@@ -24,6 +24,11 @@ static const uint32_t palette[16]    = {
     0xf7f773, 0x10F710, 0x21ce42, 0x313131};
 extern unsigned char charset[256 * 8 * 8];
 
+static uint8_t ay_addr = 0;
+static uint8_t ay_regs[14];
+static uint8_t handctrl1 = 0xFF;
+static uint8_t handctrl2 = 0xFF;
+
 static uint8_t mem_read(size_t param, uint16_t addr) {
     if (cpm_remap) {
         if (addr < 0x4000)
@@ -69,7 +74,20 @@ static uint8_t io_read(size_t param, ushort addr) {
 
     switch (addr & 0xFF) {
         case 0xF6:
-        case 0xF7: break;
+        case 0xF7:
+            // AY-3-8910 register read
+            switch (ay_addr) {
+                case 14: result = handctrl1; break;
+                case 15: result = handctrl2; break;
+                default:
+                    if (ay_addr < 14)
+                        result = ay_regs[ay_addr];
+
+                    printf("AY-3-8910 R%u => 0x%02X\n", ay_addr, result);
+                    break;
+            }
+
+            break;
 
         case 0xFC: printf("Cassette port input (%04x) -> %02x\n", addr, result); break;
         case 0xFD: result = is_vsync ? 0 : 1; break;
@@ -96,8 +114,16 @@ static uint8_t io_read(size_t param, ushort addr) {
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
     switch (addr & 0xFF) {
         case 0xF6:
+            // AY-3-8910 register write
+            if (ay_addr < 14)
+                ay_regs[ay_addr] = data;
+
+            printf("AY-3-8910 R%u=0x%02X\n", ay_addr, data);
+            break;
+
         case 0xF7:
-            // AY-3-8910
+            // AY-3-8910 address latch
+            ay_addr = data;
             break;
 
         case 0xFC:
@@ -139,8 +165,34 @@ static Uint32 timer_callback(Uint32 interval, void *param) {
 static void keyboard_scancode(unsigned scancode, bool keydown) {
     // printf("%c: %d\n", keydown ? 'D' : 'U', scancode);
 
+    enum {
+        UP    = (1 << 0),
+        DOWN  = (1 << 1),
+        LEFT  = (1 << 2),
+        RIGHT = (1 << 3),
+        K1    = (1 << 4),
+        K2    = (1 << 5),
+        K3    = (1 << 6),
+        K4    = (1 << 7),
+        K5    = (1 << 8),
+        K6    = (1 << 9),
+    };
+
+    static int handctrl_pressed = 0;
+
     int key = -1;
     switch (scancode) {
+        case SDL_SCANCODE_UP: handctrl_pressed = (keydown) ? (handctrl_pressed | UP) : (handctrl_pressed & ~UP); break;
+        case SDL_SCANCODE_DOWN: handctrl_pressed = (keydown) ? (handctrl_pressed | DOWN) : (handctrl_pressed & ~DOWN); break;
+        case SDL_SCANCODE_LEFT: handctrl_pressed = (keydown) ? (handctrl_pressed | LEFT) : (handctrl_pressed & ~LEFT); break;
+        case SDL_SCANCODE_RIGHT: handctrl_pressed = (keydown) ? (handctrl_pressed | RIGHT) : (handctrl_pressed & ~RIGHT); break;
+        case SDL_SCANCODE_F1: handctrl_pressed = (keydown) ? (handctrl_pressed | K1) : (handctrl_pressed & ~K1); break;
+        case SDL_SCANCODE_F2: handctrl_pressed = (keydown) ? (handctrl_pressed | K2) : (handctrl_pressed & ~K2); break;
+        case SDL_SCANCODE_F3: handctrl_pressed = (keydown) ? (handctrl_pressed | K3) : (handctrl_pressed & ~K3); break;
+        case SDL_SCANCODE_F4: handctrl_pressed = (keydown) ? (handctrl_pressed | K4) : (handctrl_pressed & ~K4); break;
+        case SDL_SCANCODE_F5: handctrl_pressed = (keydown) ? (handctrl_pressed | K5) : (handctrl_pressed & ~K5); break;
+        case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
+
         case SDL_SCANCODE_ESCAPE: reset(); break;
 
         case SDL_SCANCODE_EQUALS: key = 0; break;
@@ -199,6 +251,31 @@ static void keyboard_scancode(unsigned scancode, bool keydown) {
         case SDL_SCANCODE_LSHIFT: key = 46; break;
         case SDL_SCANCODE_LCTRL: key = 47; break;
     }
+
+    handctrl1 = 0xFF;
+    switch (handctrl_pressed & 0xF) {
+        case LEFT: handctrl1 &= ~(1 << 3); break;
+        case UP | LEFT: handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+        case UP: handctrl1 &= ~(1 << 2); break;
+        case UP | RIGHT: handctrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+        case RIGHT: handctrl1 &= ~(1 << 1); break;
+        case DOWN | RIGHT: handctrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+        case DOWN: handctrl1 &= ~(1 << 0); break;
+        case DOWN | LEFT: handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+        default: break;
+    }
+    if (handctrl_pressed & K1)
+        handctrl1 &= ~(1 << 6);
+    if (handctrl_pressed & K2)
+        handctrl1 &= ~((1 << 7) | (1 << 2));
+    if (handctrl_pressed & K3)
+        handctrl1 &= ~((1 << 7) | (1 << 5));
+    if (handctrl_pressed & K4)
+        handctrl1 &= ~(1 << 5);
+    if (handctrl_pressed & K5)
+        handctrl1 &= ~((1 << 7) | (1 << 1));
+    if (handctrl_pressed & K6)
+        handctrl1 &= ~((1 << 7) | (1 << 0));
 
     if (key < 0) {
         return;
