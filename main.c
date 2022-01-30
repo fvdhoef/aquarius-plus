@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
+#include <unistd.h>
 
 #include <SDL.h>
 
@@ -302,26 +303,55 @@ static inline void draw_char(uint32_t *pixels, int pitch, uint8_t ch, uint8_t co
     }
 }
 
-int main(int argc, const char **argv) {
+int main(int argc, char *argv[]) {
+    char *base_path = SDL_GetBasePath();
+
+    char rom_path[1024];
+    snprintf(rom_path, sizeof(rom_path), "%s%s", base_path, "aquarius.rom");
+
+    char cartrom_path[1024];
+    cartrom_path[0] = 0;
+
+    int  opt;
+    bool params_ok = true;
+    while ((opt = getopt(argc, argv, "r:c:")) != -1) {
+        switch (opt) {
+            case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
+            case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
+            default: params_ok = false; break;
+        }
+    }
+    if (optind != argc) {
+        params_ok = false;
+    }
+
+    if (!params_ok) {
+        fprintf(stderr, "Usage: %s <options>\n\n", argv[0]);
+        fprintf(stderr, "Options:\n");
+        fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
+        fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
+        fprintf(stderr, "\n");
+        exit(1);
+    }
+
     reset();
 
+    // Load system ROM
     {
-        FILE *f = fopen("aquarius.rom", "rb");
+        FILE *f = fopen(rom_path, "rb");
         if (f == NULL) {
-            perror("aquarius.rom");
+            perror(rom_path);
             exit(1);
         }
         fread(rom, sizeof(rom), 1, f);
         fclose(f);
     }
 
-    if (0) {
-        // FILE *f = fopen("roms/Astrosmash (1982)(Mattel).bin", "rb");
-        // FILE *f = fopen("roms/Advanced Dungeons & Dragons (1982)(Mattel).bin", "rb");
-        // FILE *f = fopen("roms/Tron - Deadly Discs (1982)(Mattel).bin", "rb");
-        FILE *f = fopen("roms/ExtendedBasic.bin", "rb");
+    // Load cartridge ROM
+    if (cartrom_path[0] != 0) {
+        FILE *f = fopen(cartrom_path, "rb");
         if (f == NULL) {
-            perror("gamerom");
+            perror(cartrom_path);
             exit(1);
         }
         fread(gamerom, sizeof(gamerom), 1, f);
