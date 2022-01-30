@@ -13,9 +13,10 @@ static uint8_t        gamerom[0x4000];
 static uint8_t        ram[0x1000];
 static uint8_t        extram[0x8000];
 static volatile bool  frame_busy     = false;
-static uint8_t        scramble_value = 0;
-static volatile bool  is_vsync       = false;
+static bool           is_vsync       = false;
 static uint8_t        keyb_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t        scramble_value = 0;
+static bool           cpm_remap      = false;
 static const uint32_t palette[16]    = {
     0x101010, 0xf71010, 0x10f710, 0xf7ef10,
     0x2121de, 0xf710f7, 0x31c6c6, 0xf7f7f7,
@@ -24,6 +25,13 @@ static const uint32_t palette[16]    = {
 extern unsigned char charset[256 * 8 * 8];
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
+    if (cpm_remap) {
+        if (addr < 0x4000)
+            addr += 0xC000;
+        if (addr >= 0xC000)
+            addr -= 0xC000;
+    }
+
     uint8_t result = 0xFF;
     if (addr < 0x2000) {
         result = rom[addr];
@@ -40,6 +48,13 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
 }
 
 static void mem_write(size_t param, uint16_t addr, uint8_t data) {
+    if (cpm_remap) {
+        if (addr < 0x4000)
+            addr += 0xC000;
+        if (addr >= 0xC000)
+            addr -= 0xC000;
+    }
+
     if (addr >= 0x3000 && addr < 0x4000) {
         ram[addr - 0x3000] = data;
     } else if (addr >= 0x4000 && addr < 0xC000) {
@@ -57,10 +72,7 @@ static uint8_t io_read(size_t param, ushort addr) {
         case 0xF7: break;
 
         case 0xFC: printf("Cassette port input (%04x) -> %02x\n", addr, result); break;
-        case 0xFD:
-            result = is_vsync ? 1 : 0;
-            //  printf("Vertical sync signal (%04x) -> %02x\n", addr, result);
-            break;
+        case 0xFD: result = is_vsync ? 0 : 1; break;
         case 0xFE: printf("Clear to send status (%04x) -> %02x\n", addr, result); break;
         case 0xFF: {
             uint8_t rows = addr >> 8;
@@ -91,14 +103,22 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
         case 0xFC:
             // printf("Cassette and sound port output (%04x) = %02x\n", addr, data);
             break;
-        case 0xFD: printf("CP/M mode memory mapper (%04x) = %02x\n", addr, data); break;
+        case 0xFD: cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %02x\n", addr, data); break;
-        case 0xFF:
-            // printf("Software lock pattern (%04x) = %02x\n", addr, data);
-            scramble_value = data;
-            break;
+        case 0xFF: scramble_value = data; break;
         default: printf("io_write(0x%04x, 0x%02x)\n", addr, data); break;
     }
+}
+
+static void reset(void) {
+    Z80RESET(&z80context);
+    z80context.ioRead   = io_read;
+    z80context.ioWrite  = io_write;
+    z80context.memRead  = mem_read;
+    z80context.memWrite = mem_write;
+
+    scramble_value = 0;
+    cpm_remap      = false;
 }
 
 static Uint32 timer_callback(Uint32 interval, void *param) {
@@ -121,6 +141,8 @@ static void keyboard_scancode(unsigned scancode, bool keydown) {
 
     int key = -1;
     switch (scancode) {
+        case SDL_SCANCODE_ESCAPE: reset(); break;
+
         case SDL_SCANCODE_EQUALS: key = 0; break;
         case SDL_SCANCODE_BACKSPACE: key = 1; break;
         case SDL_SCANCODE_APOSTROPHE: key = 2; break;
@@ -204,11 +226,8 @@ static inline void draw_char(uint32_t *pixels, int pitch, uint8_t ch, uint8_t co
 }
 
 int main(int argc, const char **argv) {
-    Z80RESET(&z80context);
-    z80context.ioRead   = io_read;
-    z80context.ioWrite  = io_write;
-    z80context.memRead  = mem_read;
-    z80context.memWrite = mem_write;
+    reset();
+
     {
         FILE *f = fopen("aquarius.rom", "rb");
         if (f == NULL) {
@@ -219,7 +238,7 @@ int main(int argc, const char **argv) {
         fclose(f);
     }
 
-    if (1) {
+    if (0) {
         // FILE *f = fopen("roms/Astrosmash (1982)(Mattel).bin", "rb");
         // FILE *f = fopen("roms/Advanced Dungeons & Dragons (1982)(Mattel).bin", "rb");
         // FILE *f = fopen("roms/Tron - Deadly Discs (1982)(Mattel).bin", "rb");
