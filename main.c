@@ -23,7 +23,7 @@ static const uint32_t palette[16]    = {
     0x2121de, 0xf710f7, 0x31c6c6, 0xf7f7f7,
     0xc6c6c6, 0x29adad, 0xc621c6, 0x42108c,
     0xf7f773, 0x10F710, 0x21ce42, 0x313131};
-extern unsigned char charset[256 * 8 * 8];
+extern unsigned char charrom_bin[2048];
 
 static uint8_t ay_addr = 0;
 static uint8_t ay_regs[14];
@@ -106,7 +106,7 @@ static uint8_t io_read(size_t param, ushort addr) {
             // printf("Keyboard port (%04x) -> %02x\n", addr, result);
             break;
         }
-        default: printf("io_read(0x%04x) -> 0x%02x\n", addr, result); break;
+        default: printf("io_read(0x%02x) -> 0x%02x\n", addr & 0xFF, result); break;
     }
 
     return result;
@@ -132,8 +132,11 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
             break;
         case 0xFD: cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %02x\n", addr, data); break;
-        case 0xFF: scramble_value = data; break;
-        default: printf("io_write(0x%04x, 0x%02x)\n", addr, data); break;
+        case 0xFF:
+            scramble_value = data;
+            printf("Scramble: %02X\n", data);
+            break;
+        default: printf("io_write(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
     }
 }
 
@@ -289,16 +292,37 @@ static void keyboard_scancode(unsigned scancode, bool keydown) {
     }
 }
 
-static inline void draw_char(uint32_t *pixels, int pitch, uint8_t ch, uint8_t color, int row, int column) {
-    uint32_t fgcol = palette[color >> 4];
-    uint32_t bgcol = palette[color & 0xF];
-
-    const uint8_t *ps = &charset[ch * 64];
+static inline void draw_char(void *pixels, int pitch, uint8_t ch, uint8_t color, int row, int column) {
+    uint32_t       fgcol = palette[color >> 4];
+    uint32_t       bgcol = palette[color & 0xF];
+    const uint8_t *ps    = &charrom_bin[ch * 8];
 
     for (int j = 0; j < 8; j++) {
         uint32_t *pd = &((uint32_t *)((uintptr_t)pixels + (row * 8 + j) * pitch))[column * 8];
         for (int i = 0; i < 8; i++) {
-            pd[i] = ps[j * 8 + i] ? fgcol : bgcol;
+            pd[i] = (ps[j] & (1 << (7 - i))) ? fgcol : bgcol;
+        }
+    }
+}
+
+static void draw_screen(void *pixels, int pitch) {
+    uint8_t border_ch    = ram[0];
+    uint8_t border_color = ram[0x400];
+
+    for (int row = 0; row < 28; row++) {
+        for (int column = 0; column < 44; column++) {
+            if (row >= 2 && row < 26 && column >= 2 && column < 42)
+                continue;
+
+            draw_char(pixels, pitch, border_ch, border_color, row, column);
+        }
+    }
+
+    for (int row = 0; row < 24; row++) {
+        for (int column = 0; column < 40; column++) {
+            uint8_t ch    = ram[(row + 1) * 40 + column];
+            uint8_t color = ram[0x400 + (row + 1) * 40 + column];
+            draw_char(pixels, pitch, ch, color, row + 2, column + 2);
         }
     }
 }
@@ -390,30 +414,11 @@ int main(int argc, char *argv[]) {
             case SDL_USEREVENT: {
                 frame_busy = false;
 
-                uint32_t *pixels;
-                int       pitch;
-                SDL_LockTexture(texture, NULL, (void **)&pixels, &pitch);
-
-                uint8_t border_ch    = ram[0];
-                uint8_t border_color = ram[0x400];
-
-                for (int row = 0; row < 28; row++) {
-                    for (int column = 0; column < 44; column++) {
-                        if (row >= 2 && row < 26 && column >= 2 && column < 42)
-                            continue;
-
-                        draw_char(pixels, pitch, border_ch, border_color, row, column);
-                    }
-                }
-
-                for (int row = 0; row < 24; row++) {
-                    for (int column = 0; column < 40; column++) {
-                        uint8_t ch    = ram[(row + 1) * 40 + column];
-                        uint8_t color = ram[0x400 + (row + 1) * 40 + column];
-                        draw_char(pixels, pitch, ch, color, row + 2, column + 2);
-                    }
-                }
-
+                // Render screen
+                void *pixels;
+                int   pitch;
+                SDL_LockTexture(texture, NULL, &pixels, &pitch);
+                draw_screen(pixels, pitch);
                 SDL_UnlockTexture(texture);
                 SDL_RenderClear(renderer);
 
@@ -449,12 +454,19 @@ int main(int argc, char *argv[]) {
                 }
                 SDL_RenderPresent(renderer);
 
+                // 3579545 Hz -> 59659 cycles / frame
+                // 7159090 Hz -> 119318 cycles / frame
+
+                // 455x262=119210 -> 60.05 Hz
+                // 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
+                // 366 active pixels
+
                 // 13.8 ms active state
-                Z80ExecuteTStates(&z80context, 48302);
+                Z80ExecuteTStates(&z80context, 49596);
 
                 // 2.8 ms v-sync
                 is_vsync = true;
-                Z80ExecuteTStates(&z80context, 9800);
+                Z80ExecuteTStates(&z80context, 10063);
                 is_vsync = false;
 
                 break;
