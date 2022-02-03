@@ -2,7 +2,7 @@
 #include "audio.h"
 #include <SDL.h>
 
-#define NUM_BUFS (64)
+#define NUM_BUFS (8)
 
 static SDL_AudioDeviceID audio_dev;
 static int16_t **        buffers;
