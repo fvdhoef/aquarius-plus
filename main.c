@@ -1,14 +1,10 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <stdbool.h>
-#include <unistd.h>
-
+#include "common.h"
 #include <SDL.h>
-
+#include "audio.h"
 #include "z80.h"
 
 static Z80Context     z80context;
+static int            cpu_cycles = 0;
 static uint8_t        rom[0x2000];
 static uint8_t        gamerom[0x4000];
 static uint8_t        ram[0x1000];
@@ -114,24 +110,29 @@ static uint8_t io_read(size_t param, ushort addr) {
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
     switch (addr & 0xFF) {
-        case 0xF6:
-            // AY-3-8910 register write
-            if (ay_addr < 14)
-                ay_regs[ay_addr] = data;
+            // case 0xF6:
+            //     // AY-3-8910 register write
+            //     if (ay_addr < 14)
+            //         ay_regs[ay_addr] = data;
 
-            printf("AY-3-8910 R%u=0x%02X\n", ay_addr, data);
-            break;
+            //     printf("AY-3-8910 R%u=0x%02X\n", ay_addr, data);
+            //     break;
 
-        case 0xF7:
-            // AY-3-8910 address latch
-            ay_addr = data;
-            break;
+            // case 0xF7:
+            //     // AY-3-8910 address latch
+            //     ay_addr = data;
+            //     break;
 
-        case 0xFC:
-            // printf("Cassette and sound port output (%04x) = %02x\n", addr, data);
+        case 0xFC: {
+            audio_set(cpu_cycles, data & 1);
+
+            // static unsigned prev_tstate;
+            // printf("%u Cassette and sound port output (%04x) = %u\n", z80context.tstates - prev_tstate, addr, data & 1);
+            // prev_tstate = z80context.tstates;
             break;
+        }
         case 0xFD: cpm_remap = (data & 1) != 0; break;
-        case 0xFE: printf("1200 bps serial printer (%04x) = %02x\n", addr, data); break;
+        case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
         case 0xFF:
             scramble_value = data;
             printf("Scramble: %02X\n", data);
@@ -327,6 +328,52 @@ static void draw_screen(void *pixels, int pitch) {
     }
 }
 
+static void render_screen(SDL_Renderer *renderer) {
+    static SDL_Texture *texture = NULL;
+    if (texture == NULL) {
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 352, 224);
+    }
+
+    void *pixels;
+    int   pitch;
+    SDL_LockTexture(texture, NULL, &pixels, &pitch);
+    draw_screen(pixels, pitch);
+    SDL_UnlockTexture(texture);
+    SDL_RenderClear(renderer);
+
+    // Determine target size
+    {
+        int w, h;
+        SDL_GetRendererOutputSize(renderer, &w, &h);
+
+        // Retain aspect ratio
+        int w1 = w / 352 * 352;
+        int h1 = w1 * 224 / 352;
+        int h2 = h / 224 * 224;
+        int w2 = h2 * 352 / 224;
+
+        int sw, sh;
+        if (w1 == 0 || h1 == 0) {
+            sw = w;
+            sh = h;
+        } else if (w1 <= w && h1 <= h) {
+            sw = w1;
+            sh = h1;
+        } else {
+            sw = w2;
+            sh = h2;
+        }
+
+        SDL_Rect dst;
+        dst.w = (int)sw;
+        dst.h = (int)sh;
+        dst.x = (w - dst.w) / 2;
+        dst.y = (h - dst.h) / 2;
+        SDL_RenderCopy(renderer, texture, NULL, &dst);
+    }
+    SDL_RenderPresent(renderer);
+}
+
 int main(int argc, char *argv[]) {
     char *base_path = SDL_GetBasePath();
 
@@ -358,7 +405,13 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+        SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
+        exit(1);
+    }
+
     reset();
+    audio_init();
 
     // Load system ROM
     {
@@ -397,10 +450,12 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    SDL_Texture *texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, 352, 224);
-
-    SDL_AddTimer(16, timer_callback, NULL);
+    SDL_AddTimer(1, timer_callback, NULL);
     SDL_Event event;
+
+    unsigned offset         = SDL_GetTicks64();
+    int      display_cycles = 0;
+
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
         switch (event.type) {
             case SDL_KEYDOWN:
@@ -414,45 +469,9 @@ int main(int argc, char *argv[]) {
             case SDL_USEREVENT: {
                 frame_busy = false;
 
+                int cycles_now = ((uint64_t)(SDL_GetTicks64() - offset) * CPU_FREQ) / 1000;
+
                 // Render screen
-                void *pixels;
-                int   pitch;
-                SDL_LockTexture(texture, NULL, &pixels, &pitch);
-                draw_screen(pixels, pitch);
-                SDL_UnlockTexture(texture);
-                SDL_RenderClear(renderer);
-
-                // Determine target size
-                {
-                    int w, h;
-                    SDL_GetRendererOutputSize(renderer, &w, &h);
-
-                    // Retain aspect ratio
-                    int w1 = w / 352 * 352;
-                    int h1 = w1 * 224 / 352;
-                    int h2 = h / 224 * 224;
-                    int w2 = h2 * 352 / 224;
-
-                    int sw, sh;
-                    if (w1 == 0 || h1 == 0) {
-                        sw = w;
-                        sh = h;
-                    } else if (w1 <= w && h1 <= h) {
-                        sw = w1;
-                        sh = h1;
-                    } else {
-                        sw = w2;
-                        sh = h2;
-                    }
-
-                    SDL_Rect dst;
-                    dst.w = (int)sw;
-                    dst.h = (int)sh;
-                    dst.x = (w - dst.w) / 2;
-                    dst.y = (h - dst.h) / 2;
-                    SDL_RenderCopy(renderer, texture, NULL, &dst);
-                }
-                SDL_RenderPresent(renderer);
 
                 // 3579545 Hz -> 59659 cycles / frame
                 // 7159090 Hz -> 119318 cycles / frame
@@ -461,13 +480,21 @@ int main(int argc, char *argv[]) {
                 // 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
                 // 366 active pixels
 
-                // 13.8 ms active state
-                Z80ExecuteTStates(&z80context, 49596);
+                while (cpu_cycles < cycles_now) {
+                    unsigned tstates = z80context.tstates;
+                    Z80Execute(&z80context);
+                    int delta = z80context.tstates - tstates;
+                    cpu_cycles += delta;
 
-                // 2.8 ms v-sync
-                is_vsync = true;
-                Z80ExecuteTStates(&z80context, 10063);
-                is_vsync = false;
+                    display_cycles += delta;
+                    if (!is_vsync && display_cycles >= 49596) {
+                        render_screen(renderer);
+                        is_vsync = true;
+                    } else if (is_vsync && display_cycles >= 59658) {
+                        display_cycles -= 59658;
+                        is_vsync = false;
+                    }
+                }
 
                 break;
             }
