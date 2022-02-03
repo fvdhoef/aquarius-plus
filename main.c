@@ -3,13 +3,13 @@
 #include "audio.h"
 #include "z80.h"
 
+#define AUDIO_LEVEL (4095)
+
 static Z80Context     z80context;
-static int            cpu_cycles = 0;
 static uint8_t        rom[0x2000];
 static uint8_t        gamerom[0x4000];
 static uint8_t        ram[0x1000];
 static uint8_t        extram[0x8000];
-static volatile bool  frame_busy     = false;
 static bool           is_vsync       = false;
 static uint8_t        keyb_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static uint8_t        scramble_value = 0;
@@ -20,6 +20,8 @@ static const uint32_t palette[16]    = {
     0xc6c6c6, 0x29adad, 0xc621c6, 0x42108c,
     0xf7f773, 0x10F710, 0x21ce42, 0x313131};
 extern unsigned char charrom_bin[2048];
+static int16_t       audio_out        = AUDIO_LEVEL;
+static bool          expander_enabled = true;
 
 static uint8_t ay_addr = 0;
 static uint8_t ay_regs[14];
@@ -72,18 +74,19 @@ static uint8_t io_read(size_t param, ushort addr) {
     switch (addr & 0xFF) {
         case 0xF6:
         case 0xF7:
-            // AY-3-8910 register read
-            switch (ay_addr) {
-                case 14: result = handctrl1; break;
-                case 15: result = handctrl2; break;
-                default:
-                    if (ay_addr < 14)
-                        result = ay_regs[ay_addr];
+            if (expander_enabled) {
+                // AY-3-8910 register read
+                switch (ay_addr) {
+                    case 14: result = handctrl1; break;
+                    case 15: result = handctrl2; break;
+                    default:
+                        if (ay_addr < 14)
+                            result = ay_regs[ay_addr];
 
-                    printf("AY-3-8910 R%u => 0x%02X\n", ay_addr, result);
-                    break;
+                        printf("AY-3-8910 R%u => 0x%02X\n", ay_addr, result);
+                        break;
+                }
             }
-
             break;
 
         case 0xFC: printf("Cassette port input (%04x) -> %02x\n", addr, result); break;
@@ -110,27 +113,23 @@ static uint8_t io_read(size_t param, ushort addr) {
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
     switch (addr & 0xFF) {
-            // case 0xF6:
-            //     // AY-3-8910 register write
-            //     if (ay_addr < 14)
-            //         ay_regs[ay_addr] = data;
+        case 0xF6:
+            if (expander_enabled) {
+                // AY-3-8910 register write
+                if (ay_addr < 14)
+                    ay_regs[ay_addr] = data;
 
-            //     printf("AY-3-8910 R%u=0x%02X\n", ay_addr, data);
-            //     break;
-
-            // case 0xF7:
-            //     // AY-3-8910 address latch
-            //     ay_addr = data;
-            //     break;
-
-        case 0xFC: {
-            audio_set(cpu_cycles, data & 1);
-
-            // static unsigned prev_tstate;
-            // printf("%u Cassette and sound port output (%04x) = %u\n", z80context.tstates - prev_tstate, addr, data & 1);
-            // prev_tstate = z80context.tstates;
+                printf("AY-3-8910 R%u=0x%02X\n", ay_addr, data);
+            }
             break;
-        }
+        case 0xF7:
+            if (expander_enabled) {
+                // AY-3-8910 address latch
+                ay_addr = data;
+            }
+            break;
+
+        case 0xFC: audio_out = (data & 1) ? AUDIO_LEVEL : -AUDIO_LEVEL; break;
         case 0xFD: cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
         case 0xFF:
@@ -150,21 +149,6 @@ static void reset(void) {
 
     scramble_value = 0;
     cpm_remap      = false;
-}
-
-static Uint32 timer_callback(Uint32 interval, void *param) {
-    (void)param;
-    if (!frame_busy) {
-        frame_busy = true;
-
-        SDL_Event event;
-        memset(&event, 0, sizeof(event));
-        event.type      = SDL_USEREVENT;
-        event.user.type = SDL_USEREVENT;
-        event.user.code = 0;
-        SDL_PushEvent(&event);
-    }
-    return interval;
 }
 
 static void keyboard_scancode(unsigned scancode, bool keydown) {
@@ -198,7 +182,10 @@ static void keyboard_scancode(unsigned scancode, bool keydown) {
         case SDL_SCANCODE_F5: handctrl_pressed = (keydown) ? (handctrl_pressed | K5) : (handctrl_pressed & ~K5); break;
         case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
 
-        case SDL_SCANCODE_ESCAPE: reset(); break;
+        case SDL_SCANCODE_ESCAPE:
+            if (keydown)
+                reset();
+            break;
 
         case SDL_SCANCODE_EQUALS: key = 0; break;
         case SDL_SCANCODE_BACKSPACE: key = 1; break;
@@ -385,10 +372,11 @@ int main(int argc, char *argv[]) {
 
     int  opt;
     bool params_ok = true;
-    while ((opt = getopt(argc, argv, "r:c:")) != -1) {
+    while ((opt = getopt(argc, argv, "r:c:x")) != -1) {
         switch (opt) {
             case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
+            case 'x': expander_enabled = false; break;
             default: params_ok = false; break;
         }
     }
@@ -401,6 +389,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
+        fprintf(stderr, "-x          Disable mini expander emulation.\n");
         fprintf(stderr, "\n");
         exit(1);
     }
@@ -443,18 +432,19 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
         SDL_Quit();
         return 1;
     }
 
-    SDL_AddTimer(1, timer_callback, NULL);
     SDL_Event event;
 
-    unsigned offset         = SDL_GetTicks64();
-    int      display_cycles = 0;
+    int frame_cycles      = 0;
+    int sample_halfcycles = 0;
+
+    audio_start();
 
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
         switch (event.type) {
@@ -467,11 +457,9 @@ int main(int argc, char *argv[]) {
             }
 
             case SDL_USEREVENT: {
-                frame_busy = false;
-
-                int cycles_now = ((uint64_t)(SDL_GetTicks64() - offset) * CPU_FREQ) / 1000;
-
                 // Render screen
+                int16_t *abuf = audio_get_buffer();
+                int      aidx = 0;
 
                 // 3579545 Hz -> 59659 cycles / frame
                 // 7159090 Hz -> 119318 cycles / frame
@@ -480,21 +468,43 @@ int main(int argc, char *argv[]) {
                 // 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
                 // 366 active pixels
 
-                while (cpu_cycles < cycles_now) {
+                const int cycles_per_frame      = 59659;
+                const int halfcycles_per_sample = 149;
+
+                while (frame_cycles < 49596) {
                     unsigned tstates = z80context.tstates;
                     Z80Execute(&z80context);
                     int delta = z80context.tstates - tstates;
-                    cpu_cycles += delta;
+                    frame_cycles += delta;
 
-                    display_cycles += delta;
-                    if (!is_vsync && display_cycles >= 49596) {
-                        render_screen(renderer);
-                        is_vsync = true;
-                    } else if (is_vsync && display_cycles >= 59658) {
-                        display_cycles -= 59658;
-                        is_vsync = false;
+                    sample_halfcycles += delta * 2;
+                    if (sample_halfcycles >= halfcycles_per_sample) {
+                        sample_halfcycles -= halfcycles_per_sample;
+                        assert(aidx < 800);
+                        abuf[aidx++] = audio_out;
                     }
                 }
+
+                render_screen(renderer);
+                is_vsync = true;
+                while (frame_cycles < cycles_per_frame) {
+                    unsigned tstates = z80context.tstates;
+                    Z80Execute(&z80context);
+                    int delta = z80context.tstates - tstates;
+                    frame_cycles += delta;
+
+                    sample_halfcycles += delta * 2;
+                    if (sample_halfcycles >= halfcycles_per_sample) {
+                        sample_halfcycles -= halfcycles_per_sample;
+                        abuf[aidx++] = audio_out;
+                        if (aidx >= 800)
+                            break;
+                    }
+                }
+                is_vsync = false;
+
+                frame_cycles = 0;
+                audio_put_buffer(abuf);
 
                 break;
             }
