@@ -481,7 +481,10 @@ int main(int argc, char *argv[]) {
                     if (sample_halfcycles >= halfcycles_per_sample) {
                         sample_halfcycles -= halfcycles_per_sample;
                         assert(aidx < 800);
-                        abuf[aidx++] = audio_out;
+
+                        if (abuf != NULL)
+                            abuf[aidx] = audio_out;
+                        aidx++;
                     }
                 }
 
@@ -496,7 +499,10 @@ int main(int argc, char *argv[]) {
                     sample_halfcycles += delta * 2;
                     if (sample_halfcycles >= halfcycles_per_sample) {
                         sample_halfcycles -= halfcycles_per_sample;
-                        abuf[aidx++] = audio_out;
+
+                        if (abuf != NULL)
+                            abuf[aidx] = audio_out;
+                        aidx++;
                         if (aidx >= 800)
                             break;
                     }
@@ -504,7 +510,9 @@ int main(int argc, char *argv[]) {
                 is_vsync = false;
 
                 frame_cycles = 0;
-                audio_put_buffer(abuf);
+
+                if (abuf != NULL)
+                    audio_put_buffer(abuf);
 
                 break;
             }

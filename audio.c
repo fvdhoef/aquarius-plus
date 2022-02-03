@@ -88,6 +88,10 @@ void audio_close(void) {
 }
 
 int16_t *audio_get_buffer(void) {
+    if (buf_cnt == NUM_BUFS) {
+        return NULL;
+    }
+
     // printf("audio_get_buffer %d %d\n", wridx, buf_cnt);
 
     assert(buf_cnt < NUM_BUFS);
