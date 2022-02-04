@@ -411,7 +411,10 @@ int main(int argc, char *argv[]) {
             perror(rom_path);
             exit(1);
         }
-        fread(rom, sizeof(rom), 1, f);
+        if (fread(rom, sizeof(rom), 1, f) != 1) {
+            fprintf(stderr, "Error during reading of system ROM image.\n");
+            exit(1);
+        }
         fclose(f);
     }
 
@@ -422,7 +425,10 @@ int main(int argc, char *argv[]) {
             perror(cartrom_path);
             exit(1);
         }
-        fread(gamerom, sizeof(gamerom), 1, f);
+        if (fread(gamerom, sizeof(gamerom), 1, f) <= 0) {
+            fprintf(stderr, "Error during reading of cartridge ROM image.\n");
+            exit(1);
+        }
         fclose(f);
     }
 
