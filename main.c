@@ -1,5 +1,7 @@
 #include "common.h"
 #include <SDL.h>
+#undef main
+
 #include "audio.h"
 #include "z80.h"
 

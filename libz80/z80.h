@@ -26,6 +26,10 @@
 #ifndef _Z80_H_
 #define _Z80_H_
 
+#if _WIN32
+#    define _CRT_SECURE_NO_WARNINGS
+#endif
+
 #include <stddef.h>
 
 /* If this file is included inside a C++ program, use explicit C linkage for the following functions
