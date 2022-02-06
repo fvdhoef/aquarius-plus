@@ -5,29 +5,31 @@
 #include "audio.h"
 #include "z80.h"
 #include "ay8910.h"
+#include "ch376.h"
 
 #define AUDIO_LEVEL (16000)
 
 extern unsigned char charrom_bin[2048]; // Character ROM contents
 
 struct emulation_state {
-    Z80Context z80context;       // Z80 emulation core state
-    int        line_hcycles;     // Half-cycles for this line
-    int        sample_hcycles;   // Half-cycles for this sample
-    int        linenr;           // Current display line
-    int16_t    audio_out;        // Audio level of internal sound output (also used for cassette interface)
-    bool       cpm_remap;        // Remap memory for CP/M
-    uint8_t    scramble_value;   // Value to XOR (scramble) the external data bus with
-    uint8_t    keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
-    bool       expander_enabled; // Mini-expander enabled?
-    uint8_t    ay_addr;          // Mini-expander - AY-3-8910: Selected address to access via data register
-    uint8_t    handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
-    uint8_t    handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
-    bool       ramexp_enabled;   // RAM expansion enabled?
-    uint8_t    rom[0x2000];      // 0x0000-0x1FFF: System ROM
-    uint8_t    ram[0x1000];      // 0x3000-0x3FFF: System RAM
-    uint8_t    ramexp[0x8000];   // 0x4000-0xBFFF: RAM expansion
-    uint8_t    gamerom[0x4000];  // 0xC000-0xFFFF: Cartridge
+    Z80Context    z80context;       // Z80 emulation core state
+    int           line_hcycles;     // Half-cycles for this line
+    int           sample_hcycles;   // Half-cycles for this sample
+    int           linenr;           // Current display line
+    int16_t       audio_out;        // Audio level of internal sound output (also used for cassette interface)
+    bool          cpm_remap;        // Remap memory for CP/M
+    uint8_t       scramble_value;   // Value to XOR (scramble) the external data bus with
+    uint8_t       keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
+    bool          expander_enabled; // Mini-expander enabled?
+    uint8_t       ay_addr;          // Mini-expander - AY-3-8910: Selected address to access via data register
+    uint8_t       handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
+    uint8_t       handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
+    bool          ramexp_enabled;   // RAM expansion enabled?
+    uint8_t       rom[0x2000];      // 0x0000-0x1FFF: System ROM
+    uint8_t       ram[0x1000];      // 0x3000-0x3FFF: System RAM
+    uint8_t       ramexp[0x8000];   // 0x4000-0xBFFF: RAM expansion
+    uint8_t       gamerom[0x4000];  // 0xC000-0xFFFF: Cartridge
+    struct ay8910 ay_state;         // AY-3-8910 emulation state
 };
 
 static struct emulation_state state = {
@@ -92,7 +94,20 @@ static uint8_t io_read(size_t param, ushort addr) {
     (void)param;
     uint8_t result = 0xFF;
 
+    // Bruce Abbott's Micro-Expander CH376
+    if ((addr & 0xC0) == 0x40) {
+        if ((addr & 1) == 0)
+            return ch376_read_data();
+        else
+            return ch376_read_status();
+    }
+
     switch (addr & 0xFF) {
+        case 0x40:
+            break;
+        case 0x41:
+            break;
+
         case 0xF6:
         case 0xF7:
             if (state.expander_enabled) {
@@ -102,7 +117,7 @@ static uint8_t io_read(size_t param, ushort addr) {
                     case 15: result = state.handctrl2; break;
                     default:
                         if (state.ay_addr < 14)
-                            result = ay8910_read_reg(state.ay_addr);
+                            result = ay8910_read_reg(&state.ay_state, state.ay_addr);
 
                         // printf("AY-3-8910 R%u => 0x%02X\n", state.ay_addr, result);
                         break;
@@ -133,12 +148,22 @@ static uint8_t io_read(size_t param, ushort addr) {
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
     (void)param;
+
+    // Bruce Abbott's Micro-Expander CH376
+    if ((addr & 0xC0) == 0x40) {
+        if ((addr & 1) == 0)
+            ch376_write_data(data);
+        else
+            ch376_write_cmd(data);
+        return;
+    }
+
     switch (addr & 0xFF) {
         case 0xF6:
             if (state.expander_enabled) {
                 // AY-3-8910 register write
                 if (state.ay_addr < 14)
-                    ay8910_write_reg(state.ay_addr, data);
+                    ay8910_write_reg(&state.ay_state, state.ay_addr, data);
 
                 // printf("AY-3-8910 R%u=0x%02X\n", state.ay_addr, data);
             }
@@ -168,7 +193,7 @@ static void reset(void) {
     state.scramble_value = 0;
     state.cpm_remap      = false;
 
-    ay8910_reset();
+    ay8910_reset(&state.ay_state);
 }
 
 static void keyboard_scancode(unsigned scancode, bool keydown) {
@@ -429,7 +454,7 @@ static void emulate(SDL_Renderer *renderer) {
         // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
         float samples = 0;
         for (int i = 0; i < 5; i++) {
-            samples += ay8910_render();
+            samples += ay8910_render(&state.ay_state);
         }
         samples /= 5.0;
 
@@ -531,7 +556,7 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned long wnd_width = 352 * 2, wnd_height = 224 * 2;
-    SDL_Window *  window = SDL_CreateWindow("Aquarius emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    SDL_Window   *window = SDL_CreateWindow("Aquarius emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -546,7 +571,7 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Event event;
-    ay8910_init();
+    ay8910_init(&state.ay_state);
     audio_start();
 
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {

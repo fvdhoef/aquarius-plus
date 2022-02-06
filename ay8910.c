@@ -4,7 +4,6 @@
 
 #include "ay8910.h"
 #include <string.h>
-#include <stdbool.h>
 
 enum {
     AY_AFINE    = 0x00,
@@ -25,38 +24,6 @@ enum {
     AY_PORTB    = 0x0F,
 };
 
-struct tone {
-    uint32_t period;
-    uint8_t  volume;
-    int32_t  count;
-    uint8_t  duty_cycle;
-    uint8_t  output;
-};
-
-struct envelope {
-    uint32_t period;
-    uint32_t count;
-    int8_t   step;
-    uint8_t  volume;
-    bool     hold;
-    bool     alternate;
-    uint8_t  attack;
-    bool     holding;
-};
-
-struct ay8910 {
-    uint8_t         regs[16];                                 // Registers
-    struct tone     tone[3];                                  // Tone generator state
-    struct envelope envelope;                                 // Envelope generator state
-    uint8_t         prescale_noise;                           // Noise prescaler
-    uint8_t         noise_cnt;                                // Noise period counter
-    uint32_t        rng;                                      // RNG LFSR state
-    uint8_t         value[3];                                 // Current channel value (either 0 or 1)
-    float           output_amplitude_table[8 * 16 * 16 * 16]; // Table containing all possible output amplitudes
-};
-
-static struct ay8910 ay_state = {0};
-
 struct ay_ym_param {
     float r_up;
     float r_down;
@@ -73,7 +40,7 @@ static const struct ay_ym_param ay8910_param = {
         4820, 3945, 3017, 2345},
 };
 
-static void build_3d_table(float r_load, bool normalize, float factor, bool zero_is_off) {
+static void build_3d_table(struct ay8910 *ay, float r_load, bool normalize, float factor, bool zero_is_off) {
     float min = 10.0;
     float max = 0.0;
 
@@ -102,94 +69,94 @@ static void build_3d_table(float r_load, bool normalize, float factor, bool zero
 
                     int indx = (e << 12) | (j3 << 8) | (j2 << 4) | j1;
 
-                    ay_state.output_amplitude_table[indx] = rw / rt;
-                    if (ay_state.output_amplitude_table[indx] < min)
-                        min = ay_state.output_amplitude_table[indx];
-                    if (ay_state.output_amplitude_table[indx] > max)
-                        max = ay_state.output_amplitude_table[indx];
+                    ay->output_amplitude_table[indx] = rw / rt;
+                    if (ay->output_amplitude_table[indx] < min)
+                        min = ay->output_amplitude_table[indx];
+                    if (ay->output_amplitude_table[indx] > max)
+                        max = ay->output_amplitude_table[indx];
                 }
             }
         }
     }
 
     if (normalize) {
-        for (unsigned j = 0; j < sizeof(ay_state.output_amplitude_table) / sizeof(ay_state.output_amplitude_table[0]); j++) {
-            ay_state.output_amplitude_table[j] = ((ay_state.output_amplitude_table[j] - min) / (max - min)) * factor;
+        for (unsigned j = 0; j < sizeof(ay->output_amplitude_table) / sizeof(ay->output_amplitude_table[0]); j++) {
+            ay->output_amplitude_table[j] = ((ay->output_amplitude_table[j] - min) / (max - min)) * factor;
         }
     }
 }
 
-void ay8910_init(void) {
+void ay8910_init(struct ay8910 *ay) {
     // The previous implementation added all three channels up instead of averaging them.
     // The factor of 3 will force the same levels if normalizing is used.
     const float res_load = 1000;
-    build_3d_table(res_load, true, 3, true);
+    build_3d_table(ay, res_load, true, 3, true);
 
-    ay8910_reset();
+    ay8910_reset(ay);
 }
 
-void ay8910_reset(void) {
-    ay_state.rng = 1;
+void ay8910_reset(struct ay8910 *ay) {
+    ay->rng = 1;
 
     // Reset tone generator values
     for (int ch = 0; ch < 3; ch++) {
-        ay_state.tone[ch].period     = 0;
-        ay_state.tone[ch].volume     = 0;
-        ay_state.tone[ch].count      = 0;
-        ay_state.tone[ch].duty_cycle = 0;
-        ay_state.tone[ch].output     = 0;
+        ay->tone[ch].period     = 0;
+        ay->tone[ch].volume     = 0;
+        ay->tone[ch].count      = 0;
+        ay->tone[ch].duty_cycle = 0;
+        ay->tone[ch].output     = 0;
     }
 
     // Reset envelope generator values
-    ay_state.envelope.period    = 0;
-    ay_state.envelope.count     = 0;
-    ay_state.envelope.step      = 0;
-    ay_state.envelope.volume    = 0;
-    ay_state.envelope.hold      = false;
-    ay_state.envelope.alternate = false;
-    ay_state.envelope.attack    = 0;
-    ay_state.envelope.holding   = false;
+    ay->envelope.period    = 0;
+    ay->envelope.count     = 0;
+    ay->envelope.step      = 0;
+    ay->envelope.volume    = 0;
+    ay->envelope.hold      = false;
+    ay->envelope.alternate = false;
+    ay->envelope.attack    = 0;
+    ay->envelope.holding   = false;
 
-    ay_state.noise_cnt      = 0;
-    ay_state.prescale_noise = 0;
+    ay->noise_cnt      = 0;
+    ay->prescale_noise = 0;
     for (int i = 0; i < AY_PORTA; i++)
-        ay8910_write_reg(i, 0);
+        ay8910_write_reg(ay, i, 0);
 }
 
-void ay8910_write_reg(uint8_t r, uint8_t v) {
+void ay8910_write_reg(struct ay8910 *ay, uint8_t r, uint8_t v) {
     if (r > 15)
         return;
-    ay_state.regs[r] = v;
+    ay->regs[r] = v;
 
     switch (r) {
         case AY_AFINE:
-        case AY_ACOARSE: ay_state.tone[0].period = ((ay_state.regs[AY_ACOARSE] & 0xF) << 8) | ay_state.regs[AY_AFINE]; break;
+        case AY_ACOARSE: ay->tone[0].period = ((ay->regs[AY_ACOARSE] & 0xF) << 8) | ay->regs[AY_AFINE]; break;
         case AY_BFINE:
-        case AY_BCOARSE: ay_state.tone[1].period = ((ay_state.regs[AY_BCOARSE] & 0xF) << 8) | ay_state.regs[AY_BFINE]; break;
+        case AY_BCOARSE: ay->tone[1].period = ((ay->regs[AY_BCOARSE] & 0xF) << 8) | ay->regs[AY_BFINE]; break;
         case AY_CFINE:
-        case AY_CCOARSE: ay_state.tone[2].period = ((ay_state.regs[AY_CCOARSE] & 0xF) << 8) | ay_state.regs[AY_CFINE]; break;
+        case AY_CCOARSE: ay->tone[2].period = ((ay->regs[AY_CCOARSE] & 0xF) << 8) | ay->regs[AY_CFINE]; break;
         case AY_NOISEPER: break;
-        case AY_AVOL: ay_state.tone[0].volume = ay_state.regs[AY_AVOL]; break;
-        case AY_BVOL: ay_state.tone[1].volume = ay_state.regs[AY_BVOL]; break;
-        case AY_CVOL: ay_state.tone[2].volume = ay_state.regs[AY_CVOL]; break;
+        case AY_AVOL: ay->tone[0].volume = ay->regs[AY_AVOL]; break;
+        case AY_BVOL: ay->tone[1].volume = ay->regs[AY_BVOL]; break;
+        case AY_CVOL: ay->tone[2].volume = ay->regs[AY_CVOL]; break;
         case AY_EACOARSE:
-        case AY_EAFINE: ay_state.envelope.period = (ay_state.regs[AY_EACOARSE] << 8) | ay_state.regs[AY_EAFINE]; break;
+        case AY_EAFINE: ay->envelope.period = (ay->regs[AY_EACOARSE] << 8) | ay->regs[AY_EAFINE]; break;
         case AY_ENABLE: break;
         case AY_EASHAPE: {
-            uint8_t       shape      = ay_state.regs[AY_EASHAPE];
-            const uint8_t mask       = 0x0F;
-            ay_state.envelope.attack = (shape & 0x04) ? mask : 0x00;
+            uint8_t       shape = ay->regs[AY_EASHAPE];
+            const uint8_t mask  = 0x0F;
+            ay->envelope.attack = (shape & 0x04) ? mask : 0x00;
             if ((shape & 0x08) == 0) {
                 // if Continue = 0, map the shape to the equivalent one which has Continue = 1
-                ay_state.envelope.hold      = true;
-                ay_state.envelope.alternate = ay_state.envelope.attack != 0;
+                ay->envelope.hold      = true;
+                ay->envelope.alternate = ay->envelope.attack != 0;
             } else {
-                ay_state.envelope.hold      = (shape & 0x01) != 0;
-                ay_state.envelope.alternate = (shape & 0x02) != 0;
+                ay->envelope.hold      = (shape & 0x01) != 0;
+                ay->envelope.alternate = (shape & 0x02) != 0;
             }
-            ay_state.envelope.step    = mask;
-            ay_state.envelope.holding = false;
-            ay_state.envelope.volume  = (ay_state.envelope.step ^ ay_state.envelope.attack);
+            ay->envelope.step    = mask;
+            ay->envelope.holding = false;
+            ay->envelope.volume  = (ay->envelope.step ^ ay->envelope.attack);
             break;
         }
         case AY_PORTA: break;
@@ -197,17 +164,17 @@ void ay8910_write_reg(uint8_t r, uint8_t v) {
     }
 }
 
-uint8_t ay8910_read_reg(uint8_t r) {
+uint8_t ay8910_read_reg(struct ay8910 *ay, uint8_t r) {
     if (r > 15)
         return 0xFF;
 
     const uint8_t mask[0x10] = {0xFF, 0x0F, 0xFF, 0x0F, 0xFF, 0x0F, 0x1F, 0xFF, 0x1F, 0x1F, 0x1F, 0xFF, 0xFF, 0x0F, 0xFF, 0xFF};
-    return ay_state.regs[r] & mask[r];
+    return ay->regs[r] & mask[r];
 }
 
-float ay8910_render(void) {
+float ay8910_render(struct ay8910 *ay) {
     for (int ch = 0; ch < 3; ch++) {
-        struct tone *tone   = &ay_state.tone[ch];
+        struct tone *tone   = &ay->tone[ch];
         int          period = tone->period < 1 ? 1 : tone->period;
         tone->count += 1;
         while (tone->count >= period) {
@@ -217,16 +184,16 @@ float ay8910_render(void) {
         }
     }
 
-    if (++ay_state.noise_cnt >= (ay_state.regs[AY_NOISEPER] & 0x1F)) {
+    if (++ay->noise_cnt >= (ay->regs[AY_NOISEPER] & 0x1F)) {
         // Toggle the prescaler output. Noise is no different to channels.
-        ay_state.noise_cnt = 0;
-        ay_state.prescale_noise ^= 1;
+        ay->noise_cnt = 0;
+        ay->prescale_noise ^= 1;
 
-        if (!ay_state.prescale_noise) {
+        if (!ay->prescale_noise) {
             // The Random Number Generator of the 8910 is a 17-bit LFSR.
             // The input to the shift register is bit0 XOR bit3
             // (bit0 is the output).
-            ay_state.rng = (ay_state.rng >> 1) | (((ay_state.rng & 1) ^ ((ay_state.rng >> 3) & 1)) << 16);
+            ay->rng = (ay->rng >> 1) | (((ay->rng & 1) ^ ((ay->rng >> 3) & 1)) << 16);
         }
     }
 
@@ -239,37 +206,37 @@ float ay8910_render(void) {
         // Note that this means that if both tone and noise are disabled, the
         // output is 1, not 0, and can be modulated changing the volume.
 
-        ay_state.value[ch] =
-            (ay_state.tone[ch].output | ((ay_state.regs[AY_ENABLE] >> ch) & 1)) &
-            ((ay_state.rng & 1) | ((ay_state.regs[AY_ENABLE] >> (3 + ch)) & 1));
+        ay->value[ch] =
+            (ay->tone[ch].output | ((ay->regs[AY_ENABLE] >> ch) & 1)) &
+            ((ay->rng & 1) | ((ay->regs[AY_ENABLE] >> (3 + ch)) & 1));
     }
 
     // Update envelope
-    if (!ay_state.envelope.holding) {
-        if ((++ay_state.envelope.count) >= ay_state.envelope.period * 2) {
-            ay_state.envelope.count = 0;
-            ay_state.envelope.step--;
+    if (!ay->envelope.holding) {
+        if ((++ay->envelope.count) >= ay->envelope.period * 2) {
+            ay->envelope.count = 0;
+            ay->envelope.step--;
 
             // Check envelope current position
-            if (ay_state.envelope.step < 0) {
-                if (ay_state.envelope.hold) {
-                    if (ay_state.envelope.alternate)
-                        ay_state.envelope.attack ^= 0x0F;
-                    ay_state.envelope.holding = true;
-                    ay_state.envelope.step    = 0;
+            if (ay->envelope.step < 0) {
+                if (ay->envelope.hold) {
+                    if (ay->envelope.alternate)
+                        ay->envelope.attack ^= 0x0F;
+                    ay->envelope.holding = true;
+                    ay->envelope.step    = 0;
 
                 } else {
                     // If envelope.count has looped an odd number of times (usually 1),
                     // invert the output.
-                    if (ay_state.envelope.alternate && (ay_state.envelope.step & (0x0F + 1)))
-                        ay_state.envelope.attack ^= 0x0F;
+                    if (ay->envelope.alternate && (ay->envelope.step & (0x0F + 1)))
+                        ay->envelope.attack ^= 0x0F;
 
-                    ay_state.envelope.step &= 0x0F;
+                    ay->envelope.step &= 0x0F;
                 }
             }
         }
     }
-    ay_state.envelope.volume = ay_state.envelope.step ^ ay_state.envelope.attack;
+    ay->envelope.volume = ay->envelope.step ^ ay->envelope.attack;
 
     // Determine output amplitude
     unsigned table_idx = 0;
@@ -277,16 +244,16 @@ float ay8910_render(void) {
         unsigned mask   = 0;
         unsigned volume = 0;
 
-        if (((ay_state.tone[ch].volume >> 4) & 1) != 0) {
+        if (((ay->tone[ch].volume >> 4) & 1) != 0) {
             // Amplitude controlled by envelope generator
             mask   = (1 << (ch + 12));
-            volume = ay_state.envelope.volume;
+            volume = ay->envelope.volume;
 
         } else {
             // Amplitude controlled by amplitude register
-            volume = ay_state.tone[ch].volume & 0x0F;
+            volume = ay->tone[ch].volume & 0x0F;
         }
-        table_idx |= mask | (ay_state.value[ch] ? volume << (ch * 4) : 0);
+        table_idx |= mask | (ay->value[ch] ? volume << (ch * 4) : 0);
     }
-    return ay_state.output_amplitude_table[table_idx];
+    return ay->output_amplitude_table[table_idx];
 }
