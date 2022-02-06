@@ -27,6 +27,12 @@
     <ClCompile Include="..\libz80\z80.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\ay8910.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ch376.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libz80\z80.h">

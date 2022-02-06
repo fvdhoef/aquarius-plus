@@ -7,12 +7,30 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "aquarius-emu", "aquarius-em
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		BT Cart w AY|x64 = BT Cart w AY|x64
+		BT Cart w AY|x86 = BT Cart w AY|x86
+		BT Cart|x64 = BT Cart|x64
+		BT Cart|x86 = BT Cart|x86
+		DD Cart|x64 = DD Cart|x64
+		DD Cart|x86 = DD Cart|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart w AY|x64.ActiveCfg = BT Cart w AY|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart w AY|x64.Build.0 = BT Cart w AY|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart w AY|x86.ActiveCfg = BT Cart w AY|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart w AY|x86.Build.0 = BT Cart w AY|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart|x64.ActiveCfg = BT Cart no AY|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart|x64.Build.0 = BT Cart no AY|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart|x86.ActiveCfg = BT Cart no AY|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.BT Cart|x86.Build.0 = BT Cart no AY|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.DD Cart|x64.ActiveCfg = DD Cart|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.DD Cart|x64.Build.0 = DD Cart|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.DD Cart|x86.ActiveCfg = DD Cart|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.DD Cart|x86.Build.0 = DD Cart|Win32
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x64.ActiveCfg = Debug|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x64.Build.0 = Debug|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x86.ActiveCfg = Debug|Win32
