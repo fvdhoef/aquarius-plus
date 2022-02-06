@@ -6282,7 +6282,7 @@ static void NEG (Z80Context* ctx)
 static void NOP (Z80Context* ctx)
 {
 	/* NOP */
-	
+	(void)ctx;	
 }
 
 

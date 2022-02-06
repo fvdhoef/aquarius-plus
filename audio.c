@@ -5,7 +5,7 @@
 #define NUM_BUFS (8)
 
 static SDL_AudioDeviceID audio_dev;
-static int16_t **        buffers;
+static uint16_t **       buffers;
 static int               rdidx   = 0;
 static int               wridx   = 0;
 static volatile int      buf_cnt = 0;
@@ -50,7 +50,7 @@ void audio_init(void) {
     // Setup SDL audio
     memset(&desired, 0, sizeof(desired));
     desired.freq     = SAMPLERATE;
-    desired.format   = AUDIO_S16SYS;
+    desired.format   = AUDIO_U16SYS;
     desired.samples  = SAMPLES_PER_BUFFER;
     desired.channels = 1;
     desired.callback = audio_callback;
@@ -87,7 +87,7 @@ void audio_close(void) {
     }
 }
 
-int16_t *audio_get_buffer(void) {
+uint16_t *audio_get_buffer(void) {
     if (buf_cnt == NUM_BUFS) {
         return NULL;
     }
@@ -98,7 +98,7 @@ int16_t *audio_get_buffer(void) {
     return buffers[wridx];
 }
 
-void audio_put_buffer(int16_t *buf) {
+void audio_put_buffer(uint16_t *buf) {
     assert(buf_cnt < NUM_BUFS);
 
     // printf("audio_put_buffer %d %d\n", wridx, buf_cnt);

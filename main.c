@@ -4,8 +4,9 @@
 
 #include "audio.h"
 #include "z80.h"
+#include "ay8910.h"
 
-#define AUDIO_LEVEL (4095)
+#define AUDIO_LEVEL (16000)
 
 extern unsigned char charrom_bin[2048]; // Character ROM contents
 
@@ -20,7 +21,6 @@ struct emulation_state {
     uint8_t    keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
     bool       expander_enabled; // Mini-expander enabled?
     uint8_t    ay_addr;          // Mini-expander - AY-3-8910: Selected address to access via data register
-    uint8_t    ay_regs[14];      // Mini-expander - AY-3-8910: Registers
     uint8_t    handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
     bool       ramexp_enabled;   // RAM expansion enabled?
@@ -47,6 +47,7 @@ static const uint32_t palette[16] = {
     0xf7f773, 0x10F710, 0x21ce42, 0x313131};
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
+    (void)param;
     if (state.cpm_remap) {
         if (addr < 0x4000)
             addr += 0xC000;
@@ -70,6 +71,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
 }
 
 static void mem_write(size_t param, uint16_t addr, uint8_t data) {
+    (void)param;
     if (state.cpm_remap) {
         if (addr < 0x4000)
             addr += 0xC000;
@@ -87,6 +89,7 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
 }
 
 static uint8_t io_read(size_t param, ushort addr) {
+    (void)param;
     uint8_t result = 0xFF;
 
     switch (addr & 0xFF) {
@@ -99,9 +102,9 @@ static uint8_t io_read(size_t param, ushort addr) {
                     case 15: result = state.handctrl2; break;
                     default:
                         if (state.ay_addr < 14)
-                            result = state.ay_regs[state.ay_addr];
+                            result = ay8910_read_reg(state.ay_addr);
 
-                        printf("AY-3-8910 R%u => 0x%02X\n", state.ay_addr, result);
+                        // printf("AY-3-8910 R%u => 0x%02X\n", state.ay_addr, result);
                         break;
                 }
             }
@@ -125,19 +128,19 @@ static uint8_t io_read(size_t param, ushort addr) {
         }
         default: printf("io_read(0x%02x) -> 0x%02x\n", addr & 0xFF, result); break;
     }
-
     return result;
 }
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
+    (void)param;
     switch (addr & 0xFF) {
         case 0xF6:
             if (state.expander_enabled) {
                 // AY-3-8910 register write
                 if (state.ay_addr < 14)
-                    state.ay_regs[state.ay_addr] = data;
+                    ay8910_write_reg(state.ay_addr, data);
 
-                printf("AY-3-8910 R%u=0x%02X\n", state.ay_addr, data);
+                // printf("AY-3-8910 R%u=0x%02X\n", state.ay_addr, data);
             }
             break;
         case 0xF7:
@@ -164,6 +167,8 @@ static void reset(void) {
 
     state.scramble_value = 0;
     state.cpm_remap      = false;
+
+    ay8910_reset();
 }
 
 static void keyboard_scancode(unsigned scancode, bool keydown) {
@@ -386,13 +391,13 @@ static void render_screen(SDL_Renderer *renderer) {
 #define HCYCLES_PER_LINE (455)
 #define HCYCLES_PER_SAMPLE (149)
 
-void emulate(SDL_Renderer *renderer) {
+static void emulate(SDL_Renderer *renderer) {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
     // second.
 
     // Get a buffer from audio subsystem.
-    int16_t *abuf = audio_get_buffer();
+    uint16_t *abuf = audio_get_buffer();
     if (abuf == NULL) {
         // No buffer available, don't emulate for now.
         return;
@@ -420,7 +425,15 @@ void emulate(SDL_Renderer *renderer) {
         } while (state.sample_hcycles < HCYCLES_PER_SAMPLE);
 
         state.sample_hcycles -= HCYCLES_PER_SAMPLE;
-        abuf[aidx] = state.audio_out;
+
+        // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
+        float samples = 0;
+        for (int i = 0; i < 5; i++) {
+            samples += ay8910_render();
+        }
+        samples /= 5.0;
+
+        abuf[aidx] = state.audio_out + (uint16_t)(samples * AUDIO_LEVEL);
     }
 
     // Return buffer to audio subsystem.
@@ -491,10 +504,29 @@ int main(int argc, char *argv[]) {
             perror(cartrom_path);
             exit(1);
         }
-        if (fread(state.gamerom, sizeof(state.gamerom), 1, f) <= 0) {
-            fprintf(stderr, "Error during reading of cartridge ROM image.\n");
-            exit(1);
+
+        fseek(f, 0, SEEK_END);
+        int filesize = ftell(f);
+        fseek(f, 0, SEEK_SET);
+
+        if (filesize == 8192) {
+            if (fread(state.gamerom + 8192, filesize, 1, f) <= 0) {
+                fprintf(stderr, "Error during reading of cartridge ROM image.\n");
+                exit(1);
+            }
+            // Mirror ROM to $C000
+            memcpy(state.gamerom, state.gamerom + 8192, 8192);
+
+        } else if (filesize == 16384) {
+            if (fread(state.gamerom, filesize, 1, f) <= 0) {
+                fprintf(stderr, "Error during reading of cartridge ROM image.\n");
+                exit(1);
+            }
+
+        } else {
+            fprintf(stderr, "Invalid cartridge ROM file: %u, should be either exactly 8 or 16KB.\n", filesize);
         }
+
         fclose(f);
     }
 
@@ -514,6 +546,7 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Event event;
+    ay8910_init();
     audio_start();
 
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
