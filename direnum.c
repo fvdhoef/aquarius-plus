@@ -28,6 +28,10 @@ struct direnum_ctx {
 
 direnum_ctx_t *direnum_open(const char *path) {
     struct direnum_ctx *ctx = calloc(1, sizeof(*ctx));
+    if (ctx == NULL) {
+        perror("direnum_open");
+        exit(1);
+    }
 
 #ifndef _WIN32
     ctx->dir = opendir(path);
