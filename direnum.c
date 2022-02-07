@@ -66,10 +66,14 @@ bool direnum_read(direnum_ctx_t *_ctx, struct direnum_ent *dee) {
     }
 
     // Read additional file stats
-    char path[strlen(ctx->path) + strlen(de->d_name) + 1];
-    snprintf(path, sizeof(path), "%s/%s", ctx->path, de->d_name);
+    size_t fullpath_len = strlen(ctx->path) + strlen(de->d_name) + 2;
+    char  *fullpath     = malloc(fullpath_len);
+    snprintf(fullpath, fullpath_len, "%s/%s", ctx->path, de->d_name);
+
     struct stat st;
-    if (stat(path, &st) < 0) {
+    int         result = stat(fullpath, &st);
+    free(fullpath);
+    if (result < 0) {
         return false;
     }
 
