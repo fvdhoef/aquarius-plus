@@ -5,7 +5,7 @@
 #define NUM_BUFS (8)
 
 static SDL_AudioDeviceID audio_dev;
-static uint16_t **       buffers;
+static uint16_t        **buffers;
 static int               rdidx   = 0;
 static int               wridx   = 0;
 static volatile int      buf_cnt = 0;
@@ -40,8 +40,16 @@ void audio_init(void) {
 
     // Allocate audio buffers
     buffers = malloc(NUM_BUFS * sizeof(*buffers));
+    if (buffers == NULL) {
+        fprintf(stderr, "Error allocating audio buffers\n");
+        exit(1);
+    }
     for (int i = 0; i < NUM_BUFS; i++) {
         buffers[i] = malloc(SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+        if (buffers[i] == NULL) {
+            fprintf(stderr, "Error allocating audio buffers\n");
+            exit(1);
+        }
     }
 
     SDL_AudioSpec desired;

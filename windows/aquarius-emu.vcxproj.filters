@@ -33,6 +33,9 @@
     <ClCompile Include="..\ch376.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\direnum.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libz80\z80.h">
@@ -45,6 +48,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="getopt.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ay8910.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ch376.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\direnum.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

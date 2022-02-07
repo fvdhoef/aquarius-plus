@@ -6,6 +6,7 @@
 #include "z80.h"
 #include "ay8910.h"
 #include "ch376.h"
+#include "direnum.h"
 
 #define AUDIO_LEVEL (16000)
 
@@ -467,6 +468,15 @@ static void emulate(SDL_Renderer *renderer) {
 
 int main(int argc, char *argv[]) {
     char *base_path = SDL_GetBasePath();
+
+    direnum_ctx_t dec = direnum_open(".");
+    if (dec != NULL) {
+        struct direnum_ent dee;
+        while (direnum_read(dec, &dee)) {
+            printf("%s %u %u %lu\n", dee.filename, dee.size, dee.attr, dee.t);
+        }
+        direnum_close(dec);
+    }
 
     char rom_path[1024];
     snprintf(rom_path, sizeof(rom_path), "%s%s", base_path, "aquarius.rom");
