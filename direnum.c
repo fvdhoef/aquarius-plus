@@ -66,7 +66,7 @@ bool direnum_read(direnum_ctx_t *_ctx, struct direnum_ent *dee) {
     }
 
     // Read additional file stats
-    char path[1024];
+    char path[strlen(ctx->path) + strlen(de->d_name) + 1];
     snprintf(path, sizeof(path), "%s/%s", ctx->path, de->d_name);
     struct stat st;
     if (stat(path, &st) < 0) {
