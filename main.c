@@ -6,7 +6,6 @@
 #include "z80.h"
 #include "ay8910.h"
 #include "ch376.h"
-#include "direnum.h"
 
 #define AUDIO_LEVEL (16000)
 
@@ -469,15 +468,6 @@ static void emulate(SDL_Renderer *renderer) {
 int main(int argc, char *argv[]) {
     char *base_path = SDL_GetBasePath();
 
-    direnum_ctx_t dec = direnum_open(".");
-    if (dec != NULL) {
-        struct direnum_ent dee;
-        while (direnum_read(dec, &dee)) {
-            printf("%s %u %u %lu\n", dee.filename, dee.size, dee.attr, dee.t);
-        }
-        direnum_close(dec);
-    }
-
     char rom_path[1024];
     snprintf(rom_path, sizeof(rom_path), "%s%s", base_path, "aquarius.rom");
 
@@ -486,12 +476,13 @@ int main(int argc, char *argv[]) {
 
     int  opt;
     bool params_ok = true;
-    while ((opt = getopt(argc, argv, "r:c:XR")) != -1) {
+    while ((opt = getopt(argc, argv, "r:c:XRu:")) != -1) {
         switch (opt) {
             case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
             case 'X': state.expander_enabled = false; break;
             case 'R': state.ramexp_enabled = false; break;
+            case 'u': ch376_init(optarg); break;
             default: params_ok = false; break;
         }
     }
@@ -504,6 +495,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
+        fprintf(stderr, "-u <path>   CH376 USB base path\n");
         fprintf(stderr, "-X          Disable mini expander emulation.\n");
         fprintf(stderr, "-R          Disable RAM expansion.\n");
         fprintf(stderr, "\n");
