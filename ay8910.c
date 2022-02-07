@@ -50,22 +50,22 @@ static void build_3d_table(struct ay8910 *ay, float r_load, bool normalize, floa
                 for (int j3 = 0; j3 < 16; j3++) {
                     float n;
                     if (zero_is_off) {
-                        n = (j1 != 0 || (e & 0x01)) ? 1 : 0;
-                        n += (j2 != 0 || (e & 0x02)) ? 1 : 0;
-                        n += (j3 != 0 || (e & 0x04)) ? 1 : 0;
+                        n = (j1 != 0 || (e & 0x01)) ? 1.0f : 0.0f;
+                        n += (j2 != 0 || (e & 0x02)) ? 1.0f : 0.0f;
+                        n += (j3 != 0 || (e & 0x04)) ? 1.0f : 0.0f;
                     } else {
-                        n = 3.0;
+                        n = 3.0f;
                     }
 
-                    float rt = n / ay8910_param.r_up + 3.0 / ay8910_param.r_down + 1.0 / r_load;
+                    float rt = n / ay8910_param.r_up + 3.0f / ay8910_param.r_down + 1.0f / r_load;
                     float rw = n / ay8910_param.r_up;
 
-                    rw += 1.0 / ay8910_param.res[j1];
-                    rt += 1.0 / ay8910_param.res[j1];
-                    rw += 1.0 / ay8910_param.res[j2];
-                    rt += 1.0 / ay8910_param.res[j2];
-                    rw += 1.0 / ay8910_param.res[j3];
-                    rt += 1.0 / ay8910_param.res[j3];
+                    rw += 1.0f / ay8910_param.res[j1];
+                    rt += 1.0f / ay8910_param.res[j1];
+                    rw += 1.0f / ay8910_param.res[j2];
+                    rt += 1.0f / ay8910_param.res[j2];
+                    rw += 1.0f / ay8910_param.res[j3];
+                    rt += 1.0f / ay8910_param.res[j3];
 
                     int indx = (e << 12) | (j3 << 8) | (j2 << 4) | j1;
 

@@ -456,7 +456,7 @@ static void emulate(SDL_Renderer *renderer) {
         for (int i = 0; i < 5; i++) {
             samples += ay8910_render(&state.ay_state);
         }
-        samples /= 5.0;
+        samples /= 5.0f;
 
         abuf[aidx] = state.audio_out + (uint16_t)(samples * AUDIO_LEVEL);
     }

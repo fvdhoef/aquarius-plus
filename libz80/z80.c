@@ -140,7 +140,7 @@ static void write8 (Z80Context* ctx, ushort addr, byte val)
 
 static void write16 (Z80Context* ctx, ushort addr, ushort val)
 {
-	write8(ctx, addr, val);
+	write8(ctx, addr, val & 0xFF);
 	write8(ctx, addr + 1, val >> 8);
 }
 
@@ -361,7 +361,7 @@ static byte doArithmetic (Z80Context* ctx, byte value, int withCarry, int isSub)
 	else
 		overflow = minuend_sign == subtrahend_sign && result_sign != minuend_sign;
 	VALFLAG(F_PV, overflow);
-	adjustFlags(ctx, res);
+	adjustFlags(ctx, res & 0xFF);
 
 	return (byte)(res & 0xFF);
 }
