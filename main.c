@@ -477,6 +477,10 @@ int main(int argc, char *argv[]) {
     int  opt;
     bool params_ok = true;
     while ((opt = getopt(argc, argv, "r:c:XRu:")) != -1) {
+        if (opt == '?' || opt == ':') {
+            params_ok = false;
+            break;
+        }
         switch (opt) {
             case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;

@@ -1,6 +1,10 @@
 #include "ch376.h"
 #include "direnum.h"
 
+#if _WIN32
+#define strdup _strdup
+#endif
+
 enum {
     CMD_GET_IC_VER    = 0x01, // Get the chip and firmware versions
     CMD_SET_BAUDRATE  = 0x02,
