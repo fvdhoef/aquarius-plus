@@ -1,5 +1,5 @@
-# aquarius-emu
-Aquarius Emulator
+# Aquarius Emulator
+aquarius-emu
 
 by Frank van der Hoef
 
