@@ -1,9 +1,6 @@
 #include "ch376.h"
 #include "direnum.h"
-
-#if _WIN32
-#define strdup _strdup
-#endif
+#include "fat.h"
 
 enum {
     CMD_GET_IC_VER    = 0x01, // Get the chip and firmware versions
@@ -91,14 +88,7 @@ static char *basepath;
 void ch376_init(const char *path) {
     basepath = strdup(path);
 
-    direnum_ctx_t dec = direnum_open(path);
-    if (dec != NULL) {
-        struct direnum_ent dee;
-        while (direnum_read(dec, &dee)) {
-            printf("%s %u %u %lu\n", dee.filename, dee.size, dee.attr, dee.t);
-        }
-        direnum_close(dec);
-    }
+    fat_init(basepath);
 }
 
 void ch376_write_cmd(uint8_t cmd) {

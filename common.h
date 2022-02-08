@@ -13,6 +13,7 @@
 
 #if _WIN32
 #    include "getopt.h"
+#    define strdup _strdup
 #else
 #    include <unistd.h>
 #endif
