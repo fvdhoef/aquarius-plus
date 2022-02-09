@@ -1,32 +1,18 @@
 #include "fat.h"
 #include "direnum.h"
 
-struct fat_dirent {
-    uint8_t  name[11];
-    uint8_t  attr;
-    uint8_t  nt_res;
-    uint8_t  crt_time_tenth;
-    uint16_t crt_time;
-    uint16_t crt_date;
-    uint16_t lst_acc_date;
-    uint16_t fst_clus_hi;
-    uint16_t wrt_time;
-    uint16_t wrt_date;
-    uint16_t fst_clus_lo;
-    uint32_t filesize;
-};
-
 struct entry {
     char              name[256]; // Original name
     struct fat_dirent de;        // Emulated FAT entry
 };
-
-static char *basepath;
-static char  subpath[1024];
-
 static struct entry *entries;
 static int           entries_capacity;
 static int           entries_count;
+
+static char *basepath;
+static char *current_path;
+
+static int enum_entry = -1;
 
 static struct entry *add_entry(void) {
     if (entries_count >= entries_capacity) {
@@ -58,16 +44,24 @@ static void free_entries(void) {
     entries_count    = 0;
 }
 
-static char convert_ch(char ch) {
-    static const char *allowed_chars = "$%'-_@~`!(){}^#&";
-
-    // Convert to uppercase
+static inline char to_upper(char ch) {
     if (ch >= 'a' && ch <= 'z')
         ch += ('A' - 'a');
+    return ch;
+}
 
-    if (!((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'Z') ||
-          strchr(allowed_chars, ch) != NULL)) {
+static bool is_allowed_char(char ch) {
+    static const char *allowed_chars = "$%'-_@~`!(){}^#&";
+    return (
+        (ch >= '0' && ch <= '9') ||
+        (ch >= 'A' && ch <= 'Z') ||
+        strchr(allowed_chars, ch) != NULL);
+}
 
+static char convert_ch(char ch) {
+    // Convert to uppercase
+    ch = to_upper(ch);
+    if (!is_allowed_char(ch)) {
         // Non-allowed character, convert to underscore
         ch = '_';
     }
@@ -76,14 +70,23 @@ static char convert_ch(char ch) {
 
 static void process_path(const char *path) {
     free_entries();
+    if (current_path == NULL || strcmp(current_path, path) != 0) {
+        if (current_path != NULL) {
+            free(current_path);
+            current_path = NULL;
+        }
+        current_path = strdup(path);
+    }
 
-    direnum_ctx_t dectx = direnum_open(basepath);
+    bool is_basepath = strcmp(path, basepath) == 0;
+
+    direnum_ctx_t dectx = direnum_open(current_path);
     if (dectx != NULL) {
         struct direnum_ent de;
         while (direnum_read(dectx, &de)) {
 
             struct entry *entry = add_entry();
-            snprintf(entry->name, sizeof(entry->name), "%s", de.filename);
+            snprintf(entry->name, sizeof(entry->name), "%s/%s", current_path, de.filename);
 
             // Convert to 8.3 name
             const char *p = de.filename;
@@ -93,46 +96,67 @@ static void process_path(const char *path) {
             char shortname[12];
             int  idx = 0;
 
-            // Get first 8 characters
-            while ((ch = *(p++)) != 0 && idx < 8) {
-                // Strip all leading and embedded spaces from the long name.
-                if (ch == ' ')
+            if (strcmp(p, ".") == 0) {
+                if (!is_basepath) {
+                    shortname[idx++] = '.';
+                } else {
+                    // Don't include this entry in root directory listing.
+                    entries_count--;
                     continue;
+                }
 
-                // Strip all leading periods from the long name.
-                if (ch == '.') {
-                    if (strip_leading_periods) {
+            } else if (strcmp(p, "..") == 0) {
+                if (!is_basepath) {
+                    shortname[idx++] = '.';
+                    shortname[idx++] = '.';
+                } else {
+                    // Don't include this entry in root directory listing.
+                    entries_count--;
+                    continue;
+                }
+
+            } else {
+                // Get first 8 characters
+                while ((ch = *(p++)) != 0 && idx < 8) {
+                    // Strip all leading and embedded spaces from the long name.
+                    if (ch == ' ')
                         continue;
-                    } else {
-                        break;
-                    }
-                    continue;
-                }
-                strip_leading_periods = false;
 
-                shortname[idx++] = convert_ch(ch);
-            }
-
-            // Pad with spaces
-            while (idx < 8) {
-                shortname[idx++] = ' ';
-            }
-
-            // Skip up to the extension
-            if (ch != 0) {
-                if (ch != '.') {
-                    while ((ch = *(p++)) != 0) {
-                        if (ch == '.')
+                    // Strip all leading periods from the long name.
+                    if (ch == '.') {
+                        if (strip_leading_periods) {
+                            continue;
+                        } else {
                             break;
+                        }
+                        continue;
                     }
-                }
-
-                // Get 3 extension characters
-                while ((ch = *(p++)) != 0 && idx < 11) {
-                    if (ch == '.')
-                        break;
+                    strip_leading_periods = false;
 
                     shortname[idx++] = convert_ch(ch);
+                }
+
+                // Pad with spaces
+                while (idx < 8) {
+                    shortname[idx++] = ' ';
+                }
+
+                // Skip up to the extension
+                if (ch != 0) {
+                    if (ch != '.') {
+                        while ((ch = *(p++)) != 0) {
+                            if (ch == '.')
+                                break;
+                        }
+                    }
+
+                    // Get 3 extension characters
+                    while ((ch = *(p++)) != 0 && idx < 11) {
+                        if (ch == '.')
+                            break;
+
+                        shortname[idx++] = convert_ch(ch);
+                    }
                 }
             }
 
@@ -177,8 +201,7 @@ static void process_path(const char *path) {
             entry->de.wrt_date = ((tm.tm_year + 1900 - 1980) << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday;
             entry->de.filesize = de.size;
 
-            printf("%s\n", shortname);
-            printf("%s %u %u %lu\n", de.filename, de.size, de.attr, de.t);
+            // printf("%s %s\n", shortname, entry->name);
         }
         direnum_close(dectx);
     }
@@ -188,12 +211,87 @@ int fat_init(const char *_basepath) {
     basepath = strdup(_basepath);
     process_path(basepath);
 
-    exit(1);
-
     return 0;
 }
 
 int fat_open(const char *name) {
+    enum_entry = -1;
+
+    // If name start with '/' start at
+    const char *ps = name;
+    if (*ps == '/') {
+        process_path(basepath);
+        ps++;
+    } else {
+        process_path(current_path);
+    }
+
+    if (ps[0] == 0) {
+        // Open current directory
+        enum_entry = 0;
+        return OPEN_IS_DIR;
+    } else {
+        // Open given file/directory
+
+        // Convert given name to FAT directory entry name
+        char shortname[12];
+        {
+            // Get first 8 characters
+            int  idx = 0;
+            char ch;
+            while ((ch = *(ps++)) != 0 && idx < 8) {
+                if (ch == '.')
+                    break;
+                ch = to_upper(ch);
+                if (!is_allowed_char(ch))
+                    return ERR_INVALID_NAME;
+                shortname[idx++] = ch;
+            }
+            // Pad with spaces
+            while (idx < 8) {
+                shortname[idx++] = ' ';
+            }
+            if (ch != 0 && ch != '.') {
+                return ERR_INVALID_NAME;
+            }
+            // Get 3 extension characters
+            while ((ch = *(ps++)) != 0 && idx < 11) {
+                ch = to_upper(ch);
+                if (!is_allowed_char(ch))
+                    return ERR_INVALID_NAME;
+                shortname[idx++] = ch;
+            }
+            if (ch != 0) {
+                return ERR_INVALID_NAME;
+            }
+            // Pad with spaces
+            while (idx < 11) {
+                shortname[idx++] = ' ';
+            }
+            shortname[idx++] = 0;
+        }
+
+        // Find name in current directory
+        const struct entry *entry = NULL;
+        for (int i = 0; i < entries_count; i++) {
+            if (memcmp(shortname, entries[i].de.name, 11) == 0) {
+                entry = &entries[i];
+                break;
+            }
+        }
+        if (entry == NULL) {
+            return ERR_INVALID_NAME;
+        }
+
+        printf("Shortname: %s -> %s  (attr: %02X)\n", shortname, entry->name, entry->de.attr);
+
+        if (entry->de.attr & 0x10) {
+            // Open subdirectory
+            process_path(entry->name);
+            enum_entry = 0;
+            return OPEN_IS_DIR;
+        }
+    }
     return 0;
 }
 
@@ -202,6 +300,19 @@ int fat_close(void) {
 }
 
 int fat_read(void *buf, size_t size) {
+    if (enum_entry >= 0) {
+        if (enum_entry == entries_count) {
+            return 0;
+        }
+
+        if (size > sizeof(struct fat_dirent))
+            size = sizeof(struct fat_dirent);
+
+        memcpy(buf, &entries[enum_entry].de, size);
+        enum_entry++;
+
+        return size;
+    }
     return 0;
 }
 

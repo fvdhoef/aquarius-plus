@@ -66,29 +66,19 @@ static uint8_t wrbuf_idx = 0;
 
 static uint8_t intstatus = 0;
 
-struct fat_dir_info {
-    uint8_t  name[11];
-    uint8_t  attr;
-    uint8_t  nt_res;
-    uint8_t  crt_time_tenth;
-    uint16_t crt_time;
-    uint16_t crt_date;
-    uint16_t lst_acc_date;
-    uint16_t fst_clus_hi;
-    uint16_t wrt_time;
-    uint16_t wrt_date;
-    uint16_t fst_clus_lo;
-    uint32_t filesize;
-};
-
 #define PATH_MAX (1024)
 
 static char *basepath;
+
+static char cur_filename[16];
+
+static struct fat_dirent dirent;
 
 void ch376_init(const char *path) {
     basepath = strdup(path);
 
     fat_init(basepath);
+    // fat_open("aqubasic.rom");
 }
 
 void ch376_write_cmd(uint8_t cmd) {
@@ -112,29 +102,48 @@ void ch376_write_cmd(uint8_t cmd) {
             break;
         }
 
-        case CMD_FILE_OPEN:
-            printf("- File open\n");
-            intstatus = USB_INT_DISK_READ;
+        case CMD_FILE_OPEN: {
+            printf("- File open: %s\n", cur_filename);
+            int result = fat_open(cur_filename);
+            if (result == 0) {
+                intstatus = USB_INT_DISK_READ;
+            } else if (result == 1) {
+                if (fat_read(&dirent, sizeof(dirent)) == sizeof(dirent)) {
+                    intstatus = USB_INT_DISK_READ;
+                } else {
+                    intstatus = ERR_MISS_FILE;
+                }
+            } else {
+                intstatus = CMD_RET_ABORT;
+            }
             break;
+        }
 
         case CMD_RD_USB_DATA0: {
             printf("- USB Read Data0\n");
-            rdbuf[0] = 32;
+            // rdbuf[0] = fat_read(rdbuf + 1, sizeof(rdbuf) - 1);
 
-            struct fat_dir_info fdi;
-            memset(&fdi, 0, sizeof(fdi));
+            // printf("CMD_RD_USB_DATA0  0:%02X\n", rdbuf[0]);
 
-            memcpy(fdi.name, "HELLO   PT3", 11);
-            fdi.filesize = 0;
-            fdi.attr     = 0x10;
+            // struct fat_dir_info fdi;
+            // memset(&fdi, 0, sizeof(fdi));
 
-            memcpy(rdbuf + 1, &fdi, sizeof(fdi));
+            // memcpy(fdi.name, "HELLO   PT3", 11);
+            // fdi.filesize = 0;
+            // fdi.attr     = 0x10;
+
+            rdbuf[0] = sizeof(dirent);
+            memcpy(rdbuf + 1, &dirent, sizeof(dirent));
             break;
         }
 
         case CMD_FILE_ENUM_GO:
             printf("- File enum go\n");
-            intstatus = ERR_MISS_FILE;
+            if (fat_read(&dirent, sizeof(dirent)) == sizeof(dirent)) {
+                intstatus = USB_INT_DISK_READ;
+            } else {
+                intstatus = ERR_MISS_FILE;
+            }
             break;
 
         default: {
@@ -166,7 +175,8 @@ void ch376_write_data(uint8_t data) {
 
         case CMD_SET_FILE_NAME: {
             if (data == 0) {
-                printf("- Set filename: %s\n", wrbuf);
+                strncpy(cur_filename, wrbuf, sizeof(cur_filename) - 1);
+                cur_filename[sizeof(cur_filename) - 1] = 0;
             }
             break;
         }
@@ -180,7 +190,7 @@ uint8_t ch376_read_data(void) {
         return 0xFF;
 
     uint8_t result = rdbuf[rdbuf_idx++];
-    printf("> CH376 DATA RD: %02X\n", result);
+    // printf("> CH376 DATA RD: %02X\n", result);
     return result;
 }
 
