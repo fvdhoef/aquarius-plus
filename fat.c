@@ -203,11 +203,10 @@ static void process_path(const char *path) {
 
             // Fill in FAT entry
             memcpy(entry->de.name, shortname, sizeof(entry->de.name));
-            entry->de.attr = (de.attr & DE_DIR) ? 0x10 : 0;
-            struct tm tm;
-            localtime_r(&de.t, &tm);
-            entry->de.wrt_time = (tm.tm_hour << 11) | (tm.tm_min << 5) | (tm.tm_sec / 2);
-            entry->de.wrt_date = ((tm.tm_year + 1900 - 1980) << 9) | ((tm.tm_mon + 1) << 5) | tm.tm_mday;
+            entry->de.attr     = (de.attr & DE_DIR) ? 0x10 : 0;
+            struct tm *tm      = localtime(&de.t);
+            entry->de.wrt_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
+            entry->de.wrt_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
             entry->de.filesize = de.size;
 
             // printf("%s %s\n", shortname, entry->name);
@@ -320,7 +319,7 @@ int fat_read(void *buf, size_t size) {
         memcpy(buf, &entries[enum_entry].de, size);
         enum_entry++;
 
-        return size;
+        return (int)size;
     }
     return 0;
 }
