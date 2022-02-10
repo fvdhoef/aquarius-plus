@@ -80,8 +80,6 @@ void ch376_init(const char *path) {
 }
 
 static void read_file(void) {
-    printf("==== read_file: (remaining: %d)\n", rdlength_remaining);
-
     if (rdlength_remaining == 0) {
         intstatus     = USB_INT_SUCCESS;
         result_buf[0] = 0;
@@ -91,10 +89,7 @@ static void read_file(void) {
             bytes_to_read = 255;
 
         int bytes_read = fat_read(result_buf + 1, bytes_to_read);
-
-        printf("bytes_read: %d\n", bytes_read);
-
-        result_buf[0] = bytes_read;
+        result_buf[0]  = bytes_read;
 
         if (bytes_read == 0) {
             rdlength_remaining = 0;
@@ -107,10 +102,7 @@ static void read_file(void) {
 }
 
 static void read_dir(void) {
-    printf("==== read_dir\n");
     int bytes_read = fat_read(result_buf + 1, 32);
-    printf("==== read_dir: %d\n", bytes_read);
-
     if (bytes_read == 32) {
         result_buf[0] = 32;
         intstatus     = USB_INT_DISK_READ;
@@ -130,8 +122,15 @@ void ch376_write_cmd(uint8_t cmd) {
     rdbuf_idx = 0;
 
     switch (cmd) {
+        case CMD_CHECK_EXIST:
+        case CMD_SET_USB_MODE:
+        case CMD_SET_FILE_NAME:
+        case CMD_FILE_CLOSE:
+        case CMD_BYTE_READ:
+            break;
+
         case CMD_DISK_MOUNT: {
-            printf("- Mount disk\n");
+            // printf("- Mount disk\n");
             intstatus = USB_INT_SUCCESS;
             break;
         }
@@ -159,17 +158,17 @@ void ch376_write_cmd(uint8_t cmd) {
 
         case CMD_RD_USB_DATA0: {
             memcpy(rdbuf, result_buf, sizeof(rdbuf));
-            printf("- USB Read Data0: %u bytes in buffer\n", rdbuf[0]);
+            // printf("- USB Read Data0: %u bytes in buffer\n", rdbuf[0]);
             break;
         }
 
         case CMD_FILE_ENUM_GO:
-            printf("- File enum go\n");
+            // printf("- File enum go\n");
             read_dir();
             break;
 
         case CMD_BYTE_RD_GO: {
-            printf("- Byte read continue (%u bytes remaining)\n", rdlength_remaining);
+            // printf("- Byte read continue (%u bytes remaining)\n", rdlength_remaining);
             read_file();
             break;
         }
@@ -184,8 +183,6 @@ void ch376_write_cmd(uint8_t cmd) {
 void ch376_write_data(uint8_t data) {
     if (basepath == NULL)
         return;
-
-    printf("> CH376 DATA WR: %02X\n", data);
 
     wrbuf[wrbuf_idx++] = data;
 
@@ -218,7 +215,7 @@ void ch376_write_data(uint8_t data) {
         case CMD_BYTE_READ: {
             if (wrbuf_idx == 2) {
                 rdlength_remaining = wrbuf[0] | (wrbuf[1] << 8);
-                printf("- Read %u bytes\n", rdlength_remaining);
+                // printf("- Read %u bytes\n", rdlength_remaining);
                 read_file();
             }
             break;
@@ -233,7 +230,9 @@ void ch376_write_data(uint8_t data) {
             break;
         }
 
-        default: break;
+        default:
+            printf("> CH376 DATA WR: %02X\n", data);
+            break;
     }
 }
 
@@ -251,6 +250,6 @@ uint8_t ch376_read_status(void) {
         return 0xFF;
 
     uint8_t result = 0;
-    printf("> CH376 STATUS RD: %02X\n", result);
+    // printf("> CH376 STATUS RD: %02X\n", result);
     return result;
 }

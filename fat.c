@@ -75,6 +75,12 @@ static char convert_ch(char ch) {
     return ch;
 }
 
+static int entry_compare(const void *_entry1, const void *_entry2) {
+    const struct entry *entry1 = _entry1;
+    const struct entry *entry2 = _entry2;
+    return memcmp(entry1->de.name, entry2->de.name, sizeof(entry1->de.name));
+}
+
 static void process_path(const char *path) {
     if (current_path == NULL || strcmp(current_path, path) != 0) {
         if (current_path != NULL) {
@@ -213,6 +219,9 @@ static void process_path(const char *path) {
         }
         direnum_close(dectx);
     }
+
+    // Sort entries
+    qsort(entries, entries_count, sizeof(entries[0]), entry_compare);
 }
 
 int fat_init(const char *_basepath) {
