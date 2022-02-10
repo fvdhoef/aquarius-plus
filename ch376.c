@@ -57,6 +57,8 @@ enum {
     ERR_MISS_FILE = 0x42,
 };
 
+static uint8_t result_buf[256];
+
 static uint8_t rdbuf[256];
 static uint8_t rdbuf_idx = 0;
 static uint8_t cur_cmd   = 0;
@@ -64,21 +66,57 @@ static uint8_t cur_cmd   = 0;
 static uint8_t wrbuf[256];
 static uint8_t wrbuf_idx = 0;
 
-static uint8_t intstatus = 0;
-
-#define PATH_MAX (1024)
+static uint8_t  intstatus          = 0;
+static uint16_t rdlength_remaining = 0;
 
 static char *basepath;
-
-static char cur_filename[16];
-
-static struct fat_dirent dirent;
+static char  cur_filename[16];
 
 void ch376_init(const char *path) {
     basepath = strdup(path);
 
     fat_init(basepath);
     // fat_open("aqubasic.rom");
+}
+
+static void read_file(void) {
+    printf("==== read_file: (remaining: %d)\n", rdlength_remaining);
+
+    if (rdlength_remaining == 0) {
+        intstatus     = USB_INT_SUCCESS;
+        result_buf[0] = 0;
+    } else {
+        unsigned bytes_to_read = rdlength_remaining;
+        if (bytes_to_read > 255)
+            bytes_to_read = 255;
+
+        int bytes_read = fat_read(result_buf + 1, bytes_to_read);
+
+        printf("bytes_read: %d\n", bytes_read);
+
+        result_buf[0] = bytes_read;
+
+        if (bytes_read == 0) {
+            rdlength_remaining = 0;
+            intstatus          = USB_INT_SUCCESS;
+        } else {
+            intstatus = USB_INT_DISK_READ;
+            rdlength_remaining -= bytes_read;
+        }
+    }
+}
+
+static void read_dir(void) {
+    printf("==== read_dir\n");
+    int bytes_read = fat_read(result_buf + 1, 32);
+    printf("==== read_dir: %d\n", bytes_read);
+
+    if (bytes_read == 32) {
+        result_buf[0] = 32;
+        intstatus     = USB_INT_DISK_READ;
+    } else {
+        intstatus = ERR_MISS_FILE;
+    }
 }
 
 void ch376_write_cmd(uint8_t cmd) {
@@ -107,12 +145,12 @@ void ch376_write_cmd(uint8_t cmd) {
             int result = fat_open(cur_filename);
             if (result == 0) {
                 intstatus = USB_INT_DISK_READ;
-            } else if (result == 1) {
-                if (fat_read(&dirent, sizeof(dirent)) == sizeof(dirent)) {
-                    intstatus = USB_INT_DISK_READ;
-                } else {
-                    intstatus = ERR_MISS_FILE;
-                }
+            } else if (result == OPEN_IS_DIR) {
+                intstatus = ERR_OPEN_DIR;
+            } else if (result == OPEN_ENUM_DIR) {
+                read_dir();
+            } else if (result == OPEN_IS_FILE) {
+                intstatus = USB_INT_SUCCESS;
             } else {
                 intstatus = CMD_RET_ABORT;
             }
@@ -120,31 +158,21 @@ void ch376_write_cmd(uint8_t cmd) {
         }
 
         case CMD_RD_USB_DATA0: {
-            printf("- USB Read Data0\n");
-            // rdbuf[0] = fat_read(rdbuf + 1, sizeof(rdbuf) - 1);
-
-            // printf("CMD_RD_USB_DATA0  0:%02X\n", rdbuf[0]);
-
-            // struct fat_dir_info fdi;
-            // memset(&fdi, 0, sizeof(fdi));
-
-            // memcpy(fdi.name, "HELLO   PT3", 11);
-            // fdi.filesize = 0;
-            // fdi.attr     = 0x10;
-
-            rdbuf[0] = sizeof(dirent);
-            memcpy(rdbuf + 1, &dirent, sizeof(dirent));
+            memcpy(rdbuf, result_buf, sizeof(rdbuf));
+            printf("- USB Read Data0: %u bytes in buffer\n", rdbuf[0]);
             break;
         }
 
         case CMD_FILE_ENUM_GO:
             printf("- File enum go\n");
-            if (fat_read(&dirent, sizeof(dirent)) == sizeof(dirent)) {
-                intstatus = USB_INT_DISK_READ;
-            } else {
-                intstatus = ERR_MISS_FILE;
-            }
+            read_dir();
             break;
+
+        case CMD_BYTE_RD_GO: {
+            printf("- Byte read continue (%u bytes remaining)\n", rdlength_remaining);
+            read_file();
+            break;
+        }
 
         default: {
             printf("CH376 CMD WR: %02X\n", cmd);
@@ -177,6 +205,21 @@ void ch376_write_data(uint8_t data) {
             if (data == 0) {
                 strncpy(cur_filename, (const char *)wrbuf, sizeof(cur_filename) - 1);
                 cur_filename[sizeof(cur_filename) - 1] = 0;
+            }
+            break;
+        }
+
+        case CMD_FILE_CLOSE: {
+            printf("- Close file\n");
+            fat_close();
+            break;
+        }
+
+        case CMD_BYTE_READ: {
+            if (wrbuf_idx == 2) {
+                rdlength_remaining = wrbuf[0] | (wrbuf[1] << 8);
+                printf("- Read %u bytes\n", rdlength_remaining);
+                read_file();
             }
             break;
         }

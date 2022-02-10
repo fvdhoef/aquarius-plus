@@ -11,8 +11,8 @@ static int           entries_count;
 
 static char *basepath;
 static char *current_path;
-
-static int enum_entry = -1;
+static FILE *opened_file;
+static int   enum_entry = -1;
 
 static struct entry *add_entry(void) {
     if (entries_count >= entries_capacity) {
@@ -225,6 +225,8 @@ int fat_init(const char *_basepath) {
 int fat_open(const char *name) {
     enum_entry = -1;
 
+    fat_close();
+
     // If name start with '/' start at
     const char *ps = name;
     if (*ps == '/') {
@@ -235,15 +237,23 @@ int fat_open(const char *name) {
     }
 
     if (ps[0] == 0) {
+        return OPEN_IS_DIR;
+    } else if (ps[0] == '*') {
         // Open current directory
         enum_entry = 0;
-        return OPEN_IS_DIR;
+        return OPEN_ENUM_DIR;
     } else {
         // Open given file/directory
 
         // Convert given name to FAT directory entry name
         char shortname[12];
-        {
+
+        if (strlen(ps) == 11 && strchr(ps, '.') == NULL) {
+            // HACK: Use name as is.
+            memcpy(shortname, ps, 11);
+            shortname[11] = 0;
+
+        } else {
             // Get first 8 characters
             int  idx = 0;
             char ch;
@@ -298,17 +308,27 @@ int fat_open(const char *name) {
             process_path(entry->name);
             enum_entry = 0;
             return OPEN_IS_DIR;
+        } else {
+            opened_file = fopen(entry->name, "rb");
+            return OPEN_IS_FILE;
         }
     }
     return 0;
 }
 
 int fat_close(void) {
+    if (opened_file) {
+        fclose(opened_file);
+        opened_file = NULL;
+    }
     return 0;
 }
 
 int fat_read(void *buf, size_t size) {
-    if (enum_entry >= 0) {
+    if (opened_file != NULL) {
+        return (int)fread(buf, 1, size, opened_file);
+
+    } else if (enum_entry >= 0) {
         if (enum_entry == entries_count) {
             return 0;
         }

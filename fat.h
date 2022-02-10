@@ -23,6 +23,8 @@ enum {
     ERR_INVALID_NAME = -1,
     ERR_EOF          = -2,
     OPEN_IS_DIR      = 1,
+    OPEN_ENUM_DIR    = 2,
+    OPEN_IS_FILE     = 3,
 };
 
 int fat_init(const char *basepath);
