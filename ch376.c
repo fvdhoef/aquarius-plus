@@ -175,7 +175,7 @@ void ch376_write_data(uint8_t data) {
 
         case CMD_SET_FILE_NAME: {
             if (data == 0) {
-                strncpy(cur_filename, wrbuf, sizeof(cur_filename) - 1);
+                strncpy(cur_filename, (const char *)wrbuf, sizeof(cur_filename) - 1);
                 cur_filename[sizeof(cur_filename) - 1] = 0;
             }
             break;

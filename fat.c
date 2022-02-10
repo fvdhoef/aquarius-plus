@@ -2,8 +2,8 @@
 #include "direnum.h"
 
 struct entry {
-    char              name[256]; // Original name
-    struct fat_dirent de;        // Emulated FAT entry
+    char             *name; // Original name
+    struct fat_dirent de;   // Emulated FAT entry
 };
 static struct entry *entries;
 static int           entries_capacity;
@@ -37,6 +37,13 @@ static struct entry *add_entry(void) {
 
 static void free_entries(void) {
     if (entries != NULL) {
+        for (int i = 0; i < entries_count; i++) {
+            if (entries[i].name != NULL) {
+                free(entries[i].name);
+                entries[i].name = NULL;
+            }
+        }
+
         free(entries);
         entries = NULL;
     }
@@ -69,7 +76,6 @@ static char convert_ch(char ch) {
 }
 
 static void process_path(const char *path) {
-    free_entries();
     if (current_path == NULL || strcmp(current_path, path) != 0) {
         if (current_path != NULL) {
             free(current_path);
@@ -77,16 +83,19 @@ static void process_path(const char *path) {
         }
         current_path = strdup(path);
     }
-
     bool is_basepath = strcmp(path, basepath) == 0;
+
+    free_entries();
 
     direnum_ctx_t dectx = direnum_open(current_path);
     if (dectx != NULL) {
         struct direnum_ent de;
         while (direnum_read(dectx, &de)) {
 
-            struct entry *entry = add_entry();
-            snprintf(entry->name, sizeof(entry->name), "%s/%s", current_path, de.filename);
+            struct entry *entry      = add_entry();
+            int           str_length = snprintf(NULL, 0, "%s/%s", current_path, de.filename) + 1;
+            entry->name              = malloc(str_length);
+            snprintf(entry->name, str_length, "%s/%s", current_path, de.filename);
 
             // Convert to 8.3 name
             const char *p = de.filename;
