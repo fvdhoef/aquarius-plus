@@ -224,6 +224,15 @@ void ch376_write_data(uint8_t data) {
             break;
         }
 
+        case CMD_BYTE_LOCATE: {
+            if (wrbuf_idx == 4) {
+                unsigned offset = wrbuf[0] | (wrbuf[1] << 8) | (wrbuf[2] << 16) | (wrbuf[3] << 24);
+                printf("- Seek: %u\n", offset);
+                fat_seek(offset);
+            }
+            break;
+        }
+
         default: break;
     }
 }

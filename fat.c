@@ -344,6 +344,13 @@ int fat_read(void *buf, size_t size) {
     return 0;
 }
 
+int fat_seek(uint32_t offset) {
+    if (opened_file != NULL) {
+        fseek(opened_file, offset, SEEK_SET);
+    }
+    return 0;
+}
+
 int fat_delete(const char *name) {
     return 0;
 }
