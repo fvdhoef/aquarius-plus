@@ -49,6 +49,15 @@ static struct emulation_state state = {
 //     0xf7f773, 0x21ce42, 0xad2121, 0x313131};
 
 // 2-Bit Aquarius palette
+// optimized for a better color range.
+// static const uint32_t palette[16] = {
+//     0x000000, 0xff0000, 0x55ff55, 0xffaa00,
+//     0x0000ff, 0xff00ff, 0x55aaff, 0xffffff,
+//     0xaaaaaa, 0x0055aa, 0xaa00aa, 0x000055,
+//     0xffff55, 0x55aa55, 0xaa0000, 0x555555};
+
+// 2-Bit Aquarius palette
+// optimized to match STOCK color.
 static const uint32_t palette[16] = {
     0x000000, 0xff0000, 0x55ff55, 0xffff00,
     0x0000ff, 0xff00ff, 0x00ffff, 0xffffff,
