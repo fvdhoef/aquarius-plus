@@ -233,10 +233,8 @@ int fat_init(const char *_basepath) {
     return 0;
 }
 
-int fat_open(const char *name) {
-    enum_entry = -1;
-
-    fat_close();
+static int find_file(const char *name, struct entry **found_entry) {
+    *found_entry = NULL;
 
     // If name start with '/' start at
     const char *ps = name;
@@ -301,7 +299,7 @@ int fat_open(const char *name) {
         }
 
         // Find name in current directory
-        const struct entry *entry = NULL;
+        struct entry *entry = NULL;
         for (int i = 0; i < entries_count; i++) {
             if (memcmp(shortname, entries[i].de.name, 11) == 0) {
                 entry = &entries[i];
@@ -313,24 +311,34 @@ int fat_open(const char *name) {
         }
 
         printf("Shortname: %s -> %s  (attr: %02X)\n", shortname, entry->name, entry->de.attr);
+        *found_entry = entry;
+    }
+    return 0;
+}
 
-        if (entry->de.attr & 0x10) {
-            // Open subdirectory
-            process_path(entry->name);
-            enum_entry = 0;
-            return OPEN_IS_DIR;
-        } else {
-            opened_file_path = strdup(entry->name);
-            opened_file      = fopen(opened_file_path, "rb");
-            return OPEN_IS_FILE;
-        }
+int fat_open(const char *name) {
+    fat_close();
+
+    struct entry *entry;
+    int           result = find_file(name, &entry);
+    if (result != 0) {
+        return result;
+    }
+
+    if (entry->de.attr & 0x10) {
+        // Open subdirectory
+        process_path(entry->name);
+        enum_entry = 0;
+        return OPEN_IS_DIR;
+    } else {
+        opened_file_path = strdup(entry->name);
+        opened_file      = fopen(opened_file_path, "rb");
+        return OPEN_IS_FILE;
     }
     return 0;
 }
 
 int fat_create(const char *name) {
-    enum_entry = -1;
-
     fat_close();
 
     // If name start with '/' start at
@@ -376,6 +384,7 @@ int fat_close(void) {
         free(opened_file_path);
         opened_file_path = NULL;
     }
+    enum_entry = -1;
     return 0;
 }
 
@@ -414,5 +423,24 @@ int fat_seek(uint32_t offset) {
 }
 
 int fat_delete(const char *name) {
+    fat_close();
+
+    struct entry *entry;
+    int           result = find_file(name, &entry);
+    if (result != 0) {
+        return result;
+    }
+
+    if (entry->de.attr & 0x10) {
+        // Open subdirectory
+        if (rmdir(entry->name) != 0) {
+            return ERR_INVALID_NAME;
+        }
+    } else {
+        if (unlink(entry->name) != 0) {
+            return ERR_INVALID_NAME;
+        }
+    }
+
     return 0;
 }

@@ -14,6 +14,8 @@
 #if _WIN32
 #    include "getopt.h"
 #    define strdup _strdup
+#    define unlink _unlink
+#    define rmdir _rmdir
 #else
 #    include <unistd.h>
 #endif

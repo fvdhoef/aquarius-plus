@@ -163,6 +163,12 @@ void ch376_write_cmd(uint8_t cmd) {
             break;
         }
 
+        case CMD_FILE_ERASE: {
+            printf("- File delete: %s\n", cur_filename);
+            fat_delete(cur_filename);
+            break;
+        }
+
         case CMD_FILE_CREATE: {
             printf("- File create: %s\n", cur_filename);
             int result = fat_create(cur_filename);
