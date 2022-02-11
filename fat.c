@@ -12,7 +12,9 @@ static int           entries_count;
 static char *basepath;
 static char *current_path;
 static FILE *opened_file;
-static int   enum_entry = -1;
+static char *opened_file_path;
+
+static int enum_entry = -1;
 
 static struct entry *add_entry(void) {
     if (entries_count >= entries_capacity) {
@@ -318,9 +320,50 @@ int fat_open(const char *name) {
             enum_entry = 0;
             return OPEN_IS_DIR;
         } else {
-            opened_file = fopen(entry->name, "rb");
+            opened_file_path = strdup(entry->name);
+            opened_file      = fopen(opened_file_path, "rb");
             return OPEN_IS_FILE;
         }
+    }
+    return 0;
+}
+
+int fat_create(const char *name) {
+    enum_entry = -1;
+
+    fat_close();
+
+    // If name start with '/' start at
+    const char *ps = name;
+    if (*ps == '/') {
+        process_path(basepath);
+        ps++;
+    } else {
+        process_path(current_path);
+    }
+
+    // Compose path
+    int   str_length       = snprintf(NULL, 0, "%s/%s", current_path, name) + 1;
+    char *opened_file_path = malloc(str_length);
+    snprintf(opened_file_path, str_length, "%s/%s", current_path, name);
+
+    opened_file = fopen(opened_file_path, "wb");
+    printf("Create file: %s\n", opened_file_path);
+    if (opened_file == NULL) {
+        return ERR_INVALID_NAME;
+    }
+    return 0;
+}
+
+int fat_truncate(void) {
+    if (opened_file_path == NULL) {
+        return ERR_INVALID_NAME;
+    }
+
+    opened_file = fopen(opened_file_path, "wb");
+    printf("Create file: %s\n", opened_file_path);
+    if (opened_file == NULL) {
+        return ERR_INVALID_NAME;
     }
     return 0;
 }
@@ -329,6 +372,9 @@ int fat_close(void) {
     if (opened_file) {
         fclose(opened_file);
         opened_file = NULL;
+
+        free(opened_file_path);
+        opened_file_path = NULL;
     }
     return 0;
 }
@@ -349,6 +395,13 @@ int fat_read(void *buf, size_t size) {
         enum_entry++;
 
         return (int)size;
+    }
+    return 0;
+}
+
+int fat_write(const void *buf, size_t size) {
+    if (fwrite(buf, 1, size, opened_file) != size) {
+        return ERR_DISKFULL;
     }
     return 0;
 }

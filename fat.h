@@ -22,6 +22,7 @@ struct fat_dirent {
 enum {
     ERR_INVALID_NAME = -1,
     ERR_EOF          = -2,
+    ERR_DISKFULL     = -3,
     OPEN_IS_DIR      = 1,
     OPEN_ENUM_DIR    = 2,
     OPEN_IS_FILE     = 3,
@@ -29,7 +30,10 @@ enum {
 
 int fat_init(const char *basepath);
 int fat_open(const char *name);
+int fat_create(const char *name);
 int fat_close(void);
 int fat_read(void *buf, size_t size);
+int fat_write(const void *buf, size_t size);
+int fat_truncate(void);
 int fat_seek(uint32_t offset);
 int fat_delete(const char *name);

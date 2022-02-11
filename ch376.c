@@ -6,10 +6,12 @@ enum {
     CMD_GET_IC_VER    = 0x01, // Get the chip and firmware versions
     CMD_SET_BAUDRATE  = 0x02,
     CMD_ENTER_SLEEP   = 0x03,
+    CMD_SET_USB_SPEED = 0x04,
     CMD_RESET_ALL     = 0x05,
     CMD_CHECK_EXIST   = 0x06,
     CMD_SET_SDO_INT   = 0x0B,
     CMD_GET_FILE_SIZE = 0x0C,
+    CMD_SET_FILE_SIZE = 0x0D,
     CMD_SET_USB_MODE  = 0x15,
     CMD_GET_STATUS    = 0x22,
     CMD_RD_USB_DATA0  = 0x27,
@@ -50,11 +52,11 @@ enum {
 };
 
 enum {
-    USB_INT_SUCCESS   = 0x14,
-    USB_INT_DISK_READ = 0x1D,
-
-    ERR_OPEN_DIR  = 0x41,
-    ERR_MISS_FILE = 0x42,
+    USB_INT_SUCCESS    = 0x14,
+    USB_INT_DISK_READ  = 0x1D,
+    USB_INT_DISK_WRITE = 0x1E,
+    ERR_OPEN_DIR       = 0x41,
+    ERR_MISS_FILE      = 0x42,
 };
 
 static uint8_t result_buf[256];
@@ -68,6 +70,7 @@ static uint8_t wrbuf_idx = 0;
 
 static uint8_t  intstatus          = 0;
 static uint16_t rdlength_remaining = 0;
+static uint16_t wrlength_remaining = 0;
 
 static char *basepath;
 static char  cur_filename[16];
@@ -127,7 +130,8 @@ void ch376_write_cmd(uint8_t cmd) {
         case CMD_SET_FILE_NAME:
         case CMD_FILE_CLOSE:
         case CMD_BYTE_READ:
-            break;
+        case CMD_BYTE_WRITE:
+        case CMD_SET_FILE_SIZE: break;
 
         case CMD_DISK_MOUNT: {
             // printf("- Mount disk\n");
@@ -135,6 +139,7 @@ void ch376_write_cmd(uint8_t cmd) {
             break;
         }
         case CMD_GET_STATUS: {
+            // printf("CMD_GET_STATUS\n");
             rdbuf[0] = intstatus;
             break;
         }
@@ -149,6 +154,19 @@ void ch376_write_cmd(uint8_t cmd) {
             } else if (result == OPEN_ENUM_DIR) {
                 read_dir();
             } else if (result == OPEN_IS_FILE) {
+                intstatus = USB_INT_SUCCESS;
+            } else if (result == ERR_INVALID_NAME) {
+                intstatus = ERR_MISS_FILE;
+            } else {
+                intstatus = CMD_RET_ABORT;
+            }
+            break;
+        }
+
+        case CMD_FILE_CREATE: {
+            printf("- File create: %s\n", cur_filename);
+            int result = fat_create(cur_filename);
+            if (result == 0) {
                 intstatus = USB_INT_SUCCESS;
             } else {
                 intstatus = CMD_RET_ABORT;
@@ -170,6 +188,16 @@ void ch376_write_cmd(uint8_t cmd) {
         case CMD_BYTE_RD_GO: {
             // printf("- Byte read continue (%u bytes remaining)\n", rdlength_remaining);
             read_file();
+            break;
+        }
+
+        case CMD_BYTE_WR_GO:
+        case CMD_WR_REQ_DATA: {
+            // printf("- Write data (wrlength_remaining: %u)\n", wrlength_remaining);
+            rdbuf[0] = wrlength_remaining > 64 ? 64 : wrlength_remaining;
+            if (wrlength_remaining == 0)
+                intstatus = USB_INT_SUCCESS;
+
             break;
         }
 
@@ -221,11 +249,43 @@ void ch376_write_data(uint8_t data) {
             break;
         }
 
+        case CMD_BYTE_WRITE: {
+            if (wrbuf_idx == 2) {
+                wrlength_remaining = wrbuf[0] | (wrbuf[1] << 8);
+                // printf("- Write %u bytes\n", wrlength_remaining);
+
+                if (wrlength_remaining == 0) {
+                    intstatus = USB_INT_SUCCESS;
+                } else {
+                    intstatus = USB_INT_DISK_WRITE;
+                }
+                // read_file();
+            }
+            break;
+        }
+
         case CMD_BYTE_LOCATE: {
             if (wrbuf_idx == 4) {
                 unsigned offset = wrbuf[0] | (wrbuf[1] << 8) | (wrbuf[2] << 16) | (wrbuf[3] << 24);
                 printf("- Seek: %u\n", offset);
                 fat_seek(offset);
+            }
+            break;
+        }
+
+        case CMD_BYTE_WR_GO:
+        case CMD_WR_REQ_DATA: {
+            // printf("- Write data: %02X\n", data);
+            fat_write(&data, 1);
+            if (wrlength_remaining > 0)
+                wrlength_remaining--;
+            break;
+        }
+
+        case CMD_SET_FILE_SIZE: {
+            if (wrbuf_idx == 5) {
+                // This command isn't really supported, but we just truncate the file.
+                fat_truncate();
             }
             break;
         }
