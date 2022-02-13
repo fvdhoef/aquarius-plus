@@ -19,14 +19,6 @@ name      EQU count
 count     = count+2
           ENDM
 
-; allocate 3 bytes in structure
-; typically used to define jump table addresses
-; eg. VECT my_code
-VECTOR    MACRO name
-name      EQU count
-count     = count+3
-          ENDM
-
 ; allocate 4 bytes in structure
 ; eg. LONG longint1
 LONG      MACRO name

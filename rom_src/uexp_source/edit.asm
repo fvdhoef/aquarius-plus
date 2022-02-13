@@ -355,18 +355,7 @@ _clr_key_wait:
 _key_wait:
     call    $1e7e       ; get last key pressed
     jr      z,_key_wait ; loop until key pressed
-    push af
-    ld   a,$FF          ; speaker ON
-    out  ($fc),a
-.click_wait:
-    push af
-    pop  af             ; delay 6 cycles * 256
-    dec  a
-    jr   nz,.click_wait
-    out  ($fc),a        ; speaker OFF
-    pop  af
     ret
-
 
 ;--------------------------------------------------------------------
 ;         Print String to screen without moving cursor

@@ -51,7 +51,6 @@ REVISION = 0
 ; code options
 ;softrom  equ 1    ; loaded from disk into upper 16k of 32k RAM
 aqubug   equ 1    ; full featured debugger (else lite version without screen save etc.)
-init_pcg equ 1    ; reset programmable character generator (if present)
 ;debug    equ 1    ; debugging our code. Undefine for release version!
 ;
 ; Commands:
@@ -91,7 +90,6 @@ init_pcg equ 1    ; reset programmable character generator (if present)
     include  "aquarius.i" ; aquarius hardware and system ROM
     include  "macros.i"   ; structure macros
     include  "windows.i"  ; fast windowed text functions
-    include  "pcg.i"      ; programmable character generator
 
 ; alternative system variable names
 VARTAB      = BASEND     ; $38D6 variables table (at end of BASIC program)
@@ -133,7 +131,6 @@ endif
 ;system flags
 SF_NTSC  = 0       ; 1 = NTSC, 0 = PAL
 SF_RETYP = 1       ; 1 = CTRL-O is retype
-SF_DEBUG = 7       ; 1 = Debugger available
 
 
 ;=======================================
@@ -151,8 +148,8 @@ SF_DEBUG = 7       ; 1 = Debugger available
 ; via these vectors only!
 ;
 ; system vectors
-SYS_BREAK         jp  Break
-SYS_DEBUG         jp  ST_DEBUG
+SYS_BREAK         jp  break
+SYS_DEBUG         jp  break
 SYS_KEY_CHECK     jp  Key_Check
 SYS_WAIT_KEY      jp  Wait_key
 SYS_EDITLINE      jp  EditLine
@@ -225,20 +222,19 @@ WIN_CLEARTOEND    jp  ClearToEnd
 WIN_BACKSPACE     jp  BackSpace
 WIN_WAITKEY       jp  Wait_Key
 WIN_CAT_DISK      jp  WinCatDisk
-WIN_INPUTLINE     jp  InputLine
+WIN_INPUTLINE     jp  break
 WIN_reserved1     jp  break
 WIN_reserved2     jp  break
+
+Break:
+       RET
 
 
 ; windowed text functions
    include "windows.asm"
 
 ; debugger
- ifdef aqubug
    include "aqubug.asm"
- else
-   include "debug.asm"
- endif
 
 ; fill with $FF to $E000
      assert !($E000 < $) ; low rom full!!!
@@ -261,29 +257,9 @@ RECOGNIZATION:
 
 ROM_ENTRY:
 
-; initialize Programmble Character Generator
-  ifdef init_pcg
-     ld      hl,PCG_UNLOCK
-     ld      (hl),$ff      ; unlock PCG registers
-     ld      hl,PCG_MODE   ; PCG_CHAR is first
-     ld      b,3           ; 3 registers to clear
-     xor     a
-.reset_pcg:
-     ld      (hl),a        ; clear registers PCG_MODE, DBANK, WBANK
-     inc     hl
-     djnz    .reset_pcg
-     inc     hl            ; skip CHRSET
-     ld      (hl),a
-     dec     hl            ; back to WBANK
-     ld      (hl),a        ; load character set #0
-  endif
-
-; set flag for NTSC or PAL
-     call    PAL__NTSC     ; measure video frame period: nc = PAL, c = NTSC
+; set flag for NTSC
      ld      a,0
-     jr      nc,.set_sysflags
      set     SF_NTSC,a
-.set_sysflags:
      ld      (Sysflags),a
 ;
 ; init debugger
@@ -300,12 +276,13 @@ ROM_ENTRY:
      ld      (USRJMP),a
      ld      HL,0
      ld      (USRADDR),HL       ; set system RST $38 vector
-  ifdef aqubug
-     ld      de,MemWindows
-     ld      hl,dflt_winaddrs
-     ld      bc,2*4             ; initialize default memory window addresses
-     ldir
-  endif
+;   ifdef aqubug
+;      ld      de,MemWindows
+;      ld      hl,dflt_winaddrs
+;      ld      bc,2*4             ; initialize default memory window addresses
+;      ldir
+;   endif
+
 ;
 ; init CH376
      call    usb__check_exists  ; CH376 present?
@@ -344,33 +321,11 @@ SPLASH:
 SPLKEY:
      call    Key_Check
      jr      z,SPLKEY           ; loop until key pressed
-  ifndef softrom
-     cp      "1"                ; '1' = load ROM
-     jr      z,LoadROM
-  endif
-     cp      "2"                ; '2' = debugger
-     jr      z,DEBUG
-     cp      "3"                ; '3' = PT3 player
-     jr      z,PTPLAY
      cp      $0d                ; RTN = cold boot
      jp      z, COLDBOOT
      cp      $03                ;  ^C = warm boot
      jp      z, WARMBOOT
      jr      SPLKEY
-
-DEBUG:
-     call    InitBreak          ; set RST $38 vector to Trace Break
-     ld      hl,0               ; HL = 0 (no BASIC text)
-     call    ST_DEBUG           ; invoke Debugger
-     JR      SPLASH
-
-LoadROM:
-     call    Load_ROM           ; ROM loader
-     JR      SPLASH
-
-PTPLAY:
-     CALL    PT3_PLAY           ; Music player
-     JR      SPLASH
 
 ; CTRL-C pressed in boot menu
 WARMBOOT:
@@ -472,56 +427,10 @@ MEMSIZE:
      xor     a
      jp      $0402              ; Jump to OKMAIN (BASIC command line)
 
-
-;---------------------------------------------------------------------
-;                         ROM loader
-;---------------------------------------------------------------------
-     include "load_rom.asm"
-
-
 ;---------------------------------------------------------------------
 ;                      USB Disk Driver
 ;---------------------------------------------------------------------
     include "ch376.asm"
-
-
-;-------------------------------------------------------------------
-;                  Test for PAL or NTSC
-;-------------------------------------------------------------------
-; Measure video frame period, compare to 1.80ms
-; NTSC = 16.7ms, PAL = 20ms
-;
-; out: nc = PAL, c = NTSC
-;
-; NOTE: waits for ~17-41ms. Do not use in timing-critical code!
-;
-PAL__NTSC:
-    PUSH BC
-.wait_vbl1:
-    IN   A,($FD)
-    RRA                   ; wait for start of vertical blank
-    JR   C,.wait_vbl1
-.wait_vbh1:
-    IN   A,($FD)
-    RRA                   ; wait for end of vertical blank
-    JR   NC,.wait_vbh1
-    LD   BC,0
-.wait_vbl2:               ; 1.117us/cycle
-    INC  BC               ; 2 count                 ]
-    IN   A,($FD)          ; 3 read status reg       ]
-    RRA                   ; 1 test VBL bit          ]   9 cycles per loop
-    JR   C,.wait_vbl2     ; 3 loop until VLB high   ]   10.06us/loop
-.wait_vbh2:               ; cycles (1.12us/cycle)
-    INC  BC               ; 2 count                 ]
-    IN   A,($FD)          ; 3 read status reg       ]   9 cycles per loop
-    RRA                   ; 1 test VBL bit          ]   10.06us/loop
-    JR   NC,.wait_vbh2    ; 3 loop until VLB high   ]
-    LD   C,A
-    LD   A,B              ; ~1657 = 60Hz, ~1989 = 50Hz
-    CP   7                ; c = NTSC, nc = PAL
-    LD   A,C
-    POP  BC
-    RET
 
 ; boot window with border
 BootBdrWindow:
@@ -544,17 +453,6 @@ BootWinTitle:
      db     VERSION+'0','.',REVISION+'0',' ',0
 
 BootMenuText:
-     db     CR
-  ifdef softrom
-     db     "    1. (disabled)",CR
-  else
-     db     "    1. Load ROM",CR
-  endif
-     db     CR,CR
-     db     "    2. Debug",CR
-     db     CR,CR
-     db     "    3. PT3 Player",CR
-     db     CR,CR,CR,CR
      db     "    <RTN> BASIC",CR
      db     CR
      db     "<CTRL-C> Warm Start",0
@@ -633,7 +531,6 @@ TBLCMDS:
      db      $80 + 'L', "OCATE"
      db      $80 + 'O', "UT"
      db      $80 + 'P', "SG"
-     db      $80 + 'D', "EBUG"
      db      $80 + 'C', "ALL"
      db      $80 + 'L', "OAD"
      db      $80 + 'S', "AVE"
@@ -653,7 +550,6 @@ TBLJMPS:
      dw      ST_LOCATE
      dw      ST_OUT
      dw      ST_PSG
-     dw      ST_DEBUG
      dw      ST_CALL
      dw      ST_LOAD
      dw      ST_SAVE
@@ -1270,26 +1166,12 @@ ST_CALL:
 Wait_key:
        CALL key_check    ; check for key pressed
        JR   Z,Wait_Key   ; loop until key pressed
-.key_click:
-       push af
-       ld   a,$FF        ; speaker ON
-       out  ($fc),a
-       ld   a,128
-.click_wait:
-       dec  a
-       jr   nz,.click_wait
-       out  ($fc),a      ; speaker OFF
-       pop  af
        RET
 
 ; disk file selector
    include "filerequest.asm"
 
-; PT3 music player
-     include "pt3play.asm"
-
 ; fill with $FF to end of ROM
-
      assert !($FFFF<$)   ; ROM full!
 
      dc $FFFF-$+1,$FF

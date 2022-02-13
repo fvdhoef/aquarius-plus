@@ -34,10 +34,6 @@
 ;  6          ''          high byte
 
 ; constants:
-
-CTRLC     = $03
-BKSPC     = $08
-LF        = $0A
 CR        = $0D
 
 ; colors
@@ -57,23 +53,6 @@ STRAW     = 12
 DKGREEN   = 13
 DKRED     = 14
 BLACK2    = 15
-
-;-------------------------------------------------------------------
-;                         Screen RAM
-;-------------------------------------------------------------------
-; 1k for characters followed by 1k for color attributes.
-; 1000 visible characters on screen, leaving 24 unused bytes at end.
-; First character in screen also sets the border character and color.
-; The first row (40 bytes), and first & last columns of each row are
-; normally filled with spaces, giving an effective character matrix
-; of 38 columns x 24 rows.
-
-CHRRAM   = $3000 ; 12288           start of character RAM
-;          $33E7 ; 13287           end of character RAM
-                 ;                 24 unused bytes
-COLRAM   = $3400 ; 13312           Start of colour RAM
-;          $37E7 ; 14311           end of color RAM
-                 ;                 24 unused bytes
 
 ;-------------------------------------------------------------------
 ;                       System Variables
@@ -231,29 +210,6 @@ CHKNXT  MACRO char
         db    'char'
         ENDM
 
-GETNEXT MACRO
-        RST    $10    ; get next char and test for numeric
-        ENDM
-
-PRNTCHR MACRO
-        RST   $18     ; print char in A
-        ENDM
-
-CMPHLDE MACRO
-        RST   $20     ; compare HL to DE. Z if equal, C if HL < DE
-        ENDM
-
-;ASCII codes
-CTRLC   = $03   ; ^C = break
-CTRLG   = $07   ; ^G = bell
-BKSPC   = $08   ; backspace
-TAB     = $09   ; TAB
-LF      = $0A   ; line feed
-CR      = $0D   ; carriage return
-CTRLS   = $13   ; ^S = wait for key
-CTRLU   = $15   ; ^U = abandon line
-CTRLX   = $18   ; ^X = undo line
-
 ;----------------------------------------------------------------------------
 ;                         BASIC Error Codes
 ;----------------------------------------------------------------------------
@@ -305,18 +261,3 @@ ERROR_UF    = $03d0  ;   undefined function
 
 ; process error code, E = code (offset to 2 char error name)
 DO_ERROR    = $03db
-
-
-
-;-------------------------------------------------
-;          AquBASIC Binary File Header
-;-------------------------------------------------
-; Embeds load address into binary file.
-;
-; benign code can be executed without affecting
-; any registers.
-;
-BINHEADER macro addr
-    CP    A        ; $BF resets Carry flag
-    JP    C,$-1    ; $DA nnnn (load address)
-    endm
