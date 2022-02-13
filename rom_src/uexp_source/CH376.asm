@@ -540,21 +540,21 @@ usb__wait_int:
 ;      NZ = not detected, A = error code 1 (no CH376)
 ;---------------------------------------------------------------------
 usb__check_exists:
-    LD      B,10
+    ld      B,10
 .retry:
-    LD      A,CH376_CMD_CHECK_EXIST
-    OUT     (CH376_CONTROL_PORT),A  ; command: check CH376 exists
-    LD      A,$1A
-    OUT     (CH376_DATA_PORT),A     ; send test byte
-    EX      (SP),HL
-    EX      (SP),HL                 ; delay ~10us
-    IN      A,(CH376_DATA_PORT)
-    CP      $E5                     ; byte inverted?
-    RET     Z
-    DJNZ    .retry
-    LD      A,1                     ; error code = no CH376
-    OR      A                       ; NZ
-    RET
+    ld      A,CH376_CMD_CHECK_EXIST
+    out     (CH376_CONTROL_PORT),A  ; command: check CH376 exists
+    ld      A,$1A
+    out     (CH376_DATA_PORT),A     ; send test byte
+    ex      (SP),HL
+    ex      (SP),HL                 ; delay ~10us
+    in      A,(CH376_DATA_PORT)
+    cp      $E5                     ; byte inverted?
+    ret     Z
+    djnz    .retry
+    ld      A,1                     ; error code = no CH376
+    or      A                       ; NZ
+    ret
 
 ;---------------------------------------------------------------------
 ; Set USB Mode

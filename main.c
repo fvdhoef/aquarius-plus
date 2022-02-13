@@ -25,7 +25,7 @@ struct emulation_state {
     uint8_t       handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t       handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
     bool          ramexp_enabled;   // RAM expansion enabled?
-    uint8_t       rom[0x2000];      // 0x0000-0x1FFF: System ROM
+    uint8_t       rom[0x3000];      // 0x0000-0x2FFF: System ROM (12KB)
     uint8_t       ram[0x1000];      // 0x3000-0x3FFF: System RAM
     uint8_t       ramexp[0x8000];   // 0x4000-0xBFFF: RAM expansion
     uint8_t       gamerom[0x4000];  // 0xC000-0xFFFF: Cartridge
@@ -74,7 +74,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
     }
 
     uint8_t result = 0xFF;
-    if (addr < 0x2000) {
+    if (addr < 0x3000) {
         result = state.rom[addr];
     } else if (addr >= 0x3000 && addr < 0x4000) {
         result = state.ram[addr - 0x3000];
@@ -537,7 +537,7 @@ int main(int argc, char *argv[]) {
             perror(rom_path);
             exit(1);
         }
-        if (fread(state.rom, sizeof(state.rom), 1, f) != 1) {
+        if (fread(state.rom, 1, sizeof(state.rom), f) < 8192) {
             fprintf(stderr, "Error during reading of system ROM image.\n");
             exit(1);
         }

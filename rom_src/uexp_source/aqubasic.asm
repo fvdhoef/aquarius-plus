@@ -157,7 +157,7 @@ GETLEN      = $0FF7  ; get string length (in: (FPREG) = string block, out: HL = 
 TSTNUM      = $0975  ; error if evaluated expression not a number
 TSTSTR      = $0976  ; error if evaluated expression not string
 DEINT       = $0682  ; convert fp number to 16 bit signed integer in DE
-INT2STR     = $1679  ; convert 16 bit ingeter in HL to text at FPSTR (starts with ' ')
+INT2STR     = $1679  ; convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 
 ;-----------------------------------------------------------------------------
 ; RST macros
@@ -262,101 +262,23 @@ DosFlags = sysvars + _dosflags
 SysFlags = sysvars + _sysflags
 
 ; system flags
-SF_NTSC  = 0       ; 1 = NTSC, 0 = PAL
 SF_RETYP = 1       ; 1 = CTRL-O is retype
-
-;=======================================
-;             ROM Code
-;=======================================
-;
-; 16k ROM start address
-    ORG $C000
-
-;----------------------------------------------
-;            External Vectors
-;----------------------------------------------
-;
-; User programs should call ROM functions
-; via these vectors only!
-;
-; system vectors
-; SYS_BREAK         jp  break
-; SYS_DEBUG         jp  break
-; SYS_KEY_CHECK     jp  Key_Check
-; SYS_WAIT_KEY      jp  Wait_key
-; SYS_EDITLINE      jp  EditLine
-; SYS_reserved1     jp  break
-; SYS_reserved2     jp  break
-; SYS_reserved3     jp  break
-
-
-; ; USB driver vectors
-; USB_OPEN_READ     jp  usb__open_read
-; USB_READ_BYTE     jp  usb__read_byte
-; USB_READ_BYTES    jp  usb__read_bytes
-; USB_OPEN_WRITE    jp  usb__open_write
-; USB_WRITE_BYTE    jp  usb__write_byte
-; USB_WRITE_BYTES   jp  usb__write_bytes
-; USB_CLOSE_FILE    jp  usb__close_file
-; USB_DELETE_FILE   jp  usb__delete
-; USB_FILE_EXIST    jp  usb__file_exist
-; USB_SEEK_FILE     jp  usb__seek
-; USB_WILDCARD      jp  usb__wildcard
-; USB_DIR           jp  usb__dir
-; USB_SORT          jp  usb__sort
-; USB_SET_FILENAME  jp  usb__set_filename
-; USB_MOUNT         jp  usb__mount
-; USB_SET_USB_MODE  jp  usb__set_usb_mode
-; USB_CHECK_EXISTS  jp  usb__check_exists
-; USB_READY         jp  usb__ready
-; USB_Wait_Int      jp  usb__wait_int
-; USB_GET_PATH      jp  usb__get_path
-; USB_ROOT          jp  usb__root
-; USB_OPEN_PATH     jp  usb__open_path
-; USB_OPEN_DIR      jp  usb__open_dir
-; USB_reserved1     jp  Break
-; USB_reserved2     jp  Break
-
-; ; DOS vectors
-; DOS_GETFILENAME   jp  dos__getfilename
-; DOS_DIRECTORY     jp  dos__directory
-; DOS_PRTDIRINFO    jp  dos__prtDirInfo
-; DOS_GETFILETYPE   jp  dos__getfiletype
-; DOS_NAME          jp  dos__name
-; DOS_CHAR          jp  dos__char
-; DOS_SET_PATH      jp  dos__set_path
-; DOS_reserved1     jp  break
-; DOS_reserved2     jp  break
-
-; Break:
-;        RET
-
-; vars = SysVars
-
-; fill with $FF to $E000
-    assert !($E000 < $) ; low rom full!!!
-    dc $E000-$,$FF
 
 ;=================================================================
 ;                     AquBASIC BOOT ROM
 ;=================================================================
+    org $2000
+    jp _coldboot    ; Called from main ROM for cold boot
+    jp _warmboot    ; Called from main ROM for warm boot
 
-    org $E000
-
-    ; Rom recognition - 16 bytes
-    db  $42, $4F, $4F, $54, $53, $9C, $54, $B0
-    db  $52, $6C, $41, $64, $50, $A8, $80, $70
-
-entry:
-    ; set flag for NTSC
-    ld      a,0
-    set     SF_NTSC,a
+_init:
+    xor     a
     ld      (Sysflags),a
 
     ld      a,$C3
     ld      (USRJMP),a
-    ld      HL,0
-    ld      (USRADDR),HL       ; set system RST $38 vector
+    ld      hl,0
+    ld      (USRADDR),hl       ; set system RST $38 vector
 
     ; init CH376
     call    usb__check_exists  ; CH376 present?
@@ -369,48 +291,22 @@ entry:
     xor     a
     ld      (LASTKEY),a
     ld      (SCANCNT),a
+    ret
 
-; ; show splash screen (Boot menu)
-; SPLASH:
-;      call    usb__root          ; root directory
-;      ld      a,CYAN
-;      call    clearscreen
-;      ld      b,40
-;      ld      hl,$3000
-; .topline:
-;      ld      (hl),' '
-;      set     2,h
-;      ld      (hl),WHITE*16+BLACK ; black border, white on black chars in top line
-;      res     2,h
-;      inc     hl
-;      djnz    .topline
-;      ld      ix,BootbdrWindow
-;      call    OpenWindow
-;      ld      ix,bootwindow
-;      call    OpenWindow
-;      ld      hl,bootmenutext
-;      call    WinPrtStr
+_coldboot:
+    call _init
+    jp   COLDBOOT
 
-; ; wait for Boot option key
-; SPLKEY:
-;      call    Key_Check
-;      jr      z,SPLKEY           ; loop until key pressed
-;      cp      $0d                ; RTN = cold boot
-;      jp      z, COLDBOOT
-;      cp      $03                ;  ^C = warm boot
-;      jp      z, WARMBOOT
-;      jr      SPLKEY
-
-; ; CTRL-C pressed in boot menu
-; WARMBOOT:
-;      xor     a
-;      ld      (RETYPBUF),a       ; clear history buffer
-;      ld      a,$0b
-;      rst     $18                ; clear screen
-;      call    $0be5              ; clear workspace and prepare to enter BASIC
-;      call    $1a40              ; enter BASIC at KEYBREAK
-; JUMPSTART:
-    jp      COLDBOOT           ; if BASIC returns then cold boot it
+; CTRL-C pressed in boot menu
+_warmboot:
+    call _init
+    xor     a
+    ld      (RETYPBUF),a       ; clear history buffer
+    ld      a,$0b
+    rst     $18                ; clear screen
+    call    $0be5              ; clear workspace and prepare to enter BASIC
+    call    $1a40              ; enter BASIC at KEYBREAK
+    jp      COLDBOOT
 
 ;
 ; Show copyright message
@@ -1281,12 +1177,10 @@ prtstr:
     call PRNCHR
     jr   prtstr
 
-
-
 ;-----------------------------------------------------------------------------
 ; fill with $FF to end of ROM
 ;-----------------------------------------------------------------------------
-    assert !($FFFF<$)   ; ROM full!
-    dc $FFFF-$+1,$FF
+    assert !($2FFF<$)   ; ROM full!
+    dc $2FFF-$+1,$FF
 
     end
