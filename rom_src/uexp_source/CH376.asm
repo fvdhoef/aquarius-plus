@@ -1,7 +1,7 @@
 ;******************************************************************************
 ;                      CH376 USB Driver for Z80 CPU
 ;******************************************************************************
-; Based on code for the MZ800 by Michal Hucík http://www.8bit.8u.cz
+; Based on code for the MZ800 by Michal Hucï¿½k http://www.8bit.8u.cz
 ;
 ;   Date      Ver                     Changes                         Author
 ; 2015-10-4  V0.00 started                                         Bruce Abbott
@@ -152,17 +152,17 @@ CH376_ERR_MISS_FILE     equ     $42     ; file not found
 
  structure FAT_DIR_INFO,0
     STRUCT DIR_Name,11          ; $00 0
-     BYTE  DIR_Attr             ; $0B 11
-     BYTE  DIR_NTRes            ; $0C 12
-     BYTE  DIR_CrtTimeTenth     ; $0D 13
-     WORD  DIR_CrtTime          ; $0E 14
-     WORD  DIR_CrtDate          ; $10 16
-     WORD  DIR_LstAccDate       ; $12 18
-     WORD  DIR_FstClusHI        ; $14 20
-     WORD  DIR_WrtTime          ; $16 22
-     WORD  DIR_WrtDate          ; $18 24
-     WORD  DIR_FstClusLO        ; $1A 26
-     LONG  DIR_FileSize         ; $1C 28
+     SBYTE  DIR_Attr             ; $0B 11
+     SBYTE  DIR_NTRes            ; $0C 12
+     SBYTE  DIR_CrtTimeTenth     ; $0D 13
+     SWORD  DIR_CrtTime          ; $0E 14
+     SWORD  DIR_CrtDate          ; $10 16
+     SWORD  DIR_LstAccDate       ; $12 18
+     SWORD  DIR_FstClusHI        ; $14 20
+     SWORD  DIR_WrtTime          ; $16 22
+     SWORD  DIR_WrtDate          ; $18 24
+     SWORD  DIR_FstClusLO        ; $1A 26
+     SLONG  DIR_FileSize         ; $1C 28
  endstruct FAT_DIR_INFO         ; $20 32
 
 ; attribute masks
@@ -580,10 +580,6 @@ usb__wait_int:
         LD      A,B
         OR      C
         JR      NZ,.wait_int_loop       ; loop until timeout
-     ifdef debug
-        ld      a,"?"
-        ld      ($3000),a
-     endif
 .wait_int_end:
         LD      A,CH376_CMD_GET_STATUS
         OUT     (CH376_CONTROL_PORT),A  ; command: get status
@@ -611,11 +607,6 @@ usb__check_exists:
         IN      A,(CH376_DATA_PORT)
         CP      $E5                     ; byte inverted?
         RET     Z
-  ifdef debug
-        ld      a,"1"+10
-        sub     b
-        ld      ($3001),a
-  endif
         DJNZ    .retry
         LD      A,1                     ; error code = no CH376
         OR      A                       ; NZ
@@ -640,11 +631,6 @@ usb__set_usb_mode:
         IN      A,(CH376_DATA_PORT)
         CP      $51                     ; status = $51?
         RET     Z
-  ifdef debug
-        ld      a,"1"+10
-        sub     b
-        ld      ($3002),a
-  endif
         DJNZ    .retry
         LD      A,2                     ; error code 2 = no USB
         OR      A                       ; NZ
@@ -677,18 +663,9 @@ usb__ready:
 .mountloop:
         CALL    usb__mount              ; try to mount disk
         JR      z,.done                 ; return OK if mounted
-     ifdef debug
-        ld      a,'5'
-        sub     b
-        ld      ($3003),a
-     endif
         call    usb__root               ; may be different disk so reset path
         DJNZ    .mountloop
 ; mount failed,
-     ifdef debug
-        ld      a,"S"
-        ld      ($3004),a
-     endif
         DEC     C                       ; already tried set_usb_mode ?
         JR      NZ,.done                ; yes, fail
         call    usb__set_usb_mode       ; put CH376 into USB mode
@@ -711,8 +688,8 @@ usb__mount:
 
   STRUCTURE FileInfo,0
     STRUCT  FI_NAME,11
-    BYTE    FI_ATTR
-    LONG    FI_SIZE
+    SBYTE    FI_ATTR
+    SLONG    FI_SIZE
   ENDSTRUCT FileInfo
 
 

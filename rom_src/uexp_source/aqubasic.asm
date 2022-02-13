@@ -3,14 +3,12 @@
 ;===============================================================================
 ; By Bruce Abbott                                            www.bhabbott.net.nz
 ;                                                        bruce.abbott@xtra.co.nz
+; Modified for Aquarius+ by Frank van den Hoef
 
 VERSION  = 1
 REVISION = 0
 
 ; code options
-;softrom  equ 1    ; loaded from disk into upper 16k of 32k RAM
-aqubug   equ 1    ; full featured debugger (else lite version without screen save etc.)
-;debug    equ 1    ; debugging our code. Undefine for release version!
 ;
 ; Commands:
 ; CLS    - Clear screen
@@ -52,24 +50,7 @@ aqubug   equ 1    ; full featured debugger (else lite version without screen sav
 
 ; constants:
 CR        = $0D
-
-; colors
-BLACK     = 0
-RED       = 1
-GREEN     = 2
-YELLOW    = 3
-BLUE      = 4
-MAGENTA   = 5
 CYAN      = 6
-WHITE     = 7
-GREY      = 8
-AQUA      = 9
-PURPLE    = 10
-DKBLUE    = 11
-STRAW     = 12
-DKGREEN   = 13
-DKRED     = 14
-BLACK2    = 15
 
 ;-------------------------------------------------------------------
 ;                       System Variables
@@ -84,12 +65,12 @@ UDFADDR  = $3806 ; 14342  HOKDSP   RST $30 vector, hooks into various system rou
                  ; 14343
 LISTCNT  = $3808 ; 14344  ROWCOUNT Counter for lines listed (pause every 23 lines)
 LASTFF   = $3809 ; 14345  PTOLD    Last protection code sent to port($FF)
-LSTASCI  = $380a ; 14346  CHARQ    ASCII value of last key pressed.
-KWADDR   = $380b ; 14347  SKEY     Address of keyword in the keyword table.
+LSTASCI  = $380A ; 14346  CHARQ    ASCII value of last key pressed.
+KWADDR   = $380B ; 14347  SKEY     Address of keyword in the keyword table.
                  ; 14348
-CURHOLD  = $380d ; 14349  BUFO     holds character under the cursor.
+CURHOLD  = $380D ; 14349  BUFO     holds character under the cursor.
 LASTKEY  = $380E ; 14350           SCAN CODE of last key pressed
-SCANCNT  = $380f ; 14351           number of SCANS key has been down for
+SCANCNT  = $380F ; 14351           number of SCANS key has been down for
 FDIV     = $3810 ; 14352           subroutine for division ???
                  ;  ...
 RANDOM   = $381F ; 14367           used by random number generator
@@ -125,15 +106,15 @@ FRETOP   = $38C1 ; 14529           pointer to top of string space
                  ; 14530
 SYSTEMP  = $38C3 ; 14531  TEMP     temp space used by FOR etc.
                  ;  ...
-DATLIN   = $38c9 ; 14537           address of current DATA line
+DATLIN   = $38C9 ; 14537           address of current DATA line
                  ; 14538
 FORFLG   = $38CB ; 14439           flag FOR:, GETVAR: 0=variable, 1=array
 
-TMPSTAT  = $38ce ; 14540           temp holder of next statement address
+TMPSTAT  = $38CE ; 14540           temp holder of next statement address
                  ;  ...
-CONTLIN  = $38d2 ; 14546,7         Line number to CONTinue from.
-CONTPOS  = $38d4 ; 14548,9         address of line to CONTinue from.
-BASEND   = $38d6 ; 14550  VARTAB   variable table (end of BASIC program)
+CONTLIN  = $38D2 ; 14546,7         Line number to CONTinue from.
+CONTPOS  = $38D4 ; 14548,9         address of line to CONTinue from.
+BASEND   = $38D6 ; 14550  VARTAB   variable table (end of BASIC program)
                  ; 14551
 ARYTAB   = $38D8 ; 14552           start of array table
                  ; 14553
@@ -162,70 +143,33 @@ TMPSTATLEN  = CONTLIN-TMPSTAT
 FPREGLEN    = FPSTR-FPREG
 FPSTRLEN    = $38F9-FPSTR
 
-;----------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ;                          system routines
-;----------------------------------------------------------------------------
-;
-; RST $08,xx CHKNXT    syntax error if char at (HL) is not eqaul to xx
-; RST $10    GETNXT    get char at (HL)+, Carry set if '0' to '9'
-; RST $18    PRNTCHR   print char in A
-; RST $20    CMPHLDE   compare HL to DE. Z if equal, C if DE is greater
-; RST $28    TSTSIGN   test sign of floating point number
-; RST $30,xx CALLUDF   hooks into various places in the ROM (identified by xx)
-; RST $38    CALLUSR   maskable interrupt handler
-; RST $66       -      NMI entry point. No code in ROM for this, do NOT use it!
-
-PRNCHR      = $1d94  ; print character in A
-PRNCHR1     = $1d72  ; print character in A with pause/break at end of page
-PRNCRLF     = $19ea  ; print CR+LF
-PRINTSTR    = $0e9d  ; print null-terminated string
-PRINTINT    = $1675  ; print 16 bit integer in HL
-
-SCROLLUP    = $1dfe  ; scroll the screen up 1 line
-SVCURCOL    = $1e3e  ; save cursor position (HL = address, A = column)
-
-LINEDONE    = $19e5  ; line entered (CR pressed)
-FINDLIN     = $049f  ; find address of BASIC line (DE = line number)
-
+;-----------------------------------------------------------------------------
+PRNCHR      = $1D94  ; print character in A
+PRNCHR1     = $1D72  ; print character in A with pause/break at end of page
+PRNCRLF     = $19EA  ; print CR+LF
+PRINTSTR    = $0E9D  ; print null-terminated string
+SCROLLUP    = $1DFE  ; scroll the screen up 1 line
 EVAL        = $0985  ; evaluate expression
-OPRND       = $09fd  ; evaluate operand
-EVLPAR      = $0a37  ; evaluate expression in brackets
-GETINT      = $0b54  ; evaluate numeric expression (integer 0-255)
+EVLPAR      = $0A37  ; evaluate expression in brackets
+GETINT      = $0B54  ; evaluate numeric expression (integer 0-255)
 GETNUM      = $0972  ; evaluate numeric expression
-PUTVAR      = $0b22  ; store variable 16 bit (out: B,A = value)
-PUTVAR8     = $0b36  ; store variable 8 bit (out: B = value)
-
-CRTST       = $0e5f  ; create string (HL = text ending with NULL)
-QSTR        = $0e60  ; create string (HL = text starting with '"')
-GETFLNM     = $1006  ; get tape filename string (out: DE = filename, A = 1st char)
-GETVAR      = $10d1  ; get variable (out: BC = addr, DE = len)
-
-GETLEN      = $0ff7  ; get string length (in: (FPREG) = string block)
-                     ;                   (out: HL = string block, A = length)
+PUTVAR8     = $0B36  ; store variable 8 bit (out: B = value)
+GETVAR      = $10D1  ; get variable (out: BC = addr, DE = len)
+GETLEN      = $0FF7  ; get string length (in: (FPREG) = string block, out: HL = string block, A = length)
 TSTNUM      = $0975  ; error if evaluated expression not a number
 TSTSTR      = $0976  ; error if evaluated expression not string
-CHKTYP      = $0977  ; error if type mismatch
-
 DEINT       = $0682  ; convert fp number to 16 bit signed integer in DE
-STRTOVAL    = $069c  ; DE = value of decimal number string at HL-1 (65529 max)
-STR2INT     = $069d  ; DE = value of decimal number string at HL
 INT2STR     = $1679  ; convert 16 bit ingeter in HL to text at FPSTR (starts with ' ')
 
-KEYWAIT     = $1a33  ; wait for keypress (out: A = key)
-UKEYCHK     = $1e7e  ; get current key pressed (through UDF)
-KEYCHK      = $1e80  ; get current key pressed (direct)
-CLRKEYWT    = $19da  ; flush keyboard buffer and wait for keypress
-
-CHKSTK      = $0ba0  ; check for stack space (in: C = number of words required)
-
-
 ;-----------------------------------------------------------------------------
-;                         RST  macros
+; RST macros
 ;-----------------------------------------------------------------------------
-CHKNXT  MACRO char
-        RST    $08    ; syntax error if char at (HL) is not equal to next byte
-        db    'char'
-        ENDM
+CHKNXT MACRO char
+    RST    $08    ; syntax error if char at (HL) is not equal to next byte
+    db    'char'
+ENDM
 
 ;----------------------------------------------------------------------------
 ;                         BASIC Error Codes
@@ -233,56 +177,15 @@ CHKNXT  MACRO char
 ; code is offset to error name (2 characters)
 ;
 ;name        code            description
-NF_ERR  =    $00             ; NEXT without FOR
-SN_ERR  =    $02             ; Syntax error
-RG_ERR  =    $04             ; RETURN without GOSUB
-OD_ERR  =    $06             ; Out of DATA
 FC_ERR  =    $08             ; Function Call error
-OV_ERR  =    $0A             ; Overflow
-OM_ERR  =    $0C             ; Out of memory
-UL_ERR  =    $0E             ; Undefined line number
-BS_ERR  =    $10             ; Bad subscript
-DD_ERR  =    $12             ; Re-DIMensioned array
-DZ_ERR  =    $14             ; Division by zero (/0)
-ID_ERR  =    $16             ; Illegal direct
-TM_ERR  =    $18             ; Type mismatch
-OS_ERR  =    $1A             ; out of string space
-LS_ERR  =    $1C             ; String too long
-ST_ERR  =    $1E             ; String formula too complex
-CN_ERR  =    $20             ; Can't CONTinue
-UF_ERR  =    $22             ; UnDEFined FN function
-MO_ERR  =    $24             ; Missing operand
-
 
 ;----------------------------------------------------------------------------
 ;     jump addresses for BASIC errors (returns to command prompt)
 ;----------------------------------------------------------------------------
-ERROR_SN    = $03c4  ;   syntax error
-                     ;   return without gosub
-                     ;   out of data
 ERROR_FC    = $0697  ;   function code error
-ERROR_OV    = $03d3  ;   overflow
-ERROR_OM    = $0bb7  ;   out of memory
-ERROR_UL    = $06f3  ;   undefined line number
-ERROR_BS    = $11cd  ;   bad subscript
-ERROR_DD    = $03cd  ;   re-dimensioned array
-ERROR_DIV0  = $03c7  ;   divide by zero
-ERROR_ID    = $0b4F  ;   illegal direct
-ERROR_TM    = $03d9  ;   type mismatch
-ERROR_OS    = $0CEF  ;   out of string space
-                     ;   string to long
-ERROR_ST    = $0E97  ;   string formula too complex
-ERROR_CN    = $0C51  ;   can't continue
-ERROR_UF    = $03d0  ;   undefined function
-                     ;   missing operand
 
 ; process error code, E = code (offset to 2 char error name)
-DO_ERROR    = $03db
-
-
-
-
-
+DO_ERROR    = $03DB
 
 ;-----------------------------------------------------------------------------
 ; structure macros
@@ -296,22 +199,22 @@ count     = offset
 ENDM
 
 ; allocate 1 byte in structure
-; eg. BYTE char1
-BYTE      MACRO name
+; eg. SBYTE char1
+SBYTE      MACRO name
 name      EQU   count
 count     = count+1
 ENDM
 
 ; allocate 2 bytes in structure
-; eg. WORD int1
-WORD      MACRO name
+; eg. SWORD int1
+SWORD      MACRO name
 name      EQU count
 count     = count+2
 ENDM
 
 ; allocate 4 bytes in structure
-; eg. LONG longint1
-LONG      MACRO name
+; eg. SLONG longint1
+SLONG      MACRO name
 name      EQU count
 count     = count+4
 ENDM
@@ -333,59 +236,45 @@ ENDM
 
 
 
-
-
-
-
-
 ; alternative system variable names
 VARTAB      = BASEND     ; $38D6 variables table (at end of BASIC program)
 
-  ifdef softrom
-RAMEND = $8000           ; we are in RAM, 16k expansion RAM available
-  else
 RAMEND = $C000           ; we are in ROM, 32k expansion RAM available
-  endif
 
 path.size = 37           ; length of file path buffer
 
 ; high RAM usage
- STRUCTURE _sysvars,0
+STRUCTURE _sysvars,0
     STRUCT _retypbuf,74         ; BASIC command line history
     STRUCT _pathname,path.size  ; file path eg. "/root/subdir1/subdir2",0
     STRUCT _filename,13         ; USB file name 1-11 chars + '.', NULL
-    BYTE   _filetype            ; file type BASIC/array/binary/etc.
-    WORD   _binstart            ; binary file load/save address
-    WORD   _binlen              ; binary file length
-    BYTE   _dosflags            ; DOS flags
-    BYTE   _sysflags            ; system flags
- ENDSTRUCT _sysvars
+    SBYTE   _filetype            ; file type BASIC/array/binary/etc.
+    SWORD   _binstart            ; binary file load/save address
+    SWORD   _binlen              ; binary file length
+    SBYTE   _dosflags            ; DOS flags
+    SBYTE   _sysflags            ; system flags
+ENDSTRUCT _sysvars
 
-SysVars  = RAMEND-_sysvars.size
-ReTypBuf = sysvars+_retypbuf
-PathName = sysvars+_pathname
-FileName = sysvars+_filename
-FileType = sysvars+_filetype
-BinStart = sysvars+_binstart
-BinLen   = sysvars+_binlen
-DosFlags = sysvars+_dosflags
-SysFlags = sysvars+_sysflags
+SysVars  = RAMEND - _sysvars.size
+ReTypBuf = sysvars + _retypbuf
+PathName = sysvars + _pathname
+FileName = sysvars + _filename
+FileType = sysvars + _filetype
+BinStart = sysvars + _binstart
+BinLen   = sysvars + _binlen
+DosFlags = sysvars + _dosflags
+SysFlags = sysvars + _sysflags
 
-ifdef debug
-  pathname = $3006  ; store path in top line of screen
-endif
-
-;system flags
+; system flags
 SF_NTSC  = 0       ; 1 = NTSC, 0 = PAL
 SF_RETYP = 1       ; 1 = CTRL-O is retype
-
 
 ;=======================================
 ;             ROM Code
 ;=======================================
 ;
 ; 16k ROM start address
-     ORG $C000
+    ORG $C000
 
 ;----------------------------------------------
 ;            External Vectors
@@ -446,48 +335,47 @@ SF_RETYP = 1       ; 1 = CTRL-O is retype
 ; Break:
 ;        RET
 
-vars = SysVars
+; vars = SysVars
 
 ; fill with $FF to $E000
-     assert !($E000 < $) ; low rom full!!!
-     dc  $E000-$,$FF
+    assert !($E000 < $) ; low rom full!!!
+    dc $E000-$,$FF
 
 ;=================================================================
 ;                     AquBASIC BOOT ROM
 ;=================================================================
 
-     ORG $E000
+    ORG $E000
 
-; Rom recognition
-; 16 bytes
+; Rom recognition - 16 bytes
 RECOGNITION:
-     db  66, 79, 79, 84
-     db  83, 156, 84, 176
-     db  82, 108, 65, 100
-     db  80, 168, 128, 112
+    db  66, 79, 79, 84
+    db  83, 156, 84, 176
+    db  82, 108, 65, 100
+    db  80, 168, 128, 112
+
 ROM_ENTRY:
+    ; set flag for NTSC
+    ld      a,0
+    set     SF_NTSC,a
+    ld      (Sysflags),a
 
-     ; set flag for NTSC
-     ld      a,0
-     set     SF_NTSC,a
-     ld      (Sysflags),a
+    ld      a,$C3
+    ld      (USRJMP),a
+    ld      HL,0
+    ld      (USRADDR),HL       ; set system RST $38 vector
 
-     ld      a,$C3
-     ld      (USRJMP),a
-     ld      HL,0
-     ld      (USRADDR),HL       ; set system RST $38 vector
-
-     ; init CH376
-     call    usb__check_exists  ; CH376 present?
-     jr      nz,.no_ch376
-     call    usb__set_usb_mode  ; yes, set USB mode
+    ; init CH376
+    call    usb__check_exists  ; CH376 present?
+    jr      nz,.no_ch376
+    call    usb__set_usb_mode  ; yes, set USB mode
 .no_ch376:
-     call    usb__root          ; root directory
+    call    usb__root          ; root directory
 
-     ; init keyboard vars
-     xor     a
-     ld      (LASTKEY),a
-     ld      (SCANCNT),a
+    ; init keyboard vars
+    xor     a
+    ld      (LASTKEY),a
+    ld      (SCANCNT),a
 
 ; ; show splash screen (Boot menu)
 ; SPLASH:
@@ -529,7 +417,7 @@ ROM_ENTRY:
 ;      call    $0be5              ; clear workspace and prepare to enter BASIC
 ;      call    $1a40              ; enter BASIC at KEYBREAK
 ; JUMPSTART:
-     jp      COLDBOOT           ; if BASIC returns then cold boot it
+    jp      COLDBOOT           ; if BASIC returns then cold boot it
 
 ;
 ; Show copyright message
@@ -591,14 +479,10 @@ MEMTEST:
      jr      nz,MEMTEST         ; continue testing RAM until end of memory
 MEMREADY:
      ld      a,h
-  ifdef softrom
-     cp      $80                ; 16k expansion
-  else
      cp      $c0                ; 32k expansion
-  endif
      jp      c,$0bb7            ; OM error if expansion RAM missing
      dec     hl                 ; last good RAM addresss
-     ld      hl,vars-1          ; top of public RAM
+     ld      hl,SysVars-1       ; top of public RAM
 MEMSIZE:
      ld      ($38ad),hl         ; MEMSIZ, Contains the highest RAM location
      ld      de,-50             ; subtract 50 for strings space
@@ -615,153 +499,126 @@ MEMSIZE:
      xor     a
      jp      $0402              ; Jump to OKMAIN (BASIC command line)
 
-;---------------------------------------------------------------------
-;                      USB Disk Driver
-;---------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+;  USB Disk Driver
+;-----------------------------------------------------------------------------
     include "ch376.asm"
 
-; ; boot window with border
-; BootBdrWindow:
-;      db     (1<<WA_BORDER)|(1<<WA_TITLE)|(1<<WA_CENTER)
-;      db     CYAN
-;      db     CYAN
-;      db     2,3,36,20
-;      dw     bootWinTitle
-
-; ; boot window text inside border
-; BootWindow:
-;      db     0
-;      db     CYAN
-;      db     CYAN
-;      db     9,5,26,18
-;      dw     0
-
-; BootWinTitle:
-;      db     " AQUARIUS USB BASIC V"
-;      db     VERSION+'0','.',REVISION+'0',' ',0
-
-; BootMenuText:
-;      db     "    <RTN> BASIC",CR
-;      db     CR
-;      db     "<CTRL-C> Warm Start",0
-
-
-
-;------------------------------------------------------
-;             UDF Hook Service Routine
-;------------------------------------------------------
+;-----------------------------------------------------------------------------
+; UDF Hook Service Routine
+;-----------------------------------------------------------------------------
 ; This address is stored at $3806-7, and is called by
 ; every RST $30. It allows us to hook into the system
 ; ROM in several places (anywhere a RST $30 is located).
 ;
-HOOK ex      (sp),hl            ; save HL and get address of byte after RST $30
-     push    af                 ; save AF
-     ld      a,(hl)             ; A = byte (RST $30 parameter)
-     inc     hl                 ; skip over byte after RST $30
-     push    hl                 ; push return address (code after RST $30,xx)
-     ld      hl,UDFLIST         ; HL = RST 30 parameter table
-     push    bc
-     ld      bc,UDF_JMP-UDFLIST+1 ; number of UDF parameters
-     cpir                       ; find paramater in list
-     ld      a,c                ; A = parameter number in list
-     pop     bc
-     add     a,a                ; A * 2 to index WORD size vectors
-     ld      hl,UDF_JMP         ; HL = Jump vector table
+HOOK:
+    ex      (sp),hl            ; save HL and get address of byte after RST $30
+    push    af                 ; save AF
+    ld      a,(hl)             ; A = byte (RST $30 parameter)
+    inc     hl                 ; skip over byte after RST $30
+    push    hl                 ; push return address (code after RST $30,xx)
+    ld      hl,UDFLIST         ; HL = RST 30 parameter table
+    push    bc
+    ld      bc,UDF_JMP-UDFLIST+1 ; number of UDF parameters
+    cpir                       ; find paramater in list
+    ld      a,c                ; A = parameter number in list
+    pop     bc
+    add     a,a                ; A * 2 to index WORD size vectors
+    ld      hl,UDF_JMP         ; HL = Jump vector table
 do_jump:
-     add     a,l
-     ld      l,a
-     ld      a,$00
-     adc     a,h
-     ld      h,a                ; HL += vector number
-     ld      a,(hl)
-     inc     hl
-     ld      h,(hl)             ; get vector address
-     ld      l,a
-     jp      (hl)               ; and jump to it
-                                ; will return to HOOKEND
+    add     a,l
+    ld      l,a
+    ld      a,$00
+    adc     a,h
+    ld      h,a                ; HL += vector number
+    ld      a,(hl)
+    inc     hl
+    ld      h,(hl)             ; get vector address
+    ld      l,a
+    jp      (hl)               ; and jump to it
+                               ; will return to HOOKEND
 
 ; End of hook
 HOOKEND:
-     pop     hl                 ; get return address
-     pop     af                 ; restore AF
-     ex      (sp),hl            ; restore HL and set return address
-     ret                        ; return to code after RST $30,xx
-
+    pop     hl                 ; get return address
+    pop     af                 ; restore AF
+    ex      (sp),hl            ; restore HL and set return address
+    ret                        ; return to code after RST $30,xx
 
 ; UDF parameter table
 ; List of RST $30,xx hooks that we are monitoring.
 ; NOTE: order is reverse of UDF jumps!
 UDFLIST:    ; xx     index caller    @addr  performing function:-
-     db      $18     ; 7   RUN       $06be  starting BASIC program
-     db      $17     ; 6   NEXTSTMT  $064b  interpreting next BASIC statement
-     db      $16     ; 5   PEXPAND   $0598  expanding a token
-     db      $0a     ; 4   REPLCMD   $0536  converting keyword to token
-     db      $1b     ; 3   FUNCTIONS $0a5f  executing a function
-     db      $05     ; 2   LINKLINES $0485  updating nextline pointers in BASIC prog
-     db      $02     ; 1   OKMAIN    $0402  BASIC command line (immediate mode)
+    db      $18     ; 7   RUN       $06be  starting BASIC program
+    db      $17     ; 6   NEXTSTMT  $064b  interpreting next BASIC statement
+    db      $16     ; 5   PEXPAND   $0598  expanding a token
+    db      $0a     ; 4   REPLCMD   $0536  converting keyword to token
+    db      $1b     ; 3   FUNCTIONS $0a5f  executing a function
+    db      $05     ; 2   LINKLINES $0485  updating nextline pointers in BASIC prog
+    db      $02     ; 1   OKMAIN    $0402  BASIC command line (immediate mode)
 ; UDF parameter Jump table
 UDF_JMP:
-     dw      HOOKEND            ; 0 parameter not found in list
-     dw      AQMAIN             ; 1 replacement immediate mode
-     dw      LINKLINES          ; 2 update BASIC nextline pointers (returns to AQMAIN)
-     dw      AQFUNCTION         ; 3 execute AquBASIC function
-     dw      REPLCMD            ; 4 replace keyword with token
-     dw      PEXPAND            ; 5 expand token to keyword
-     dw      NEXTSTMT           ; 6 execute next BASIC statement
-     dw      RUNPROG            ; 7 run program
+    dw      HOOKEND            ; 0 parameter not found in list
+    dw      AQMAIN             ; 1 replacement immediate mode
+    dw      LINKLINES          ; 2 update BASIC nextline pointers (returns to AQMAIN)
+    dw      AQFUNCTION         ; 3 execute AquBASIC function
+    dw      REPLCMD            ; 4 replace keyword with token
+    dw      PEXPAND            ; 5 expand token to keyword
+    dw      NEXTSTMT           ; 6 execute next BASIC statement
+    dw      RUNPROG            ; 7 run program
 
 ; Our commands and functions
 ;
-BTOKEN       equ $d4             ; our first token number
+BTOKEN:     equ $d4             ; our first token number
 TBLCMDS:
-     db      $80 + 'E', "DIT"
-     db      $80 + 'C', "LS"
-     db      $80 + 'L', "OCATE"
-     db      $80 + 'O', "UT"
-     db      $80 + 'P', "SG"
-     db      $80 + 'D', "EBUG"
-     db      $80 + 'C', "ALL"
-     db      $80 + 'L', "OAD"
-     db      $80 + 'S', "AVE"
-     db      $80 + 'D', "IR"
-     db      $80 + 'C', "AT"
-     db      $80 + 'K', "ILL"
-     db      $80 + 'C', "D"
-; functions
-     db      $80 + 'I', "N"
-     db      $80 + 'J', "OY"
-     db      $80 + 'H', "EX$"
-     db      $80                ; End of table marker
+    db      $80 + 'E', "DIT"
+    db      $80 + 'C', "LS"
+    db      $80 + 'L', "OCATE"
+    db      $80 + 'O', "UT"
+    db      $80 + 'P', "SG"
+    db      $80 + 'D', "EBUG"
+    db      $80 + 'C', "ALL"
+    db      $80 + 'L', "OAD"
+    db      $80 + 'S', "AVE"
+    db      $80 + 'D', "IR"
+    db      $80 + 'C', "AT"
+    db      $80 + 'K', "ILL"
+    db      $80 + 'C', "D"
+
+    ; functions
+    db      $80 + 'I', "N"
+    db      $80 + 'J', "OY"
+    db      $80 + 'H', "EX$"
+    db      $80                ; End of table marker
 
 TBLJMPS:
-     dw      ST_reserved    ; Previously EDIT
-     dw      ST_CLS
-     dw      ST_LOCATE
-     dw      ST_OUT
-     dw      ST_PSG
-     dw      ST_reserved    ; Previously DEBUG
-     dw      ST_CALL
-     dw      ST_LOAD
-     dw      ST_SAVE
-     dw      ST_DIR
-     dw      ST_CAT
-     dw      ST_KILL
-     dw      ST_CD
+    dw      ST_reserved    ; Previously EDIT
+    dw      ST_CLS
+    dw      ST_LOCATE
+    dw      ST_OUT
+    dw      ST_PSG
+    dw      ST_reserved    ; Previously DEBUG
+    dw      ST_CALL
+    dw      ST_LOAD
+    dw      ST_SAVE
+    dw      ST_DIR
+    dw      ST_CAT
+    dw      ST_KILL
+    dw      ST_CD
 TBLJEND:
 
-BCOUNT equ (TBLJEND-TBLJMPS)/2    ; number of commands
+BCOUNT: equ (TBLJEND-TBLJMPS)/2    ; number of commands
 
 TBLFNJP:
-     dw      FN_IN
-     dw      FN_JOY
-     dw      FN_HEX
+    dw      FN_IN
+    dw      FN_JOY
+    dw      FN_HEX
 TBLFEND:
 
-FCOUNT equ (TBLFEND-TBLFNJP)/2    ; number of functions
+FCOUNT: equ (TBLFEND-TBLFNJP)/2    ; number of functions
 
-firstf equ BTOKEN+BCOUNT          ; token number of first function in table
-lastf  equ firstf+FCOUNT-1        ; token number of last function in table
-
+firstf: equ BTOKEN+BCOUNT          ; token number of first function in table
+lastf:  equ firstf+FCOUNT-1        ; token number of last function in table
 
 ;-----------------------------------------------------------------------------
 ;                          Command Line
@@ -1468,27 +1325,6 @@ prtstr:
 
 
 
-
-
-
-
-
-
-
-; keyboard scan
-   include "keycheck.asm"
-
-;-----------------------------------------------
-;          Wait for Key Press
-;-----------------------------------------------
-; Wait for next key to be pressed.
-;
-;   out A = char
-;
-Wait_key:
-       CALL key_check    ; check for key pressed
-       JR   Z,Wait_Key   ; loop until key pressed
-       RET
 
 ; fill with $FF to end of ROM
      assert !($FFFF<$)   ; ROM full!
