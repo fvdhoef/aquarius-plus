@@ -46,9 +46,297 @@ aqubug   equ 1    ; full featured debugger (else lite version without screen sav
 ; MODULE_FUNCTION    vector for use by external progams
 ; module__function   internal name for code in this ROM
 
-    include  "aquarius.i" ; aquarius hardware and system ROM
-    include  "macros.i"   ; structure macros
-    include  "windows.i"  ; fast windowed text functions
+;-----------------------------------------------------------------------------
+; aquarius hardware and system ROM
+;-----------------------------------------------------------------------------
+
+; constants:
+CR        = $0D
+
+; colors
+BLACK     = 0
+RED       = 1
+GREEN     = 2
+YELLOW    = 3
+BLUE      = 4
+MAGENTA   = 5
+CYAN      = 6
+WHITE     = 7
+GREY      = 8
+AQUA      = 9
+PURPLE    = 10
+DKBLUE    = 11
+STRAW     = 12
+DKGREEN   = 13
+DKRED     = 14
+BLACK2    = 15
+
+;-------------------------------------------------------------------
+;                       System Variables
+;-------------------------------------------------------------------
+;Name    location Decimal alt name          description
+CURCOL   = $3800 ; 14336  TTYPOS   Current cursor column
+CURRAM   = $3801 ; 14337  CHRPOS   Position in CHARACTER RAM of cursor
+USRJMP   = $3803 ; 14339  USRGO    JMP instruction for USR.
+USRADDR  = $3804 ; 14340  USRAL    address of USR() function
+                 ; 14341  USRAH
+UDFADDR  = $3806 ; 14342  HOKDSP   RST $30 vector, hooks into various system routines
+                 ; 14343
+LISTCNT  = $3808 ; 14344  ROWCOUNT Counter for lines listed (pause every 23 lines)
+LASTFF   = $3809 ; 14345  PTOLD    Last protection code sent to port($FF)
+LSTASCI  = $380a ; 14346  CHARQ    ASCII value of last key pressed.
+KWADDR   = $380b ; 14347  SKEY     Address of keyword in the keyword table.
+                 ; 14348
+CURHOLD  = $380d ; 14349  BUFO     holds character under the cursor.
+LASTKEY  = $380E ; 14350           SCAN CODE of last key pressed
+SCANCNT  = $380f ; 14351           number of SCANS key has been down for
+FDIV     = $3810 ; 14352           subroutine for division ???
+                 ;  ...
+RANDOM   = $381F ; 14367           used by random number generator
+                 ; ...
+LPTLST   = $3845 ; 14405           last printer operation status
+PRNCOL   = $3846 ; 14406  LPTPOS   The current printer column (0-131).
+CHANNEL  = $3847 ; 14407  PRTFLG   Channel: 0=screen, 1=printer.
+LINLEN   = $3848 ; 14408           line length (initially set to 40 ???)
+CLMLST   = $3849 ; 14409           position of last comma column
+RUBSW    = $384A ; 14410           rubout switch
+STKTOP   = $384B ; 14411           high address of stack. followed by string storage space
+                 ; 14412
+CURLIN   = $384D ; 14413           current BASIC line number (-1 in direct mode)
+                 ; 14414
+BASTART  = $384F ; 14415  TXTTAB   pointer to start of BASIC program
+                 ; 14416
+CASNAM   = $3851 ; 14417           tape filename (6 chars)
+CASNM2   = $3857 ; 14423           tape read filename (6 chars)
+CASFL2   = $385D ; 14429           tape flag
+CASFL3   = $385E ; 14430           tape flag (break key check)
+BUFMIN   = $385F ; 14431           buffer used by INPUT statement
+LINBUF   = $3860 ; 14432  BUF      line input buffer (73 bytes).
+                 ;  ...
+BUFEND   = $38A9 ; 14505           end of line unput buffer
+DIMFLG   = $38AA ; 14506           dimension flag 1 = array
+VALTYP   = $38AB ; 14507           type: 0 = number, 1 = string
+DORES    = $38AC ; 14508           flag for crunch
+RAMTOP   = $38AD ; 14509  MEMSIZ   Address of top of physical RAM.
+                 ; 14510
+STRBUF   = $38AF ; 14511           18 bytes used by string functions
+                 ;  ...
+FRETOP   = $38C1 ; 14529           pointer to top of string space
+                 ; 14530
+SYSTEMP  = $38C3 ; 14531  TEMP     temp space used by FOR etc.
+                 ;  ...
+DATLIN   = $38c9 ; 14537           address of current DATA line
+                 ; 14538
+FORFLG   = $38CB ; 14439           flag FOR:, GETVAR: 0=variable, 1=array
+
+TMPSTAT  = $38ce ; 14540           temp holder of next statement address
+                 ;  ...
+CONTLIN  = $38d2 ; 14546,7         Line number to CONTinue from.
+CONTPOS  = $38d4 ; 14548,9         address of line to CONTinue from.
+BASEND   = $38d6 ; 14550  VARTAB   variable table (end of BASIC program)
+                 ; 14551
+ARYTAB   = $38D8 ; 14552           start of array table
+                 ; 14553
+ARYEND   = $38DA ; 14554           end of array table
+                 ; 14555
+RESTORE  = $38DC ; 14556           Address of line last RESTORE'd
+                 ; 14557
+;          $38DE ; 14558           pointer and flag for arrays
+                 ;  ...
+FPREG    = $38E4 ; 14564  FPNUM    floating point number
+                 ;  ...
+FPSTR    = $38E9 ; 14569           floating point string
+                 ;  ...
+;          $38F9 ; 14585           used by keybord routine
+                 ;  ...
+PROGST   = $3900 ; 14592           NULL before start of BASIC program
+
+; end of system variables = start of BASIC program in stock Aquarius
+;          $3901 ; 14593
+
+; buffer lengths
+LINBUFLEN   = DIMFLG-LINBUF
+STRBUFLEN   = FRETOP-STRBUF
+SYSTEMPLEN  = DATLIN-SYSTEMP
+TMPSTATLEN  = CONTLIN-TMPSTAT
+FPREGLEN    = FPSTR-FPREG
+FPSTRLEN    = $38F9-FPSTR
+
+;----------------------------------------------------------------------------
+;                          system routines
+;----------------------------------------------------------------------------
+;
+; RST $08,xx CHKNXT    syntax error if char at (HL) is not eqaul to xx
+; RST $10    GETNXT    get char at (HL)+, Carry set if '0' to '9'
+; RST $18    PRNTCHR   print char in A
+; RST $20    CMPHLDE   compare HL to DE. Z if equal, C if DE is greater
+; RST $28    TSTSIGN   test sign of floating point number
+; RST $30,xx CALLUDF   hooks into various places in the ROM (identified by xx)
+; RST $38    CALLUSR   maskable interrupt handler
+; RST $66       -      NMI entry point. No code in ROM for this, do NOT use it!
+
+PRNCHR      = $1d94  ; print character in A
+PRNCHR1     = $1d72  ; print character in A with pause/break at end of page
+PRNCRLF     = $19ea  ; print CR+LF
+PRINTSTR    = $0e9d  ; print null-terminated string
+PRINTINT    = $1675  ; print 16 bit integer in HL
+
+SCROLLUP    = $1dfe  ; scroll the screen up 1 line
+SVCURCOL    = $1e3e  ; save cursor position (HL = address, A = column)
+
+LINEDONE    = $19e5  ; line entered (CR pressed)
+FINDLIN     = $049f  ; find address of BASIC line (DE = line number)
+
+EVAL        = $0985  ; evaluate expression
+OPRND       = $09fd  ; evaluate operand
+EVLPAR      = $0a37  ; evaluate expression in brackets
+GETINT      = $0b54  ; evaluate numeric expression (integer 0-255)
+GETNUM      = $0972  ; evaluate numeric expression
+PUTVAR      = $0b22  ; store variable 16 bit (out: B,A = value)
+PUTVAR8     = $0b36  ; store variable 8 bit (out: B = value)
+
+CRTST       = $0e5f  ; create string (HL = text ending with NULL)
+QSTR        = $0e60  ; create string (HL = text starting with '"')
+GETFLNM     = $1006  ; get tape filename string (out: DE = filename, A = 1st char)
+GETVAR      = $10d1  ; get variable (out: BC = addr, DE = len)
+
+GETLEN      = $0ff7  ; get string length (in: (FPREG) = string block)
+                     ;                   (out: HL = string block, A = length)
+TSTNUM      = $0975  ; error if evaluated expression not a number
+TSTSTR      = $0976  ; error if evaluated expression not string
+CHKTYP      = $0977  ; error if type mismatch
+
+DEINT       = $0682  ; convert fp number to 16 bit signed integer in DE
+STRTOVAL    = $069c  ; DE = value of decimal number string at HL-1 (65529 max)
+STR2INT     = $069d  ; DE = value of decimal number string at HL
+INT2STR     = $1679  ; convert 16 bit ingeter in HL to text at FPSTR (starts with ' ')
+
+KEYWAIT     = $1a33  ; wait for keypress (out: A = key)
+UKEYCHK     = $1e7e  ; get current key pressed (through UDF)
+KEYCHK      = $1e80  ; get current key pressed (direct)
+CLRKEYWT    = $19da  ; flush keyboard buffer and wait for keypress
+
+CHKSTK      = $0ba0  ; check for stack space (in: C = number of words required)
+
+
+;-----------------------------------------------------------------------------
+;                         RST  macros
+;-----------------------------------------------------------------------------
+CHKNXT  MACRO char
+        RST    $08    ; syntax error if char at (HL) is not equal to next byte
+        db    'char'
+        ENDM
+
+;----------------------------------------------------------------------------
+;                         BASIC Error Codes
+;----------------------------------------------------------------------------
+; code is offset to error name (2 characters)
+;
+;name        code            description
+NF_ERR  =    $00             ; NEXT without FOR
+SN_ERR  =    $02             ; Syntax error
+RG_ERR  =    $04             ; RETURN without GOSUB
+OD_ERR  =    $06             ; Out of DATA
+FC_ERR  =    $08             ; Function Call error
+OV_ERR  =    $0A             ; Overflow
+OM_ERR  =    $0C             ; Out of memory
+UL_ERR  =    $0E             ; Undefined line number
+BS_ERR  =    $10             ; Bad subscript
+DD_ERR  =    $12             ; Re-DIMensioned array
+DZ_ERR  =    $14             ; Division by zero (/0)
+ID_ERR  =    $16             ; Illegal direct
+TM_ERR  =    $18             ; Type mismatch
+OS_ERR  =    $1A             ; out of string space
+LS_ERR  =    $1C             ; String too long
+ST_ERR  =    $1E             ; String formula too complex
+CN_ERR  =    $20             ; Can't CONTinue
+UF_ERR  =    $22             ; UnDEFined FN function
+MO_ERR  =    $24             ; Missing operand
+
+
+;----------------------------------------------------------------------------
+;     jump addresses for BASIC errors (returns to command prompt)
+;----------------------------------------------------------------------------
+ERROR_SN    = $03c4  ;   syntax error
+                     ;   return without gosub
+                     ;   out of data
+ERROR_FC    = $0697  ;   function code error
+ERROR_OV    = $03d3  ;   overflow
+ERROR_OM    = $0bb7  ;   out of memory
+ERROR_UL    = $06f3  ;   undefined line number
+ERROR_BS    = $11cd  ;   bad subscript
+ERROR_DD    = $03cd  ;   re-dimensioned array
+ERROR_DIV0  = $03c7  ;   divide by zero
+ERROR_ID    = $0b4F  ;   illegal direct
+ERROR_TM    = $03d9  ;   type mismatch
+ERROR_OS    = $0CEF  ;   out of string space
+                     ;   string to long
+ERROR_ST    = $0E97  ;   string formula too complex
+ERROR_CN    = $0C51  ;   can't continue
+ERROR_UF    = $03d0  ;   undefined function
+                     ;   missing operand
+
+; process error code, E = code (offset to 2 char error name)
+DO_ERROR    = $03db
+
+
+
+
+
+
+;-----------------------------------------------------------------------------
+; structure macros
+;-----------------------------------------------------------------------------
+
+; start a structure definition
+; eg. STRUCTURE mystruct,0
+STRUCTURE MACRO name,offset
+`name`_offset EQU offset
+count     = offset
+ENDM
+
+; allocate 1 byte in structure
+; eg. BYTE char1
+BYTE      MACRO name
+name      EQU   count
+count     = count+1
+ENDM
+
+; allocate 2 bytes in structure
+; eg. WORD int1
+WORD      MACRO name
+name      EQU count
+count     = count+2
+ENDM
+
+; allocate 4 bytes in structure
+; eg. LONG longint1
+LONG      MACRO name
+name      EQU count
+count     = count+4
+ENDM
+
+; allocate multiple bytes
+; typically used to embed a structure inside another
+; eg. STRUCT filename,11
+STRUCT    MACRO name,size
+name      EQU   count
+count     = count+size
+ENDM
+
+; finish defining structure
+; eg. ENDSTRUCT mystruct
+ENDSTRUCT MACRO name
+`name`.size EQU count-`name`_offset
+ENDM
+
+
+
+
+
+
+
+
 
 ; alternative system variable names
 VARTAB      = BASEND     ; $38D6 variables table (at end of BASIC program)
@@ -170,18 +458,16 @@ vars = SysVars
 
      ORG $E000
 
-; Rom recognization
+; Rom recognition
 ; 16 bytes
-;
-RECOGNIZATION:
+RECOGNITION:
      db  66, 79, 79, 84
      db  83, 156, 84, 176
      db  82, 108, 65, 100
      db  80, 168, 128, 112
-
 ROM_ENTRY:
 
-; set flag for NTSC
+     ; set flag for NTSC
      ld      a,0
      set     SF_NTSC,a
      ld      (Sysflags),a
@@ -191,59 +477,58 @@ ROM_ENTRY:
      ld      HL,0
      ld      (USRADDR),HL       ; set system RST $38 vector
 
-;
-; init CH376
+     ; init CH376
      call    usb__check_exists  ; CH376 present?
      jr      nz,.no_ch376
      call    usb__set_usb_mode  ; yes, set USB mode
 .no_ch376:
      call    usb__root          ; root directory
 
-; init keyboard vars
+     ; init keyboard vars
      xor     a
      ld      (LASTKEY),a
      ld      (SCANCNT),a
-;
-; show splash screen (Boot menu)
-SPLASH:
-     call    usb__root          ; root directory
-     ld      a,CYAN
-     call    clearscreen
-     ld      b,40
-     ld      hl,$3000
-.topline:
-     ld      (hl),' '
-     set     2,h
-     ld      (hl),WHITE*16+BLACK ; black border, white on black chars in top line
-     res     2,h
-     inc     hl
-     djnz    .topline
-     ld      ix,BootbdrWindow
-     call    OpenWindow
-     ld      ix,bootwindow
-     call    OpenWindow
-     ld      hl,bootmenutext
-     call    WinPrtStr
 
-; wait for Boot option key
-SPLKEY:
-     call    Key_Check
-     jr      z,SPLKEY           ; loop until key pressed
-     cp      $0d                ; RTN = cold boot
-     jp      z, COLDBOOT
-     cp      $03                ;  ^C = warm boot
-     jp      z, WARMBOOT
-     jr      SPLKEY
+; ; show splash screen (Boot menu)
+; SPLASH:
+;      call    usb__root          ; root directory
+;      ld      a,CYAN
+;      call    clearscreen
+;      ld      b,40
+;      ld      hl,$3000
+; .topline:
+;      ld      (hl),' '
+;      set     2,h
+;      ld      (hl),WHITE*16+BLACK ; black border, white on black chars in top line
+;      res     2,h
+;      inc     hl
+;      djnz    .topline
+;      ld      ix,BootbdrWindow
+;      call    OpenWindow
+;      ld      ix,bootwindow
+;      call    OpenWindow
+;      ld      hl,bootmenutext
+;      call    WinPrtStr
 
-; CTRL-C pressed in boot menu
-WARMBOOT:
-     xor     a
-     ld      (RETYPBUF),a       ; clear history buffer
-     ld      a,$0b
-     rst     $18                ; clear screen
-     call    $0be5              ; clear workspace and prepare to enter BASIC
-     call    $1a40              ; enter BASIC at KEYBREAK
-JUMPSTART:
+; ; wait for Boot option key
+; SPLKEY:
+;      call    Key_Check
+;      jr      z,SPLKEY           ; loop until key pressed
+;      cp      $0d                ; RTN = cold boot
+;      jp      z, COLDBOOT
+;      cp      $03                ;  ^C = warm boot
+;      jp      z, WARMBOOT
+;      jr      SPLKEY
+
+; ; CTRL-C pressed in boot menu
+; WARMBOOT:
+;      xor     a
+;      ld      (RETYPBUF),a       ; clear history buffer
+;      ld      a,$0b
+;      rst     $18                ; clear screen
+;      call    $0be5              ; clear workspace and prepare to enter BASIC
+;      call    $1a40              ; enter BASIC at KEYBREAK
+; JUMPSTART:
      jp      COLDBOOT           ; if BASIC returns then cold boot it
 
 ;
@@ -335,30 +620,30 @@ MEMSIZE:
 ;---------------------------------------------------------------------
     include "ch376.asm"
 
-; boot window with border
-BootBdrWindow:
-     db     (1<<WA_BORDER)|(1<<WA_TITLE)|(1<<WA_CENTER)
-     db     CYAN
-     db     CYAN
-     db     2,3,36,20
-     dw     bootWinTitle
+; ; boot window with border
+; BootBdrWindow:
+;      db     (1<<WA_BORDER)|(1<<WA_TITLE)|(1<<WA_CENTER)
+;      db     CYAN
+;      db     CYAN
+;      db     2,3,36,20
+;      dw     bootWinTitle
 
-; boot window text inside border
-BootWindow:
-     db     0
-     db     CYAN
-     db     CYAN
-     db     9,5,26,18
-     dw     0
+; ; boot window text inside border
+; BootWindow:
+;      db     0
+;      db     CYAN
+;      db     CYAN
+;      db     9,5,26,18
+;      dw     0
 
-BootWinTitle:
-     db     " AQUARIUS USB BASIC V"
-     db     VERSION+'0','.',REVISION+'0',' ',0
+; BootWinTitle:
+;      db     " AQUARIUS USB BASIC V"
+;      db     VERSION+'0','.',REVISION+'0',' ',0
 
-BootMenuText:
-     db     "    <RTN> BASIC",CR
-     db     CR
-     db     "<CTRL-C> Warm Start",0
+; BootMenuText:
+;      db     "    <RTN> BASIC",CR
+;      db     CR
+;      db     "<CTRL-C> Warm Start",0
 
 
 
@@ -1057,10 +1342,6 @@ Wait_key:
        CALL key_check    ; check for key pressed
        JR   Z,Wait_Key   ; loop until key pressed
        RET
-
-; windowed text functions
-   include "windows.asm"
-
 
 ; fill with $FF to end of ROM
      assert !($FFFF<$)   ; ROM full!

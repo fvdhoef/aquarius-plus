@@ -1,2 +1,2 @@
 all:
-	zmac --zmac -n -I include aqubasic.asm --oo cim,lst
+	zmac --zmac -n aqubasic.asm --oo cim,lst
