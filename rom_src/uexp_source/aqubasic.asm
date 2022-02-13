@@ -3,47 +3,6 @@
 ;===============================================================================
 ; By Bruce Abbott                                            www.bhabbott.net.nz
 ;                                                        bruce.abbott@xtra.co.nz
-;
-; For use with my micro-expander (CH376 USB interface, 32K RAM, AY-3-8910 PSG)
-; Incudes commands from BLBasic by Martin Steenoven  http://www.vdSteenoven.com
-; changes:-
-; 2015-11-4  V0.0  created
-; 2015-11-5        EDIT command provides enhanced editing of BASIC lines.
-; 2015-11-6  V0.01 PRINT token expands to '?' on edit line (allows editing longer lines).
-; 2015-11-9  V0.02 Added Turboload cassette routines
-;                  Faster power-on memtest
-; 2015-11-13 V0.03 Turbo tape commands TSAVE and TLOAD
-;                  Enhanced edit functions on command line (immediate mode)
-;                  Fixed scroll issue caused by conflicting ROWCOUNT definitions
-; 2015-12-22 V0.04 fixed ctrl-c not removing colored cursor
-; 2015-01-17 V0.05 CAT catalog files (minimalist directory listing)
-; 2016-01-18 V0.06 RUN command can take name of file (BASIC or BINARY) to load and run
-; 2016-01-30 V0.07 added PROGST to allow for extra system variables.
-; 2016-02-21 V0.08 CALL passes txt pointer (in HL) to user code.
-; 2016-04-11 V0.09 disk function vectors at $C000
-; 2016-10-10 V0.10 changed cold boot menu to suit uexp (no ROM menu)
-; 2017-01-22 V0.11 DOS commands take fully evaluated arguments eg. LOAD LEFT$(A$,11)
-;                  DIR with wildcards
-;                  CAT prints 3 filenames per line
-; 2017-02-20 V0.12 DEBUG
-; 2017-03-03 V0.13 change displayed name to AQUARIUS USB BASIC
-; 2017-03-06 V0.14 Incorporate ROM initialization, boot menu, ROM loader.
-; 2017-03-09 V0.15 add PT3 player, tidy vector and function names
-; 2017-03-12 V0.16 HEX$() function: convert number to Hexadecimal string
-; 2017-04-14 V0.17 HL = 0 on entry to debugger from splash screen
-; 2017-04-18 V0.18 CRTL-R = retype line
-; 2017-04-25 V0.19 Reserve high RAM for retype buffer, debugger, DOS
-; 2017-04-29 V0.20 FileName, FileType, DOSflags moved from BASIC variables to private RAM
-; 2017-05-04 V0.21 sys_KeyChk: replacement keyboard scan routine
-; 2017-05-06 V0.22 clear history buffer before entering BASIC
-;                  bugfix: ST_EDIT buffer length equate 1 less than actual buffer size
-; 2017-05-08 V0.23 refactored code to get more space in ROM!
-; 2017-05-16 V0.24 CLS clears 1000 chars/colors, doesn't touch last 24 bytes.
-; 2017-05-22 V0.25 updated vectors
-;                  moved wait_key from aqubug.asm to here
-; 2017-05-30 V0.26 increased path.size from 36 to 37 (space for at least 4 subdirecties)
-; 2017-06-11 V0.27 return to root dir after debug, pt3play etc. in boot menu
-; 2017-06-12 V1.0  bumped to release version
 
 VERSION  = 1
 REVISION = 0
@@ -148,93 +107,58 @@ SF_RETYP = 1       ; 1 = CTRL-O is retype
 ; via these vectors only!
 ;
 ; system vectors
-SYS_BREAK         jp  break
-SYS_DEBUG         jp  break
-SYS_KEY_CHECK     jp  Key_Check
-SYS_WAIT_KEY      jp  Wait_key
-SYS_EDITLINE      jp  EditLine
-SYS_reserved1     jp  break
-SYS_reserved2     jp  break
-SYS_reserved3     jp  break
+; SYS_BREAK         jp  break
+; SYS_DEBUG         jp  break
+; SYS_KEY_CHECK     jp  Key_Check
+; SYS_WAIT_KEY      jp  Wait_key
+; SYS_EDITLINE      jp  EditLine
+; SYS_reserved1     jp  break
+; SYS_reserved2     jp  break
+; SYS_reserved3     jp  break
 
 
-; USB driver vectors
-USB_OPEN_READ     jp  usb__open_read
-USB_READ_BYTE     jp  usb__read_byte
-USB_READ_BYTES    jp  usb__read_bytes
-USB_OPEN_WRITE    jp  usb__open_write
-USB_WRITE_BYTE    jp  usb__write_byte
-USB_WRITE_BYTES   jp  usb__write_bytes
-USB_CLOSE_FILE    jp  usb__close_file
-USB_DELETE_FILE   jp  usb__delete
-USB_FILE_EXIST    jp  usb__file_exist
-USB_SEEK_FILE     jp  usb__seek
-USB_WILDCARD      jp  usb__wildcard
-USB_DIR           jp  usb__dir
-USB_SORT          jp  usb__sort
-USB_SET_FILENAME  jp  usb__set_filename
-USB_MOUNT         jp  usb__mount
-USB_SET_USB_MODE  jp  usb__set_usb_mode
-USB_CHECK_EXISTS  jp  usb__check_exists
-USB_READY         jp  usb__ready
-USB_Wait_Int      jp  usb__wait_int
-USB_GET_PATH      jp  usb__get_path
-USB_ROOT          jp  usb__root
-USB_OPEN_PATH     jp  usb__open_path
-USB_OPEN_DIR      jp  usb__open_dir
-USB_reserved1     jp  Break
-USB_reserved2     jp  Break
+; ; USB driver vectors
+; USB_OPEN_READ     jp  usb__open_read
+; USB_READ_BYTE     jp  usb__read_byte
+; USB_READ_BYTES    jp  usb__read_bytes
+; USB_OPEN_WRITE    jp  usb__open_write
+; USB_WRITE_BYTE    jp  usb__write_byte
+; USB_WRITE_BYTES   jp  usb__write_bytes
+; USB_CLOSE_FILE    jp  usb__close_file
+; USB_DELETE_FILE   jp  usb__delete
+; USB_FILE_EXIST    jp  usb__file_exist
+; USB_SEEK_FILE     jp  usb__seek
+; USB_WILDCARD      jp  usb__wildcard
+; USB_DIR           jp  usb__dir
+; USB_SORT          jp  usb__sort
+; USB_SET_FILENAME  jp  usb__set_filename
+; USB_MOUNT         jp  usb__mount
+; USB_SET_USB_MODE  jp  usb__set_usb_mode
+; USB_CHECK_EXISTS  jp  usb__check_exists
+; USB_READY         jp  usb__ready
+; USB_Wait_Int      jp  usb__wait_int
+; USB_GET_PATH      jp  usb__get_path
+; USB_ROOT          jp  usb__root
+; USB_OPEN_PATH     jp  usb__open_path
+; USB_OPEN_DIR      jp  usb__open_dir
+; USB_reserved1     jp  Break
+; USB_reserved2     jp  Break
 
-; DOS vectors
-DOS_GETFILENAME   jp  dos__getfilename
-DOS_DIRECTORY     jp  dos__directory
-DOS_PRTDIRINFO    jp  dos__prtDirInfo
-DOS_GETFILETYPE   jp  dos__getfiletype
-DOS_NAME          jp  dos__name
-DOS_CHAR          jp  dos__char
-DOS_SET_PATH      jp  dos__set_path
-DOS_reserved1     jp  break
-DOS_reserved2     jp  break
+; ; DOS vectors
+; DOS_GETFILENAME   jp  dos__getfilename
+; DOS_DIRECTORY     jp  dos__directory
+; DOS_PRTDIRINFO    jp  dos__prtDirInfo
+; DOS_GETFILETYPE   jp  dos__getfiletype
+; DOS_NAME          jp  dos__name
+; DOS_CHAR          jp  dos__char
+; DOS_SET_PATH      jp  dos__set_path
+; DOS_reserved1     jp  break
+; DOS_reserved2     jp  break
 
-; file requester
-FRQ_FILEREQ       jp  RequestFile
-FRQ_LISTFILES     jp  ListFiles
-FRQ_SHOWLIST      jp  ShowList
-FRQ_SELECT        jp  SelectFile
-FRQ_reserved      jp  break
+; Break:
+;        RET
 
-; windows
-WIN_OPENWINDOW    jp  OpenWindow
-WIN_SETCURSOR     jp  WinSetCursor
-WIN_CLEARWINDOW   jp  ClearWindow
-WIN_SHOWTITLE     jp  ShowTitle
-WIN_DRAWBORDER    jp  DrawBorder
-WIN_COLORWINDOW   jp  ColorWindow
-WIN_PRTCHR        jp  WinPrtChr
-WIN_PRTCHARS      jp  WinPrtChrs
-WIN_PRTSTR        jp  WinPrtStr
-WIN_PRTMSG        jp  WinPrtMsg
-WIN_CURSORADDR    jp  CursorAddr
-WIN_TEXTADDR      jp  WinTextAddr
-WIN_SCROLLWINDOW  jp  ScrollWindow
-WIN_NEWLINE       jp  NewLine
-WIN_CLEARTOEND    jp  ClearToEnd
-WIN_BACKSPACE     jp  BackSpace
-WIN_WAITKEY       jp  Wait_Key
-WIN_CAT_DISK      jp  WinCatDisk
-WIN_INPUTLINE     jp  break
-WIN_reserved1     jp  break
-WIN_reserved2     jp  break
-
-Break:
-       RET
-
-
-; windowed text functions
-   include "windows.asm"
-
-; debugger
-   include "aqubug.asm"
+vars = SysVars
 
 ; fill with $FF to $E000
      assert !($E000 < $) ; low rom full!!!
@@ -261,27 +185,11 @@ ROM_ENTRY:
      ld      a,0
      set     SF_NTSC,a
      ld      (Sysflags),a
-;
-; init debugger
-     ld      hl,vars
-     ld      bc,v.size
-.clrbugmem:
-     ld      (hl),0             ; clear all debugger variables
-     inc     hl
-     dec     bc
-     ld      a,b
-     or      c
-     jr      nz,.clrbugmem
+
      ld      a,$C3
      ld      (USRJMP),a
      ld      HL,0
      ld      (USRADDR),HL       ; set system RST $38 vector
-;   ifdef aqubug
-;      ld      de,MemWindows
-;      ld      hl,dflt_winaddrs
-;      ld      bc,2*4             ; initialize default memory window addresses
-;      ldir
-;   endif
 
 ;
 ; init CH376
@@ -345,8 +253,6 @@ SHOWCOPYRIGHT:
      call    SHOWCOPY           ; Show system ROM copyright message
      ld      hl,STR_BASIC       ; "USB BASIC"
      call    $0e9d              ; PRINTSTR
-     ld      hl, STR_VERSION    ;
-     call    $0e9d              ; PRINTSTR
      ret
 
 ;
@@ -366,10 +272,7 @@ SHOWIT:
      ret
 
 STR_BASIC:
-     db      $0D,"USB BASIC"
-     db      $00
-STR_VERSION:
-     db      " V",VERSION+'0','.',REVISION+'0',$0D,$0A,0
+     db      $0D,"USB BASIC V", VERSION+'0', '.', REVISION+'0', $0D, $0A, 0
 
 ; The bytes from $0187 to $01d7 are copied to $3803 onwards as default data.
 COLDBOOT:
@@ -531,6 +434,7 @@ TBLCMDS:
      db      $80 + 'L', "OCATE"
      db      $80 + 'O', "UT"
      db      $80 + 'P', "SG"
+     db      $80 + 'D', "EBUG"
      db      $80 + 'C', "ALL"
      db      $80 + 'L', "OAD"
      db      $80 + 'S', "AVE"
@@ -550,6 +454,7 @@ TBLJMPS:
      dw      ST_LOCATE
      dw      ST_OUT
      dw      ST_PSG
+     dw      ST_reserved    ; Previously DEBUG
      dw      ST_CALL
      dw      ST_LOAD
      dw      ST_SAVE
@@ -573,9 +478,9 @@ firstf equ BTOKEN+BCOUNT          ; token number of first function in table
 lastf  equ firstf+FCOUNT-1        ; token number of last function in table
 
 
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ;                          Command Line
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ; Replacement Immediate Mode with Line editing
 ;
 ; UDF hook number $02 at OKMAIN ($0402)
@@ -824,10 +729,9 @@ _run_file:
 ST_reserved:
     ret
 
-
-;--------------------------------------------------------------------
-;   CLS statement
-;
+;-----------------------------------------------------------------------------
+; CLS statement
+;-----------------------------------------------------------------------------
 ST_CLS:
     ld      a,CYAN
     call    clearscreen
@@ -839,9 +743,9 @@ ST_CLS:
     ld      (CURHOLD),a   ; SPACE under cursor
     ret
 
-;-----------------------------------
-;       Clear Screen
-;-----------------------------------
+;-----------------------------------------------------------------------------
+; Clear Screen
+;-----------------------------------------------------------------------------
 ; - user-defined colors
 ; - doesn't clear last 24 bytes
 ; - doesn't show cursor
@@ -865,20 +769,10 @@ clearscreen:
     pop     hl
     ret
 
-;--------------------------------------
-; get/put text area
-; deprecated because they require extra
-; variables, shifting the start of BASIC
-; (possible compatitiblity issue)
-;
-;ST_GET:
-;ST_PUT:
-;    ret
-
-;--------------------------------------------------------------------
-;   OUT statement
-;   syntax: OUT port, data
-;
+;-----------------------------------------------------------------------------
+; OUT statement
+; syntax: OUT port, data
+;-----------------------------------------------------------------------------
 ST_OUT:
     call    GETNUM              ; get/evaluate port
     call    DEINT               ; convert number to 16 bit integer (result in DE)
@@ -890,10 +784,10 @@ ST_OUT:
     out     (c),a               ; out data to port
     ret
 
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ; LOCATE statement
 ; Syntax: LOCATE col, row
-;
+;-----------------------------------------------------------------------------
 ST_LOCATE:
     call    GETINT              ; read number from command line (column). Stored in A and E
     push    af                  ; column store on stack for later use
@@ -941,10 +835,10 @@ GOTO_HL:
     jp      $1de7               ; Save cursor position and return
 
 
-;--------------------------------------------------------------------
-;   PSG statement
-;   syntax: PSG register, value [, ... ]
-;
+;-----------------------------------------------------------------------------
+; PSG statement
+; syntax: PSG register, value [, ... ]
+;-----------------------------------------------------------------------------
 ST_PSG:
     cp      $00
     jp      z,$03d6          ; MO error if no args
@@ -963,10 +857,10 @@ psgloop:
     jr      psgloop          ; parse next register & value
 
 
-;--------------------------------------------------------------------
-;   IN() function
-;   syntax: var = IN(port)
-;
+;-----------------------------------------------------------------------------
+; IN() function
+; syntax: var = IN(port)
+;-----------------------------------------------------------------------------
 FN_IN:
     pop     hl
     inc     hl
@@ -981,13 +875,13 @@ FN_IN:
     jp      PUTVAR8          ; return with 8 bit input value in variable var
 
 
-;--------------------------------------------------------------------
-;   Entry point for JOY() function
-;   syntax: var = JOY( stick )
-;                 stick - 0 will read left or right
-;                       - 1 will read left joystick only
-;                       - 2 will read right joystick only
-;
+;-----------------------------------------------------------------------------
+; JOY() function
+; syntax: var = JOY(stick)
+;    stick - 0 will read left or right
+;          - 1 will read left joystick only
+;          - 2 will read right joystick only
+;-----------------------------------------------------------------------------
 FN_JOY:
          pop     hl             ; Return address
          inc     hl             ; skip rst parameter
@@ -1031,13 +925,10 @@ joy04:   in      a,(c)
 joy05:   cpl
          jp      $0b36
 
-
-;----------------------------------------
-;  Convert number to HEX string
-;----------------------------------------
-;
+;-----------------------------------------------------------------------------
+; HEX$() function
 ; eg. A$=HEX$(B)
-;
+;-----------------------------------------------------------------------------
 FN_HEX:
     pop  hl
     inc  hl
@@ -1079,11 +970,10 @@ FN_HEX:
     inc  hl
     ret
 
-
-;--------------------------
-;   print hex byte
-;--------------------------
+;-----------------------------------------------------------------------------
+; print hex byte
 ; in: A = byte
+;-----------------------------------------------------------------------------
 PRINTHEX:
         push    bc
         ld      b,a
@@ -1109,9 +999,9 @@ PRINTHEX:
         jp      PRNCHR
 
 
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ;                            CALL
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ; syntax: CALL address
 ; address is signed integer, 0 to 32767   = $0000-$7FFF
 ;                            -32768 to -1 = $8000-$FFFF
@@ -1168,8 +1058,9 @@ Wait_key:
        JR   Z,Wait_Key   ; loop until key pressed
        RET
 
-; disk file selector
-   include "filerequest.asm"
+; windowed text functions
+   include "windows.asm"
+
 
 ; fill with $FF to end of ROM
      assert !($FFFF<$)   ; ROM full!

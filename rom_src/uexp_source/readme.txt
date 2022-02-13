@@ -3,11 +3,9 @@ Building Aqubasic from Source
 
    file                purpose
 aqubasic.asm     ROM initialisation, boot menu, extended BASIC commands
-aqubug.asm       Aqubug debugger
 dos.asm          interface between BASIC and USB driver 
 ch376.asm        USB driver
 windows.asm      windowed text
-filerequest.asm  select file from list 
 string.asm       string functions
 edit.asm         BASIC command line editor
 keycheck.asm     keyboard scan

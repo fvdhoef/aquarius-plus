@@ -786,7 +786,7 @@ ST_DIR:
     call    dos__getfilename  ; wildcard -> FileName
     ex      (sp),hl           ; update text pointer on stack
 .st_dir_go:
-    call    usb_ready         ; check for USB disk (may reset path to root!)
+    call    usb__ready        ; check for USB disk (may reset path to root!)
     jr      nz,.error
     call    PRINTSTR          ; print path
     call    PRNCRLF
