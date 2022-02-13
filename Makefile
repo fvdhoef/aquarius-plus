@@ -5,3 +5,6 @@ all:
 
 run: all
 	build/aquarius_emu
+
+runusb: all
+	build/aquarius_emu -c testdata/roms/aqubasic_bank1.rom -u testdata/usb
