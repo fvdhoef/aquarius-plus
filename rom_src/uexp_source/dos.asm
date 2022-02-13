@@ -676,95 +676,97 @@ st_write_sync:
 ; Minimalist directory listing (shows all filenames)
 ;
 ST_CAT:
-    push    hl                      ; save BASIC text pointer
-    LD      A,$0D                   ; print carriage return
-    CALL    PRNCHR1
-    ld      a,23
-    ld      (LISTCNT),a             ; set initial number of lines per page
-.cat_disk:
-    call    usb__ready              ; check for USB disk
-    jr      nz,.disk_error
-    call    usb__open_dir           ; open '*' for all files in directory
-    jr      z,.cat_loop
-; usb_ready or open "*" failed
-.disk_error:
-    call    _show_error             ; show error code
-    pop     hl
-    ld      e,FC_ERR
-    jp      DO_ERROR                ; return to BASIC with FC error
-.cat_loop:
-    LD      A,CH376_CMD_RD_USB_DATA
-    OUT     (CH376_CONTROL_PORT),A  ; command: read USB data (directory entry)
-    IN      A,(CH376_DATA_PORT)     ; A = number of bytes in CH376 buffer
-    OR      A                       ; if bytes = 0 then read next entry
-    JR      Z,.cat_next
-    LD      HL,-16
-    ADD     HL,SP                   ; allocate 16 bytes on stack
-    LD      SP,HL
-    LD      B,12                    ; B = 11 bytes filename, 1 byte file attributes
-    LD      C,CH376_DATA_PORT
-    INIR                            ; get filename, attributes
-    LD      B,16
-.absorb_bytes:
-    IN      A,(CH376_DATA_PORT)     ; absorb bytes until filesize
-    DJNZ    .absorb_bytes
-    LD      B,4                     ; B = 4 bytes file size
-.read_size:
-    INIR                            ; get file size
-    LD      BC,-5
-    ADD     HL,BC                   ; HL = attributes
-    LD      A,(HL)                  ; get attributes
-    LD      BC,-11                  ; HL = filename
-    ADD     HL,BC
-    LD      C,A                     ; C = attributes
-    LD      B,8                     ; 8 chars in file name
-    BIT     ATTR_B_DIRECTORY,C
-    JR      Z,.cat_name
-    LD      A,'<'
-    CALL    PRNCHR1                 ; print '<' in front of directory name
-.cat_name:
-    LD      A,(HL)
-    INC     HL
-    CALL    PRNCHR1                 ; print name char
-    DJNZ    .cat_name
-    BIT     ATTR_B_DIRECTORY,C
-    JR      NZ,.extn
-    LD      A," "                   ; print ' ' between file name and extension
-.separator:
-    CALL    PRNCHR
-.extn:
-    LD      A,(HL)
-    INC     HL
-    CALL    PRNCHR                  ; print 1st extn char
-    LD      A,(HL)
-    INC     HL
-    CALL    PRNCHR                  ; print 2nd extn char
-    LD      A,(HL)
-    CP      ' '
-    JR      NZ,.last                ; if 3rd extn char is SPACE
-    BIT     ATTR_B_DIRECTORY,C      ; and name is directory then
-    JR      Z,.last
-    LD      A,'>'                   ; replace with '>'
-.last:
-    CALL    PRNCHR                  ; print 3rd extn char
-    LD      HL,16
-    ADD     HL,SP                   ; clean up stack
-    LD      SP,HL
-    LD      A,(CURCOL)
-    AND     A                       ; if column = 0 then already on next line
-    JR      Z,.cat_go
-    LD      A," "                   ; else padding space after filename
-    CALL    PRNCHR
-.cat_go:
-    LD      A,CH376_CMD_FILE_ENUM_GO
-    OUT     (CH376_CONTROL_PORT),A  ; command: read next filename
-    CALL    usb__wait_int           ; wait until done
-.cat_next:
-    CP      CH376_INT_DISK_READ     ; more entries?
-    JR      Z,.cat_loop             ; yes, get next entry
-.cat_done:
-    pop     hl                      ; restore BASIC text pointer
-    RET
+    ret
+
+;     push    hl                      ; save BASIC text pointer
+;     LD      A,$0D                   ; print carriage return
+;     CALL    PRNCHR1
+;     ld      a,23
+;     ld      (LISTCNT),a             ; set initial number of lines per page
+; .cat_disk:
+;     call    usb__ready              ; check for USB disk
+;     jr      nz,.disk_error
+;     call    usb__open_dir           ; open '*' for all files in directory
+;     jr      z,.cat_loop
+; ; usb_ready or open "*" failed
+; .disk_error:
+;     call    _show_error             ; show error code
+;     pop     hl
+;     ld      e,FC_ERR
+;     jp      DO_ERROR                ; return to BASIC with FC error
+; .cat_loop:
+;     LD      A,CH376_CMD_RD_USB_DATA
+;     OUT     (CH376_CONTROL_PORT),A  ; command: read USB data (directory entry)
+;     IN      A,(CH376_DATA_PORT)     ; A = number of bytes in CH376 buffer
+;     OR      A                       ; if bytes = 0 then read next entry
+;     JR      Z,.cat_next
+;     LD      HL,-16
+;     ADD     HL,SP                   ; allocate 16 bytes on stack
+;     LD      SP,HL
+;     LD      B,12                    ; B = 11 bytes filename, 1 byte file attributes
+;     LD      C,CH376_DATA_PORT
+;     INIR                            ; get filename, attributes
+;     LD      B,16
+; .absorb_bytes:
+;     IN      A,(CH376_DATA_PORT)     ; absorb bytes until filesize
+;     DJNZ    .absorb_bytes
+;     LD      B,4                     ; B = 4 bytes file size
+; .read_size:
+;     INIR                            ; get file size
+;     LD      BC,-5
+;     ADD     HL,BC                   ; HL = attributes
+;     LD      A,(HL)                  ; get attributes
+;     LD      BC,-11                  ; HL = filename
+;     ADD     HL,BC
+;     LD      C,A                     ; C = attributes
+;     LD      B,8                     ; 8 chars in file name
+;     BIT     ATTR_B_DIRECTORY,C
+;     JR      Z,.cat_name
+;     LD      A,'<'
+;     CALL    PRNCHR1                 ; print '<' in front of directory name
+; .cat_name:
+;     LD      A,(HL)
+;     INC     HL
+;     CALL    PRNCHR1                 ; print name char
+;     DJNZ    .cat_name
+;     BIT     ATTR_B_DIRECTORY,C
+;     JR      NZ,.extn
+;     LD      A," "                   ; print ' ' between file name and extension
+; .separator:
+;     CALL    PRNCHR
+; .extn:
+;     LD      A,(HL)
+;     INC     HL
+;     CALL    PRNCHR                  ; print 1st extn char
+;     LD      A,(HL)
+;     INC     HL
+;     CALL    PRNCHR                  ; print 2nd extn char
+;     LD      A,(HL)
+;     CP      ' '
+;     JR      NZ,.last                ; if 3rd extn char is SPACE
+;     BIT     ATTR_B_DIRECTORY,C      ; and name is directory then
+;     JR      Z,.last
+;     LD      A,'>'                   ; replace with '>'
+; .last:
+;     CALL    PRNCHR                  ; print 3rd extn char
+;     LD      HL,16
+;     ADD     HL,SP                   ; clean up stack
+;     LD      SP,HL
+;     LD      A,(CURCOL)
+;     AND     A                       ; if column = 0 then already on next line
+;     JR      Z,.cat_go
+;     LD      A," "                   ; else padding space after filename
+;     CALL    PRNCHR
+; .cat_go:
+;     LD      A,CH376_CMD_FILE_ENUM_GO
+;     OUT     (CH376_CONTROL_PORT),A  ; command: read next filename
+;     CALL    usb__wait_int           ; wait until done
+; .cat_next:
+;     CP      CH376_INT_DISK_READ     ; more entries?
+;     JR      Z,.cat_loop             ; yes, get next entry
+; .cat_done:
+;     pop     hl                      ; restore BASIC text pointer
+;     RET
 
 ;--------------------------------------------------------------------
 ;                   Disk Directory Listing
@@ -801,24 +803,6 @@ ST_DIR:
     pop     hl                ; POP text pointer
     ret
 
-;-----------------------------------------
-;      FAT Directory Info structure
-;-----------------------------------------
-; structure FAT_DIR_INFO
-;    STRUCT DIR_Name,11;         ; $00 0
-;     UINT8 DIR_Attr;            ; $0B 11
-;     UINT8 DIR_NTRes;           ; $0C 12
-;     UINT8 DIR_CrtTimeTenth;    ; $0D 13
-;    UINT16 DIR_CrtTime;         ; $0E 14
-;    UINT16 DIR_CrtDate;         ; $10 16
-;    UINT16 DIR_LstAccDate;      ; $12 18
-;    UINT16 DIR_FstClusHI;       ; $14 20
-;    UINT16 DIR_WrtTime;         ; $16 22
-;    UINT16 DIR_WrtDate;         ; $18 24
-;    UINT16 DIR_FstClusLO;       ; $1A 26
-;    UINT32 DIR_FileSize;        ; $1C 28
-; endstruct FAT_DIR_INFO;        ; $20 32
-
 ;------------------------------------------------------------------------------
 ;                     Read and Display Directory
 ;------------------------------------------------------------------------------
@@ -832,44 +816,43 @@ ST_DIR:
 ; uses: A, BC, DE, HL
 ;
 dos__directory:
-        LD      A,$0D
-        CALL    PRNCHR                  ; print CR
-        CALL    usb__open_dir           ; open '*' for all files in directory
-        RET     NZ                      ; abort if error (disk not present?)
-        ld      a,22
-        ld      (LISTCNT),a             ; set initial number of lines per page
+    LD      A,$0D
+    CALL    PRNCHR                  ; print CR
+    CALL    usb__open_dir           ; open '*' for all files in directory
+    RET     NZ                      ; abort if error (disk not present?)
+    ld      a,22
+    ld      (LISTCNT),a             ; set initial number of lines per page
 .dir_loop:
-        LD      A,CH376_CMD_RD_USB_DATA
-        OUT     (CH376_CONTROL_PORT),A  ; command: read USB data
-        LD      C,CH376_DATA_PORT
-        IN      A,(C)                   ; A = number of bytes in CH376 buffer
-        CP      32                      ; must be 32 bytes!
-        RET     NZ
-        LD      B,A
-        LD      HL,-32
-        ADD     HL,SP                   ; allocate 32 bytes on stack
-        LD      SP,HL
-        PUSH    HL
-        INIR                            ; read directory info onto stack
-        POP     HL
-        ld      DE,FileName             ; DE = wildcard pattern
-        call    usb__wildcard           ; Z if filename matches wildcard
-        call    z,dos__prtDirInfo       ; display file info (type, size)
-        LD      HL,32
-        ADD     HL,SP                   ; clean up stack
-        LD      SP,HL
-        LD      A,CH376_CMD_FILE_ENUM_GO
-        OUT     (CH376_CONTROL_PORT),A  ; command: read next filename
-        CALL    usb__wait_int           ; wait until done
+    LD      A,CH376_CMD_RD_USB_DATA
+    OUT     (CH376_CONTROL_PORT),A  ; command: read USB data
+    LD      C,CH376_DATA_PORT
+    IN      A,(C)                   ; A = number of bytes in CH376 buffer
+    CP      32                      ; must be 32 bytes!
+    RET     NZ
+    LD      B,A
+    LD      HL,-32
+    ADD     HL,SP                   ; allocate 32 bytes on stack
+    LD      SP,HL
+    PUSH    HL
+    INIR                            ; read directory info onto stack
+    POP     HL
+    ld      DE,FileName             ; DE = wildcard pattern
+    call    usb__wildcard           ; Z if filename matches wildcard
+    call    z,dos__prtDirInfo       ; display file info (type, size)
+    LD      HL,32
+    ADD     HL,SP                   ; clean up stack
+    LD      SP,HL
+    LD      A,CH376_CMD_FILE_ENUM_GO
+    OUT     (CH376_CONTROL_PORT),A  ; command: read next filename
+    CALL    usb__wait_int           ; wait until done
 .dir_next:
-        CP      CH376_INT_DISK_READ     ; more entries?
-        JP      Z,.dir_loop             ; yes, get next entry
-        CP      CH376_ERR_MISS_FILE     ; Z if end of file list, else NZ
-        RET
+    CP      CH376_INT_DISK_READ     ; more entries?
+    JP      Z,.dir_loop             ; yes, get next entry
+    CP      CH376_ERR_MISS_FILE     ; Z if end of file list, else NZ
+    RET
 
 _dir_msg:
-        db      "<dir>",0
-
+    db      "<DIR>",0
 
 ;--------------------------------------------------------------------
 ;                      Print File Info
@@ -1065,10 +1048,8 @@ ST_KILL:
     ret
 
 
-;----------------------------------------------------------------
-;                         Set Path
-;----------------------------------------------------------------
-;
+;-----------------------------------------------------------------------------
+; Set Path
 ;    In:    HL = string to add to path (NOT null-terminated!)
 ;            A = string length
 ;
@@ -1079,93 +1060,98 @@ ST_KILL:
 ; path with no leading '/' is added to existing path
 ;         with leading '/' replaces existing path
 ;        ".." = removes last subdir from path
-;
+;-----------------------------------------------------------------------------
 dos__set_path:
-        PUSH   BC
-        LD     C,A               ; C = string length
-        LD     DE,PathName
-        LD     A,(DE)
-        CP     '/'               ; does current path start with '/'?
-        JR     Z,.gotpath
-        CALL   usb__root         ; no, create root path
+    PUSH   BC
+    LD     C,A               ; C = string length
+    LD     DE,PathName
+    LD     A,(DE)
+    CP     '/'               ; does current path start with '/'?
+    JR     Z,.gotpath
+    CALL   usb__root         ; no, create root path
 .gotpath:
-        INC    DE                ; DE = 2nd char in pathname (after '/')
-        LD     B,path.size-1     ; B = max number of chars in pathname (less leading '/')
-        LD     A,(HL)
-        CP     '/'               ; does string start with '/'?
-        JR     Z,.rootdir        ; yes, replace entire path
-        JR     .path_end         ; no, goto end of path
+    INC    DE                ; DE = 2nd char in pathname (after '/')
+    LD     B,path.size-1     ; B = max number of chars in pathname (less leading '/')
+    LD     A,(HL)
+    CP     '/'               ; does string start with '/'?
+    JR     Z,.rootdir        ; yes, replace entire path
+    JR     .path_end         ; no, goto end of path
 .path_end_loop:
-        INC    DE                ; advance DE towards end of path
-        DEC    B
-        JR     Z,.fail           ; fail if path full
+    INC    DE                ; advance DE towards end of path
+    DEC    B
+    JR     Z,.fail           ; fail if path full
 .path_end:
-        LD     A,(DE)
-        OR     A
-        JR     NZ,.path_end_loop
+    LD     A,(DE)
+    OR     A
+    JR     NZ,.path_end_loop
 ; at end-of-path
-        LD     A,'.'             ; does string start with '.' ?
-        CP     (HL)
-        JR     NZ,.subdir        ; no
+    LD     A,'.'             ; does string start with '.' ?
+    CP     (HL)
+    JR     NZ,.subdir        ; no
 ; "." or ".."
-        INC    HL
-        CP     (HL)              ; ".." ?
-        JR     NZ,.ok            ; no, staying in current directory so quit
+    INC    HL
+    CP     (HL)              ; ".." ?
+    JR     NZ,.ok            ; no, staying in current directory so quit
 .dotdot:
-        DEC    DE
-        LD     A,(DE)
-        CP     '/'               ; back to last '/'
-        JR     NZ,.dotdot
-        LD     A,E
-        CP     low(PathName)     ; at root?
-        JR     NZ,.trim
-        INC    DE                ; yes, leave root '/' in
-.trim:  XOR    A
-        LD     (DE),A            ; NULL terminate pathname
-        JR     .ok               ; return OK
+    DEC    DE
+    LD     A,(DE)
+    CP     '/'               ; back to last '/'
+    JR     NZ,.dotdot
+    LD     A,E
+    CP     low(PathName)     ; at root?
+    JR     NZ,.trim
+    INC    DE                ; yes, leave root '/' in
+.trim:
+    XOR    A
+    LD     (DE),A            ; NULL terminate pathname
+    JR     .ok               ; return OK
 .rootdir:
-        PUSH   DE                ; push end-of-path
-        JR     .nextc            ; skip '/' in string, then copy to path
+    PUSH   DE                ; push end-of-path
+    JR     .nextc            ; skip '/' in string, then copy to path
 .subdir:
-        PUSH   DE                ; push end-of-path before adding '/'
-        LD     A,E
-        CP     low(PathName)+1   ; at root?
-        JR     Z,.copypath       ; yes,
-        LD     A,'/'
-        LD     (DE),A            ; add '/' separator
-        INC    DE
-        DEC    B
-        JR     Z,.undo           ; if path full then undo
+    PUSH   DE                ; push end-of-path before adding '/'
+    LD     A,E
+    CP     low(PathName)+1   ; at root?
+    JR     Z,.copypath       ; yes,
+    LD     A,'/'
+    LD     (DE),A            ; add '/' separator
+    INC    DE
+    DEC    B
+    JR     Z,.undo           ; if path full then undo
 .copypath:
-        LD     A,(HL)            ; get next string char
-        CALL   dos__char         ; convert to MSDOS
-        LD     (DE),A            ; store char in pathname
-        INC    DE
-        DEC    B
-        JR     Z,.undo           ; if path full then undo and fail
-.nextc: INC    HL
-        DEC    C
-        JR     NZ,.copypath      ; until end of string
+    LD     A,(HL)            ; get next string char
+    CALL   dos__char         ; convert to MSDOS
+    LD     (DE),A            ; store char in pathname
+    INC    DE
+    DEC    B
+    JR     Z,.undo           ; if path full then undo and fail
+.nextc:
+    INC    HL
+    DEC    C
+    JR     NZ,.copypath      ; until end of string
 .nullend:
-        XOR    A
-        LD     (DE),A            ; NULL terminate pathname
-        JR     .copied
+    XOR    A
+    LD     (DE),A            ; NULL terminate pathname
+    JR     .copied
 ; if path full then undo add
-.undo:  POP    DE                ; pop original end-of-path
-.fail:  XOR    A
-        LD     (DE),A            ; remove added subdir from path
-        INC    A                 ; return NZ
-        JR     .done
+.undo:
+    POP    DE                ; pop original end-of-path
+.fail:
+    XOR    A
+    LD     (DE),A            ; remove added subdir from path
+    INC    A                 ; return NZ
+    JR     .done
 .copied:
-        POP    DE                ; DE = original end-of-path
-.ok     CP     A                 ; return Z
-.done:  POP    BC
-        RET
+    POP    DE                ; DE = original end-of-path
+.ok:
+    CP     A                 ; return Z
+.done:
+    POP    BC
+    RET
 
-
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ;                        Get Filename
-;--------------------------------------------------------------------
+;-----------------------------------------------------------------------------
 ; Get Filename argument from BASIC text or command line.
 ; May be literal string, or an expression that evaluates to a string
 ; eg. LOAD "filename"
@@ -1368,17 +1354,13 @@ dos__name:
 ;     '=' -> '~' (in case we cannot type '~' on the keyboard!)
 ;
 dos__char:
-        CP      'a'
-        JR      C,.uppercase
-        CP      'z'+1          ; convert lowercase to uppercase
-        JR      NC,.uppercase
-        AND     $5f
+    cp      'a'
+    jr      c,.uppercase
+    cp      'z'+1          ; convert lowercase to uppercase
+    jr      nc,.uppercase
+    and     $5F
 .uppercase:
-        CP      '='
-        RET     NZ             ; convert '=' to '~'
-        LD      A,'~'
-        RET
-
-
-
-
+    cp      '='
+    ret     nz             ; convert '=' to '~'
+    ld      a,'~'
+    ret
