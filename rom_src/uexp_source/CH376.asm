@@ -150,110 +150,86 @@ CH376_INT_DISK_WRITE    equ     $1E     ; write again (more bytes to write)
 CH376_ERR_OPEN_DIR      equ     $41     ; is directory, not file
 CH376_ERR_MISS_FILE     equ     $42     ; file not found
 
- structure FAT_DIR_INFO,0
+STRUCTURE FAT_DIR_INFO,0
     STRUCT DIR_Name,11          ; $00 0
-     SBYTE  DIR_Attr             ; $0B 11
-     SBYTE  DIR_NTRes            ; $0C 12
-     SBYTE  DIR_CrtTimeTenth     ; $0D 13
-     SWORD  DIR_CrtTime          ; $0E 14
-     SWORD  DIR_CrtDate          ; $10 16
-     SWORD  DIR_LstAccDate       ; $12 18
-     SWORD  DIR_FstClusHI        ; $14 20
-     SWORD  DIR_WrtTime          ; $16 22
-     SWORD  DIR_WrtDate          ; $18 24
-     SWORD  DIR_FstClusLO        ; $1A 26
-     SLONG  DIR_FileSize         ; $1C 28
- endstruct FAT_DIR_INFO         ; $20 32
+    SBYTE  DIR_Attr             ; $0B 11
+    SBYTE  DIR_NTRes            ; $0C 12
+    SBYTE  DIR_CrtTimeTenth     ; $0D 13
+    SWORD  DIR_CrtTime          ; $0E 14
+    SWORD  DIR_CrtDate          ; $10 16
+    SWORD  DIR_LstAccDate       ; $12 18
+    SWORD  DIR_FstClusHI        ; $14 20
+    SWORD  DIR_WrtTime          ; $16 22
+    SWORD  DIR_WrtDate          ; $18 24
+    SWORD  DIR_FstClusLO        ; $1A 26
+    SLONG  DIR_FileSize         ; $1C 28
+ENDSTRUCT FAT_DIR_INFO          ; $20 32
 
-; attribute masks
-ATTR_READ_ONLY      EQU $01
-ATTR_HIDDEN         EQU $02
-ATTR_SYSTEM         EQU $04
-ATTR_VOLUME_ID      EQU $08
-ATTR_DIRECTORY      EQU $10
-ATTR_ARCHIVE        EQU $20
-ATTR_LONG_NAME      EQU (ATTR_READ_ONLY | ATTR_HIDDEN | ATTR_SYSTEM | ATTR_VOLUME_ID)
-ATTR_LONG_NAME_MASK EQU (ATTR_LONG_NAME | ATTR_DIRECTORY | ATTR_ARCHIVE)
-; attribute bits
-ATTR_B_READ_ONLY    EQU 0
-ATTR_B_HIDDEN       EQU 1
-ATTR_B_SYSTEM       EQU 2
-ATTR_B_VOLUME_ID    EQU 3
-ATTR_B_DIRECTORY    EQU 4
-ATTR_B_ARCHIVE      EQU 5
+ATTR_DIRECTORY      equ $10
+ATTR_B_DIRECTORY    equ 4
 
-
-;------------------------------------------------------------------------------
-;     Get Pointer to Path string
-;------------------------------------------------------------------------------
-;
-usb__get_path:
-        LD     HL,PathName
-        RET
-
-;------------------------------------------------------------------------------
-;     create root path
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; create root path
+;-----------------------------------------------------------------------------
 usb__root:
-        LD   A,'/'
-        LD   (PathName),A
-        XOR  A
-        LD   (PathName+1),A
-        RET
+    ld   a,'/'
+    ld   (PathName),a
+    xor  a
+    ld   (PathName+1),a
+    ret
 
-;--------------------------------------------------------------
-;            Open all subdirectory levels in path
-;--------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Open all subdirectory levels in path
 ;    in: PathName = path eg. "/",0
 ;                            "/subdir1/subdir2/subdir3",0
 ;   out:     Z = OK
 ;           NZ = failed to open directory, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__open_path:
-        PUSH   HL
-        CALL   usb__ready               ; check for USB drive
-        JR     NZ,.done                 ; abort if no drive
-        LD     HL,PathName
-        LD     A,CH376_CMD_SET_FILE_NAME
-        OUT    (CH376_CONTROL_PORT),A   ; command: set file name (root dir)
-        LD     A,'/'
-        JR     .start                   ; start with '/' (root dir)
+    PUSH   HL
+    CALL   usb__ready               ; check for USB drive
+    JR     NZ,.done                 ; abort if no drive
+    LD     HL,PathName
+    LD     A,CH376_CMD_SET_FILE_NAME
+    OUT    (CH376_CONTROL_PORT),A   ; command: set file name (root dir)
+    LD     A,'/'
+    JR     .start                   ; start with '/' (root dir)
 .next_level:
-        LD     A,(HL)
-        OR     A                        ; if NULL then end of path
-        JR     Z,.done
-        LD     A,CH376_CMD_SET_FILE_NAME
-        OUT    (CH376_CONTROL_PORT),A   ; command: set file name (subdirectory)
+    LD     A,(HL)
+    OR     A                        ; if NULL then end of path
+    JR     Z,.done
+    LD     A,CH376_CMD_SET_FILE_NAME
+    OUT    (CH376_CONTROL_PORT),A   ; command: set file name (subdirectory)
 .send_name:
-        INC    HL
-        LD     A,(HL)                   ; get next char of directory name
-        CP     "/"
-        JR     Z,.open_dir
-        OR     A                        ; terminate name on '/' or NULL
-        JR     Z,.open_dir
-        CALL   UpperCase                ; convert 'a-z' to 'A-Z'
-.start  OUT    (CH376_DATA_PORT),A      ; send char to CH376
-        JR     .send_name               ; next char
+    INC    HL
+    LD     A,(HL)                   ; get next char of directory name
+    CP     "/"
+    JR     Z,.open_dir
+    OR     A                        ; terminate name on '/' or NULL
+    JR     Z,.open_dir
+    CALL   UpperCase                ; convert 'a-z' to 'A-Z'
+.start:
+    OUT    (CH376_DATA_PORT),A      ; send char to CH376
+    JR     .send_name               ; next char
 .open_dir:
-        XOR    A
-        OUT    (CH376_DATA_PORT),A      ; send NULL char (end of name)
-        LD     A,CH376_CMD_FILE_OPEN
-        OUT    (CH376_CONTROL_PORT),A   ; command: open file/directory
-        CALL   usb__wait_int
-        CP     CH376_ERR_OPEN_DIR       ; opened directory?
-        JR     Z,.next_level            ; yes, do next level.  no, error
-.done:  POP    HL
-        RET
+    XOR    A
+    OUT    (CH376_DATA_PORT),A      ; send NULL char (end of name)
+    LD     A,CH376_CMD_FILE_OPEN
+    OUT    (CH376_CONTROL_PORT),A   ; command: open file/directory
+    CALL   usb__wait_int
+    CP     CH376_ERR_OPEN_DIR       ; opened directory?
+    JR     Z,.next_level            ; yes, do next level.  no, error
+.done:
+    POP    HL
+    RET
 
-
-;-----------------------------------------------------
+;-----------------------------------------------------------------------------
 ;           Open Current Directory
-;-----------------------------------------------------
 ;  out: z = directory opened
 ;      nz = error
 ;
 ; if current directory won't open then reset to root.
-;
+;-----------------------------------------------------------------------------
 usb__open_dir:
     ld      hl,_usb_star
     CALL    usb__open_read          ; open "*" = request all files in current directory
@@ -261,35 +237,14 @@ usb__open_dir:
     RET     Z                       ; yes, ret z
     CP      CH376_ERR_MISS_FILE     ; no, directory missing?
     RET     NZ                      ; no, quit with disk error
-    Call    usb__root               ; yes, set path to root
+    call    usb__root               ; yes, set path to root
     ld      hl,_usb_star
     CALL    usb__open_read          ; try to open root directory
     CP      CH376_INT_DISK_READ
     RET                             ; z = OK, nz = error
 
-
-;------------------------------------------------------------------------------
-;                      Test if File Exists
-;------------------------------------------------------------------------------
-; Input:    HL = filename
-;
-; Output:    Z = file exists
-;           NZ = file not exist or is directory, A = error code
-;
-usb__file_exist:
-        CALL    usb__open_read          ; try to open file
-        JR      Z,.close
-        CP      CH376_ERR_OPEN_DIR      ; error, file is directory?
-        JR      NZ,.done                ; no, quit
-.close: PUSH    AF
-        CALL    usb__close_file         ; close file
-        POP     AF
-.done:  CP      CH376_INT_SUCCESS       ; Z if file exists, else NZ
-        RET
-
-;------------------------------------------------------------------------------
-;                        Open File for Writing
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Open File for Writing
 ; If file doesn't exist then creates and opens new file.
 ; If file does exist then opens it and sets size to 1.
 ;
@@ -299,165 +254,161 @@ usb__file_exist:
 ;
 ; Output:    Z = success
 ;           NZ = fail, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__open_write:
-        CALL    usb__open_read          ; try to open existing file
-        JR      Z,.file_exists
-        CP      CH376_ERR_MISS_FILE     ; error = file missing?
-        RET     NZ                      ; no, some other error so abort
-        LD      A,CH376_CMD_FILE_CREATE
-        OUT     (CH376_CONTROL_PORT),A  ; command: create new file
-        JP      usb__wait_int           ; and return
-; file exists, set size to 1 byte (forgets existing data in file)
-.file_exists:
-        LD      A,CH376_CMD_SET_FILE_SIZE
-        OUT     (CH376_CONTROL_PORT),A  ; command: set file size
-        LD      A,$68
-        OUT     (CH376_DATA_PORT),A     ; select file size variable in CH376
-        LD      A,1
-        OUT     (CH376_DATA_PORT),A     ; file size = 1
-        XOR     A
-        OUT     (CH376_DATA_PORT),A
-        OUT     (CH376_DATA_PORT),A     ; zero out higher bytes of file size
-        OUT     (CH376_DATA_PORT),A
-        RET
+    CALL    usb__open_read          ; try to open existing file
+    JR      Z,.file_exists
+    CP      CH376_ERR_MISS_FILE     ; error = file missing?
+    RET     NZ                      ; no, some other error so abort
+    LD      A,CH376_CMD_FILE_CREATE
+    OUT     (CH376_CONTROL_PORT),A  ; command: create new file
+    JP      usb__wait_int           ; and return
 
-;------------------------------------------------------------------------------
-;    Write Bytes from Memory to open File
-;------------------------------------------------------------------------------
+    ; file exists, set size to 1 byte (forgets existing data in file)
+.file_exists:
+    LD      A,CH376_CMD_SET_FILE_SIZE
+    OUT     (CH376_CONTROL_PORT),A  ; command: set file size
+    LD      A,$68
+    OUT     (CH376_DATA_PORT),A     ; select file size variable in CH376
+    LD      A,1
+    OUT     (CH376_DATA_PORT),A     ; file size = 1
+    XOR     A
+    OUT     (CH376_DATA_PORT),A
+    OUT     (CH376_DATA_PORT),A     ; zero out higher bytes of file size
+    OUT     (CH376_DATA_PORT),A
+    RET
+
+;-----------------------------------------------------------------------------
+; Write bytes from memory to open file
 ;   in: HL = address of source data
 ;       DE = number of bytes to write
 ;
 ;  out: Z if successful
 ;       HL = next address
-;
+;-----------------------------------------------------------------------------
 usb__write_bytes:
-        PUSH    BC
-        LD      A,CH376_CMD_BYTE_WRITE
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'byte write'
-        LD      C,CH376_DATA_PORT
-        OUT     (C),E                      ; send data length lower byte
-        OUT     (C),D                      ; send data length upper byte
-.loop:  CALL    usb__wait_int              ; wait for response
-        JR      Z,.done                    ; return Z if finished writing
-        CP      CH376_INT_DISK_WRITE       ; more bytes to write?
-        RET     NZ                         ; no, error so return NZ
-        LD      A,CH376_CMD_WR_REQ_DATA
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'write request'
-        IN      B,(C)                      ; B = number of bytes requested
-        JR      Z,.next                    ; skip if no bytes to transfer
-        OTIR                               ; output data (1-255 bytes)
-.next:  LD      A,CH376_CMD_BYTE_WR_GO
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'write go'
-        JR      .loop                      ; do next transfer
-.done:  POP     BC
-        RET
+    PUSH    BC
+    LD      A,CH376_CMD_BYTE_WRITE
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'byte write'
+    LD      C,CH376_DATA_PORT
+    OUT     (C),E                      ; send data length lower byte
+    OUT     (C),D                      ; send data length upper byte
+.loop:
+    CALL    usb__wait_int              ; wait for response
+    JR      Z,.done                    ; return Z if finished writing
+    CP      CH376_INT_DISK_WRITE       ; more bytes to write?
+    RET     NZ                         ; no, error so return NZ
+    LD      A,CH376_CMD_WR_REQ_DATA
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'write request'
+    IN      B,(C)                      ; B = number of bytes requested
+    JR      Z,.next                    ; skip if no bytes to transfer
+    OTIR                               ; output data (1-255 bytes)
+.next:
+    LD      A,CH376_CMD_BYTE_WR_GO
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'write go'
+    JR      .loop                      ; do next transfer
+.done:
+    POP     BC
+    RET
 
-;------------------------------------------------------------------------------
-;    Write Byte in A to File
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Write Byte in A to File
 ;  in: A = Byte
 ;
 ; out: Z if successful
-;
+;-----------------------------------------------------------------------------
 usb__write_byte:
-        PUSH    BC
-        LD      B,A                        ; B = byte
-        LD      A,CH376_CMD_BYTE_WRITE
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'byte write'
-        LD      C,CH376_DATA_PORT
-        LD      A,1
-        OUT     (C),A                      ; send data length = 1 byte
-        XOR     A
-        OUT     (C),A                      ; send data length upper byte
+    PUSH    BC
+    LD      B,A                        ; B = byte
+    LD      A,CH376_CMD_BYTE_WRITE
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'byte write'
+    LD      C,CH376_DATA_PORT
+    LD      A,1
+    OUT     (C),A                      ; send data length = 1 byte
+    XOR     A
+    OUT     (C),A                      ; send data length upper byte
 usb_write_byte_loop:
-        CALL    usb__wait_int              ; wait for response
-        CP      CH376_INT_DISK_WRITE
-        JR      NZ,usb_write_byte_end      ; return error if not requesting byte
-        LD      A,CH376_CMD_WR_REQ_DATA
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'write request'
-        IN      A,(C)                      ; A = number of bytes requested
-        CP      1
-        JR      NZ,usb_write_byte_end      ; return error if no byte requested
-        OUT     (C),B                      ; send the byte
+    CALL    usb__wait_int              ; wait for response
+    CP      CH376_INT_DISK_WRITE
+    JR      NZ,usb_write_byte_end      ; return error if not requesting byte
+    LD      A,CH376_CMD_WR_REQ_DATA
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'write request'
+    IN      A,(C)                      ; A = number of bytes requested
+    CP      1
+    JR      NZ,usb_write_byte_end      ; return error if no byte requested
+    OUT     (C),B                      ; send the byte
 usb_write_byte_go:
-        LD      A,CH376_CMD_BYTE_WR_GO
-        OUT     (CH376_CONTROL_PORT),A     ; send command 'write go' (flush buffers)
-        CALL    usb__wait_int              ; wait until command executed
+    LD      A,CH376_CMD_BYTE_WR_GO
+    OUT     (CH376_CONTROL_PORT),A     ; send command 'write go' (flush buffers)
+    CALL    usb__wait_int              ; wait until command executed
 usb_write_byte_end:
-        POP     BC
-        RET
+    POP     BC
+    RET
 
-;--------------------------------------------------------------------
-;                          Close File
-;--------------------------------------------------------------------
-;
+;-----------------------------------------------------------------------------
+; Close file
+;-----------------------------------------------------------------------------
 usb__close_file:
-        LD      A,CH376_CMD_FILE_CLOSE
-        OUT     (CH376_CONTROL_PORT),A
-        LD      A,1
-        OUT     (CH376_DATA_PORT),A
-        JP      usb__wait_int
+    ld      a,CH376_CMD_FILE_CLOSE
+    out     (CH376_CONTROL_PORT),a
+    ld      a,1
+    out     (CH376_DATA_PORT),a
+    jp      usb__wait_int
 
-;------------------------------------------------------------------------------
-;                      Open a File or Directory
-;------------------------------------------------------------------------------
-; Input:   HL = filename (null-terminated)
-;
-; Output:   Z = OK
-;          NZ = fail, A = error code
+;-----------------------------------------------------------------------------
+; Open a File or Directory
+; Input:  HL = filename (null-terminated)
+; Output: Z = OK
+;         NZ = fail, A = error code
 ;                         $1D (INT_DISK_READ) too many subdirectories
 ;                         $41 (ERR_OPEN_DIR) 'filename'is a directory
 ;                         $42 (CH376_ERR_MISS_FILE) file not found
-;
+;-----------------------------------------------------------------------------
 usb__open_read:
-        PUSH    HL                      ; save filename pointer
-        CALL    usb__open_path          ; enter current directory
-        POP     HL                      ; restore filename pointer
-        RET     NZ
-        CALL    usb__set_filename       ; send filename to CH376
-        RET     NZ                      ; abort if error
-        LD      A,CH376_CMD_FILE_OPEN
-        OUT     (CH376_CONTROL_PORT),A  ; command: open file
-        JP      usb__wait_int
+    push    hl                      ; save filename pointer
+    call    usb__open_path          ; enter current directory
+    pop     hl                      ; restore filename pointer
+    ret     nz
+    call    usb__set_filename       ; send filename to CH376
+    ret     nz                      ; abort if error
+    ld      a,CH376_CMD_FILE_OPEN
+    out     (CH376_CONTROL_PORT),a  ; command: open file
+    jp      usb__wait_int
 
-;------------------------------------------------------------------------------
-;                       Set File Name
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Set file name
 ;  Input:  HL = filename
 ; Output:   Z = OK
 ;          NZ = error, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__set_filename:
-        PUSH    HL
-        CALL    usb__ready              ; check for USB drive
-        JR      NZ,.done                ; abort if error
-        LD      A,CH376_CMD_SET_FILE_NAME
-        OUT     (CH376_CONTROL_PORT), A ; command: set file name
+    push    hl
+    call    usb__ready              ; check for USB drive
+    jr      nz,.done                ; abort if error
+    ld      a,CH376_CMD_SET_FILE_NAME
+    out     (CH376_CONTROL_PORT),a  ; command: set file name
 .send_name:
-        LD      A,(HL)
-        CALL    dos__char               ; convert char to MSDOS equivalent
+    ld      a,(hl)
+    call    dos__char               ; convert char to MSDOS equivalent
 .send_char:
-        OUT     (CH376_DATA_PORT),A     ; send filename char to CH376
-        INC     HL                      ; next char
-        OR      A
-        JR      NZ,.send_name           ; until end of name
-.done:  POP     HL
-        RET
+    out     (CH376_DATA_PORT),a     ; send filename char to CH376
+    inc     hl                      ; next char
+    or      a
+    jr      nz,.send_name           ; until end of name
+.done:
+    pop     hl
+    ret
 
-
-;------------------------------------------------------------------------------
-;               Read Bytes from File into RAM
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Read bytes from file into RAM
 ; Input:  HL = destination address
 ;         DE = number of bytes to read
-;
 ; Output: HL = next address (start address if no bytes read)
 ;         DE = number of bytes actually read
 ;          Z = successful read
 ;         NZ = error reading file
 ;          A = status code
-;
+;-----------------------------------------------------------------------------
 usb__read_bytes:
         PUSH    BC
         PUSH    HL
@@ -494,152 +445,143 @@ usb_read_end:
         CP      CH376_INT_SUCCESS
         RET
 
-
-;------------------------------------------------------------------------------
-;                   Read 1 Byte from File into A
-;------------------------------------------------------------------------------
-;
+;-----------------------------------------------------------------------------
+; Read 1 Byte from File into A
 ; Output:  Z = successful read, byte returned in A
 ;         NZ = error reading byte, A = status code
-;
+;-----------------------------------------------------------------------------
 usb__read_byte:
-        LD      A,CH376_CMD_BYTE_READ
-        OUT     (CH376_CONTROL_PORT),A  ; command: read bytes
-        LD      A,1
-        OUT     (CH376_DATA_PORT),A     ; number of bytes to read = 1
-        XOR     A
-        OUT     (CH376_DATA_PORT),A
+    LD      A,CH376_CMD_BYTE_READ
+    OUT     (CH376_CONTROL_PORT),A  ; command: read bytes
+    LD      A,1
+    OUT     (CH376_DATA_PORT),A     ; number of bytes to read = 1
+    XOR     A
+    OUT     (CH376_DATA_PORT),A
 usb_readbyte_loop:
-        CALL    usb__wait_int           ; wait until command executed
-        CP      CH376_INT_DISK_READ
-        JR      NZ,usb_readbyte_end     ; quit if no byte available
-        LD      A,CH376_CMD_RD_USB_DATA
-        OUT     (CH376_CONTROL_PORT),A  ; command: read USB data
-        IN      A,(CH376_DATA_PORT)     ; get number of bytes available
-        CP      1
-        JR      NZ,usb_readbyte_end     ; if not 1 byte available then quit
-        IN      A,(CH376_DATA_PORT)     ; read byte into A
-        PUSH    AF
-        LD      A,CH376_CMD_BYTE_RD_GO
-        OUT     (CH376_CONTROL_PORT),A  ; command: read more bytes (for next read)
-        CALL    usb__wait_int           ; wait until command executed
-        POP     AF
-        CP      A                       ; return Z with byte in A
+    CALL    usb__wait_int           ; wait until command executed
+    CP      CH376_INT_DISK_READ
+    JR      NZ,usb_readbyte_end     ; quit if no byte available
+    LD      A,CH376_CMD_RD_USB_DATA
+    OUT     (CH376_CONTROL_PORT),A  ; command: read USB data
+    IN      A,(CH376_DATA_PORT)     ; get number of bytes available
+    CP      1
+    JR      NZ,usb_readbyte_end     ; if not 1 byte available then quit
+    IN      A,(CH376_DATA_PORT)     ; read byte into A
+    PUSH    AF
+    LD      A,CH376_CMD_BYTE_RD_GO
+    OUT     (CH376_CONTROL_PORT),A  ; command: read more bytes (for next read)
+    CALL    usb__wait_int           ; wait until command executed
+    POP     AF
+    CP      A                       ; return Z with byte in A
 usb_readbyte_end:
-        RET
+    RET
 
-;------------------------------------------------------------------------------
-;                        Delete File
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Delete File
 ; Input:  HL = filename string
 ;
 ; Output:  Z = OK
 ;         NZ = fail, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__delete:
-        CALL    usb__open_read
-        RET     NZ
-        LD      A,CH376_CMD_FILE_ERASE
-        OUT     (CH376_CONTROL_PORT),A  ; command: erase file
-        JR      usb__wait_int
+    CALL    usb__open_read
+    RET     NZ
+    LD      A,CH376_CMD_FILE_ERASE
+    OUT     (CH376_CONTROL_PORT),A  ; command: erase file
+    JR      usb__wait_int
 
-;------------------------------------------------------------------------------
-;                        Seek Into Open File
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Seek Into Open File
 ; Input:  DE = number of bytes to skip (max 65535 bytes)
 ;
 ; Output:  Z = OK
 ;         NZ = fail, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__seek:
-        LD      A,CH376_CMD_BYTE_LOCATE
-        OUT     (CH376_CONTROL_PORT),A  ; command: byte locate
-        LD      A,E
-        OUT     (CH376_DATA_PORT),A     ; send offset low byte
-        LD      A,D
-        OUT     (CH376_DATA_PORT),A     ;     ''     high byte
-        XOR     A
-        OUT     (CH376_DATA_PORT),A     ; zero bits 31-16
-        OUT     (CH376_DATA_PORT),A
+    LD      A,CH376_CMD_BYTE_LOCATE
+    OUT     (CH376_CONTROL_PORT),A  ; command: byte locate
+    LD      A,E
+    OUT     (CH376_DATA_PORT),A     ; send offset low byte
+    LD      A,D
+    OUT     (CH376_DATA_PORT),A     ;     ''     high byte
+    XOR     A
+    OUT     (CH376_DATA_PORT),A     ; zero bits 31-16
+    OUT     (CH376_DATA_PORT),A
 ; falls into...
 
-;------------------------------------------------------------------------------
-;                   Wait for Interrupt and Read Status
-;------------------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Wait for Interrupt and Read Status
 ; output:  Z = success
 ;         NZ = fail, A = error code
-;
+;-----------------------------------------------------------------------------
 usb__wait_int:
-        PUSH    BC
-        LD      BC,0                    ; wait counter = 65536
+    PUSH    BC
+    LD      BC,0                    ; wait counter = 65536
 .wait_int_loop:
-        IN      A,(CH376_CONTROL_PORT)  ; command: read status register
-        RLA                             ; interrupt bit set?
-        JR      NC,.wait_int_end        ; yes,
-        DEC     BC                      ; no, counter-1
-        LD      A,B
-        OR      C
-        JR      NZ,.wait_int_loop       ; loop until timeout
+    IN      A,(CH376_CONTROL_PORT)  ; command: read status register
+    RLA                             ; interrupt bit set?
+    JR      NC,.wait_int_end        ; yes,
+    DEC     BC                      ; no, counter-1
+    LD      A,B
+    OR      C
+    JR      NZ,.wait_int_loop       ; loop until timeout
 .wait_int_end:
-        LD      A,CH376_CMD_GET_STATUS
-        OUT     (CH376_CONTROL_PORT),A  ; command: get status
-        NOP
-        IN      A,(CH376_DATA_PORT)     ; read status byte
-        CP      CH376_INT_SUCCESS       ; test return code
-        POP     BC
-        RET
-
+    LD      A,CH376_CMD_GET_STATUS
+    OUT     (CH376_CONTROL_PORT),A  ; command: get status
+    NOP
+    IN      A,(CH376_DATA_PORT)     ; read status byte
+    CP      CH376_INT_SUCCESS       ; test return code
+    POP     BC
+    RET
 
 ;---------------------------------------------------------------------
-;                     Check if CH376 Exists
-;---------------------------------------------------------------------
+; Check if CH376 Exists
 ;  out: Z = CH376 exists
 ;      NZ = not detected, A = error code 1 (no CH376)
-;
+;---------------------------------------------------------------------
 usb__check_exists:
-        LD      B,10
-.retry: LD      A,CH376_CMD_CHECK_EXIST
-        OUT     (CH376_CONTROL_PORT),A  ; command: check CH376 exists
-        LD      A,$1A
-        OUT     (CH376_DATA_PORT),A     ; send test byte
-        EX      (SP),HL
-        EX      (SP),HL                 ; delay ~10us
-        IN      A,(CH376_DATA_PORT)
-        CP      $E5                     ; byte inverted?
-        RET     Z
-        DJNZ    .retry
-        LD      A,1                     ; error code = no CH376
-        OR      A                       ; NZ
-        RET
+    LD      B,10
+.retry:
+    LD      A,CH376_CMD_CHECK_EXIST
+    OUT     (CH376_CONTROL_PORT),A  ; command: check CH376 exists
+    LD      A,$1A
+    OUT     (CH376_DATA_PORT),A     ; send test byte
+    EX      (SP),HL
+    EX      (SP),HL                 ; delay ~10us
+    IN      A,(CH376_DATA_PORT)
+    CP      $E5                     ; byte inverted?
+    RET     Z
+    DJNZ    .retry
+    LD      A,1                     ; error code = no CH376
+    OR      A                       ; NZ
+    RET
 
 ;---------------------------------------------------------------------
-;                         Set USB Mode
-;---------------------------------------------------------------------
+; Set USB Mode
 ;  out: Z = OK
 ;      NZ = failed to enter USB mode, A = error code 2 (no USB)
-;
+;---------------------------------------------------------------------
 usb__set_usb_mode:
-        LD      B,10
-.retry: LD      A,CH376_CMD_SET_USB_MODE
-        OUT     (CH376_CONTROL_PORT),A  ; command: set USB mode
-        LD      A,6
-        OUT     (CH376_DATA_PORT),A     ; mode 6
-        EX      (SP),HL
-        EX      (SP),HL
-        EX      (SP),HL                 ; delay ~20us
-        EX      (SP),HL
-        IN      A,(CH376_DATA_PORT)
-        CP      $51                     ; status = $51?
-        RET     Z
-        DJNZ    .retry
-        LD      A,2                     ; error code 2 = no USB
-        OR      A                       ; NZ
-        RET
+    LD      B,10
+.retry:
+    LD      A,CH376_CMD_SET_USB_MODE
+    OUT     (CH376_CONTROL_PORT),A  ; command: set USB mode
+    LD      A,6
+    OUT     (CH376_DATA_PORT),A     ; mode 6
+    EX      (SP),HL
+    EX      (SP),HL
+    EX      (SP),HL                 ; delay ~20us
+    EX      (SP),HL
+    IN      A,(CH376_DATA_PORT)
+    CP      $51                     ; status = $51?
+    RET     Z
+    DJNZ    .retry
+    LD      A,2                     ; error code 2 = no USB
+    OR      A                       ; NZ
+    RET
 
-
-;-------------------------------------------------------------------
-;               is USB drive Ready to access?
-;-------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Is USB drive Ready to access?
 ; Check for presense of CH376 and USB drive.
 ; If so then mount drive.
 ;
@@ -648,199 +590,46 @@ usb__set_usb_mode:
 ;                          1 = no CH376
 ;                          2 = no USB
 ;                          3 = no disk (mount failure)
-;
+;-----------------------------------------------------------------------------
 usb__ready:
-        PUSH    BC
-        ld      a,(PathName)
-        cp      '/'                     ; if no path then set to '/',0
-        call    nz,usb__root
-        call    usb__check_exists       ; CH376 hardware present?
-        jr      nz,.done
-        ld      b,3                     ; retry count for mount
-        ld      c,1                     ; C = flag, 1 = before set_usb_mode
+    PUSH    BC
+    ld      a,(PathName)
+    cp      '/'                     ; if no path then set to '/',0
+    call    nz,usb__root
+    call    usb__check_exists       ; CH376 hardware present?
+    jr      nz,.done
+    ld      b,3                     ; retry count for mount
+    ld      c,1                     ; C = flag, 1 = before set_usb_mode
 .mount:
-        LD      B,5
+    LD      B,5
 .mountloop:
-        CALL    usb__mount              ; try to mount disk
-        JR      z,.done                 ; return OK if mounted
-        call    usb__root               ; may be different disk so reset path
-        DJNZ    .mountloop
-; mount failed,
-        DEC     C                       ; already tried set_usb_mode ?
-        JR      NZ,.done                ; yes, fail
-        call    usb__set_usb_mode       ; put CH376 into USB mode
-        JR      Z,.mount                ; if successful then try to mount disk
-.done:  POP     BC
-        RET
+    CALL    usb__mount              ; try to mount disk
+    JR      z,.done                 ; return OK if mounted
+    call    usb__root               ; may be different disk so reset path
+    DJNZ    .mountloop
 
-;------------------------------------------------------------------------------
-;                            Mount USB Disk
-;------------------------------------------------------------------------------
+    ; mount failed,
+    DEC     C                       ; already tried set_usb_mode ?
+    JR      NZ,.done                ; yes, fail
+    call    usb__set_usb_mode       ; put CH376 into USB mode
+    JR      Z,.mount                ; if successful then try to mount disk
+.done:
+    POP     BC
+    RET
+
+;-----------------------------------------------------------------------------
+; Mount USB Disk
 ; output:  Z = mounted
 ;         NZ = not mounted
 ;          A = CH376 interrupt code
-;
+;-----------------------------------------------------------------------------
 usb__mount:
-        LD      A,CH376_CMD_DISK_MOUNT
-        OUT     (CH376_CONTROL_PORT),A  ; command: mount disk
-        JP      usb__wait_int           ; wait until done
-
-
-  STRUCTURE FileInfo,0
-    STRUCT  FI_NAME,11
-    SBYTE    FI_ATTR
-    SLONG    FI_SIZE
-  ENDSTRUCT FileInfo
-
-
-;-----------------------------------------------------------------------------
-;                  Get Disk Directory with Wildcard filter
-;-----------------------------------------------------------------------------
-;  in: HL = filename array (16 bytes per name)
-;       B = number of elements in array
-;      DE-> wildcard pattern
-;
-;  out: C = number of files that match wildcard
-;       A = return code:-
-;              CH376_ERR_MISS_FILE = got all files in directory
-;              CH376_INT_DISK_READ = may be more files in directory
-;              anything else       = disk error
-;       Z = OK, NZ = disk error
-;
-usb__dir:
-    PUSH    HL                      ; save array address
-    LD      C,0                     ; C = count matching files
-    LD      HL,_usb_star            ; filename = "*" (read directory)
-    CALL    usb__open_read          ; open directory
-    POP     HL
-    PUSH    HL
-    JR      .next_entry             ; start reading directory
-.dir_loop:
-    LD      A,CH376_CMD_RD_USB_DATA
-    OUT     (CH376_CONTROL_PORT),A  ; command: read USB data (directory entry)
-    IN      A,(CH376_DATA_PORT)     ; A = number of bytes in CH376 buffer (should be 32)
-    OR      A                       ; if bytes = 0 then read next entry
-    JR      Z,.next_entry
-; read DIR_name, DIR_attr, DIR_filesize from FAT_DIR_INFO buffer in CH376
-    PUSH    HL                      ; save element array pointer
-    PUSH    BC                      ; save array size, file count
-    LD      B,12                    ; B = 11 bytes filename, 1 byte file attributes
-.read_name_attr:
-    IN      A,(CH376_DATA_PORT)     ; get next filename char
-    LD      (HL),A                  ; store it in array
-    INC     HL
-    DJNZ    .read_name_attr
-    LD      B,32-12-4               ; B = bytes to absorb
-    LD      C,A                     ; C = attributes
-.absorb_bytes:
-    IN      A,(CH376_DATA_PORT)     ; absorb bytes until filesize
-    DJNZ    .absorb_bytes
-    LD      B,4
-.read_size:
-    IN      A,(CH376_DATA_PORT)     ; get next size byte
-    LD      (HL),A                  ; store filesize byte in array
-    INC     HL
-    DJNZ    .read_size
-    BIT     ATTR_B_DIRECTORY,C      ; if subdirectory then don't filter it
-    POP     BC                      ; restore array size, file count
-    POP     HL                      ; restore array pointer
-    JR      NZ,.subdir
-    CALL    usb__wildcard           ; wildcard pattern matches file?
-    JR      Z,.gotfile              ; yes,
-.killname:
-    LD      (HL),0                  ; no, kill filename
-    JR      .read_next
-.subdir:
-    LD      A,(HL)                  ; get 1st char of filename
-    CP      '.'                     ; directory name starts with '.'?
-    JR      NZ,.gotfile             ; no,
-    INC     HL
-    LD      A,(HL)                  ; get 2nd char
-    DEC     HL
-    CP      '.'                     ; ".." ?
-    JR      NZ,.killname            ; no, kill filename
-    JR      .gotfile                ; yes, got directory ".."
-.gotfile:
-    PUSH    BC
-    LD      BC,16
-    ADD     HL,BC                   ; advance to next element in array
-    POP     BC                      ; restore array size, count
-    INC     C                       ; count+1
-.read_next:
-    LD      A,CH376_CMD_FILE_ENUM_GO
-    OUT     (CH376_CONTROL_PORT),A  ; command: read next filename
-    CALL    usb__wait_int           ; wait until done
-.next_entry:
-    CP      CH376_INT_DISK_READ     ; more files in directory?
-    JR      NZ,.dir_end             ; no,
-    LD      A,C
-    CP      B                       ; yes, filename array full?
-    JR      C,.dir_loop             ; no, get next entry
-    CP      A
-    JR      .done                   ; yes, ret Z = OK
-.dir_end:
-    CP      CH376_ERR_MISS_FILE     ; Z if got all files, else disk error
-.done:
-    POP     HL
-    RET
+    LD      A,CH376_CMD_DISK_MOUNT
+    OUT     (CH376_CONTROL_PORT),A  ; command: mount disk
+    JP      usb__wait_int           ; wait until done
 
 _usb_star:
    db  "*",0
-
-
-;---------------------------------------------------------------------
-;                      sort directory array
-;---------------------------------------------------------------------
-;   in: HL = array
-;        B = number of files in array
-;        A = sort options    0 = directories before files
-;                            1 = sort by name (not implemented!)
-;                            2 = sort by size (not implemented!)
-;
-usb__sort:
-    push  ix
-    push  de
-    push  bc
-    push  hl
-    pop   ix                     ; IX = array
-    dec   b                      ; B = number of compares to do
-    jr    z,.done                ; if no compares needed then done
-    ld    c,0                    ; C  = no swaps
-.sort:
-    push  bc                     ; save number of files, swapflag
-    push  ix                     ; save array address
-.compare:
-    ld    de,FileInfo.size       ; DE = size of array entry
-    bit   ATTR_B_DIRECTORY,(ix+DIR_Attr)
-    jr    nz,.skip               ; if dir then skip
-    bit   ATTR_B_DIRECTORY,(ix+DIR_Attr+FileInfo.size)
-    jr    nz,.swap               ; if next is dir then swap
-.skip:
-    add   ix,de                  ; else skip to next entry
-    jr    .next
-.swap:
-    ld    a,(ix+0)
-    ld    d,(ix+FileInfo.size)
-    ld    (ix++0),d              ; current entry <-> next entry
-    ld    (ix+FileInfo.size),a
-    inc   ix
-    dec   e                      ; next byte
-    jr    nz,.swap
-    set   0,c                    ; 1 or more swaps occurred
-.next:
-    djnz  .compare               ; compare next entries until end of list
-.end:
-    pop   ix                     ; restore array address
-    bit   0,c                    ; any swaps?
-    pop   bc                     ; restore number of files, swapflag
-    jr    nz,.sort               ; if any swaps then continue sorting
-.done:
-    pop   bc
-    pop   de
-    pop   ix
-    ret
-
-
 
 ;---------------------------------------------------------------------
 ;                     Wildcard Pattern Match
@@ -941,4 +730,3 @@ usb__wildcard:
     pop  de
     pop  hl
     ret
-

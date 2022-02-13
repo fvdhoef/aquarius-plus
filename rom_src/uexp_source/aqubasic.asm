@@ -48,13 +48,9 @@ REVISION = 0
 ; aquarius hardware and system ROM
 ;-----------------------------------------------------------------------------
 
-; constants:
-CR        = $0D
-CYAN      = 6
-
-;-------------------------------------------------------------------
-;                       System Variables
-;-------------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; System Variables
+;-----------------------------------------------------------------------------
 ;Name    location Decimal alt name          description
 CURCOL   = $3800 ; 14336  TTYPOS   Current cursor column
 CURRAM   = $3801 ; 14337  CHRPOS   Position in CHARACTER RAM of cursor
@@ -345,16 +341,13 @@ SF_RETYP = 1       ; 1 = CTRL-O is retype
 ;                     AquBASIC BOOT ROM
 ;=================================================================
 
-    ORG $E000
+    org $E000
 
-; Rom recognition - 16 bytes
-RECOGNITION:
-    db  66, 79, 79, 84
-    db  83, 156, 84, 176
-    db  82, 108, 65, 100
-    db  80, 168, 128, 112
+    ; Rom recognition - 16 bytes
+    db  $42, $4F, $4F, $54, $53, $9C, $54, $B0
+    db  $52, $6C, $41, $64, $50, $A8, $80, $70
 
-ROM_ENTRY:
+entry:
     ; set flag for NTSC
     ld      a,0
     set     SF_NTSC,a
@@ -423,81 +416,81 @@ ROM_ENTRY:
 ; Show copyright message
 ;
 SHOWCOPYRIGHT:
-     call    SHOWCOPY           ; Show system ROM copyright message
-     ld      hl,STR_BASIC       ; "USB BASIC"
-     call    $0e9d              ; PRINTSTR
-     ret
+    call    SHOWCOPY           ; Show system ROM copyright message
+    ld      hl,str_basic       ; "USB BASIC"
+    call    PRINTSTR
+    ret
 
 ;
 ; Show Copyright message in system ROM
 ;
 SHOWCOPY:
-     ld      hl,$0163           ; point to copyright string in ROM
-     ld      a,(hl)
-     cp      $79                ; is it the 'y' in "Copyright"?
-     ret     nz                 ; no, quit
-     dec     hl
-     dec     hl                 ; yes, back up to start of string
-     dec     hl
+    ld      hl,$0163           ; point to copyright string in ROM
+    ld      a,(hl)
+    cp      $79                ; is it the 'y' in "Copyright"?
+    ret     nz                 ; no, quit
+    dec     hl
+    dec     hl                 ; yes, back up to start of string
+    dec     hl
 SHOWIT:
-     dec     hl
-     call    $0e9d              ; PRINTSTR, Print the string pointed to by HL
-     ret
+    dec     hl
+    call    PRINTSTR
+    ret
 
-STR_BASIC:
-     db      $0D,"USB BASIC V", VERSION+'0', '.', REVISION+'0', $0D, $0A, 0
+str_basic:
+    db      $0D,"USB BASIC V", VERSION+'0', '.', REVISION+'0', $0D, $0A, 0
 
 ; The bytes from $0187 to $01d7 are copied to $3803 onwards as default data.
 COLDBOOT:
-     ld      hl,$0187           ; default values in system ROM
-     ld      bc,$0051           ; 81 bytes to copy
-     ld      de,$3803           ; system variables
-     ldir                       ; copy default values
-     xor     a
-     ld      (BUFEND),a         ; NULL end of input buffer
-     ld      (BINSTART),a       ; NULL binary file start address
-     ld      (RETYPBUF),a       ; NULL history buffer
-     ld      a,$0b
-     rst     $18                ; clear screen
-; Test the memory
-; only testing 1st byte in each 256 byte page!
-;
-     ld      hl,$3A00           ; first page of free RAM
-     ld      a,$55              ; pattern = 01010101
+    ld      hl,$0187           ; default values in system ROM
+    ld      bc,$0051           ; 81 bytes to copy
+    ld      de,$3803           ; system variables
+    ldir                       ; copy default values
+    xor     a
+    ld      (BUFEND),a         ; NULL end of input buffer
+    ld      (BINSTART),a       ; NULL binary file start address
+    ld      (RETYPBUF),a       ; NULL history buffer
+    ld      a,$0b
+    rst     $18                ; clear screen
+
+    ; Test the memory
+    ; only testing 1st byte in each 256 byte page!
+    ld      hl,$3A00           ; first page of free RAM
+    ld      a,$55              ; pattern = 01010101
 MEMTEST:
-     ld      c,(hl)             ; save original RAM contents in C
-     ld      (hl),a             ; write pattern
-     cp      (hl)               ; compare read to write
-     jr      nz,MEMREADY        ; if not equal then end of RAM
-     cpl                        ; invert pattern
-     ld      (hl),a             ; write inverted pattern
-     cp      (hl)               ; compare read to write
-     jr      nz,MEMREADY        ; if not equal then end of RAM
-     ld      (hl),c             ; restore original RAM contents
-     cpl                        ; uninvert pattern
-     inc     h                  ; advance to next page
-     jr      nz,MEMTEST         ; continue testing RAM until end of memory
+    ld      c,(hl)             ; save original RAM contents in C
+    ld      (hl),a             ; write pattern
+    cp      (hl)               ; compare read to write
+    jr      nz,MEMREADY        ; if not equal then end of RAM
+    cpl                        ; invert pattern
+    ld      (hl),a             ; write inverted pattern
+    cp      (hl)               ; compare read to write
+    jr      nz,MEMREADY        ; if not equal then end of RAM
+    ld      (hl),c             ; restore original RAM contents
+    cpl                        ; uninvert pattern
+    inc     h                  ; advance to next page
+    jr      nz,MEMTEST         ; continue testing RAM until end of memory
 MEMREADY:
-     ld      a,h
-     cp      $c0                ; 32k expansion
-     jp      c,$0bb7            ; OM error if expansion RAM missing
-     dec     hl                 ; last good RAM addresss
-     ld      hl,SysVars-1       ; top of public RAM
+    ld      a,h
+    cp      $c0                ; 32k expansion
+    jp      c,$0bb7            ; OM error if expansion RAM missing
+    dec     hl                 ; last good RAM addresss
+    ld      hl,SysVars-1       ; top of public RAM
 MEMSIZE:
-     ld      ($38ad),hl         ; MEMSIZ, Contains the highest RAM location
-     ld      de,-50             ; subtract 50 for strings space
-     add     hl,de
-     ld      ($384b),hl         ; STKTOP, Top location to be used for stack
-     ld      hl,PROGST
-     ld      (hl), $00          ; NULL at start of BASIC program
-     inc     hl
-     ld      (BASTART), hl      ; beginning of BASIC program text
-     call    $0bbe              ; ST_NEW2 - NEW without syntax check
-     ld      hl,HOOK            ; RST $30 Vector (our UDF service routine)
-     ld      (UDFADDR),hl       ; store in UDF vector
-     call    SHOWCOPYRIGHT      ; Show our copyright message
-     xor     a
-     jp      $0402              ; Jump to OKMAIN (BASIC command line)
+    ld      ($38ad),hl         ; MEMSIZ, Contains the highest RAM location
+    ld      de,-50             ; subtract 50 for strings space
+    add     hl,de
+    ld      ($384b),hl         ; STKTOP, Top location to be used for stack
+    ld      hl,PROGST
+    ld      (hl), $00          ; NULL at start of BASIC program
+    inc     hl
+    ld      (BASTART), hl      ; beginning of BASIC program text
+    call    $0bbe              ; ST_NEW2 - NEW without syntax check
+    ld      hl,HOOK            ; RST $30 Vector (our UDF service routine)
+    ld      (UDFADDR),hl       ; store in UDF vector
+    call    SHOWCOPYRIGHT      ; Show our copyright message
+    xor     a
+    jp      $0402              ; Jump to OKMAIN (BASIC command line)
 
 ;-----------------------------------------------------------------------------
 ;  USB Disk Driver
@@ -637,13 +630,13 @@ AQMAIN:
     ld      (LISTCNT),a         ; Set ROWCOUNT to 0
     call    $19de               ; RSTCOL reset cursor to start of (next) line
     ld      hl,$036e            ; 'Ok'+CR+LF
-    call    $0e9d               ; PRINTSTR
+    call    PRINTSTR
 ;
 ; Immediate Mode Main Loop
 ;l0414:
 IMMEDIATE:
     ld      hl,SysFlags
-    SET     SF_RETYP,(HL)       ; CRTL-R (RETYP) active
+    SET     SF_RETYP,(HL)       ; CTRL-R (RETYP) active
     ld      hl,-1
     ld      (CURLIN),hl         ; Current BASIC line number is -1 (immediate mode)
     ld      hl,LINBUF           ; HL = line input buffer
@@ -875,7 +868,7 @@ ST_reserved:
 ; CLS statement
 ;-----------------------------------------------------------------------------
 ST_CLS:
-    ld      a,CYAN
+    ld      a,6           ; Cyan
     call    clearscreen
     ld      de,$3001+40   ; DE cursor at 0,0
     ld      (CURRAM),de
@@ -1016,7 +1009,6 @@ FN_IN:
     in      a,(c)            ; a = in(port)
     jp      PUTVAR8          ; return with 8 bit input value in variable var
 
-
 ;-----------------------------------------------------------------------------
 ; JOY() function
 ; syntax: var = JOY(stick)
@@ -1025,47 +1017,52 @@ FN_IN:
 ;          - 2 will read right joystick only
 ;-----------------------------------------------------------------------------
 FN_JOY:
-         pop     hl             ; Return address
-         inc     hl             ; skip rst parameter
-         call    $0a37          ; Read number from line - ending with a ')'
-         ex      (sp),hl
-         ld      de,$0a49       ; set return address
-         push    de
-         call    $0682          ; DEINT - evalute formula pointed by HL result in DE
+    pop     hl             ; Return address
+    inc     hl             ; skip rst parameter
+    call    $0a37          ; Read number from line - ending with a ')'
+    ex      (sp),hl
+    ld      de,$0a49       ; set return address
+    push    de
+    call    DEINT          ; DEINT - evalute formula pointed by HL result in DE
 
-         ld      a,e
-         or      a
-         jr      nz, joy01
-         ld      a,$03
+    ld      a,e
+    or      a
+    jr      nz, joy01
+    ld      a,$03
 
-joy01:   ld      e,a
-         ld      bc,$00f7
-         ld      a,$ff
-         bit     0,e
-         jr      z, joy03
-         ld      a,$0e
-         out     (c),a
-         dec     c
-         ld      b,$ff
+joy01:
+    ld      e,a
+    ld      bc,$00f7
+    ld      a,$ff
+    bit     0,e
+    jr      z, joy03
+    ld      a,$0e
+    out     (c),a
+    dec     c
+    ld      b,$ff
 
-joy02:   in      a,(c)
-         djnz    joy02
-         cp      $ff
-         jr      nz,joy05
+joy02:
+    in      a,(c)
+    djnz    joy02
+    cp      $ff
+    jr      nz,joy05
 
-joy03:   bit     1,e
-         jr      z,joy05
-         ld      bc,$00f7
-         ld      a,$0f
-         out     (c),a
-         dec     c
-         ld      b,$ff
+joy03:
+    bit     1,e
+    jr      z,joy05
+    ld      bc,$00f7
+    ld      a,$0f
+    out     (c),a
+    dec     c
+    ld      b,$ff
 
-joy04:   in      a,(c)
-         djnz    joy04
+joy04:
+    in      a,(c)
+    djnz    joy04
 
-joy05:   cpl
-         jp      $0b36
+joy05:
+    cpl
+    jp      $0b36
 
 ;-----------------------------------------------------------------------------
 ; HEX$() function
@@ -1117,29 +1114,28 @@ FN_HEX:
 ; in: A = byte
 ;-----------------------------------------------------------------------------
 PRINTHEX:
-        push    bc
-        ld      b,a
-        and     $f0
-        rra
-        rra
-        rra
-        rra
-        cp      10
-        jr      c,.hi_nib
-        add     7
+    push    bc
+    ld      b,a
+    and     $f0
+    rra
+    rra
+    rra
+    rra
+    cp      10
+    jr      c,.hi_nib
+    add     7
 .hi_nib:
-        add     '0'
-        call    PRNCHR
-        ld      a,b
-        and     $0f
-        cp      10
-        jr      c,.low_nib
-        add     7
+    add     '0'
+    call    PRNCHR
+    ld      a,b
+    and     $0f
+    cp      10
+    jr      c,.low_nib
+    add     7
 .low_nib:
-        add     '0'
-        pop     bc
-        jp      PRNCHR
-
+    add     '0'
+    pop     bc
+    jp      PRNCHR
 
 ;-----------------------------------------------------------------------------
 ;                            CALL
@@ -1150,87 +1146,60 @@ PRINTHEX:
 ;
 ; on entry to user code, HL = text after address
 ; on exit from user code, HL should point to end of statement
-;
 ST_CALL:
     call    GETNUM           ; get number from BASIC text
     call    DEINT            ; convert to 16 bit integer
     push    de
     ret                      ; jump to user code, HL = BASIC text pointer
 
-
-;---------------------------------------------------------------------
-;                       DOS commands
-;---------------------------------------------------------------------
-; ST_CD
-; ST_LOAD
-; ST_SAVE
-; ST_DIR
-; ST_CAT
-; ST_KILL
-     include "dos.asm"
-
-
-;---------------------------------------------------------------------
-;                     BASIC Line Editor
-;---------------------------------------------------------------------
-; EDIT (line number)
-;
-;ST_EDIT
-     include "edit.asm"
-
-
-;=====================================================================
-;                  Miscellaneous functions
+;-----------------------------------------------------------------------------
+; DOS commands
+;-----------------------------------------------------------------------------
+    include "dos.asm"
 
 ;-----------------------------------------------------------------------------
-; string functions
+;  BASIC Line Editor
 ;-----------------------------------------------------------------------------
+    include "edit.asm"
 
-;-------------------------------------------------
-;          Lowercase->Uppercase
-;-------------------------------------------------
+;-----------------------------------------------------------------------------
+; Lowercase -> Uppercase
 ; in-out; A = char
-;
+;-----------------------------------------------------------------------------
 UpperCase:
-       CP  'a'     ; >='a'?
-       RET  C
-       CP   'z'+1  ; <='z'?
-       RET  NC
-       SUB  $20    ; a-z -> A-Z
-       RET
+    cp  'a'     ; >='a'?
+    ret  c
+    cp   'z'+1  ; <='z'?
+    ret  nc
+    sub  $20    ; a-z -> A-Z
+    ret
 
-;------------------------------------------------
-;               String Length
-;------------------------------------------------
-;
+;-----------------------------------------------------------------------------
+; String length
 ;  in: HL-> string (null-terminated)
-;
 ; out: A = number of characters in string
-;
+;-----------------------------------------------------------------------------
 strlen:
-       PUSH  DE
-       LD    D,H
-       LD    E,L
-       XOR   A
-       DEC   HL
+    push  de
+    ld    d,h
+    ld    e,l
+    xor   a
+    dec   hl
 _strlen_loop:
-       INC   HL
-       CP    (HL)
-       JR    NZ,_strlen_loop
-       SBC   HL,DE
-       LD    A,L
-       EX    DE,HL
-       POP   DE
-       RET
+    inc   hl
+    cp    (hl)
+    jr    nz,_strlen_loop
+    sbc   hl,de
+    ld    a,l
+    ex    de,hl
+    pop   de
+    ret
 
-
-;----------------------------------------------
-;           String Concatenate
-;----------------------------------------------
-;
+;-----------------------------------------------------------------------------
+; String concatenate
 ; in: hl = string being added to (must have sufficient space at end!)
 ;     de = string to add
-;
+;-----------------------------------------------------------------------------
 strcat:
     xor  a
 _strcat_find_end:
@@ -1247,16 +1216,13 @@ _strcat_append:             ; yes, append string
     jr   nz,_strcat_append
     ret
 
-
-;-------------------------------------------
-;            Compare Strings
-;-------------------------------------------
+;-----------------------------------------------------------------------------
+; Compare strings
 ;  in: hl = string 1 (null terminated)
 ;      de = string 2 (null terminated)
-;
-; out:   Z  = strings equal
-;        NZ = not equal
-;
+; out: Z  = strings equal
+;      NZ = not equal
+;-----------------------------------------------------------------------------
 strcmp:
     ld   a,(de)          ; get char from string 2
     inc  de
@@ -1267,15 +1233,12 @@ strcmp:
     jr   nz,strcmp       ; loop until end of strings
     ret                  ; return Z
 
-
-;--------------------------------------------------------------------
-;            get next character, skipping spaces
-;--------------------------------------------------------------------
-;  in:    HL = text pointer
-;
+;-----------------------------------------------------------------------------
+; Get next character, skipping spaces
+;  in: HL = text pointer
 ; out: NZ, A = next non-space char, HL = address of char in text
 ;      Z,  A = 0, HL = end of text
-;
+;-----------------------------------------------------------------------------
 get_next:                       ; starting at next location
     inc     hl
 get_arg:                        ; starting at current location
@@ -1286,14 +1249,12 @@ get_arg:                        ; starting at current location
     ret     nz                  ; return NZ if not SPACE
     jr      get_next
 
-;-----------------------------------------------------------------
-;          check for argument in current statement
-;-----------------------------------------------------------------
+;-----------------------------------------------------------------------------
+; Check for argument in current statement
 ;  in: HL = text pointer
-;
 ; out: NZ = argument present
 ;       Z = end of statement
-;
+;-----------------------------------------------------------------------------
 chkarg:
     push hl                   ; save BASIC text pointer
 _chkarg_next_char:
@@ -1308,28 +1269,24 @@ _chkarg_done:
     pop  hl                   ; restore BASIC text pointer
     ret
 
-
-;-----------------------------------------------------------------
-;               Print Null-terminated String
-;-----------------------------------------------------------------
-;  in: HL = text ending with NULL
-;
+;-----------------------------------------------------------------------------
+; Print null-terminated string
+; in: HL = text ending with NULL
+;-----------------------------------------------------------------------------
 prtstr:
-   ld   a,(hl)
-   inc  hl
-   or   a
-   ret  z
-   call PRNCHR
-   jr   prtstr
+    ld   a,(hl)
+    inc  hl
+    or   a
+    ret  z
+    call PRNCHR
+    jr   prtstr
 
 
 
-
-
+;-----------------------------------------------------------------------------
 ; fill with $FF to end of ROM
-     assert !($FFFF<$)   ; ROM full!
+;-----------------------------------------------------------------------------
+    assert !($FFFF<$)   ; ROM full!
+    dc $FFFF-$+1,$FF
 
-     dc $FFFF-$+1,$FF
-
-     end
-
+    end
