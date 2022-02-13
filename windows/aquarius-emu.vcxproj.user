@@ -7,7 +7,7 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='USB|x64'">
-    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\testdata\roms\aqubasic_bank1.rom" -u "$(ProjectDir)\..\usb" </LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -u "$(ProjectDir)\..\testdata\usb" </LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
