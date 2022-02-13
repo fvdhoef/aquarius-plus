@@ -734,7 +734,7 @@ TBLCMDS:
      db      $80                ; End of table marker
 
 TBLJMPS:
-     dw      ST_EDIT
+     dw      ST_reserved    ; Previously EDIT
      dw      ST_CLS
      dw      ST_LOCATE
      dw      ST_OUT
@@ -1325,8 +1325,155 @@ ST_CALL:
 ;=====================================================================
 ;                  Miscellaneous functions
 
+;-----------------------------------------------------------------------------
 ; string functions
-   include "strings.asm"
+;-----------------------------------------------------------------------------
+
+;-------------------------------------------------
+;          Lowercase->Uppercase
+;-------------------------------------------------
+; in-out; A = char
+;
+UpperCase:
+       CP  'a'     ; >='a'?
+       RET  C
+       CP   'z'+1  ; <='z'?
+       RET  NC
+       SUB  $20    ; a-z -> A-Z
+       RET
+
+;------------------------------------------------
+;               String Length
+;------------------------------------------------
+;
+;  in: HL-> string (null-terminated)
+;
+; out: A = number of characters in string
+;
+strlen:
+       PUSH  DE
+       LD    D,H
+       LD    E,L
+       XOR   A
+       DEC   HL
+_strlen_loop:
+       INC   HL
+       CP    (HL)
+       JR    NZ,_strlen_loop
+       SBC   HL,DE
+       LD    A,L
+       EX    DE,HL
+       POP   DE
+       RET
+
+
+;----------------------------------------------
+;           String Concatenate
+;----------------------------------------------
+;
+; in: hl = string being added to (must have sufficient space at end!)
+;     de = string to add
+;
+strcat:
+    xor  a
+_strcat_find_end:
+    cp   (hl)               ; end of string?
+    jr   z,_strcat_append
+    inc  hl                 ; no, continue looking for it
+    jr   _strcat_find_end
+_strcat_append:             ; yes, append string
+    ld   a,(de)
+    inc  de
+    ld   (hl),a
+    inc  hl
+    or   a
+    jr   nz,_strcat_append
+    ret
+
+
+;-------------------------------------------
+;            Compare Strings
+;-------------------------------------------
+;  in: hl = string 1 (null terminated)
+;      de = string 2 (null terminated)
+;
+; out:   Z  = strings equal
+;        NZ = not equal
+;
+strcmp:
+    ld   a,(de)          ; get char from string 2
+    inc  de
+    cp  (hl)             ; compare to char in string 1
+    inc  hl
+    ret  nz              ; return NZ if not equal
+    or   a
+    jr   nz,strcmp       ; loop until end of strings
+    ret                  ; return Z
+
+
+;--------------------------------------------------------------------
+;            get next character, skipping spaces
+;--------------------------------------------------------------------
+;  in:    HL = text pointer
+;
+; out: NZ, A = next non-space char, HL = address of char in text
+;      Z,  A = 0, HL = end of text
+;
+get_next:                       ; starting at next location
+    inc     hl
+get_arg:                        ; starting at current location
+    ld      a,(hl)
+    or      a
+    ret     z                   ; return Z if NULL
+    cp      ' '
+    ret     nz                  ; return NZ if not SPACE
+    jr      get_next
+
+;-----------------------------------------------------------------
+;          check for argument in current statement
+;-----------------------------------------------------------------
+;  in: HL = text pointer
+;
+; out: NZ = argument present
+;       Z = end of statement
+;
+chkarg:
+    push hl                   ; save BASIC text pointer
+_chkarg_next_char:
+    ld   a,(hl)               ; get char
+    inc  hl
+    cp   ' '                  ; skip spaces
+    jr   z,_chkarg_next_char
+    cp   ':'                  ; Z if end of statement
+    jr   z,_chkarg_done       ; return Z if end of statement
+    or   a                    ; Z if end of line
+_chkarg_done:
+    pop  hl                   ; restore BASIC text pointer
+    ret
+
+
+;-----------------------------------------------------------------
+;               Print Null-terminated String
+;-----------------------------------------------------------------
+;  in: HL = text ending with NULL
+;
+prtstr:
+   ld   a,(hl)
+   inc  hl
+   or   a
+   ret  z
+   call PRNCHR
+   jr   prtstr
+
+
+
+
+
+
+
+
+
+
 
 ; keyboard scan
    include "keycheck.asm"
