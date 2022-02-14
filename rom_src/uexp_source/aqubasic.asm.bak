@@ -26,7 +26,7 @@ REVISION = 0
 ; DIR    - display USB disk directory with wildcard
 ; CAT    - display USB disk directory
 ; CD     - change directory
-; DEL    - delete file
+; KILL   - delete file
 
 ; functions:
 ; IN()   - get data from I/O port
@@ -509,7 +509,7 @@ TBLJMPS:
     dw      ST_SAVE
     dw      ST_DIR
     dw      ST_reserved
-    dw      ST_DEL         ; Previously KILL
+    dw      ST_DEL
     dw      ST_CD
 TBLJEND:
 
