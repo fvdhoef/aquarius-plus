@@ -13,6 +13,8 @@
 
 #if _WIN32
 #    include "getopt.h"
+#    include <direct.h>
+#    include <io.h>
 #    define strdup _strdup
 #    define unlink _unlink
 #    define rmdir _rmdir
