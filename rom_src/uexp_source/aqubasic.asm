@@ -159,6 +159,9 @@ TSTSTR      = $0976  ; error if evaluated expression not string
 DEINT       = $0682  ; convert fp number to 16 bit signed integer in DE
 INT2STR     = $1679  ; convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 
+FINLPT = $19BE
+CRDONZ = $19DE
+
 ;-----------------------------------------------------------------------------
 ; RST macros
 ;-----------------------------------------------------------------------------
@@ -271,6 +274,9 @@ SF_RETYP = 1       ; 1 = CTRL-O is retype
     jp _coldboot    ; Called from main ROM for cold boot
     jp _warmboot    ; Called from main ROM for warm boot
 
+;-----------------------------------------------------------------------------
+; Common initialization code for cold/warm boot
+;-----------------------------------------------------------------------------
 _init:
     xor     a
     ld      (Sysflags),a
@@ -280,14 +286,14 @@ _init:
     ld      hl,0
     ld      (USRADDR),hl       ; set system RST $38 vector
 
-    ; init CH376
+    ; Init CH376
     call    usb__check_exists  ; CH376 present?
     jr      nz,.no_ch376
     call    usb__set_usb_mode  ; yes, set USB mode
 .no_ch376:
     call    usb__root          ; root directory
 
-    ; init keyboard vars
+    ; Init keyboard vars
     xor     a
     ld      (LASTKEY),a
     ld      (SCANCNT),a
@@ -389,7 +395,7 @@ MEMSIZE:
     jp      $0402              ; Jump to OKMAIN (BASIC command line)
 
 ;-----------------------------------------------------------------------------
-;  USB Disk Driver
+; USB Disk Driver
 ;-----------------------------------------------------------------------------
     include "ch376.asm"
 
@@ -401,38 +407,38 @@ MEMSIZE:
 ; ROM in several places (anywhere a RST $30 is located).
 ;
 HOOK:
-    ex      (sp),hl            ; save HL and get address of byte after RST $30
-    push    af                 ; save AF
-    ld      a,(hl)             ; A = byte (RST $30 parameter)
-    inc     hl                 ; skip over byte after RST $30
-    push    hl                 ; push return address (code after RST $30,xx)
-    ld      hl,UDFLIST         ; HL = RST 30 parameter table
+    ex      (sp),hl             ; save HL and get address of byte after RST $30
+    push    af                  ; save AF
+    ld      a,(hl)              ; A = byte (RST $30 parameter)
+    inc     hl                  ; skip over byte after RST $30
+    push    hl                  ; push return address (code after RST $30,xx)
+    ld      hl, UDFLIST         ; HL = RST 30 parameter table
     push    bc
-    ld      bc,UDF_JMP-UDFLIST+1 ; number of UDF parameters
-    cpir                       ; find paramater in list
-    ld      a,c                ; A = parameter number in list
+    ld      bc,UDF_JMP - UDFLIST + 1 ; number of UDF parameters
+    cpir                        ; find parameter in list
+    ld      a,c                 ; A = parameter number in list
     pop     bc
-    add     a,a                ; A * 2 to index WORD size vectors
-    ld      hl,UDF_JMP         ; HL = Jump vector table
+    add     a,a                 ; A * 2 to index WORD size vectors
+    ld      hl,UDF_JMP          ; HL = Jump vector table
 do_jump:
     add     a,l
     ld      l,a
     ld      a,$00
     adc     a,h
-    ld      h,a                ; HL += vector number
+    ld      h,a                 ; HL += vector number
     ld      a,(hl)
     inc     hl
-    ld      h,(hl)             ; get vector address
+    ld      h,(hl)              ; get vector address
     ld      l,a
-    jp      (hl)               ; and jump to it
-                               ; will return to HOOKEND
+    jp      (hl)                ; and jump to it
+                                ; will return to HOOKEND
 
 ; End of hook
 HOOKEND:
-    pop     hl                 ; get return address
-    pop     af                 ; restore AF
-    ex      (sp),hl            ; restore HL and set return address
-    ret                        ; return to code after RST $30,xx
+    pop     hl                  ; get return address
+    pop     af                  ; restore AF
+    ex      (sp),hl             ; restore HL and set return address
+    ret                         ; return to code after RST $30,xx
 
 ; UDF parameter table
 ; List of RST $30,xx hooks that we are monitoring.
@@ -471,7 +477,7 @@ TBLCMDS:
     db      $80 + 'S', "AVE"
     db      $80 + 'D', "IR"
     db      $80 + 'C', "AT"
-    db      $80 + 'K', "ILL"
+    db      $80 + 'D', "EL"
     db      $80 + 'C', "D"
 
     ; functions
@@ -492,7 +498,7 @@ TBLJMPS:
     dw      ST_SAVE
     dw      ST_DIR
     dw      ST_reserved
-    dw      ST_KILL
+    dw      ST_DEL
     dw      ST_CD
 TBLJEND:
 
@@ -504,13 +510,13 @@ TBLFNJP:
     dw      FN_HEX
 TBLFEND:
 
-FCOUNT: equ (TBLFEND-TBLFNJP)/2    ; number of functions
+FCOUNT: equ (TBLFEND - TBLFNJP) / 2  ; number of functions
 
-firstf: equ BTOKEN+BCOUNT          ; token number of first function in table
-lastf:  equ firstf+FCOUNT-1        ; token number of last function in table
+firstf: equ BTOKEN + BCOUNT          ; token number of first function in table
+lastf:  equ firstf + FCOUNT - 1      ; token number of last function in table
 
 ;-----------------------------------------------------------------------------
-;                          Command Line
+; Command Line
 ;-----------------------------------------------------------------------------
 ; Replacement Immediate Mode with Line editing
 ;
@@ -521,10 +527,10 @@ AQMAIN:
     pop     af                  ; restore AF
     pop     hl                  ; restore HL
 
-    call    $19be               ; PRNHOME if we were printing to printer, LPRINT a CR and LF
+    call    FINLPT              ; PRNHOME if we were printing to printer, LPRINT a CR and LF
     xor     a
     ld      (LISTCNT),a         ; Set ROWCOUNT to 0
-    call    $19de               ; RSTCOL reset cursor to start of (next) line
+    call    CRDONZ              ; RSTCOL reset cursor to start of (next) line
     ld      hl,$036e            ; 'Ok'+CR+LF
     call    PRINTSTR
 ;
@@ -543,11 +549,11 @@ IMMEDIATE:
     RES     SF_RETYP,(HL)       ; CTRL-R inactive
 ENTERLINE:
     ld      hl,LINBUF-1
-    jr      c,immediate         ; If c then discard line
+    jr      c,IMMEDIATE         ; If c then discard line
     rst     $10                 ; get next char (1st character in line buffer)
     inc     a
     dec     a                   ; set z flag if A = 0
-    jr      z,immediate         ; If nothing on line then loop back to immediate mode
+    jr      z,IMMEDIATE         ; If nothing on line then loop back to immediate mode
     push    hl
     ld      de,ReTypBuf
     ld      bc,LINBUFLEN        ; save line in history buffer
@@ -570,7 +576,7 @@ l0489:
     ld      a,(hl)
     inc     hl                 ; get address of next line
     or      (hl)
-    jr      z,immediate        ; if next line = 0 then done so return to immediate mode
+    jr      z,IMMEDIATE        ; if next line = 0 then done so return to immediate mode
     inc     hl
     inc     hl                 ; skip line number
     inc     hl
@@ -586,9 +592,9 @@ l0495:
     jr      l0489              ; next line
 
 
-;-------------------------------------
-;        AquBASIC Function
-;-------------------------------------
+;-----------------------------------------------------------------------------
+; AquBASIC Function
+;-----------------------------------------------------------------------------
 ; called from $0a5f by RST $30,$1b
 ;
 AQFUNCTION:
@@ -596,21 +602,20 @@ AQFUNCTION:
     pop     af
     pop     hl
     push    bc                  ; push return address back on stack
-    cp      (firstf-$B2)        ; ($B2 = first system BASIC function token)
+    cp      (firstf - $B2)      ; ($B2 = first system BASIC function token)
     ret     c                   ; return if function number below ours
-    cp      (lastf-$B2+1)
+    cp      (lastf - $B2 + 1)
     ret     nc                  ; return if function number above ours
-    sub     (firstf-$B2)
+    sub     (firstf - $B2)
     add     a,a                 ; index = A * 2
     push    hl
     ld      hl,TBLFNJP          ; function address table
     jp      do_jump             ; JP to our function
 
 
-
-;-------------------------------------
-;         Replace Command
-;-------------------------------------
+;-----------------------------------------------------------------------------
+; Replace Command
+;-----------------------------------------------------------------------------
 ; Called from $0536 by RST $30,$0a
 ; Replaces keyword with token.
 ;
@@ -627,12 +632,12 @@ REPLCMD:
      ld      b,BTOKEN-1         ; B = our first token
      jp      $04f9              ; continue searching using our keyword table
 
-;-------------------------------------
-;             PEXPAND
-;-------------------------------------
+;-----------------------------------------------------------------------------
+; PEXPAND
+;
 ; Called from $0598 by RST $30,$16
 ; Expand token to keyword
-;
+;-----------------------------------------------------------------------------
 PEXPAND:
     pop     de
     pop     af                  ; restore AF (token)
@@ -649,12 +654,12 @@ PEXPBAB:
     jp      $05a8               ; Print keyword indexed by C
 
 
-;-------------------------------------
-;            NEXTSTMT
-;-------------------------------------
+;-----------------------------------------------------------------------------
+; NEXTSTMT
+;
 ; Called from $064b by RST 30
 ; with parameter $17
-;
+;-----------------------------------------------------------------------------
 NEXTSTMT:
     pop     bc                  ; BC = return address
     pop     af                  ; AF = token, flags
@@ -737,8 +742,8 @@ _run_file:
     cp      FT_BAS             ; filetype is BASIC?
     jp      z,$0bcb            ; yes, run loaded BASIC program
     cp      FT_BIN             ; BINARY?
-    jp      nz,immediate       ; no, return to command line prompt
-    ld      de,immediate
+    jp      nz,IMMEDIATE       ; no, return to command line prompt
+    ld      de,IMMEDIATE
     push    de                 ; set return address
     ld      de,(BINSTART)
     push    de                 ; set jump address

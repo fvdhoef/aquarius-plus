@@ -891,7 +891,7 @@ print_integer:
 ;-----------------------------------------------------------------------------
 ; Delete File
 ;-----------------------------------------------------------------------------
-ST_KILL:
+ST_DEL:
     call   dos__getfilename  ; filename -> FileName
     push   hl                ; push BASIC text pointer
     jr     z,.goodname
