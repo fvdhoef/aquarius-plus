@@ -161,6 +161,7 @@ INT2STR     = $1679  ; convert 16 bit integer in HL to text at FPSTR (starts wit
 
 FINLPT = $19BE
 CRDONZ = $19DE
+OKMAIN = $0402
 
 ;-----------------------------------------------------------------------------
 ; RST macros
@@ -344,55 +345,65 @@ str_basic:
 
 ; The bytes from $0187 to $01d7 are copied to $3803 onwards as default data.
 COLDBOOT:
-    ld      hl,$0187           ; default values in system ROM
-    ld      bc,$0051           ; 81 bytes to copy
-    ld      de,$3803           ; system variables
-    ldir                       ; copy default values
-    xor     a
-    ld      (BUFEND),a         ; NULL end of input buffer
-    ld      (BINSTART),a       ; NULL binary file start address
-    ld      (RETYPBUF),a       ; NULL history buffer
-    ld      a,$0b
-    rst     $18                ; clear screen
+    ; Copy default values in system ROM to RAM
+    ld      hl,$0187            ; default values in system ROM
+    ld      bc,$0051            ; 81 bytes to copy
+    ld      de,$3803            ; system variables
+    ldir                        ; copy default values
 
-    ; Test the memory
-    ; only testing 1st byte in each 256 byte page!
-    ld      hl,$3A00           ; first page of free RAM
-    ld      a,$55              ; pattern = 01010101
-MEMTEST:
-    ld      c,(hl)             ; save original RAM contents in C
-    ld      (hl),a             ; write pattern
-    cp      (hl)               ; compare read to write
-    jr      nz,MEMREADY        ; if not equal then end of RAM
-    cpl                        ; invert pattern
-    ld      (hl),a             ; write inverted pattern
-    cp      (hl)               ; compare read to write
-    jr      nz,MEMREADY        ; if not equal then end of RAM
-    ld      (hl),c             ; restore original RAM contents
-    cpl                        ; uninvert pattern
-    inc     h                  ; advance to next page
-    jr      nz,MEMTEST         ; continue testing RAM until end of memory
-MEMREADY:
-    ld      a,h
-    cp      $c0                ; 32k expansion
-    jp      c,$0bb7            ; OM error if expansion RAM missing
-    dec     hl                 ; last good RAM addresss
-    ld      hl,SysVars-1       ; top of public RAM
-MEMSIZE:
-    ld      ($38ad),hl         ; MEMSIZ, Contains the highest RAM location
-    ld      de,-50             ; subtract 50 for strings space
-    add     hl,de
-    ld      ($384b),hl         ; STKTOP, Top location to be used for stack
-    ld      hl,PROGST
-    ld      (hl), $00          ; NULL at start of BASIC program
-    inc     hl
-    ld      (BASTART), hl      ; beginning of BASIC program text
-    call    $0bbe              ; ST_NEW2 - NEW without syntax check
-    ld      hl,HOOK            ; RST $30 Vector (our UDF service routine)
-    ld      (UDFADDR),hl       ; store in UDF vector
-    call    SHOWCOPYRIGHT      ; Show our copyright message
     xor     a
-    jp      $0402              ; Jump to OKMAIN (BASIC command line)
+    ld      (BUFEND),a          ; NULL end of input buffer
+    ld      (BINSTART),a        ; NULL binary file start address
+    ld      (RETYPBUF),a        ; NULL history buffer
+
+    ; Clear screen
+    ld      a,$0b
+    rst     $18
+
+    ; Test the memory (only testing 1st byte in each 256 byte page!)
+    ld      hl,$3A00            ; first page of free RAM
+    ld      a,$55               ; pattern = 01010101
+MEMTEST:
+    ld      c,(hl)              ; save original RAM contents in C
+    ld      (hl),a              ; write pattern
+    cp      (hl)                ; compare read to write
+    jr      nz,MEMREADY         ; if not equal then end of RAM
+    cpl                         ; invert pattern
+    ld      (hl),a              ; write inverted pattern
+    cp      (hl)                ; compare read to write
+    jr      nz,MEMREADY         ; if not equal then end of RAM
+    ld      (hl),c              ; restore original RAM contents
+    cpl                         ; uninvert pattern
+    inc     h                   ; advance to next page
+    jr      nz,MEMTEST          ; continue testing RAM until end of memory
+MEMREADY:
+
+    ld      a,h
+    cp      $c0                 ; 32k expansion
+    jp      c,$0bb7             ; OM error if expansion RAM missing
+    dec     hl                  ; last good RAM addresss
+    ld      hl,SysVars-1        ; top of public RAM
+
+MEMSIZE:
+    ld      (RAMTOP), hl        ; MEMSIZ, Contains the highest RAM location
+    ld      de, -50             ; subtract 50 for strings space
+    add     hl, de
+    ld      (STKTOP), hl        ; STKTOP, Top location to be used for stack
+    ld      hl, PROGST
+    ld      (hl), $00           ; NULL at start of BASIC program
+    inc     hl
+    ld      (BASTART), hl       ; beginning of BASIC program text
+    call    $0bbe               ; ST_NEW2 - NEW without syntax check
+
+    ; Install BASIC HOOK
+    ld      hl,HOOK             ; RST $30 Vector (our UDF service routine)
+    ld      (UDFADDR),hl        ; store in UDF vector
+
+    ; Show our copyright message
+    call    SHOWCOPYRIGHT
+
+    xor     a
+    jp      OKMAIN              ; Jump to OKMAIN (BASIC command line)
 
 ;-----------------------------------------------------------------------------
 ; USB Disk Driver
@@ -454,8 +465,8 @@ UDFLIST:    ; xx     index caller    @addr  performing function:-
 ; UDF parameter Jump table
 UDF_JMP:
     dw      HOOKEND            ; 0 parameter not found in list
-    dw      AQMAIN             ; 1 replacement immediate mode
-    dw      LINKLINES          ; 2 update BASIC nextline pointers (returns to AQMAIN)
+    dw      HOOKEND            ; 1 replacement immediate mode
+    dw      HOOKEND            ; 2 update BASIC nextline pointers (returns to AQMAIN)
     dw      AQFUNCTION         ; 3 execute AquBASIC function
     dw      REPLCMD            ; 4 replace keyword with token
     dw      PEXPAND            ; 5 expand token to keyword
@@ -514,83 +525,6 @@ FCOUNT: equ (TBLFEND - TBLFNJP) / 2  ; number of functions
 
 firstf: equ BTOKEN + BCOUNT          ; token number of first function in table
 lastf:  equ firstf + FCOUNT - 1      ; token number of last function in table
-
-;-----------------------------------------------------------------------------
-; Command Line
-;-----------------------------------------------------------------------------
-; Replacement Immediate Mode with Line editing
-;
-; UDF hook number $02 at OKMAIN ($0402)
-;
-AQMAIN:
-    pop     af                  ; clean up stack
-    pop     af                  ; restore AF
-    pop     hl                  ; restore HL
-
-    call    FINLPT              ; PRNHOME if we were printing to printer, LPRINT a CR and LF
-    xor     a
-    ld      (LISTCNT),a         ; Set ROWCOUNT to 0
-    call    CRDONZ              ; RSTCOL reset cursor to start of (next) line
-    ld      hl,$036e            ; 'Ok'+CR+LF
-    call    PRINTSTR
-;
-; Immediate Mode Main Loop
-;l0414:
-IMMEDIATE:
-    ld      hl,SysFlags
-    SET     SF_RETYP,(HL)       ; CTRL-R (RETYP) active
-    ld      hl,-1
-    ld      (CURLIN),hl         ; Current BASIC line number is -1 (immediate mode)
-    ld      hl,LINBUF           ; HL = line input buffer
-    ld      (hl),0              ; buffer empty
-    ld      b,LINBUFLEN         ; 74 bytes including terminator
-    call    EDITLINE            ; Input a line from keyboard.
-    ld      hl,SysFlags
-    RES     SF_RETYP,(HL)       ; CTRL-R inactive
-ENTERLINE:
-    ld      hl,LINBUF-1
-    jr      c,IMMEDIATE         ; If c then discard line
-    rst     $10                 ; get next char (1st character in line buffer)
-    inc     a
-    dec     a                   ; set z flag if A = 0
-    jr      z,IMMEDIATE         ; If nothing on line then loop back to immediate mode
-    push    hl
-    ld      de,ReTypBuf
-    ld      bc,LINBUFLEN        ; save line in history buffer
-    ldir
-    pop     hl
-    jp      $0424               ; back to system ROM
-
-; --- linking BASIC lines ---
-; Redirected here so we can regain control of immediate mode
-; Comes from $0485 via CALLUDF $05
-LINKLINES:
-    pop     af                 ; clean up stack
-    pop     af                 ; restore AF
-    pop     hl                 ; restore HL
-    inc     hl
-    ex      de,hl              ; DE = start of BASIC program
-l0489:
-    ld      h,d
-    ld      l,e                ; HL = DE
-    ld      a,(hl)
-    inc     hl                 ; get address of next line
-    or      (hl)
-    jr      z,IMMEDIATE        ; if next line = 0 then done so return to immediate mode
-    inc     hl
-    inc     hl                 ; skip line number
-    inc     hl
-    xor     a
-l0495:
-    cp      (hl)               ; search for next null byte (end of line)
-    inc     hl
-    jr      nz,l0495
-    ex      de,hl              ; HL = current line, DE = next line
-    ld      (hl),e
-    inc     hl                 ; update address of next line
-    ld      (hl),d
-    jr      l0489              ; next line
-
 
 ;-----------------------------------------------------------------------------
 ; AquBASIC Function
@@ -742,12 +676,16 @@ _run_file:
     cp      FT_BAS             ; filetype is BASIC?
     jp      z,$0bcb            ; yes, run loaded BASIC program
     cp      FT_BIN             ; BINARY?
-    jp      nz,IMMEDIATE       ; no, return to command line prompt
-    ld      de,IMMEDIATE
+    jp      nz,.done           ; no, return to command line prompt
+    ld      de,.done
     push    de                 ; set return address
     ld      de,(BINSTART)
     push    de                 ; set jump address
     ret                        ; jump into binary
+
+.done:
+    xor     a
+    jp      OKMAIN
 
 .bas_extn:
     db     ".BAS",0
@@ -1025,11 +963,6 @@ ST_CALL:
 ; DOS commands
 ;-----------------------------------------------------------------------------
     include "dos.asm"
-
-;-----------------------------------------------------------------------------
-;  BASIC Line Editor
-;-----------------------------------------------------------------------------
-    include "edit.asm"
 
 ;-----------------------------------------------------------------------------
 ; Convert lower-case to upper-case

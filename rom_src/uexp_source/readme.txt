@@ -5,7 +5,6 @@ Building Aqubasic from Source
 aqubasic.asm     ROM initialisation, boot menu, extended BASIC commands
 dos.asm          interface between BASIC and USB driver 
 ch376.asm        USB driver
-edit.asm         BASIC command line editor
 
 All the code was assembled with zmac, slightly modified to output only binary files. 
 
