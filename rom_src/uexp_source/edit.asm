@@ -1,18 +1,4 @@
-;====================================================================
-; Mattel Aquarius:   Enhanced Line Editing Routines
-;====================================================================
-;
-; changes:-
-; 2015-11-13 PRINTSTR after CTRL-C to ensure that cursor goes to next line.
-;            Could not type into last char position in buffer - fixed.
-; 2015-11-14 Cursor now restores original charactcr color when removed.
-; 2016-02-06 Return to BABASIC immediate mode loop.
-; 2017-04-18 CTRL-R = retype previous line entered
-; 2017-04-29 bugfix: EDIT retreiving another line if line not found
-; 2017-05-06 using equates LINBUF and LINBUFLEN
-;            retype clears old line before recalling history buffer
-;
-
+; Based on V1.0 of micro-expander ROM
 
 ; editing keys
 ; cursor left  = $0f     ; CTRL-O

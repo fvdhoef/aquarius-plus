@@ -491,7 +491,7 @@ TBLJMPS:
     dw      ST_LOAD
     dw      ST_SAVE
     dw      ST_DIR
-    dw      ST_CAT
+    dw      ST_reserved
     dw      ST_KILL
     dw      ST_CD
 TBLJEND:
@@ -1059,10 +1059,10 @@ ST_CALL:
     include "edit.asm"
 
 ;-----------------------------------------------------------------------------
-; Lowercase -> Uppercase
+; Convert lower-case to upper-case
 ; in-out; A = char
 ;-----------------------------------------------------------------------------
-UpperCase:
+to_upper:
     cp  'a'     ; >='a'?
     ret  c
     cp   'z'+1  ; <='z'?
@@ -1072,8 +1072,8 @@ UpperCase:
 
 ;-----------------------------------------------------------------------------
 ; String length
-;  in: HL-> string (null-terminated)
-; out: A = number of characters in string
+;  in: hl = string (null-terminated)
+; out:  a = number of characters in string
 ;-----------------------------------------------------------------------------
 strlen:
     push  de
