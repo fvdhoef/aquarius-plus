@@ -769,40 +769,8 @@ ST_reserved:
 ; CLS statement
 ;-----------------------------------------------------------------------------
 ST_CLS:
-    ld      a,6           ; Cyan
-    call    clearscreen
-    ld      de,$3001+40   ; DE cursor at 0,0
-    ld      (CURRAM),de
-    xor     a
-    ld      (CURCOL),a    ; column 0
-    ld      a,' '
-    ld      (CURHOLD),a   ; SPACE under cursor
-    ret
-
-;-----------------------------------------------------------------------------
-; Clear Screen
-;-----------------------------------------------------------------------------
-; - user-defined colors
-; - doesn't clear last 24 bytes
-; - doesn't show cursor
-;
-; in: A = color attribute (background*16 + foreground)
-clearscreen:
-    push    hl
-    ld      hl,$3000
-    ld      c,25
-.line:
-    ld      b,40
-.char:
-    ld      (hl),' '
-    set     2,h
-    ld      (hl),a
-    res     2,h
-    inc     hl
-    djnz    .char
-    dec     c
-    jr      nz,.line
-    pop     hl
+    ld      a,$0b
+    rst     $18                ; clear screen
     ret
 
 ;-----------------------------------------------------------------------------
