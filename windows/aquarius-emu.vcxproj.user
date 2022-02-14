@@ -13,19 +13,19 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='DD Cart|x64'">
-    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\roms\Advanced Dungeons &amp; Dragons (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\testdata\roms\Advanced Dungeons &amp; Dragons (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='BT Cart no AY|x64'">
-    <LocalDebuggerCommandArguments>-X -r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\roms\BurgerTime (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-X -r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\testdata\roms\BurgerTime (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='BT Cart w AY|x64'">
-    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\roms\BurgerTime (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
+    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\testdata\roms\BurgerTime (1982)(Mattel).bin"</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
