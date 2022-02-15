@@ -32,21 +32,6 @@ CH376_INT_DISK_WRITE:    equ     $1E     ; write again (more bytes to write)
 CH376_ERR_OPEN_DIR:      equ     $41     ; is directory, not file
 CH376_ERR_MISS_FILE:     equ     $42     ; file not found
 
-STRUCTURE FAT_DIR_INFO,0
-    STRUCT DIR_Name,11          ; $00 0
-    SBYTE  DIR_Attr             ; $0B 11
-    SBYTE  DIR_NTRes            ; $0C 12
-    SBYTE  DIR_CrtTimeTenth     ; $0D 13
-    SWORD  DIR_CrtTime          ; $0E 14
-    SWORD  DIR_CrtDate          ; $10 16
-    SWORD  DIR_LstAccDate       ; $12 18
-    SWORD  DIR_FstClusHI        ; $14 20
-    SWORD  DIR_WrtTime          ; $16 22
-    SWORD  DIR_WrtDate          ; $18 24
-    SWORD  DIR_FstClusLO        ; $1A 26
-    SLONG  DIR_FileSize         ; $1C 28
-ENDSTRUCT FAT_DIR_INFO          ; $20 32
-
 ATTR_DIRECTORY      equ $10
 ATTR_B_DIRECTORY    equ 4
 
