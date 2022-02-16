@@ -35,14 +35,23 @@ CH376_ERR_MISS_FILE:     equ     $42     ; file not found
 ATTR_DIRECTORY      equ $10
 ATTR_B_DIRECTORY    equ 4
 
+usb_init:
+    call    usb__check_exists   ; CH376 present?
+    jr      nz, .no_ch376
+    call    usb__set_usb_mode   ; yes, set USB mode
+.no_ch376:
+    call    usb__root           ; root directory
+    ret
+
+
 ;-----------------------------------------------------------------------------
 ; Create root path
 ;-----------------------------------------------------------------------------
 usb__root:
-    ld   a,'/'
-    ld   (PathName),a
+    ld   a, '/'
+    ld   (PathName), a
     xor  a
-    ld   (PathName+1),a
+    ld   (PathName + 1), a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -416,19 +425,19 @@ usb__wait_int:
 ;      nz = not detected, a = error code 1 (no CH376)
 ;---------------------------------------------------------------------
 usb__check_exists:
-    ld      b,10
+    ld      b, 10
 .retry:
-    ld      a,CH376_CMD_CHECK_EXIST
-    out     (CH376_CONTROL_PORT),a  ; command: check CH376 exists
-    ld      a,$1A
-    out     (CH376_DATA_PORT),a     ; send test byte
-    ex      (SP),hl
-    ex      (SP),hl                 ; delay ~10us
-    in      a,(CH376_DATA_PORT)
+    ld      a, CH376_CMD_CHECK_EXIST
+    out     (CH376_CONTROL_PORT), a ; command: check CH376 exists
+    ld      a, $1A
+    out     (CH376_DATA_PORT), a    ; send test byte
+    ex      (sp), hl
+    ex      (sp), hl                ; delay ~10us
+    in      a, (CH376_DATA_PORT)
     cp      $E5                     ; byte inverted?
     ret     z
     djnz    .retry
-    ld      a,1                     ; error code = no CH376
+    ld      a, 1                    ; error code = no CH376
     or      a                       ; nz
     ret
 
@@ -438,21 +447,21 @@ usb__check_exists:
 ;      nz = failed to enter USB mode, a = error code 2 (no USB)
 ;---------------------------------------------------------------------
 usb__set_usb_mode:
-    ld      b,10
+    ld      b, 10
 .retry:
-    ld      a,CH376_CMD_SET_USB_MODE
-    out     (CH376_CONTROL_PORT),a  ; command: set USB mode
-    ld      a,6
-    out     (CH376_DATA_PORT),a     ; mode 6
-    ex      (SP),hl
-    ex      (SP),hl
-    ex      (SP),hl                 ; delay ~20us
-    ex      (SP),hl
-    in      a,(CH376_DATA_PORT)
+    ld      a, CH376_CMD_SET_USB_MODE
+    out     (CH376_CONTROL_PORT), a ; command: set USB mode
+    ld      a, 6
+    out     (CH376_DATA_PORT), a    ; mode 6
+    ex      (sp), hl
+    ex      (sp), hl
+    ex      (sp), hl                ; delay ~20us
+    ex      (sp), hl
+    in      a, (CH376_DATA_PORT)
     cp      $51                     ; status = $51?
     ret     z
     djnz    .retry
-    ld      a,2                     ; error code 2 = no USB
+    ld      a, 2                    ; error code 2 = no USB
     or      a                       ; nz
     ret
 

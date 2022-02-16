@@ -12,7 +12,33 @@ FT_CAQ   equ $ff  ; .CAQ BASIC program or numeric array
 DF_ADDR   = 0      ; set = address specified
 DF_ARRAY  = 7      ; set = numeric array
 
-
+;-----------------------------------------------------------------------------
+; Print hex byte
+; in: A = byte
+;-----------------------------------------------------------------------------
+printhex:
+    push    bc
+    ld      b,a
+    and     $f0
+    rra
+    rra
+    rra
+    rra
+    cp      10
+    jr      c,.hi_nib
+    add     7
+.hi_nib:
+    add     '0'
+    call    PRNCHR
+    ld      a,b
+    and     $0f
+    cp      10
+    jr      c,.low_nib
+    add     7
+.low_nib:
+    add     '0'
+    pop     bc
+    jp      PRNCHR
 
 
 ;-----------------------------------------------------------------------------
@@ -468,20 +494,20 @@ _error_messages:
     dw      open_dir_error_msg   ;12
     dw      path_too_long_msg    ;13
 
-no_376_msg:         db "no CH376", 0
-no_disk_msg:        db "no USB", 0
-no_mount_msg:       db "no disk", 0
-bad_name_msg:       db "invalid name", 0
-no_file_msg:        db "file not found", 0
-file_empty_msg:     db "file empty", 0
-bad_file_msg:       db "filetype mismatch", 0
-no_addr_msg:        db "no load address", 0
-read_error_msg:     db "read error", 0
-write_error_msg:    db "write error", 0
-create_error_msg:   db "file create error", 0
-open_dir_error_msg: db "directory not found", 0
-path_too_long_msg:  db "path too long", 0
-unknown_error_msg:  db "disk error $", 0
+no_376_msg:         db "No CH376", 0
+no_disk_msg:        db "No USB", 0
+no_mount_msg:       db "No disk", 0
+bad_name_msg:       db "Invalid name", 0
+no_file_msg:        db "File not found", 0
+file_empty_msg:     db "File empty", 0
+bad_file_msg:       db "Filetype mismatch", 0
+no_addr_msg:        db "No load address", 0
+read_error_msg:     db "Read error", 0
+write_error_msg:    db "Write error", 0
+create_error_msg:   db "File create error", 0
+open_dir_error_msg: db "Directory not found", 0
+path_too_long_msg:  db "Path too long", 0
+unknown_error_msg:  db "Disk error $", 0
 
 ;-----------------------------------------------------------------------------
 ; Read CAQ Sync Sequence
