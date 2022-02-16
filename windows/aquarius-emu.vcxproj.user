@@ -30,6 +30,12 @@ $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
 $(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
     <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Demo|x64'">
+    <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom" -c "$(ProjectDir)\..\testdata\roms\RFDV7.bin"</LocalDebuggerCommandArguments>
+    <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
+$(LocalDebuggerEnvironment)</LocalDebuggerEnvironment>
+    <DebuggerFlavor>WindowsLocalDebugger</DebuggerFlavor>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LocalDebuggerCommandArguments>-r "$(ProjectDir)\..\aquarius.rom"</LocalDebuggerCommandArguments>
     <LocalDebuggerEnvironment>PATH=%PATH%;$(ProjectDir)SDL2-2.0.20\lib\x64
