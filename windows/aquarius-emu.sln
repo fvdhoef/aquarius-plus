@@ -15,6 +15,8 @@ Global
 		DD Cart|x86 = DD Cart|x86
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Demo|x64 = Demo|x64
+		Demo|x86 = Demo|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 		USB|x64 = USB|x64
@@ -37,6 +39,10 @@ Global
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x64.Build.0 = Debug|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x86.ActiveCfg = Debug|Win32
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Debug|x86.Build.0 = Debug|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x64.ActiveCfg = Demo|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x64.Build.0 = Demo|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x86.ActiveCfg = Demo|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x86.Build.0 = Demo|Win32
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x64.ActiveCfg = Release|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x64.Build.0 = Release|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x86.ActiveCfg = Release|Win32
