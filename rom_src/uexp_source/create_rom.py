@@ -9,9 +9,9 @@ with open("zout/aqubasic.cim", "rb") as f:
 # Patch stock ROM
 
 # Cold start entry point in ROM
-stockrom[0x00FD] = 0xC3   # JP $2000
-stockrom[0x00FE] = 0x00
-stockrom[0x00FF] = 0x20
+stockrom[0x010F] = 0xC3   # JP $2000
+stockrom[0x0110] = 0x00
+stockrom[0x0111] = 0x20
 
 # Warm start entry point in ROM
 stockrom[0x00ED] = 0xC3   # JP $2003
