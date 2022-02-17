@@ -194,7 +194,10 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
         case 0xFC: state.audio_out = (data & 1) ? AUDIO_LEVEL : -AUDIO_LEVEL; break;
         case 0xFD: state.cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
-        case 0xFF: state.scramble_value = data; break;
+        case 0xFF:
+            printf("Scramble value: 0x%02x\n", data);
+            state.scramble_value = data;
+            break;
         default: printf("io_write(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
     }
 }

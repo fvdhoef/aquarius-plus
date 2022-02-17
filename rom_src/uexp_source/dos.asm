@@ -1197,11 +1197,11 @@ dos__getfilename:
     ret
 
 ;-----------------------------------------------------------------------------
-; Determine File Type from Extension
+; Determine file type from extension
 ;
 ; Examines extension to determine filetype eg. "name.BIN" is binary
 ;
-;  out: a = file type:-
+;  out: A = file type:
 ;             0       bad name
 ;          FT_NONE    no extension
 ;          FT_OTHER   unknown extension
@@ -1213,65 +1213,65 @@ dos__getfilename:
 dos__getfiletype:
     push  hl
     ld    hl, FileName
-    ld    b,-1             ; b = position of '.' in filename
+    ld    b, -1             ; B = position of '.' in filename
 _gft_find_dot
     inc   b
-    ld    a,b
-    cp    9                ; error if name > 8 charcters long
-    jr    nc,_gft_error
-    ld    a,(hl)           ; get next char in filename
+    ld    a, b
+    cp    9                 ; Error if name > 8 charcters long
+    jr    nc, _gft_error
+    ld    a, (hl)           ; Get next char in filename
     inc   hl
-    cp    "."              ; is it a '.'?
-    jr    z,_gft_got_dot
-    or    a                ; end of string?
-    jr    z,_gft_no_extn
-    jr    _gft_find_dot    ; continue searching for '.'
+    cp    '.'               ; Is it a '.'?
+    jr    z, _gft_got_dot
+    or    a                 ; End of string?
+    jr    z, _gft_no_extn
+    jr    _gft_find_dot     ; Continue searching for '.'
 _gft_got_dot:
-    ld    a,b
-    or    a                ; error if no name
-    jr    z,_gft_error
-    ld    a,(hl)
-    or    a                ; if '.' is last char then no extn
-    jr    z,_gft_no_extn
-    ld    de,extn_list     ; de = list of extension names
+    ld    a, b
+    or    a                 ; Error if no name
+    jr    z, _gft_error
+    ld    a, (hl)
+    or    a                 ; If '.' is last char then no extn
+    jr    z, _gft_no_extn
+    ld    de, extn_list     ; DE = list of extension names
     jr    _gft_search
 _gft_skip:
     or    a
-    jr    z,_gft_next
-    ld    a,(de)
-    inc   de               ; skip extn name in list
+    jr    z, _gft_next
+    ld    a, (de)
+    inc   de                ; Skip extn name in list
     jr    _gft_skip
 _gft_next:
-    inc   de               ; skip filetype in list
+    inc   de                ; Skip filetype in list
 _gft_search:
-    ld    a,(de)
-    or    a                ; end of filetypes list?
-    jr    z,_gft_other
+    ld    a, (de)
+    or    a                 ; End of filetypes list?
+    jr    z, _gft_other
     push  hl
-    call  strcmp           ; compare extn to name in list
+    call  strcmp            ; Compare extn to name in list
     pop   hl
-    jr    nz,_gft_skip     ; if no match then keep searching
+    jr    nz, _gft_skip     ; If no match then keep searching
 _gft_got_extn:
-    ld    a,(de)           ; get filetype
+    ld    a, (de)           ; Get filetype
     jr    _gft_done
 _gft_other:
-    ld    a,FT_OTHER       ; unknown filetype
+    ld    a, FT_OTHER       ; Unknown filetype
     jr    _gft_done
 _gft_no_extn:
-    ld    a,FT_NONE        ; no extn (eg. "name", "name.")
+    ld    a, FT_NONE        ; No extn (eg. "name", "name.")
     jr    _gft_done
 _gft_error:
-    xor   a                ; 0 = bad name
+    xor   a                 ; 0 = bad name
 _gft_done:
     pop   hl
     ret
 
 extn_list:
-    db   "TXT",0,FT_TXT    ; ASCII text
-    db   "BIN",0,FT_BIN    ; binary code/data
-    db   "BAS",0,FT_BAS    ; BASIC program
-    db   "CAQ",0,FT_CAQ    ; tape file (BASIC, Array, ???)
-    db   0
+    db "TXT", 0, FT_TXT     ; ASCII text
+    db "BIN", 0, FT_BIN     ; Binary code/data
+    db "BAS", 0, FT_BAS     ; BASIC program
+    db "CAQ", 0, FT_CAQ     ; Tape file (BASIC, Array, ???)
+    db 0
 
 ;-----------------------------------------------------------------------------
 ; Convert FAT filename to DOS filename
@@ -1288,37 +1288,37 @@ dos__name:
     push  bc
     push  de
     push  hl
-    ld    b,8
+    ld    b, 8
 .getname:
-    ld    a,(hl)       ; get name char
+    ld    a, (hl)       ; Get name char
     inc   hl
-    cp    " "          ; don't copy spaces
-    jr    z,.next
-    ld    (de),a       ; store name char
+    cp    ' '           ; Don't copy spaces
+    jr    z, .next
+    ld    (de), a       ; Store name char
     inc   de
 .next:
     djnz  .getname
-    ld    a,(hl)       ; a = 1st extn char
-    cp    " "
-    jr    z,.end       ; if " " then no extn
-    ex    de,hl
-    ld    (hl),"."     ; add separator
-    ex    de,hl
+    ld    a, (hl)       ; A = 1st extn char
+    cp    ' '
+    jr    z, .end       ; If ' ' then no extn
+    ex    de, hl
+    ld    (hl), '.'     ; Add separator
+    ex    de, hl
     inc   de
-    ld    b,3          ; 3 chars in extn
+    ld    b, 3          ; 3 chars in extn
 .extn:
     inc   hl
-    ld    c,(hl)       ; c = next extn char
-    ld    (de),a       ; store current extn char
+    ld    c, (hl)       ; C = next extn char
+    ld    (de), a       ; Store current extn char
     inc   de
     dec   b
-    jr    z,.end       ; if done 3 chars then end of extn
-    ld    a,c
-    cp    ' '          ; if space then end of extn
-    jr    nz,.extn
+    jr    z, .end       ; If done 3 chars then end of extn
+    ld    a, c
+    cp    ' '           ; If space then end of extn
+    jr    nz, .extn
 .end:
     xor   a
-    ld    (de),a       ; NULL end of DOS filename string
+    ld    (de), a       ; NULL end of DOS filename string
 .done:
     pop   hl
     pop   de
@@ -1329,7 +1329,7 @@ dos__name:
 ; Convert character to MSDOS equivalent
 ;
 ;  Input:  a = char
-; Output:  a = MDOS compatible char
+; Output:  a = MSDOS compatible char
 ;
 ; converts:-
 ;     lowercase to uppercase
@@ -1338,6 +1338,6 @@ dos__name:
 dos__char:
     call    to_upper
     cp      '='
-    ret     nz             ; convert '=' to '~'
+    ret     nz          ; Convert '=' to '~'
     ld      a, '~'
     ret
