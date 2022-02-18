@@ -32,8 +32,8 @@ CH376_INT_DISK_WRITE:    equ     $1E     ; write again (more bytes to write)
 CH376_ERR_OPEN_DIR:      equ     $41     ; is directory, not file
 CH376_ERR_MISS_FILE:     equ     $42     ; file not found
 
-ATTR_DIRECTORY      equ $10
-ATTR_B_DIRECTORY    equ 4
+ATTR_DIRECTORY:          equ $10
+ATTR_B_DIRECTORY:        equ 4
 
 usb_init:
     call    usb__check_exists   ; CH376 present?
@@ -171,7 +171,7 @@ usb__write_bytes:
     out     (c),d                      ; send data length upper byte
 .loop:
     call    usb__wait_int              ; wait for response
-    jr      z,.done                    ; return z if finished writing
+    jr      z, .write_bytes_done       ; return z if finished writing
     cp      CH376_INT_DISK_WRITE       ; more bytes to write?
     ret     nz                         ; no, error so return nz
     ld      a,CH376_CMD_WR_REQ_DATA
@@ -183,7 +183,7 @@ usb__write_bytes:
     ld      a,CH376_CMD_BYTE_WR_GO
     out     (CH376_CONTROL_PORT),a     ; send command 'write go'
     jr      .loop                      ; do next transfer
-.done:
+.write_bytes_done:
     pop     bc
     ret
 
@@ -263,18 +263,18 @@ usb__open_read:
 usb__set_filename:
     push    hl
     call    usb__ready              ; check for USB drive
-    jr      nz,.done                ; abort if error
+    jr      nz,.set_filename_done   ; abort if error
     ld      a,CH376_CMD_SET_FILE_NAME
     out     (CH376_CONTROL_PORT),a  ; command: set file name
-.send_name:
+.set_filename_send_name:
     ld      a,(hl)
     call    dos__char               ; convert char to MSDOS equivalent
 .send_char:
     out     (CH376_DATA_PORT),a     ; send filename char to CH376
     inc     hl                      ; next char
     or      a
-    jr      nz,.send_name           ; until end of name
-.done:
+    jr      nz,.set_filename_send_name   ; until end of name
+.set_filename_done:
     pop     hl
     ret
 
@@ -448,7 +448,7 @@ usb__check_exists:
 ;---------------------------------------------------------------------
 usb__set_usb_mode:
     ld      b, 10
-.retry:
+.set_mode_retry:
     ld      a, CH376_CMD_SET_USB_MODE
     out     (CH376_CONTROL_PORT), a ; command: set USB mode
     ld      a, 6
@@ -460,7 +460,7 @@ usb__set_usb_mode:
     in      a, (CH376_DATA_PORT)
     cp      $51                     ; status = $51?
     ret     z
-    djnz    .retry
+    djnz    .set_mode_retry
     ld      a, 2                    ; error code 2 = no USB
     or      a                       ; nz
     ret
@@ -482,23 +482,23 @@ usb__ready:
     cp      '/'                     ; if no path then set to '/',0
     call    nz,usb__root
     call    usb__check_exists       ; CH376 hardware present?
-    jr      nz,.done
+    jr      nz,.ready_done
     ld      b,3                     ; retry count for mount
     ld      c,1                     ; c = flag, 1 = before set_usb_mode
 .mount:
     ld      b,5
 .mountloop:
     call    usb__mount              ; try to mount disk
-    jr      z,.done                 ; return OK if mounted
+    jr      z,.ready_done           ; return OK if mounted
     call    usb__root               ; may be different disk so reset path
     djnz    .mountloop
 
     ; mount failed,
     dec     c                       ; already tried set_usb_mode ?
-    jr      nz,.done                ; yes, fail
+    jr      nz,.ready_done          ; yes, fail
     call    usb__set_usb_mode       ; put CH376 into USB mode
     jr      z,.mount                ; if successful then try to mount disk
-.done:
+.ready_done:
     pop     bc
     ret
 

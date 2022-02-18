@@ -38,123 +38,123 @@
 ; System Variables
 ;-----------------------------------------------------------------------------
 ; Name   Location  Alt name  Description
-CURCOL   = $3800 ; TTYPOS    Current cursor column
-CURRAM   = $3801 ; CHRPOS    Position in CHARACTER RAM of cursor
-USRJMP   = $3803 ; USRGO     JMP instruction for USR.
-USRADDR  = $3804 ; USRAL     Address of USR() function
-;          $3805 ; USRAH     "
-UDFADDR  = $3806 ; HOKDSP    RST $30 vector, hooks into various system routines
-;          $3807 ;
-LISTCNT  = $3808 ; ROWCOUNT  Counter for lines listed (pause every 23 lines)
-LASTFF   = $3809 ; PTOLD     Last protection code sent to port($FF)
-LSTASCI  = $380A ; CHARQ     ASCII value of last key pressed.
-KWADDR   = $380B ; SKEY      Address of keyword in the keyword table.
-;          $380C ;           "
-CURHOLD  = $380D ; BUFO      Holds character under the cursor.
-LASTKEY  = $380E ;           SCAN CODE of last key pressed
-SCANCNT  = $380F ;           Number of SCANS key has been down for
-FDIV     = $3810 ;           Subroutine for division ???
-                 ;
-RANDOM   = $381F ;           Used by random number generator
-                 ;
-LPTLST   = $3845 ;           Last printer operation status
-PRNCOL   = $3846 ; LPTPOS    The current printer column (0-131).
-CHANNEL  = $3847 ; PRTFLG    Channel: 0=screen, 1=printer.
-LINLEN   = $3848 ;           Line length (initially set to 40 ???)
-CLMLST   = $3849 ;           Position of last comma column
-RUBSW    = $384A ;           Rubout switch
-STKTOP   = $384B ;           High address of stack. followed by string storage space
-                 ;
-CURLIN   = $384D ;           Current BASIC line number (-1 in direct mode)
-                 ;
-BASTART  = $384F ; TXTTAB    Pointer to start of BASIC program
-                 ;
-CASNAM   = $3851 ;           Tape filename (6 chars)
-CASNM2   = $3857 ;           Tape read filename (6 chars)
-CASFL2   = $385D ;           Tape flag
-CASFL3   = $385E ;           Tape flag (break key check)
-BUFMIN   = $385F ;           Buffer used by INPUT statement
-LINBUF   = $3860 ; BUF       Line input buffer (73 bytes).
-                 ;
-BUFEND   = $38A9 ;           end of line unput buffer
-DIMFLG   = $38AA ;           dimension flag 1 = array
-VALTYP   = $38AB ;           type: 0 = number, 1 = string
-DORES    = $38AC ;           flag for crunch
-RAMTOP   = $38AD ; MEMSIZ    Address of top of physical RAM.
-;          $38AE ;
-STRBUF   = $38AF ;           18 bytes used by string functions
-                 ;
-FRETOP   = $38C1 ;           Pointer to top of string space
-;          $38C2 ;
-SYSTEMP  = $38C3 ; TEMP      Temp space used by FOR etc.
-                 ;
-DATLIN   = $38C9 ;           Address of current DATA line
-;          $38CA ;
-FORFLG   = $38CB ;           Flag FOR:, GETVAR: 0=variable, 1=array
-                 ;      
-TMPSTAT  = $38CE ;           Temp holder of next statement address
-                 ;
-CONTLIN  = $38D2 ;           Line number to CONTinue from.
-CONTPOS  = $38D4 ;           Address of line to CONTinue from.
-BASEND   = $38D6 ; VARTAB    Variable table (end of BASIC program)
-                 ;
-ARYTAB   = $38D8 ;           Start of array table
-                 ;
-ARYEND   = $38DA ;           End of array table
-                 ;
-RESTORE  = $38DC ;           Address of line last RESTORE'd
-                 ;
-;          $38DE ;           Pointer and flag for arrays
-                 ;
-FPREG    = $38E4 ; FPNUM     Floating point number
-                 ;
-FPSTR    = $38E9 ;           Floating point string
-                 ;
-;          $38F9 ;           Used by keyboard routine
-                 ;
-PROGST   = $3900 ;           NULL before start of BASIC program
+CURCOL:   equ $3800 ; TTYPOS    Current cursor column
+CURRAM:   equ $3801 ; CHRPOS    Position in CHARACTER RAM of cursor
+USRJMP:   equ $3803 ; USRGO     JMP instruction for USR.
+USRADDR:  equ $3804 ; USRAL     Address of USR() function
+;             $3805 ; USRAH     "
+UDFADDR:  equ $3806 ; HOKDSP    RST $30 vector, hooks into various system routines
+;             $3807 ;
+LISTCNT:  equ $3808 ; ROWCOUNT  Counter for lines listed (pause every 23 lines)
+LASTFF:   equ $3809 ; PTOLD     Last protection code sent to port($FF)
+LSTASCI:  equ $380A ; CHARQ     ASCII value of last key pressed.
+KWADDR:   equ $380B ; SKEY      Address of keyword in the keyword table.
+;             $380C ;           "
+CURHOLD:  equ $380D ; BUFO      Holds character under the cursor.
+LASTKEY:  equ $380E ;           SCAN CODE of last key pressed
+SCANCNT:  equ $380F ;           Number of SCANS key has been down for
+FDIV:     equ $3810 ;           Subroutine for division ???
+                    ;
+RANDOM:   equ $381F ;           Used by random number generator
+                    ;
+LPTLST:   equ $3845 ;           Last printer operation status
+PRNCOL:   equ $3846 ; LPTPOS    The current printer column (0-131).
+CHANNEL:  equ $3847 ; PRTFLG    Channel: 0=screen, 1=printer.
+LINLEN:   equ $3848 ;           Line length (initially set to 40 ???)
+CLMLST:   equ $3849 ;           Position of last comma column
+RUBSW:    equ $384A ;           Rubout switch
+STKTOP:   equ $384B ;           High address of stack. followed by string storage space
+                    ;
+CURLIN:   equ $384D ;           Current BASIC line number (-1 in direct mode)
+                    ;
+BASTART:  equ $384F ; TXTTAB    Pointer to start of BASIC program
+                    ;
+CASNAM:   equ $3851 ;           Tape filename (6 chars)
+CASNM2:   equ $3857 ;           Tape read filename (6 chars)
+CASFL2:   equ $385D ;           Tape flag
+CASFL3:   equ $385E ;           Tape flag (break key check)
+BUFMIN:   equ $385F ;           Buffer used by INPUT statement
+LINBUF:   equ $3860 ; BUF       Line input buffer (73 bytes).
+                    ;
+BUFEND:   equ $38A9 ;           end of line unput buffer
+DIMFLG:   equ $38AA ;           dimension flag 1 = array
+VALTYP:   equ $38AB ;           type: 0 = number, 1 = string
+DORES:    equ $38AC ;           flag for crunch
+RAMTOP:   equ $38AD ; MEMSIZ    Address of top of physical RAM.
+;             $38AE ;
+STRBUF:   equ $38AF ;           18 bytes used by string functions
+                    ;
+FRETOP:   equ $38C1 ;           Pointer to top of string space
+;             $38C2 ;
+SYSTEMP:  equ $38C3 ; TEMP      Temp space used by FOR etc.
+                    ;
+DATLIN:   equ $38C9 ;           Address of current DATA line
+;             $38CA ;
+FORFLG:   equ $38CB ;           Flag FOR:, GETVAR: 0=variable, 1=array
+                    ;
+TMPSTAT:  equ $38CE ;           Temp holder of next statement address
+                    ;
+CONTLIN:  equ $38D2 ;           Line number to CONTinue from.
+CONTPOS:  equ $38D4 ;           Address of line to CONTinue from.
+BASEND:   equ $38D6 ; VARTAB    Variable table (end of BASIC program)
+                    ;
+ARYTAB:   equ $38D8 ;           Start of array table
+                    ;
+ARYEND:   equ $38DA ;           End of array table
+                    ;
+RESTORE:  equ $38DC ;           Address of line last RESTORE'd
+                    ;
+;             $38DE ;           Pointer and flag for arrays
+                    ;
+FPREG:    equ $38E4 ; FPNUM     Floating point number
+                    ;
+FPSTR:    equ $38E9 ;           Floating point string
+                    ;
+;             $38F9 ;           Used by keyboard routine
+                    ;
+PROGST:   equ $3900 ;           NULL before start of BASIC program
 
 ; end of system variables = start of BASIC program in stock Aquarius
 ;          $3901 ; 14593
 
 ; buffer lengths
-LINBUFLEN   = DIMFLG - LINBUF
-STRBUFLEN   = FRETOP - STRBUF
-SYSTEMPLEN  = DATLIN - SYSTEMP
-TMPSTATLEN  = CONTLIN - TMPSTAT
-FPREGLEN    = FPSTR - FPREG
-FPSTRLEN    = $38F9 - FPSTR
+LINBUFLEN:  equ DIMFLG - LINBUF
+STRBUFLEN:  equ FRETOP - STRBUF
+SYSTEMPLEN: equ DATLIN - SYSTEMP
+TMPSTATLEN: equ CONTLIN - TMPSTAT
+FPREGLEN:   equ FPSTR - FPREG
+FPSTRLEN:   equ $38F9 - FPSTR
 
 ;-----------------------------------------------------------------------------
 ; System routines
 ;-----------------------------------------------------------------------------
-PRNCHR      = $1D94  ; Print character in A
-PRNCHR1     = $1D72  ; Print character in A with pause/break at end of page
-PRNCRLF     = $19EA  ; Print CR+LF
-PRINTSTR    = $0E9D  ; Print null-terminated string
-SCROLLUP    = $1DFE  ; Scroll the screen up 1 line
-EVAL        = $0985  ; Evaluate expression
-EVLPAR      = $0A37  ; Evaluate expression in brackets
-GETINT      = $0B54  ; Evaluate numeric expression (integer 0-255)
-GETNUM      = $0972  ; Evaluate numeric expression
-PUTVAR8     = $0B36  ; Store variable 8 bit (out: B = value)
-GETVAR      = $10D1  ; Get variable (out: BC = addr, DE = len)
-GETLEN      = $0FF7  ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length)
-TSTNUM      = $0975  ; Error if evaluated expression not a number
-TSTSTR      = $0976  ; Error if evaluated expression not string
-DEINT       = $0682  ; Convert fp number to 16 bit signed integer in DE
-INT2STR     = $1679  ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
+PRNCHR:   equ $1D94  ; Print character in A
+PRNCHR1:  equ $1D72  ; Print character in A with pause/break at end of page
+PRNCRLF:  equ $19EA  ; Print CR+LF
+PRINTSTR: equ $0E9D  ; Print null-terminated string
+SCROLLUP: equ $1DFE  ; Scroll the screen up 1 line
+EVAL:     equ $0985  ; Evaluate expression
+EVLPAR:   equ $0A37  ; Evaluate expression in brackets
+GETINT:   equ $0B54  ; Evaluate numeric expression (integer 0-255)
+GETNUM:   equ $0972  ; Evaluate numeric expression
+PUTVAR8:  equ $0B36  ; Store variable 8 bit (out: B = value)
+GETVAR:   equ $10D1  ; Get variable (out: BC = addr, DE = len)
+GETLEN:   equ $0FF7  ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length)
+TSTNUM:   equ $0975  ; Error if evaluated expression not a number
+TSTSTR:   equ $0976  ; Error if evaluated expression not string
+DEINT:    equ $0682  ; Convert fp number to 16 bit signed integer in DE
+INT2STR:  equ $1679  ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 
-FINLPT = $19BE
-CRDONZ = $19DE
-READY = $0402
+FINLPT: equ $19BE
+CRDONZ: equ $19DE
+READY:  equ $0402
 
-ERROR_FC    = $0697  ; Function code error
-DO_ERROR    = $03DB  ; Process error code, E = code (offset to 2 char error name)
+ERROR_FC: equ $0697  ; Function code error
+DO_ERROR: equ $03DB  ; Process error code, E = code (offset to 2 char error name)
 
-STKINI = $0BE5
-WRMCON = $1A40
-TTYCHR = $1D72
+STKINI: equ $0BE5
+WRMCON: equ $1A40
+TTYCHR: equ $1D72
 
 ;----------------------------------------------------------------------------
 ;                         BASIC Error Codes
@@ -162,25 +162,25 @@ TTYCHR = $1D72
 ; code is offset to error name (2 characters)
 ;
 ;name        code            description
-FC_ERR  =    $08             ; Function Call error
+FC_ERR:  equ $08           ; Function Call error
 
 ; alternative system variable names
-VARTAB      = BASEND     ; $38D6 variables table (at end of BASIC program)
+VARTAB: equ BASEND     ; $38D6 variables table (at end of BASIC program)
 
-PathSize = 37
+PathSize: equ 37
 
-PathName = $BFC8    ; (37 chars) file path eg. "/root/subdir1/subdir2",0
-FileName = $BFED    ; USB file name 1-11 chars + '.', NULL
-FileType = $BFFA    ; file type BASIC/array/binary/etc.
-BinStart = $BFFB    ; binary file load/save address
-BinLen   = $BFFD    ; 16-bit binary file length
-DosFlags = $BFFF
-RAMEND   = $C000    ; we are in ROM, 32k expansion RAM available
+PathName: equ $BFC8    ; (37 chars) file path eg. "/root/subdir1/subdir2",0
+FileName: equ $BFED    ; USB file name 1-11 chars + '.', NULL
+FILETYPE: equ $BFFA    ; file type BASIC/array/binary/etc.
+BINSTART: equ $BFFB    ; binary file load/save address
+BINLEN:   equ $BFFD    ; 16-bit binary file length
+DOSFLAGS: equ $BFFF
+RAMEND:   equ $C000    ; we are in ROM, 32k expansion RAM available
 
-SysVars = PathName
+SysVars: equ PathName
 
 ; system flags
-SF_RETYP = 1       ; 1 = CTRL-O is retype
+SF_RETYP: equ 1       ; 1 = CTRL-O is retype
 
 ;=================================================================
 ;                     AquBASIC BOOT ROM
@@ -256,7 +256,8 @@ _coldboot:
     jp      $0153               ; Continue in ROM
 
 .str_basic:
-    db      $0D, $0A, "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
+    db $0D, $0A
+    db "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
 
 ;-----------------------------------------------------------------------------
 ; USB Disk Driver
@@ -329,24 +330,40 @@ _udf_jmp:
 BTOKEN:     equ $D4             ; Our first token number
 
 TBLCMDS:
-    db $80 + 'E', "DIT"
-    db $80 + 'C', "LS"
-    db $80 + 'L', "OCATE"
-    db $80 + 'O', "UT"
-    db $80 + 'P', "SG"
-    db $80 + 'D', "EBUG"
-    db $80 + 'C', "ALL"
-    db $80 + 'L', "OAD"
-    db $80 + 'S', "AVE"
-    db $80 + 'D', "IR"
-    db $80 + 'C', "AT"
-    db $80 + 'D', "EL"
-    db $80 + 'C', "D"
+    db $80 + 'E'
+    db "DIT"
+    db $80 + 'C'
+    db "LS"
+    db $80 + 'L'
+    db "OCATE"
+    db $80 + 'O'
+    db "UT"
+    db $80 + 'P'
+    db "SG"
+    db $80 + 'D'
+    db "EBUG"
+    db $80 + 'C'
+    db "ALL"
+    db $80 + 'L'
+    db "OAD"
+    db $80 + 'S'
+    db "AVE"
+    db $80 + 'D'
+    db "IR"
+    db $80 + 'C'
+    db "AT"
+    db $80 + 'D'
+    db "EL"
+    db $80 + 'C'
+    db "D"
 
     ; Functions
-    db $80 + 'I', "N"
-    db $80 + 'J', "OY"
-    db $80 + 'H', "EX$"
+    db $80 + 'I'
+    db "N"
+    db $80 + 'J'
+    db "OY"
+    db $80 + 'H'
+    db "EX$"
     db $80             ; End of table marker
 
 TBLJMPS:
@@ -388,11 +405,11 @@ execute_function:
     pop     af
     pop     hl
     push    bc                  ; Push return address back on stack
-    cp      (firstf - $B2)      ; ($B2 = first system BASIC function token)
+    cp      firstf - $B2        ; ($B2 = first system BASIC function token)
     ret     c                   ; Return if function number below ours
-    cp      (lastf - $B2 + 1)
+    cp      lastf - $B2 + 1
     ret     nc                  ; Return if function number above ours
-    sub     (firstf - $B2)
+    sub     firstf - $B2
     add     a, a                ; Index = A * 2
     push    hl
     ld      hl, TBLFNJP         ; Function address table

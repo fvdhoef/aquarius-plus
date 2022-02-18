@@ -1,16 +1,16 @@
 ; Based on V1.0 of micro-expander ROM
 
 ; File types
-FT_NONE  equ $01    ; no file extension (type determined from file header)
-FT_TXT   equ $20    ; .TXT ASCII text file (no header)
-FT_OTHER equ $80    ; .??? unknown file type (raw binary, no header)
-FT_BIN   equ $BF    ; .BIN binary (starts with $BF,$DA,load_addr if executable)
-FT_BAS   equ $FE    ; .BAS tokenized BASIC (has CAQ header same as .CAQ)
-FT_CAQ   equ $FF    ; .CAQ BASIC program or numeric array
+FT_NONE:  equ $01    ; no file extension (type determined from file header)
+FT_TXT:   equ $20    ; .TXT ASCII text file (no header)
+FT_OTHER: equ $80    ; .??? unknown file type (raw binary, no header)
+FT_BIN:   equ $BF    ; .BIN binary (starts with $BF,$DA,load_addr if executable)
+FT_BAS:   equ $FE    ; .BAS tokenized BASIC (has CAQ header same as .CAQ)
+FT_CAQ:   equ $FF    ; .CAQ BASIC program or numeric array
 
 ; Bits in dosflags
-DF_ADDR   = 0       ; set = address specified
-DF_ARRAY  = 7       ; set = numeric array
+DF_ADDR:  equ 0       ; set = address specified
+DF_ARRAY: equ 7       ; set = numeric array
 
 ;-----------------------------------------------------------------------------
 ; Print hex byte
@@ -104,9 +104,9 @@ chkarg:
     cp      ' '             ; Skip spaces
     jr      z, .next_char
     cp      ':'             ; Z if end of statement
-    jr      z, .done        ; Return Z if end of statement
+    jr      z, .chkarg_done ; Return Z if end of statement
     or      a               ; Z if end of line
-.done:
+.chkarg_done:
     pop     hl              ; Restore BASIC text pointer
     ret
 
@@ -147,7 +147,7 @@ ST_CD:
     ld     hl,PathName
     call   PRINTSTR             ; Print path
     call   PRNCRLF
-    jr     .done
+    jr     .cd_done
 .change_dir:
     pop    hl                   ; Pop BASIC text pointer
     call   EVAL                 ; Evaluate expression
@@ -168,7 +168,7 @@ ST_CD:
 .open:
     ld     hl, PathName
     call   usb__open_path       ; Try to open directory
-    jr     z, .done             ; If opened OK then done
+    jr     z, .cd_done          ; If opened OK then done
     cp     CH376_ERR_MISS_FILE  ; Directory missing?
     jr     z, .undo
     cp     CH376_INT_SUCCESS    ; 'directory' is actually a file?
@@ -182,7 +182,7 @@ ST_CD:
     ld     e, FC_ERR
     pop    hl
     jp     DO_ERROR             ; Return to BASIC with FC error
-.done:
+.cd_done:
     pop    hl                   ; Restore BASIC text pointer
     ret
 
@@ -438,20 +438,20 @@ _stl_done:
 ;
 ;  in: a = error code
 ;-----------------------------------------------------------------------------
-ERROR_NO_CH376    equ   1 ; CH376 not responding
-ERROR_NO_USB      equ   2 ; not in USB mode
-ERROR_MOUNT_FAIL  equ   3 ; drive mount failed
-ERROR_BAD_NAME    equ   4 ; bad name
-ERROR_NO_FILE     equ   5 ; no file
-ERROR_FILE_EMPTY  equ   6 ; file empty
-ERROR_BAD_FILE    equ   7 ; file header mismatch
-ERROR_NO_ADDR     equ   8 ; no load address in binary file
-ERROR_READ_FAIL   equ   9 ; read error
-ERROR_WRITE_FAIL  equ  10 ; write error
-ERROR_CREATE_FAIL equ  11 ; can't create file
-ERROR_NO_DIR      equ  12 ; can't open directory
-ERROR_PATH_LEN    equ  13 ; path too long
-ERROR_UNKNOWN     equ  14 ; other disk error
+ERROR_NO_CH376:    equ   1 ; CH376 not responding
+ERROR_NO_USB:      equ   2 ; not in USB mode
+ERROR_MOUNT_FAIL:  equ   3 ; drive mount failed
+ERROR_BAD_NAME:    equ   4 ; bad name
+ERROR_NO_FILE:     equ   5 ; no file
+ERROR_FILE_EMPTY:  equ   6 ; file empty
+ERROR_BAD_FILE:    equ   7 ; file header mismatch
+ERROR_NO_ADDR:     equ   8 ; no load address in binary file
+ERROR_READ_FAIL:   equ   9 ; read error
+ERROR_WRITE_FAIL:  equ  10 ; write error
+ERROR_CREATE_FAIL: equ  11 ; can't create file
+ERROR_NO_DIR:      equ  12 ; can't open directory
+ERROR_PATH_LEN:    equ  13 ; path too long
+ERROR_UNKNOWN:     equ  14 ; other disk error
 
 _show_error:
     cp      ERROR_UNKNOWN           ; Known error?
@@ -469,7 +469,7 @@ _show_error:
     add     l
     ld      l, a
     ld      a, h
-    adc     0
+    adc     a, 0
     ld      h, a                    ; Index into error message list
     ld      a, (hl)
     inc     hl
@@ -522,7 +522,7 @@ _error_messages:
 ;-----------------------------------------------------------------------------
 st_read_sync:
     ld      b, 12
-_st_read_caq_lp1
+_st_read_caq_lp1:
     call    usb__read_byte
     ret     nz
     inc     a
@@ -565,7 +565,7 @@ Init_BASIC:
     ld      a, (hl)
     inc     hl                  ; Test nextline address
     or      (hl)
-    jr      z, .done            ; If $0000 then done
+    jr      z, .init_done       ; If $0000 then done
     inc     hl
     inc     hl                  ; Skip line number
     inc     hl
@@ -579,7 +579,7 @@ Init_BASIC:
     inc     hl                  ; Set address of next line
     ld      (hl), d
     jr      .next_line
-.done:
+.init_done:
     ret
 
 ;-----------------------------------------------------------------------------
@@ -604,7 +604,7 @@ ST_SAVE:
 ST_SAVEFILE:
     call    get_arg                 ; Get current char (skipping spaces)
     cp      ','
-    jr      nz, .open               ; If not ',' then no args so saving BASIC program
+    jr      nz, .save_open               ; If not ',' then no args so saving BASIC program
     call    get_next
     cp      $AA                     ; '*' token?
     jr      nz, .num                ; No, parse binary address & length
@@ -637,7 +637,7 @@ ST_SAVEFILE:
     ld      a, 1<<DF_ARRAY
     ld      (DOSFLAGS), a           ; Flag saving array
     pop     hl
-    jr      .open
+    jr      .save_open
 
     ; Parse address, length
 .num:
@@ -654,7 +654,7 @@ ST_SAVEFILE:
     ld      (BINLEN),de             ; Store length
 
     ; Create new file
-.open:
+.save_open:
     push    hl                      ; Push BASIC text pointer
     ld      hl, FileName
     call    usb__open_write         ; Create/open new file
@@ -668,7 +668,7 @@ ST_SAVEFILE:
     jr      nz, .write_error
     ld      a, (DOSFLAGS)
     bit     DF_ARRAY, a             ; Saving array?
-    jr      z, .bas
+    jr      z, .ext_bas
 
     ; Saving array
     ld      hl, _array_name         ; "######"
@@ -678,7 +678,7 @@ ST_SAVEFILE:
     jr      .binary                 ; Write array
 
     ; Saving BASIC program
-.bas:
+.ext_bas:
     ld      hl, FileName
     ld      de, 6                   ; Write 1st 6 chars of filename
     call    usb__write_bytes
@@ -773,17 +773,17 @@ ST_DIR:
     ex      (sp), hl            ; Update text pointer on stack
 .go:
     call    usb__ready          ; Check for USB disk (may reset path to root!)
-    jr      nz, .error
+    jr      nz, .dir_error
     call    PRINTSTR            ; Print path
     call    PRNCRLF
     call    dos__directory      ; Display directory listing
-    jr      z, .done            ; If successful listing then done
-.error:
+    jr      z, .dir_done        ; If successful listing then done
+.dir_error:
     call    _show_error         ; Else show error message (a = error code)
     ld      e, FC_ERR
     pop     hl
     jp      DO_ERROR            ; Return to BASIC with FC error
-.done:
+.dir_done:
     pop     hl                  ; Pop text pointer
     ret
 
@@ -880,11 +880,11 @@ dos__prtDirInfo:
     or      c
     jr      nz, .kbytes
     ld      a, d
-    cp      high(10000)
+    cp      10000 >> 8
     jr      c, .bytes
     jr      nz, .kbytes             ; <10000 bytes?
     ld      a, e
-    cp      low(10000)
+    cp      10000 & $FF
     jr      nc, .kbytes             ; no,
 .bytes:
     ld      h, d
@@ -909,11 +909,11 @@ dos__prtDirInfo:
     or      a
     jr      nz, .dir_MB
     ld      a, h
-    cp      high(1000)
+    cp      1000 >> 8
     jr      c, .dir_round           ; <1000kB?
     jr      nz, .dir_MB
     ld      a,l
-    cp      low(1000)
+    cp      1000 & $FF
     jr      c, .dir_round           ; yes
 .dir_MB:
     ld      a, h
@@ -998,10 +998,10 @@ print_integer:
     ld       a, (hl)        ; Get next digit
     inc      hl
     or       a              ; Return when NULL reached
-    jr       z, .done
+    jr       z, .print_done
     call     PRNCHR         ; Print digit
     jr       .prtnum
-.done:
+.print_done:
     pop      bc
     ret
 
@@ -1014,18 +1014,18 @@ ST_DEL:
     jr     z, .goodname
     ld     e, a
     ld     a, ERROR_BAD_NAME
-    jr     .do_error
+    jr     .del_error
 .goodname:
     ld     hl, FileName
     call   usb__delete      ; Delete file
-    jr     z, .done
+    jr     z, .del_done
     ld     e, FC_ERR
     ld     a, ERROR_NO_FILE
-.do_error:
+.del_error:
     call   _show_error      ; Print error message
     pop    hl               ; Pop BASIC text pointer
     jp     DO_ERROR
-.done:
+.del_done:
     pop    hl               ; Pop BASIC text pointer
     ret
 
@@ -1081,7 +1081,7 @@ dos__set_path:
     cp     '/'              ; Back to last '/'
     jr     nz, .dotdot
     ld     a, e
-    cp     low(PathName)    ; At root?
+    cp     PathName & $FF   ; At root?
     jr     nz, .trim
     inc    de               ; Yes, leave root '/' in
 .trim:
@@ -1094,20 +1094,20 @@ dos__set_path:
 .subdir:
     push   de               ; Push end-of-path before adding '/'
     ld     a, e
-    cp     low(PathName)+1  ; At root?
+    cp     (PathName & $FF) + 1  ; At root?
     jr     z, .copypath     ; Yes,
     ld     a, '/'
     ld     (de), a          ; Add '/' separator
     inc    de
     dec    b
-    jr     z, .undo         ; If path full then undo
+    jr     z, .set_path_undo  ; If path full then undo
 .copypath:
     ld     a, (hl)          ; Get next string char
     call   dos__char        ; Convert to MSDOS
     ld     (de), a          ; Store char in pathname
     inc    de
     dec    b
-    jr     z, .undo         ; If path full then undo and fail
+    jr     z, .set_path_undo  ; If path full then undo and fail
 .nextc:
     inc    hl
     dec    c
@@ -1118,18 +1118,18 @@ dos__set_path:
     jr     .copied
 
     ; If path full then undo add
-.undo:
+.set_path_undo:
     pop    de               ; Pop original end-of-path
 .fail:
     xor    a
     ld     (de), a          ; Remove added subdir from path
     inc    a                ; Return nz
-    jr     .done
+    jr     .set_path_done
 .copied:
     pop    de               ; DE = original end-of-path
 .ok:
     cp     a                ; Return z
-.done:
+.set_path_done:
     pop    bc
     ret
 
@@ -1184,14 +1184,14 @@ dos__getfilename:
     jr      .got_name           ; Done
 .null_str:
     ld      a, $08              ; Function code error
-    jr      .done
+    jr      .get_filename_done
 .type_mismatch:
     ld      a, $18              ; Type mismatch error
-    jr      .done
+    jr      .get_filename_done
 .got_name:
     xor     a                   ; No error
     ld      (de), a             ; Terminate filename
-.done:
+.get_filename_done:
     pop     hl                  ; Restore BASIC text pointer
     or      a                   ; Test error code
     ret
@@ -1214,7 +1214,7 @@ dos__getfiletype:
     push  hl
     ld    hl, FileName
     ld    b, -1             ; B = position of '.' in filename
-_gft_find_dot
+_gft_find_dot:
     inc   b
     ld    a, b
     cp    9                 ; Error if name > 8 charcters long
@@ -1319,7 +1319,7 @@ dos__name:
 .end:
     xor   a
     ld    (de), a       ; NULL end of DOS filename string
-.done:
+
     pop   hl
     pop   de
     pop   bc
