@@ -1,31 +1,38 @@
-;===============================================================================
-;    AQUBASIC: Extended BASIC ROM for Mattel Aquarius With USB MicroExpander
-;===============================================================================
-; By Bruce Abbott                                            www.bhabbott.net.nz
-;                                                        bruce.abbott@xtra.co.nz
-; Modified for Aquarius+ by Frank van den Hoef
-
+;-----------------------------------------------------------------------------
+; Aquarius+ system ROM
+;-----------------------------------------------------------------------------
+; By Frank van den Hoef
+;
+; Based on AQUBASIC source code by Bruce Abbott:
+; http://bhabbott.net.nz/micro_expander.html
+;
 ; Useful links:
-; - Excellent ROM disassembly by Curtis F Kaylor:
+; - Excellent Aquarius S2 ROM disassembly by Curtis F Kaylor:
 ; https://github.com/RevCurtisP/Aquarius/blob/main/disassembly/aquarius-rom.lst
+;
+;-----------------------------------------------------------------------------
 
-; Commands:
+;-----------------------------------------------------------------------------
+; Extra BASIC commands
+;-----------------------------------------------------------------------------
 ; CLS    - Clear screen
 ; LOCATE - Position on screen
 ; SCR    - Scroll screen
-; OUT    - output data to I/O port
+; OUT    - Output data to I/O port
 ; PSG    - Program PSG register, value
-; CALL   - call machine code subroutine
-; LOAD   - load file from USB disk
-; SAVE   - save file to USB disk
-; DIR    - display USB disk directory with wildcard
-; CD     - change directory
-; DEL    - delete file
+; CALL   - Call machine code subroutine
+; LOAD   - Load file from USB disk
+; SAVE   - Save file to USB disk
+; DIR    - Display USB disk directory with wildcard
+; CD     - Change directory
+; DEL    - Delete file
 
-; Functions:
-; IN()   - get data from I/O port
+;-----------------------------------------------------------------------------
+; Extra BASIC functions
+;-----------------------------------------------------------------------------
+; IN()   - Get data from I/O port
 ; JOY()  - Read joystick
-; HEX$() - convert number to hexadecimal string
+; HEX$() - Convert number to hexadecimal string
 
 ;-----------------------------------------------------------------------------
 ; System Variables
@@ -249,7 +256,7 @@ _coldboot:
     jp      $0153               ; Continue in ROM
 
 .str_basic:
-    db      $0D, "USB BASIC V1.0", $0D, $0A, 0
+    db      $0D, $0A, "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
 
 ;-----------------------------------------------------------------------------
 ; USB Disk Driver

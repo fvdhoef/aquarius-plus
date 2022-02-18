@@ -18,7 +18,7 @@ with open("../../aquarius.rom", "wb") as f:
         f.write(stockrom)
 
     # Extended ROM
-    with open("zout/aqubasic.cim", "rb") as f2:
+    with open("zout/aqplus.cim", "rb") as f2:
         f.write(f2.read())
 
     # Aquarius Character ROM
