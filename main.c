@@ -171,8 +171,6 @@ void reset(void) {
 #define HCYCLES_PER_SAMPLE (149)
 
 static void render_screen(SDL_Renderer *renderer) {
-    draw_screen();
-
     static SDL_Texture *texture = NULL;
     if (texture == NULL) {
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
@@ -261,6 +259,8 @@ static void emulate(SDL_Renderer *renderer) {
 
             if (emustate.line_hcycles >= HCYCLES_PER_LINE) {
                 emustate.line_hcycles -= HCYCLES_PER_LINE;
+
+                video_draw_line(emustate.linenr);
 
                 emustate.linenr++;
                 if (emustate.linenr == 262) {

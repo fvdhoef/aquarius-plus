@@ -38,39 +38,31 @@ const uint8_t *video_get_fb(void) {
     return screen;
 }
 
-static inline void draw_char(uint8_t ch, uint8_t color, int row, int column) {
-    uint8_t        fgcol = text_palette[color >> 4];
-    uint8_t        bgcol = text_palette[color & 0xF];
-    const uint8_t *ps    = &charrom_bin[ch * 8];
+void video_draw_line(int line) {
+    if (line < 0 || line >= VIDEO_HEIGHT)
+        return;
 
-    uint8_t *pd = &screen[(row * 8) * VIDEO_WIDTH + column * 8];
+    uint8_t *pd = &screen[line * VIDEO_WIDTH];
 
-    for (int j = 0; j < 8; j++) {
-        for (int i = 0; i < 8; i++) {
-            pd[i] = (ps[j] & (1 << (7 - i))) ? fgcol : bgcol;
+    for (int i = 0; i < VIDEO_WIDTH; i++) {
+
+        // Draw text character
+        uint8_t ch;
+        uint8_t color;
+        if (line >= 16 && line < 208 && i >= 16 && i <= 336) {
+            int row    = (line - 16) / 8;
+            int column = (i - 16) / 8;
+            ch         = emustate.ram[(row + 1) * 40 + column];
+            color      = emustate.ram[0x400 + (row + 1) * 40 + column];
+        } else {
+            ch    = emustate.ram[0];
+            color = emustate.ram[0x400];
         }
-        pd += VIDEO_WIDTH;
-    }
-}
 
-void draw_screen(void) {
-    uint8_t border_ch    = emustate.ram[0];
-    uint8_t border_color = emustate.ram[0x400];
+        uint8_t fgcol  = text_palette[color >> 4];
+        uint8_t bgcol  = text_palette[color & 0xF];
+        uint8_t charbm = charrom_bin[ch * 8 + (line & 7)];
 
-    for (int row = 0; row < 28; row++) {
-        for (int column = 0; column < 44; column++) {
-            if (row >= 2 && row < 26 && column >= 2 && column < 42)
-                continue;
-
-            draw_char(border_ch, border_color, row, column);
-        }
-    }
-
-    for (int row = 0; row < 24; row++) {
-        for (int column = 0; column < 40; column++) {
-            uint8_t ch    = emustate.ram[(row + 1) * 40 + column];
-            uint8_t color = emustate.ram[0x400 + (row + 1) * 40 + column];
-            draw_char(ch, color, row + 2, column + 2);
-        }
+        pd[i] = (charbm & (1 << (7 - (i & 7)))) ? fgcol : bgcol;
     }
 }
