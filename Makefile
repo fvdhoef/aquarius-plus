@@ -1,10 +1,66 @@
-all:
-	mkdir -p build
+#-----------------------------------------------------------------------------
+# Makefile
+#-----------------------------------------------------------------------------
+INC_DIRS    += . libz80
+SRC_DIRS    += .
+C_SRCS      += libz80/z80.c
+C_SRCS      += assets/charrom.c
+
+CFLAGS      += -O3 -g
+OUT          = $(BUILD_DIR)/aquarius_emu
+CFLAGS      += `pkg-config --cflags sdl2`
+LFLAGS      += `pkg-config --libs sdl2`
+
+CFLAGS      += -D_BSD_SOURCE -D_DEFAULT_SOURCE -std=c11 -pedantic
+CFLAGS      += -Wall -Wextra -Wshadow -Winit-self -Wfloat-conversion -Wdouble-promotion -Wmissing-include-dirs
+CFLAGS      += -Werror=implicit-function-declaration
+BUILD_DIR   ?= build
+
+CFLAGS      += -MD $(addprefix -I,$(INC_DIRS))
+
+#-----------------------------------------------------------------------------
+# Sources
+#-----------------------------------------------------------------------------
+C_SRCS      += $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
+
+#-----------------------------------------------------------------------------
+# Object files
+#-----------------------------------------------------------------------------
+C_OBJS      := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.o))
+OBJS        := $(C_OBJS)
+DEPS        := $(OBJS:.o=.d)
+
+#-----------------------------------------------------------------------------
+# Rules
+#-----------------------------------------------------------------------------
+.PHONY: all clean run
+
+all: $(OUT)
+
+$(OUT): $(BUILD_DIR) $(OBJS)
+	@echo Linking $@
+	@$(CC) $(OBJS) $(CFLAGS) $(LFLAGS) -o $@
 	ln -sf ../aquarius.rom build/aquarius.rom
-	gcc -O2 -Wall -Wextra -Wfloat-conversion -Ilibz80 -o build/aquarius_emu main.c audio.c ay8910.c ch376.c fat.c direnum.c video.c keyboard.c emustate.c libz80/z80.c assets/charrom.c `sdl2-config --cflags --libs`
 
-run: all
-	build/aquarius_emu
+	@ln -sf ../kernel.bin $(BUILD_DIR)/kernel.bin
+	@ln -sf ../spiflash.bin $(BUILD_DIR)/spiflash.bin
+	@ln -sf ../sdcard.bin $(BUILD_DIR)/sdcard.bin
 
-runusb: all
-	build/aquarius_emu -c testdata/roms/aqubasic_bank1.rom -u testdata/usb
+$(C_OBJS): $(BUILD_DIR)/%.o: %.c
+	@echo Compiling $<
+	@$(CC) $(CFLAGS) -o $@ -c $<
+
+$(BUILD_DIR):
+	@mkdir -p $(dir $(C_OBJS))
+
+run: $(OUT)
+	$(OUT) -u testdata/usb
+
+clean:
+	@echo Cleaning...
+	@rm -f $(OUT)
+	@rm -rf $(BUILD_DIR)
+
+.DEFAULT_GOAL = all
+
+-include $(DEPS)
