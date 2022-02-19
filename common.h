@@ -23,3 +23,5 @@
 #endif
 
 #define CPU_FREQ (3579545)
+
+void reset(void);
