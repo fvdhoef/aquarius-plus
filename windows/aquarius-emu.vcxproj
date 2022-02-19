@@ -64,9 +64,12 @@
     <ClCompile Include="..\ay8910.c" />
     <ClCompile Include="..\ch376.c" />
     <ClCompile Include="..\direnum.c" />
+    <ClCompile Include="..\emustate.c" />
     <ClCompile Include="..\fat.c" />
+    <ClCompile Include="..\keyboard.c" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.c" />
+    <ClCompile Include="..\video.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\audio.h" />
@@ -74,8 +77,11 @@
     <ClInclude Include="..\ch376.h" />
     <ClInclude Include="..\common.h" />
     <ClInclude Include="..\direnum.h" />
+    <ClInclude Include="..\emustate.h" />
     <ClInclude Include="..\fat.h" />
+    <ClInclude Include="..\keyboard.h" />
     <ClInclude Include="..\libz80\z80.h" />
+    <ClInclude Include="..\video.h" />
     <ClInclude Include="getopt.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
