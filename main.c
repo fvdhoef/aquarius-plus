@@ -160,7 +160,6 @@ void reset(void) {
     ay8910_reset(&emustate.ay_state);
 }
 
-
 // 3579545 Hz -> 59659 cycles / frame
 // 7159090 Hz -> 119318 cycles / frame
 
@@ -170,6 +169,73 @@ void reset(void) {
 
 #define HCYCLES_PER_LINE (455)
 #define HCYCLES_PER_SAMPLE (149)
+
+static void render_screen(SDL_Renderer *renderer) {
+    draw_screen();
+
+    static SDL_Texture *texture = NULL;
+    if (texture == NULL) {
+        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
+    }
+
+    void *pixels;
+    int   pitch;
+    SDL_LockTexture(texture, NULL, &pixels, &pitch);
+
+    const uint8_t *fb = video_get_fb();
+
+    for (int j = 0; j < VIDEO_HEIGHT; j++) {
+        for (int i = 0; i < VIDEO_WIDTH; i++) {
+
+            // Convert from RGB 2:2:2 to RGB 8:8:8
+            uint8_t col222 = fb[j * VIDEO_WIDTH + i];
+
+            unsigned r = (col222 >> 0) & 3;
+            unsigned g = (col222 >> 2) & 3;
+            unsigned b = (col222 >> 4) & 3;
+
+            ((uint32_t *)((uintptr_t)pixels + j * pitch))[i] =
+                (r << 22) | (r << 20) | (r << 18) | (r << 16) |
+                (g << 14) | (g << 12) | (g << 10) | (g << 8) |
+                (b << 6) | (b << 4) | (b << 2) | (b << 0);
+        }
+    }
+
+    SDL_UnlockTexture(texture);
+    SDL_RenderClear(renderer);
+
+    // Determine target size
+    {
+        int w, h;
+        SDL_GetRendererOutputSize(renderer, &w, &h);
+
+        // Retain aspect ratio
+        int w1 = w / VIDEO_WIDTH * VIDEO_WIDTH;
+        int h1 = w1 * VIDEO_HEIGHT / VIDEO_WIDTH;
+        int h2 = h / VIDEO_HEIGHT * VIDEO_HEIGHT;
+        int w2 = h2 * VIDEO_WIDTH / VIDEO_HEIGHT;
+
+        int sw, sh;
+        if (w1 == 0 || h1 == 0) {
+            sw = w;
+            sh = h;
+        } else if (w1 <= w && h1 <= h) {
+            sw = w1;
+            sh = h1;
+        } else {
+            sw = w2;
+            sh = h2;
+        }
+
+        SDL_Rect dst;
+        dst.w = (int)sw;
+        dst.h = (int)sh;
+        dst.x = (w - dst.w) / 2;
+        dst.y = (h - dst.h) / 2;
+        SDL_RenderCopy(renderer, texture, NULL, &dst);
+    }
+    SDL_RenderPresent(renderer);
+}
 
 static void emulate(SDL_Renderer *renderer) {
     // Emulation is performed in sync with the audio. This function will run
@@ -316,7 +382,7 @@ int main(int argc, char *argv[]) {
         fclose(f);
     }
 
-    unsigned long wnd_width = 352 * 2, wnd_height = 224 * 2;
+    unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
     SDL_Window   *window = SDL_CreateWindow("Aquarius emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());

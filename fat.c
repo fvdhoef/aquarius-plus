@@ -351,8 +351,8 @@ int fat_create(const char *name) {
     }
 
     // Compose path
-    int   str_length       = snprintf(NULL, 0, "%s/%s", current_path, name) + 1;
-    char *opened_file_path = malloc(str_length);
+    int str_length   = snprintf(NULL, 0, "%s/%s", current_path, name) + 1;
+    opened_file_path = malloc(str_length);
     snprintf(opened_file_path, str_length, "%s/%s", current_path, name);
 
     opened_file = fopen(opened_file_path, "wb");
