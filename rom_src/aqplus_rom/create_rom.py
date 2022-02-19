@@ -5,15 +5,21 @@ with open("../../aquarius.rom", "wb") as f:
     with open("../../assets/aquarius_s2.rom", "rb") as f2:
         stockrom = bytearray(f2.read())
 
-        # Cold start entry point in ROM
-        stockrom[0x010F] = 0xC3   # JP $2000
-        stockrom[0x0110] = 0x00
-        stockrom[0x0111] = 0x20
+        def set_jump(offset, target):
+            stockrom[offset+0] = 0xC3
+            stockrom[offset+1] = target & 0xFF
+            stockrom[offset+2] = (target >> 8) & 0xFF
 
-        # Warm start entry point in ROM
-        stockrom[0x00ED] = 0xC3   # JP $2003
-        stockrom[0x00EE] = 0x03
-        stockrom[0x00EF] = 0x20
+        def set_call(offset, target):
+            stockrom[offset+0] = 0xCD
+            stockrom[offset+1] = target & 0xFF
+            stockrom[offset+2] = (target >> 8) & 0xFF
+
+        # Reset entry point in ROM
+        set_call(0x0046, 0x2000)
+
+        # Cold start entry point in ROM
+        set_jump(0x010F, 0x2003)
 
         f.write(stockrom)
 

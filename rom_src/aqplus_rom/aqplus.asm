@@ -145,16 +145,16 @@ TSTSTR:   equ $0976  ; Error if evaluated expression not string
 DEINT:    equ $0682  ; Convert fp number to 16 bit signed integer in DE
 INT2STR:  equ $1679  ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 
-FINLPT: equ $19BE
-CRDONZ: equ $19DE
-READY:  equ $0402
+FINLPT:   equ $19BE
+CRDONZ:   equ $19DE
+READY:    equ $0402
 
 ERROR_FC: equ $0697  ; Function code error
 DO_ERROR: equ $03DB  ; Process error code, E = code (offset to 2 char error name)
 
-STKINI: equ $0BE5
-WRMCON: equ $1A40
-TTYCHR: equ $1D72
+STKINI:   equ $0BE5
+WRMCON:   equ $1A40
+TTYCHR:   equ $1D72
 
 ;----------------------------------------------------------------------------
 ;                         BASIC Error Codes
@@ -162,52 +162,45 @@ TTYCHR: equ $1D72
 ; code is offset to error name (2 characters)
 ;
 ;name        code            description
-FC_ERR:  equ $08           ; Function Call error
+FC_ERR:   equ $08           ; Function Call error
 
 ; alternative system variable names
-VARTAB: equ BASEND     ; $38D6 variables table (at end of BASIC program)
+VARTAB:   equ BASEND        ; $38D6 variables table (at end of BASIC program)
 
 PathSize: equ 37
 
-PathName: equ $BFC8    ; (37 chars) file path eg. "/root/subdir1/subdir2",0
-FileName: equ $BFED    ; USB file name 1-11 chars + '.', NULL
-FILETYPE: equ $BFFA    ; file type BASIC/array/binary/etc.
-BINSTART: equ $BFFB    ; binary file load/save address
-BINLEN:   equ $BFFD    ; 16-bit binary file length
+PathName: equ $BFC8         ; (37 chars) file path eg. "/root/subdir1/subdir2",0
+FileName: equ $BFED         ; USB file name 1-11 chars + '.', NULL
+FILETYPE: equ $BFFA         ; file type BASIC/array/binary/etc.
+BINSTART: equ $BFFB         ; binary file load/save address
+BINLEN:   equ $BFFD         ; 16-bit binary file length
 DOSFLAGS: equ $BFFF
-RAMEND:   equ $C000    ; we are in ROM, 32k expansion RAM available
+RAMEND:   equ $C000         ; we are in ROM, 32k expansion RAM available
 
-SysVars: equ PathName
+SysVars:  equ PathName
 
 ; system flags
-SF_RETYP: equ 1       ; 1 = CTRL-O is retype
+SF_RETYP: equ 1             ; 1 = CTRL-O is retype
 
 ;=================================================================
 ;                     AquBASIC BOOT ROM
 ;=================================================================
-    org $2000
-    jp _coldboot    ; Called from main ROM for cold boot
-    jp _warmboot    ; Called from main ROM for warm boot
+    org     $2000
+    jp      _reset          ; Called from main ROM after reset after setting up temp stack
+    jp      _coldboot       ; Called from main ROM for cold boot
 
 ;-----------------------------------------------------------------------------
-; Warm boot entry point (CTRL-C pressed in boot menu)
+; Common initialisation
 ;-----------------------------------------------------------------------------
-_warmboot:
+_reset:
+    call    PRNCHR
     call    usb_init
-
-    ; Clear screen
-    ld      a, $0b
-    call    TTYCHR
-
-    ; Continue in ROM code
-    jp      $00F2
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Cold boot entry point
 ;-----------------------------------------------------------------------------
 _coldboot:
-    call    usb_init
-
     ; Test the memory (only testing 1st byte in each 256 byte page!)
     ld      hl, $3A00           ; First page of free RAM
     ld      a, $55              ; Pattern = 01010101
