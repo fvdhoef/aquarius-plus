@@ -284,6 +284,7 @@ void reset(void) {
 
     emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;
+    emustate.sysctrl_ay_both = true;
 
     ay8910_reset(&emustate.ay_state);
     ay8910_reset(&emustate.ay2_state);
@@ -402,14 +403,25 @@ static void emulate(SDL_Renderer *renderer) {
         emustate.sample_hcycles -= HCYCLES_PER_SAMPLE;
 
         // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
-        float samples = 0;
+        float ay1_samples = 0;
+        float ay2_samples = 0;
         for (int i = 0; i < 5; i++) {
-            samples += ay8910_render(&emustate.ay_state);
-            samples += ay8910_render(&emustate.ay2_state);
+            ay1_samples += 0.2f * ay8910_render(&emustate.ay_state);
+            ay2_samples += 0.2f * ay8910_render(&emustate.ay2_state);
         }
-        samples /= 10.0f;
 
-        abuf[aidx] = (emustate.sound_output ? AUDIO_LEVEL : 0) + (uint16_t)(samples * AUDIO_LEVEL);
+        uint16_t ay1  = (uint16_t)(ay1_samples * AUDIO_LEVEL);
+        uint16_t ay2  = (uint16_t)(ay2_samples * AUDIO_LEVEL);
+        uint16_t beep = emustate.sound_output ? AUDIO_LEVEL : 0;
+
+        uint16_t left  = beep + ay1;
+        uint16_t right = beep + ay2;
+        if (emustate.sysctrl_ay_both) {
+            right += ay1;
+        }
+
+        abuf[aidx * 2 + 0] = left;
+        abuf[aidx * 2 + 1] = right;
     }
 
     // Return buffer to audio subsystem.

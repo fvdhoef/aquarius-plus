@@ -13,7 +13,7 @@ static volatile int      buf_cnt = 0;
 static void audio_callback(void *userdata, Uint8 *stream, int len) {
     (void)userdata;
 
-    assert(len == SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+    assert(len == 2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
 
     SDL_Event event;
     memset(&event, 0, sizeof(event));
@@ -45,7 +45,7 @@ void audio_init(void) {
         exit(1);
     }
     for (int i = 0; i < NUM_BUFS; i++) {
-        buffers[i] = malloc(SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+        buffers[i] = malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
         if (buffers[i] == NULL) {
             fprintf(stderr, "Error allocating audio buffers\n");
             exit(1);
@@ -60,7 +60,7 @@ void audio_init(void) {
     desired.freq     = SAMPLERATE;
     desired.format   = AUDIO_U16SYS;
     desired.samples  = SAMPLES_PER_BUFFER;
-    desired.channels = 1;
+    desired.channels = 2;
     desired.callback = audio_callback;
 
     audio_dev = SDL_OpenAudioDevice(NULL, 0, &desired, &obtained, 0);
