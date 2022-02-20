@@ -405,8 +405,9 @@ static void emulate(SDL_Renderer *renderer) {
         float samples = 0;
         for (int i = 0; i < 5; i++) {
             samples += ay8910_render(&emustate.ay_state);
+            samples += ay8910_render(&emustate.ay2_state);
         }
-        samples /= 5.0f;
+        samples /= 10.0f;
 
         abuf[aidx] = (emustate.sound_output ? AUDIO_LEVEL : 0) + (uint16_t)(samples * AUDIO_LEVEL);
     }
