@@ -143,17 +143,22 @@ ST_CD:
     ld     a, c
     or     a                    ; Any args?
     jr     nz, .change_dir      ; Yes,
+
+    ; No arguments -> show current path
 .show_path:
     ld     hl, PathName
-    call   STROUT              ; Print path
+    call   STROUT
     call   CRDO
     jr     .cd_done
+
 .change_dir:
     pop    hl                   ; Pop BASIC text pointer
     call   FRMEVL               ; Evaluate expression
     push   hl                   ; Push BASIC text pointer
+
     call   CHKSTR               ; Type mismatch error if not string
     call   LEN1                 ; Get string and its length
+
     jr     z, .open             ; If null string then open current directory
     inc    hl
     inc    hl                   ; Skip to string text pointer
@@ -161,27 +166,33 @@ ST_CD:
     inc    hl
     ld     h, (hl)              ; HL = string text
     ld     l, b
-    call   dos__set_path        ; Update path (out: de = end of old path)
+    call   dos__set_path        ; Update path (out: DE = end of old path)
     jr     z, .open
     ld     a, ERROR_PATH_LEN
     jr     .do_error            ; Path too long
+
 .open:
     ld     hl, PathName
     call   usb__open_path       ; Try to open directory
     jr     z, .cd_done          ; If opened OK then done
+
     cp     CH376_ERR_MISS_FILE  ; Directory missing?
     jr     z, .undo
+
     cp     CH376_INT_SUCCESS    ; 'directory' is actually a file?
     jr     nz, .do_error        ; No, disk error
+
 .undo:
     ex     de, hl               ; HL = end of old path
     ld     (hl), 0              ; Remove subdirectory from path
     ld     a, ERROR_NO_DIR      ; Error = missing directory
+
 .do_error:
     call   _show_error          ; Print error message
     ld     e, FC_ERR
     pop    hl
     jp     ERROR                ; Return to BASIC with FC error
+
 .cd_done:
     pop    hl                   ; Restore BASIC text pointer
     ret
@@ -556,7 +567,7 @@ Init_BASIC:
     ld      h, a
     ld      (OLDTXT), hl        ; Set CONTinue position to 0
     ld      (SUBFLG), a         ; Clear locator flag
-    ld      ($38DE), hl         ; Clear array pointer???
+    ld      (VARNAM), hl         ; Clear array pointer???
 .link_lines:
     ld      de, (TXTTAB)        ; DE = start of BASIC program
 .next_line:

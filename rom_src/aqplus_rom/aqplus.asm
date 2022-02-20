@@ -66,8 +66,13 @@ SysVars:  equ PathName
 ; Common initialisation
 ;-----------------------------------------------------------------------------
 _reset:
+    ; Clear screen (the system ROM already loaded 11 in A)
     call    TTYOUT
+
+    ; Initialize character RAM
     call    init_charram
+ 
+    ; Initialize USB
     call    usb_init
     ret
 
@@ -125,7 +130,7 @@ _coldboot:
     ; Check that we have enough RAM
     ld      a, h
     cp      $C0                 ; 32k expansion
-    jp      c, $0BB7            ; OM error if expansion RAM missing
+    jp      c, OMERR            ; OM error if expansion RAM missing
     dec     hl                  ; Last good RAM addresss
     ld      hl, SysVars - 1     ; Top of public RAM
 
@@ -138,18 +143,18 @@ _coldboot:
     ld      (hl), $00           ; NULL at start of BASIC program
     inc     hl
     ld      (TXTTAB), hl        ; Beginning of BASIC program text
-    call    $0BBE               ; ST_NEW2 - NEW without syntax check
+    call    SCRTCH              ; ST_NEW2 - NEW without syntax check
 
     ; Install BASIC HOOK
     ld      hl, hook_handler
     ld      (HOOK), hl
 
     ; Show our copyright message
-    call    $1FF2               ; Print copyright string in ROM
+    call    PRNTIT              ; Print copyright string in ROM
     ld      hl, .str_basic      ; "USB BASIC"
     call    STROUT
 
-    jp      $0153               ; Continue in ROM
+    jp      INITFF              ; Continue in ROM
 
 .str_basic:
     db $0D, $0A
@@ -293,7 +298,7 @@ firstf: equ BTOKEN + BCOUNT          ; Token number of first function in table
 lastf:  equ firstf + FCOUNT - 1      ; Token number of last function in table
 
 ;-----------------------------------------------------------------------------
-; BASIC Function handler
+; BASIC Function handler - hook 27
 ;-----------------------------------------------------------------------------
 ; called from $0a5f by RST $30,$1b
 ;
@@ -313,7 +318,7 @@ execute_function:
     jp      do_jump             ; JP to our function
 
 ;-----------------------------------------------------------------------------
-; Convert keyword to token
+; Convert keyword to token - 10
 ;-----------------------------------------------------------------------------
 keyword_to_token:
     ld      a, b               ; A = current index
@@ -333,7 +338,7 @@ keyword_to_token:
     jp      $04F9              ; Continue searching using our keyword table
 
 ;-----------------------------------------------------------------------------
-; Convert token to keyword
+; Convert token to keyword - hook 22
 ;
 ; This function will check if the passed token is one of the stock BASIC or
 ; our extra commands. If it one of our commands, we pass our command table
@@ -352,10 +357,10 @@ token_to_keyword:
     sub     BTOKEN - 1
     ld      c, a                ; C = offset to AquBASIC command
     ld      de, TBLCMDS         ; DE = table of AquBASIC command names
-    jp      $05A8               ; Print keyword indexed by C
+    jp      RESSRC              ; Print keyword indexed by C
 
 ;-----------------------------------------------------------------------------
-; exec_next_statement
+; exec_next_statement - hook 23
 ;-----------------------------------------------------------------------------
 exec_next_statement:
     pop     bc                  ; BC = return address
@@ -368,9 +373,9 @@ exec_next_statement:
 .process:
     ; Check if the token is own of our own, otherwise give syntax error
     sub     (BTOKEN) - $80
-    jp      c, $03C4            ; SN error if < our 1st BASIC command token
+    jp      c, SNERR           ; SN error if < our 1st BASIC command token
     cp      BCOUNT              ; Count number of commands
-    jp      nc, $03C4           ; SN error if > out last BASIC command token
+    jp      nc, SNERR          ; SN error if > out last BASIC command token
 
     ; Execute handler 
     rlca                        ; A*2 indexing WORDs
@@ -381,13 +386,13 @@ exec_next_statement:
     jp      $0665               ; Continue with exec_next_statement
 
 ;-----------------------------------------------------------------------------
-; RUN command
+; RUN command - hook 24
 ;-----------------------------------------------------------------------------
 run_cmd:
     pop     af                 ; Clean up stack
     pop     af                 ; Restore AF
     pop     hl                 ; Restore HL
-    jp      z, $0BCB           ; If no argument then RUN from 1st line
+    jp      z, RUNC            ; If no argument then RUN from 1st line
 
     push    hl
     call    FRMEVL             ; Get argument type
@@ -398,9 +403,9 @@ run_cmd:
     jr      z, .run_file
 
     ; RUN with line number
-    call    $0BCF              ; Init BASIC run environment
-    ld      bc, $062C
-    jp      $06DB              ; GOTO line number
+    call    CLEARC             ; Init BASIC run environment
+    ld      bc, NEWSTT
+    jp      RUNC2              ; GOTO line number
 
     ; RUN with string argument
 .run_file:
@@ -458,7 +463,7 @@ run_cmd:
     call    ST_LOADFILE        ; Load file from disk, name in FileName
     jp      nz, .error         ; If load failed then return to command prompt
     cp      FT_BAS             ; Filetype is BASIC?
-    jp      z, $0BCB           ; Yes, run loaded BASIC program
+    jp      z, RUNC            ; Yes, run loaded BASIC program
 
     cp      FT_BIN             ; BINARY?
     jp      nz, .done          ; No, return to command line prompt
@@ -487,7 +492,7 @@ ST_reserved:
 ;-----------------------------------------------------------------------------
 ST_CLS:
     ; Clear screen
-    ld      a, $0B
+    ld      a, 11
     OUTCHR
     ret
 
@@ -540,8 +545,8 @@ ST_LOCATE:
     ; Restore character behind cursor
     push    hl
     exx
-    ld      hl, ($3801)         ; CHRPOS - address of cursor within matrix
-    ld      a, ($380D)          ; BUFO - storage of the character behind the cursor
+    ld      hl, (CURRAM)        ; CHRPOS - address of cursor within matrix
+    ld      a, (CURCHR)         ; BUFO - storage of the character behind the cursor
     ld      (hl), a             ; Put original character on screen
     pop     hl
 
@@ -561,9 +566,9 @@ ST_LOCATE:
     add     hl, hl
     add     hl, hl              ; HL is now 40 * rows
     add     hl, de              ; Added the columns
-    ld      de, $3000           ; Screen character-matrix (= 12288 dec)
+    ld      de, SCREEN          ; Screen character-matrix (= 12288 dec)
     add     hl, de              ; Putting it al together
-    jp      $1DE7               ; Save cursor position and return
+    jp      TTYFIS              ; Save cursor position and return
 
 ;-----------------------------------------------------------------------------
 ; PSG statement
@@ -571,7 +576,7 @@ ST_LOCATE:
 ;-----------------------------------------------------------------------------
 ST_PSG:
     cp      $00
-    jp      z, $03D6         ; MO error if no args
+    jp      z, MOERR         ; MO error if no args
 
 .psgloop:
     ; Get PSG register to write to
@@ -601,7 +606,7 @@ FN_IN:
 
     call    PARCHK           ; Read number from line - ending with a ')'
     ex      (sp), hl
-    ld      de, $0A49        ; Return address
+    ld      de, LABBCK       ; Return address
     push    de               ; On stack
     call    FRCINT           ; Evaluate formula pointed by HL, result in DE
     ld      b, d
@@ -621,9 +626,9 @@ FN_IN:
 FN_JOY:
     pop     hl             ; Return address
     inc     hl             ; skip rst parameter
-    call    $0A37          ; Read number from line - ending with a ')'
+    call    PARCHK         ; Read number from line - ending with a ')'
     ex      (sp), hl
-    ld      de, $0A49      ; set return address
+    ld      de, LABBCK     ; set return address
     push    de
     call    FRCINT         ; FRCINT - evalute formula pointed by HL result in DE
 
@@ -664,7 +669,7 @@ FN_JOY:
 
 .joy05:
     cpl
-    jp      $0B36
+    jp      SNGFLT
 
 ;-----------------------------------------------------------------------------
 ; HEX$() function
@@ -675,10 +680,10 @@ FN_HEX:
     inc     hl
     call    PARCHK          ; Evaluate parameter in brackets
     ex      (sp), hl
-    ld      de, $0A49       ; Return address
+    ld      de, LABBCK      ; Return address
     push    de              ; On stack
     call    FRCINT          ; Evaluate formula @HL, result in DE
-    ld      hl, $38E9       ; HL = temp string
+    ld      hl, FPSTR       ; HL = temp string
     ld      a, d
     or      a               ; > zero ?
     jr      z, .lower_byte
@@ -688,7 +693,7 @@ FN_HEX:
     ld      a, e
     call    .hexbyte        ; Convert byte in E to hex string
     ld      (hl), 0         ; Null-terminate string
-    ld      hl, $38E9
+    ld      hl, FPSTR
 .create_string:
     jp      $0E2F           ; Create BASIC string
 

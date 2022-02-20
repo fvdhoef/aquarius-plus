@@ -109,23 +109,36 @@ BASTXT:     equ $3901   ; Start of Basic Program
 ;-----------------------------------------------------------------------------
 ; System ROM functions
 ;-----------------------------------------------------------------------------
+INITFF:     equ $0153   ; Initialize I/O Port 255
+SNERR:      equ $03C4   ; Syntax error
+MOERR:      equ $03D6   ; Missing Operand error
 ERROR:      equ $03DB   ; Process error code, E = code (offset to 2 char error name)
 READY:      equ $0402
+RESSRC:     equ $05A8
+NEWSTT:     equ $062C
 FRCINT:     equ $0682   ; Convert fp number to 16 bit signed integer in DE
 FCERR:      equ $0697   ; Function call error
+RUNC2:      equ $06DB
 FRMNUM:     equ $0972   ; Evaluate numeric expression
 CHKNUM:     equ $0975   ; Error if evaluated expression not a number
 CHKSTR:     equ $0976   ; Error if evaluated expression not string
 FRMEVL:     equ $0985   ; Evaluate formula
 PARCHK:     equ $0A37   ; Evaluate expression in brackets
+LABBCK:     equ $0A49
 SNGFLT:     equ $0B36   ; Store variable 8 bit (out: B = value)
 GETBYT:     equ $0B54   ; Evaluate numeric expression (integer 0-255)
+OMERR:      equ $0BB7   ; Out of memory error
+SCRTCH:     equ $0BBE
+RUNC:       equ $0BCB
+CLEARC:     equ $0BCF
 STROUT:     equ $0E9D   ; Print null-terminated string in HL
 LEN1:       equ $0FF7   ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length) 
 PTRGET:     equ $10D1   ; Get variable (out: BC = addr, DE = len)
 CRDO:       equ $19EA   ; Print CR+LF
 TTYCHR:     equ $1D72   ; Print character in A with pause/break at end of page
 TTYOUT:     equ $1D94   ; Print character in A
+TTYFIS:     equ $1DE7   ; Save Column and Position
+PRNTIT:     equ $1FF2   ; Print copyright message and return
 
 ; Extra variables / functions
 INT2STR:    equ $1679   ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
