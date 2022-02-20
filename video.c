@@ -38,7 +38,8 @@ const uint8_t *video_get_fb(void) {
     return screen;
 }
 
-void video_draw_line(int line) {
+void video_draw_line(void) {
+    int line = emustate.video_line;
     if (line < 0 || line >= VIDEO_HEIGHT)
         return;
 
@@ -52,11 +53,11 @@ void video_draw_line(int line) {
         if (line >= 16 && line < 208 && i >= 16 && i <= 336) {
             int row    = (line - 16) / 8;
             int column = (i - 16) / 8;
-            ch         = emustate.ram[(row + 1) * 40 + column];
-            color      = emustate.ram[0x400 + (row + 1) * 40 + column];
+            ch         = emustate.textram[(row + 1) * 40 + column];
+            color      = emustate.colorram[(row + 1) * 40 + column];
         } else {
-            ch    = emustate.ram[0];
-            color = emustate.ram[0x400];
+            ch    = emustate.textram[0];
+            color = emustate.colorram[0];
         }
 
         uint8_t fgcol  = text_palette[color >> 4];

@@ -11,6 +11,8 @@
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
     (void)param;
+
+    // Handle CPM remap bit
     if (emustate.cpm_remap) {
         if (addr < 0x4000)
             addr += 0xC000;
@@ -18,23 +20,43 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
             addr -= 0xC000;
     }
 
-    uint8_t result = 0xFF;
-    if (addr < 0x3000) {
-        result = emustate.rom[addr];
-    } else if (addr >= 0x3000 && addr < 0x4000) {
-        result = emustate.ram[addr - 0x3000];
-    } else if (emustate.ramexp_enabled && addr >= 0x4000 && addr < 0xC000) {
-        result = emustate.ramexp[addr - 0x4000];
-    } else if (addr >= 0xC000) {
-        result = emustate.gamerom[addr - 0xC000] ^ emustate.scramble_value;
-    } else {
-        printf("mem_read(0x%04x) -> 0x%02x\n", addr, result);
+    // Get and decode banking register
+    uint8_t  bankreg     = emustate.bankregs[addr >> 14];
+    unsigned page        = bankreg & 0x3F;
+    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
+
+    addr &= 0x3FFF;
+
+    if (overlay_ram && addr >= 0x3000) {
+        if (addr < 0x3400) {
+            return emustate.textram[addr & 0x3FF];
+        } else if (addr < 0x3800) {
+            return emustate.colorram[addr & 0x3FF];
+        } else {
+            return emustate.basicram[addr & 0x7FF];
+        }
     }
-    return result;
+
+    if (page == 3) {
+        return emustate.gamerom[addr] ^ emustate.extbus_scramble;
+    } else if (page == 4) {
+        return emustate.videoram[addr];
+    } else if (page == 5) {
+        if (addr < 0x800) {
+            return emustate.charram[addr];
+        }
+    } else if (page >= 16 && page < 32) {
+        return emustate.flashrom[(page - 16) * 0x4000 + addr];
+    } else if (page >= 32 && page < 64) {
+        return emustate.mainram[(page - 32) * 0x4000 + addr];
+    }
+    return 0xFF;
 }
 
 static void mem_write(size_t param, uint16_t addr, uint8_t data) {
     (void)param;
+
+    // Handle CPM remap bit
     if (emustate.cpm_remap) {
         if (addr < 0x4000)
             addr += 0xC000;
@@ -42,18 +64,47 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
             addr -= 0xC000;
     }
 
-    if (addr >= 0x3000 && addr < 0x4000) {
-        emustate.ram[addr - 0x3000] = data;
-    } else if (emustate.ramexp_enabled && addr >= 0x4000 && addr < 0xC000) {
-        emustate.ramexp[addr - 0x4000] = data;
-    } else {
-        printf("mem_write(0x%04x, 0x%02x)\n", addr, data);
+    // Get and decode banking register
+    uint8_t  bankreg     = emustate.bankregs[addr >> 14];
+    unsigned page        = bankreg & 0x3F;
+    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
+    bool     readonly    = (bankreg & (1 << 7)) != 0;
+    addr &= 0x3FFF;
+
+    if (overlay_ram && addr >= 0x3000) {
+        if (addr < 0x3400) {
+            emustate.textram[addr & 0x3FF] = data;
+        } else if (addr < 0x3800) {
+            emustate.colorram[addr & 0x3FF] = data;
+        } else {
+            emustate.basicram[addr & 0x7FF] = data;
+        }
+        return;
+    }
+
+    if (readonly) {
+        return;
+    }
+
+    if (page == 3) {
+        // Game ROM is readonly
+        return;
+    } else if (page == 4) {
+        emustate.videoram[addr] = data;
+    } else if (page == 5) {
+        if (addr < 0x800) {
+            emustate.charram[addr] = data;
+        }
+    } else if (page >= 16 && page < 32) {
+        // Flash read-only for now
+        return;
+    } else if (page >= 32 && page < 64) {
+        emustate.mainram[(page - 32) * 0x4000 + addr] = data;
     }
 }
 
 static uint8_t io_read(size_t param, ushort addr) {
     (void)param;
-    uint8_t result = 0xFF;
 
     // Bruce Abbott's Micro-Expander CH376
     if ((addr & 0xC0) == 0x40) {
@@ -63,48 +114,80 @@ static uint8_t io_read(size_t param, ushort addr) {
             return ch376_read_status();
     }
 
-    switch (addr & 0xFF) {
-        case 0x40:
-            break;
-        case 0x41:
-            break;
+    if (!emustate.sysctrl_disable_ext) {
+        switch (addr & 0xFF) {
+            case 0xE0: return emustate.video_ctrl;
+            case 0xE1: return emustate.video_scrx & 0xFF;
+            case 0xE2: return emustate.video_scrx >> 8;
+            case 0xE3: return emustate.video_scry;
+            case 0xE4: return emustate.video_sprx[(addr >> 8) & 0x3F] & 0xFF;
+            case 0xE5: return emustate.video_sprx[(addr >> 8) & 0x3F] >> 8;
+            case 0xE6: return emustate.video_spry[(addr >> 8) & 0x3F];
+            case 0xE7: return emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF;
+            case 0xE8: return (emustate.video_sprattr[(addr >> 8) & 0x3F] & 0xFE) | ((emustate.video_spridx[(addr >> 8) & 0x3F] >> 8) & 1);
+            case 0xE9: return emustate.video_palette_text[(addr >> 8) & 0x0F];
+            case 0xEA: return emustate.video_palette_tile[(addr >> 8) & 0x0F];
+            case 0xEB: return emustate.video_palette_sprite[(addr >> 8) & 0x0F];
+            case 0xEC: return emustate.video_line < 255 ? emustate.video_line : 255;
+            case 0xED: return emustate.video_irqline;
+            case 0xEE: return emustate.irqmask;
+            case 0xEF: return emustate.irqstatus;
+            case 0xF0: return emustate.bankregs[0];
+            case 0xF1: return emustate.bankregs[1];
+            case 0xF2: return emustate.bankregs[2];
+            case 0xF3: return emustate.bankregs[3];
+            case 0xF4: return 0xFF; // ESPCTL
+            case 0xF5: return 0xFF; // ESPDAT
+        }
+    }
 
+    switch (addr & 0xFF) {
         case 0xF6:
         case 0xF7:
-            if (emustate.expander_enabled) {
-                // AY-3-8910 register read
+            if (emustate.sysctrl_ay_disable)
+                return 0xFF;
+            else {
                 switch (emustate.ay_addr) {
-                    case 14: result = emustate.handctrl1; break;
-                    case 15: result = emustate.handctrl2; break;
-                    default:
-                        if (emustate.ay_addr < 14)
-                            result = ay8910_read_reg(&emustate.ay_state, emustate.ay_addr);
-
-                        // printf("AY-3-8910 R%u => 0x%02X\n", emustate.ay_addr, result);
-                        break;
+                    case 14: return emustate.handctrl1; break;
+                    case 15: return emustate.handctrl2; break;
+                    default: return ay8910_read_reg(&emustate.ay_state, emustate.ay_addr);
                 }
             }
             break;
 
-        case 0xFC: printf("Cassette port input (%04x) -> %02x\n", addr, result); break;
-        case 0xFD: result = (emustate.linenr >= 224) ? 0 : 1; break;
-        case 0xFE: printf("Clear to send status (%04x) -> %02x\n", addr, result); break;
+        case 0xF8:
+        case 0xF9:
+            if (emustate.sysctrl_ay_disable || emustate.sysctrl_disable_ext)
+                return 0xFF;
+            else
+                return ay8910_read_reg(&emustate.ay2_state, emustate.ay2_addr);
+
+        case 0xFB: return (
+            (emustate.sysctrl_disable_ext ? (1 << 0) : 0) |
+            (emustate.sysctrl_ay_both ? (1 << 1) : 0) |
+            (emustate.sysctrl_ay_disable ? (1 << 2) : 0));
+
+        case 0xFC: printf("Cassette port input (%04x)\n", addr); return 0xFF;
+        case 0xFD: return (emustate.video_line >= 224) ? 0 : 1;
+        case 0xFE: printf("Clear to send status (%04x)\n", addr); return 0xFF;
         case 0xFF: {
             // Keyboard matrix. Selected rows are passed in the upper 8 address lines.
             uint8_t rows = addr >> 8;
 
             // Wire-AND all selected rows.
-            result = 0xFF;
+            uint8_t result = 0xFF;
             for (int i = 0; i < 8; i++) {
                 if ((rows & (1 << i)) == 0) {
                     result &= emustate.keyb_matrix[i];
                 }
             }
-            break;
+            return result;
         }
-        default: printf("io_read(0x%02x) -> 0x%02x\n", addr & 0xFF, result); break;
+        default: break;
     }
-    return result;
+
+    printf("io_read(0x%02x)\n", addr & 0xFF);
+    return 0xFF;
 }
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
@@ -119,29 +202,69 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
         return;
     }
 
+    if (!emustate.sysctrl_disable_ext) {
+        switch (addr & 0xFF) {
+            case 0xE0: emustate.video_ctrl = data; return;
+            case 0xE1: emustate.video_scrx = (emustate.video_scrx & ~0xFF) | data; return;
+            case 0xE2: emustate.video_scrx = (emustate.video_scrx & 0xFF) | ((data & 1) << 8); return;
+            case 0xE3: emustate.video_scry = data; return;
+            case 0xE4: emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
+            case 0xE5: emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & 0xFF) | ((data & 1) << 8); return;
+            case 0xE6: emustate.video_spry[(addr >> 8) & 0x3F] = data; return;
+            case 0xE7: emustate.video_spridx[(addr >> 8) & 0x3F] = (emustate.video_spridx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
+            case 0xE8:
+                emustate.video_sprattr[(addr >> 8) & 0x3F] = data & 0xFE;
+                emustate.video_spridx[(addr >> 8) & 0x3F]  = (emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF) | ((data & 1) << 8);
+                return;
+            case 0xE9: emustate.video_palette_text[(addr >> 8) & 0x0F] = data & 0x3F; return;
+            case 0xEA: emustate.video_palette_tile[(addr >> 8) & 0x0F] = data & 0x3F; return;
+            case 0xEB: emustate.video_palette_sprite[(addr >> 8) & 0x0F] = data & 0x3F; return;
+            case 0xEC: return;
+            case 0xED: emustate.video_irqline = data; return;
+            case 0xEE: emustate.irqmask = data; return;
+            case 0xEF: emustate.irqstatus = data; return;
+            case 0xF0: emustate.bankregs[0] = data; return;
+            case 0xF1: emustate.bankregs[1] = data; return;
+            case 0xF2: emustate.bankregs[2] = data; return;
+            case 0xF3: emustate.bankregs[3] = data; return;
+            case 0xF4: return; // ESPCTL
+            case 0xF5: return; // ESPDAT
+        }
+    }
+
     switch (addr & 0xFF) {
         case 0xF6:
-            if (emustate.expander_enabled) {
-                // AY-3-8910 register write
-                if (emustate.ay_addr < 14)
-                    ay8910_write_reg(&emustate.ay_state, emustate.ay_addr, data);
+            if (!emustate.sysctrl_ay_disable && emustate.ay_addr < 14)
+                ay8910_write_reg(&emustate.ay_state, emustate.ay_addr, data);
+            return;
 
-                // printf("AY-3-8910 R%u=0x%02X\n", emustate.ay_addr, data);
-            }
-            break;
         case 0xF7:
-            if (emustate.expander_enabled) {
-                // AY-3-8910 address latch
+            if (!emustate.sysctrl_ay_disable)
                 emustate.ay_addr = data;
-            }
-            break;
+            return;
 
-        case 0xFC: emustate.audio_out = (data & 1) ? AUDIO_LEVEL : -AUDIO_LEVEL; break;
+        case 0xF8:
+            if (!(emustate.sysctrl_ay_disable || emustate.sysctrl_disable_ext) && emustate.ay2_addr < 14)
+                ay8910_write_reg(&emustate.ay2_state, emustate.ay2_addr, data);
+            return;
+
+        case 0xF9:
+            if (!(emustate.sysctrl_ay_disable || emustate.sysctrl_disable_ext))
+                emustate.ay2_addr = data;
+            return;
+
+        case 0xFB:
+            emustate.sysctrl_disable_ext = (data & (1 << 0)) != 0;
+            emustate.sysctrl_ay_both     = (data & (1 << 1)) != 0;
+            emustate.sysctrl_ay_disable  = (data & (1 << 2)) != 0;
+            return;
+
+        case 0xFC: emustate.sound_output = (data & 1) != 0; break;
         case 0xFD: emustate.cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
         case 0xFF:
             printf("Scramble value: 0x%02x\n", data);
-            emustate.scramble_value = data;
+            emustate.extbus_scramble = data;
             break;
         default: printf("io_write(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
     }
@@ -154,8 +277,8 @@ void reset(void) {
     emustate.z80context.memRead  = mem_read;
     emustate.z80context.memWrite = mem_write;
 
-    emustate.scramble_value = 0;
-    emustate.cpm_remap      = false;
+    emustate.extbus_scramble = 0;
+    emustate.cpm_remap       = false;
 
     ay8910_reset(&emustate.ay_state);
 }
@@ -260,12 +383,12 @@ static void emulate(SDL_Renderer *renderer) {
             if (emustate.line_hcycles >= HCYCLES_PER_LINE) {
                 emustate.line_hcycles -= HCYCLES_PER_LINE;
 
-                video_draw_line(emustate.linenr);
+                video_draw_line();
 
-                emustate.linenr++;
-                if (emustate.linenr == 262) {
+                emustate.video_line++;
+                if (emustate.video_line == 262) {
                     render_screen(renderer);
-                    emustate.linenr = 0;
+                    emustate.video_line = 0;
                 }
             }
         } while (emustate.sample_hcycles < HCYCLES_PER_SAMPLE);
@@ -279,7 +402,7 @@ static void emulate(SDL_Renderer *renderer) {
         }
         samples /= 5.0f;
 
-        abuf[aidx] = emustate.audio_out + (uint16_t)(samples * AUDIO_LEVEL);
+        abuf[aidx] = (emustate.sound_output ? AUDIO_LEVEL : 0) + (uint16_t)(samples * AUDIO_LEVEL);
     }
 
     // Return buffer to audio subsystem.
@@ -342,7 +465,7 @@ int main(int argc, char *argv[]) {
             perror(rom_path);
             exit(1);
         }
-        if (fread(emustate.rom, 1, sizeof(emustate.rom), f) < 8192) {
+        if (fread(emustate.flashrom, 1, sizeof(emustate.flashrom), f) < 8192) {
             fprintf(stderr, "Error during reading of system ROM image.\n");
             exit(1);
         }
