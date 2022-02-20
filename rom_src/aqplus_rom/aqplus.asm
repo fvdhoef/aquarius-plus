@@ -67,7 +67,37 @@ SysVars:  equ PathName
 ;-----------------------------------------------------------------------------
 _reset:
     call    TTYOUT
+    call    charram_init
     call    usb_init
+    ret
+
+;-----------------------------------------------------------------------------
+; Character RAM initialization
+;-----------------------------------------------------------------------------
+charram_init:
+    ; Save current bank 1/2
+    in      a, (IO_BANK1)
+    push    a
+    in      a, (IO_BANK2)
+    push    a
+
+    ; Temporarily set up mappings for character RAM and character ROM
+    ld      a, 5            ; Page 5: character RAM
+    out     (IO_BANK1), a
+    ld      a, 16           ; Page 16: first page of flash ROM
+    out     (IO_BANK2), a
+
+    ; Copy character ROM to character RAM
+    ld      de, BANK1_BASE
+    ld      hl, BANK2_BASE + $3000
+    ld      bc, 2048
+    ldir
+
+    ; Restore bank 1/2
+    pop     a
+    out     (IO_BANK2), a
+    pop     a
+    out     (IO_BANK1), a
     ret
 
 ;-----------------------------------------------------------------------------

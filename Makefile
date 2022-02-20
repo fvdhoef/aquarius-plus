@@ -4,7 +4,6 @@
 INC_DIRS    += . libz80
 SRC_DIRS    += .
 C_SRCS      += libz80/z80.c
-C_SRCS      += assets/charrom.c
 
 CFLAGS      += -O3 -g
 OUT          = $(BUILD_DIR)/aquarius_emu

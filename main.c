@@ -271,8 +271,6 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
 }
 
 void reset(void) {
-    memcpy(emustate.charram, emustate.flashrom + 12 * 1024, sizeof(emustate.charram));
-
     Z80RESET(&emustate.z80context);
     emustate.z80context.ioRead   = io_read;
     emustate.z80context.ioWrite  = io_write;

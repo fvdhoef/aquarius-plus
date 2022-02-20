@@ -107,7 +107,7 @@ SAVSTK:     equ $38F9   ; [M80] NEWSTT SAVES STACK HERE BEFORE SO THAT ERROR REV
 BASTXT:     equ $3901   ; Start of Basic Program 
 
 ;-----------------------------------------------------------------------------
-; System functions
+; System ROM functions
 ;-----------------------------------------------------------------------------
 ERROR:      equ $03DB   ; Process error code, E = code (offset to 2 char error name)
 READY:      equ $0402
@@ -130,3 +130,42 @@ TTYOUT:     equ $1D94   ; Print character in A
 ; Extra variables / functions
 INT2STR:    equ $1679   ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 FPSTR:      equ $38E9   ; Floating point string
+
+;-----------------------------------------------------------------------------
+; IO registers
+;-----------------------------------------------------------------------------
+IO_VCTRL:       equ $E0
+IO_VSCRX_L:     equ $E1
+IO_VSCRX_H:     equ $E2
+IO_VSCRY:       equ $E3
+IO_VSPRX_L:     equ $E4
+IO_VSPRX_H:     equ $E5
+IO_VSPRY:       equ $E6
+IO_VSPRIDX:     equ $E7
+IO_VSPRATTR:    equ $E8
+IO_VPALTXT:     equ $E9
+IO_VPALTILE:    equ $EA
+IO_VPALSPR:     equ $EB
+IO_VLINE:       equ $EC
+IO_VIRQLINE:    equ $ED
+IO_IRQMASK:     equ $EE
+IO_IRQSTAT:     equ $EF
+IO_BANK0:       equ $F0
+IO_BANK1:       equ $F1
+IO_BANK2:       equ $F2
+IO_BANK3:       equ $F3
+IO_ESPCTRL:     equ $F4
+IO_ESPDATA:     equ $F5
+IO_PSG1DATA:    equ $F6
+IO_PSG1ADDR:    equ $F7
+IO_PSG2DATA:    equ $F8
+IO_PSG2ADDR:    equ $F9
+IO_SYSCTRL:     equ $FB
+
+;-----------------------------------------------------------------------------
+; Other definitions
+;-----------------------------------------------------------------------------
+BANK0_BASE: equ $0000
+BANK1_BASE: equ $4000
+BANK2_BASE: equ $8000
+BANK3_BASE: equ $C000
