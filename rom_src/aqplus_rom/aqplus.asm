@@ -11,6 +11,7 @@
 ; https://github.com/RevCurtisP/Aquarius/blob/main/disassembly/aquarius-rom.lst
 ;
 ;-----------------------------------------------------------------------------
+    include "regs.inc"
 
 ;-----------------------------------------------------------------------------
 ; Extra BASIC commands
@@ -34,128 +35,6 @@
 ; JOY()  - Read joystick
 ; HEX$() - Convert number to hexadecimal string
 
-;-----------------------------------------------------------------------------
-; System Variables
-;-----------------------------------------------------------------------------
-; Name   Location  Alt name  Description
-CURCOL:   equ $3800 ; TTYPOS    Current cursor column
-CURRAM:   equ $3801 ; CHRPOS    Position in CHARACTER RAM of cursor
-USRJMP:   equ $3803 ; USRGO     JMP instruction for USR.
-USRADDR:  equ $3804 ; USRAL     Address of USR() function
-;             $3805 ; USRAH     "
-UDFADDR:  equ $3806 ; HOKDSP    RST $30 vector, hooks into various system routines
-;             $3807 ;
-LISTCNT:  equ $3808 ; ROWCOUNT  Counter for lines listed (pause every 23 lines)
-LASTFF:   equ $3809 ; PTOLD     Last protection code sent to port($FF)
-LSTASCI:  equ $380A ; CHARQ     ASCII value of last key pressed.
-KWADDR:   equ $380B ; SKEY      Address of keyword in the keyword table.
-;             $380C ;           "
-CURHOLD:  equ $380D ; BUFO      Holds character under the cursor.
-LASTKEY:  equ $380E ;           SCAN CODE of last key pressed
-SCANCNT:  equ $380F ;           Number of SCANS key has been down for
-FDIV:     equ $3810 ;           Subroutine for division ???
-                    ;
-RANDOM:   equ $381F ;           Used by random number generator
-                    ;
-LPTLST:   equ $3845 ;           Last printer operation status
-PRNCOL:   equ $3846 ; LPTPOS    The current printer column (0-131).
-CHANNEL:  equ $3847 ; PRTFLG    Channel: 0=screen, 1=printer.
-LINLEN:   equ $3848 ;           Line length (initially set to 40 ???)
-CLMLST:   equ $3849 ;           Position of last comma column
-RUBSW:    equ $384A ;           Rubout switch
-STKTOP:   equ $384B ;           High address of stack. followed by string storage space
-                    ;
-CURLIN:   equ $384D ;           Current BASIC line number (-1 in direct mode)
-                    ;
-BASTART:  equ $384F ; TXTTAB    Pointer to start of BASIC program
-                    ;
-CASNAM:   equ $3851 ;           Tape filename (6 chars)
-CASNM2:   equ $3857 ;           Tape read filename (6 chars)
-CASFL2:   equ $385D ;           Tape flag
-CASFL3:   equ $385E ;           Tape flag (break key check)
-BUFMIN:   equ $385F ;           Buffer used by INPUT statement
-LINBUF:   equ $3860 ; BUF       Line input buffer (73 bytes).
-                    ;
-BUFEND:   equ $38A9 ;           end of line unput buffer
-DIMFLG:   equ $38AA ;           dimension flag 1 = array
-VALTYP:   equ $38AB ;           type: 0 = number, 1 = string
-DORES:    equ $38AC ;           flag for crunch
-RAMTOP:   equ $38AD ; MEMSIZ    Address of top of physical RAM.
-;             $38AE ;
-STRBUF:   equ $38AF ;           18 bytes used by string functions
-                    ;
-FRETOP:   equ $38C1 ;           Pointer to top of string space
-;             $38C2 ;
-SYSTEMP:  equ $38C3 ; TEMP      Temp space used by FOR etc.
-                    ;
-DATLIN:   equ $38C9 ;           Address of current DATA line
-;             $38CA ;
-FORFLG:   equ $38CB ;           Flag FOR:, GETVAR: 0=variable, 1=array
-                    ;
-TMPSTAT:  equ $38CE ;           Temp holder of next statement address
-                    ;
-CONTLIN:  equ $38D2 ;           Line number to CONTinue from.
-CONTPOS:  equ $38D4 ;           Address of line to CONTinue from.
-BASEND:   equ $38D6 ; VARTAB    Variable table (end of BASIC program)
-                    ;
-ARYTAB:   equ $38D8 ;           Start of array table
-                    ;
-ARYEND:   equ $38DA ;           End of array table
-                    ;
-RESTORE:  equ $38DC ;           Address of line last RESTORE'd
-                    ;
-;             $38DE ;           Pointer and flag for arrays
-                    ;
-FPREG:    equ $38E4 ; FPNUM     Floating point number
-                    ;
-FPSTR:    equ $38E9 ;           Floating point string
-                    ;
-;             $38F9 ;           Used by keyboard routine
-                    ;
-PROGST:   equ $3900 ;           NULL before start of BASIC program
-
-; end of system variables = start of BASIC program in stock Aquarius
-;          $3901 ; 14593
-
-; buffer lengths
-LINBUFLEN:  equ DIMFLG - LINBUF
-STRBUFLEN:  equ FRETOP - STRBUF
-SYSTEMPLEN: equ DATLIN - SYSTEMP
-TMPSTATLEN: equ CONTLIN - TMPSTAT
-FPREGLEN:   equ FPSTR - FPREG
-FPSTRLEN:   equ $38F9 - FPSTR
-
-;-----------------------------------------------------------------------------
-; System routines
-;-----------------------------------------------------------------------------
-PRNCHR:   equ $1D94  ; Print character in A
-PRNCHR1:  equ $1D72  ; Print character in A with pause/break at end of page
-PRNCRLF:  equ $19EA  ; Print CR+LF
-PRINTSTR: equ $0E9D  ; Print null-terminated string
-SCROLLUP: equ $1DFE  ; Scroll the screen up 1 line
-EVAL:     equ $0985  ; Evaluate expression
-EVLPAR:   equ $0A37  ; Evaluate expression in brackets
-GETINT:   equ $0B54  ; Evaluate numeric expression (integer 0-255)
-GETNUM:   equ $0972  ; Evaluate numeric expression
-PUTVAR8:  equ $0B36  ; Store variable 8 bit (out: B = value)
-GETVAR:   equ $10D1  ; Get variable (out: BC = addr, DE = len)
-GETLEN:   equ $0FF7  ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length)
-TSTNUM:   equ $0975  ; Error if evaluated expression not a number
-TSTSTR:   equ $0976  ; Error if evaluated expression not string
-DEINT:    equ $0682  ; Convert fp number to 16 bit signed integer in DE
-INT2STR:  equ $1679  ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
-
-FINLPT:   equ $19BE
-CRDONZ:   equ $19DE
-READY:    equ $0402
-
-ERROR_FC: equ $0697  ; Function code error
-DO_ERROR: equ $03DB  ; Process error code, E = code (offset to 2 char error name)
-
-STKINI:   equ $0BE5
-WRMCON:   equ $1A40
-TTYCHR:   equ $1D72
-
 ;----------------------------------------------------------------------------
 ;                         BASIC Error Codes
 ;----------------------------------------------------------------------------
@@ -163,9 +42,6 @@ TTYCHR:   equ $1D72
 ;
 ;name        code            description
 FC_ERR:   equ $08           ; Function Call error
-
-; alternative system variable names
-VARTAB:   equ BASEND        ; $38D6 variables table (at end of BASIC program)
 
 PathSize: equ 37
 
@@ -179,9 +55,6 @@ RAMEND:   equ $C000         ; we are in ROM, 32k expansion RAM available
 
 SysVars:  equ PathName
 
-; system flags
-SF_RETYP: equ 1             ; 1 = CTRL-O is retype
-
 ;=================================================================
 ;                     AquBASIC BOOT ROM
 ;=================================================================
@@ -193,7 +66,7 @@ SF_RETYP: equ 1             ; 1 = CTRL-O is retype
 ; Common initialisation
 ;-----------------------------------------------------------------------------
 _reset:
-    call    PRNCHR
+    call    TTYOUT
     call    usb_init
     ret
 
@@ -227,24 +100,24 @@ _coldboot:
     ld      hl, SysVars - 1     ; Top of public RAM
 
     ; Set memory size
-    ld      (RAMTOP), hl        ; MEMSIZ, Contains the highest RAM location
+    ld      (MEMSIZ), hl        ; MEMSIZ, Contains the highest RAM location
     ld      de, -50             ; Subtract 50 for strings space
     add     hl, de
-    ld      (STKTOP), hl        ; STKTOP, Top location to be used for stack
-    ld      hl, PROGST
+    ld      (TOPMEM), hl        ; TOPMEM, Top location to be used for stack
+    ld      hl, BASTXT-1
     ld      (hl), $00           ; NULL at start of BASIC program
     inc     hl
-    ld      (BASTART), hl       ; Beginning of BASIC program text
+    ld      (TXTTAB), hl        ; Beginning of BASIC program text
     call    $0BBE               ; ST_NEW2 - NEW without syntax check
 
     ; Install BASIC HOOK
     ld      hl, udf_handler     ; RST $30 Vector (our UDF service routine)
-    ld      (UDFADDR), hl       ; store in UDF vector
+    ld      (HOOK), hl          ; store in UDF vector
 
     ; Show our copyright message
     call    $1FF2               ; Print copyright string in ROM
     ld      hl, .str_basic      ; "USB BASIC"
-    call    PRINTSTR
+    call    STROUT
 
     jp      $0153               ; Continue in ROM
 
@@ -486,7 +359,7 @@ run_cmd:
     jp      z, $0BCB           ; If no argument then RUN from 1st line
 
     push    hl
-    call    EVAL               ; Get argument type
+    call    FRMEVL             ; Get argument type
     pop     hl
 
     ld      a, (VALTYP)
@@ -516,18 +389,18 @@ run_cmd:
     cp      '.'                ; if already has '.' then cannot extend
     jp      z, .nofile
     cp      ' '
-    jr      z, .extend          ; until SPACE or NULL
+    jr      z, .extend         ; until SPACE or NULL
     or      a
     jr      z, .extend
     djnz    .instr
 
 .nofile:
     ld      hl, .nofile_msg
-    call    PRINTSTR
+    call    STROUT
     pop     hl                 ; Restore BASIC text pointer
 .error:
     ld      e, FC_ERR          ; Function code error
-    jp      DO_ERROR           ; Return to BASIC
+    jp      ERROR              ; Return to BASIC
 
 .extend:
     dec     hl
@@ -592,15 +465,15 @@ ST_CLS:
 ; syntax: OUT port, data
 ;-----------------------------------------------------------------------------
 ST_OUT:
-    call    GETNUM              ; Get/evaluate port
-    call    DEINT               ; Convert number to 16 bit integer (result in DE)
+    call    FRMNUM              ; Get/evaluate port
+    call    FRCINT              ; Convert number to 16 bit integer (result in DE)
     push    de                  ; Stored to be used in BC
 
     ; Expect comma
     rst     $08                 ; Compare RAM byte with following byte
     db      ','                 ; Character ',' byte used by RST 08
 
-    call    GETINT              ; Get/evaluate data
+    call    GETBYT              ; Get/evaluate data
     pop     bc                  ; BC = port
     out     (c), a              ; Out data to port
     ret
@@ -610,19 +483,19 @@ ST_OUT:
 ; Syntax: LOCATE col, row
 ;-----------------------------------------------------------------------------
 ST_LOCATE:
-    call    GETINT              ; Read number from command line (column). Stored in A and E
+    call    GETBYT              ; Read number from command line (column). Stored in A and E
     push    af                  ; Column store on stack for later use
     dec     a
     cp      38                  ; Compare with 38 decimal (max cols on screen)
-    jp      nc, ERROR_FC        ; If higher then 38 goto FC error
+    jp      nc, FCERR           ; If higher then 38 goto FC error
 
     ; Expect comma
     rst     $08                 ; Compare RAM byte with following byte
     db      ','                 ; Character ',' byte used by RST 08
 
-    call    GETINT              ; Read number from command line (row). Stored in A and E
+    call    GETBYT              ; Read number from command line (row). Stored in A and E
     cp      $18                 ; Compare with 24 decimal (max rows on screen)
-    jp      nc,ERROR_FC         ; If higher then 24 goto FC error
+    jp      nc,FCERR            ; If higher then 24 goto FC error
 
     inc     e
     pop     af                  ; Restore column from store
@@ -673,7 +546,7 @@ ST_PSG:
 
 .psgloop:
     ; Get PSG register to write to
-    call    GETINT           ; Get/evaluate register
+    call    GETBYT           ; Get/evaluate register
     out     ($F7), a         ; Set the PSG register
 
     ; Expect comma
@@ -681,7 +554,7 @@ ST_PSG:
     db      ','              ; ','
 
     ; Get value to write to PSG register
-    call    GETINT           ; Get/evaluate value
+    call    GETBYT           ; Get/evaluate value
     out     ($F6), a         ; Send data to the selected PSG register
     ld      a, (hl)          ; Get next character on command line
     cp      ','              ; Compare with ','
@@ -698,17 +571,17 @@ FN_IN:
     pop     hl
     inc     hl
 
-    call    EVLPAR           ; Read number from line - ending with a ')'
+    call    PARCHK           ; Read number from line - ending with a ')'
     ex      (sp), hl
     ld      de, $0A49        ; Return address
     push    de               ; On stack
-    call    DEINT            ; Evaluate formula pointed by HL, result in DE
+    call    FRCINT           ; Evaluate formula pointed by HL, result in DE
     ld      b, d
     ld      c, e             ; BC = port
 
     ; Read from port
     in      a, (c)           ; A = in(port)
-    jp      PUTVAR8          ; Return with 8 bit input value in variable var
+    jp      SNGFLT           ; Return with 8 bit input value in variable var
 
 ;-----------------------------------------------------------------------------
 ; JOY() function
@@ -724,7 +597,7 @@ FN_JOY:
     ex      (sp), hl
     ld      de, $0A49      ; set return address
     push    de
-    call    DEINT          ; DEINT - evalute formula pointed by HL result in DE
+    call    FRCINT         ; FRCINT - evalute formula pointed by HL result in DE
 
     ld      a, e
     or      a
@@ -772,11 +645,11 @@ FN_JOY:
 FN_HEX:
     pop     hl
     inc     hl
-    call    EVLPAR          ; Evaluate parameter in brackets
+    call    PARCHK          ; Evaluate parameter in brackets
     ex      (sp), hl
     ld      de, $0A49       ; Return address
     push    de              ; On stack
-    call    DEINT           ; Evaluate formula @HL, result in DE
+    call    FRCINT          ; Evaluate formula @HL, result in DE
     ld      hl, $38E9       ; HL = temp string
     ld      a, d
     or      a               ; > zero ?
@@ -821,8 +694,8 @@ FN_HEX:
 ; on exit from user code, HL should point to end of statement
 ;-----------------------------------------------------------------------------
 ST_CALL:
-    call    GETNUM           ; Get number from BASIC text
-    call    DEINT            ; Convert to 16 bit integer
+    call    FRMNUM           ; Get number from BASIC text
+    call    FRCINT           ; Convert to 16 bit integer
     push    de
     ret                      ; Jump to user code, HL = BASIC text pointer
 

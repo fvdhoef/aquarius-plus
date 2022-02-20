@@ -1,8 +1,6 @@
 #include "video.h"
 #include "emustate.h"
 
-extern unsigned char charrom_bin[2048]; // Character ROM contents
-
 // Original Aquarius palette
 // static const uint32_t palette[16] = {
 //     0x101010, 0xf71010, 0x10f710, 0xf7ef10,
@@ -53,16 +51,16 @@ void video_draw_line(void) {
         if (line >= 16 && line < 208 && i >= 16 && i <= 336) {
             int row    = (line - 16) / 8;
             int column = (i - 16) / 8;
-            ch         = emustate.textram[(row + 1) * 40 + column];
+            ch         = emustate.screenram[(row + 1) * 40 + column];
             color      = emustate.colorram[(row + 1) * 40 + column];
         } else {
-            ch    = emustate.textram[0];
+            ch    = emustate.screenram[0];
             color = emustate.colorram[0];
         }
 
         uint8_t fgcol  = text_palette[color >> 4];
         uint8_t bgcol  = text_palette[color & 0xF];
-        uint8_t charbm = charrom_bin[ch * 8 + (line & 7)];
+        uint8_t charbm = emustate.charram[ch * 8 + (line & 7)];
 
         pd[i] = (charbm & (1 << (7 - (i & 7)))) ? fgcol : bgcol;
     }

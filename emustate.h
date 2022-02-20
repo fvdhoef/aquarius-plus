@@ -44,7 +44,7 @@ struct emulation_state {
     uint8_t       extbus_scramble;          // $FF   : External bus scramble (XOR) value
 
     // Memory space
-    uint8_t textram[1024];        // $3000-33FF: Text RAM
+    uint8_t screenram[1024];      // $3000-33FF: Screen RAM for text mode
     uint8_t colorram[1024];       // $3400-37FF: Color RAM for text mode
     uint8_t basicram[2048];       // $3800-3FFF: BASIC RAM on a stock Aquarius
     uint8_t flashrom[256 * 1024]; // Flash memory

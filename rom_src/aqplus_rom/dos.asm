@@ -29,7 +29,7 @@ printhex:
     add     7
 .hi_nib:
     add     '0'
-    call    PRNCHR
+    call    TTYOUT
     ld      a, b
     and     $0F
     cp      10
@@ -38,7 +38,7 @@ printhex:
 .low_nib:
     add     '0'
     pop     bc
-    jp      PRNCHR
+    jp      TTYOUT
 
 ;-----------------------------------------------------------------------------
 ; strlen - String length
@@ -87,7 +87,7 @@ prtstr:
     inc     hl
     or      a
     ret     z
-    call    PRNCHR
+    call    TTYOUT
     jr      prtstr
 
 ;-----------------------------------------------------------------------------
@@ -145,15 +145,15 @@ ST_CD:
     jr     nz, .change_dir      ; Yes,
 .show_path:
     ld     hl,PathName
-    call   PRINTSTR             ; Print path
-    call   PRNCRLF
+    call   STROUT              ; Print path
+    call   CRDO
     jr     .cd_done
 .change_dir:
     pop    hl                   ; Pop BASIC text pointer
-    call   EVAL                 ; Evaluate expression
+    call   FRMEVL               ; Evaluate expression
     push   hl                   ; Push BASIC text pointer
-    call   TSTSTR               ; Type mismatch error if not string
-    call   GETLEN               ; Get string and its length
+    call   CHKSTR               ; Type mismatch error if not string
+    call   LEN1                 ; Get string and its length
     jr     z, .open             ; If null string then open current directory
     inc    hl
     inc    hl                   ; Skip to string text pointer
@@ -181,7 +181,7 @@ ST_CD:
     call   _show_error          ; Print error message
     ld     e, FC_ERR
     pop    hl
-    jp     DO_ERROR             ; Return to BASIC with FC error
+    jp     ERROR                ; Return to BASIC with FC error
 .cd_done:
     pop    hl                   ; Restore BASIC text pointer
     ret
@@ -224,18 +224,18 @@ ST_LOADFILE:
 .getarg:
     call    get_arg                 ; Get next non-space character
     cp      ','
-    jr      nz, .start          ; If not ',' then no arg
+    jr      nz, .start              ; If not ',' then no arg
     call    get_next
     cp      $AA                     ; Token for '*'
     jr      nz, .addr
 .arg_array:
     inc     hl                      ; Skip '*' token
     ld      a, 1
-    ld      (FORFLG), a             ; Set array flag
-    call    GETVAR                  ; Get array (out: bc = address, de = length)
-    ld      (FORFLG), a             ; Clear array flag
-    jp      nz, ERROR_FC            ; FC Error if array not found
-    call    TSTNUM                  ; TM error if not numeric
+    ld      (SUBFLG), a             ; Set array flag
+    call    PTRGET                  ; Get array (out: bc = address, de = length)
+    ld      (SUBFLG), a             ; Clear array flag
+    jp      nz, FCERR               ; FC Error if array not found
+    call    CHKNUM                  ; TM error if not numeric
 .array_parms:
     push    hl                      ; Push BASIC text pointer
     ld      h, b
@@ -255,8 +255,8 @@ ST_LOADFILE:
     pop     hl                      ; Pop text pointer
     jr      .start
 .addr:
-    call    GETNUM                  ; Get number
-    call    DEINT                   ; Convert to 16 bit integer
+    call    FRMNUM                  ; Get number
+    call    FRCINT                  ; Convert to 16 bit integer
     ld      (BINSTART), de
     ld      a, 1<<DF_ADDR
     ld      (DOSFLAGS), a           ; Load address specified
@@ -381,7 +381,7 @@ ST_LOADFILE:
 .basprog:
     call    st_read_sync            ; Read 2nd CAQ sync sequence
     jr      nz, .bad_file
-    ld      hl, (BASTART)           ; HL = start of BASIC program
+    ld      hl, (TXTTAB)            ; HL = start of BASIC program
     ld      de, $FFFF               ; DE = read to end of file
     call    usb__read_bytes         ; Read BASIC program into RAM
     jr      nz, .read_error
@@ -394,7 +394,7 @@ ST_LOADFILE:
     inc     hl
     inc     hl                      ; Forward past 3 zeros = end of BASIC program
     inc     hl
-    ld      (BASEND), hl            ; Set end of BASIC program
+    ld      (VARTAB), hl            ; Set end of BASIC program
     call    Init_BASIC              ; Clear variables etc. and update line addresses
     ld      a, FT_BAS
     ld      (FILETYPE), a           ; Filetype is BASIC
@@ -425,7 +425,7 @@ _stl_show_error:
     ld      e, FC_ERR               ; Function Call error
 _stl_do_error:
     pop     hl                      ; Restore BASIC text pointer
-    jp      DO_ERROR                ; Return to BASIC with error code in e
+    jp      ERROR                   ; Return to BASIC with error code in e
 _stl_done:
     call    usb__close_file         ; Close file
     ld      a, (FILETYPE)
@@ -461,7 +461,7 @@ _show_error:
     call    prtstr                  ; Print "disk error $"
     pop     af                      ; Pop error code
     call    printhex
-    jp      PRNCRLF
+    jp      CRDO
 .index:
     ld      hl, _error_messages
     dec     a
@@ -476,7 +476,7 @@ _show_error:
     ld      h, (hl)                 ; HL = error message
     ld      l, a
     call    prtstr                  ; Print error message
-    jp      PRNCRLF
+    jp      CRDO
 
 .unknown_error_msg:  db "Disk error $", 0
 
@@ -540,25 +540,25 @@ _st_read_caq_lp1:
 ; Updates nextline pointers to match location of BASIC program in RAM
 ;-----------------------------------------------------------------------------
 Init_BASIC:
-    ld      hl, (BASTART)
+    ld      hl, (TXTTAB)
     dec     hl
-    ld      (TMPSTAT), hl       ; Set next statement to start of program
-    ld      (RESTORE), hl       ; Set RESTORE to start of program
-    ld      hl, (RAMTOP)
+    ld      (SAVTXT), hl        ; Set next statement to start of program
+    ld      (DATPTR), hl        ; Set DATPTR to start of program
+    ld      hl, (MEMSIZ)
     ld      (FRETOP), hl        ; Clear string space
-    ld      hl, (BASEND)
+    ld      hl, (VARTAB)
     ld      (ARYTAB), hl        ; Clear simple variables
-    ld      (ARYEND), hl        ; Clear array table
-    ld      hl, STRBUF + 2
-    ld      (STRBUF), hl        ; Clear string buffer
+    ld      (STREND), hl        ; Clear array table
+    ld      hl, TEMPPT + 2
+    ld      (TEMPPT), hl        ; Clear string buffer
     xor     a
     ld      l, a
     ld      h, a
-    ld      (CONTPOS), hl       ; Set CONTinue position to 0
-    ld      (FORFLG), a         ; Clear locator flag
+    ld      (OLDTXT), hl        ; Set CONTinue position to 0
+    ld      (SUBFLG), a         ; Clear locator flag
     ld      ($38DE), hl         ; Clear array pointer???
 .link_lines:
-    ld      de, (BASTART)       ; DE = start of BASIC program
+    ld      de, (TXTTAB)        ; DE = start of BASIC program
 .next_line:
     ld      h, d
     ld      l, e                ; HL = DE
@@ -598,23 +598,23 @@ ST_SAVE:
     cp      FC_ERR
     jp      nz, _sts_error          ; If not FC error then show BASIC error code
     ld      a, ERROR_BAD_NAME
-    jp      DO_ERROR                ; Bad filename, quit to BASIC
+    jp      ERROR                   ; Bad filename, quit to BASIC
 
     ; Save with filename in FileName
 ST_SAVEFILE:
     call    get_arg                 ; Get current char (skipping spaces)
     cp      ','
-    jr      nz, .save_open               ; If not ',' then no args so saving BASIC program
+    jr      nz, .save_open          ; If not ',' then no args so saving BASIC program
     call    get_next
     cp      $AA                     ; '*' token?
     jr      nz, .num                ; No, parse binary address & length
     inc     hl                      ; Yes, skip token
     ld      a, 1
-    ld      (FORFLG), a             ; Flag = array
-    call    GETVAR                  ; Bc = array address, de = array length
-    ld      (FORFLG), a             ; Clear flag
-    jp      nz, ERROR_FC            ; Report FC Error if array not found
-    call    TSTNUM                  ; TM error if not numeric
+    ld      (SUBFLG), a             ; Flag = array
+    call    PTRGET                  ; Bc = array address, de = array length
+    ld      (SUBFLG), a             ; Clear flag
+    jp      nz, FCERR               ; Report FC Error if array not found
+    call    CHKNUM                  ; TM error if not numeric
     call    get_next
     cp      'a'
     jr      c, .array
@@ -641,16 +641,16 @@ ST_SAVEFILE:
 
     ; Parse address, length
 .num:
-    call    GETNUM                  ; Get address
-    call    DEINT                   ; Convert to 16 bit integer
+    call    FRMNUM                  ; Get address
+    call    FRCINT                  ; Convert to 16 bit integer
     ld      (BINSTART), de          ; Set address
     ld      a, 1<<DF_ADDR
     ld      (DOSFLAGS), a           ; Flag load address present
     call    get_arg                 ; Get next char from text, skipping spaces
     rst     $08                     ; CHKNXT - skip ',' (syntax error if not ',')
     db      ','
-    call    GETNUM                  ; Get length
-    call    DEINT                   ; Convert to 16 bit integer
+    call    FRMNUM                  ; Get length
+    call    FRCINT                  ; Convert to 16 bit integer
     ld      (BINLEN),de             ; Store length
 
     ; Create new file
@@ -685,8 +685,8 @@ ST_SAVEFILE:
     jr      nz, .write_error
     call    st_write_sync           ; Write 2nd caq sync $FFx12,$00
     jr      nz, .write_error
-    ld      de, (BASTART)           ; DE = start of BASIC program
-    ld      hl, (BASEND)            ; HL = end of BASIC program
+    ld      de, (TXTTAB)            ; DE = start of BASIC program
+    ld      hl, (VARTAB)            ; HL = end of BASIC program
     or      a
     sbc     hl, de
     ex      de, hl                  ; HL = start, DE = length of BASIC program
@@ -730,7 +730,7 @@ ST_SAVEFILE:
     ld      e, FC_ERR
 _sts_error:
     pop     hl
-    jp      DO_ERROR                ; Return to BASIC with error code in e
+    jp      ERROR                   ; Return to BASIC with error code in e
 _sts_done:
     pop     hl                      ; Restore BASIC text pointer
     ret
@@ -774,15 +774,15 @@ ST_DIR:
 .go:
     call    usb__ready          ; Check for USB disk (may reset path to root!)
     jr      nz, .dir_error
-    call    PRINTSTR            ; Print path
-    call    PRNCRLF
+    call    STROUT              ; Print path
+    call    CRDO
     call    dos__directory      ; Display directory listing
     jr      z, .dir_done        ; If successful listing then done
 .dir_error:
     call    _show_error         ; Else show error message (a = error code)
     ld      e, FC_ERR
     pop     hl
-    jp      DO_ERROR            ; Return to BASIC with FC error
+    jp      ERROR               ; Return to BASIC with FC error
 .dir_done:
     pop     hl                  ; Pop text pointer
     ret
@@ -801,11 +801,11 @@ ST_DIR:
 ;------------------------------------------------------------------------------
 dos__directory:
     ld      a, $0D
-    call    PRNCHR                  ; Print CR
+    call    TTYOUT                  ; Print CR
     call    usb__open_dir           ; Open '*' for all files in directory
     ret     nz                      ; Abort if error (disk not present?)
     ld      a, 22
-    ld      (LISTCNT), a            ; Set initial number of lines per page
+    ld      (CNTOFL), a             ; Set initial number of lines per page
 .dir_loop:
     ld      a, CH376_CMD_RD_USB_DATA
     out     (CH376_CONTROL_PORT), a ; Command: read USB data
@@ -849,22 +849,22 @@ dos__prtDirInfo:
     ld      a, (hl)                 ; Get next char of filename
     inc     hl
 .dir_prt_name:
-    call    PRNCHR1                 ; Print filename char, with pause if end of screen
+    call    TTYCHR                  ; Print filename char, with pause if end of screen
     djnz    .dir_name
     ld      a, ' '                  ; Space between name and extension
-    call    PRNCHR
+    call    TTYOUT
     ld      b, 3                    ; 3 characters in extension
 .dir_ext:
     ld      a, (hl)                 ; Get next char of extension
     inc     hl
-    call    PRNCHR                  ; Print extn char
+    call    TTYOUT                  ; Print extn char
     djnz    .dir_ext
     ld      a, (hl)                 ; Get file attribute byte
     inc     hl
     and     ATTR_DIRECTORY          ; Directory bit set?
     jr      nz, .dir_folder
     ld      a, ' '                  ; Print ' '
-    call    PRNCHR
+    call    TTYOUT
     ld      bc, 16                  ; DIR_FileSize - DIR_NTres
     add     hl, bc                  ; Skip to file size
 .dir_file_size:
@@ -943,31 +943,31 @@ dos__prtDirInfo:
     ld      a, 3                    ; 3 digit number with leading spaces
     call    print_integer           ; Print HL as 16 bit number
     ld      a, b
-    call    PRNCHR                  ; Print 'k', or 'M'
+    call    TTYOUT                  ; Print 'k', or 'M'
     jr      .dir_tab
 .print_bytes:
     ld      a, 4                    ; 4 digit number with leading spaces
     call    print_integer           ; Print HL as 16 bit number
     ld      a, ' '
-    call    PRNCHR                  ; Print ' '
+    call    TTYOUT                  ; Print ' '
     jr      .dir_tab
 .dir_folder:
     ld      hl, .dir_msg            ; Print "<DIR>"
-    call    PRINTSTR
+    call    STROUT
 .dir_tab:
-    ld      a, (CURCOL)
+    ld      a, (TTYPOS)
     cp      19
     ret     z                       ; If reached center of screen then return
     jr      nc, .tab_right          ; If on right side then fill to end of line
     ld      a, ' '
-    call    PRNCHR                  ; Print " "
+    call    TTYOUT                  ; Print " "
     jr      .dir_tab
 .tab_right:
-    ld      a, (CURCOL)
+    ld      a, (TTYPOS)
     cp      0
     ret     z                       ; Reached end of line?
     ld      a, ' '
-    call    PRNCHR                  ; No, print " "
+    call    TTYOUT                  ; No, print " "
     jr      .tab_right
 
 .dir_msg: db "<DIR>", 0
@@ -992,14 +992,14 @@ print_integer:
     ld       b, a
 .lead_space:
     ld       a, ' '
-    call     PRNCHR         ; Print leading space
+    call     TTYOUT         ; Print leading space
     djnz     .lead_space
 .prtnum:
     ld       a, (hl)        ; Get next digit
     inc      hl
     or       a              ; Return when NULL reached
     jr       z, .print_done
-    call     PRNCHR         ; Print digit
+    call     TTYOUT         ; Print digit
     jr       .prtnum
 .print_done:
     pop      bc
@@ -1024,7 +1024,7 @@ ST_DEL:
 .del_error:
     call   _show_error      ; Print error message
     pop    hl               ; Pop BASIC text pointer
-    jp     DO_ERROR
+    jp     ERROR
 .del_done:
     pop    hl               ; Pop BASIC text pointer
     ret
@@ -1151,12 +1151,12 @@ dos__set_path:
 ; uses: bc, de
 ;-----------------------------------------------------------------------------
 dos__getfilename:
-    call    EVAL                ; Evaluate expression
+    call    FRMEVL              ; Evaluate expression
     push    hl                  ; Save BASIC text pointer
     ld      a, (VALTYP)         ; Get type
     dec     a
     jr      nz, .type_mismatch
-    call    GETLEN              ; Get string and its length
+    call    LEN1                ; Get string and its length
     jr      z, .null_str        ; If empty string then return
     cp      12
     jr      c, .string          ; Trim to 12 chars max

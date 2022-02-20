@@ -29,7 +29,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
 
     if (overlay_ram && addr >= 0x3000) {
         if (addr < 0x3400) {
-            return emustate.textram[addr & 0x3FF];
+            return emustate.screenram[addr & 0x3FF];
         } else if (addr < 0x3800) {
             return emustate.colorram[addr & 0x3FF];
         } else {
@@ -73,7 +73,7 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
 
     if (overlay_ram && addr >= 0x3000) {
         if (addr < 0x3400) {
-            emustate.textram[addr & 0x3FF] = data;
+            emustate.screenram[addr & 0x3FF] = data;
         } else if (addr < 0x3800) {
             emustate.colorram[addr & 0x3FF] = data;
         } else {
@@ -136,8 +136,8 @@ static uint8_t io_read(size_t param, ushort addr) {
             case 0xF1: return emustate.bankregs[1];
             case 0xF2: return emustate.bankregs[2];
             case 0xF3: return emustate.bankregs[3];
-            case 0xF4: return 0xFF; // ESPCTL
-            case 0xF5: return 0xFF; // ESPDAT
+            case 0xF4: return 0xFF; // ESPCTRL
+            case 0xF5: return 0xFF; // ESPDATA
         }
     }
 
@@ -227,8 +227,8 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
             case 0xF1: emustate.bankregs[1] = data; return;
             case 0xF2: emustate.bankregs[2] = data; return;
             case 0xF3: emustate.bankregs[3] = data; return;
-            case 0xF4: return; // ESPCTL
-            case 0xF5: return; // ESPDAT
+            case 0xF4: return; // ESPCTRL
+            case 0xF5: return; // ESPDATA
         }
     }
 
@@ -271,16 +271,24 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
 }
 
 void reset(void) {
+    memcpy(emustate.charram, emustate.flashrom + 12 * 1024, sizeof(emustate.charram));
+
     Z80RESET(&emustate.z80context);
     emustate.z80context.ioRead   = io_read;
     emustate.z80context.ioWrite  = io_write;
     emustate.z80context.memRead  = mem_read;
     emustate.z80context.memWrite = mem_write;
 
+    emustate.bankregs[0] = (1 << 7) | (1 << 6) | 16,
+    emustate.bankregs[1] = (0 << 7) | (0 << 6) | 32,
+    emustate.bankregs[2] = (0 << 7) | (0 << 6) | 33,
+    emustate.bankregs[3] = (1 << 7) | (0 << 6) | 3,
+
     emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;
 
     ay8910_reset(&emustate.ay_state);
+    ay8910_reset(&emustate.ay2_state);
 }
 
 // 3579545 Hz -> 59659 cycles / frame
@@ -331,10 +339,10 @@ static void render_screen(SDL_Renderer *renderer) {
         SDL_GetRendererOutputSize(renderer, &w, &h);
 
         // Retain aspect ratio
-        int w1 = w / VIDEO_WIDTH * VIDEO_WIDTH;
-        int h1 = w1 * VIDEO_HEIGHT / VIDEO_WIDTH;
-        int h2 = h / VIDEO_HEIGHT * VIDEO_HEIGHT;
-        int w2 = h2 * VIDEO_WIDTH / VIDEO_HEIGHT;
+        int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
+        int h1 = (w1 * VIDEO_HEIGHT) / VIDEO_WIDTH;
+        int h2 = (h / VIDEO_HEIGHT) * VIDEO_HEIGHT;
+        int w2 = (h2 * VIDEO_WIDTH) / VIDEO_HEIGHT;
 
         int sw, sh;
         if (w1 == 0 || h1 == 0) {
@@ -455,9 +463,6 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    reset();
-    audio_init();
-
     // Load system ROM
     {
         FILE *f = fopen(rom_path, "rb");
@@ -521,7 +526,12 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Event event;
+
     ay8910_init(&emustate.ay_state);
+    ay8910_init(&emustate.ay2_state);
+    audio_init();
+
+    reset();
     audio_start();
 
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
