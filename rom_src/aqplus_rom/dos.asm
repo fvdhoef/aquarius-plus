@@ -18,6 +18,8 @@ DF_ARRAY: equ 7       ; set = numeric array
 ;-----------------------------------------------------------------------------
 printhex:
     push    bc
+
+    ; Print high nibble
     ld      b, a
     and     $F0
     rra
@@ -30,6 +32,8 @@ printhex:
 .hi_nib:
     add     '0'
     call    TTYOUT
+
+    ; Print low nibble
     ld      a, b
     and     $0F
     cp      10
@@ -42,29 +46,36 @@ printhex:
 
 ;-----------------------------------------------------------------------------
 ; strlen - String length
-;  in: hl = string (null-terminated)
-; out:  a = number of characters in string
+;  in: HL = string (null-terminated)
+; out:  A = number of characters in string
 ;-----------------------------------------------------------------------------
 strlen:
+    ; Save DE/HL
     push  de
     ld    d, h
     ld    e, l
+
+    ; Find null-character in string
     xor   a
     dec   hl
 .loop:
     inc   hl
     cp    (hl)
     jr    nz, .loop
+
+    ; Calculate length of string
     sbc   hl, de
     ld    a, l
+
+    ; Restore DE/HL
     ex    de, hl
     pop   de
     ret
 
 ;-----------------------------------------------------------------------------
 ; strcmp - Compare strings
-;  in: hl = string 1 (null terminated)
-;      de = string 2 (null terminated)
+;  in: HL = string 1 (null terminated)
+;      DE = string 2 (null terminated)
 ; out: Z  = strings equal
 ;      NZ = not equal
 ;-----------------------------------------------------------------------------
@@ -77,18 +88,6 @@ strcmp:
     or      a
     jr      nz, strcmp      ; Loop until end of strings
     ret                     ; Return Z
-
-;-----------------------------------------------------------------------------
-; Print null-terminated string
-; in: HL = text ending with NULL
-;-----------------------------------------------------------------------------
-prtstr:
-    ld      a, (hl)
-    inc     hl
-    or      a
-    ret     z
-    call    TTYOUT
-    jr      prtstr
 
 ;-----------------------------------------------------------------------------
 ; Check for argument in current statement
@@ -137,14 +136,15 @@ get_arg:                    ; Starting at current location
 ;-----------------------------------------------------------------------------
 ST_CD:
     push   hl                   ; Push BASIC text pointer
-    ld     c,a
+
+    ld     c, a
     call   usb__ready           ; Check for USB disk (may reset path to root!)
     jr     nz, .do_error
-    ld     a,c
+    ld     a, c
     or     a                    ; Any args?
     jr     nz, .change_dir      ; Yes,
 .show_path:
-    ld     hl,PathName
+    ld     hl, PathName
     call   STROUT              ; Print path
     call   CRDO
     jr     .cd_done
@@ -458,7 +458,7 @@ _show_error:
     jr      c, .index               ; Yes,
     push    af                      ; No, push error code
     ld      hl, .unknown_error_msg
-    call    prtstr                  ; Print "disk error $"
+    call    STROUT                  ; Print "disk error $"
     pop     af                      ; Pop error code
     call    printhex
     jp      CRDO
@@ -475,7 +475,7 @@ _show_error:
     inc     hl
     ld      h, (hl)                 ; HL = error message
     ld      l, a
-    call    prtstr                  ; Print error message
+    call    STROUT                  ; Print error message
     jp      CRDO
 
 .unknown_error_msg:  db "Disk error $", 0
@@ -647,8 +647,7 @@ ST_SAVEFILE:
     ld      a, 1<<DF_ADDR
     ld      (DOSFLAGS), a           ; Flag load address present
     call    get_arg                 ; Get next char from text, skipping spaces
-    rst     $08                     ; CHKNXT - skip ',' (syntax error if not ',')
-    db      ','
+    SYNCHK  ','                     ; Check for ',' (otherwise syntax error)
     call    FRMNUM                  ; Get length
     call    FRCINT                  ; Convert to 16 bit integer
     ld      (BINLEN),de             ; Store length

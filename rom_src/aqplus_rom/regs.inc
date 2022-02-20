@@ -120,7 +120,7 @@ FRMEVL:     equ $0985   ; Evaluate formula
 PARCHK:     equ $0A37   ; Evaluate expression in brackets
 SNGFLT:     equ $0B36   ; Store variable 8 bit (out: B = value)
 GETBYT:     equ $0B54   ; Evaluate numeric expression (integer 0-255)
-STROUT:     equ $0E9D   ; Print null-terminated string
+STROUT:     equ $0E9D   ; Print null-terminated string in HL
 LEN1:       equ $0FF7   ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length) 
 PTRGET:     equ $10D1   ; Get variable (out: BC = addr, DE = len)
 CRDO:       equ $19EA   ; Print CR+LF
@@ -169,3 +169,15 @@ BANK0_BASE: equ $0000
 BANK1_BASE: equ $4000
 BANK2_BASE: equ $8000
 BANK3_BASE: equ $C000
+
+;-----------------------------------------------------------------------------
+; Other definitions
+;-----------------------------------------------------------------------------
+SYNCHK macro value
+    rst     $08
+    db      'value'
+endm
+
+OUTCHR macro
+    rst     $18
+endm

@@ -6,6 +6,9 @@
 
 #define AUDIO_LEVEL (16000)
 
+#define BANK_READONLY (1 << 7)
+#define BANK_MAP_RAM (1 << 6)
+
 struct emulation_state {
     Z80Context z80context;       // Z80 emulation core state
     int        line_hcycles;     // Half-cycles for this line

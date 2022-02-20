@@ -277,10 +277,10 @@ void reset(void) {
     emustate.z80context.memRead  = mem_read;
     emustate.z80context.memWrite = mem_write;
 
-    emustate.bankregs[0] = (1 << 7) | (1 << 6) | 16,
-    emustate.bankregs[1] = (0 << 7) | (0 << 6) | 32,
-    emustate.bankregs[2] = (0 << 7) | (0 << 6) | 33,
-    emustate.bankregs[3] = (1 << 7) | (0 << 6) | 3,
+    emustate.bankregs[0] = 16 | BANK_READONLY | BANK_MAP_RAM,
+    emustate.bankregs[1] = 32,
+    emustate.bankregs[2] = 33,
+    emustate.bankregs[3] = 3 | BANK_READONLY,
 
     emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;

@@ -240,8 +240,8 @@ The character RAM is used by the text mode character generator to display text o
     </tr>
 </table>
 
-For registers $E4-$E8, the A register determines which sprite to read or write.  
-For registers $E9-$EB, the A register determines which palette entry to read or write.
+For registers $E4-$E8, the B register determines which sprite to read or write.  
+For registers $E9-$EB, the B register determines which palette entry to read or write.
 
 The current line number is reflected in the **_VLINE_** register. Internal line number range from 0-261. Line numbers above 255 are reflected in this register as 255.
 

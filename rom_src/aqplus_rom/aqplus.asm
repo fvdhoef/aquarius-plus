@@ -67,14 +67,14 @@ SysVars:  equ PathName
 ;-----------------------------------------------------------------------------
 _reset:
     call    TTYOUT
-    call    charram_init
+    call    init_charram
     call    usb_init
     ret
 
 ;-----------------------------------------------------------------------------
 ; Character RAM initialization
 ;-----------------------------------------------------------------------------
-charram_init:
+init_charram:
     ; Save current bank 1/2
     in      a, (IO_BANK1)
     push    a
@@ -141,8 +141,8 @@ _coldboot:
     call    $0BBE               ; ST_NEW2 - NEW without syntax check
 
     ; Install BASIC HOOK
-    ld      hl, udf_handler     ; RST $30 Vector (our UDF service routine)
-    ld      (HOOK), hl          ; store in UDF vector
+    ld      hl, hook_handler
+    ld      (HOOK), hl
 
     ; Show our copyright message
     call    $1FF2               ; Print copyright string in ROM
@@ -161,27 +161,29 @@ _coldboot:
     include "ch376.asm"
 
 ;-----------------------------------------------------------------------------
-; UDF Hook Service Routine
-;
-; This address is stored at $3806-7, and is called by every RST $30.
-; It allows us to hook into the system ROM in several places (anywhere a 
-; RST $30 is located).
+; Hook handler
 ;-----------------------------------------------------------------------------
-udf_handler:
+hook_handler:
+    ; The hook index byte is stored after the RST $30 call. So SP currently
+    ; points to this hook index byte. Retrieve the hook index byte into A
+    ; and determine the correct return address.
     ex      (sp), hl            ; Save HL and get address of byte after RST $30
     push    af                  ; Save AF
     ld      a, (hl)             ; A = byte (RST $30 parameter)
     inc     hl                  ; Skip over byte after RST $30
-    push    hl                  ; Push return address (code after RST $30,xx)
+    push    hl                  ; Push return address
 
-    ld      hl, _udf_list       ; HL = RST 30 parameter table
+    ; Find index in hook indexes table
+    ld      hl, _hook_idxs
     push    bc
-    ld      bc, _udf_jmp - _udf_list + 1 ; Number of UDF parameters
+    ld      bc, _hook_handlers - _hook_idxs + 1
     cpir                        ; Find parameter in list
     ld      a, c                ; A = parameter number in list
     pop     bc
+
+    ; Call handler from hook handlers table
     add     a, a                ; A * 2 to index WORD size vectors
-    ld      hl, _udf_jmp        ; HL = Jump vector table
+    ld      hl, _hook_handlers
 do_jump:
     add     a, l
     ld      l, a
@@ -192,28 +194,27 @@ do_jump:
     inc     hl
     ld      h, (hl)             ; Get vector address
     ld      l, a
-    jp      (hl)                ; And jump to it will return to udf_exit
+    jp      (hl)                ; And jump to it will return to hook_exit
 
-; End of UDF handler
-udf_exit:
+; End of hook handler
+hook_exit:
     pop     hl                  ; Get return address
     pop     af                  ; Restore AF
     ex      (sp), hl            ; Restore HL and set return address
     ret                         ; Return to code after RST $30,xx
 
-; UDF parameter table
-; List of RST $30,xx hooks that we are monitoring.
-; NOTE: order is reverse of UDF jumps!
-_udf_list:  ; xx      index caller            @addr  performing function:
+; Hook indexes we're handling
+; NOTE: order is reverse of hook handlers table!
+_hook_idxs:  ; xx      index caller            @addr  performing function:
     db      24      ; 5   RUN                 $06BE  starting BASIC program
     db      23      ; 4   exec_next_statement $0658  interpreting next BASIC statement
     db      22      ; 3   token_to_keyword    $05A0  expanding token to keyword
     db      10      ; 2   keyword_to_token    $0536  converting keyword to token
     db      27      ; 1   FUNCTIONS           $0A5F  executing a function
 
-; UDF parameter Jump table
-_udf_jmp:
-    dw      udf_exit            ; 0 parameter not found in list
+; Hook handler entry points
+_hook_handlers:
+    dw      hook_exit           ; 0 parameter not found in list
     dw      execute_function    ; 1 executing a function
     dw      keyword_to_token    ; 2 converting keyword to token
     dw      token_to_keyword    ; 3 expanding token to keyword
@@ -318,7 +319,7 @@ keyword_to_token:
     ld      a, b               ; A = current index
 
     cp      $CB                ; If < $CB then keyword was found in BASIC table
-    jp      nz, udf_exit       ;    so return
+    jp      nz, hook_exit       ;    so return
 
     pop     bc                 ; Get return address from stack
     pop     af                 ; Restore AF
@@ -486,8 +487,8 @@ ST_reserved:
 ;-----------------------------------------------------------------------------
 ST_CLS:
     ; Clear screen
-    ld      a, $0b
-    rst     $18
+    ld      a, $0B
+    OUTCHR
     ret
 
 ;-----------------------------------------------------------------------------
@@ -500,8 +501,7 @@ ST_OUT:
     push    de                  ; Stored to be used in BC
 
     ; Expect comma
-    rst     $08                 ; Compare RAM byte with following byte
-    db      ','                 ; Character ',' byte used by RST 08
+    SYNCHK  ","
 
     call    GETBYT              ; Get/evaluate data
     pop     bc                  ; BC = port
@@ -520,8 +520,7 @@ ST_LOCATE:
     jp      nc, FCERR           ; If higher then 38 goto FC error
 
     ; Expect comma
-    rst     $08                 ; Compare RAM byte with following byte
-    db      ','                 ; Character ',' byte used by RST 08
+    SYNCHK  ','
 
     call    GETBYT              ; Read number from command line (row). Stored in A and E
     cp      $18                 ; Compare with 24 decimal (max rows on screen)
@@ -580,8 +579,7 @@ ST_PSG:
     out     ($F7), a         ; Set the PSG register
 
     ; Expect comma
-    rst     $08              ; Next character must be ','
-    db      ','              ; ','
+    SYNCHK  ','
 
     ; Get value to write to PSG register
     call    GETBYT           ; Get/evaluate value
