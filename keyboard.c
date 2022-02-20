@@ -3,9 +3,59 @@
 #include <SDL.h>
 #include "emustate.h"
 
-void keyboard_scancode(unsigned scancode, bool keydown) {
-    // printf("%c: %d\n", keydown ? 'D' : 'U', scancode);
+// Aquarius keys
+enum {
+    KEY_EQUALS    = 0,  // = +
+    KEY_BACKSPACE = 1,  // BS Backslash
+    KEY_COLON     = 2,  // : *
+    KEY_RETURN    = 3,  // Return
+    KEY_SEMICOLON = 4,  // ; @
+    KEY_PERIOD    = 5,  // . >
+    KEY_MINUS     = 6,  // - _
+    KEY_SLASH     = 7,  // / ^
+    KEY_0         = 8,  // 0 ?
+    KEY_P         = 9,  // P
+    KEY_L         = 10, // L
+    KEY_COMMA     = 11, // , <
+    KEY_9         = 12, // 9 )
+    KEY_O         = 13, // O
+    KEY_K         = 14, // K
+    KEY_M         = 15, // M
+    KEY_N         = 16, // N
+    KEY_J         = 17, // J
+    KEY_8         = 18, // 8 (
+    KEY_I         = 19, // I
+    KEY_7         = 20, // 7 '
+    KEY_U         = 21, // U
+    KEY_H         = 22, // H
+    KEY_B         = 23, // B
+    KEY_6         = 24, // 6 &
+    KEY_Y         = 25, // Y
+    KEY_G         = 26, // G
+    KEY_V         = 27, // V
+    KEY_C         = 28, // C
+    KEY_F         = 29, // F
+    KEY_5         = 30, // 5 %
+    KEY_T         = 31, // T
+    KEY_4         = 32, // 4 $
+    KEY_R         = 33, // R
+    KEY_D         = 34, // D
+    KEY_X         = 35, // X
+    KEY_3         = 36, // 3 #
+    KEY_E         = 37, // E
+    KEY_S         = 38, // S
+    KEY_Z         = 39, // Z
+    KEY_SPACE     = 40, // Space
+    KEY_A         = 41, // A
+    KEY_2         = 42, // 2 "
+    KEY_W         = 43, // W
+    KEY_1         = 44, // 1 !
+    KEY_Q         = 45, // Q
+    KEY_SHIFT     = 46, // Shift
+    KEY_CTRL      = 47, // Ctrl
+};
 
+static void handcontroller(unsigned scancode, bool keydown) {
     enum {
         UP    = (1 << 0),
         DOWN  = (1 << 1),
@@ -21,7 +71,6 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
 
     static int handctrl_pressed = 0;
 
-    int key = -1;
     switch (scancode) {
         case SDL_SCANCODE_UP: handctrl_pressed = (keydown) ? (handctrl_pressed | UP) : (handctrl_pressed & ~UP); break;
         case SDL_SCANCODE_DOWN: handctrl_pressed = (keydown) ? (handctrl_pressed | DOWN) : (handctrl_pressed & ~DOWN); break;
@@ -33,67 +82,6 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         case SDL_SCANCODE_F4: handctrl_pressed = (keydown) ? (handctrl_pressed | K4) : (handctrl_pressed & ~K4); break;
         case SDL_SCANCODE_F5: handctrl_pressed = (keydown) ? (handctrl_pressed | K5) : (handctrl_pressed & ~K5); break;
         case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
-
-        case SDL_SCANCODE_ESCAPE:
-            if (keydown)
-                reset();
-            break;
-
-        case SDL_SCANCODE_EQUALS: key = 0; break;
-        case SDL_SCANCODE_BACKSPACE: key = 1; break;
-        case SDL_SCANCODE_APOSTROPHE: key = 2; break;
-        case SDL_SCANCODE_RETURN: key = 3; break;
-        case SDL_SCANCODE_SEMICOLON: key = 4; break;
-        case SDL_SCANCODE_PERIOD: key = 5; break;
-
-        case SDL_SCANCODE_MINUS: key = 6; break;
-        case SDL_SCANCODE_SLASH: key = 7; break;
-        case SDL_SCANCODE_0: key = 8; break;
-        case SDL_SCANCODE_P: key = 9; break;
-        case SDL_SCANCODE_L: key = 10; break;
-        case SDL_SCANCODE_COMMA: key = 11; break;
-
-        case SDL_SCANCODE_9: key = 12; break;
-        case SDL_SCANCODE_O: key = 13; break;
-        case SDL_SCANCODE_K: key = 14; break;
-        case SDL_SCANCODE_M: key = 15; break;
-        case SDL_SCANCODE_N: key = 16; break;
-        case SDL_SCANCODE_J: key = 17; break;
-
-        case SDL_SCANCODE_8: key = 18; break;
-        case SDL_SCANCODE_I: key = 19; break;
-        case SDL_SCANCODE_7: key = 20; break;
-        case SDL_SCANCODE_U: key = 21; break;
-        case SDL_SCANCODE_H: key = 22; break;
-        case SDL_SCANCODE_B: key = 23; break;
-
-        case SDL_SCANCODE_6: key = 24; break;
-        case SDL_SCANCODE_Y: key = 25; break;
-        case SDL_SCANCODE_G: key = 26; break;
-        case SDL_SCANCODE_V: key = 27; break;
-        case SDL_SCANCODE_C: key = 28; break;
-        case SDL_SCANCODE_F: key = 29; break;
-
-        case SDL_SCANCODE_5: key = 30; break;
-        case SDL_SCANCODE_T: key = 31; break;
-        case SDL_SCANCODE_4: key = 32; break;
-        case SDL_SCANCODE_R: key = 33; break;
-        case SDL_SCANCODE_D: key = 34; break;
-        case SDL_SCANCODE_X: key = 35; break;
-
-        case SDL_SCANCODE_3: key = 36; break;
-        case SDL_SCANCODE_E: key = 37; break;
-        case SDL_SCANCODE_S: key = 38; break;
-        case SDL_SCANCODE_Z: key = 39; break;
-        case SDL_SCANCODE_SPACE: key = 40; break;
-        case SDL_SCANCODE_A: key = 41; break;
-
-        case SDL_SCANCODE_2: key = 42; break;
-        case SDL_SCANCODE_W: key = 43; break;
-        case SDL_SCANCODE_1: key = 44; break;
-        case SDL_SCANCODE_Q: key = 45; break;
-        case SDL_SCANCODE_LSHIFT: key = 46; break;
-        case SDL_SCANCODE_LCTRL: key = 47; break;
     }
 
     emustate.handctrl1 = 0xFF;
@@ -120,14 +108,194 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         emustate.handctrl1 &= ~((1 << 7) | (1 << 1));
     if (handctrl_pressed & K6)
         emustate.handctrl1 &= ~((1 << 7) | (1 << 0));
+}
 
-    if (key < 0) {
-        return;
+static inline void _aqkey_up(int key) {
+    emustate.keyb_matrix[key / 6] |= (1 << (key % 6));
+}
+static inline void _aqkey_down(int key) {
+    emustate.keyb_matrix[key / 6] &= ~(1 << (key % 6));
+}
+
+static inline void aqkey_down(int key, bool shift) {
+    _aqkey_down(key);
+    if (shift) {
+        _aqkey_down(KEY_SHIFT);
+    } else {
+        _aqkey_up(KEY_SHIFT);
+    }
+}
+
+void keyboard_scancode(unsigned scancode, bool keydown) {
+    // Hand controller emulation
+    handcontroller(scancode, keydown);
+
+    // Reset key
+    if (scancode == SDL_SCANCODE_ESCAPE && keydown) {
+        reset();
     }
 
-    if (keydown) {
-        emustate.keyb_matrix[key / 6] &= ~(1 << (key % 6));
-    } else {
-        emustate.keyb_matrix[key / 6] |= (1 << (key % 6));
+    // Handle modifier keys
+    static uint16_t modifiers       = 0;
+    static uint8_t  pressed_keys[8] = {0};
+
+    if (scancode == SDL_SCANCODE_LSHIFT) {
+        modifiers = (modifiers & ~KMOD_LSHIFT) | (keydown ? KMOD_LSHIFT : 0);
+    }
+    if (scancode == SDL_SCANCODE_RSHIFT) {
+        modifiers = (modifiers & ~KMOD_RSHIFT) | (keydown ? KMOD_RSHIFT : 0);
+    }
+    if (scancode == SDL_SCANCODE_LCTRL) {
+        modifiers = (modifiers & ~KMOD_LCTRL) | (keydown ? KMOD_LCTRL : 0);
+    }
+    if (scancode == SDL_SCANCODE_RCTRL) {
+        modifiers = (modifiers & ~KMOD_RCTRL) | (keydown ? KMOD_RCTRL : 0);
+    }
+
+    if (scancode < 64) {
+        if (keydown) {
+            pressed_keys[scancode / 8] |= 1 << (scancode & 7);
+        } else {
+            pressed_keys[scancode / 8] &= ~(1 << (scancode & 7));
+        }
+    }
+
+    enum {
+        UP    = (1 << 0),
+        DOWN  = (1 << 1),
+        LEFT  = (1 << 2),
+        RIGHT = (1 << 3),
+        K1    = (1 << 4),
+        K2    = (1 << 5),
+        K3    = (1 << 6),
+        K4    = (1 << 7),
+        K5    = (1 << 8),
+        K6    = (1 << 9),
+    };
+
+    // Clear keyboard state
+    for (int i = 0; i < 8; i++) {
+        emustate.keyb_matrix[i] = 0xFF;
+    }
+
+    // Set keyboard state based on current pressed keys
+    if (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) {
+        _aqkey_down(KEY_CTRL);
+    }
+
+    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+    if (shift_pressed) {
+        _aqkey_down(KEY_SHIFT);
+    }
+
+    for (int i = 0; i < 64; i++) {
+        if (pressed_keys[i / 8] & (1 << (i & 7))) {
+            switch (i) {
+                case SDL_SCANCODE_RETURN:
+                    aqkey_down(KEY_RETURN, shift_pressed);
+                    break;
+
+                case SDL_SCANCODE_1: aqkey_down(KEY_1, shift_pressed); break;
+                case SDL_SCANCODE_2:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_2, false);
+                    else
+                        aqkey_down(KEY_SEMICOLON, true);
+                    break;
+                case SDL_SCANCODE_3: aqkey_down(KEY_3, shift_pressed); break;
+                case SDL_SCANCODE_4: aqkey_down(KEY_4, shift_pressed); break;
+                case SDL_SCANCODE_5: aqkey_down(KEY_5, shift_pressed); break;
+                case SDL_SCANCODE_6:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_6, false);
+                    else
+                        aqkey_down(KEY_SLASH, true);
+                    break;
+                case SDL_SCANCODE_7:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_7, false);
+                    else
+                        aqkey_down(KEY_6, true);
+                    break;
+                case SDL_SCANCODE_8:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_8, false);
+                    else
+                        aqkey_down(KEY_COLON, true);
+                    break;
+                case SDL_SCANCODE_9:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_9, false);
+                    else
+                        aqkey_down(KEY_8, true);
+                    break;
+                case SDL_SCANCODE_0:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_0, false);
+                    else
+                        aqkey_down(KEY_9, true);
+                    break;
+                case SDL_SCANCODE_MINUS: aqkey_down(KEY_MINUS, shift_pressed); break;
+                case SDL_SCANCODE_EQUALS: aqkey_down(KEY_EQUALS, shift_pressed); break;
+                case SDL_SCANCODE_BACKSPACE: aqkey_down(KEY_BACKSPACE, false); break;
+
+                case SDL_SCANCODE_Q: aqkey_down(KEY_Q, shift_pressed); break;
+                case SDL_SCANCODE_W: aqkey_down(KEY_W, shift_pressed); break;
+                case SDL_SCANCODE_E: aqkey_down(KEY_E, shift_pressed); break;
+                case SDL_SCANCODE_R: aqkey_down(KEY_R, shift_pressed); break;
+                case SDL_SCANCODE_T: aqkey_down(KEY_T, shift_pressed); break;
+                case SDL_SCANCODE_Y: aqkey_down(KEY_Y, shift_pressed); break;
+                case SDL_SCANCODE_U: aqkey_down(KEY_U, shift_pressed); break;
+                case SDL_SCANCODE_I: aqkey_down(KEY_I, shift_pressed); break;
+                case SDL_SCANCODE_O: aqkey_down(KEY_O, shift_pressed); break;
+                case SDL_SCANCODE_P: aqkey_down(KEY_P, shift_pressed); break;
+
+                case SDL_SCANCODE_A: aqkey_down(KEY_A, shift_pressed); break;
+                case SDL_SCANCODE_S: aqkey_down(KEY_S, shift_pressed); break;
+                case SDL_SCANCODE_D: aqkey_down(KEY_D, shift_pressed); break;
+                case SDL_SCANCODE_F: aqkey_down(KEY_F, shift_pressed); break;
+                case SDL_SCANCODE_G: aqkey_down(KEY_G, shift_pressed); break;
+                case SDL_SCANCODE_H: aqkey_down(KEY_H, shift_pressed); break;
+                case SDL_SCANCODE_J: aqkey_down(KEY_J, shift_pressed); break;
+                case SDL_SCANCODE_K: aqkey_down(KEY_K, shift_pressed); break;
+                case SDL_SCANCODE_L: aqkey_down(KEY_L, shift_pressed); break;
+                case SDL_SCANCODE_SEMICOLON:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_SEMICOLON, false);
+                    else
+                        aqkey_down(KEY_COLON, false);
+                    break;
+                case SDL_SCANCODE_APOSTROPHE:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_7, true);
+                    else
+                        aqkey_down(KEY_2, true);
+                    break;
+                case SDL_SCANCODE_BACKSLASH:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_BACKSPACE, true);
+                    break;
+
+                case SDL_SCANCODE_Z: aqkey_down(KEY_Z, shift_pressed); break;
+                case SDL_SCANCODE_X: aqkey_down(KEY_X, shift_pressed); break;
+                case SDL_SCANCODE_C: aqkey_down(KEY_C, shift_pressed); break;
+                case SDL_SCANCODE_V: aqkey_down(KEY_V, shift_pressed); break;
+                case SDL_SCANCODE_B: aqkey_down(KEY_B, shift_pressed); break;
+                case SDL_SCANCODE_N: aqkey_down(KEY_N, shift_pressed); break;
+                case SDL_SCANCODE_M: aqkey_down(KEY_M, shift_pressed); break;
+                case SDL_SCANCODE_COMMA: aqkey_down(KEY_COMMA, shift_pressed); break;
+                case SDL_SCANCODE_PERIOD: aqkey_down(KEY_PERIOD, shift_pressed); break;
+                case SDL_SCANCODE_SLASH:
+                    if (!shift_pressed)
+                        aqkey_down(KEY_SLASH, false);
+                    else
+                        aqkey_down(KEY_0, true);
+                    break;
+
+                case SDL_SCANCODE_SPACE:
+                    aqkey_down(KEY_SHIFT, shift_pressed);
+                    break;
+            }
+        }
     }
 }
