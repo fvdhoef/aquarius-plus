@@ -293,7 +293,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
                     break;
 
                 case SDL_SCANCODE_SPACE:
-                    aqkey_down(KEY_SHIFT, shift_pressed);
+                    aqkey_down(KEY_SPACE, shift_pressed);
                     break;
             }
         }
