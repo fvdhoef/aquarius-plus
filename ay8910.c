@@ -31,11 +31,10 @@ void ay8910_reset(struct ay8910 *ay) {
 
     // Reset tone generator values
     for (int ch = 0; ch < 3; ch++) {
-        ay->tone[ch].period     = 0;
-        ay->tone[ch].volume     = 0;
-        ay->tone[ch].count      = 0;
-        ay->tone[ch].duty_cycle = 0;
-        ay->tone[ch].output     = 0;
+        ay->tone[ch].period = 0;
+        ay->tone[ch].volume = 0;
+        ay->tone[ch].count  = 0;
+        ay->tone[ch].output = 0;
     }
 
     // Reset envelope generator values
@@ -106,11 +105,10 @@ uint8_t ay8910_read_reg(struct ay8910 *ay, uint8_t r) {
 void ay8910_render(struct ay8910 *ay, uint16_t abc[3]) {
     for (int ch = 0; ch < 3; ch++) {
         struct tone *tone   = &ay->tone[ch];
-        int          period = tone->period < 1 ? 1 : tone->period;
-        tone->count += 1;
+        uint16_t     period = tone->period < 1 ? 1 : tone->period;
+        tone->count++;
         while (tone->count >= period) {
-            tone->duty_cycle = (tone->duty_cycle - 1) & 0x1F;
-            tone->output     = tone->duty_cycle & 1;
+            tone->output ^= 1;
             tone->count -= period;
         }
     }

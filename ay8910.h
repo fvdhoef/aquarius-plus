@@ -4,10 +4,9 @@
 #include <stdbool.h>
 
 struct tone {
-    uint32_t period;
+    uint16_t period;
     uint8_t  volume;
     int32_t  count;
-    uint8_t  duty_cycle;
     uint8_t  output;
 };
 
