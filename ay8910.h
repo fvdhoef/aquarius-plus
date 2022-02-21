@@ -33,8 +33,7 @@ struct ay8910 {
     float           output_amplitude_table[8 * 16 * 16 * 16]; // Table containing all possible output amplitudes
 };
 
-void    ay8910_init(struct ay8910 *ay);
 void    ay8910_reset(struct ay8910 *ay);
 void    ay8910_write_reg(struct ay8910 *ay, uint8_t r, uint8_t v);
 uint8_t ay8910_read_reg(struct ay8910 *ay, uint8_t r);
-float   ay8910_render(struct ay8910 *ay);
+void    ay8910_render(struct ay8910 *ay, uint16_t abc[3]);

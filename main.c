@@ -164,8 +164,7 @@ static uint8_t io_read(size_t param, ushort addr) {
 
         case 0xFB: return (
             (emustate.sysctrl_disable_ext ? (1 << 0) : 0) |
-            (emustate.sysctrl_ay_both ? (1 << 1) : 0) |
-            (emustate.sysctrl_ay_disable ? (1 << 2) : 0));
+            (emustate.sysctrl_ay_disable ? (1 << 1) : 0));
 
         case 0xFC: printf("Cassette port input (%04x)\n", addr); return 0xFF;
         case 0xFD: return (emustate.video_line >= 224) ? 0 : 1;
@@ -255,8 +254,7 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
 
         case 0xFB:
             emustate.sysctrl_disable_ext = (data & (1 << 0)) != 0;
-            emustate.sysctrl_ay_both     = (data & (1 << 1)) != 0;
-            emustate.sysctrl_ay_disable  = (data & (1 << 2)) != 0;
+            emustate.sysctrl_ay_disable  = (data & (1 << 1)) != 0;
             return;
 
         case 0xFC: emustate.sound_output = (data & 1) != 0; break;
@@ -284,7 +282,6 @@ void reset(void) {
 
     emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;
-    emustate.sysctrl_ay_both = true;
 
     ay8910_reset(&emustate.ay_state);
     ay8910_reset(&emustate.ay2_state);
@@ -402,23 +399,25 @@ static void emulate(SDL_Renderer *renderer) {
 
         emustate.sample_hcycles -= HCYCLES_PER_SAMPLE;
 
-        // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
-        float ay1_samples = 0;
-        float ay2_samples = 0;
-        for (int i = 0; i < 5; i++) {
-            ay1_samples += 0.2f * ay8910_render(&emustate.ay_state);
-            ay2_samples += 0.2f * ay8910_render(&emustate.ay2_state);
-        }
-
-        uint16_t ay1  = (uint16_t)(ay1_samples * AUDIO_LEVEL);
-        uint16_t ay2  = (uint16_t)(ay2_samples * AUDIO_LEVEL);
         uint16_t beep = emustate.sound_output ? AUDIO_LEVEL : 0;
 
-        uint16_t left  = beep + ay1;
-        uint16_t right = beep + ay2;
-        if (emustate.sysctrl_ay_both) {
-            right += ay1;
+        // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
+        unsigned left  = 0;
+        unsigned right = 0;
+
+        for (int i = 0; i < 5; i++) {
+            uint16_t abc[3];
+            ay8910_render(&emustate.ay_state, abc);
+            left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
+            right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
+
+            ay8910_render(&emustate.ay2_state, abc);
+            left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
+            right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
         }
+
+        left  = left + beep;
+        right = right + beep;
 
         abuf[aidx * 2 + 0] = left;
         abuf[aidx * 2 + 1] = right;
@@ -537,11 +536,7 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Event event;
-
-    ay8910_init(&emustate.ay_state);
-    ay8910_init(&emustate.ay2_state);
     audio_init();
-
     reset();
     audio_start();
 

@@ -24,76 +24,7 @@ enum {
     AY_PORTB    = 0x0F,
 };
 
-struct ay_ym_param {
-    float r_up;
-    float r_down;
-    float res[16]; // Effective output resistance for different DAC values
-};
-
-static const struct ay_ym_param ay8910_param = {
-    .r_up   = 800000,
-    .r_down = 8000000,
-    .res    = {
-        15950, 15350, 15090, 14760,
-        14275, 13620, 12890, 11370,
-        10600, 8590, 7190, 5985,
-        4820, 3945, 3017, 2345},
-};
-
-static void build_3d_table(struct ay8910 *ay, float r_load, bool normalize, float factor, bool zero_is_off) {
-    float min = 10.0;
-    float max = 0.0;
-
-    for (int e = 0; e < 8; e++) {
-        for (int j1 = 0; j1 < 16; j1++) {
-            for (int j2 = 0; j2 < 16; j2++) {
-                for (int j3 = 0; j3 < 16; j3++) {
-                    float n;
-                    if (zero_is_off) {
-                        n = (j1 != 0 || (e & 0x01)) ? 1.0f : 0.0f;
-                        n += (j2 != 0 || (e & 0x02)) ? 1.0f : 0.0f;
-                        n += (j3 != 0 || (e & 0x04)) ? 1.0f : 0.0f;
-                    } else {
-                        n = 3.0f;
-                    }
-
-                    float rt = n / ay8910_param.r_up + 3.0f / ay8910_param.r_down + 1.0f / r_load;
-                    float rw = n / ay8910_param.r_up;
-
-                    rw += 1.0f / ay8910_param.res[j1];
-                    rt += 1.0f / ay8910_param.res[j1];
-                    rw += 1.0f / ay8910_param.res[j2];
-                    rt += 1.0f / ay8910_param.res[j2];
-                    rw += 1.0f / ay8910_param.res[j3];
-                    rt += 1.0f / ay8910_param.res[j3];
-
-                    int indx = (e << 12) | (j3 << 8) | (j2 << 4) | j1;
-
-                    ay->output_amplitude_table[indx] = rw / rt;
-                    if (ay->output_amplitude_table[indx] < min)
-                        min = ay->output_amplitude_table[indx];
-                    if (ay->output_amplitude_table[indx] > max)
-                        max = ay->output_amplitude_table[indx];
-                }
-            }
-        }
-    }
-
-    if (normalize) {
-        for (unsigned j = 0; j < sizeof(ay->output_amplitude_table) / sizeof(ay->output_amplitude_table[0]); j++) {
-            ay->output_amplitude_table[j] = ((ay->output_amplitude_table[j] - min) / (max - min)) * factor;
-        }
-    }
-}
-
-void ay8910_init(struct ay8910 *ay) {
-    // The previous implementation added all three channels up instead of averaging them.
-    // The factor of 3 will force the same levels if normalizing is used.
-    const float res_load = 1000;
-    build_3d_table(ay, res_load, true, 3, true);
-
-    ay8910_reset(ay);
-}
+static const uint16_t dac_levels[16] = {0, 6, 9, 13, 19, 27, 39, 56, 80, 116, 166, 239, 344, 495, 712, 1024};
 
 void ay8910_reset(struct ay8910 *ay) {
     ay->rng = 1;
@@ -172,7 +103,7 @@ uint8_t ay8910_read_reg(struct ay8910 *ay, uint8_t r) {
     return ay->regs[r] & mask[r];
 }
 
-float ay8910_render(struct ay8910 *ay) {
+void ay8910_render(struct ay8910 *ay, uint16_t abc[3]) {
     for (int ch = 0; ch < 3; ch++) {
         struct tone *tone   = &ay->tone[ch];
         int          period = tone->period < 1 ? 1 : tone->period;
@@ -238,22 +169,15 @@ float ay8910_render(struct ay8910 *ay) {
     }
     ay->envelope.volume = ay->envelope.step ^ ay->envelope.attack;
 
-    // Determine output amplitude
-    unsigned table_idx = 0;
     for (int ch = 0; ch < 3; ch++) {
-        unsigned mask   = 0;
-        unsigned volume = 0;
-
+        unsigned volume;
         if (((ay->tone[ch].volume >> 4) & 1) != 0) {
             // Amplitude controlled by envelope generator
-            mask   = (1 << (ch + 12));
-            volume = ay->envelope.volume;
-
+            volume = ay->envelope.volume & 0xF;
         } else {
             // Amplitude controlled by amplitude register
-            volume = ay->tone[ch].volume & 0x0F;
+            volume = ay->tone[ch].volume & 0xF;
         }
-        table_idx |= mask | (ay->value[ch] ? volume << (ch * 4) : 0);
+        abc[ch] = dac_levels[ay->value[ch] ? volume : 0];
     }
-    return ay->output_amplitude_table[table_idx];
 }

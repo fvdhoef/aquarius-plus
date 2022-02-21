@@ -4,7 +4,7 @@
 #include "z80.h"
 #include "ay8910.h"
 
-#define AUDIO_LEVEL (16000)
+#define AUDIO_LEVEL (10000)
 
 #define BANK_READONLY (1 << 7)
 #define BANK_MAP_RAM (1 << 6)
@@ -40,8 +40,7 @@ struct emulation_state {
     struct ay8910 ay2_state;                // $F8/F9: AY-3-8910 emulation state
     uint8_t       ay2_addr;                 // $F9   : AY-3-8910: Selected address to access via data register
     bool          sysctrl_disable_ext;      // $FB<0>: Disable access to extended registers
-    bool          sysctrl_ay_both;          // $FB<1>: Send first PSG to both channels
-    bool          sysctrl_ay_disable;       // $FB<2>: Disable AY PSGs
+    bool          sysctrl_ay_disable;       // $FB<1>: Disable AY PSGs
     bool          sound_output;             // $FC<1>: Cassette/Sound output
     bool          cpm_remap;                // $FD<1>: Remap memory for CP/M
     uint8_t       extbus_scramble;          // $FF   : External bus scramble (XOR) value
