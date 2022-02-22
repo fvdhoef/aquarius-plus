@@ -45,6 +45,9 @@
     <ClCompile Include="..\video.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\esp32.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libz80\z80.h">
@@ -78,6 +81,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\video.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\esp32.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
