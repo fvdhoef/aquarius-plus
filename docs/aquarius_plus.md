@@ -11,42 +11,42 @@
 
 # IO map
 
-| IO address | Name     | Description                                                       |
-| ---------- | -------- | ----------------------------------------------------------------- |
-| $00 - $DF  |          | -                                                                 |
-| $E0        | VCTRL    | Video: Control register                                           |
-| $E1        | VSCRX_L  | Video: Tilemap horizontal scroll (7:0)                            |
-| $E2        | VSCRX_H  | Video: Tilemap horizontal scroll (8)                              |
-| $E3        | VSCRY    | Video: Tilemap vertical scroll                                    |
-| $E4        | VSPRX_L  | Video: Sprite X-position (7:0)                                    |
-| $E5        | VSPRX_H  | Video: Sprite X-position (8)                                      |
-| $E6        | VSPRY    | Video: Sprite Y-position                                          |
-| $E7        | VSPRIDX  | Video: Sprite tile index (7:0)                                    |
-| $E8        | VSPRATTR | Video: Sprite attributes                                          |
-| $E9        | VPALTXT  | Video: Text palette                                               |
-| $EA        | VPALTILE | Video: Tile/bitmap palette                                        |
-| $EB        | VPALSPR  | Video: Sprite palette                                             |
-| $EC        | VLINE    | Video: Current line                                               |
-| $ED        | VIRQLINE | Video: Line at which to generate interrupt                        |
-| $EE        | IRQMASK  | Interrupt masking register                                        |
-| $EF        | IRQSTAT  | Interrupt status register                                         |
-| $F0        | BANK0    | Bank 0 ($0000-$3FFF) page                                         |
-| $F1        | BANK1    | Bank 1 ($4000-$7FFF) page                                         |
-| $F2        | BANK2    | Bank 2 ($8000-$BFFF) page                                         |
-| $F3        | BANK3    | Bank 3 ($C000-$FFFF) page                                         |
-| $F4        | ESPCTRL  | ESP32 control/status                                              |
-| $F5        | ESPDATA  | ESP32 data                                                        |
-| $F6        | PSG1DATA | AY-3-8910 (left/both) R: read from PSG, W: write to PSG           |
-| $F7        | PSG1ADDR | AY-3-8910 (left/both) R: read from PSG, W: write to latch address |
-| $F8        | PSG2DATA | AY-3-8910 (right) R: read from PSG, W: write to PSG               |
-| $F9        | PSG2ADDR | AY-3-8910 (right) R: read from PSG, W: write to latch address     |
-| $FA        |          | -                                                                 |
-| $FB        | SYSCTRL  | RW<0>: Disable access to extended registers                       |
-| $FB        | SYSCTRL  | RW<1>: Disable PSGs (as if micro-expander isn't available)        |
-| $FC        |          | W<0>: Cassette/Sound output<br/>R<0>: Cassette input              |
-| $FD        |          | W<0>: CP/M mode remapping<br/>R<0>: V-sync signal (0: in v-sync)  |
-| $FE        |          | W<0>: Serial printer (1200bps)<br/>R<0>: Clear to send status     |
-| $FF        |          | W<7:0>: External bus scramble value (XOR)<br/>R<5:0>: Keyboard    |
+| IO address | Name     | Description                                                      |
+| ---------- | -------- | ---------------------------------------------------------------- |
+| $00 - $DF  |          | -                                                                |
+| $E0        | VCTRL    | Video: Control register                                          |
+| $E1        | VSCRX_L  | Video: Tilemap horizontal scroll (7:0)                           |
+| $E2        | VSCRX_H  | Video: Tilemap horizontal scroll (8)                             |
+| $E3        | VSCRY    | Video: Tilemap vertical scroll                                   |
+| $E4        | VSPRX_L  | Video: Sprite X-position (7:0)                                   |
+| $E5        | VSPRX_H  | Video: Sprite X-position (8)                                     |
+| $E6        | VSPRY    | Video: Sprite Y-position                                         |
+| $E7        | VSPRIDX  | Video: Sprite tile index (7:0)                                   |
+| $E8        | VSPRATTR | Video: Sprite attributes                                         |
+| $E9        | VPALTXT  | Video: Text palette                                              |
+| $EA        | VPALTILE | Video: Tile/bitmap palette                                       |
+| $EB        | VPALSPR  | Video: Sprite palette                                            |
+| $EC        | VLINE    | Video: Current line                                              |
+| $ED        | VIRQLINE | Video: Line at which to generate interrupt                       |
+| $EE        | IRQMASK  | Interrupt masking register                                       |
+| $EF        | IRQSTAT  | Interrupt status register                                        |
+| $F0        | BANK0    | Bank 0 ($0000-$3FFF) page                                        |
+| $F1        | BANK1    | Bank 1 ($4000-$7FFF) page                                        |
+| $F2        | BANK2    | Bank 2 ($8000-$BFFF) page                                        |
+| $F3        | BANK3    | Bank 3 ($C000-$FFFF) page                                        |
+| $F4        | ESPCTRL  | ESP32 control/status                                             |
+| $F5        | ESPDATA  | ESP32 data                                                       |
+| $F6        | PSG1DATA | PSG1: AY-3-8910 R: read from PSG, W: write to PSG                |
+| $F7        | PSG1ADDR | PSG1: AY-3-8910 R: read from PSG, W: write to latch address      |
+| $F8        | PSG2DATA | PSG2: AY-3-8910 R: read from PSG, W: write to PSG                |
+| $F9        | PSG2ADDR | PSG2: AY-3-8910 R: read from PSG, W: write to latch address      |
+| $FA        |          | -                                                                |
+| $FB        | SYSCTRL  | RW<0>: Disable access to extended registers                      |
+| $FB        | SYSCTRL  | RW<1>: Disable PSGs (as if micro-expander isn't available)       |
+| $FC        |          | W<0>: Cassette/Sound output<br/>R<0>: Cassette input             |
+| $FD        |          | W<0>: CP/M mode remapping<br/>R<0>: V-sync signal (0: in v-sync) |
+| $FE        |          | W<0>: Serial printer (1200bps)<br/>R<0>: Clear to send status    |
+| $FF        |          | W<7:0>: External bus scramble value (XOR)<br/>R<5:0>: Keyboard   |
 
 ## Banking
 
@@ -82,14 +82,14 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 
 |  Page | Description                                |
 | ----: | ------------------------------------------ |
-|     0 | External bus $0000 - $3FFF                 |
-|     1 | External bus $4000 - $7FFF                 |
-|     2 | External bus $8000 - $BFFF                 |
-|     3 | External bus $C000 - $FFFF (Cartridge ROM) |
-|     4 | Video RAM                                  |
-|     5 | Character RAM                              |
-|  6-15 | -                                          |
-| 16-31 | Flash memory (256KB)                       |
+|  0-15 | Flash memory (256KB)                       |
+|    16 | External bus $0000 - $3FFF                 |
+|    17 | External bus $4000 - $7FFF                 |
+|    18 | External bus $8000 - $BFFF                 |
+|    19 | External bus $C000 - $FFFF (Cartridge ROM) |
+|    20 | Video RAM                                  |
+|    21 | Character RAM                              |
+| 22-31 | -                                          |
 | 32-63 | RAM (512KB)                                |
 
 ### Page 4

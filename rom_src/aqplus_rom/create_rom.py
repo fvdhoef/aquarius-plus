@@ -16,10 +16,13 @@ with open("../../aquarius.rom", "wb") as f:
             stockrom[offset+2] = (target >> 8) & 0xFF
 
         # Reset entry point in ROM
-        set_call(0x0046, 0x2000)
+        set_call(0x0000, 0x2000)
+
+        # Common initialization
+        set_call(0x0046, 0x2003)
 
         # Cold start entry point in ROM
-        set_jump(0x010F, 0x2003)
+        set_jump(0x010F, 0x2006)
 
         f.write(stockrom)
 

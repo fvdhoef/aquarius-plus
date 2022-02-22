@@ -8,6 +8,7 @@
 #include "keyboard.h"
 #include "audio.h"
 #include "ch376.h"
+#include "esp32.h"
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
     (void)param;
@@ -37,16 +38,16 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
         }
     }
 
-    if (page == 3) {
+    if (page < 16) {
+        return emustate.flashrom[page * 0x4000 + addr];
+    } else if (page == 19) {
         return emustate.gamerom[addr] ^ emustate.extbus_scramble;
-    } else if (page == 4) {
+    } else if (page == 20) {
         return emustate.videoram[addr];
-    } else if (page == 5) {
+    } else if (page == 21) {
         if (addr < 0x800) {
             return emustate.charram[addr];
         }
-    } else if (page >= 16 && page < 32) {
-        return emustate.flashrom[(page - 16) * 0x4000 + addr];
     } else if (page >= 32 && page < 64) {
         return emustate.mainram[(page - 32) * 0x4000 + addr];
     }
@@ -86,18 +87,19 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
         return;
     }
 
-    if (page == 3) {
+    if (page < 16) {
+        // Flash memory is read-only for now
+        // TODO: Implement flash emulation
+        return;
+    } else if (page == 19) {
         // Game ROM is readonly
         return;
-    } else if (page == 4) {
+    } else if (page == 20) {
         emustate.videoram[addr] = data;
-    } else if (page == 5) {
+    } else if (page == 21) {
         if (addr < 0x800) {
             emustate.charram[addr] = data;
         }
-    } else if (page >= 16 && page < 32) {
-        // Flash read-only for now
-        return;
     } else if (page >= 32 && page < 64) {
         emustate.mainram[(page - 32) * 0x4000 + addr] = data;
     }
@@ -136,8 +138,8 @@ static uint8_t io_read(size_t param, ushort addr) {
             case 0xF1: return emustate.bankregs[1];
             case 0xF2: return emustate.bankregs[2];
             case 0xF3: return emustate.bankregs[3];
-            case 0xF4: return 0xFF; // ESPCTRL
-            case 0xF5: return 0xFF; // ESPDATA
+            case 0xF4: return esp32_read_ctrl();
+            case 0xF5: return esp32_read_data();
         }
     }
 
@@ -226,8 +228,8 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
             case 0xF1: emustate.bankregs[1] = data; return;
             case 0xF2: emustate.bankregs[2] = data; return;
             case 0xF3: emustate.bankregs[3] = data; return;
-            case 0xF4: return; // ESPCTRL
-            case 0xF5: return; // ESPDATA
+            case 0xF4: esp32_write_ctrl(data); return;
+            case 0xF5: esp32_write_data(data); return;
         }
     }
 
@@ -274,11 +276,6 @@ void reset(void) {
     emustate.z80context.ioWrite  = io_write;
     emustate.z80context.memRead  = mem_read;
     emustate.z80context.memWrite = mem_write;
-
-    emustate.bankregs[0] = 16 | BANK_READONLY | BANK_MAP_RAM,
-    emustate.bankregs[1] = 32,
-    emustate.bankregs[2] = 33,
-    emustate.bankregs[3] = 3 | BANK_READONLY,
 
     emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;
@@ -448,7 +445,10 @@ int main(int argc, char *argv[]) {
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
             case 'X': emustate.expander_enabled = false; break;
             case 'R': emustate.ramexp_enabled = false; break;
-            case 'u': ch376_init(optarg); break;
+            case 'u':
+                ch376_init(optarg);
+                esp32_init(optarg);
+                break;
             default: params_ok = false; break;
         }
     }
