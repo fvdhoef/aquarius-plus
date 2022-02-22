@@ -59,7 +59,6 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\assets\charrom.c" />
     <ClCompile Include="..\audio.c" />
     <ClCompile Include="..\ay8910.c" />
     <ClCompile Include="..\ch376.c" />
