@@ -138,6 +138,7 @@ CRDO:       equ $19EA   ; Print CR+LF
 TTYCHR:     equ $1D72   ; Print character in A with pause/break at end of page
 TTYOUT:     equ $1D94   ; Print character in A
 TTYFIS:     equ $1DE7   ; Save Column and Position
+JMPINI:     equ $1FE1   ; Power Up/Reset Routine: Jumped to from RST 0 
 PRNTIT:     equ $1FF2   ; Print copyright message and return
 
 ; Extra variables / functions
@@ -182,6 +183,9 @@ BANK0_BASE: equ $0000
 BANK1_BASE: equ $4000
 BANK2_BASE: equ $8000
 BANK3_BASE: equ $C000
+
+BANK_READONLY:  equ $80     ; Bank readonly
+BANK_OVERLAY:   equ $40     ; RAM overlay
 
 ;-----------------------------------------------------------------------------
 ; Other definitions

@@ -59,13 +59,34 @@ SysVars:  equ PathName
 ;                     AquBASIC BOOT ROM
 ;=================================================================
     org     $2000
-    jp      _reset          ; Called from main ROM after reset after setting up temp stack
+    jp      _reset          ; Called from main ROM at reset vector
+    jp      _common_init    ; Called from main ROM after setting up temp stack
     jp      _coldboot       ; Called from main ROM for cold boot
+
+;-----------------------------------------------------------------------------
+; Reset vector
+;
+; CAUTION: stack isn't available at this point, so don't use any instruction
+;          that uses the stack.
+;-----------------------------------------------------------------------------
+_reset:
+    ; Initialize banking registers
+    ld      a, 0 | BANK_OVERLAY | BANK_READONLY
+    out     (IO_BANK0), a
+    ld      a, 32
+    out     (IO_BANK1), a
+    ld      a, 33
+    out     (IO_BANK2), a
+    ld      a, 19 | BANK_READONLY
+    out     (IO_BANK3), a
+
+    ; Back to system ROM init
+    jp      JMPINI
 
 ;-----------------------------------------------------------------------------
 ; Common initialisation
 ;-----------------------------------------------------------------------------
-_reset:
+_common_init:
     ; Clear screen (the system ROM already loaded 11 in A)
     call    TTYOUT
 
@@ -87,9 +108,9 @@ init_charram:
     push    a
 
     ; Temporarily set up mappings for character RAM and character ROM
-    ld      a, 5            ; Page 5: character RAM
+    ld      a, 21           ; Page 21: character RAM
     out     (IO_BANK1), a
-    ld      a, 16           ; Page 16: first page of flash ROM
+    ld      a, 0            ; Page 0: first page of flash ROM
     out     (IO_BANK2), a
 
     ; Copy character ROM to character RAM
