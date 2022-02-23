@@ -602,20 +602,39 @@ ST_PSG:
 .psgloop:
     ; Get PSG register to write to
     call    GETBYT           ; Get/evaluate register
-    out     ($F7), a         ; Set the PSG register
+    cp      16
+    jr      nc, .psg2
+
+    out     (IO_PSG1ADDR), a ; Set the PSG register
 
     ; Expect comma
     SYNCHK  ','
 
     ; Get value to write to PSG register
     call    GETBYT           ; Get/evaluate value
-    out     ($F6), a         ; Send data to the selected PSG register
+    out     (IO_PSG1DATA), a ; Send data to the selected PSG register
+
+.check_comma:
+    ; Check for a comma
     ld      a, (hl)          ; Get next character on command line
     cp      ','              ; Compare with ','
     ret     nz               ; No comma = no more parameters -> return
 
     inc     hl               ; next character on command line
     jr      .psgloop         ; parse next register & value
+
+.psg2:
+    sub     16
+    out     (IO_PSG2ADDR), a ; Set the PSG register
+
+    ; Expect comma
+    SYNCHK  ','
+
+    ; Get value to write to PSG register
+    call    GETBYT           ; Get/evaluate value
+    out     (IO_PSG2DATA), a ; Send data to the selected PSG register
+
+    jr      .check_comma
 
 ;-----------------------------------------------------------------------------
 ; IN() function

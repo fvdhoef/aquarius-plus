@@ -198,3 +198,21 @@ endm
 OUTCHR macro
     rst     $18
 endm
+
+;-----------------------------------------------------------------------------
+; ESP32 commands
+;-----------------------------------------------------------------------------
+ESP_OPEN:      equ $10      ;  Open / create file
+ESP_CLOSE:     equ $11      ;  Close open file
+ESP_READ:      equ $12      ;  Read from file
+ESP_WRITE:     equ $13      ;  Write to file
+ESP_SEEK:      equ $14      ;  Move read/write pointer
+ESP_TELL:      equ $15      ;  Get current read/write
+ESP_OPENDIR:   equ $16      ;  Open directory
+ESP_CLOSEDIR:  equ $17      ;  Close open directory
+ESP_READDIR:   equ $18      ;  Read from directory
+ESP_UNLINK:    equ $19      ;  Remove file or directory
+ESP_RENAME:    equ $1A      ;  Rename / move file or directory
+ESP_MKDIR:     equ $1B      ;  Create directory
+ESP_CHDIR:     equ $1C      ;  Change directory
+ESP_STAT:      equ $1D      ;  Get file status
