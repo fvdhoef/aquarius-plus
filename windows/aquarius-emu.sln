@@ -17,6 +17,8 @@ Global
 		Debug|x86 = Debug|x86
 		Demo|x64 = Demo|x64
 		Demo|x86 = Demo|x86
+		PT3 Player|x64 = PT3 Player|x64
+		PT3 Player|x86 = PT3 Player|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
 		USB|x64 = USB|x64
@@ -43,6 +45,10 @@ Global
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x64.Build.0 = Demo|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x86.ActiveCfg = Demo|Win32
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Demo|x86.Build.0 = Demo|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.PT3 Player|x64.ActiveCfg = PT3 Player|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.PT3 Player|x64.Build.0 = PT3 Player|x64
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.PT3 Player|x86.ActiveCfg = PT3 Player|Win32
+		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.PT3 Player|x86.Build.0 = PT3 Player|Win32
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x64.ActiveCfg = Release|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x64.Build.0 = Release|x64
 		{DA91B001-4FCF-4F72-80D5-D9658DFB0329}.Release|x86.ActiveCfg = Release|Win32
