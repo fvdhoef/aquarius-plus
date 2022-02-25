@@ -83,6 +83,16 @@ _reset:
     ; Back to system ROM init
     jp      JMPINI
 
+
+esp_init:
+    ld      a, ESP_OPENDIR
+    out     (IO_ESPDATA), a
+    ld      a, '/'
+    out     (IO_ESPDATA), a
+    ld      a, 0
+    out     (IO_ESPDATA), a
+    ret
+
 ;-----------------------------------------------------------------------------
 ; Common initialisation
 ;-----------------------------------------------------------------------------
@@ -95,6 +105,9 @@ _common_init:
  
     ; Initialize USB
     call    usb_init
+
+    ; Initialize ESP
+    call    esp_init
     ret
 
 ;-----------------------------------------------------------------------------

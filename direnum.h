@@ -20,6 +20,6 @@ struct direnum_ent {
 
 typedef void *direnum_ctx_t;
 
-direnum_ctx_t *direnum_open(const char *path);
-bool           direnum_read(direnum_ctx_t *ctx, struct direnum_ent *dee);
-void           direnum_close(direnum_ctx_t *ctx);
+direnum_ctx_t direnum_open(const char *path);
+bool          direnum_read(direnum_ctx_t ctx, struct direnum_ent *dee);
+void          direnum_close(direnum_ctx_t ctx);

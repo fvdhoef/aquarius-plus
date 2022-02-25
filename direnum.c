@@ -26,7 +26,7 @@ struct direnum_ctx {
 };
 #endif
 
-direnum_ctx_t *direnum_open(const char *path) {
+direnum_ctx_t direnum_open(const char *path) {
     struct direnum_ctx *ctx = calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
         perror("direnum_open");
@@ -53,10 +53,10 @@ direnum_ctx_t *direnum_open(const char *path) {
 
 #endif
 
-    return (direnum_ctx_t *)ctx;
+    return (direnum_ctx_t)ctx;
 }
 
-bool direnum_read(direnum_ctx_t *_ctx, struct direnum_ent *dee) {
+bool direnum_read(direnum_ctx_t _ctx, struct direnum_ent *dee) {
     if (_ctx == NULL || dee == NULL) {
         return false;
     }
@@ -108,7 +108,7 @@ bool direnum_read(direnum_ctx_t *_ctx, struct direnum_ent *dee) {
     return true;
 }
 
-void direnum_close(direnum_ctx_t *_ctx) {
+void direnum_close(direnum_ctx_t _ctx) {
     if (_ctx == NULL) {
         return;
     }
