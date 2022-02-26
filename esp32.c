@@ -2,20 +2,21 @@
 #include "direnum.h"
 
 enum {
-    ESP_OPEN     = 0x10, //  Open / create file
-    ESP_CLOSE    = 0x11, //  Close open file
-    ESP_READ     = 0x12, //  Read from file
-    ESP_WRITE    = 0x13, //  Write to file
-    ESP_SEEK     = 0x14, //  Move read/write pointer
-    ESP_TELL     = 0x15, //  Get current read/write
-    ESP_OPENDIR  = 0x16, //  Open directory
-    ESP_CLOSEDIR = 0x17, //  Close open directory
-    ESP_READDIR  = 0x18, //  Read from directory
-    ESP_UNLINK   = 0x19, //  Remove file or directory
-    ESP_RENAME   = 0x1A, //  Rename / move file or directory
-    ESP_MKDIR    = 0x1B, //  Create directory
-    ESP_CHDIR    = 0x1C, //  Change directory
-    ESP_STAT     = 0x1D, //  Get file status
+    ESP_OPEN     = 0x10, // Open / create file
+    ESP_CLOSE    = 0x11, // Close open file
+    ESP_READ     = 0x12, // Read from file
+    ESP_WRITE    = 0x13, // Write to file
+    ESP_SEEK     = 0x14, // Move read/write pointer
+    ESP_TELL     = 0x15, // Get current read/write
+    ESP_OPENDIR  = 0x16, // Open directory
+    ESP_CLOSEDIR = 0x17, // Close open directory
+    ESP_READDIR  = 0x18, // Read from directory
+    ESP_UNLINK   = 0x19, // Remove file or directory
+    ESP_RENAME   = 0x1A, // Rename / move file or directory
+    ESP_MKDIR    = 0x1B, // Create directory
+    ESP_CHDIR    = 0x1C, // Change directory
+    ESP_STAT     = 0x1D, // Get file status
+    ESP_GETCWD   = 0x1E, // Get current working directory
 };
 
 enum {
@@ -31,14 +32,15 @@ enum {
 struct state {
     char         *basepath;
     char         *current_path;
-    uint8_t       rxbuf[256];
+    uint8_t       rxbuf[0x10000];
     unsigned      rxbuf_idx;
-    uint8_t       txfifo[256];
+    uint8_t       txfifo[0x10000];
     unsigned      txfifo_wridx;
     unsigned      txfifo_rdidx;
     unsigned      txfifo_cnt;
     direnum_ctx_t dds[MAX_DDS];
     int           fds[MAX_FDS];
+    const char   *new_path;
 };
 
 static struct state state;
@@ -164,6 +166,24 @@ void esp32_init(const char *basepath) {
     }
 }
 
+static void esp_open(uint8_t flags, const char *path_arg) {
+}
+
+static void esp_close(uint8_t fd) {
+}
+
+static void esp_read(uint8_t fd, uint16_t size) {
+}
+
+static void esp_write(uint8_t fd, uint16_t size, const void *data) {
+}
+
+static void esp_seek(uint8_t fd, uint32_t offset) {
+}
+
+static void esp_tell(uint8_t fd) {
+}
+
 static void esp_opendir(const char *path_arg) {
     // Find free directory descriptor
     int dd = -1;
@@ -202,6 +222,19 @@ static void esp_opendir(const char *path_arg) {
     txfifo_write(dd);
 }
 
+static void esp_closedir(uint8_t dd) {
+    if (dd > MAX_DDS || state.dds[dd] == NULL) {
+        txfifo_write(ERR_INVALID_DESC);
+        return;
+    }
+    direnum_ctx_t ctx = state.dds[dd];
+
+    direnum_close(ctx);
+    state.dds[dd] = NULL;
+
+    txfifo_write(0);
+}
+
 static void esp_readdir(uint8_t dd) {
     if (dd > MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_INVALID_DESC);
@@ -237,17 +270,22 @@ static void esp_readdir(uint8_t dd) {
     txfifo_write(0);
 }
 
-static void esp_closedir(uint8_t dd) {
-    if (dd > MAX_DDS || state.dds[dd] == NULL) {
-        txfifo_write(ERR_INVALID_DESC);
-        return;
-    }
-    direnum_ctx_t ctx = state.dds[dd];
+static void esp_unlink(const char *path_arg) {
+}
 
-    direnum_close(ctx);
-    state.dds[dd] = NULL;
+static void esp_rename(const char *old_arg, const char *new_arg) {
+}
 
-    txfifo_write(0);
+static void esp_mkdir(const char *path_arg) {
+}
+
+static void esp_chdir(const char *path_arg) {
+}
+
+static void esp_stat(const char *path_arg) {
+}
+
+static void esp_getcwd(void) {
 }
 
 void esp32_write_data(uint8_t data) {
@@ -262,18 +300,61 @@ void esp32_write_data(uint8_t data) {
         uint8_t cmd = state.rxbuf[0];
 
         switch (cmd) {
-            case ESP_OPENDIR: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_opendir((const char *)&state.rxbuf[1]);
+            case ESP_OPEN: {
+                if (data == 0 && state.rxbuf_idx >= 3) {
+                    esp_open(state.rxbuf[1], (const char *)&state.rxbuf[2]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_CLOSE: {
+                if (state.rxbuf_idx == 2) {
+                    esp_close(state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_READ: {
+                if (state.rxbuf_idx == 4) {
+                    esp_read(state.rxbuf[1], state.rxbuf[2] | (state.rxbuf[3] << 8));
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_WRITE: {
+                if (state.rxbuf_idx >= 4) {
+                    unsigned len = state.rxbuf[2] | (state.rxbuf[3] << 8);
+                    if (state.rxbuf_idx == 4 + len) {
+                        esp_write(state.rxbuf[1], len, (const char *)&state.rxbuf[4]);
+                        state.rxbuf_idx = 0;
+                    }
+                }
+                break;
+            }
+            case ESP_SEEK: {
+                if (state.rxbuf_idx == 6) {
+                    esp_seek(
+                        state.rxbuf[1],
+                        ((state.rxbuf[2] << 0) |
+                         (state.rxbuf[3] << 8) |
+                         (state.rxbuf[4] << 16) |
+                         (state.rxbuf[5] << 24)));
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_TELL: {
+                if (state.rxbuf_idx == 2) {
+                    esp_tell(state.rxbuf[1]);
                     state.rxbuf_idx = 0;
                 }
                 break;
             }
 
-            case ESP_READDIR: {
-                if (state.rxbuf_idx == 2) {
-                    esp_readdir(state.rxbuf[1]);
+            case ESP_OPENDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    esp_opendir((const char *)&state.rxbuf[1]);
                     state.rxbuf_idx = 0;
                 }
                 break;
@@ -287,6 +368,63 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
+            case ESP_READDIR: {
+                if (state.rxbuf_idx == 2) {
+                    esp_readdir(state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+
+            case ESP_UNLINK: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    esp_unlink((const char *)&state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_RENAME: {
+                if (data == 0) {
+                    if (state.new_path == NULL) {
+                        state.new_path = (const char *)&state.rxbuf[state.rxbuf_idx];
+                    } else {
+                        esp_rename((const char *)&state.rxbuf[1], state.new_path);
+                        state.new_path  = NULL;
+                        state.rxbuf_idx = 0;
+                    }
+                }
+                break;
+            }
+            case ESP_MKDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    esp_mkdir((const char *)&state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_CHDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    esp_chdir((const char *)&state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_STAT: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    esp_stat((const char *)&state.rxbuf[1]);
+                    state.rxbuf_idx = 0;
+                }
+                break;
+            }
+            case ESP_GETCWD: {
+                esp_getcwd();
+                state.rxbuf_idx = 0;
+                break;
+            }
             default: {
                 printf("Invalid command: 0x%02X\n", cmd);
                 break;

@@ -354,6 +354,7 @@ Write a 1 to either _TX FIFO full_ or _RX FIFO non-empty_ will flush the respect
 |   $1B | MKDIR    | Create directory                | File / Directory management |
 |   $1C | CHDIR    | Change directory                | File / Directory management |
 |   $1D | STAT     | Get file status                 | File / Directory management |
+|   $1E | GETCWD   | Get current working directory   | File / Directory management |
 
 TODO: WiFi management commands
 
@@ -389,7 +390,7 @@ TODO: WiFi management commands
 | Offset | Value           |
 | ------ | --------------- |
 | 0      | $11             |
-| 1-n    | File descriptor |
+| 1      | File descriptor |
 
 #### Response
 
@@ -404,7 +405,8 @@ TODO: WiFi management commands
 | Offset | Value                   |
 | ------ | ----------------------- |
 | 0      | $12                     |
-| 1-2    | Length to read (16-bit) |
+| 1      | File descriptor         |
+| 2-3    | Length to read (16-bit) |
 
 #### Response
 
@@ -421,8 +423,9 @@ TODO: WiFi management commands
 | Offset | Value                    |
 | ------ | ------------------------ |
 | 0      | $13                      |
-| 1-2    | Length to write (16-bit) |
-| 3-n    | Data bytes               |
+| 1      | File descriptor          |
+| 2-3    | Length to write (16-bit) |
+| 4-n    | Data bytes               |
 
 #### Response
 
@@ -435,10 +438,11 @@ TODO: WiFi management commands
 
 #### Request
 
-| Offset | Value       |
-| ------ | ----------- |
-| 0      | $14         |
-| 1-4    | Seek offset |
+| Offset | Value           |
+| ------ | --------------- |
+| 0      | $14             |
+| 1      | File descriptor |
+| 2-5    | Seek offset     |
 
 #### Response
 
@@ -450,9 +454,10 @@ TODO: WiFi management commands
 
 #### Request
 
-| Offset | Value |
-| ------ | ----- |
-| 0      | $15   |
+| Offset | Value           |
+| ------ | --------------- |
+| 0      | $15             |
+| 1      | File descriptor |
 
 #### Response
 
