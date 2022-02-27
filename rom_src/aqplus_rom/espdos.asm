@@ -3,6 +3,46 @@
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
+; DEL - Delete file/directory
+;-----------------------------------------------------------------------------
+ST_DEL:
+    call    FRMEVL              ; Evaluate expression
+    push    hl                  ; Push BASIC text pointer
+
+    ; Get string argument (HL = string text, A = string length)
+    call    CHKSTR              ; Type mismatch error if not string
+    call    LEN1                ; Get string and its length
+    inc     hl
+    inc     hl                  ; Skip to string text pointer
+    ld      b, (hl)
+    inc     hl
+    ld      h, (hl)             ; HL = string text
+    ld      l, b
+
+    ; Issue ESP command
+    push    a
+    ld      a, ESP_UNLINK
+    call    esp_cmd
+    pop     a
+    or      a
+    jr      z, .zeroterm        ; Empty string
+    ld      b, a
+    ld      c, IO_ESPDATA
+    otir
+.zeroterm:
+    xor     a
+    out     (IO_ESPDATA), a
+
+    ; Get result
+    call    esp_get_data
+    or      a
+    jp      p, .done
+    pop     hl              ; Restore BASIC text pointer
+    jp      esp_error
+ 
+    ret
+
+;-----------------------------------------------------------------------------
 ; CD - Change directory
 ;
 ; No argument -> Show current directory

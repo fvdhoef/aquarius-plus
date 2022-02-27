@@ -691,30 +691,6 @@ st_write_sync:
     jp      usb__write_byte         ; Write $00
 
 ;-----------------------------------------------------------------------------
-; Delete File
-;-----------------------------------------------------------------------------
-ST_DEL:
-    call   dos__getfilename ; Filename -> FileName
-    push   hl               ; Push BASIC text pointer
-    jr     z, .goodname
-    ld     e, a
-    ld     a, ERROR_BAD_NAME
-    jr     .del_error
-.goodname:
-    ld     hl, FileName
-    call   usb__delete      ; Delete file
-    jr     z, .del_done
-    ld     e, FC_ERR
-    ld     a, ERROR_NO_FILE
-.del_error:
-    call   _show_error      ; Print error message
-    pop    hl               ; Pop BASIC text pointer
-    jp     ERROR
-.del_done:
-    pop    hl               ; Pop BASIC text pointer
-    ret
-
-;-----------------------------------------------------------------------------
 ; Get Filename
 ;
 ; Get Filename argument from BASIC text or command line.
