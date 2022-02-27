@@ -10,6 +10,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <assert.h>
+#include <fcntl.h>
+#include <errno.h>
 
 #if _WIN32
 #    include "getopt.h"
@@ -20,6 +22,7 @@
 #    define rmdir _rmdir
 #else
 #    include <unistd.h>
+#    include <sys/stat.h>
 #endif
 
 #define CPU_FREQ (3579545)

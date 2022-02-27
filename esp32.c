@@ -22,8 +22,22 @@ enum {
 enum {
     ERR_NOT_FOUND     = -1, // File / directory not found
     ERR_TOO_MANY_OPEN = -2, // Too many open files / directories
-    ERR_INVALID_DESC  = -3, // Invalid descriptor
+    ERR_PARAM         = -3, // Invalid parameter
     ERR_EOF           = -4, // End of file / directory
+    ERR_EXISTS        = -5, // File already exists
+    ERR_OTHER         = -6, // Other error
+};
+
+enum {
+    FO_RDONLY  = 0x00, // Open for reading only
+    FO_WRONLY  = 0x01, // Open for writing only
+    FO_RDWR    = 0x02, // Open for reading and writing
+    FO_ACCMODE = 0x03, // Mask for above modes
+
+    FO_APPEND = 0x04, // Append mode
+    FO_CREATE = 0x08, // Create if non-existant
+    FO_TRUNC  = 0x10, // Truncate to zero length
+    FO_EXCL   = 0x20, // Error if already exists
 };
 
 #define MAX_FDS (10)
@@ -34,7 +48,7 @@ struct state {
     char         *current_path;
     uint8_t       rxbuf[0x10000];
     unsigned      rxbuf_idx;
-    uint8_t       txfifo[0x10000];
+    uint8_t       txfifo[0x10000 + 16];
     unsigned      txfifo_wridx;
     unsigned      txfifo_rdidx;
     unsigned      txfifo_cnt;
@@ -167,21 +181,164 @@ void esp32_init(const char *basepath) {
 }
 
 static void esp_open(uint8_t flags, const char *path_arg) {
+    // Translate flags
+    int oflag = 0;
+    switch (flags & FO_ACCMODE) {
+        case FO_RDONLY: oflag = O_RDONLY; break;
+        case FO_WRONLY: oflag = O_WRONLY; break;
+        case FO_RDWR: oflag = O_RDWR; break;
+        default: {
+            // Error
+            txfifo_write(ERR_PARAM);
+            return;
+        }
+    }
+    if (flags & FO_APPEND)
+        oflag |= O_APPEND;
+    if (flags & FO_CREATE)
+        oflag |= O_CREAT;
+    if (flags & FO_TRUNC)
+        oflag |= O_TRUNC;
+    if (flags & FO_EXCL)
+        oflag |= O_EXCL;
+
+    // Find free file descriptor
+    int fd = -1;
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (state.fds[i] == -1) {
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1) {
+        // Error
+        txfifo_write(ERR_TOO_MANY_OPEN);
+        return;
+    }
+
+    // Compose full path
+    char *path      = resolve_path(path_arg);
+    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    strcpy(full_path, state.basepath);
+    strcat(full_path, path);
+    free(path);
+
+    printf("OPEN: flags: 0x%02X  '%s'\n", flags, full_path);
+
+    int _fd    = open(full_path, flags, 0664);
+    int _errno = errno;
+    free(full_path);
+
+    if (_fd < 0) {
+        uint8_t err = ERR_NOT_FOUND;
+        switch (_errno) {
+            case EACCES: err = ERR_NOT_FOUND; break;
+            case EEXIST: err = ERR_EXISTS; break;
+            default: err = ERR_NOT_FOUND; break;
+        }
+        // Error
+        txfifo_write(err);
+        return;
+    }
+    state.fds[fd] = _fd;
+
+    printf("OPEN fd: %d\n", fd);
 }
 
 static void esp_close(uint8_t fd) {
+    printf("CLOSE fd: %d\n", fd);
+
+    if (fd > MAX_FDS || state.fds[fd] < 0) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    int _fd = state.fds[fd];
+
+    close(_fd);
+    state.fds[fd] = -1;
+    txfifo_write(0);
 }
 
 static void esp_read(uint8_t fd, uint16_t size) {
+    printf("READ fd: %d  size: %u\n", fd, size);
+
+    if (fd > MAX_FDS || state.fds[fd] < 0) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    int _fd = state.fds[fd];
+
+    uint8_t tmpbuf[0x10000];
+    int     result = read(_fd, tmpbuf, size);
+    if (result < 0) {
+        txfifo_write(ERR_OTHER);
+        return;
+    }
+
+    txfifo_write(0);
+    txfifo_write((result >> 0) & 0xFF);
+    txfifo_write((result >> 8) & 0xFF);
+    for (int i = 0; i < result; i++) {
+        txfifo_write(tmpbuf[i]);
+    }
 }
 
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
+    printf("WRITE fd: %d  size: %u\n", fd, size);
+
+    if (fd > MAX_FDS || state.fds[fd] < 0) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    int _fd = state.fds[fd];
+
+    int result = write(_fd, data, size);
+    if (result < 0) {
+        txfifo_write(ERR_OTHER);
+        return;
+    }
+
+    txfifo_write(0);
+    txfifo_write((result >> 0) & 0xFF);
+    txfifo_write((result >> 8) & 0xFF);
 }
 
 static void esp_seek(uint8_t fd, uint32_t offset) {
+    printf("SEEK fd: %d  offset: %u\n", fd, offset);
+
+    if (fd > MAX_FDS || state.fds[fd] < 0) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    int _fd = state.fds[fd];
+
+    int result = lseek(_fd, offset, SEEK_SET);
+    if (result < 0) {
+        txfifo_write(ERR_OTHER);
+        return;
+    }
+    txfifo_write(0);
 }
 
 static void esp_tell(uint8_t fd) {
+    printf("TELL fd: %d\n", fd);
+
+    if (fd > MAX_FDS || state.fds[fd] < 0) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    int _fd = state.fds[fd];
+
+    int result = lseek(_fd, 0, SEEK_CUR);
+    if (result < 0) {
+        txfifo_write(ERR_OTHER);
+        return;
+    }
+    txfifo_write(0);
+    txfifo_write((result >> 0) & 0xFF);
+    txfifo_write((result >> 8) & 0xFF);
+    txfifo_write((result >> 16) & 0xFF);
+    txfifo_write((result >> 24) & 0xFF);
 }
 
 static void esp_opendir(const char *path_arg) {
@@ -193,13 +350,13 @@ static void esp_opendir(const char *path_arg) {
             break;
         }
     }
-
     if (dd == -1) {
         // Error
         txfifo_write(ERR_TOO_MANY_OPEN);
         return;
     }
 
+    // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
     strcpy(full_path, state.basepath);
@@ -220,11 +377,15 @@ static void esp_opendir(const char *path_arg) {
     // Return directory descriptor
     state.dds[dd] = ctx;
     txfifo_write(dd);
+
+    printf("OPENDIR dd: %d\n", dd);
 }
 
 static void esp_closedir(uint8_t dd) {
+    printf("CLOSEDIR dd: %d\n", dd);
+
     if (dd > MAX_DDS || state.dds[dd] == NULL) {
-        txfifo_write(ERR_INVALID_DESC);
+        txfifo_write(ERR_PARAM);
         return;
     }
     direnum_ctx_t ctx = state.dds[dd];
@@ -236,8 +397,10 @@ static void esp_closedir(uint8_t dd) {
 }
 
 static void esp_readdir(uint8_t dd) {
+    printf("READDIR dd: %d\n", dd);
+
     if (dd > MAX_DDS || state.dds[dd] == NULL) {
-        txfifo_write(ERR_INVALID_DESC);
+        txfifo_write(ERR_PARAM);
         return;
     }
     direnum_ctx_t ctx = state.dds[dd];
@@ -271,21 +434,154 @@ static void esp_readdir(uint8_t dd) {
 }
 
 static void esp_unlink(const char *path_arg) {
+    // Compose full path
+    char *path      = resolve_path(path_arg);
+    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    strcpy(full_path, state.basepath);
+    strcat(full_path, path);
+    free(path);
+
+    printf("UNLINK %s\n", full_path);
+
+    int result = unlink(full_path);
+    free(full_path);
+
+    if (result < 0) {
+        // Error
+        txfifo_write(ERR_NOT_FOUND);
+        return;
+    }
+    txfifo_write(0);
 }
 
 static void esp_rename(const char *old_arg, const char *new_arg) {
+    // Compose full path
+    char *old_path      = resolve_path(old_arg);
+    char *old_full_path = malloc(strlen(state.basepath) + strlen(old_path) + 1);
+    strcpy(old_full_path, state.basepath);
+    strcat(old_full_path, old_path);
+    free(old_path);
+
+    char *new_path      = resolve_path(new_arg);
+    char *new_full_path = malloc(strlen(state.basepath) + strlen(new_path) + 1);
+    strcpy(new_full_path, state.basepath);
+    strcat(new_full_path, new_path);
+    free(new_path);
+
+    printf("RENAME %s -> %s\n", old_full_path, new_full_path);
+
+    int result = rename(old_full_path, new_full_path);
+    free(old_full_path);
+    free(new_full_path);
+
+    if (result < 0) {
+        // Error
+        txfifo_write(ERR_NOT_FOUND);
+        return;
+    }
+    txfifo_write(0);
 }
 
 static void esp_mkdir(const char *path_arg) {
+    // Compose full path
+    char *path      = resolve_path(path_arg);
+    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    strcpy(full_path, state.basepath);
+    strcat(full_path, path);
+    free(path);
+
+    printf("MKDIR %s\n", full_path);
+
+#if _WIN32
+    int result = mkdir(full_path);
+#else
+    int result = mkdir(full_path, 0775);
+#endif
+    free(full_path);
+    if (result < 0) {
+        // Error
+        txfifo_write(ERR_OTHER);
+        return;
+    }
+    txfifo_write(0);
 }
 
 static void esp_chdir(const char *path_arg) {
+    // Compose full path
+    char *path      = resolve_path(path_arg);
+    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    strcpy(full_path, state.basepath);
+    strcat(full_path, path);
+
+    printf("CHDIR %s\n", full_path);
+
+    struct stat st;
+    int         result = stat(full_path, &st);
+    free(full_path);
+
+    if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
+        free(state.current_path);
+        state.current_path = path;
+
+    } else {
+        free(path);
+
+        // Error
+        txfifo_write(ERR_NOT_FOUND);
+    }
 }
 
 static void esp_stat(const char *path_arg) {
+    // Compose full path
+    char *path      = resolve_path(path_arg);
+    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    strcpy(full_path, state.basepath);
+    strcat(full_path, path);
+    free(path);
+
+    printf("STAT %s\n", full_path);
+
+    struct stat st;
+    int         result = stat(full_path, &st);
+    free(full_path);
+
+    if (result < 0) {
+        // Error
+        txfifo_write(ERR_NOT_FOUND);
+        return;
+    }
+
+    time_t t;
+#ifdef __APPLE__
+    t = st.st_mtimespec.tv_sec;
+#else
+    t          = st.st_mtim.tv_sec;
+#endif
+
+    struct tm *tm       = localtime(&t);
+    uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
+    uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
+
+    txfifo_write(0);
+    txfifo_write((st.st_size >> 0) & 0xFF);
+    txfifo_write((st.st_size >> 8) & 0xFF);
+    txfifo_write((st.st_size >> 16) & 0xFF);
+    txfifo_write((st.st_size >> 24) & 0xFF);
+    txfifo_write((fat_date >> 0) & 0xFF);
+    txfifo_write((fat_date >> 8) & 0xFF);
+    txfifo_write((fat_time >> 0) & 0xFF);
+    txfifo_write((fat_time >> 8) & 0xFF);
+    txfifo_write((st.st_mode & S_IFDIR) != 0 ? DE_DIR : 0);
 }
 
 static void esp_getcwd(void) {
+    txfifo_write(0);
+    int len = strlen(state.current_path);
+
+    txfifo_write(0);
+    for (int i = 0; i < len + 1; i++) {
+        txfifo_write(state.current_path[i]);
+    }
 }
 
 void esp32_write_data(uint8_t data) {
@@ -444,9 +740,22 @@ uint8_t esp32_read_data(void) {
 
 void esp32_write_ctrl(uint8_t data) {
     printf("esp32_write_ctrl: %02X\n", data);
+
+    if (data & 0x80) {
+        state.rxbuf_idx = 0;
+        state.new_path  = NULL;
+    }
+    if (data & 0x01) {
+        state.txfifo_cnt   = 0;
+        state.txfifo_rdidx = 0;
+        state.txfifo_wridx = 0;
+    }
 }
 
 uint8_t esp32_read_ctrl(void) {
-    printf("esp32_read_ctrl\n");
-    return 0;
+    uint8_t result = 0;
+    if (state.txfifo_cnt > 0) {
+        result |= 1;
+    }
+    return result;
 }

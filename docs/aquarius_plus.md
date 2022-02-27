@@ -586,7 +586,7 @@ TODO: WiFi management commands
 | 0      | $1D                  |
 | 1-n    | Zero-terminated path |
 
-#### Response (same as readdir)
+#### Response
 
 | Offset | Value                          |
 | ------ | ------------------------------ |
@@ -595,4 +595,16 @@ TODO: WiFi management commands
 | 5-6    | Date                           |
 | 7-8    | Time                           |
 | 9      | Attribute                      |
-| 10-n   | Zero terminated filename       |
+
+### GETCWD
+
+| Offset | Value |
+| ------ | ----- |
+| 0      | $1E   |
+
+#### Response
+
+| Offset | Value                          |
+| ------ | ------------------------------ |
+| 0      | 0 on success / error code (<0) |
+| 1-n    | Zero-terminated path           |
