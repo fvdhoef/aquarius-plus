@@ -202,6 +202,7 @@ endm
 ;-----------------------------------------------------------------------------
 ; ESP32 commands
 ;-----------------------------------------------------------------------------
+ESP_RESET:     equ $01      ; Reset ESP
 ESP_OPEN:      equ $10      ; Open / create file
 ESP_CLOSE:     equ $11      ; Close open file
 ESP_READ:      equ $12      ; Read from file
@@ -219,5 +220,8 @@ ESP_STAT:      equ $1D      ; Get file status
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories
-ERR_INVALID_DESC:  equ -3   ; Invalid descriptor
+ERR_PARAM:         equ -3   ; Invalid parameter
 ERR_EOF:           equ -4   ; End of file / directory
+ERR_EXISTS:        equ -5   ; File already exists
+ERR_OTHER:         equ -6   ; Other error
+ERR_NO_DISK:       equ -7   ; No disk

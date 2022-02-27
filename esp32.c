@@ -2,6 +2,7 @@
 #include "direnum.h"
 
 enum {
+    ESP_RESET    = 0x01, // Reset ESP
     ESP_OPEN     = 0x10, // Open / create file
     ESP_CLOSE    = 0x11, // Close open file
     ESP_READ     = 0x12, // Read from file
@@ -26,6 +27,7 @@ enum {
     ERR_EOF           = -4, // End of file / directory
     ERR_EXISTS        = -5, // File already exists
     ERR_OTHER         = -6, // Other error
+    ERR_NO_DISK       = -7, // No disk
 };
 
 enum {
@@ -597,6 +599,10 @@ static void esp_getcwd(void) {
 
 void esp32_write_data(uint8_t data) {
     // printf("esp32_write_data: %02X\n", data);
+    if (state.basepath == NULL) {
+        txfifo_write(ERR_NO_DISK);
+        return;
+    }
 
     state.rxbuf[state.rxbuf_idx] = data;
     if (state.rxbuf_idx < sizeof(state.rxbuf) - 1) {
@@ -607,6 +613,25 @@ void esp32_write_data(uint8_t data) {
         uint8_t cmd = state.rxbuf[0];
 
         switch (cmd) {
+            case ESP_RESET: {
+                // Close any open descriptors
+                for (int i = 0; i < MAX_DDS; i++) {
+                    if (state.dds[i] != NULL) {
+                        direnum_close(state.dds[i]);
+                        state.dds[i] = NULL;
+                    }
+                }
+                for (int i = 0; i < MAX_FDS; i++) {
+                    if (state.fds[i] >= 0) {
+                        close(state.fds[i]);
+                        state.fds[i] = -1;
+                    }
+                }
+                free(state.current_path);
+                state.current_path = strdup("");
+                break;
+            }
+
             case ESP_OPEN: {
                 if (data == 0 && state.rxbuf_idx >= 3) {
                     esp_open(state.rxbuf[1], (const char *)&state.rxbuf[2]);

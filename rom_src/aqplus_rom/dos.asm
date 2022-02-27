@@ -762,11 +762,54 @@ st_write_sync:
     ld      a, $00
     jp      usb__write_byte         ; Write $00
 
+;-----------------------------------------------------------------------------
+; esp_error
+;-----------------------------------------------------------------------------
+esp_error:
+    push    hl
+    neg
+    dec     a
+    cp      -ERR_NO_DISK
+    jr      c, .ok
+    ld      a, -ERR_OTHER - 1
 
-handle_error:
-    ret
+.ok:
+    ld      hl, .error_msgs
+    add     a,a
+    add     l
+    ld      l, a
+    ld      a, h
+    adc     a, 0
+    ld      h, a
+    ld      a, (hl)
+    inc     hl
+    ld      h, (hl)
+    ld      l, a
+    call    STROUT
 
+    pop     hl
+    jp      CRDO
 
+.error_msgs:
+    dw .msg_err_not_found     ; -1: File / directory not found
+    dw .msg_err_too_many_open ; -2: Too many open files / directories
+    dw .msg_err_param         ; -3: Invalid parameter
+    dw .msg_err_eof           ; -4: End of file / directory
+    dw .msg_err_exists        ; -5: File already exists
+    dw .msg_err_other         ; -6: Other error
+    dw .msg_err_no_disk       ; -7: No disk
+
+.msg_err_not_found:     db "Not found",0
+.msg_err_too_many_open: db "Too many open",0
+.msg_err_param:         db "Invalid param",0
+.msg_err_eof:           db "EOF",0
+.msg_err_exists:        db "Already exists",0
+.msg_err_other:         db "Unknown error",0
+.msg_err_no_disk:       db "No disk",0
+
+;-----------------------------------------------------------------------------
+; Issue command to ESP
+;-----------------------------------------------------------------------------
 esp_cmd:
     ; Start of command
     push    a
@@ -778,6 +821,9 @@ esp_cmd:
     out     (IO_ESPDATA), a
     ret
 
+;-----------------------------------------------------------------------------
+; Wait for data from ESP
+;-----------------------------------------------------------------------------
 esp_get_data:
 .wait:
     in      a, (IO_ESPCTRL)
@@ -878,7 +924,7 @@ ST_DIR:
     or      a
     jp      p, .ok
     pop     hl              ; Restore BASIC text pointer
-    jp      handle_error
+    jp      esp_error
 .ok:
     ld      (.dd), a        ; Keep track of directory descriptor
 
@@ -895,7 +941,7 @@ ST_DIR:
     or      a
     jp      p, .ok2
     pop     hl              ; Restore BASIC text pointer
-    jp      handle_error
+    jp      esp_error
 
 .ok2:
     ;-- Date -----------------------------------------------------------------
@@ -1085,7 +1131,7 @@ ST_DIR:
     out     (IO_ESPDATA), a
     call    esp_get_data
     or      a
-    jp      m, handle_error
+    jp      m, esp_error
 
     pop     hl      ; Restore BASIC text pointer
     ret

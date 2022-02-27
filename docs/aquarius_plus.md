@@ -340,6 +340,7 @@ Write a 1 to either _TX FIFO full_ or _RX FIFO non-empty_ will flush the respect
 
 | Value | Function | Description                     | Category                    |
 | ----: | -------- | ------------------------------- | --------------------------- |
+|   $01 | RESET    | Reset ESP                       | General                     |
 |   $10 | OPEN     | Open / create file              | File                        |
 |   $11 | CLOSE    | Close open file                 | File                        |
 |   $12 | READ     | Read from file                  | File                        |
@@ -364,8 +365,11 @@ TODO: WiFi management commands
 | ----: | ----------------- | --------------------------------- |
 |    -1 | ERR_NOT_FOUND     | File / directory not found        |
 |    -2 | ERR_TOO_MANY_OPEN | Too many open files / directories |
-|    -3 | ERR_INVALID_DESC  | Invalid descriptor                |
+|    -3 | ERR_PARAM         | Invalid parameter                 |
 |    -4 | ERR_EOF           | End of file / directory           |
+|    -5 | ERR_EXISTS        | File already exists               |
+|    -6 | ERR_OTHER         | Other error                       |
+|    -7 | ERR_NO_DISK       | No disk                           |
 
 ### OPEN
 

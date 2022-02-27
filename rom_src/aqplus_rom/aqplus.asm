@@ -87,6 +87,10 @@ _reset:
 esp_init:
     ld      a, 3
     out     (IO_ESPCTRL), a
+
+    ld      a, ESP_RESET
+    out     (IO_ESPDATA), a
+
     ret
 
 ;-----------------------------------------------------------------------------
