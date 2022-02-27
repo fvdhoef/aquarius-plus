@@ -13,66 +13,6 @@ DF_ADDR:  equ 0       ; set = address specified
 DF_ARRAY: equ 7       ; set = numeric array
 
 ;-----------------------------------------------------------------------------
-; Print hex byte
-; in: A = byte
-;-----------------------------------------------------------------------------
-printhex:
-    push    bc
-
-    ; Print high nibble
-    ld      b, a
-    and     $F0
-    rra
-    rra
-    rra
-    rra
-    cp      10
-    jr      c, .hi_nib
-    add     7
-.hi_nib:
-    add     '0'
-    call    TTYOUT
-
-    ; Print low nibble
-    ld      a, b
-    and     $0F
-    cp      10
-    jr      c, .low_nib
-    add     7
-.low_nib:
-    add     '0'
-    pop     bc
-    jp      TTYOUT
-
-;-----------------------------------------------------------------------------
-; strlen - String length
-;  in: HL = string (null-terminated)
-; out:  A = number of characters in string
-;-----------------------------------------------------------------------------
-strlen:
-    ; Save DE/HL
-    push  de
-    ld    d, h
-    ld    e, l
-
-    ; Find null-character in string
-    xor   a
-    dec   hl
-.loop:
-    inc   hl
-    cp    (hl)
-    jr    nz, .loop
-
-    ; Calculate length of string
-    sbc   hl, de
-    ld    a, l
-
-    ; Restore DE/HL
-    ex    de, hl
-    pop   de
-    ret
-
-;-----------------------------------------------------------------------------
 ; strcmp - Compare strings
 ;  in: HL = string 1 (null terminated)
 ;      DE = string 2 (null terminated)
@@ -395,11 +335,8 @@ ERROR_UNKNOWN:     equ  14 ; other disk error
 _show_error:
     cp      ERROR_UNKNOWN           ; Known error?
     jr      c, .index               ; Yes,
-    push    af                      ; No, push error code
     ld      hl, .unknown_error_msg
     call    STROUT                  ; Print "disk error $"
-    pop     af                      ; Pop error code
-    call    printhex
     jp      CRDO
 .index:
     ld      hl, _error_messages
@@ -417,7 +354,7 @@ _show_error:
     call    STROUT                  ; Print error message
     jp      CRDO
 
-.unknown_error_msg:  db "Disk error $", 0
+.unknown_error_msg:  db "Disk error", 0
 
 _error_messages:
     dw .no_376_msg           ;  1

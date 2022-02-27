@@ -40,6 +40,8 @@ ST_DEL:
     pop     hl              ; Restore BASIC text pointer
     jp      esp_error
  
+.done:
+    pop     hl                  ; Restore BASIC text pointer
     ret
 
 ;-----------------------------------------------------------------------------
