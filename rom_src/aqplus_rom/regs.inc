@@ -217,6 +217,7 @@ ESP_RENAME:    equ $1A      ; Rename / move file or directory
 ESP_MKDIR:     equ $1B      ; Create directory
 ESP_CHDIR:     equ $1C      ; Change directory
 ESP_STAT:      equ $1D      ; Get file status
+ESP_GETCWD:    equ $1E      ; Get current working directory
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories

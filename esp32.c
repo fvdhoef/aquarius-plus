@@ -399,7 +399,7 @@ static void esp_closedir(uint8_t dd) {
 }
 
 static void esp_readdir(uint8_t dd) {
-    printf("READDIR dd: %d\n", dd);
+    // printf("READDIR dd: %d\n", dd);
 
     if (dd > MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -428,16 +428,16 @@ static void esp_readdir(uint8_t dd) {
     txfifo_write((de.size >> 16) & 0xFF);
     txfifo_write((de.size >> 24) & 0xFF);
 
-    printf(
-        "%02u-%02u-%02u %02u:%02u ",
-        tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
-        tm->tm_hour, tm->tm_min);
-    if (de.attr & DE_DIR) {
-        printf("<DIR>");
-    } else {
-        printf("%5u", de.size);
-    }
-    printf(" %s\n", de.filename);
+    // printf(
+    //     "%02u-%02u-%02u %02u:%02u ",
+    //     tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
+    //     tm->tm_hour, tm->tm_min);
+    // if (de.attr & DE_DIR) {
+    //     printf("<DIR>");
+    // } else {
+    //     printf("%5u", de.size);
+    // }
+    // printf(" %s\n", de.filename);
 
     const char *p = de.filename;
     while (*p) {
@@ -535,6 +535,7 @@ static void esp_chdir(const char *path_arg) {
     if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
         free(state.current_path);
         state.current_path = path;
+        txfifo_write(0);
 
     } else {
         free(path);
@@ -588,13 +589,19 @@ static void esp_stat(const char *path_arg) {
 }
 
 static void esp_getcwd(void) {
+    printf("GETCWD\n");
+
     txfifo_write(0);
     int len = strlen(state.current_path);
 
-    txfifo_write(0);
-    for (int i = 0; i < len + 1; i++) {
-        txfifo_write(state.current_path[i]);
+    if (len == 0) {
+        txfifo_write('/');
+    } else {
+        for (int i = 0; i < len + 1; i++) {
+            txfifo_write(state.current_path[i]);
+        }
     }
+    txfifo_write(0);
 }
 
 void esp32_write_data(uint8_t data) {
