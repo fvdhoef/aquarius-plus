@@ -15,7 +15,7 @@ ST_CD:
     or      a
     jr      nz, .change_dir     ; Yes
 
-    ; No argument -> show current path
+    ; -- No argument -> show current path ------------------------------------
 .show_path:
     ld      a, ESP_GETCWD
     call    esp_cmd
@@ -39,7 +39,7 @@ ST_CD:
     pop     hl                  ; Restore BASIC text pointer
     ret
 
-    ; Argument given -> change directory
+    ; -- Argument given -> change directory ----------------------------------
 .change_dir:
     pop     hl                  ; Pop BASIC text pointer
     call    FRMEVL              ; Evaluate expression
@@ -48,7 +48,6 @@ ST_CD:
     ; Get string argument (HL = string text, A = string length)
     call    CHKSTR              ; Type mismatch error if not string
     call    LEN1                ; Get string and its length
-    jr      z, .done            ; Null string -> nothing to do
     inc     hl
     inc     hl                  ; Skip to string text pointer
     ld      b, (hl)
@@ -60,9 +59,13 @@ ST_CD:
     push    a
     ld      a, ESP_CHDIR
     call    esp_cmd
-    pop     b
+    pop     a
+    or      a
+    jr      z, .zeroterm        ; Empty string
+    ld      b, a
     ld      c, IO_ESPDATA
     otir
+.zeroterm:
     xor     a
     out     (IO_ESPDATA), a
 
@@ -75,6 +78,9 @@ ST_CD:
 
 ;-----------------------------------------------------------------------------
 ; DIR - Directory listing
+;
+; No argument -> List current directory
+; With argument -> List given path
 ;-----------------------------------------------------------------------------
 ST_DIR:
     .dd:   equ FILNAM+0
@@ -86,12 +92,41 @@ ST_DIR:
     ; Preserve BASIC text pointer
     push    hl
 
-    ld      a, 22
-    ld      (CNTOFL), a     ; Set initial number of lines per page
+    ; Argument given?
+    or      a
+    jr      nz, .witharg     ; Yes
 
     ; Issue ESP command
     ld      a, ESP_OPENDIR
     call    esp_cmd
+    jr      .zeroterm
+
+.witharg:
+    pop     hl                  ; Pop BASIC text pointer
+    call    FRMEVL              ; Evaluate expression
+    push    hl                  ; Push BASIC text pointer
+
+    ; Get string argument (HL = string text, A = string length)
+    call    CHKSTR              ; Type mismatch error if not string
+    call    LEN1                ; Get string and its length
+    inc     hl
+    inc     hl                  ; Skip to string text pointer
+    ld      b, (hl)
+    inc     hl
+    ld      h, (hl)             ; HL = string text
+    ld      l, b
+
+    ; Issue ESP command
+    push    a
+    ld      a, ESP_OPENDIR
+    call    esp_cmd
+    pop     a
+    or      a
+    jr      z, .zeroterm        ; Empty string
+    ld      b, a
+    ld      c, IO_ESPDATA
+    otir
+.zeroterm:
     xor     a
     out     (IO_ESPDATA), a
     call    esp_get_data
@@ -101,6 +136,9 @@ ST_DIR:
     jp      esp_error
 .ok:
     ld      (.dd), a        ; Keep track of directory descriptor
+
+    ld      a, 22
+    ld      (CNTOFL), a     ; Set initial number of lines per page
 
 .next_entry:
     ; Read entry
