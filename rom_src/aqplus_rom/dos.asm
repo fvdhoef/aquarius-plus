@@ -762,257 +762,332 @@ st_write_sync:
     ld      a, $00
     jp      usb__write_byte         ; Write $00
 
+
+handle_error:
+    ret
+
+
+esp_cmd:
+    ; Start of command
+    push    a
+    ld      a, $83
+    out     (IO_ESPCTRL), a
+    pop     a
+
+    ; Issue command
+    out     (IO_ESPDATA), a
+    ret
+
+esp_get_data:
+.wait:
+    in      a, (IO_ESPCTRL)
+    and     a, 1
+    jr      z, .wait
+    in      a, (IO_ESPDATA)
+    ret
+
 ;-----------------------------------------------------------------------------
-; Disk Directory Listing
-;
-; Display directory listing of all files, or only those which match
-; the wildcard pattern.
-;
-; Listing includes details such as file size, volume label etc.
-;
-; DIR "wildcard"   selective directory listing
-; DIR              listing all files
+; Output 2 number digit in A
+;-----------------------------------------------------------------------------
+out_number_2digits:
+    cp      100
+    jr      c, .l0
+    sub     a, 100
+    jr      out_number_2digits
+.l0:
+    ld      c, 0
+.l1:
+    inc     c
+    sub     a, 10
+    jr      nc, .l1
+    add     a, 10
+    push    a
+
+    ld      a, c
+    add     '0'-1
+    call    TTYCHR
+    pop     a
+    add     '0'
+    call    TTYCHR
+    ret
+
+;-----------------------------------------------------------------------------
+; Output 4 number digit in HL
+;-----------------------------------------------------------------------------
+out_number_4digits:
+    ld      d, 1
+
+    ld      bc, -10000
+    call    .num1
+    ld      bc, -1000
+    call    .num1
+    ld      bc, -100
+    call    .num1
+    ld      c, -10
+    call    .num1
+
+    ld      d, 0
+    ld      c, -1
+.num1:
+    ld      a, -1
+.num2:
+    inc     a
+    add     hl, bc
+    jr      c, .num2
+    sbc     hl, bc
+
+    or      a
+    jr      z, .zero
+
+    ld      d, 0
+
+.normal:
+    add     '0'
+    call    TTYCHR
+    ret
+
+.zero:
+    bit     0, d
+    jr      z, .normal
+    ld      a, ' '
+    call    TTYCHR
+    ret
+
+;-----------------------------------------------------------------------------
+; DIR - Directory listing
 ;-----------------------------------------------------------------------------
 ST_DIR:
-    push    hl                  ; Push text pointer
-    xor     a
-    ld      (FileName), a       ; Wildcard string = NULL
-    call    chkarg              ; Is wildcard argument present?
-    jr      z, .go              ; If no wildcard then show all files
-    call    dos__getfilename    ; Wildcard -> FileName
-    ex      (sp), hl            ; Update text pointer on stack
-.go:
-    call    usb__ready          ; Check for USB disk (may reset path to root!)
-    jr      nz, .dir_error
-    call    STROUT              ; Print path
-    call    CRDO
-    call    dos__directory      ; Display directory listing
-    jr      z, .dir_done        ; If successful listing then done
-.dir_error:
-    call    _show_error         ; Else show error message (a = error code)
-    ld      e, FC_ERR
-    pop     hl
-    jp      ERROR               ; Return to BASIC with FC error
-.dir_done:
-    pop     hl                  ; Pop text pointer
-    ret
+    .dd:   equ FILNAM+0
+    .tmp0: equ FILNAM+1
+    .tmp1: equ FILNAM+2
+    .tmp2: equ FILNAM+3
+    .tmp3: equ FILNAM+4
 
-;------------------------------------------------------------------------------
-; Read and Display Directory
-;
-; Reads all filenames in directory, printing only those names that match the
-; wildcard pattern.
-;
-; in: FILENAME = wildcard string (null string for all files)
-;
-; out: z = OK, nz = no disk
-;
-; uses: a, bc, de, hl
-;------------------------------------------------------------------------------
-dos__directory:
-    ld      a, $0D
-    call    TTYOUT                  ; Print CR
-    call    usb__open_dir           ; Open '*' for all files in directory
-    ret     nz                      ; Abort if error (disk not present?)
-    ld      a, 22
-    ld      (CNTOFL), a             ; Set initial number of lines per page
-.dir_loop:
-    ld      a, CH376_CMD_RD_USB_DATA
-    out     (CH376_CONTROL_PORT), a ; Command: read USB data
-    ld      c, CH376_DATA_PORT
-    in      a, (c)                  ; A = number of bytes in CH376 buffer
-    cp      32                      ; Must be 32 bytes!
-    ret     nz
-    ld      b, a
-    ld      hl, -32
-    add     hl, sp                  ; Allocate 32 bytes on stack
-    ld      sp, hl
+    ; Preserve BASIC text pointer
     push    hl
-    inir                            ; Read directory info onto stack
-    pop     hl
-    ld      de, FileName            ; DE = wildcard pattern
-    call    usb__wildcard           ; Z if filename matches wildcard
-    call    z, dos__prtDirInfo      ; Display file info (type, size)
-    ld      hl, 32
-    add     hl, sp                  ; Clean up stack
-    ld      sp, hl
-    ld      a, CH376_CMD_FILE_ENUM_GO
-    out     (CH376_CONTROL_PORT), a ; Command: read next filename
-    call    usb__wait_int           ; Wait until done
-.dir_next:
-    cp      CH376_INT_DISK_READ     ; More entries?
-    jp      z, .dir_loop            ; Yes, get next entry
-    cp      CH376_ERR_MISS_FILE     ; Z if end of file list, else nz
-    ret
 
-;-----------------------------------------------------------------------------
-; Print File Info
-;
-; in: HL = file info structure (32 bytes)
-;
-; if directory then print "<dir>"
-; if file then print size in Bytes, kB or MB
-;-----------------------------------------------------------------------------
-dos__prtDirInfo:
-    ld      b,8                     ; 8 characters in filename
-.dir_name:
-    ld      a, (hl)                 ; Get next char of filename
-    inc     hl
-.dir_prt_name:
-    call    TTYCHR                  ; Print filename char, with pause if end of screen
-    djnz    .dir_name
-    ld      a, ' '                  ; Space between name and extension
-    call    TTYOUT
-    ld      b, 3                    ; 3 characters in extension
-.dir_ext:
-    ld      a, (hl)                 ; Get next char of extension
-    inc     hl
-    call    TTYOUT                  ; Print extn char
-    djnz    .dir_ext
-    ld      a, (hl)                 ; Get file attribute byte
-    inc     hl
-    and     ATTR_DIRECTORY          ; Directory bit set?
-    jr      nz, .dir_folder
-    ld      a, ' '                  ; Print ' '
-    call    TTYOUT
-    ld      bc, 16                  ; DIR_FileSize - DIR_NTres
-    add     hl, bc                  ; Skip to file size
-.dir_file_size:
-    ld      e, (hl)
-    inc     hl                      ; DE = size 15:0
-    ld      d, (hl)
-    inc     hl
-    ld      c, (hl)
-    inc     hl                      ; BC = size 31:16
-    ld      b, (hl)
+    ld      a, 22
+    ld      (CNTOFL), a     ; Set initial number of lines per page
 
-    ld      a, b
-    or      c
-    jr      nz, .kbytes
-    ld      a, d
-    cp      10000 >> 8
-    jr      c, .bytes
-    jr      nz, .kbytes             ; <10000 bytes?
-    ld      a, e
-    cp      10000 & $FF
-    jr      nc, .kbytes             ; no,
-.bytes:
-    ld      h, d
-    ld      l, e                    ; HL = file size 0-9999 bytes
-    jr      .print_bytes
-.kbytes:
-    ld      l, d
-    ld      h, c                    ; C, HL = size / 256
-    ld      c, b
-    ld      b, 'k'                  ; B = 'k' (kbytes)
-    ld      a, d
-    and     3
-    or      e
-    ld      e,a                     ; E = zero if size is multiple of 1 kilobyte
-    srl     c
-    rr      h
-    rr      l
-    srl     c                       ; C, HL = size / 1024
-    rr      h
-    rr      l
-    ld      a,c
+    ; Issue ESP command
+    ld      a, ESP_OPENDIR
+    call    esp_cmd
+    xor     a
+    out     (IO_ESPDATA), a
+    call    esp_get_data
     or      a
-    jr      nz, .dir_MB
-    ld      a, h
-    cp      1000 >> 8
-    jr      c, .dir_round           ; <1000kB?
-    jr      nz, .dir_MB
-    ld      a,l
-    cp      1000 & $FF
-    jr      c, .dir_round           ; yes
-.dir_MB:
-    ld      a, h
-    and     3
-    or      l                       ; E = 0 if size is multiple of 1 megabyte
-    or      e
-    ld      e, a
+    jp      p, .ok
+    pop     hl              ; Restore BASIC text pointer
+    jp      handle_error
+.ok:
+    ld      (.dd), a        ; Keep track of directory descriptor
 
-    ld      b, 'M'                  ; 'M' after number
+.next_entry:
+    ; Read entry
+    ld      a, ESP_READDIR
+    call    esp_cmd
+    ld      a, (.dd)
+    out     (IO_ESPDATA), a
+    call    esp_get_data
 
-    ld      l, h
-    ld      h, c
-    srl     h
-    rr      l                       ; HL = kB / 1024
-    srl     h
-    srl     l
-.dir_round:
-    ld      a,h
-    or      l                       ; If 0 kB/MB then round up
-    jr      z, .round_up
-    inc     e
-    dec     e
-    jr      z, .print_kB_MB         ; If exact kB or MB then don't round up
-.round_up:
-    inc     hl                      ; Filesize + 1
-.print_kB_MB:
-    ld      a, 3                    ; 3 digit number with leading spaces
-    call    print_integer           ; Print HL as 16 bit number
-    ld      a, b
-    call    TTYOUT                  ; Print 'k', or 'M'
-    jr      .dir_tab
-.print_bytes:
-    ld      a, 4                    ; 4 digit number with leading spaces
-    call    print_integer           ; Print HL as 16 bit number
+    cp      ERR_EOF
+    jp      z, .done
+    or      a
+    jp      p, .ok2
+    pop     hl              ; Restore BASIC text pointer
+    jp      handle_error
+
+.ok2:
+    ;-- Date -----------------------------------------------------------------
+    call    esp_get_data
+    ld      (.tmp0), a
+    call    esp_get_data
+    ld      (.tmp1), a
+
+    ; Extract year
+    srl     a
+    add     80
+    call    out_number_2digits
+
+    ld      a, '-'
+    call    TTYCHR
+
+    ; Extract month
+    ld      a, (.tmp1)
+    rra                     ; Lowest bit in carry
+    ld      a, (.tmp0)
+    rra
+    srl     a
+    srl     a
+    srl     a
+    srl     a
+    call    out_number_2digits
+
+    ld      a, '-'
+    call    TTYCHR
+
+    ; Extract day
+    ld      a, (.tmp0)
+    and     $1F
+    call    out_number_2digits
+
     ld      a, ' '
-    call    TTYOUT                  ; Print ' '
-    jr      .dir_tab
-.dir_folder:
-    ld      hl, .dir_msg            ; Print "<DIR>"
+    call    TTYCHR
+
+    ;-- Time -----------------------------------------------------------------
+    ; Get time (hhhhhmmm mmmsssss)
+    call    esp_get_data
+    ld      (.tmp0), a
+    call    esp_get_data
+    ld      (.tmp1), a
+
+    ; Hours
+    srl     a
+    srl     a
+    srl     a
+    call    out_number_2digits
+
+    ld      a, ':'
+    call    TTYCHR
+
+    ; Minutes
+    ld      a, (.tmp1)
+    and     $07
+    ld      c, a
+    ld      a, (.tmp0)
+    srl     c
+    rra
+    srl     c
+    rra
+    srl     c
+    rra
+    srl     c
+    rra
+    srl     c
+    rra
+    call    out_number_2digits
+
+    ;-- Attributes -----------------------------------------------------------
+    call    esp_get_data
+    bit     0, a
+    jr      z, .no_dir
+
+    ;-- Directory ------------------------------------------------------------
+    ld      hl, .str_dir
     call    STROUT
-.dir_tab:
-    ld      a, (TTYPOS)
-    cp      19
-    ret     z                       ; If reached center of screen then return
-    jr      nc, .tab_right          ; If on right side then fill to end of line
-    ld      a, ' '
-    call    TTYOUT                  ; Print " "
-    jr      .dir_tab
-.tab_right:
-    ld      a, (TTYPOS)
-    cp      0
-    ret     z                       ; Reached end of line?
-    ld      a, ' '
-    call    TTYOUT                  ; No, print " "
-    jr      .tab_right
 
-.dir_msg: db "<DIR>", 0
+    ; Skip length bytes
+    call    esp_get_data
+    call    esp_get_data
+    call    esp_get_data
+    call    esp_get_data
 
-;-----------------------------------------------------------------------------
-; Print Integer as Decimal with leading spaces
-;
-;   in: HL = 16 bit Integer
-;        A = number of chars to print
-;-----------------------------------------------------------------------------
-print_integer:
-    push     bc
-    push     af
-    call     INT2STR
-    ld       hl, FPSTR+1
-    call     strlen
-    pop      bc
-    ld       c, a
-    ld       a, b
-    SUB      c
-    jr       z, .prtnum
-    ld       b, a
-.lead_space:
-    ld       a, ' '
-    call     TTYOUT         ; Print leading space
-    djnz     .lead_space
-.prtnum:
-    ld       a, (hl)        ; Get next digit
-    inc      hl
-    or       a              ; Return when NULL reached
-    jr       z, .print_done
-    call     TTYOUT         ; Print digit
-    jr       .prtnum
-.print_done:
-    pop      bc
+    jr      .get_filename
+
+    ;-- Regular file: file size ----------------------------------------------
+.no_dir:
+    ; aaaaaaaa bbbbbbbb cccccccc dddddddd
+
+
+    call    esp_get_data
+    ld      (.tmp0), a
+    call    esp_get_data
+    ld      (.tmp1), a
+    call    esp_get_data
+    ld      (.tmp2), a
+    call    esp_get_data
+    ld      (.tmp3), a
+
+    ; Megabytes range?
+    or      a
+    jr      nz, .mb
+    ld      a, (.tmp2)
+    and     $F0
+    jr      nz, .mb
+
+    ; Kilobytes range?
+    ld      a, (.tmp2)
+    or      a
+    jr      nz, .kb
+    ld      a, (.tmp1)
+    and     $FC
+    jr      nz, .kb
+
+    ; Bytes range (aaaaaaaa bbbbbbbb ccccccCC DDDDDDDD)
+.bytes:
+    ld      a, (.tmp1)
+    ld      h, a
+    ld      a, (.tmp0)
+    ld      l, a
+    call    out_number_4digits
+    ld      a, 'B'
+    call    TTYCHR
+    jr      .get_filename
+
+    ; Kilobytes range: aaaaaaaa bbbbBBBB CCCCCCcc dddddddd
+.kb:
+    ld      a, (.tmp2)
+    and     a, $0F
+    ld      h, a
+    ld      a, (.tmp1)
+    ld      l, a
+    srl     h
+    rr      l
+    srl     h
+    rr      l
+    call    out_number_4digits
+    ld      a, 'K'
+    call    TTYCHR
+    jr      .get_filename
+
+    ; Megabytes range: AAAAAAAA BBBBbbbb cccccccc dddddddd
+.mb:
+    ld      a, (.tmp3)
+    ld      h, a
+    ld      a, (.tmp2)
+    ld      l, a
+    srl     h
+    rr      l
+    srl     h
+    rr      l
+    srl     h
+    rr      l
+    srl     h
+    rr      l
+    call    out_number_4digits
+    ld      a, 'M'
+    call    TTYCHR
+    jr      .get_filename
+
+    ;-- Filename -------------------------------------------------------------
+.get_filename:
+    ld      a, ' '
+    call    TTYCHR
+
+.filename:
+    call    esp_get_data
+    or      a
+    jr      z, .name_done
+    call    TTYCHR
+    jr      .filename
+
+.name_done:
+    call    CRDO
+    jp      .next_entry
+
+.str_dir: db " <DIR>",0
+
+.done:
+    ; Close directory
+    ld      a, ESP_CLOSEDIR
+    call    esp_cmd
+    ld      a, (.dd)
+    out     (IO_ESPDATA), a
+    call    esp_get_data
+    or      a
+    jp      m, handle_error
+
+    pop     hl      ; Restore BASIC text pointer
     ret
 
 ;-----------------------------------------------------------------------------

@@ -510,10 +510,10 @@ TODO: WiFi management commands
 | Offset | Value                          |
 | ------ | ------------------------------ |
 | 0      | 0 on success / error code (<0) |
-| 1-4    | File size                      |
-| 5-6    | Date                           |
-| 7-8    | Time                           |
-| 9      | Attribute                      |
+| 1-2    | Date                           |
+| 3-4    | Time                           |
+| 5      | Attribute                      |
+| 6-9    | File size                      |
 | 10-n   | Zero terminated filename       |
 
 ### UNLINK
@@ -591,10 +591,10 @@ TODO: WiFi management commands
 | Offset | Value                          |
 | ------ | ------------------------------ |
 | 0      | 0 on success / error code (<0) |
-| 1-4    | File size                      |
-| 5-6    | Date                           |
-| 7-8    | Time                           |
-| 9      | Attribute                      |
+| 1-2    | Date                           |
+| 3-4    | Time                           |
+| 5      | Attribute                      |
+| 6-9    | File size                      |
 
 ### GETCWD
 

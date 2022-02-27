@@ -416,15 +416,26 @@ static void esp_readdir(uint8_t dd) {
     uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
 
     txfifo_write(0);
-    txfifo_write((de.size >> 0) & 0xFF);
-    txfifo_write((de.size >> 8) & 0xFF);
-    txfifo_write((de.size >> 16) & 0xFF);
-    txfifo_write((de.size >> 24) & 0xFF);
     txfifo_write((fat_date >> 0) & 0xFF);
     txfifo_write((fat_date >> 8) & 0xFF);
     txfifo_write((fat_time >> 0) & 0xFF);
     txfifo_write((fat_time >> 8) & 0xFF);
     txfifo_write(de.attr);
+    txfifo_write((de.size >> 0) & 0xFF);
+    txfifo_write((de.size >> 8) & 0xFF);
+    txfifo_write((de.size >> 16) & 0xFF);
+    txfifo_write((de.size >> 24) & 0xFF);
+
+    printf(
+        "%02u-%02u-%02u %02u:%02u ",
+        tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
+        tm->tm_hour, tm->tm_min);
+    if (de.attr & DE_DIR) {
+        printf("<DIR>");
+    } else {
+        printf("%5u", de.size);
+    }
+    printf(" %s\n", de.filename);
 
     const char *p = de.filename;
     while (*p) {
@@ -563,15 +574,15 @@ static void esp_stat(const char *path_arg) {
     uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
 
     txfifo_write(0);
-    txfifo_write((st.st_size >> 0) & 0xFF);
-    txfifo_write((st.st_size >> 8) & 0xFF);
-    txfifo_write((st.st_size >> 16) & 0xFF);
-    txfifo_write((st.st_size >> 24) & 0xFF);
     txfifo_write((fat_date >> 0) & 0xFF);
     txfifo_write((fat_date >> 8) & 0xFF);
     txfifo_write((fat_time >> 0) & 0xFF);
     txfifo_write((fat_time >> 8) & 0xFF);
     txfifo_write((st.st_mode & S_IFDIR) != 0 ? DE_DIR : 0);
+    txfifo_write((st.st_size >> 0) & 0xFF);
+    txfifo_write((st.st_size >> 8) & 0xFF);
+    txfifo_write((st.st_size >> 16) & 0xFF);
+    txfifo_write((st.st_size >> 24) & 0xFF);
 }
 
 static void esp_getcwd(void) {
@@ -585,7 +596,7 @@ static void esp_getcwd(void) {
 }
 
 void esp32_write_data(uint8_t data) {
-    printf("esp32_write_data: %02X\n", data);
+    // printf("esp32_write_data: %02X\n", data);
 
     state.rxbuf[state.rxbuf_idx] = data;
     if (state.rxbuf_idx < sizeof(state.rxbuf) - 1) {
@@ -739,7 +750,7 @@ uint8_t esp32_read_data(void) {
 }
 
 void esp32_write_ctrl(uint8_t data) {
-    printf("esp32_write_ctrl: %02X\n", data);
+    // printf("esp32_write_ctrl: %02X\n", data);
 
     if (data & 0x80) {
         state.rxbuf_idx = 0;

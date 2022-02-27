@@ -85,12 +85,8 @@ _reset:
 
 
 esp_init:
-    ld      a, ESP_OPENDIR
-    out     (IO_ESPDATA), a
-    ld      a, '/'
-    out     (IO_ESPDATA), a
-    ld      a, 0
-    out     (IO_ESPDATA), a
+    ld      a, 3
+    out     (IO_ESPCTRL), a
     ret
 
 ;-----------------------------------------------------------------------------
