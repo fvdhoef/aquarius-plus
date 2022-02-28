@@ -92,6 +92,7 @@ static char *resolve_path(const char *path) {
 
     size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = malloc(tmppath_size);
+    assert(tmppath != NULL);
     tmppath[0]          = 0;
     if (path[0] != '/' && path[0] != '\\') {
         strcat(tmppath, state.current_path);
@@ -102,6 +103,7 @@ static char *resolve_path(const char *path) {
     char *components[MAX_COMPONENTS];
     int   num_components = 0;
     char *result         = malloc(strlen(tmppath) + 1);
+    assert(result != NULL);
 
     const char *ps = tmppath;
     char       *pd = result;
@@ -174,7 +176,12 @@ void esp32_init(const char *basepath) {
         basepath_len--;
     }
     state.basepath = malloc(basepath_len + 1);
+    assert(state.basepath != NULL);
     strncpy(state.basepath, basepath, basepath_len);
+    state.basepath[basepath_len] = 0;
+
+    printf("basepath: '%s'\n", state.basepath);
+
     state.current_path = strdup("");
 
     for (int i = 0; i < MAX_FDS; i++) {
@@ -221,6 +228,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
     free(path);
@@ -250,7 +258,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 static void esp_close(uint8_t fd) {
     printf("CLOSE fd: %d\n", fd);
 
-    if (fd > MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] < 0) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -264,13 +272,13 @@ static void esp_close(uint8_t fd) {
 static void esp_read(uint8_t fd, uint16_t size) {
     printf("READ fd: %d  size: %u\n", fd, size);
 
-    if (fd > MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] < 0) {
         txfifo_write(ERR_PARAM);
         return;
     }
     int _fd = state.fds[fd];
 
-    uint8_t tmpbuf[0x10000];
+    static uint8_t tmpbuf[0x10000];
     int     result = read(_fd, tmpbuf, size);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
@@ -288,7 +296,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
     printf("WRITE fd: %d  size: %u\n", fd, size);
 
-    if (fd > MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] < 0) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -308,7 +316,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 static void esp_seek(uint8_t fd, uint32_t offset) {
     printf("SEEK fd: %d  offset: %u\n", fd, offset);
 
-    if (fd > MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] < 0) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -325,7 +333,7 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
 static void esp_tell(uint8_t fd) {
     printf("TELL fd: %d\n", fd);
 
-    if (fd > MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] < 0) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -361,6 +369,7 @@ static void esp_opendir(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
     free(path);
@@ -386,7 +395,7 @@ static void esp_opendir(const char *path_arg) {
 static void esp_closedir(uint8_t dd) {
     printf("CLOSEDIR dd: %d\n", dd);
 
-    if (dd > MAX_DDS || state.dds[dd] == NULL) {
+    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -401,7 +410,7 @@ static void esp_closedir(uint8_t dd) {
 static void esp_readdir(uint8_t dd) {
     // printf("READDIR dd: %d\n", dd);
 
-    if (dd > MAX_DDS || state.dds[dd] == NULL) {
+    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -450,6 +459,7 @@ static void esp_unlink(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
     free(path);
@@ -471,12 +481,14 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
     // Compose full path
     char *old_path      = resolve_path(old_arg);
     char *old_full_path = malloc(strlen(state.basepath) + strlen(old_path) + 1);
+    assert(old_full_path != NULL);
     strcpy(old_full_path, state.basepath);
     strcat(old_full_path, old_path);
     free(old_path);
 
     char *new_path      = resolve_path(new_arg);
     char *new_full_path = malloc(strlen(state.basepath) + strlen(new_path) + 1);
+    assert(new_full_path != NULL);
     strcpy(new_full_path, state.basepath);
     strcat(new_full_path, new_path);
     free(new_path);
@@ -499,6 +511,7 @@ static void esp_mkdir(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
     free(path);
@@ -523,6 +536,7 @@ static void esp_chdir(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
 
@@ -549,6 +563,7 @@ static void esp_stat(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
     free(path);

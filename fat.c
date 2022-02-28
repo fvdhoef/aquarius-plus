@@ -25,11 +25,9 @@ static struct entry *add_entry(void) {
             entries_capacity *= 2;
         }
 
-        entries = realloc(entries, entries_capacity * sizeof(struct entry));
-        if (entries == NULL) {
-            perror("fat add_entry");
-            exit(1);
-        }
+        struct entry *new_entries = realloc(entries, entries_capacity * sizeof(struct entry));
+        assert(new_entries != NULL);
+        entries = new_entries;
     }
 
     struct entry *result = &entries[entries_count++];
@@ -353,6 +351,7 @@ int fat_create(const char *name) {
     // Compose path
     int str_length   = snprintf(NULL, 0, "%s/%s", current_path, name) + 1;
     opened_file_path = malloc(str_length);
+    assert(opened_file_path != NULL);
     snprintf(opened_file_path, str_length, "%s/%s", current_path, name);
 
     opened_file = fopen(opened_file_path, "wb");
