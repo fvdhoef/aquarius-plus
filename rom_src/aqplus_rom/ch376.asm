@@ -100,26 +100,6 @@ usb__open_path:
     ret
 
 ;-----------------------------------------------------------------------------
-; Open current directory
-;  out: z = directory opened
-;      nz = error
-;
-; if current directory won't open then reset to root.
-;-----------------------------------------------------------------------------
-usb__open_dir:
-    ld      hl,_usb_star
-    call    usb__open_read          ; open "*" = request all files in current directory
-    cp      CH376_INT_DISK_READ     ; opened directory?
-    ret     z                       ; yes, ret z
-    cp      CH376_ERR_MISS_FILE     ; no, directory missing?
-    ret     nz                      ; no, quit with disk error
-    call    usb__root               ; yes, set path to root
-    ld      hl,_usb_star
-    call    usb__open_read          ; try to open root directory
-    cp      CH376_INT_DISK_READ
-    ret                             ; z = OK, nz = error
-
-;-----------------------------------------------------------------------------
 ; Open file for writing
 ; If file doesn't exist then creates and opens new file.
 ; If file does exist then opens it and sets size to 1.
@@ -204,23 +184,21 @@ usb__write_byte:
     xor     a
     out     (c),a                      ; send data length upper byte
 
-usb_write_byte_loop:
     call    usb__wait_int              ; wait for response
     cp      CH376_INT_DISK_WRITE
-    jr      nz,usb_write_byte_end      ; return error if not requesting byte
+    jr      nz, .end                   ; return error if not requesting byte
     ld      a,CH376_CMD_WR_REQ_DATA
     out     (CH376_CONTROL_PORT),a     ; send command 'write request'
     in      a,(c)                      ; a = number of bytes requested
     cp      1
-    jr      nz,usb_write_byte_end      ; return error if no byte requested
+    jr      nz, .end                   ; return error if no byte requested
     out     (c),b                      ; send the byte
 
-usb_write_byte_go:
     ld      a,CH376_CMD_BYTE_WR_GO
     out     (CH376_CONTROL_PORT),a     ; send command 'write go' (flush buffers)
     call    usb__wait_int              ; wait until command executed
 
-usb_write_byte_end:
+.end:
     pop     bc
     ret
 
@@ -268,7 +246,6 @@ usb__set_filename:
     out     (CH376_CONTROL_PORT),a  ; command: set file name
 .set_filename_send_name:
     ld      a,(hl)
-    call    dos__char               ; convert char to MSDOS equivalent
 .send_char:
     out     (CH376_DATA_PORT),a     ; send filename char to CH376
     inc     hl                      ; next char
@@ -359,20 +336,6 @@ usb_readbyte_loop:
 
 usb_readbyte_end:
     ret
-
-;-----------------------------------------------------------------------------
-; Delete file
-; Input:  hl = filename string
-;
-; Output:  z = OK
-;         nz = fail, a = error code
-;-----------------------------------------------------------------------------
-usb__delete:
-    call    usb__open_read
-    ret     nz
-    ld      a,CH376_CMD_FILE_ERASE
-    out     (CH376_CONTROL_PORT),a  ; command: erase file
-    jr      usb__wait_int
 
 ;-----------------------------------------------------------------------------
 ; Seek Into Open File
@@ -514,104 +477,3 @@ usb__mount:
     jp      usb__wait_int           ; wait until done
 
 _usb_star: db "*", 0
-
-;---------------------------------------------------------------------
-;                     Wildcard Pattern Match
-;---------------------------------------------------------------------
-; Pattern match CH376 filename. Filename is 11 characters long, padded
-; with spaces to 8 name characters plus 3 extension characters.
-;
-; example filenames:-     "NAME       "
-;                         "NAME    TXT"
-;                         "FILENAMETXT"
-;
-; pattern string is up to 12 characters long, not padded.
-;
-; example:- "F?LE*.TX?"
-;
-; pattern matching characters:-
-; '?'  = match any single character
-; '*'  = match all characters to end of name or extension
-; '.'  = separator between name and extension
-; NULL = match all files
-;
-;---------------------------------------------------------------------
-; in:  hl = filename 11 chars (8 name + 3 extension)
-;      de = wildcard pattern string
-;
-;out:   z = match, nz = no match
-;
-usb__wildcard:
-    push hl
-    push de
-    push bc
-    ld   b,0              ; b = char position in filename
-    ld   a,(de)           ; get 1st pattern char
-    or   a
-    jr   z,.wcd_done      ; if null string then done
-    jr   .wcd_start
-.wcd_next_pat:
-    inc  de               ; next pattern
-.wcd_next_char:
-    inc  hl               ; next filename char
-    inc  b
-    ld   a,b
-    cp   11
-    jr   z,.wcd_done      ; if end of filename then it's a match
-.wcd_get_pat:
-    ld   a,(de)           ; a = pattern char
-    or   a                ; end of pattern string?
-    jr   z,.wcd_endpat
-.wcd_start:
-    cp   '*'              ; '*'  = match all chars
-    jr   z,.wcd_star
-    cp   '?'              ; '?'  = match any char at current position
-    jr   z,.wcd_next_pat
-    cp   '.'              ; '.'  = finish checking name and start extn
-    jr   z,.wcd_dot
-    cp   (hl)             ; else = compare pattern char to filename char
-    jr   z,.wcd_next_pat  ; if match then test next char
-    jr   .wcd_done        ; else return no match
-
-    ; end of pattern, check that rest of filename is spaces
-.wcd_endpat:
-    ld   a,' '            ; <SPACE> in filename?
-    cp   (hl)
-    jr   z,.wcd_next_char ; yes, continue checking
-    jr   .wcd_done        ; no, return no match
-
-    ; '*' = match all chars to end of name or extn
-.wcd_star:
-    inc  de
-    ld   a,(de)
-    dec  de
-    or   a                ; '*' is last char in pattern?
-    jr   z,.wcd_done      ; yes, return match
-    ld   a,b
-    cp   7                ; at end of name?
-    jr   z,.wcd_next_pat  ; yes, cancel '*' and do next pattern char
-    jr   .wcd_next_char   ; else continue '*' with next filename char
-
-    ; '.' = finish name part and start checking extn part
-.wcd_dot:
-    inc  de               ; point to next pattern char
-    ld   a,(de)
-.wcd_to_extn:
-    ld   a,b
-    cp   8                ; reached start of extn part?
-    jr   z,.wcd_get_pat   ; if yes then start checking extn
-    jr   nc,.wcd_done     ; if past start of extn then fail
-
-    ; still in name so...
-    ld   a,(hl)           ; get current name char
-    inc  hl
-    inc  b                ; advance to next name char
-    cp   ' '
-    jr   z,.wcd_to_extn   ; if <SPACE> then continue, else fail
-
-    ; return z = match, nz = no match
-.wcd_done:
-    pop  bc
-    pop  de
-    pop  hl
-    ret

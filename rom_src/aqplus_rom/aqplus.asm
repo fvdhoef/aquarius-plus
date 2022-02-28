@@ -245,7 +245,7 @@ hook_exit:
 ; Hook indexes we're handling
 ; NOTE: order is reverse of hook handlers table!
 _hook_idxs:  ; xx      index caller            @addr  performing function:
-    db      24      ; 5   RUN                 $06BE  starting BASIC program
+    ; db      24      ; 5   RUN                 $06BE  starting BASIC program
     db      23      ; 4   exec_next_statement $0658  interpreting next BASIC statement
     db      22      ; 3   token_to_keyword    $05A0  expanding token to keyword
     db      10      ; 2   keyword_to_token    $0536  converting keyword to token
@@ -258,7 +258,7 @@ _hook_handlers:
     dw      keyword_to_token    ; 2 converting keyword to token
     dw      token_to_keyword    ; 3 expanding token to keyword
     dw      exec_next_statement ; 4 execute next BASIC statement
-    dw      run_cmd             ; 5 run program
+    ; dw      run_cmd             ; 5 run program
 
 ;-----------------------------------------------------------------------------
 ; Our commands and functions
@@ -352,7 +352,7 @@ execute_function:
     jp      do_jump             ; JP to our function
 
 ;-----------------------------------------------------------------------------
-; Convert keyword to token - 10
+; Convert keyword to token - hook 10
 ;-----------------------------------------------------------------------------
 keyword_to_token:
     ld      a, b               ; A = current index
@@ -422,98 +422,98 @@ exec_next_statement:
 ;-----------------------------------------------------------------------------
 ; RUN command - hook 24
 ;-----------------------------------------------------------------------------
-run_cmd:
-    pop     af                 ; Clean up stack
-    pop     af                 ; Restore AF
-    pop     hl                 ; Restore HL
-    jp      z, RUNC            ; If no argument then RUN from 1st line
+; run_cmd:
+;     pop     af                 ; Clean up stack
+;     pop     af                 ; Restore AF
+;     pop     hl                 ; Restore HL
+;     jp      z, RUNC            ; If no argument then RUN from 1st line
 
-    push    hl
-    call    FRMEVL             ; Get argument type
-    pop     hl
+;     push    hl
+;     call    FRMEVL             ; Get argument type
+;     pop     hl
 
-    ld      a, (VALTYP)
-    dec     a                  ; 0 = string
-    jr      z, .run_file
+;     ld      a, (VALTYP)
+;     dec     a                  ; 0 = string
+;     jr      z, .run_file
 
-    ; RUN with line number
-    call    CLEARC             ; Init BASIC run environment
-    ld      bc, NEWSTT
-    jp      RUNC2              ; GOTO line number
+;     ; RUN with line number
+;     call    CLEARC             ; Init BASIC run environment
+;     ld      bc, NEWSTT
+;     jp      RUNC2              ; GOTO line number
 
-    ; RUN with string argument
-.run_file:
-    call    dos__getfilename   ; Convert filename, store in FileName
-    push    hl                 ; Save BASIC text pointer
+;     ; RUN with string argument
+; .run_file:
+;     call    dos__getfilename   ; Convert filename, store in FileName
+;     push    hl                 ; Save BASIC text pointer
 
-    ld      hl, FileName
-    call    usb__open_read     ; Try to open file
-    jr      z, .load_run
-    cp      CH376_ERR_MISS_FILE ; error = file not found?
-    jp      nz, .nofile        ; No, break
+;     ld      hl, FileName
+;     call    usb__open_read     ; Try to open file
+;     jr      z, .load_run
+;     cp      CH376_ERR_MISS_FILE ; error = file not found?
+;     jp      nz, .nofile        ; No, break
 
-    ld      b, 9               ; Max 9 chars in name (including '.' or NULL)
-.instr:
-    ld      a,(hl)             ; get next name char
-    inc     hl
-    cp      '.'                ; if already has '.' then cannot extend
-    jp      z, .nofile
-    cp      ' '
-    jr      z, .extend         ; until SPACE or NULL
-    or      a
-    jr      z, .extend
-    djnz    .instr
+;     ld      b, 9               ; Max 9 chars in name (including '.' or NULL)
+; .instr:
+;     ld      a,(hl)             ; get next name char
+;     inc     hl
+;     cp      '.'                ; if already has '.' then cannot extend
+;     jp      z, .nofile
+;     cp      ' '
+;     jr      z, .extend         ; until SPACE or NULL
+;     or      a
+;     jr      z, .extend
+;     djnz    .instr
 
-.nofile:
-    ld      hl, .nofile_msg
-    call    STROUT
-    pop     hl                 ; Restore BASIC text pointer
-.error:
-    ld      e, FC_ERR          ; Function code error
-    jp      ERROR              ; Return to BASIC
+; .nofile:
+;     ld      hl, .nofile_msg
+;     call    STROUT
+;     pop     hl                 ; Restore BASIC text pointer
+; .error:
+;     ld      e, FC_ERR          ; Function code error
+;     jp      ERROR              ; Return to BASIC
 
-.extend:
-    dec     hl
+; .extend:
+;     dec     hl
 
-    ; Try to open file appending .BAS extension
-    push    hl                 ; Save extension address
-    ld      de, .bas_extn
-    call    strcat             ; Append ".BAS"
-    ld      hl, FileName
-    call    usb__open_read     ; Try to open file
-    pop     hl                 ; Restore extension address
-    jr      z, .load_run
+;     ; Try to open file appending .BAS extension
+;     push    hl                 ; Save extension address
+;     ld      de, .bas_extn
+;     call    strcat             ; Append ".BAS"
+;     ld      hl, FileName
+;     call    usb__open_read     ; Try to open file
+;     pop     hl                 ; Restore extension address
+;     jr      z, .load_run
 
-    cp      CH376_ERR_MISS_FILE ; Error = file not found?
-    jp      nz, .nofile         ; No, break
+;     cp      CH376_ERR_MISS_FILE ; Error = file not found?
+;     jp      nz, .nofile         ; No, break
 
-    ; Try to open file appending .BIN extension
-    ld      de, .bin_extn
-    ld      (hl), 0            ; Remove extn
-    call    strcat             ; Append ".BIN"
+;     ; Try to open file appending .BIN extension
+;     ld      de, .bin_extn
+;     ld      (hl), 0            ; Remove extn
+;     call    strcat             ; Append ".BIN"
 
-.load_run:
-    pop     hl                 ; Restore BASIC text pointer
-    call    ST_LOADFILE        ; Load file from disk, name in FileName
-    jp      nz, .error         ; If load failed then return to command prompt
-    cp      FT_BAS             ; Filetype is BASIC?
-    jp      z, RUNC            ; Yes, run loaded BASIC program
+; .load_run:
+;     pop     hl                 ; Restore BASIC text pointer
+;     call    ST_LOADFILE        ; Load file from disk, name in FileName
+;     jp      nz, .error         ; If load failed then return to command prompt
+;     cp      FT_BAS             ; Filetype is BASIC?
+;     jp      z, RUNC            ; Yes, run loaded BASIC program
 
-    cp      FT_BIN             ; BINARY?
-    jp      nz, .done          ; No, return to command line prompt
-    ld      de, .done
-    push    de                 ; Set return address
-    ld      de, (BINSTART)
-    push    de                 ; Set jump address
-    ret                        ; Jump into binary
+;     cp      FT_BIN             ; BINARY?
+;     jp      nz, .done          ; No, return to command line prompt
+;     ld      de, .done
+;     push    de                 ; Set return address
+;     ld      de, (BINSTART)
+;     push    de                 ; Set jump address
+;     ret                        ; Jump into binary
 
-.done:
-    xor     a
-    jp      READY
+; .done:
+;     xor     a
+;     jp      READY
 
-.bas_extn:   db ".BAS", 0
-.bin_extn:   db ".BIN", 0
-.nofile_msg: db "File not found", $0D, $0A, 0
+; .bas_extn:   db ".BAS", 0
+; .bin_extn:   db ".BIN", 0
+; .nofile_msg: db "File not found", $0D, $0A, 0
 
 ;-----------------------------------------------------------------------------
 ; Not implemented statement - do nothing
@@ -808,21 +808,21 @@ to_upper:
 ; in: hl = string being added to (must have sufficient space at end!)
 ;     de = string to add
 ;-----------------------------------------------------------------------------
-strcat:
-    xor     a
-.find_end:
-    cp      (hl)            ; End of string?
-    jr      z, .append
-    inc     hl              ; No, continue looking for it
-    jr      .find_end
-.append:                    ; Yes, append string
-    ld      a, (de)
-    inc     de
-    ld      (hl), a
-    inc     hl
-    or      a
-    jr      nz, .append
-    ret
+; strcat:
+;     xor     a
+; .find_end:
+;     cp      (hl)            ; End of string?
+;     jr      z, .append
+;     inc     hl              ; No, continue looking for it
+;     jr      .find_end
+; .append:                    ; Yes, append string
+;     ld      a, (de)
+;     inc     de
+;     ld      (hl), a
+;     inc     hl
+;     or      a
+;     jr      nz, .append
+;     ret
 
 ;-----------------------------------------------------------------------------
 ; Fill with $FF to end of ROM

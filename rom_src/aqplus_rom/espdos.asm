@@ -526,3 +526,71 @@ out_number_4digits:
     ld      a, ' '
     call    TTYCHR
     ret
+
+;-----------------------------------------------------------------------------
+; Initialize BASIC Program
+;
+; Resets variables, arrays, string space etc.
+; Updates nextline pointers to match location of BASIC program in RAM
+;-----------------------------------------------------------------------------
+init_basic_program:
+    ; Set next statement to start of program
+    ld      hl, (TXTTAB)
+    dec     hl
+    ld      (SAVTXT), hl
+
+    ; Set DATPTR to start of program
+    ld      (DATPTR), hl
+
+    ; Clear string space
+    ld      hl, (MEMSIZ)
+    ld      (FRETOP), hl
+
+    ; Clear simple variables
+    ld      hl, (VARTAB)
+    ld      (ARYTAB), hl
+
+    ; Clear array table
+    ld      (STREND), hl
+
+    ; Clear string buffer
+    ld      hl, TEMPPT + 2
+    ld      (TEMPPT), hl
+
+    ; Set CONTinue position to 0
+    xor     a
+    ld      l, a
+    ld      h, a
+    ld      (OLDTXT), hl        
+
+    ; Clear locator flag
+    ld      (SUBFLG), a
+
+    ; Clear array pointer???
+    ld      (VARNAM), hl
+
+    ; Fix up next line addresses in loaded BASIC program
+.link_lines:
+    ld      de, (TXTTAB)        ; DE = start of BASIC program
+.next_line:
+    ld      h, d
+    ld      l, e                ; HL = DE
+    ld      a, (hl)
+    inc     hl                  ; Test nextline address
+    or      (hl)
+    jr      z, .init_done       ; If $0000 then done
+    inc     hl
+    inc     hl                  ; Skip line number
+    inc     hl
+    xor     a                   ; End of line = $00
+.find_eol:
+    cp      (hl)                ; Search for end of line
+    inc     hl
+    jr      nz, .find_eol
+    ex      de, hl              ; HL = current line, DE = next line
+    ld      (hl), e
+    inc     hl                  ; Set address of next line
+    ld      (hl), d
+    jr      .next_line
+.init_done:
+    ret

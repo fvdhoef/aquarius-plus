@@ -30,26 +30,6 @@ strcmp:
     ret                     ; Return Z
 
 ;-----------------------------------------------------------------------------
-; Check for argument in current statement
-;  in: HL = text pointer
-; out: NZ = argument present
-;       Z = end of statement
-;-----------------------------------------------------------------------------
-chkarg:
-    push    hl              ; Save BASIC text pointer
-.next_char:
-    ld      a, (hl)         ; Get char
-    inc     hl
-    cp      ' '             ; Skip spaces
-    jr      z, .next_char
-    cp      ':'             ; Z if end of statement
-    jr      z, .chkarg_done ; Return Z if end of statement
-    or      a               ; Z if end of line
-.chkarg_done:
-    pop     hl              ; Restore BASIC text pointer
-    ret
-
-;-----------------------------------------------------------------------------
 ; Get next character, skipping spaces
 ;  in: HL = text pointer
 ; out: NZ, A = next non-space char, HL = address of char in text
@@ -274,7 +254,7 @@ ST_LOADFILE:
     inc     hl                      ; Forward past 3 zeros = end of BASIC program
     inc     hl
     ld      (VARTAB), hl            ; Set end of BASIC program
-    call    Init_BASIC              ; Clear variables etc. and update line addresses
+    call    init_basic_program      ; Clear variables etc. and update line addresses
     ld      a, FT_BAS
     ld      (FILETYPE), a           ; Filetype is BASIC
     jr      _stl_done
@@ -407,55 +387,6 @@ _st_read_caq_lp1:
     call    usb__read_byte
     ret     nz
     and     a                       ; z if $00
-    ret
-
-;-----------------------------------------------------------------------------
-; Initialize BASIC Program
-;
-; Resets variables, arrays, string space etc.
-; Updates nextline pointers to match location of BASIC program in RAM
-;-----------------------------------------------------------------------------
-Init_BASIC:
-    ld      hl, (TXTTAB)
-    dec     hl
-    ld      (SAVTXT), hl        ; Set next statement to start of program
-    ld      (DATPTR), hl        ; Set DATPTR to start of program
-    ld      hl, (MEMSIZ)
-    ld      (FRETOP), hl        ; Clear string space
-    ld      hl, (VARTAB)
-    ld      (ARYTAB), hl        ; Clear simple variables
-    ld      (STREND), hl        ; Clear array table
-    ld      hl, TEMPPT + 2
-    ld      (TEMPPT), hl        ; Clear string buffer
-    xor     a
-    ld      l, a
-    ld      h, a
-    ld      (OLDTXT), hl        ; Set CONTinue position to 0
-    ld      (SUBFLG), a         ; Clear locator flag
-    ld      (VARNAM), hl         ; Clear array pointer???
-.link_lines:
-    ld      de, (TXTTAB)        ; DE = start of BASIC program
-.next_line:
-    ld      h, d
-    ld      l, e                ; HL = DE
-    ld      a, (hl)
-    inc     hl                  ; Test nextline address
-    or      (hl)
-    jr      z, .init_done       ; If $0000 then done
-    inc     hl
-    inc     hl                  ; Skip line number
-    inc     hl
-    xor     a                   ; End of line = $00
-.find_eol:
-    cp      (hl)                ; Search for end of line
-    inc     hl
-    jr      nz, .find_eol
-    ex      de, hl              ; HL = current line, DE = next line
-    ld      (hl), e
-    inc     hl                  ; Set address of next line
-    ld      (hl), d
-    jr      .next_line
-.init_done:
     ret
 
 ;-----------------------------------------------------------------------------
@@ -766,20 +697,3 @@ extn_list:
     db "BAS", 0, FT_BAS     ; BASIC program
     db "CAQ", 0, FT_CAQ     ; Tape file (BASIC, Array, ???)
     db 0
-
-;-----------------------------------------------------------------------------
-; Convert character to MSDOS equivalent
-;
-;  Input:  a = char
-; Output:  a = MSDOS compatible char
-;
-; converts:-
-;     lowercase to uppercase
-;     '=' -> '~' (in case we cannot type '~' on the keyboard!)
-;-----------------------------------------------------------------------------
-dos__char:
-    call    to_upper
-    cp      '='
-    ret     nz          ; Convert '=' to '~'
-    ld      a, '~'
-    ret
