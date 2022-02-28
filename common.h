@@ -17,9 +17,17 @@
 #    include "getopt.h"
 #    include <direct.h>
 #    include <io.h>
+#    include <sys/types.h>
+#    include <sys/stat.h>
 #    define strdup _strdup
 #    define unlink _unlink
 #    define rmdir _rmdir
+#	 define open _open
+#    define close _close
+#    define read _read
+#    define write _write
+#    define lseek _lseek
+#    define mkdir _mkdir
 #else
 #    include <unistd.h>
 #    include <sys/stat.h>

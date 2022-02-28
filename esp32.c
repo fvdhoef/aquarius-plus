@@ -228,12 +228,12 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     printf("OPEN: flags: 0x%02X  '%s'\n", flags, full_path);
 
     int _fd    = open(full_path, flags, 0664);
-    int _errno = errno;
+    int err_no = errno;
     free(full_path);
 
     if (_fd < 0) {
         uint8_t err = ERR_NOT_FOUND;
-        switch (_errno) {
+        switch (err_no) {
             case EACCES: err = ERR_NOT_FOUND; break;
             case EEXIST: err = ERR_EXISTS; break;
             default: err = ERR_NOT_FOUND; break;
@@ -568,8 +568,10 @@ static void esp_stat(const char *path_arg) {
     time_t t;
 #ifdef __APPLE__
     t = st.st_mtimespec.tv_sec;
+#elif _WIN32
+    t = st.st_mtime;
 #else
-    t          = st.st_mtim.tv_sec;
+    t = st.st_mtim.tv_sec;
 #endif
 
     struct tm *tm       = localtime(&t);
@@ -592,7 +594,7 @@ static void esp_getcwd(void) {
     printf("GETCWD\n");
 
     txfifo_write(0);
-    int len = strlen(state.current_path);
+    int len = (int)strlen(state.current_path);
 
     if (len == 0) {
         txfifo_write('/');
