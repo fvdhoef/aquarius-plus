@@ -1,0 +1,189 @@
+0001   0000             ; PROJECT: SOUND
+0002   0000             ; ASM COMPATIBILITY: TASM (e.g., TASM -80 -b sound.asm sound.caq)
+0003   0000             
+0004   0000             ; James' Cassette Compatible Init (CLOAD > RUN)
+0005   0000             LOADER:
+0006   0000             
+0007   38E1             	.org $38E1 
+0008   38E1 FF FF FF FF 	.db	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF 
+0008   38E5 FF FF FF FF 
+0008   38E9 FF FF FF FF 
+0009   38ED 00          	.db	$00 
+0010   38EE             
+0011   38EE             	; Can replace with custom SIX character identifier
+0012   38EE 53 4F 55 4E 	.db	"SOUND1"
+0012   38F2 44 31 
+0013   38F4             	
+0014   38F4 FF FF FF FF 	.db	$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF 
+0014   38F8 FF FF FF FF 
+0014   38FC FF FF FF FF 
+0015   3900 00          	.db	$00 
+0016   3901 25 39 0A 00 	.db	$25,$39,$0a,$00 
+0017   3905 8E          	.db	$8e 
+0018   3906             
+0019   3906             	; Do not edit this line
+0020   3906 20 46 6F 72 	.db	" For Aquarius S2 (do not edit)" 
+0020   390A 20 41 71 75 
+0020   390E 61 72 69 75 
+0020   3912 73 20 53 32 
+0020   3916 20 28 64 6F 
+0020   391A 20 6E 6F 74 
+0020   391E 20 65 64 69 
+0020   3922 74 29 
+0021   3924             
+0022   3924 00          	.db	00 
+0023   3925 2D 39 14 00 	.db	$2d, $39, $14, $00 
+0024   3929 42 B0 30    	.db	$42, $B0, $30 
+0025   392C 00          	.db	00 
+0026   392D 49 39 1E 00 	.db	$49, $39, $1e, $00 
+0027   3931 94 20 31 34 	.db	$94, $20, "14340", $2C, "088" 
+0027   3935 33 34 30 2C 
+0027   3939 30 38 38 
+0028   393C 3A          	.db	$3A 
+0029   393D 94 20 31 34 	.db	$94, $20, "14341", $2C, "057" 
+0029   3941 33 34 31 2C 
+0029   3945 30 35 37 
+0030   3948 00          	.db	00 
+0031   3949 13          	.db	(TERMINATE & 255) 
+0032   394A 3A          	.db	(TERMINATE >> 8) 
+0033   394B 28 00       	.db	$28, $00 
+0034   394D 42 B0 B5 28 	.db	$42, $B0,$B5,$28,$30,$29,$3A,$80 
+0034   3951 30 29 3A 80 
+0035   3955 00          	.db	$00 
+0036   3956 00 00       	.db	$00,$00	
+0037   3958             	
+0038   3958             	; Play sounds
+0039   3958 CD 78 39    	call	PLAYSOUNDS
+0040   395B             	
+0041   395B             ; Start Main Program
+0042   395B             MAIN: 
+0043   395B             
+0044   395B             	; Add Custom Code Here - Press RETURN to Exit
+0045   395B CD 63 39    	call	INPUT
+0046   395E 20 FB       	jr		nz,	MAIN
+0047   3960             	
+0048   3960             	; Clear Screen and Exit
+0049   3960 CD 45 1E    	call	$1e45
+0050   3963             	
+0051   3963             ; Basic Input Handler
+0052   3963             INPUT:
+0053   3963             
+0054   3963             	; Short Pause
+0055   3963 01 00 30    	ld		bc,$3000
+0056   3966 CD 4B 1D    	call	$1d4b
+0057   3969             
+0058   3969             	; Check for RETURN key
+0059   3969 01 FF FE    	ld		bc, $feff
+0060   396C ED 78       	in		a,(c)
+0061   396E CB 5F       	bit		3, a
+0062   3970             	
+0063   3970 C9          	ret
+0064   3971             
+0065   3971             ; Wait 500ms
+0066   3971             WAITASEC:
+0067   3971 01 74 BD    	ld		bc,$BD74
+0068   3974 CD 4B 1D    	call	$1d4b
+0069   3977 C9          	ret
+0070   3978             
+0071   3978             ; Play sounds
+0072   3978             PLAYSOUNDS:
+0073   3978             
+0074   3978             	; Start fresh
+0075   3978             	; CH-ABC0 off
+0076   3978 3E 07       	ld  a,7
+0077   397A D3 F7       	out ($F7),a
+0078   397C 3E 3F       	ld  a,63
+0079   397E D3 F6       	out ($F6),a
+0080   3980             	; C2 in CH-A0
+0081   3980 3E 00       	ld	a,0
+0082   3982 D3 F7       	out ($F7),a
+0083   3984 3E 2D       	ld	a,45
+0084   3986 D3 F6       	out ($F6),a
+0085   3988 3E 01       	ld  a,1
+0086   398A D3 F7       	out ($F7),a
+0087   398C 3E 04       	ld  a,4
+0088   398E D3 F6       	out ($F6),a
+0089   3990             	; E2 in CH-B0
+0090   3990 3E 02       	ld	a,2
+0091   3992 D3 F7       	out ($F7),a
+0092   3994 3E 50       	ld	a,80
+0093   3996 D3 F6       	out ($F6),a
+0094   3998 3E 03       	ld  a,3
+0095   399A D3 F7       	out ($F7),a
+0096   399C 3E 03       	ld  a,3
+0097   399E D3 F6       	out ($F6),a
+0098   39A0             	; G2 in CH-C0
+0099   39A0 3E 04       	ld  a,4
+0100   39A2 D3 F7       	out ($F7),a
+0101   39A4 3E C9       	ld	a,201
+0102   39A6 D3 F6       	out ($F6),a
+0103   39A8 3E 05       	ld  a,5
+0104   39AA D3 F7       	out ($F7),a
+0105   39AC 3E 02       	ld  a,2
+0106   39AE D3 F6       	out ($F6),a
+0107   39B0             	; CH-ABC0 to Volume 15
+0108   39B0 3E 08       	ld  a,8
+0109   39B2 D3 F7       	out ($F7),a
+0110   39B4 3E 0F       	ld  a,15
+0111   39B6 D3 F6       	out ($F6),a
+0112   39B8 3E 09       	ld  a,9
+0113   39BA D3 F7       	out ($F7),a
+0114   39BC 3E 0F       	ld  a,15
+0115   39BE D3 F6       	out ($F6),a
+0116   39C0 3E 0A       	ld  a,10
+0117   39C2 D3 F7       	out ($F7),a
+0118   39C4 3E 0F       	ld  a,15
+0119   39C6 D3 F6       	out ($F6),a
+0120   39C8             	; Play the notes with a pause between
+0121   39C8             	; CH-A0 on
+0122   39C8 3E 07       	ld  a,7
+0123   39CA D3 F7       	out ($F7),a
+0124   39CC 3E 3E       	ld  a,62
+0125   39CE D3 F6       	out ($F6),a
+0126   39D0 CD 71 39    	call WAITASEC
+0127   39D3             	; CH-AB0 on
+0128   39D3 3E 07       	ld  a,7
+0129   39D5 D3 F7       	out ($F7),a
+0130   39D7 3E 3C       	ld  a,60
+0131   39D9 D3 F6       	out ($F6),a
+0132   39DB CD 71 39    	call WAITASEC
+0133   39DE             	; CH-ABC0 on
+0134   39DE 3E 07       	ld  a,7
+0135   39E0 D3 F7       	out ($F7),a
+0136   39E2 3E 38       	ld  a,56
+0137   39E4 D3 F6       	out ($F6),a
+0138   39E6 CD 71 39    	call WAITASEC
+0139   39E9 CD 71 39    	call WAITASEC
+0140   39EC CD 71 39    	call WAITASEC
+0141   39EF CD 71 39    	call WAITASEC
+0142   39F2             	; CH-ABC0 off
+0143   39F2 3E 07       	ld  a,7
+0144   39F4 D3 F7       	out ($F7),a
+0145   39F6 3E 3F       	ld  a,63
+0146   39F8 D3 F6       	out ($F6),a
+0147   39FA             	; CH-ABC0 to Volume 0
+0148   39FA 3E 08       	ld  a,8
+0149   39FC D3 F7       	out ($F7),a
+0150   39FE 3E 00       	ld  a,0
+0151   3A00 D3 F6       	out ($F6),a
+0152   3A02 3E 09       	ld  a,9
+0153   3A04 D3 F7       	out ($F7),a
+0154   3A06 3E 00       	ld  a,0
+0155   3A08 D3 F6       	out ($F6),a
+0156   3A0A 3E 0A       	ld  a,10
+0157   3A0C D3 F7       	out ($F7),a
+0158   3A0E 3E 00       	ld  a,0
+0159   3A10 D3 F6       	out ($F6),a
+0160   3A12 C9          	ret
+0161   3A13             
+0162   3A13             ; Conclude ML Routine
+0163   3A13             TERMINATE:
+0164   3A13             	
+0165   3A13 00 00 00 00 	.db $00,$00,$00,$00,$00,$00,$00,$00 
+0165   3A17 00 00 00 00 
+0166   3A1B 00 00 00 00 	.db $00,$00,$00,$00,$00,$00,$00,$00 
+0166   3A1F 00 00 00 00 
+0167   3A23 00 00 00 00 	.db $00,$00,$00,$00,$00,$00,$00,$00 
+0167   3A27 00 00 00 00 
+0168   3A2B             	.end
+tasm: Number of errors = 0
