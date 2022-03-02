@@ -288,7 +288,6 @@ ST_DIR:
 .no_dir:
     ; aaaaaaaa bbbbbbbb cccccccc dddddddd
 
-
     call    esp_get_data
     ld      (.tmp0), a
     call    esp_get_data

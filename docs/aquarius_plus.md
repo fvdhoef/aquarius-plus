@@ -42,7 +42,7 @@
 | $F9        | PSG2ADDR | PSG2: AY-3-8910 R: read from PSG, W: write to latch address      |
 | $FA        |          | -                                                                |
 | $FB        | SYSCTRL  | RW<0>: Disable access to extended registers                      |
-| $FB        | SYSCTRL  | RW<1>: Disable PSGs (as if micro-expander isn't available)       |
+| $FB        | SYSCTRL  | RW<1>: Disable PSGs (as if mini-expander isn't available)        |
 | $FC        |          | W<0>: Cassette/Sound output<br/>R<0>: Cassette input             |
 | $FD        |          | W<0>: CP/M mode remapping<br/>R<0>: V-sync signal (0: in v-sync) |
 | $FE        |          | W<0>: Serial printer (1200bps)<br/>R<0>: Clear to send status    |
