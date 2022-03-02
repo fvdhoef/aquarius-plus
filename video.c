@@ -48,11 +48,11 @@ void video_draw_line(void) {
         // Draw text character
         uint8_t ch;
         uint8_t color;
-        if (line >= 16 && line < 208 && i >= 16 && i <= 336) {
-            int row    = (line - 16) / 8;
+        if (line >= 8 && line < 208 && i >= 16 && i < 336) {
+            int row    = (line - 8) / 8;
             int column = (i - 16) / 8;
-            ch         = emustate.screenram[(row + 1) * 40 + column];
-            color      = emustate.colorram[(row + 1) * 40 + column];
+            ch         = emustate.screenram[row * 40 + column];
+            color      = emustate.colorram[row * 40 + column];
         } else {
             ch    = emustate.screenram[0];
             color = emustate.colorram[0];
