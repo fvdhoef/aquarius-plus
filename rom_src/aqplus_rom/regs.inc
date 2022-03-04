@@ -113,6 +113,7 @@ INITFF:     equ $0153   ; Initialize I/O Port 255
 SNERR:      equ $03C4   ; Syntax error
 MOERR:      equ $03D6   ; Missing Operand error
 ERROR:      equ $03DB   ; Process error code, E = code (offset to 2 char error name)
+ERRFN1:     equ $03F4
 READY:      equ $0402
 RESSRC:     equ $05A8
 NEWSTT:     equ $062C
@@ -131,10 +132,12 @@ OMERR:      equ $0BB7   ; Out of memory error
 SCRTCH:     equ $0BBE
 RUNC:       equ $0BCB
 CLEARC:     equ $0BCF
+STKINI:     equ $0BE5
 STROUT:     equ $0E9D   ; Print null-terminated string in HL
 LEN1:       equ $0FF7   ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length)
 PTRGET:     equ $10D1   ; Get variable (out: BC = addr, DE = len)
 CRDO:       equ $19EA   ; Print CR+LF
+WRMCON:     equ $1A40
 TTYCHR:     equ $1D72   ; Print character in A with pause/break at end of page
 TTYOUT:     equ $1D94   ; Print character in A
 TTYFIS:     equ $1DE7   ; Save Column and Position
@@ -202,22 +205,23 @@ endm
 ;-----------------------------------------------------------------------------
 ; ESP32 commands
 ;-----------------------------------------------------------------------------
-ESP_RESET:     equ $01      ; Reset ESP
-ESP_OPEN:      equ $10      ; Open / create file
-ESP_CLOSE:     equ $11      ; Close open file
-ESP_READ:      equ $12      ; Read from file
-ESP_WRITE:     equ $13      ; Write to file
-ESP_SEEK:      equ $14      ; Move read/write pointer
-ESP_TELL:      equ $15      ; Get current read/write
-ESP_OPENDIR:   equ $16      ; Open directory
-ESP_CLOSEDIR:  equ $17      ; Close open directory
-ESP_READDIR:   equ $18      ; Read from directory
-ESP_UNLINK:    equ $19      ; Remove file or directory
-ESP_RENAME:    equ $1A      ; Rename / move file or directory
-ESP_MKDIR:     equ $1B      ; Create directory
-ESP_CHDIR:     equ $1C      ; Change directory
-ESP_STAT:      equ $1D      ; Get file status
-ESP_GETCWD:    equ $1E      ; Get current working directory
+ESP_RESET:      equ $01     ; Reset ESP
+ESP_OPEN:       equ $10     ; Open / create file
+ESP_CLOSE:      equ $11     ; Close open file
+ESP_READ:       equ $12     ; Read from file
+ESP_WRITE:      equ $13     ; Write to file
+ESP_SEEK:       equ $14     ; Move read/write pointer
+ESP_TELL:       equ $15     ; Get current read/write
+ESP_OPENDIR:    equ $16     ; Open directory
+ESP_CLOSEDIR:   equ $17     ; Close open directory
+ESP_READDIR:    equ $18     ; Read from directory
+ESP_UNLINK:     equ $19     ; Remove file or directory
+ESP_RENAME:     equ $1A     ; Rename / move file or directory
+ESP_MKDIR:      equ $1B     ; Create directory
+ESP_CHDIR:      equ $1C     ; Change directory
+ESP_STAT:       equ $1D     ; Get file status
+ESP_GETCWD:     equ $1E     ; Get current working directory
+ESP_CLOSEALL:   equ $1F     ; Close any open file/directory descriptor
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories
@@ -226,3 +230,12 @@ ERR_EOF:           equ -4   ; End of file / directory
 ERR_EXISTS:        equ -5   ; File already exists
 ERR_OTHER:         equ -6   ; Other error
 ERR_NO_DISK:       equ -7   ; No disk
+
+FO_RDONLY:      equ 0x00    ; Open for reading only
+FO_WRONLY:      equ 0x01    ; Open for writing only
+FO_RDWR:        equ 0x02    ; Open for reading and writing
+FO_ACCMODE:     equ 0x03    ; Mask for above modes
+FO_APPEND:      equ 0x04    ; Append mode
+FO_CREATE:      equ 0x08    ; Create if non-existant
+FO_TRUNC:       equ 0x10    ; Truncate to zero length
+FO_EXCL:        equ 0x20    ; Error if already exists

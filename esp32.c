@@ -18,6 +18,7 @@ enum {
     ESP_CHDIR    = 0x1C, // Change directory
     ESP_STAT     = 0x1D, // Get file status
     ESP_GETCWD   = 0x1E, // Get current working directory
+    ESP_CLOSEALL = 0x1F, // Close any open file/directory descriptor
 };
 
 enum {
@@ -93,7 +94,7 @@ static char *resolve_path(const char *path) {
     size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = malloc(tmppath_size);
     assert(tmppath != NULL);
-    tmppath[0]          = 0;
+    tmppath[0] = 0;
     if (path[0] != '/' && path[0] != '\\') {
         strcat(tmppath, state.current_path);
         strcat(tmppath, "/");
@@ -252,6 +253,8 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     }
     state.fds[fd] = _fd;
 
+    txfifo_write(fd);
+
     printf("OPEN fd: %d\n", fd);
 }
 
@@ -279,7 +282,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
     int _fd = state.fds[fd];
 
     static uint8_t tmpbuf[0x10000];
-    int     result = read(_fd, tmpbuf, size);
+    int            result = read(_fd, tmpbuf, size);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -584,7 +587,7 @@ static void esp_stat(const char *path_arg) {
 #ifdef __APPLE__
     t = st.st_mtimespec.tv_sec;
 #elif _WIN32
-    t = st.st_mtime;
+    t          = st.st_mtime;
 #else
     t = st.st_mtim.tv_sec;
 #endif
@@ -621,6 +624,28 @@ static void esp_getcwd(void) {
     txfifo_write(0);
 }
 
+static void close_all_descriptors(void) {
+    // Close any open descriptors
+    for (int i = 0; i < MAX_DDS; i++) {
+        if (state.dds[i] != NULL) {
+            direnum_close(state.dds[i]);
+            state.dds[i] = NULL;
+        }
+    }
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (state.fds[i] >= 0) {
+            close(state.fds[i]);
+            state.fds[i] = -1;
+        }
+    }
+}
+
+static void esp_closeall(void) {
+    printf("CLOSEALL\n");
+    close_all_descriptors();
+    txfifo_write(0);
+}
+
 void esp32_write_data(uint8_t data) {
     // printf("esp32_write_data: %02X\n", data);
     if (state.basepath == NULL) {
@@ -639,18 +664,7 @@ void esp32_write_data(uint8_t data) {
         switch (cmd) {
             case ESP_RESET: {
                 // Close any open descriptors
-                for (int i = 0; i < MAX_DDS; i++) {
-                    if (state.dds[i] != NULL) {
-                        direnum_close(state.dds[i]);
-                        state.dds[i] = NULL;
-                    }
-                }
-                for (int i = 0; i < MAX_FDS; i++) {
-                    if (state.fds[i] >= 0) {
-                        close(state.fds[i]);
-                        state.fds[i] = -1;
-                    }
-                }
+                close_all_descriptors();
                 free(state.current_path);
                 state.current_path = strdup("");
                 break;
@@ -778,6 +792,11 @@ void esp32_write_data(uint8_t data) {
             }
             case ESP_GETCWD: {
                 esp_getcwd();
+                state.rxbuf_idx = 0;
+                break;
+            }
+            case ESP_CLOSEALL: {
+                esp_closeall();
                 state.rxbuf_idx = 0;
                 break;
             }

@@ -338,24 +338,25 @@ Write a 1 to either _TX FIFO full_ or _RX FIFO non-empty_ will flush the respect
 
 ## Commands
 
-| Value | Function | Description                     | Category                    |
-| ----: | -------- | ------------------------------- | --------------------------- |
-|   $01 | RESET    | Reset ESP                       | General                     |
-|   $10 | OPEN     | Open / create file              | File                        |
-|   $11 | CLOSE    | Close open file                 | File                        |
-|   $12 | READ     | Read from file                  | File                        |
-|   $13 | WRITE    | Write to file                   | File                        |
-|   $14 | SEEK     | Move read/write pointer         | File                        |
-|   $15 | TELL     | Get current read/write          | File                        |
-|   $16 | OPENDIR  | Open directory                  | Directory                   |
-|   $17 | CLOSEDIR | Close open directory            | Directory                   |
-|   $18 | READDIR  | Read from directory             | Directory                   |
-|   $19 | UNLINK   | Remove file or directory        | File / Directory management |
-|   $1A | RENAME   | Rename / move file or directory | File / Directory management |
-|   $1B | MKDIR    | Create directory                | File / Directory management |
-|   $1C | CHDIR    | Change directory                | File / Directory management |
-|   $1D | STAT     | Get file status                 | File / Directory management |
-|   $1E | GETCWD   | Get current working directory   | File / Directory management |
+| Value | Function | Description                              | Category                    |
+| ----: | -------- | ---------------------------------------- | --------------------------- |
+|   $01 | RESET    | Reset ESP                                | General                     |
+|   $10 | OPEN     | Open / create file                       | File                        |
+|   $11 | CLOSE    | Close open file                          | File                        |
+|   $12 | READ     | Read from file                           | File                        |
+|   $13 | WRITE    | Write to file                            | File                        |
+|   $14 | SEEK     | Move read/write pointer                  | File                        |
+|   $15 | TELL     | Get current read/write                   | File                        |
+|   $16 | OPENDIR  | Open directory                           | Directory                   |
+|   $17 | CLOSEDIR | Close open directory                     | Directory                   |
+|   $18 | READDIR  | Read from directory                      | Directory                   |
+|   $19 | UNLINK   | Remove file or directory                 | File / Directory management |
+|   $1A | RENAME   | Rename / move file or directory          | File / Directory management |
+|   $1B | MKDIR    | Create directory                         | File / Directory management |
+|   $1C | CHDIR    | Change directory                         | File / Directory management |
+|   $1D | STAT     | Get file status                          | File / Directory management |
+|   $1E | GETCWD   | Get current working directory            | File / Directory management |
+|   $1F | CLOSEALL | Close any open file/directory descriptor | File / Directory            |
 
 TODO: WiFi management commands
 
@@ -370,6 +371,12 @@ TODO: WiFi management commands
 |    -5 | ERR_EXISTS        | File already exists               |
 |    -6 | ERR_OTHER         | Other error                       |
 |    -7 | ERR_NO_DISK       | No disk                           |
+
+### RESET
+
+| Offset | Value |
+| ------ | ----- |
+| 0      | $01   |
 
 ### OPEN
 
@@ -602,6 +609,8 @@ TODO: WiFi management commands
 
 ### GETCWD
 
+#### Request
+
 | Offset | Value |
 | ------ | ----- |
 | 0      | $1E   |
@@ -612,3 +621,17 @@ TODO: WiFi management commands
 | ------ | ------------------------------ |
 | 0      | 0 on success / error code (<0) |
 | 1-n    | Zero-terminated path           |
+
+### CLOSEALL
+
+#### Request
+
+| Offset | Value |
+| ------ | ----- |
+| 0      | $1F   |
+
+#### Response
+
+| Offset | Value                          |
+| ------ | ------------------------------ |
+| 0      | 0 on success / error code (<0) |

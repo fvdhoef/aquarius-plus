@@ -34,7 +34,8 @@
 #endif
 
 #define CPU_FREQ (3579545)
+
 #define VIDEO_WIDTH (352)
-#define VIDEO_HEIGHT (224)
+#define VIDEO_HEIGHT (240)
 
 void reset(void);
