@@ -16,7 +16,8 @@ LOADER:
 	.db	$25,$39,$0a,$00 
 	.db	$8e 
 
-	; Do not edit this line
+	; Do not edit this line. It has to be EXACTLY 30 characters inside the quotes 
+	; to ensure proper byte offset for the code to line up
 	.db	" For Aquarius S2 (do not edit)" 
 
 	.db	00 
@@ -31,9 +32,9 @@ LOADER:
 	.db	(TERMINATE & 255) 
 	.db	(TERMINATE >> 8) 
 	.db	$28, $00 
-	.db	$42, $B0,$B5,$28,$30,$29,$3A,$80 
+	.db	$42, $B0, $B5, $28, $30, $29, $3A, $80 
 	.db	$00 
-	.db	$00,$00	
+	.db	$00, $00	
 	
 	; Clear and Fill BG/Border
 	call	FILLSCENE
@@ -79,22 +80,19 @@ FILLSCENE:
 DRAWSCENE:
 
 	ld      de, 12288
-;	ld		de, 12328
 	ld		hl, SCENECHAR
 	ld      bc, 1000
-;	ld		bc, 960
 	ldir
 	ld      de, 13312
-;	ld		de, 13352
 	ld		hl, SCENECOLOR
 	ld      bc, 1000
-;   ld		bc, 960
 	ldir
 	ret
 
 ; Scene Character Data (Raw 1000 Bytes)
 SCENECHAR:
 
+; Start of 25th row character space
 	.db 143,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138
 ; Start of the REAL character space
 	.db 143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143,143
@@ -125,6 +123,7 @@ SCENECHAR:
 ; Scene Color Data (Raw 1000 Bytes)
 SCENECOLOR:
 
+; Start of 25th row color space
 	.db 38,100,101,102,103,104,105,106,107,108,109,110,111,112,113,114,115,116,117,118,119,120,121,122,123,124,125,126,127,128,129,130,131,132,133,134,135,136,137,138
 ; Start of REAL color space
 	.db 112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7,112,7
