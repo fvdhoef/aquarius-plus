@@ -169,7 +169,7 @@ static uint8_t io_read(size_t param, ushort addr) {
             (emustate.sysctrl_ay_disable ? (1 << 1) : 0));
 
         case 0xFC: printf("Cassette port input (%04x)\n", addr); return 0xFF;
-        case 0xFD: return (emustate.video_line >= 224) ? 0 : 1;
+        case 0xFD: return (emustate.video_line >= 242) ? 0 : 1;
         case 0xFE: printf("Clear to send status (%04x)\n", addr); return 0xFF;
         case 0xFF: {
             // Keyboard matrix. Selected rows are passed in the upper 8 address lines.
