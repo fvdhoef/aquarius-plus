@@ -3,45 +3,112 @@
 ;-----------------------------------------------------------------------------
 
 ;-----------------------------------------------------------------------------
+; LOAD
+;-----------------------------------------------------------------------------
+ST_LOAD:
+    ; Get string parameter
+    call    get_string_parameter
+    call    path_get_filetype
+
+    ; Check for second parameter
+    call    get_arg
+    cp      ','
+    jr      nz, .start
+    call    get_next
+    cp      $AA             ; Token for '*'
+    jr      nz, .addr
+
+    ; Load into array
+.array:
+    ; Skip '*' token
+    inc     hl
+
+    ; Get pointer to array variable
+    ld      a, 1
+    ld      (SUBFLG), a     ; Set array flag
+    call    PTRGET          ; Get array (out: BC = pointer to number of dimensions, DE = next array entry)
+    ld      (SUBFLG), a     ; Clear array flag
+    jp      nz, FCERR       ; FC Error if array not found
+    call    CHKNUM          ; TM error if not numeric
+
+    ; Get start address and length of array
+    push    hl              ; Push BASIC text pointer
+    ld      h, b
+    ld      l, c            ; HL = address
+    ld      c, (hl)
+    ld      b, 0            ; BC = index
+    add     hl, bc
+    add     hl, bc
+    inc     hl              ; HL = array data
+    ld      (BINSTART), hl
+    dec     de
+    dec     de              ; Subtract array header to get data length
+    dec     de
+    ld      (BINLEN), de
+    ; ld      a, 1<<DF_ARRAY
+    ; ld      (DOSFLAGS), a   ; Set 'loading to array' flag
+    pop     hl              ; Pop text pointer
+    jr      .start
+
+    ; Load to address
+.addr:
+    call    FRMNUM          ; Get number
+    call    FRCINT          ; Convert to 16 bit integer
+    ld      (BINSTART), de
+    ; ld      a, 1<<DF_ADDR
+    ; ld      (DOSFLAGS), a   ; Load address specified
+
+.start:
+    push    hl              ; Push BASIC text pointer
+
+    ; Close any open files
+    call    esp_close_all
+
+    ; Issue ESP command
+    ld      a, ESPCMD_OPEN
+    call    esp_cmd
+    ld      a, FO_RDONLY
+    out     (IO_ESPDATA), a
+    call    esp_send_pathbuf
+    call    esp_get_result
+
+    ld      de, 1               ; 1 byte to read
+    ld      hl, FILETYPE
+    call    esp_read_bytes      ; Read 1st byte from file into FILETYPE
+
+    ld      de, 0
+    call    esp_seek
+
+    ; ld      hl, PATHBUF
+    ; call    STROUT
+
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
+; SAVE
+;-----------------------------------------------------------------------------
+ST_SAVE:
+    ret
+
+;-----------------------------------------------------------------------------
 ; DEL - Delete file/directory
 ;-----------------------------------------------------------------------------
 ST_DEL:
-    call    FRMEVL              ; Evaluate expression
-    push    hl                  ; Push BASIC text pointer
+    ; Get string parameter
+    call    get_string_parameter
 
-    ; Get string argument (HL = string text, A = string length)
-    call    CHKSTR              ; Type mismatch error if not string
-    call    LEN1                ; Get string and its length
-    inc     hl
-    inc     hl                  ; Skip to string text pointer
-    ld      b, (hl)
-    inc     hl
-    ld      h, (hl)             ; HL = string text
-    ld      l, b
+    ; Save BASIC text pointer
+    push    hl
 
     ; Issue ESP command
-    push    a
-    ld      a, ESP_UNLINK
+    ld      a, ESPCMD_UNLINK
     call    esp_cmd
-    pop     a
-    or      a
-    jr      z, .zeroterm        ; Empty string
-    ld      b, a
-    ld      c, IO_ESPDATA
-    otir
-.zeroterm:
-    xor     a
-    out     (IO_ESPDATA), a
+    call    esp_send_pathbuf
+    call    esp_get_result
 
-    ; Get result
-    call    esp_get_data
-    or      a
-    jp      p, .done
-    pop     hl              ; Restore BASIC text pointer
-    jp      esp_error
- 
-.done:
-    pop     hl                  ; Restore BASIC text pointer
+    ; Restore BASIC text pointer
+    pop     hl              
     ret
 
 ;-----------------------------------------------------------------------------
@@ -51,7 +118,8 @@ ST_DEL:
 ; With argument -> Change current directory
 ;-----------------------------------------------------------------------------
 ST_CD:
-    push    hl                  ; Push BASIC text pointer
+    ; Push BASIC text pointer
+    push    hl
 
     ; Argument given?
     or      a
@@ -59,15 +127,11 @@ ST_CD:
 
     ; -- No argument -> show current path ------------------------------------
 .show_path:
-    ld      a, ESP_GETCWD
+    ld      a, ESPCMD_GETCWD
     call    esp_cmd
+    call    esp_get_result
 
-    ; Get result
-    call    esp_get_data
-    or      a
-    jp      p, .print_cwd
-    pop     hl                  ; Restore BASIC text pointer
-    jp      esp_error
+    ; Print current working directory
 .print_cwd:
     call    esp_get_data
     or      a
@@ -78,45 +142,27 @@ ST_CD:
     call    CRDO
 
 .done:
-    pop     hl                  ; Restore BASIC text pointer
+    ; Restore BASIC text pointer
+    pop     hl
     ret
 
     ; -- Argument given -> change directory ----------------------------------
 .change_dir:
-    pop     hl                  ; Pop BASIC text pointer
-    call    FRMEVL              ; Evaluate expression
-    push    hl                  ; Push BASIC text pointer
+    ; Restore BASIC text pointer
+    pop     hl
 
-    ; Get string argument (HL = string text, A = string length)
-    call    CHKSTR              ; Type mismatch error if not string
-    call    LEN1                ; Get string and its length
-    inc     hl
-    inc     hl                  ; Skip to string text pointer
-    ld      b, (hl)
-    inc     hl
-    ld      h, (hl)             ; HL = string text
-    ld      l, b
+    ; Get string parameter
+    call    get_string_parameter
+
+    ; Save BASIC text pointer
+    push    hl
 
     ; Issue ESP command
-    push    a
-    ld      a, ESP_CHDIR
+    ld      a, ESPCMD_CHDIR
     call    esp_cmd
-    pop     a
-    or      a
-    jr      z, .zeroterm        ; Empty string
-    ld      b, a
-    ld      c, IO_ESPDATA
-    otir
-.zeroterm:
-    xor     a
-    out     (IO_ESPDATA), a
-
-    ; Get result
-    call    esp_get_data
-    or      a
-    jp      p, .done
-    pop     hl              ; Restore BASIC text pointer
-    jp      esp_error
+    call    esp_send_pathbuf
+    call    esp_get_result
+    jr      .done
 
 ;-----------------------------------------------------------------------------
 ; DIR - Directory listing
@@ -125,7 +171,6 @@ ST_CD:
 ; With argument -> List given path
 ;-----------------------------------------------------------------------------
 ST_DIR:
-    .dd:   equ FILNAM+0
     .tmp0: equ FILNAM+1
     .tmp1: equ FILNAM+2
     .tmp2: equ FILNAM+3
@@ -138,55 +183,34 @@ ST_DIR:
     or      a
     jr      nz, .witharg     ; Yes
 
-    ; Issue ESP command
-    ld      a, ESP_OPENDIR
-    call    esp_cmd
-    jr      .zeroterm
+    xor     a
+    ld      (PATHLEN), a
+    ld      (PATHBUF), a
+    jr      .esp_command
 
 .witharg:
     pop     hl                  ; Pop BASIC text pointer
-    call    FRMEVL              ; Evaluate expression
-    push    hl                  ; Push BASIC text pointer
+    call    get_string_parameter
+    push    hl
 
-    ; Get string argument (HL = string text, A = string length)
-    call    CHKSTR              ; Type mismatch error if not string
-    call    LEN1                ; Get string and its length
-    inc     hl
-    inc     hl                  ; Skip to string text pointer
-    ld      b, (hl)
-    inc     hl
-    ld      h, (hl)             ; HL = string text
-    ld      l, b
+.esp_command:
+    call    esp_close_all
 
     ; Issue ESP command
-    push    a
-    ld      a, ESP_OPENDIR
+    ld      a, ESPCMD_OPENDIR
     call    esp_cmd
-    pop     a
-    or      a
-    jr      z, .zeroterm        ; Empty string
-    ld      b, a
-    ld      c, IO_ESPDATA
-    otir
-.zeroterm:
-    xor     a
-    out     (IO_ESPDATA), a
-    call    esp_get_data
-    or      a
-    jp      p, .ok
-    pop     hl              ; Restore BASIC text pointer
-    jp      esp_error
-.ok:
-    ld      (.dd), a        ; Keep track of directory descriptor
+    call    esp_send_pathbuf
+    call    esp_get_result
 
+    ; Set initial number of lines per page
     ld      a, 22
-    ld      (CNTOFL), a     ; Set initial number of lines per page
+    ld      (CNTOFL), a
 
 .next_entry:
     ; Read entry
-    ld      a, ESP_READDIR
+    ld      a, ESPCMD_READDIR
     call    esp_cmd
-    ld      a, (.dd)
+    xor     a
     out     (IO_ESPDATA), a
     call    esp_get_data
 
@@ -378,9 +402,9 @@ ST_DIR:
 
 .done:
     ; Close directory
-    ld      a, ESP_CLOSEDIR
+    ld      a, ESPCMD_CLOSEDIR
     call    esp_cmd
-    ld      a, (.dd)
+    xor     a
     out     (IO_ESPDATA), a
     call    esp_get_data
     or      a
@@ -393,7 +417,6 @@ ST_DIR:
 ; esp_error
 ;-----------------------------------------------------------------------------
 esp_error:
-    push    hl
     neg
     dec     a
     cp      -ERR_NO_DISK
@@ -412,10 +435,11 @@ esp_error:
     inc     hl
     ld      h, (hl)
     ld      l, a
-    call    STROUT
 
-    pop     hl
-    jp      CRDO
+    ; Print error message
+    ld      a,'?'
+    OUTCHR
+    jp      ERRFN1
 
 .error_msgs:
     dw .msg_err_not_found     ; -1: File / directory not found
@@ -593,3 +617,229 @@ init_basic_program:
     jr      .next_line
 .init_done:
     ret
+
+;-----------------------------------------------------------------------------
+; Get string parameter and store it in PATHLEN/PATHBUF
+;-----------------------------------------------------------------------------
+get_string_parameter:
+    ; Evaluate expression
+    call    FRMEVL
+    
+    ; Save BASIC text pointer
+    push    hl
+
+    ; Get string length (this will check for string type)    
+    call    LEN1
+
+    ; Save length
+    ld      (PATHLEN), a
+
+    ; Get string pointer into HL
+    inc     hl
+    inc     hl
+    ld      b, (hl)
+    inc     hl
+    ld      h, (hl)
+    ld      l, b
+
+    ; Copy string to PATHBUF
+    ld      de, PATHBUF
+    ld      b, 0
+    ld      c, a
+    or      a
+    jr      z, .copy_done
+    ldir
+.copy_done:
+
+    ; Zero-terminate string
+    xor     a
+    ld      (de), a
+
+    ; Restore BASIC text pointer
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Send PATHBUF including zero termination to ESPDATA
+;-----------------------------------------------------------------------------
+esp_send_pathbuf:
+    ld      a, (PATHLEN)
+    inc     a               ; Include zero termination
+    ld      b, a
+    ld      hl, PATHBUF
+    ld      c, IO_ESPDATA
+    otir
+    ret
+
+;-----------------------------------------------------------------------------
+; Get first result byte, and jump to error handler if it was an error
+;-----------------------------------------------------------------------------
+esp_get_result:
+    call    esp_get_data
+    or      a
+    jp      m, esp_error
+    ret
+
+;-----------------------------------------------------------------------------
+; Close any open file/directory descriptor
+;-----------------------------------------------------------------------------
+esp_close_all:
+    ld      a, ESPCMD_CLOSEALL
+    call    esp_cmd
+    jp      esp_get_result
+
+;-----------------------------------------------------------------------------
+; Read bytes
+; Input:  HL: destination address
+;         DE: number of bytes to read
+; Output: HL: next address (start address if no bytes read)
+;         DE: number of bytes actually read
+;-----------------------------------------------------------------------------
+esp_read_bytes:
+    ld      a, ESPCMD_READ
+    call    esp_cmd
+
+    ; Send file descriptor
+    xor     a
+    out     (IO_ESPDATA), a
+
+    ; Send read size
+    ld      a, e
+    out     (IO_ESPDATA), a
+    ld      a, d
+    out     (IO_ESPDATA), a
+
+    ; Get result
+    call    esp_get_result
+
+    ; Get number of bytes actual read
+    call    esp_get_data
+    ld      e, a
+    call    esp_get_data
+    ld      d, a
+
+    push    de
+
+.loop:
+    ; Done reading? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    call    esp_get_data
+    ld      (hl), a
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+    ret
+
+;-----------------------------------------------------------------------------
+; Seek
+; Input:  DE: offset
+;-----------------------------------------------------------------------------
+esp_seek:
+    ld      a, ESPCMD_SEEK
+    call    esp_cmd
+
+    ; Send file descriptor
+    xor     a
+    out     (IO_ESPDATA), a
+
+    ; Send offset
+    ld      a, e
+    out     (IO_ESPDATA), a
+    ld      a, d
+    out     (IO_ESPDATA), a
+    xor     a
+    out     (IO_ESPDATA), a
+    out     (IO_ESPDATA), a
+
+    ; Get result
+    call    esp_get_result
+    ret
+
+;-----------------------------------------------------------------------------
+; Get filetype based on extension of file in PATHBUF
+;-----------------------------------------------------------------------------
+path_get_filetype:
+    ld      a, (PATHLEN)
+    cp      a, 5
+    jr      nc, .ok
+.unknown:
+    xor     a
+    ret
+
+.ok:
+    ; Pointer to extension
+    sub     a, 3
+    ld      h, PATHBUF >> 8
+    ld      l, a
+
+    ; Check for dot
+    ld      a, (hl)
+    cp      '.'
+    jr      nz, .unknown
+    inc     hl
+
+    ; Search for extension in list
+    ld      de, .known_ext
+    jr      .search
+.skip:
+    or      a
+    jr      z, .next
+    ld      a, (de)
+    inc     de
+    jr      .skip
+.next:
+    inc     de
+.search:
+    ld      a, (de)
+    or      a
+    jr      z, .unknown     ; End of extensions list
+    push    hl
+    ex      de, hl
+    call    .cmp
+    ex      de, hl
+    pop     hl
+    jr      nz, .skip       ; No match, check next entry
+
+    ; Get file type from entry
+    ld      a, (de)
+    ret
+
+.cmp:
+    ld      a, (de)         ; Get char from string 2
+    call    to_upper
+    inc     de
+    cp      (hl)            ; Compare to char in string 1
+    inc     hl
+    ret     nz              ; Return NZ if not equal
+    or      a
+    jr      nz, .cmp        ; Loop until end of strings
+    ret                     ; Return Z
+
+.known_ext:
+    db "TXT", 0, 1
+    db "BIN", 0, 2
+    db "BAS", 0, 3
+    db "CAQ", 0, 4
+    db 0
+
+;-----------------------------------------------------------------------------
+; Get next character, skipping spaces
+;  in: HL = text pointer
+; out: NZ, A = next non-space char, HL = address of char in text
+;      Z,  A = 0, HL = end of text
+;-----------------------------------------------------------------------------
+get_next:                   ; Starting at next location
+    inc     hl
+get_arg:                    ; Starting at current location
+    ld      a, (hl)
+    or      a
+    ret     z               ; Return Z if NULL
+    cp      ' '
+    ret     nz              ; Return NZ if not SPACE
+    jr      get_next

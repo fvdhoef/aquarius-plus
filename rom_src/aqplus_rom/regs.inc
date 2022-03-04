@@ -107,6 +107,21 @@ SAVSTK:     equ $38F9   ; [M80] NEWSTT SAVES STACK HERE BEFORE SO THAT ERROR REV
 BASTXT:     equ $3901   ; Start of Basic Program
 
 ;-----------------------------------------------------------------------------
+; Variables
+;-----------------------------------------------------------------------------
+BASIC_RAM_END: equ $BEFF    ; End of BASIC RAM, $BF00-$BFFF is reserved for our extensions
+
+PATHLEN:    equ $BF00   ; Length byte
+PATHBUF:    equ $BF01   ; Path buffer
+
+PathName:   equ $BFC8   ; (37 chars) file path eg. "/root/subdir1/subdir2",0
+FileName:   equ $BFED   ; USB file name 1-11 chars + '.', NULL
+FILETYPE:   equ $BFFA   ; file type BASIC/array/binary/etc.
+BINSTART:   equ $BFFB   ; binary file load/save address
+BINLEN:     equ $BFFD   ; 16-bit binary file length
+DOSFLAGS:   equ $BFFF
+
+;-----------------------------------------------------------------------------
 ; System ROM functions
 ;-----------------------------------------------------------------------------
 INITFF:     equ $0153   ; Initialize I/O Port 255
@@ -205,23 +220,23 @@ endm
 ;-----------------------------------------------------------------------------
 ; ESP32 commands
 ;-----------------------------------------------------------------------------
-ESP_RESET:      equ $01     ; Reset ESP
-ESP_OPEN:       equ $10     ; Open / create file
-ESP_CLOSE:      equ $11     ; Close open file
-ESP_READ:       equ $12     ; Read from file
-ESP_WRITE:      equ $13     ; Write to file
-ESP_SEEK:       equ $14     ; Move read/write pointer
-ESP_TELL:       equ $15     ; Get current read/write
-ESP_OPENDIR:    equ $16     ; Open directory
-ESP_CLOSEDIR:   equ $17     ; Close open directory
-ESP_READDIR:    equ $18     ; Read from directory
-ESP_UNLINK:     equ $19     ; Remove file or directory
-ESP_RENAME:     equ $1A     ; Rename / move file or directory
-ESP_MKDIR:      equ $1B     ; Create directory
-ESP_CHDIR:      equ $1C     ; Change directory
-ESP_STAT:       equ $1D     ; Get file status
-ESP_GETCWD:     equ $1E     ; Get current working directory
-ESP_CLOSEALL:   equ $1F     ; Close any open file/directory descriptor
+ESPCMD_RESET:      equ $01     ; Reset ESP
+ESPCMD_OPEN:       equ $10     ; Open / create file
+ESPCMD_CLOSE:      equ $11     ; Close open file
+ESPCMD_READ:       equ $12     ; Read from file
+ESPCMD_WRITE:      equ $13     ; Write to file
+ESPCMD_SEEK:       equ $14     ; Move read/write pointer
+ESPCMD_TELL:       equ $15     ; Get current read/write
+ESPCMD_OPENDIR:    equ $16     ; Open directory
+ESPCMD_CLOSEDIR:   equ $17     ; Close open directory
+ESPCMD_READDIR:    equ $18     ; Read from directory
+ESPCMD_UNLINK:     equ $19     ; Remove file or directory
+ESPCMD_RENAME:     equ $1A     ; Rename / move file or directory
+ESPCMD_MKDIR:      equ $1B     ; Create directory
+ESPCMD_CHDIR:      equ $1C     ; Change directory
+ESPCMD_STAT:       equ $1D     ; Get file status
+ESPCMD_GETCWD:     equ $1E     ; Get current working directory
+ESPCMD_CLOSEALL:   equ $1F     ; Close any open file/directory descriptor
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories

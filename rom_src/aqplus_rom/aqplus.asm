@@ -35,26 +35,6 @@
 ; JOY()  - Read joystick
 ; HEX$() - Convert number to hexadecimal string
 
-;----------------------------------------------------------------------------
-;                         BASIC Error Codes
-;----------------------------------------------------------------------------
-; code is offset to error name (2 characters)
-;
-;name        code            description
-FC_ERR:   equ $08           ; Function Call error
-
-PathSize: equ 37
-
-PathName: equ $BFC8         ; (37 chars) file path eg. "/root/subdir1/subdir2",0
-FileName: equ $BFED         ; USB file name 1-11 chars + '.', NULL
-FILETYPE: equ $BFFA         ; file type BASIC/array/binary/etc.
-BINSTART: equ $BFFB         ; binary file load/save address
-BINLEN:   equ $BFFD         ; 16-bit binary file length
-DOSFLAGS: equ $BFFF
-RAMEND:   equ $C000         ; we are in ROM, 32k expansion RAM available
-
-SysVars:  equ PathName
-
 ;=================================================================
 ;                     AquBASIC BOOT ROM
 ;=================================================================
@@ -88,7 +68,7 @@ esp_init:
     ld      a, 3
     out     (IO_ESPCTRL), a
 
-    ld      a, ESP_RESET
+    ld      a, ESPCMD_RESET
     out     (IO_ESPDATA), a
 
     ret
@@ -102,9 +82,6 @@ _common_init:
 
     ; Initialize character RAM
     call    init_charram
- 
-    ; Initialize USB
-    call    usb_init
 
     ; Initialize ESP
     call    esp_init
@@ -166,7 +143,7 @@ _coldboot:
     cp      $C0                 ; 32k expansion
     jp      c, OMERR            ; OM error if expansion RAM missing
     dec     hl                  ; Last good RAM addresss
-    ld      hl, SysVars - 1     ; Top of public RAM
+    ld      hl, BASIC_RAM_END   ; Top of public RAM
 
     ; Set memory size
     ld      (MEMSIZ), hl        ; MEMSIZ, Contains the highest RAM location
@@ -193,11 +170,6 @@ _coldboot:
 .str_basic:
     db $0D, $0A
     db "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
-
-;-----------------------------------------------------------------------------
-; USB Disk Driver
-;-----------------------------------------------------------------------------
-    include "ch376.asm"
 
 ;-----------------------------------------------------------------------------
 ; Hook handler
@@ -469,8 +441,7 @@ exec_next_statement:
 ;     call    STROUT
 ;     pop     hl                 ; Restore BASIC text pointer
 ; .error:
-;     ld      e, FC_ERR          ; Function code error
-;     jp      ERROR              ; Return to BASIC
+;     jp      FCERR              ; Return to BASIC
 
 ; .extend:
 ;     dec     hl
@@ -789,7 +760,6 @@ ST_CALL:
 ; DOS commands
 ;-----------------------------------------------------------------------------
     include "espdos.asm"
-    include "dos.asm"
 
 ;-----------------------------------------------------------------------------
 ; Convert lower-case to upper-case
@@ -823,6 +793,38 @@ to_upper:
 ;     or      a
 ;     jr      nz, .append
 ;     ret
+
+
+;-----------------------------------------------------------------------------
+; Print value in A as hex value
+;-----------------------------------------------------------------------------
+printhex:
+    push    a
+
+    ; Print upper-nibble
+    srl     a
+    srl     a
+    srl     a
+    srl     a
+    call    .print
+
+    pop     a
+    push    a
+
+    ; Print lower-nibble
+    and     $0F
+    call    .print
+
+    pop     a
+    ret
+
+.print:
+    add     '0'
+    cp      ':'
+    jr      c, .print2
+    add     7
+.print2:
+    jp      TTYCHR
 
 ;-----------------------------------------------------------------------------
 ; Fill with $FF to end of ROM

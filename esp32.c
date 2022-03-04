@@ -2,23 +2,23 @@
 #include "direnum.h"
 
 enum {
-    ESP_RESET    = 0x01, // Reset ESP
-    ESP_OPEN     = 0x10, // Open / create file
-    ESP_CLOSE    = 0x11, // Close open file
-    ESP_READ     = 0x12, // Read from file
-    ESP_WRITE    = 0x13, // Write to file
-    ESP_SEEK     = 0x14, // Move read/write pointer
-    ESP_TELL     = 0x15, // Get current read/write
-    ESP_OPENDIR  = 0x16, // Open directory
-    ESP_CLOSEDIR = 0x17, // Close open directory
-    ESP_READDIR  = 0x18, // Read from directory
-    ESP_UNLINK   = 0x19, // Remove file or directory
-    ESP_RENAME   = 0x1A, // Rename / move file or directory
-    ESP_MKDIR    = 0x1B, // Create directory
-    ESP_CHDIR    = 0x1C, // Change directory
-    ESP_STAT     = 0x1D, // Get file status
-    ESP_GETCWD   = 0x1E, // Get current working directory
-    ESP_CLOSEALL = 0x1F, // Close any open file/directory descriptor
+    ESPCMD_RESET    = 0x01, // Reset ESP
+    ESPCMD_OPEN     = 0x10, // Open / create file
+    ESPCMD_CLOSE    = 0x11, // Close open file
+    ESPCMD_READ     = 0x12, // Read from file
+    ESPCMD_WRITE    = 0x13, // Write to file
+    ESPCMD_SEEK     = 0x14, // Move read/write pointer
+    ESPCMD_TELL     = 0x15, // Get current read/write
+    ESPCMD_OPENDIR  = 0x16, // Open directory
+    ESPCMD_CLOSEDIR = 0x17, // Close open directory
+    ESPCMD_READDIR  = 0x18, // Read from directory
+    ESPCMD_UNLINK   = 0x19, // Remove file or directory
+    ESPCMD_RENAME   = 0x1A, // Rename / move file or directory
+    ESPCMD_MKDIR    = 0x1B, // Create directory
+    ESPCMD_CHDIR    = 0x1C, // Change directory
+    ESPCMD_STAT     = 0x1D, // Get file status
+    ESPCMD_GETCWD   = 0x1E, // Get current working directory
+    ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
 };
 
 enum {
@@ -662,7 +662,7 @@ void esp32_write_data(uint8_t data) {
         uint8_t cmd = state.rxbuf[0];
 
         switch (cmd) {
-            case ESP_RESET: {
+            case ESPCMD_RESET: {
                 // Close any open descriptors
                 close_all_descriptors();
                 free(state.current_path);
@@ -670,28 +670,28 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESP_OPEN: {
+            case ESPCMD_OPEN: {
                 if (data == 0 && state.rxbuf_idx >= 3) {
                     esp_open(state.rxbuf[1], (const char *)&state.rxbuf[2]);
                     state.rxbuf_idx = 0;
                 }
                 break;
             }
-            case ESP_CLOSE: {
+            case ESPCMD_CLOSE: {
                 if (state.rxbuf_idx == 2) {
                     esp_close(state.rxbuf[1]);
                     state.rxbuf_idx = 0;
                 }
                 break;
             }
-            case ESP_READ: {
+            case ESPCMD_READ: {
                 if (state.rxbuf_idx == 4) {
                     esp_read(state.rxbuf[1], state.rxbuf[2] | (state.rxbuf[3] << 8));
                     state.rxbuf_idx = 0;
                 }
                 break;
             }
-            case ESP_WRITE: {
+            case ESPCMD_WRITE: {
                 if (state.rxbuf_idx >= 4) {
                     unsigned len = state.rxbuf[2] | (state.rxbuf[3] << 8);
                     if (state.rxbuf_idx == 4 + len) {
@@ -701,7 +701,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_SEEK: {
+            case ESPCMD_SEEK: {
                 if (state.rxbuf_idx == 6) {
                     esp_seek(
                         state.rxbuf[1],
@@ -713,7 +713,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_TELL: {
+            case ESPCMD_TELL: {
                 if (state.rxbuf_idx == 2) {
                     esp_tell(state.rxbuf[1]);
                     state.rxbuf_idx = 0;
@@ -721,7 +721,7 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESP_OPENDIR: {
+            case ESPCMD_OPENDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     esp_opendir((const char *)&state.rxbuf[1]);
@@ -730,7 +730,7 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESP_CLOSEDIR: {
+            case ESPCMD_CLOSEDIR: {
                 if (state.rxbuf_idx == 2) {
                     esp_closedir(state.rxbuf[1]);
                     state.rxbuf_idx = 0;
@@ -738,7 +738,7 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESP_READDIR: {
+            case ESPCMD_READDIR: {
                 if (state.rxbuf_idx == 2) {
                     esp_readdir(state.rxbuf[1]);
                     state.rxbuf_idx = 0;
@@ -746,7 +746,7 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESP_UNLINK: {
+            case ESPCMD_UNLINK: {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     esp_unlink((const char *)&state.rxbuf[1]);
@@ -754,7 +754,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_RENAME: {
+            case ESPCMD_RENAME: {
                 if (data == 0) {
                     if (state.new_path == NULL) {
                         state.new_path = (const char *)&state.rxbuf[state.rxbuf_idx];
@@ -766,7 +766,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_MKDIR: {
+            case ESPCMD_MKDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     esp_mkdir((const char *)&state.rxbuf[1]);
@@ -774,7 +774,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_CHDIR: {
+            case ESPCMD_CHDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     esp_chdir((const char *)&state.rxbuf[1]);
@@ -782,7 +782,7 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_STAT: {
+            case ESPCMD_STAT: {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     esp_stat((const char *)&state.rxbuf[1]);
@@ -790,12 +790,12 @@ void esp32_write_data(uint8_t data) {
                 }
                 break;
             }
-            case ESP_GETCWD: {
+            case ESPCMD_GETCWD: {
                 esp_getcwd();
                 state.rxbuf_idx = 0;
                 break;
             }
-            case ESP_CLOSEALL: {
+            case ESPCMD_CLOSEALL: {
                 esp_closeall();
                 state.rxbuf_idx = 0;
                 break;
