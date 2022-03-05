@@ -10,34 +10,29 @@
 ; - Excellent Aquarius S2 ROM disassembly by Curtis F Kaylor:
 ; https://github.com/RevCurtisP/Aquarius/blob/main/disassembly/aquarius-rom.lst
 ;
-;-----------------------------------------------------------------------------
-    include "regs.inc"
-
-;-----------------------------------------------------------------------------
-; Extra BASIC commands
-;-----------------------------------------------------------------------------
+; Extra BASIC commands:
+; EDIT   - ** Not supported **
 ; CLS    - Clear screen
 ; LOCATE - Position on screen
-; SCR    - Scroll screen
 ; OUT    - Output data to I/O port
 ; PSG    - Program PSG register, value
+; DEBUG  - ** Not supported **
 ; CALL   - Call machine code subroutine
 ; LOAD   - Load file from USB disk
 ; SAVE   - Save file to USB disk
 ; DIR    - Display USB disk directory with wildcard
-; CD     - Change directory
+; CAT    - ** Not supported **
 ; DEL    - Delete file
-
-;-----------------------------------------------------------------------------
-; Extra BASIC functions
-;-----------------------------------------------------------------------------
+; CD     - Change directory
+;
+; Extra BASIC functions:
 ; IN()   - Get data from I/O port
 ; JOY()  - Read joystick
 ; HEX$() - Convert number to hexadecimal string
+;-----------------------------------------------------------------------------
 
-;=================================================================
-;                     AquBASIC BOOT ROM
-;=================================================================
+    include "regs.inc"
+
     org     $2000
     jp      _reset          ; Called from main ROM at reset vector
     jp      _common_init    ; Called from main ROM after setting up temp stack
@@ -63,16 +58,6 @@ _reset:
     ; Back to system ROM init
     jp      JMPINI
 
-
-esp_init:
-    ld      a, 3
-    out     (IO_ESPCTRL), a
-
-    ld      a, ESPCMD_RESET
-    out     (IO_ESPDATA), a
-
-    ret
-
 ;-----------------------------------------------------------------------------
 ; Common initialisation
 ;-----------------------------------------------------------------------------
@@ -84,7 +69,9 @@ _common_init:
     call    init_charram
 
     ; Initialize ESP
-    call    esp_init
+    ld      a, ESPCMD_RESET
+    call    esp_cmd
+
     ret
 
 ;-----------------------------------------------------------------------------

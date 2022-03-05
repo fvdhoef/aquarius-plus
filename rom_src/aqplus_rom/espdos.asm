@@ -2,21 +2,46 @@
 ; espdos.asm
 ;-----------------------------------------------------------------------------
 
+FILETYPE_BAS: equ 1
+FILETYPE_CAQ: equ 2
+
 ;-----------------------------------------------------------------------------
 ; LOAD
 ;-----------------------------------------------------------------------------
 ST_LOAD:
+    ; Close any open files
+    call    esp_close_all
+
     ; Get string parameter
     call    get_string_parameter
+
+    ; Determine file type based on file extension
+    push    hl
     call    path_get_filetype
+    ld      (FILETYPE), a
+    pop     hl
 
     ; Check for second parameter
     call    get_arg
     cp      ','
-    jr      nz, .start
+    jr      nz, .noarg
     call    get_next
-    cp      $AA             ; Token for '*'
-    jr      nz, .addr
+    cp      $AA                 ; Token for '*'
+    jr      z, .array
+    jr      .addr
+
+    ; No argument
+.noarg:
+    ; Only .BAS and .CAQ files can be loaded without argument
+    ld      a, (FILETYPE)
+    cp      FILETYPE_BAS
+    jp      z, load_basic_program
+    cp      FILETYPE_CAQ
+    jp      z, load_basic_program
+
+    ; Other filetypes need operand
+    jp      MOERR
+
 
     ; Load into array
 .array:
@@ -25,41 +50,41 @@ ST_LOAD:
 
     ; Get pointer to array variable
     ld      a, 1
-    ld      (SUBFLG), a     ; Set array flag
-    call    PTRGET          ; Get array (out: BC = pointer to number of dimensions, DE = next array entry)
-    ld      (SUBFLG), a     ; Clear array flag
-    jp      nz, FCERR       ; FC Error if array not found
-    call    CHKNUM          ; TM error if not numeric
+    ld      (SUBFLG), a         ; Set array flag
+    call    PTRGET              ; Get array (out: BC = pointer to number of dimensions, DE = next array entry)
+    ld      (SUBFLG), a         ; Clear array flag
+    jp      nz, FCERR           ; FC Error if array not found
+    call    CHKNUM              ; TM error if not numeric
 
     ; Get start address and length of array
-    push    hl              ; Push BASIC text pointer
+    push    hl                  ; Push BASIC text pointer
     ld      h, b
-    ld      l, c            ; HL = address
+    ld      l, c                ; HL = address
     ld      c, (hl)
-    ld      b, 0            ; BC = index
+    ld      b, 0                ; BC = index
     add     hl, bc
     add     hl, bc
-    inc     hl              ; HL = array data
+    inc     hl                  ; HL = array data
     ld      (BINSTART), hl
     dec     de
-    dec     de              ; Subtract array header to get data length
+    dec     de                  ; Subtract array header to get data length
     dec     de
     ld      (BINLEN), de
     ; ld      a, 1<<DF_ARRAY
-    ; ld      (DOSFLAGS), a   ; Set 'loading to array' flag
-    pop     hl              ; Pop text pointer
+    ; ld      (DOSFLAGS), a     ; Set 'loading to array' flag
+    pop     hl                  ; Pop text pointer
     jr      .start
 
     ; Load to address
 .addr:
-    call    FRMNUM          ; Get number
-    call    FRCINT          ; Convert to 16 bit integer
+    call    FRMNUM              ; Get number
+    call    FRCINT              ; Convert to 16 bit integer
     ld      (BINSTART), de
     ; ld      a, 1<<DF_ADDR
-    ; ld      (DOSFLAGS), a   ; Load address specified
+    ; ld      (DOSFLAGS), a     ; Load address specified
 
 .start:
-    push    hl              ; Push BASIC text pointer
+    push    hl                  ; Push BASIC text pointer
 
     ; Close any open files
     call    esp_close_all
@@ -72,12 +97,56 @@ ST_LOAD:
     call    esp_send_pathbuf
     call    esp_get_result
 
-    ld      de, 1               ; 1 byte to read
-    ld      hl, FILETYPE
-    call    esp_read_bytes      ; Read 1st byte from file into FILETYPE
 
-    ld      de, 0
-    call    esp_seek
+;-----------------------------------------------------------------------------
+; Load CAQ/BAS file in PATHBUF
+;-----------------------------------------------------------------------------
+load_basic_program:
+    push    hl
+
+    ; Load file into memory
+    call    esp_open
+    call    check_sync_bytes
+    ld      de, 6
+    ld      hl, TMPBUF
+    call    esp_read_bytes
+    call    check_sync_bytes
+    ld      hl, (TXTTAB)
+    ld      de, $FFFF
+    call    esp_read_bytes
+    call    esp_close_all
+
+    ; Back up to last line of BASIC program
+.loop:
+    dec     hl
+    xor     a
+    cp      (hl)
+    jr      z, .loop
+    inc     hl
+
+    ; Forward past 3 zeros = end of BASIC program
+    inc     hl
+    inc     hl
+    inc     hl
+
+    ; Set end of BASIC program
+    ld      (VARTAB), hl
+
+    ; Clear variables etc. and update line addresses
+    call    init_basic_program
+
+    pop     hl
+    ret
+
+
+
+
+    ; ld      de, 1               ; 1 byte to read
+    ; ld      hl, FILETYPE
+    ; call    esp_read_bytes      ; Read 1st byte from file into FILETYPE
+
+    ; ld      de, 0
+    ; call    esp_seek
 
     ; ld      hl, PATHBUF
     ; call    STROUT
@@ -108,7 +177,7 @@ ST_DEL:
     call    esp_get_result
 
     ; Restore BASIC text pointer
-    pop     hl              
+    pop     hl
     ret
 
 ;-----------------------------------------------------------------------------
@@ -203,7 +272,7 @@ ST_DIR:
     call    esp_get_result
 
     ; Set initial number of lines per page
-    ld      a, 22
+    ld      a, 24
     ld      (CNTOFL), a
 
 .next_entry:
@@ -437,7 +506,7 @@ esp_error:
     ld      l, a
 
     ; Print error message
-    ld      a,'?'
+    ld      a, '?'
     OUTCHR
     jp      ERRFN1
 
@@ -459,10 +528,24 @@ esp_error:
 .msg_err_no_disk:       db "No disk",0
 
 ;-----------------------------------------------------------------------------
+; Bad file error
+;-----------------------------------------------------------------------------
+err_bad_file:
+    ld      hl, .msg_bad_file
+
+    ; Print error message
+    ld      a, '?'
+    OUTCHR
+    jp      ERRFN1
+
+.msg_bad_file:       db "Bad file",0
+
+
+;-----------------------------------------------------------------------------
 ; Issue command to ESP
 ;-----------------------------------------------------------------------------
 esp_cmd:
-    ; Start of command
+    ; Reset FIFOs and issue start of command
     push    a
     ld      a, $83
     out     (IO_ESPCTRL), a
@@ -584,7 +667,7 @@ init_basic_program:
     xor     a
     ld      l, a
     ld      h, a
-    ld      (OLDTXT), hl        
+    ld      (OLDTXT), hl
 
     ; Clear locator flag
     ld      (SUBFLG), a
@@ -624,11 +707,11 @@ init_basic_program:
 get_string_parameter:
     ; Evaluate expression
     call    FRMEVL
-    
+
     ; Save BASIC text pointer
     push    hl
 
-    ; Get string length (this will check for string type)    
+    ; Get string length (this will check for string type)
     call    LEN1
 
     ; Save length
@@ -686,6 +769,17 @@ esp_get_result:
 esp_close_all:
     ld      a, ESPCMD_CLOSEALL
     call    esp_cmd
+    jp      esp_get_result
+
+;-----------------------------------------------------------------------------
+; Open file in PATHBUF
+;-----------------------------------------------------------------------------
+esp_open:
+    ld      a, ESPCMD_OPEN
+    call    esp_cmd
+    ld      a, FO_RDONLY
+    out     (IO_ESPDATA), a
+    call    esp_send_pathbuf
     jp      esp_get_result
 
 ;-----------------------------------------------------------------------------
@@ -822,10 +916,8 @@ path_get_filetype:
     ret                     ; Return Z
 
 .known_ext:
-    db "TXT", 0, 1
-    db "BIN", 0, 2
-    db "BAS", 0, 3
-    db "CAQ", 0, 4
+    db "BAS", 0, FILETYPE_BAS
+    db "CAQ", 0, FILETYPE_CAQ
     db 0
 
 ;-----------------------------------------------------------------------------
@@ -843,3 +935,32 @@ get_arg:                    ; Starting at current location
     cp      ' '
     ret     nz              ; Return NZ if not SPACE
     jr      get_next
+
+;-----------------------------------------------------------------------------
+; Check for sync sequence (12x$FF, 1x$00)
+;-----------------------------------------------------------------------------
+check_sync_bytes:
+    ; Read 13 bytes into TMPBUF
+    ld      de, 13
+    ld      hl, TMPBUF
+    call    esp_read_bytes
+    ld      a, e
+    cp      13
+    jp      nz, err_bad_file
+
+    ; Check for 12x$FF
+    ld      c, 12
+    ld      hl, TMPBUF
+.loop:
+    ld      a, (hl)
+    cp      $FF
+    jp      nz, err_bad_file
+    inc     hl
+    dec     c
+    jr      nz, .loop
+
+    ; Check for $00
+    ld      a, (hl)
+    or      a
+    jp      nz, err_bad_file
+    ret

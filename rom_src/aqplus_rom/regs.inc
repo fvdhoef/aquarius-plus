@@ -113,13 +113,14 @@ BASIC_RAM_END: equ $BEFF    ; End of BASIC RAM, $BF00-$BFFF is reserved for our 
 
 PATHLEN:    equ $BF00   ; Length byte
 PATHBUF:    equ $BF01   ; Path buffer
-
-PathName:   equ $BFC8   ; (37 chars) file path eg. "/root/subdir1/subdir2",0
-FileName:   equ $BFED   ; USB file name 1-11 chars + '.', NULL
-FILETYPE:   equ $BFFA   ; file type BASIC/array/binary/etc.
+TMPBUF:     equ $BFEB   ; 16-byte temporary buffer
+FILETYPE:   equ $BFFA   ; File type BASIC/array/binary/etc.
 BINSTART:   equ $BFFB   ; binary file load/save address
 BINLEN:     equ $BFFD   ; 16-bit binary file length
 DOSFLAGS:   equ $BFFF
+
+; PathName:   equ $BFC8   ; (37 chars) file path eg. "/root/subdir1/subdir2",0
+; FileName:   equ $BFED   ; USB file name 1-11 chars + '.', NULL
 
 ;-----------------------------------------------------------------------------
 ; System ROM functions
