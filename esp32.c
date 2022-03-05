@@ -236,7 +236,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 
     printf("OPEN: flags: 0x%02X  '%s'\n", flags, full_path);
 
-    int _fd    = open(full_path, flags, 0664);
+    int _fd    = open(full_path, oflag, 0664);
     int err_no = errno;
     free(full_path);
 

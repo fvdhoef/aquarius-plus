@@ -7,6 +7,10 @@ FILETYPE_CAQ: equ 2
 
 ;-----------------------------------------------------------------------------
 ; LOAD
+;
+; LOAD "filename"        Load BASIC program
+; LOAD "filename",12345  Load file as raw binary to address 12345
+; LOAD "filename",*a     Load data into numeric array a
 ;-----------------------------------------------------------------------------
 ST_LOAD:
     ; Close any open files
@@ -27,10 +31,17 @@ ST_LOAD:
     call    FRMNUM                  ; Get number
     call    FRCINT                  ; Convert to 16 bit integer
     ld      (BINSTART), de
-    jp      load_bin
+    jp      load_binary
 
     ; Load into array
 .array:
+    call    get_array_argument
+    jp      load_caq_array
+
+;-----------------------------------------------------------------------------
+; Get array argument
+;-----------------------------------------------------------------------------
+get_array_argument:
     ; Skip '*' token
     inc     hl
 
@@ -57,110 +68,53 @@ ST_LOAD:
     dec     de
     ld      (BINLEN), de
     pop     hl                  ; Pop text pointer
-    jp      load_caq_array
 
-;-----------------------------------------------------------------------------
-; Load binary data in PATHBUF into BINSTART
-;-----------------------------------------------------------------------------
-load_bin:
-    push    hl
-
-    ; Load file into memory
-    call    esp_open
-    ld      hl, (BINSTART)
-    ld      de, $FFFF
-    call    esp_read_bytes
-    call    esp_close_all
-
-    pop     hl
-    ret
-
-;-----------------------------------------------------------------------------
-; Load CAQ array file in PATHBUF into BINSTART (BINLEN length)
-;-----------------------------------------------------------------------------
-load_caq_array:
-    push    hl
-
-    ; Open file
-    call    esp_open
-
-    ; Check CAQ header
-    call    check_sync_bytes    ; Sync bytes
-    ld      de, 6               ; Check that filename is '######'
-    ld      hl, TMPBUF
-    call    esp_read_bytes
-    ld      c, 6
-    ld      hl, TMPBUF
-.loop:
-    ld      a, (hl)
-    cp      '#'
-    jp      nz, err_bad_file
-    inc     hl
-    dec     c
-    jr      nz, .loop
-
-    ; Load data into array
-    ld      hl, (BINSTART)
-    ld      de, (BINLEN)
-    call    esp_read_bytes
-
-    ; Close file
-    call    esp_close_all
-
-    pop     hl
-    ret
-
-;-----------------------------------------------------------------------------
-; Load CAQ/BAS file in PATHBUF
-;-----------------------------------------------------------------------------
-load_basic_program:
-    push    hl
-
-    ; Open file
-    call    esp_open            
-
-    ; Check CAQ header
-    call    check_sync_bytes    ; Sync bytes
-    ld      de, 6               ; Skip filename
-    ld      hl, TMPBUF
-    call    esp_read_bytes
-    call    check_sync_bytes    ; Sync bytes
-    
-    ; Load actual program
-    ld      hl, (TXTTAB)
-    ld      de, $FFFF
-    call    esp_read_bytes
-
-    ; Close file
-    call    esp_close_all
-
-    ; Back up to last line of BASIC program
-.loop:
-    dec     hl
-    xor     a
-    cp      (hl)
-    jr      z, .loop
-    inc     hl
-
-    ; Skip past 3 zeros at end of BASIC program
-    inc     hl
-    inc     hl
-    inc     hl
-
-    ; Set end of BASIC program
-    ld      (VARTAB), hl
-
-    ; Initialize BASIC program
-    call    init_basic_program
-
-    pop     hl
     ret
 
 ;-----------------------------------------------------------------------------
 ; SAVE
+;
+; SAVE "filename"             Save BASIC program
+; SAVE "filename",addr,len    Save binary data
+; SAVE "filename",*a          Save numeric array a
 ;-----------------------------------------------------------------------------
 ST_SAVE:
-    ret
+    ; Close any open files
+    call    esp_close_all
+
+    ; Get string parameter with path
+    call    get_string_parameter
+
+    ; Check for second parameter
+    call    get_arg
+    cp      ','
+    jp      nz, save_basic_program
+    call    get_next
+    cp      $AA                     ; Token for '*'
+    jr      z, .array               ; Array parameter -> save array
+
+    ; Save binary data
+    
+    ; Get first parameter: address
+    call    FRMNUM                  ; Get number
+    call    FRCINT                  ; Convert to 16 bit integer
+    ld      (BINSTART), de
+
+    ; Expect comma
+    call    get_arg
+    cp      ','
+    jp      nz, MOERR
+
+    ; Get second parameter: length
+    call    FRMNUM                  ; Get number
+    call    FRCINT                  ; Convert to 16 bit integer
+    ld      (BINLEN), de
+    jp      save_binary
+
+    ; Save array
+.array:
+    call    get_array_argument
+    jp      save_caq_array
 
 ;-----------------------------------------------------------------------------
 ; DEL - Delete file/directory
@@ -204,7 +158,7 @@ ST_CD:
 
     ; Print current working directory
 .print_cwd:
-    call    esp_get_data
+    call    esp_get_byte
     or      a
     jr      z, .print_done
     call    TTYCHR
@@ -282,8 +236,8 @@ ST_DIR:
     ld      a, ESPCMD_READDIR
     call    esp_cmd
     xor     a
-    out     (IO_ESPDATA), a
-    call    esp_get_data
+    call    esp_send_byte
+    call    esp_get_byte
 
     cp      ERR_EOF
     jp      z, .done
@@ -294,9 +248,9 @@ ST_DIR:
 
 .ok2:
     ;-- Date -----------------------------------------------------------------
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp0), a
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp1), a
 
     ; Extract year
@@ -331,9 +285,9 @@ ST_DIR:
 
     ;-- Time -----------------------------------------------------------------
     ; Get time (hhhhhmmm mmmsssss)
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp0), a
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp1), a
 
     ; Hours
@@ -363,7 +317,7 @@ ST_DIR:
     call    out_number_2digits
 
     ;-- Attributes -----------------------------------------------------------
-    call    esp_get_data
+    call    esp_get_byte
     bit     0, a
     jr      z, .no_dir
 
@@ -372,10 +326,10 @@ ST_DIR:
     call    STROUT
 
     ; Skip length bytes
-    call    esp_get_data
-    call    esp_get_data
-    call    esp_get_data
-    call    esp_get_data
+    call    esp_get_byte
+    call    esp_get_byte
+    call    esp_get_byte
+    call    esp_get_byte
 
     jr      .get_filename
 
@@ -383,13 +337,13 @@ ST_DIR:
 .no_dir:
     ; aaaaaaaa bbbbbbbb cccccccc dddddddd
 
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp0), a
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp1), a
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp2), a
-    call    esp_get_data
+    call    esp_get_byte
     ld      (.tmp3), a
 
     ; Megabytes range?
@@ -459,7 +413,7 @@ ST_DIR:
     call    TTYCHR
 
 .filename:
-    call    esp_get_data
+    call    esp_get_byte
     or      a
     jr      z, .name_done
     call    TTYCHR
@@ -476,8 +430,8 @@ ST_DIR:
     ld      a, ESPCMD_CLOSEDIR
     call    esp_cmd
     xor     a
-    out     (IO_ESPDATA), a
-    call    esp_get_data
+    call    esp_send_byte
+    call    esp_get_byte
     or      a
     jp      m, esp_error
 
@@ -554,18 +508,32 @@ esp_cmd:
     pop     a
 
     ; Issue command
-    out     (IO_ESPDATA), a
-    ret
+    jp      esp_send_byte
 
 ;-----------------------------------------------------------------------------
 ; Wait for data from ESP
 ;-----------------------------------------------------------------------------
-esp_get_data:
+esp_get_byte:
 .wait:
     in      a, (IO_ESPCTRL)
     and     a, 1
     jr      z, .wait
     in      a, (IO_ESPDATA)
+    ret
+
+;-----------------------------------------------------------------------------
+; Write data to ESP
+;-----------------------------------------------------------------------------
+esp_send_byte:
+    push    a
+
+.wait:
+    in      a, (IO_ESPCTRL)
+    and     a, 2
+    jr      nz, .wait
+
+    pop     a
+    out     (IO_ESPDATA), a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -748,19 +716,18 @@ get_string_parameter:
 ; Send PATHBUF including zero termination to ESPDATA
 ;-----------------------------------------------------------------------------
 esp_send_pathbuf:
+    ld      hl, PATHBUF
+    ld      d, 0
     ld      a, (PATHLEN)
     inc     a               ; Include zero termination
-    ld      b, a
-    ld      hl, PATHBUF
-    ld      c, IO_ESPDATA
-    otir
-    ret
+    ld      e, a
+    jp      esp_send_bytes
 
 ;-----------------------------------------------------------------------------
 ; Get first result byte, and jump to error handler if it was an error
 ;-----------------------------------------------------------------------------
 esp_get_result:
-    call    esp_get_data
+    call    esp_get_byte
     or      a
     jp      m, esp_error
     ret
@@ -780,7 +747,18 @@ esp_open:
     ld      a, ESPCMD_OPEN
     call    esp_cmd
     ld      a, FO_RDONLY
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
+    call    esp_send_pathbuf
+    jp      esp_get_result
+
+;-----------------------------------------------------------------------------
+; Create file in PATHBUF
+;-----------------------------------------------------------------------------
+esp_create:
+    ld      a, ESPCMD_OPEN
+    call    esp_cmd
+    ld      a, FO_WRONLY | FO_CREATE | FO_TRUNC
+    call    esp_send_byte
     call    esp_send_pathbuf
     jp      esp_get_result
 
@@ -797,21 +775,21 @@ esp_read_bytes:
 
     ; Send file descriptor
     xor     a
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
 
     ; Send read size
     ld      a, e
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
     ld      a, d
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
 
     ; Get result
     call    esp_get_result
 
     ; Get number of bytes actual read
-    call    esp_get_data
+    call    esp_get_byte
     ld      e, a
-    call    esp_get_data
+    call    esp_get_byte
     ld      d, a
 
     push    de
@@ -822,7 +800,7 @@ esp_read_bytes:
     or      a, e
     jr      z, .done
 
-    call    esp_get_data
+    call    esp_get_byte
     ld      (hl), a
     inc     hl
     dec     de
@@ -830,6 +808,67 @@ esp_read_bytes:
 
 .done:
     pop     de
+    ret
+
+;-----------------------------------------------------------------------------
+; Send bytes
+; Input:  HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;-----------------------------------------------------------------------------
+esp_send_bytes:
+    push    de
+
+.loop:
+    ; Done sending? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    ld      a, (hl)
+    call    esp_send_byte
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+    ret
+
+;-----------------------------------------------------------------------------
+; Write bytes
+; Input:  HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;-----------------------------------------------------------------------------
+esp_write_bytes:
+    ld      a, ESPCMD_WRITE
+    call    esp_cmd
+
+    ; Send file descriptor
+    xor     a
+    call    esp_send_byte
+
+    ; Send write size
+    ld      a, e
+    call    esp_send_byte
+    ld      a, d
+    call    esp_send_byte
+
+    ; Send bytes
+    call    esp_send_bytes
+
+    ; Get result
+    call    esp_get_result
+
+    ; Get number of bytes actual written
+    call    esp_get_byte
+    ld      e, a
+    call    esp_get_byte
+    ld      d, a
+
     ret
 
 ;-----------------------------------------------------------------------------
@@ -842,16 +881,16 @@ esp_seek:
 
     ; Send file descriptor
     xor     a
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
 
     ; Send offset
     ld      a, e
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
     ld      a, d
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
     xor     a
-    out     (IO_ESPDATA), a
-    out     (IO_ESPDATA), a
+    call    esp_send_byte
+    call    esp_send_byte
 
     ; Get result
     call    esp_get_result
@@ -965,4 +1004,155 @@ check_sync_bytes:
     ld      a, (hl)
     or      a
     jp      nz, err_bad_file
+    ret
+
+;-----------------------------------------------------------------------------
+; Load binary data in PATHBUF into BINSTART
+;-----------------------------------------------------------------------------
+load_binary:
+    push    hl
+
+    ; Load file into memory
+    call    esp_open
+    ld      hl, (BINSTART)
+    ld      de, $FFFF
+    call    esp_read_bytes
+    call    esp_close_all
+
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Load CAQ array file in PATHBUF into BINSTART (BINLEN length)
+;-----------------------------------------------------------------------------
+load_caq_array:
+    push    hl
+
+    ; Open file
+    call    esp_open
+
+    ; Check CAQ header
+    call    check_sync_bytes    ; Sync bytes
+    ld      de, 6               ; Check that filename is '######'
+    ld      hl, TMPBUF
+    call    esp_read_bytes
+    ld      c, 6
+    ld      hl, TMPBUF
+.loop:
+    ld      a, (hl)
+    cp      '#'
+    jp      nz, err_bad_file
+    inc     hl
+    dec     c
+    jr      nz, .loop
+
+    ; Load data into array
+    ld      hl, (BINSTART)
+    ld      de, (BINLEN)
+    call    esp_read_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Load CAQ/BAS file in PATHBUF
+;-----------------------------------------------------------------------------
+load_basic_program:
+    push    hl
+
+    ; Open file
+    call    esp_open            
+
+    ; Check CAQ header
+    call    check_sync_bytes    ; Sync bytes
+    ld      de, 6               ; Skip filename
+    ld      hl, TMPBUF
+    call    esp_read_bytes
+    call    check_sync_bytes    ; Sync bytes
+    
+    ; Load actual program
+    ld      hl, (TXTTAB)
+    ld      de, $FFFF
+    call    esp_read_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    ; Back up to last line of BASIC program
+.loop:
+    dec     hl
+    xor     a
+    cp      (hl)
+    jr      z, .loop
+    inc     hl
+
+    ; Skip past 3 zeros at end of BASIC program
+    inc     hl
+    inc     hl
+    inc     hl
+
+    ; Set end of BASIC program
+    ld      (VARTAB), hl
+
+    ; Initialize BASIC program
+    call    init_basic_program
+
+    pop     hl
+    ret
+
+sync_bytes:
+    db $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+
+array_filename:
+    db "######"
+
+basic_filename:
+    db "BASPRG"
+
+;-----------------------------------------------------------------------------
+; Save basic program
+;-----------------------------------------------------------------------------
+save_basic_program:
+    push    hl
+
+    ; Create file
+    call    esp_create
+
+    ; Write CAQ header
+    ld      hl, sync_bytes      ; Sync bytes
+    ld      de, 13
+    call    esp_write_bytes
+    ld      hl, basic_filename  ; Filename
+    ld      de, 6
+    call    esp_write_bytes
+    ld      hl, sync_bytes      ; Sync bytes
+    ld      de, 13
+    call    esp_write_bytes
+
+    ; Write BASIC data
+    ld      de, (TXTTAB)            ; DE = start of BASIC program
+    ld      hl, (VARTAB)            ; HL = end of BASIC program
+    sbc     hl, de
+    ex      de, hl                  ; HL = start, DE = length of BASIC program
+    call    esp_write_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Save array
+;-----------------------------------------------------------------------------
+save_caq_array:
+    ret
+
+;-----------------------------------------------------------------------------
+; Save binary
+;-----------------------------------------------------------------------------
+save_binary:
     ret
