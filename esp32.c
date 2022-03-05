@@ -12,7 +12,7 @@ enum {
     ESPCMD_OPENDIR  = 0x16, // Open directory
     ESPCMD_CLOSEDIR = 0x17, // Close open directory
     ESPCMD_READDIR  = 0x18, // Read from directory
-    ESPCMD_UNLINK   = 0x19, // Remove file or directory
+    ESPCMD_DELETE   = 0x19, // Remove file or directory
     ESPCMD_RENAME   = 0x1A, // Rename / move file or directory
     ESPCMD_MKDIR    = 0x1B, // Create directory
     ESPCMD_CHDIR    = 0x1C, // Change directory
@@ -458,7 +458,7 @@ static void esp_readdir(uint8_t dd) {
     txfifo_write(0);
 }
 
-static void esp_unlink(const char *path_arg) {
+static void esp_delete(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
     char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
@@ -467,7 +467,7 @@ static void esp_unlink(const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("UNLINK %s\n", full_path);
+    printf("DELETE %s\n", full_path);
 
     int result = unlink(full_path);
     free(full_path);
@@ -747,10 +747,10 @@ void esp32_write_data(uint8_t data) {
                 break;
             }
 
-            case ESPCMD_UNLINK: {
+            case ESPCMD_DELETE: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_unlink((const char *)&state.rxbuf[1]);
+                    esp_delete((const char *)&state.rxbuf[1]);
                     state.rxbuf_idx = 0;
                 }
                 break;

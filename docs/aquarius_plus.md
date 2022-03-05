@@ -350,7 +350,7 @@ Write a 1 to either _TX FIFO full_ or _RX FIFO non-empty_ will flush the respect
 |   $16 | OPENDIR  | Open directory                           | Directory                   |
 |   $17 | CLOSEDIR | Close open directory                     | Directory                   |
 |   $18 | READDIR  | Read from directory                      | Directory                   |
-|   $19 | UNLINK   | Remove file or directory                 | File / Directory management |
+|   $19 | DELETE   | Remove file or directory                 | File / Directory management |
 |   $1A | RENAME   | Rename / move file or directory          | File / Directory management |
 |   $1B | MKDIR    | Create directory                         | File / Directory management |
 |   $1C | CHDIR    | Change directory                         | File / Directory management |
@@ -527,7 +527,7 @@ TODO: WiFi management commands
 | 6-9    | File size                      |
 | 10-n   | Zero terminated filename       |
 
-### UNLINK
+### DELETE
 
 #### Request
 

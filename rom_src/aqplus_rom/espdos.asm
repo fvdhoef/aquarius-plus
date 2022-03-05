@@ -12,36 +12,22 @@ ST_LOAD:
     ; Close any open files
     call    esp_close_all
 
-    ; Get string parameter
+    ; Get string parameter with path
     call    get_string_parameter
-
-    ; Determine file type based on file extension
-    push    hl
-    call    path_get_filetype
-    ld      (FILETYPE), a
-    pop     hl
 
     ; Check for second parameter
     call    get_arg
     cp      ','
-    jr      nz, .noarg
+    jp      nz, load_basic_program  ; No parameter -> load as basic program
     call    get_next
-    cp      $AA                 ; Token for '*'
-    jr      z, .array
-    jr      .addr
+    cp      $AA                     ; Token for '*'
+    jr      z, .array               ; Array parameter -> load as array
 
-    ; No argument
-.noarg:
-    ; Only .BAS and .CAQ files can be loaded without argument
-    ld      a, (FILETYPE)
-    cp      FILETYPE_BAS
-    jp      z, load_basic_program
-    cp      FILETYPE_CAQ
-    jp      z, load_basic_program
-
-    ; Other filetypes need operand
-    jp      MOERR
-
+    ; Load as binary to address
+    call    FRMNUM                  ; Get number
+    call    FRCINT                  ; Convert to 16 bit integer
+    ld      (BINSTART), de
+    jp      load_bin
 
     ; Load into array
 .array:
@@ -70,33 +56,59 @@ ST_LOAD:
     dec     de                  ; Subtract array header to get data length
     dec     de
     ld      (BINLEN), de
-    ; ld      a, 1<<DF_ARRAY
-    ; ld      (DOSFLAGS), a     ; Set 'loading to array' flag
     pop     hl                  ; Pop text pointer
-    jr      .start
+    jp      load_caq_array
 
-    ; Load to address
-.addr:
-    call    FRMNUM              ; Get number
-    call    FRCINT              ; Convert to 16 bit integer
-    ld      (BINSTART), de
-    ; ld      a, 1<<DF_ADDR
-    ; ld      (DOSFLAGS), a     ; Load address specified
+;-----------------------------------------------------------------------------
+; Load binary data in PATHBUF into BINSTART
+;-----------------------------------------------------------------------------
+load_bin:
+    push    hl
 
-.start:
-    push    hl                  ; Push BASIC text pointer
-
-    ; Close any open files
+    ; Load file into memory
+    call    esp_open
+    ld      hl, (BINSTART)
+    ld      de, $FFFF
+    call    esp_read_bytes
     call    esp_close_all
 
-    ; Issue ESP command
-    ld      a, ESPCMD_OPEN
-    call    esp_cmd
-    ld      a, FO_RDONLY
-    out     (IO_ESPDATA), a
-    call    esp_send_pathbuf
-    call    esp_get_result
+    pop     hl
+    ret
 
+;-----------------------------------------------------------------------------
+; Load CAQ array file in PATHBUF into BINSTART (BINLEN length)
+;-----------------------------------------------------------------------------
+load_caq_array:
+    push    hl
+
+    ; Open file
+    call    esp_open
+
+    ; Check CAQ header
+    call    check_sync_bytes    ; Sync bytes
+    ld      de, 6               ; Check that filename is '######'
+    ld      hl, TMPBUF
+    call    esp_read_bytes
+    ld      c, 6
+    ld      hl, TMPBUF
+.loop:
+    ld      a, (hl)
+    cp      '#'
+    jp      nz, err_bad_file
+    inc     hl
+    dec     c
+    jr      nz, .loop
+
+    ; Load data into array
+    ld      hl, (BINSTART)
+    ld      de, (BINLEN)
+    call    esp_read_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    pop     hl
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Load CAQ/BAS file in PATHBUF
@@ -104,16 +116,22 @@ ST_LOAD:
 load_basic_program:
     push    hl
 
-    ; Load file into memory
-    call    esp_open
-    call    check_sync_bytes
-    ld      de, 6
+    ; Open file
+    call    esp_open            
+
+    ; Check CAQ header
+    call    check_sync_bytes    ; Sync bytes
+    ld      de, 6               ; Skip filename
     ld      hl, TMPBUF
     call    esp_read_bytes
-    call    check_sync_bytes
+    call    check_sync_bytes    ; Sync bytes
+    
+    ; Load actual program
     ld      hl, (TXTTAB)
     ld      de, $FFFF
     call    esp_read_bytes
+
+    ; Close file
     call    esp_close_all
 
     ; Back up to last line of BASIC program
@@ -124,7 +142,7 @@ load_basic_program:
     jr      z, .loop
     inc     hl
 
-    ; Forward past 3 zeros = end of BASIC program
+    ; Skip past 3 zeros at end of BASIC program
     inc     hl
     inc     hl
     inc     hl
@@ -132,24 +150,8 @@ load_basic_program:
     ; Set end of BASIC program
     ld      (VARTAB), hl
 
-    ; Clear variables etc. and update line addresses
+    ; Initialize BASIC program
     call    init_basic_program
-
-    pop     hl
-    ret
-
-
-
-
-    ; ld      de, 1               ; 1 byte to read
-    ; ld      hl, FILETYPE
-    ; call    esp_read_bytes      ; Read 1st byte from file into FILETYPE
-
-    ; ld      de, 0
-    ; call    esp_seek
-
-    ; ld      hl, PATHBUF
-    ; call    STROUT
 
     pop     hl
     ret
@@ -171,7 +173,7 @@ ST_DEL:
     push    hl
 
     ; Issue ESP command
-    ld      a, ESPCMD_UNLINK
+    ld      a, ESPCMD_DELETE
     call    esp_cmd
     call    esp_send_pathbuf
     call    esp_get_result
@@ -855,70 +857,70 @@ esp_seek:
     call    esp_get_result
     ret
 
-;-----------------------------------------------------------------------------
-; Get filetype based on extension of file in PATHBUF
-;-----------------------------------------------------------------------------
-path_get_filetype:
-    ld      a, (PATHLEN)
-    cp      a, 5
-    jr      nc, .ok
-.unknown:
-    xor     a
-    ret
+; ;-----------------------------------------------------------------------------
+; ; Get filetype based on extension of file in PATHBUF
+; ;-----------------------------------------------------------------------------
+; path_get_filetype:
+;     ld      a, (PATHLEN)
+;     cp      a, 5
+;     jr      nc, .ok
+; .unknown:
+;     xor     a
+;     ret
 
-.ok:
-    ; Pointer to extension
-    sub     a, 3
-    ld      h, PATHBUF >> 8
-    ld      l, a
+; .ok:
+;     ; Pointer to extension
+;     sub     a, 3
+;     ld      h, PATHBUF >> 8
+;     ld      l, a
 
-    ; Check for dot
-    ld      a, (hl)
-    cp      '.'
-    jr      nz, .unknown
-    inc     hl
+;     ; Check for dot
+;     ld      a, (hl)
+;     cp      '.'
+;     jr      nz, .unknown
+;     inc     hl
 
-    ; Search for extension in list
-    ld      de, .known_ext
-    jr      .search
-.skip:
-    or      a
-    jr      z, .next
-    ld      a, (de)
-    inc     de
-    jr      .skip
-.next:
-    inc     de
-.search:
-    ld      a, (de)
-    or      a
-    jr      z, .unknown     ; End of extensions list
-    push    hl
-    ex      de, hl
-    call    .cmp
-    ex      de, hl
-    pop     hl
-    jr      nz, .skip       ; No match, check next entry
+;     ; Search for extension in list
+;     ld      de, .known_ext
+;     jr      .search
+; .skip:
+;     or      a
+;     jr      z, .next
+;     ld      a, (de)
+;     inc     de
+;     jr      .skip
+; .next:
+;     inc     de
+; .search:
+;     ld      a, (de)
+;     or      a
+;     jr      z, .unknown     ; End of extensions list
+;     push    hl
+;     ex      de, hl
+;     call    .cmp
+;     ex      de, hl
+;     pop     hl
+;     jr      nz, .skip       ; No match, check next entry
 
-    ; Get file type from entry
-    ld      a, (de)
-    ret
+;     ; Get file type from entry
+;     ld      a, (de)
+;     ret
 
-.cmp:
-    ld      a, (de)         ; Get char from string 2
-    call    to_upper
-    inc     de
-    cp      (hl)            ; Compare to char in string 1
-    inc     hl
-    ret     nz              ; Return NZ if not equal
-    or      a
-    jr      nz, .cmp        ; Loop until end of strings
-    ret                     ; Return Z
+; .cmp:
+;     ld      a, (de)         ; Get char from string 2
+;     call    to_upper
+;     inc     de
+;     cp      (hl)            ; Compare to char in string 1
+;     inc     hl
+;     ret     nz              ; Return NZ if not equal
+;     or      a
+;     jr      nz, .cmp        ; Loop until end of strings
+;     ret                     ; Return Z
 
-.known_ext:
-    db "BAS", 0, FILETYPE_BAS
-    db "CAQ", 0, FILETYPE_CAQ
-    db 0
+; .known_ext:
+;     db "BAS", 0, FILETYPE_BAS
+;     db "CAQ", 0, FILETYPE_CAQ
+;     db 0
 
 ;-----------------------------------------------------------------------------
 ; Get next character, skipping spaces

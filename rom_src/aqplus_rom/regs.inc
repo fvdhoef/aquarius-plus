@@ -113,14 +113,9 @@ BASIC_RAM_END: equ $BEFF    ; End of BASIC RAM, $BF00-$BFFF is reserved for our 
 
 PATHLEN:    equ $BF00   ; Length byte
 PATHBUF:    equ $BF01   ; Path buffer
-TMPBUF:     equ $BFEB   ; 16-byte temporary buffer
-FILETYPE:   equ $BFFA   ; File type BASIC/array/binary/etc.
-BINSTART:   equ $BFFB   ; binary file load/save address
-BINLEN:     equ $BFFD   ; 16-bit binary file length
-DOSFLAGS:   equ $BFFF
-
-; PathName:   equ $BFC8   ; (37 chars) file path eg. "/root/subdir1/subdir2",0
-; FileName:   equ $BFED   ; USB file name 1-11 chars + '.', NULL
+TMPBUF:     equ $BFEC   ; 16-byte temporary buffer
+BINSTART:   equ $BFFC   ; binary file load/save address
+BINLEN:     equ $BFFE   ; 16-bit binary file length
 
 ;-----------------------------------------------------------------------------
 ; System ROM functions
@@ -231,7 +226,7 @@ ESPCMD_TELL:       equ $15     ; Get current read/write
 ESPCMD_OPENDIR:    equ $16     ; Open directory
 ESPCMD_CLOSEDIR:   equ $17     ; Close open directory
 ESPCMD_READDIR:    equ $18     ; Read from directory
-ESPCMD_UNLINK:     equ $19     ; Remove file or directory
+ESPCMD_DELETE:     equ $19     ; Remove file or directory
 ESPCMD_RENAME:     equ $1A     ; Rename / move file or directory
 ESPCMD_MKDIR:      equ $1B     ; Create directory
 ESPCMD_CHDIR:      equ $1C     ; Change directory
