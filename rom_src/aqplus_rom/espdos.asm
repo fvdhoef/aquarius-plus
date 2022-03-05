@@ -104,6 +104,7 @@ ST_SAVE:
     call    get_arg
     cp      ','
     jp      nz, MOERR
+    inc     hl
 
     ; Get second parameter: length
     call    FRMNUM                  ; Get number
@@ -1106,12 +1107,6 @@ load_basic_program:
 sync_bytes:
     db $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
 
-array_filename:
-    db "######"
-
-basic_filename:
-    db "BASPRG"
-
 ;-----------------------------------------------------------------------------
 ; Save basic program
 ;-----------------------------------------------------------------------------
@@ -1125,7 +1120,7 @@ save_basic_program:
     ld      hl, sync_bytes      ; Sync bytes
     ld      de, 13
     call    esp_write_bytes
-    ld      hl, basic_filename  ; Filename
+    ld      hl, .caq_filename   ; Filename
     ld      de, 6
     call    esp_write_bytes
     ld      hl, sync_bytes      ; Sync bytes
@@ -1145,14 +1140,54 @@ save_basic_program:
     pop     hl
     ret
 
+.caq_filename: db "BASPRG"
+
 ;-----------------------------------------------------------------------------
 ; Save array
 ;-----------------------------------------------------------------------------
 save_caq_array:
+    push    hl
+
+    ; Create file
+    call    esp_create
+
+    ; Write CAQ header
+    ld      hl, sync_bytes      ; Sync bytes
+    ld      de, 13
+    call    esp_write_bytes
+    ld      hl, .array_filename ; Filename
+    ld      de, 6
+    call    esp_write_bytes
+
+    ; Write array data
+    ld      hl, (BINSTART)
+    ld      de, (BINLEN)
+    call    esp_write_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    pop     hl
     ret
+
+.array_filename: db "######"
 
 ;-----------------------------------------------------------------------------
 ; Save binary
 ;-----------------------------------------------------------------------------
 save_binary:
+    push    hl
+
+    ; Create file
+    call    esp_create
+
+    ; Write binary data
+    ld      hl, (BINSTART)
+    ld      de, (BINLEN)
+    call    esp_write_bytes
+
+    ; Close file
+    call    esp_close_all
+
+    pop     hl
     ret
