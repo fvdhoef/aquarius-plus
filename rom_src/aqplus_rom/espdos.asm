@@ -1143,32 +1143,11 @@ run_file:
     ld      e, a
     ld      hl, .romext
     call    .cmp
-    jr      z, .load_rom
+    jr      z, load_rom
 
 .load_basic:
     call    load_basic_program
     jp      RUNC
-
-.load_rom:
-    ; Open file
-    call    esp_open
-
-    ; Map RAM in bank3
-    ld      a, 34
-    out     (IO_BANK3), a
-
-    ; Load file
-    ld      hl, $C000
-    ld      de, $4000
-    call    esp_read_bytes
-    call    esp_close_all
-
-    ; Bank3 -> readonly
-    ld      a, 34 | BANK_READONLY
-    out     (IO_BANK3), a
-
-    ; Start ROM
-    jp      JMPINI
 
 .cmp:
     ld      a, (de)         ; Get char from string 2
@@ -1182,3 +1161,66 @@ run_file:
     ret                     ; Return Z
 
 .romext: db ".ROM",0
+
+;-----------------------------------------------------------------------------
+; Load ROM file
+;-----------------------------------------------------------------------------
+load_rom:
+    ; Open file
+    call    esp_open
+
+    ; Map RAM in bank3
+    ld      a, 34
+    out     (IO_BANK3), a
+
+    ; Load file
+    ld      hl, $C000
+    ld      de, $4000
+    call    esp_read_bytes
+
+    ; Check length
+    ld      a, d
+    cp      $20         ; 8KB ROM?
+    jr      nz, .ok
+
+    ; 8KB ROM, duplicate data to second 8KB area
+    ld      hl, $C000
+    ld      de, $E000
+    ld      bc, $2000
+    ldir
+.ok:
+    call    esp_close_all
+
+    ; Determine scramble value
+    xor     a
+    ld      hl, $E003
+    ld      b, 12
+.loop:
+    add     a, (hl)
+    inc     hl
+    add     a, b
+    dec     b
+    jr      nz, .loop
+    xor     (hl)
+    ld      b, a
+
+    ; Descramble ROM
+    ld      hl, $C000
+    ld      de, $4000
+.loop2:
+    ld      a, b
+    xor     (hl)
+    ld      (hl), a
+
+    inc     hl
+    dec     de
+    ld      a, d
+    or      e
+    jr      nz, .loop2
+
+    ; Bank3 -> readonly
+    ld      a, 34 | BANK_READONLY
+    out     (IO_BANK3), a
+
+    ; Start ROM
+    jp      $E010
