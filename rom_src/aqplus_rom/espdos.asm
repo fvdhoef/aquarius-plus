@@ -2,9 +2,6 @@
 ; espdos.asm
 ;-----------------------------------------------------------------------------
 
-FILETYPE_BAS: equ 1
-FILETYPE_CAQ: equ 2
-
 ;-----------------------------------------------------------------------------
 ; LOAD
 ;
@@ -897,71 +894,6 @@ esp_seek:
     call    esp_get_result
     ret
 
-; ;-----------------------------------------------------------------------------
-; ; Get filetype based on extension of file in PATHBUF
-; ;-----------------------------------------------------------------------------
-; path_get_filetype:
-;     ld      a, (PATHLEN)
-;     cp      a, 5
-;     jr      nc, .ok
-; .unknown:
-;     xor     a
-;     ret
-
-; .ok:
-;     ; Pointer to extension
-;     sub     a, 3
-;     ld      h, PATHBUF >> 8
-;     ld      l, a
-
-;     ; Check for dot
-;     ld      a, (hl)
-;     cp      '.'
-;     jr      nz, .unknown
-;     inc     hl
-
-;     ; Search for extension in list
-;     ld      de, .known_ext
-;     jr      .search
-; .skip:
-;     or      a
-;     jr      z, .next
-;     ld      a, (de)
-;     inc     de
-;     jr      .skip
-; .next:
-;     inc     de
-; .search:
-;     ld      a, (de)
-;     or      a
-;     jr      z, .unknown     ; End of extensions list
-;     push    hl
-;     ex      de, hl
-;     call    .cmp
-;     ex      de, hl
-;     pop     hl
-;     jr      nz, .skip       ; No match, check next entry
-
-;     ; Get file type from entry
-;     ld      a, (de)
-;     ret
-
-; .cmp:
-;     ld      a, (de)         ; Get char from string 2
-;     call    to_upper
-;     inc     de
-;     cp      (hl)            ; Compare to char in string 1
-;     inc     hl
-;     ret     nz              ; Return NZ if not equal
-;     or      a
-;     jr      nz, .cmp        ; Loop until end of strings
-;     ret                     ; Return Z
-
-; .known_ext:
-;     db "BAS", 0, FILETYPE_BAS
-;     db "CAQ", 0, FILETYPE_CAQ
-;     db 0
-
 ;-----------------------------------------------------------------------------
 ; Get next character, skipping spaces
 ;  in: HL = text pointer
@@ -1191,3 +1123,62 @@ save_binary:
 
     pop     hl
     ret
+
+;-----------------------------------------------------------------------------
+; Run file
+;-----------------------------------------------------------------------------
+run_file:
+    ; Close any open files
+    call    esp_close_all
+
+    ; Get string parameter with path
+    call    get_string_parameter
+
+    ; Check for .ROM extension
+    ld      a, (PATHLEN)
+    cp      a, 5
+    jr      c, .load_basic      ; Too short to have ROM extension
+    sub     a, 3
+    ld      d, PATHBUF >> 8
+    ld      e, a
+    ld      hl, .romext
+    call    .cmp
+    jr      z, .load_rom
+
+.load_basic:
+    call    load_basic_program
+    jp      RUNC
+
+.load_rom:
+    ; Open file
+    call    esp_open
+
+    ; Map RAM in bank3
+    ld      a, 34
+    out     (IO_BANK3), a
+
+    ; Load file
+    ld      hl, $C000
+    ld      de, $4000
+    call    esp_read_bytes
+    call    esp_close_all
+
+    ; Bank3 -> readonly
+    ld      a, 34 | BANK_READONLY
+    out     (IO_BANK3), a
+
+    ; Start ROM
+    jp      JMPINI
+
+.cmp:
+    ld      a, (de)         ; Get char from string 2
+    call    to_upper
+    inc     de
+    cp      (hl)            ; Compare to char in string 1
+    inc     hl
+    ret     nz              ; Return NZ if not equal
+    or      a
+    jr      nz, .cmp        ; Loop until end of strings
+    ret                     ; Return Z
+
+.romext: db ".ROM",0
