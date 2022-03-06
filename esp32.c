@@ -57,7 +57,7 @@ struct state {
     unsigned      txfifo_rdidx;
     unsigned      txfifo_cnt;
     direnum_ctx_t dds[MAX_DDS];
-    int           fds[MAX_FDS];
+    FILE         *fds[MAX_FDS];
     const char   *new_path;
 };
 
@@ -185,38 +185,60 @@ void esp32_init(const char *basepath) {
     printf("basepath: '%s'\n", state.basepath);
 
     state.current_path = strdup("");
-
-    for (int i = 0; i < MAX_FDS; i++) {
-        state.fds[i] = -1;
-    }
 }
 
 static void esp_open(uint8_t flags, const char *path_arg) {
     // Translate flags
-    int oflag = 0;
+    int  mi = 0;
+    char mode[4];
+
+    // if (flags & FO_CREATE)
+    //     oflag |= O_CREAT;
+
     switch (flags & FO_ACCMODE) {
-        case FO_RDONLY: oflag = O_RDONLY; break;
-        case FO_WRONLY: oflag = O_WRONLY; break;
-        case FO_RDWR: oflag = O_RDWR; break;
+        case FO_RDONLY:
+            mode[mi++] = 'r';
+            break;
+        case FO_WRONLY:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+            } else {
+                mode[mi++] = 'w';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+
+            break;
+        case FO_RDWR:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+                mode[mi++] = '+';
+            } else if (flags & FO_TRUNC) {
+                mode[mi++] = 'w';
+                mode[mi++] = '+';
+            } else {
+                mode[mi++] = 'r';
+                mode[mi++] = '+';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+            break;
+
         default: {
             // Error
             txfifo_write(ERR_PARAM);
             return;
         }
     }
-    if (flags & FO_APPEND)
-        oflag |= O_APPEND;
-    if (flags & FO_CREATE)
-        oflag |= O_CREAT;
-    if (flags & FO_TRUNC)
-        oflag |= O_TRUNC;
-    if (flags & FO_EXCL)
-        oflag |= O_EXCL;
+    mode[mi++] = 'b';
+    mode[mi++] = 0;
 
     // Find free file descriptor
     int fd = -1;
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] == -1) {
+        if (state.fds[i] == NULL) {
             fd = i;
             break;
         }
@@ -235,13 +257,13 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("OPEN: flags: 0x%02X  '%s'\n", flags, full_path);
+    printf("OPEN: flags: 0x%02X (%s) '%s'\n", flags, mode, full_path);
 
-    int _fd    = open(full_path, oflag, 0664);
-    int err_no = errno;
+    FILE *f      = fopen(full_path, mode);
+    int   err_no = errno;
     free(full_path);
 
-    if (_fd < 0) {
+    if (f == NULL) {
         uint8_t err = ERR_NOT_FOUND;
         switch (err_no) {
             case EACCES: err = ERR_NOT_FOUND; break;
@@ -252,7 +274,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
         txfifo_write(err);
         return;
     }
-    state.fds[fd] = _fd;
+    state.fds[fd] = f;
 
     txfifo_write(fd);
 
@@ -262,28 +284,28 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 static void esp_close(uint8_t fd) {
     printf("CLOSE fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    int _fd = state.fds[fd];
+    FILE *f = state.fds[fd];
 
-    close(_fd);
-    state.fds[fd] = -1;
+    fclose(f);
+    state.fds[fd] = NULL;
     txfifo_write(0);
 }
 
 static void esp_read(uint8_t fd, uint16_t size) {
     printf("READ fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    int _fd = state.fds[fd];
+    FILE *f = state.fds[fd];
 
     static uint8_t tmpbuf[0x10000];
-    int            result = read(_fd, tmpbuf, size);
+    int            result = fread(tmpbuf, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -300,13 +322,13 @@ static void esp_read(uint8_t fd, uint16_t size) {
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
     printf("WRITE fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    int _fd = state.fds[fd];
+    FILE *f = state.fds[fd];
 
-    int result = write(_fd, data, size);
+    int result = fwrite(data, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -320,13 +342,13 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 static void esp_seek(uint8_t fd, uint32_t offset) {
     printf("SEEK fd: %d  offset: %u\n", fd, offset);
 
-    if (fd >= MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    int _fd = state.fds[fd];
+    FILE *f = state.fds[fd];
 
-    int result = lseek(_fd, offset, SEEK_SET);
+    int result = fseek(f, offset, SEEK_SET);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -337,13 +359,13 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
 static void esp_tell(uint8_t fd) {
     printf("TELL fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state.fds[fd] < 0) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    int _fd = state.fds[fd];
+    FILE *f = state.fds[fd];
 
-    int result = lseek(_fd, 0, SEEK_CUR);
+    int result = ftell(f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -642,9 +664,9 @@ static void close_all_descriptors(void) {
         }
     }
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] >= 0) {
-            close(state.fds[i]);
-            state.fds[i] = -1;
+        if (state.fds[i] != NULL) {
+            fclose(state.fds[i]);
+            state.fds[i] = NULL;
         }
     }
 }
