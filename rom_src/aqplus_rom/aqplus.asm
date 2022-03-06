@@ -245,8 +245,8 @@ TBLCMDS:
     db "AVE"
     db $80 + 'D'
     db "IR"
-    db $80 + 'C'
-    db "AT"
+    db $80 + 'M'
+    db "KDIR"
     db $80 + 'D'
     db "EL"
     db $80 + 'C'
@@ -272,7 +272,7 @@ TBLJMPS:
     dw ST_LOAD
     dw ST_SAVE
     dw ST_DIR
-    dw ST_reserved
+    dw ST_MKDIR
     dw ST_DEL          ; Previously KILL
     dw ST_CD
 TBLJEND:

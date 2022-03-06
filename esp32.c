@@ -470,6 +470,10 @@ static void esp_delete(const char *path_arg) {
     printf("DELETE %s\n", full_path);
 
     int result = unlink(full_path);
+    if (result < 0) {
+        result = rmdir(full_path);
+    }
+
     free(full_path);
 
     if (result < 0) {

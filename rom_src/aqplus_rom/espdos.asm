@@ -188,6 +188,26 @@ ST_CD:
     jr      .done
 
 ;-----------------------------------------------------------------------------
+; MKDIR - Create directory
+;-----------------------------------------------------------------------------
+ST_MKDIR:
+    ; Get string parameter
+    call    get_string_parameter
+
+    ; Save BASIC text pointer
+    push    hl
+
+    ; Issue ESP command
+    ld      a, ESPCMD_MKDIR
+    call    esp_cmd
+    call    esp_send_pathbuf
+    call    esp_get_result
+
+    ; Restore BASIC text pointer
+    pop     hl
+    ret
+
+;-----------------------------------------------------------------------------
 ; DIR - Directory listing
 ;
 ; No argument -> List current directory
