@@ -26,25 +26,27 @@
 
 static uint8_t screen[VIDEO_WIDTH * VIDEO_HEIGHT];
 
-static const uint8_t text_palette[16] = {
-    0x00, 0x03, 0x1D, 0x1F,
-    0x30, 0x33, 0x29, 0x3F,
-    0x2A, 0x28, 0x22, 0x20,
-    0x2F, 0x19, 0x02, 0x15};
-
 const uint8_t *video_get_fb(void) {
     return screen;
 }
+
+enum {
+    VCTRL_TEXT_ENABLE    = (1 << 0),
+    VCTRL_MODE_OFF       = (0 << 1),
+    VCTRL_MODE_TILEMAP   = (1 << 1),
+    VCTRL_MODE_BITMAP    = (2 << 1),
+    VCTRL_MODE_MASK      = (3 << 1),
+    VCTRL_SPRITES_ENABLE = (1 << 3),
+};
 
 void video_draw_line(void) {
     int line = emustate.video_line;
     if (line < 0 || line >= VIDEO_HEIGHT)
         return;
 
-    uint8_t *pd = &screen[line * VIDEO_WIDTH];
-
+    // Render text
+    uint8_t line_text[VIDEO_WIDTH];
     for (int i = 0; i < VIDEO_WIDTH; i++) {
-
         // Draw text character
         uint8_t ch;
         uint8_t color;
@@ -58,10 +60,42 @@ void video_draw_line(void) {
             color = emustate.colorram[0];
         }
 
-        uint8_t fgcol  = text_palette[color >> 4];
-        uint8_t bgcol  = text_palette[color & 0xF];
         uint8_t charbm = emustate.charram[ch * 8 + (line & 7)];
+        line_text[i]   = (charbm & (1 << (7 - (i & 7)))) ? (color >> 4) : (color & 0xF);
+    }
 
-        pd[i] = (charbm & (1 << (7 - (i & 7)))) ? fgcol : bgcol;
+    // Render bitmap
+    uint8_t line_bitmap[VIDEO_WIDTH];
+    for (int i = 0; i < VIDEO_WIDTH; i++) {
+        uint8_t color;
+
+        if (line >= 16 && line < 216 && i >= 16 && i < 336) {
+            int     row    = (line - 16) / 8;
+            int     column = (i - 16) / 8;
+            uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
+            uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
+
+            color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
+
+        } else {
+            color = 0;
+        }
+        line_bitmap[i] = color;
+    }
+
+    // Compose layers
+    uint8_t *pd = &screen[line * VIDEO_WIDTH];
+    for (int i = 0; i < VIDEO_WIDTH; i++) {
+        uint8_t colidx_text = line_text[i];
+        uint8_t colidx_bm   = line_bitmap[i];
+
+        uint8_t color = 0;
+        if (emustate.video_ctrl & VCTRL_TEXT_ENABLE) {
+            color = emustate.video_palette_text[colidx_text];
+        }
+        if ((emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF && color == 0) {
+            color = emustate.video_palette_text[colidx_bm] | (1 << 4);
+        }
+        pd[i] = color;
     }
 }

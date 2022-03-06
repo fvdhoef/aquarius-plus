@@ -55,8 +55,34 @@ _reset:
     ld      a, 19 | BANK_READONLY
     out     (IO_BANK3), a
 
+    ; Init video mode
+    ld      a, 1
+    out     (IO_VCTRL), a
+
+    ; Init palettes
+    ld      hl, .default_palette + 16
+    ld      b, 16
+.palloop:
+    dec     hl
+    dec     b
+    jr      z, .paldone
+
+    ld      a, (hl)
+    ld      c, IO_VPALTXT
+    out     (c), a
+    ld      c, IO_VPALTILE
+    out     (c), a
+    ld      c, IO_VPALSPR
+    out     (c), a
+    jr      .palloop
+.paldone:
+
     ; Back to system ROM init
     jp      JMPINI
+
+.default_palette:
+    db $00, $03, $1D, $1F, $30, $33, $29, $3F
+    db $2A, $28, $22, $20, $2F, $19, $02, $15
 
 ;-----------------------------------------------------------------------------
 ; Common initialisation

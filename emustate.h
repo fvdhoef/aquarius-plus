@@ -57,3 +57,5 @@ struct emulation_state {
 };
 
 extern struct emulation_state emustate;
+
+void emustate_init(void);

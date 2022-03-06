@@ -98,8 +98,8 @@ Video RAM used by tile / bitmap / sprite engine.
 
 | Address       | Description                       |
 | ------------- | --------------------------------- |
-| $0000 - $1BFF | 8KB Bitmap RAM                    |
-| $2000 - $23BF | 1KB Bitmap color RAM (40x24)      |
+| $0000 - $1F3F | 8KB Bitmap RAM                    |
+| $2000 - $23E7 | 1KB Bitmap color RAM (40x25)      |
 | $0000 - $0FFF | 4KB Tile map 64x32                |
 | $0000 - $3FFF | 16KB Tile data (max 512 patterns) |
 
@@ -239,8 +239,8 @@ The character RAM is used by the text mode character generator to display text o
     </tr>
 </table>
 
-For registers $E4-$E8, the B register determines which sprite to read or write.  
-For registers $E9-$EB, the B register determines which palette entry to read or write.
+For registers $E4-$E8, A11-A8 determines which sprite to read or write. (eg. use a OUT (C),A instruction with B containing palette index)  
+For registers $E9-$EB, A11-A8 determines which palette entry to read or write. (eg. use a OUT (C),A instruction with B containing palette index)
 
 The current line number is reflected in the **_VLINE_** register. Internal line number range from 0-261. Line numbers above 255 are reflected in this register as 255.
 

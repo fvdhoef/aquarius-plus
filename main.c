@@ -468,6 +468,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
+    emustate_init();
+
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         exit(1);
