@@ -371,6 +371,7 @@ TODO: WiFi management commands
 |    -5 | ERR_EXISTS        | File already exists               |
 |    -6 | ERR_OTHER         | Other error                       |
 |    -7 | ERR_NO_DISK       | No disk                           |
+|    -8 | ERR_NOT_EMPTY     | Not empty                         |
 
 ### RESET
 

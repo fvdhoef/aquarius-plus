@@ -29,6 +29,7 @@ enum {
     ERR_EXISTS        = -5, // File already exists
     ERR_OTHER         = -6, // Other error
     ERR_NO_DISK       = -7, // No disk
+    ERR_NOT_EMPTY     = -8, // Not empty
 };
 
 enum {
@@ -478,7 +479,11 @@ static void esp_delete(const char *path_arg) {
 
     if (result < 0) {
         // Error
-        txfifo_write(ERR_NOT_FOUND);
+        if (errno == ENOTEMPTY) {
+            txfifo_write(ERR_NOT_EMPTY);
+        } else {
+            txfifo_write(ERR_NOT_FOUND);
+        }
         return;
     }
     txfifo_write(0);

@@ -462,7 +462,7 @@ ST_DIR:
 esp_error:
     neg
     dec     a
-    cp      -ERR_NO_DISK
+    cp      -ERR_NOT_EMPTY
     jr      c, .ok
     ld      a, -ERR_OTHER - 1
 
@@ -492,6 +492,7 @@ esp_error:
     dw .msg_err_exists        ; -5: File already exists
     dw .msg_err_other         ; -6: Other error
     dw .msg_err_no_disk       ; -7: No disk
+    dw .msg_err_not_empty     ; -8: Not empty
 
 .msg_err_not_found:     db "Not found",0
 .msg_err_too_many_open: db "Too many open",0
@@ -500,6 +501,7 @@ esp_error:
 .msg_err_exists:        db "Already exists",0
 .msg_err_other:         db "Unknown error",0
 .msg_err_no_disk:       db "No disk",0
+.msg_err_not_empty:     db "Not empty",0
 
 ;-----------------------------------------------------------------------------
 ; Bad file error
