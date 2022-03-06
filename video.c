@@ -64,37 +64,65 @@ void video_draw_line(void) {
         line_text[i]   = (charbm & (1 << (7 - (i & 7)))) ? (color >> 4) : (color & 0xF);
     }
 
-    // Render bitmap
+    // Render bitmap/tile layer
     uint8_t line_bitmap[VIDEO_WIDTH];
-    for (int i = 0; i < VIDEO_WIDTH; i++) {
-        uint8_t color;
+    if ((emustate.video_ctrl & VCTRL_MODE_MASK) == VCTRL_MODE_BITMAP) {
+        // Bitmap mode
+        for (int i = 0; i < VIDEO_WIDTH; i++) {
+            uint8_t color;
 
-        if (line >= 16 && line < 216 && i >= 16 && i < 336) {
-            int     row    = (line - 16) / 8;
-            int     column = (i - 16) / 8;
-            uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
-            uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
+            if (line >= 16 && line < 216 && i >= 16 && i < 336) {
+                int     row    = (line - 16) / 8;
+                int     column = (i - 16) / 8;
+                uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
+                uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
 
-            color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
+                color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
-        } else {
-            color = 0;
+            } else {
+                color = 0;
+            }
+            line_bitmap[i] = color | (1 << 4);
         }
-        line_bitmap[i] = color;
+    } else {
+        // Tile mode
+        for (int i = 0; i < VIDEO_WIDTH; i++) {
+            uint8_t color;
+
+            if (line >= 16 && line < 216 && i >= 16 && i < 336) {
+                color = 0;
+
+                // int     row    = (line - 16) / 8;
+                // int     column = (i - 16) / 8;
+                // uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
+                // uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
+
+                // color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
+
+            } else {
+                color = 0;
+            }
+            line_bitmap[i] = color;
+        }
     }
 
     // Compose layers
     uint8_t *pd = &screen[line * VIDEO_WIDTH];
     for (int i = 0; i < VIDEO_WIDTH; i++) {
-        uint8_t colidx_text = line_text[i];
-        uint8_t colidx_bm   = line_bitmap[i];
+        uint8_t colidx = 0;
+        if (emustate.video_ctrl & VCTRL_TEXT_ENABLE) {
+            colidx = line_text[i];
+        }
+        if ((emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF && colidx == 0) {
+            colidx = line_bitmap[i];
+        }
 
         uint8_t color = 0;
-        if (emustate.video_ctrl & VCTRL_TEXT_ENABLE) {
-            color = emustate.video_palette_text[colidx_text];
-        }
-        if ((emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF && color == 0) {
-            color = emustate.video_palette_text[colidx_bm] | (1 << 4);
+        switch (colidx >> 4) {
+            case 0: color = emustate.video_palette_text[colidx & 0xF]; break;
+            case 1: color = emustate.video_palette_tile[colidx & 0xF]; break;
+            case 2: color = emustate.video_palette_sprite[colidx & 0xF]; break;
+            default: break;
         }
         pd[i] = color;
     }
