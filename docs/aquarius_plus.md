@@ -259,7 +259,7 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
 | ----: | ----------------- |
 |     0 | Disabled          |
 |     1 | 64x32 tilemap     |
-|     2 | 320x192 bitmapped |
+|     2 | 320x200 bitmapped |
 |     3 | -                 |
 
 # Video RAM data
