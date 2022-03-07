@@ -1,0 +1,22 @@
+10 REM Set palette
+20 FOR I=0TO15
+30 READ E
+40 OUT I*256+234,E
+50 NEXT
+100 REM Set mem map to Video RAM
+101 OUT 243,20:REM $F3,20
+120 REM Load raw bits into VRAM
+121 LOAD"image.bin",-16384
+130 REM Set Video Reg to BM mode
+131 OUT 224,4:REM $E0,4
+144 REM Wait for a keypress
+145 INPUT A$
+149 REM Set Video Reg to normal
+150 OUT 224,1:REM $e0,1
+154 REM Set mem map to normal
+155 OUT 243,0:REM $f3,0
+159 REM Clear screen
+160 CLS
+170 END
+180 DATA 42,30,0,21,63,30,9,53
+190 DATA 0,0,0,0,0,0,0,0
