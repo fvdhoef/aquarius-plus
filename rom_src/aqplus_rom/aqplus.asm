@@ -60,13 +60,9 @@ _reset:
     out     (IO_VCTRL), a
 
     ; Init palettes
-    ld      hl, .default_palette + 16
-    ld      b, 16
+    ld      hl, .default_palette + 15
+    ld      b, 15
 .palloop:
-    dec     hl
-    dec     b
-    jr      z, .paldone
-
     ld      a, (hl)
     ld      c, IO_VPALTXT
     out     (c), a
@@ -74,8 +70,9 @@ _reset:
     out     (c), a
     ld      c, IO_VPALSPR
     out     (c), a
-    jr      .palloop
-.paldone:
+    dec     hl
+    dec     b
+    jp      p, .palloop
 
     ; Back to system ROM init
     jp      JMPINI

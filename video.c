@@ -22,12 +22,16 @@ void video_draw_line(void) {
         return;
 
     // Render text
-    uint8_t line_text[VIDEO_WIDTH];
+    uint8_t  line_text[512];
+    unsigned idx = 512 - 16;
+
+    bool vactive = line >= 16 && line < 216;
+
     for (int i = 0; i < VIDEO_WIDTH; i++) {
         // Draw text character
         uint8_t ch;
         uint8_t color;
-        if (line >= 16 && line < 216 && i >= 16 && i < 336) {
+        if (vactive && idx < 320) {
             int row    = (line - 16) / 8;
             int column = (i - 16) / 8;
             ch         = emustate.screenram[row * 40 + column];
@@ -38,60 +42,59 @@ void video_draw_line(void) {
         }
 
         uint8_t charbm = emustate.charram[ch * 8 + (line & 7)];
-        line_text[i]   = (charbm & (1 << (7 - (i & 7)))) ? (color >> 4) : (color & 0xF);
+        line_text[idx] = (charbm & (1 << (7 - (i & 7)))) ? (color >> 4) : (color & 0xF);
+        idx            = (idx + 1) & 511;
     }
 
     // Render bitmap/tile layer
-    uint8_t line_bitmap[VIDEO_WIDTH];
+    uint8_t line_bitmap[512];
     if ((emustate.video_ctrl & VCTRL_MODE_MASK) == VCTRL_MODE_BITMAP) {
         // Bitmap mode
-        for (int i = 0; i < VIDEO_WIDTH; i++) {
-            uint8_t color;
+        for (int i = 0; i < 320; i++) {
+            unsigned bmline = line - 16;
+            if (bmline >= 200)
+                break;
 
-            if (line >= 16 && line < 216 && i >= 16 && i < 336) {
-                int     row    = (line - 16) / 8;
-                int     column = (i - 16) / 8;
-                uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
-                uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
+            int     row    = bmline / 8;
+            int     column = i / 8;
+            uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
+            uint8_t bm     = emustate.videoram[0x0000 + bmline * 40 + column];
+            uint8_t color  = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
-                color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
-
-            } else {
-                color = 0;
-            }
-            line_bitmap[i] = color | (1 << 4);
+            line_bitmap[i] = color;
         }
     } else {
         // Tile mode
-        for (int i = 0; i < VIDEO_WIDTH; i++) {
-            uint8_t color;
+        for (int i = 0; i < 320; i++) {
+            unsigned bmline = line - 16;
+            if (bmline >= 200)
+                break;
 
-            if (line >= 16 && line < 216 && i >= 16 && i < 336) {
-                color = 0;
+            uint8_t color = 0;
 
-                // int     row    = (line - 16) / 8;
-                // int     column = (i - 16) / 8;
-                // uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
-                // uint8_t bm     = emustate.videoram[0x0000 + (line - 16) * 40 + column];
-
-                // color = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
-
-            } else {
-                color = 0;
-            }
             line_bitmap[i] = color;
         }
     }
 
     // Compose layers
     uint8_t *pd = &screen[line * VIDEO_WIDTH];
+    idx         = 512 - 16;
+
     for (int i = 0; i < VIDEO_WIDTH; i++) {
+        bool active = idx < 320 && vactive;
+
+        bool text_enable   = (emustate.video_ctrl & VCTRL_TEXT_ENABLE) != 0;
+        bool tilebm_enable = (emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF;
+
         uint8_t colidx = 0;
-        if (emustate.video_ctrl & VCTRL_TEXT_ENABLE) {
-            colidx = line_text[i];
+        if (tilebm_enable && !text_enable) {
+            colidx = 0 | (1 << 4);
         }
-        if ((emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF && colidx == 0) {
-            colidx = line_bitmap[i];
+        if (text_enable) {
+            colidx = line_text[idx];
+        }
+        if (tilebm_enable && active && (colidx & 0xF) == 0) {
+            colidx = line_bitmap[idx] | (1 << 4);
         }
 
         uint8_t color = 0;
@@ -102,5 +105,7 @@ void video_draw_line(void) {
             default: break;
         }
         pd[i] = color;
+
+        idx = (idx + 1) & 511;
     }
 }
