@@ -47,32 +47,46 @@ void video_draw_line(void) {
     }
 
     // Render bitmap/tile layer
-    uint8_t line_bitmap[512];
-    if ((emustate.video_ctrl & VCTRL_MODE_MASK) == VCTRL_MODE_BITMAP) {
+    uint8_t  line_bitmap[512];
+    unsigned bmline = line - 16;
+
+    if (vactive && (emustate.video_ctrl & VCTRL_MODE_MASK) == VCTRL_MODE_BITMAP) {
         // Bitmap mode
         for (int i = 0; i < 320; i++) {
-            unsigned bmline = line - 16;
-            if (bmline >= 200)
-                break;
-
             int     row    = bmline / 8;
             int     column = i / 8;
             uint8_t col    = emustate.videoram[0x2000 + row * 40 + column];
             uint8_t bm     = emustate.videoram[0x0000 + bmline * 40 + column];
             uint8_t color  = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
-            line_bitmap[i] = color;
+            line_bitmap[i] = color | (1 << 4);
         }
-    } else {
+    } else if (vactive) {
         // Tile mode
-        for (int i = 0; i < 320; i++) {
-            unsigned bmline = line - 16;
-            if (bmline >= 200)
-                break;
+        idx            = (-(emustate.video_scrx & 7)) & 511;
+        unsigned tline = (bmline + emustate.video_scry) & 255;
+        unsigned row   = (tline >> 3) & 31;
+        unsigned col   = emustate.video_scrx >> 3;
 
-            uint8_t color = 0;
+        for (int i = 0; i < 41; i++) {
+            // Tilemap is 64x32 (2 bytes per entry)
 
-            line_bitmap[i] = color;
+            // Fetch tilemap entry
+            uint8_t entry_l = emustate.videoram[(row << 7) | (col << 1)];
+            uint8_t entry_h = emustate.videoram[(row << 7) | (col << 1) | 1];
+
+            unsigned tile_idx = ((entry_h & 1) << 8) | entry_l;
+            bool     hflip    = (entry_h & (1 << 1)) != 0;
+            bool     vflip    = (entry_h & (1 << 2)) != 0;
+            bool     palette  = (entry_h & (1 << 3)) != 0;
+            bool     priority = (entry_h & (1 << 4)) != 0;
+
+            unsigned pat_offs = (tile_idx << 5) | ((tline & 7) << 2);
+            if (vflip)
+                pat_offs ^= (7 << 2);
+
+            // Next column
+            col = (col + 1) & 63;
         }
     }
 
@@ -94,7 +108,7 @@ void video_draw_line(void) {
             colidx = line_text[idx];
         }
         if (tilebm_enable && active && (colidx & 0xF) == 0) {
-            colidx = line_bitmap[idx] | (1 << 4);
+            colidx = line_bitmap[idx];
         }
 
         uint8_t color = 0;

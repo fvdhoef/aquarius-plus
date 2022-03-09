@@ -292,7 +292,10 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
     </tr>
 </table>
 
-If priority bit is set, the tile is displayed in front of sprites (if sprite priority bit is not set).
+If the **_Priority_** bit is set, the tile is displayed in front of sprites (if sprite priority bit is not set as well).  
+If the **_Palette_** bit is set, the sprite palette is used instead of the tile palette.  
+If **_V-flip_** bit is set, the sprite is vertically mirrored.  
+If **_H-flip_** bit is set, the sprite is horizontally mirrored.
 
 ## Tile data
 

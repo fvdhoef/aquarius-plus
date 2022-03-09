@@ -10,19 +10,14 @@ with open("../../aquarius.rom", "wb") as f:
             stockrom[offset+1] = target & 0xFF
             stockrom[offset+2] = (target >> 8) & 0xFF
 
-        def set_call(offset, target):
-            stockrom[offset+0] = 0xCD
-            stockrom[offset+1] = target & 0xFF
-            stockrom[offset+2] = (target >> 8) & 0xFF
-
         # Reset entry point in ROM
-        set_call(0x0000, 0x2000)
-
-        # Common initialization
-        set_call(0x0046, 0x2003)
+        set_jump(0x0000, 0x2000)
 
         # Cold start entry point in ROM
-        set_jump(0x010F, 0x2006)
+        set_jump(0x010F, 0x2003)
+
+        # Patch to keep scramble register at $00 in BASIC
+        stockrom[0x0156] = 0xAF
 
         f.write(stockrom)
 

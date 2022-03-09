@@ -35,7 +35,6 @@
 
     org     $2000
     jp      _reset          ; Called from main ROM at reset vector
-    jp      _common_init    ; Called from main ROM after setting up temp stack
     jp      _coldboot       ; Called from main ROM for cold boot
 
 ;-----------------------------------------------------------------------------
@@ -45,6 +44,9 @@
 ;          that uses the stack.
 ;-----------------------------------------------------------------------------
 _reset:
+    ; Set up temp stack in text line buffer
+    ld      sp, $38A0
+
     ; Initialize banking registers
     ld      a, 0 | BANK_OVERLAY | BANK_READONLY
     out     (IO_BANK0), a
@@ -74,20 +76,6 @@ _reset:
     dec     b
     jp      p, .palloop
 
-    ; Back to system ROM init
-    jp      JMPINI
-
-.default_palette:
-    db $00, $03, $1D, $1F, $30, $33, $29, $3F
-    db $2A, $28, $22, $20, $2F, $19, $02, $15
-
-;-----------------------------------------------------------------------------
-; Common initialisation
-;-----------------------------------------------------------------------------
-_common_init:
-    ; Clear screen (the system ROM already loaded 11 in A)
-    call    TTYOUT
-
     ; Initialize character RAM
     call    init_charram
 
@@ -95,7 +83,12 @@ _common_init:
     ld      a, ESPCMD_RESET
     call    esp_cmd
 
-    ret
+    ; Back to system ROM init
+    jp      JMPINI
+
+.default_palette:
+    db $00, $03, $1D, $1F, $30, $33, $29, $3F
+    db $2A, $28, $22, $20, $2F, $19, $02, $15
 
 ;-----------------------------------------------------------------------------
 ; Character RAM initialization
@@ -130,32 +123,8 @@ init_charram:
 ; Cold boot entry point
 ;-----------------------------------------------------------------------------
 _coldboot:
-    ; Test the memory (only testing 1st byte in each 256 byte page!)
-    ld      hl, $3A00           ; First page of free RAM
-    ld      a, $55              ; Pattern = 01010101
-.memtest:
-    ld      c, (hl)             ; Save original RAM contents in C
-    ld      (hl), a             ; Write pattern
-    cp      (hl)                ; Compare read to write
-    jr      nz, .memready       ; If not equal then end of RAM
-    cpl                         ; Invert pattern
-    ld      (hl), a             ; Write inverted pattern
-    cp      (hl)                ; Compare read to write
-    jr      nz, .memready       ; If not equal then end of RAM
-    ld      (hl), c             ; Restore original RAM contents
-    cpl                         ; Uninvert pattern
-    inc     h                   ; Advance to next page
-    jr      nz, .memtest        ; Continue testing RAM until end of memory
-.memready:
-
-    ; Check that we have enough RAM
-    ld      a, h
-    cp      $C0                 ; 32k expansion
-    jp      c, OMERR            ; OM error if expansion RAM missing
-    dec     hl                  ; Last good RAM addresss
-    ld      hl, BASIC_RAM_END   ; Top of public RAM
-
     ; Set memory size
+    ld      hl, BASIC_RAM_END   ; Top of public RAM
     ld      (MEMSIZ), hl        ; MEMSIZ, Contains the highest RAM location
     ld      de, -50             ; Subtract 50 for strings space
     add     hl, de
