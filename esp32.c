@@ -190,7 +190,7 @@ void esp32_init(const char *basepath) {
 static void esp_open(uint8_t flags, const char *path_arg) {
     // Translate flags
     int  mi = 0;
-    char mode[4];
+    char mode[5];
 
     // if (flags & FO_CREATE)
     //     oflag |= O_CREAT;
@@ -233,7 +233,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
         }
     }
     mode[mi++] = 'b';
-    mode[mi++] = 0;
+    mode[mi] = 0;
 
     // Find free file descriptor
     int fd = -1;
@@ -305,7 +305,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
     FILE *f = state.fds[fd];
 
     static uint8_t tmpbuf[0x10000];
-    int            result = fread(tmpbuf, 1, size, f);
+    int            result = (int)fread(tmpbuf, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -328,7 +328,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
     }
     FILE *f = state.fds[fd];
 
-    int result = fwrite(data, 1, size, f);
+    int result = (int)fwrite(data, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
