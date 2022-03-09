@@ -292,7 +292,7 @@ void reset(void) {
 // 366 active pixels
 
 #define HCYCLES_PER_LINE (455)
-#define HCYCLES_PER_SAMPLE (149)
+#define HCYCLES_PER_SAMPLE (162)
 
 static void render_screen(SDL_Renderer *renderer) {
     static SDL_Texture *texture = NULL;

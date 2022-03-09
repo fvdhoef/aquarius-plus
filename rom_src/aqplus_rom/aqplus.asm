@@ -21,7 +21,7 @@
 ; LOAD   - Load file from USB disk
 ; SAVE   - Save file to USB disk
 ; DIR    - Display USB disk directory with wildcard
-; CAT    - ** Not supported **
+; MKDIR  - Create directory
 ; DEL    - Delete file
 ; CD     - Change directory
 ;
