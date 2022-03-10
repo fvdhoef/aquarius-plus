@@ -26,7 +26,7 @@ with open("../../aquarius.rom", "wb") as f:
         f.write(f2.read())
 
     # Aquarius Character ROM
-    with open("../../assets/AquariusCharSetS2.bin", "rb") as f2:
+    with open("../../assets/AquariusCharacterSet.bin", "rb") as f2:
         f.write(f2.read())
 
     # CP437 Character ROM
