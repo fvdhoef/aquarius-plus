@@ -87,6 +87,15 @@ void video_draw_line(void) {
 
             // Next column
             col = (col + 1) & 63;
+
+            for (int i = 0; i < 4; i++) {
+                uint8_t data = emustate.videoram[pat_offs + i];
+
+                line_bitmap[idx++] = (data >> 4) | (1 << 4);
+                idx &= 511;
+                line_bitmap[idx++] = (data & 0xF) | (1 << 4);
+                idx &= 511;
+            }
         }
     }
 
