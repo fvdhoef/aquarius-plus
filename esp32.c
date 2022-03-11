@@ -1,6 +1,12 @@
 #include "esp32.h"
 #include "direnum.h"
 
+#if 0
+#define DBGF(...) printf(__VA_ARGS__)
+#else
+#define DBGF(...)
+#endif
+
 enum {
     ESPCMD_RESET    = 0x01, // Reset ESP
     ESPCMD_OPEN     = 0x10, // Open / create file
@@ -90,7 +96,7 @@ static int txfifo_read(void) {
 }
 
 static char *resolve_path(const char *path) {
-    // printf("resolve_path: '%s'\n", path);
+    // DBGF("resolve_path: '%s'\n", path);
 
     size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = malloc(tmppath_size);
@@ -182,7 +188,7 @@ void esp32_init(const char *basepath) {
     strncpy(state.basepath, basepath, basepath_len);
     state.basepath[basepath_len] = 0;
 
-    printf("basepath: '%s'\n", state.basepath);
+    DBGF("basepath: '%s'\n", state.basepath);
 
     state.current_path = strdup("");
 }
@@ -257,7 +263,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("OPEN: flags: 0x%02X (%s) '%s'\n", flags, mode, full_path);
+    DBGF("OPEN: flags: 0x%02X (%s) '%s'\n", flags, mode, full_path);
 
     FILE *f      = fopen(full_path, mode);
     int   err_no = errno;
@@ -278,11 +284,11 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 
     txfifo_write(fd);
 
-    printf("OPEN fd: %d\n", fd);
+    DBGF("OPEN fd: %d\n", fd);
 }
 
 static void esp_close(uint8_t fd) {
-    printf("CLOSE fd: %d\n", fd);
+    DBGF("CLOSE fd: %d\n", fd);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -296,7 +302,7 @@ static void esp_close(uint8_t fd) {
 }
 
 static void esp_read(uint8_t fd, uint16_t size) {
-    printf("READ fd: %d  size: %u\n", fd, size);
+    DBGF("READ fd: %d  size: %u\n", fd, size);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -320,7 +326,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
 }
 
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
-    printf("WRITE fd: %d  size: %u\n", fd, size);
+    DBGF("WRITE fd: %d  size: %u\n", fd, size);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -340,7 +346,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 }
 
 static void esp_seek(uint8_t fd, uint32_t offset) {
-    printf("SEEK fd: %d  offset: %u\n", fd, offset);
+    DBGF("SEEK fd: %d  offset: %u\n", fd, offset);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -357,7 +363,7 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
 }
 
 static void esp_tell(uint8_t fd) {
-    printf("TELL fd: %d\n", fd);
+    DBGF("TELL fd: %d\n", fd);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -400,7 +406,7 @@ static void esp_opendir(const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("OPENDIR: '%s'\n", full_path);
+    DBGF("OPENDIR: '%s'\n", full_path);
 
     direnum_ctx_t ctx = direnum_open(full_path);
     free(full_path);
@@ -415,11 +421,11 @@ static void esp_opendir(const char *path_arg) {
     state.dds[dd] = ctx;
     txfifo_write(dd);
 
-    printf("OPENDIR dd: %d\n", dd);
+    DBGF("OPENDIR dd: %d\n", dd);
 }
 
 static void esp_closedir(uint8_t dd) {
-    printf("CLOSEDIR dd: %d\n", dd);
+    DBGF("CLOSEDIR dd: %d\n", dd);
 
     if (dd >= MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -434,7 +440,7 @@ static void esp_closedir(uint8_t dd) {
 }
 
 static void esp_readdir(uint8_t dd) {
-    // printf("READDIR dd: %d\n", dd);
+    // DBGF("READDIR dd: %d\n", dd);
 
     if (dd >= MAX_DDS || state.dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -463,16 +469,16 @@ static void esp_readdir(uint8_t dd) {
     txfifo_write((de.size >> 16) & 0xFF);
     txfifo_write((de.size >> 24) & 0xFF);
 
-    // printf(
+    // DBGF(
     //     "%02u-%02u-%02u %02u:%02u ",
     //     tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
     //     tm->tm_hour, tm->tm_min);
     // if (de.attr & DE_DIR) {
-    //     printf("<DIR>");
+    //     DBGF("<DIR>");
     // } else {
-    //     printf("%5u", de.size);
+    //     DBGF("%5u", de.size);
     // }
-    // printf(" %s\n", de.filename);
+    // DBGF(" %s\n", de.filename);
 
     const char *p = de.filename;
     while (*p) {
@@ -490,7 +496,7 @@ static void esp_delete(const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("DELETE %s\n", full_path);
+    DBGF("DELETE %s\n", full_path);
 
     int result = unlink(full_path);
     if (result < 0) {
@@ -527,7 +533,7 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
     strcat(new_full_path, new_path);
     free(new_path);
 
-    printf("RENAME %s -> %s\n", old_full_path, new_full_path);
+    DBGF("RENAME %s -> %s\n", old_full_path, new_full_path);
 
     int result = rename(old_full_path, new_full_path);
     free(old_full_path);
@@ -550,7 +556,7 @@ static void esp_mkdir(const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("MKDIR %s\n", full_path);
+    DBGF("MKDIR %s\n", full_path);
 
 #if _WIN32
     int result = mkdir(full_path);
@@ -574,7 +580,7 @@ static void esp_chdir(const char *path_arg) {
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
 
-    printf("CHDIR %s\n", full_path);
+    DBGF("CHDIR %s\n", full_path);
 
     struct stat st;
     int         result = stat(full_path, &st);
@@ -602,7 +608,7 @@ static void esp_stat(const char *path_arg) {
     strcat(full_path, path);
     free(path);
 
-    printf("STAT %s\n", full_path);
+    DBGF("STAT %s\n", full_path);
 
     struct stat st;
     int         result = stat(full_path, &st);
@@ -640,7 +646,7 @@ static void esp_stat(const char *path_arg) {
 }
 
 static void esp_getcwd(void) {
-    printf("GETCWD\n");
+    DBGF("GETCWD\n");
 
     txfifo_write(0);
     int len = (int)strlen(state.current_path);
@@ -672,13 +678,13 @@ static void close_all_descriptors(void) {
 }
 
 static void esp_closeall(void) {
-    printf("CLOSEALL\n");
+    DBGF("CLOSEALL\n");
     close_all_descriptors();
     txfifo_write(0);
 }
 
 void esp32_write_data(uint8_t data) {
-    // printf("esp32_write_data: %02X\n", data);
+    // DBGF("esp32_write_data: %02X\n", data);
     if (state.basepath == NULL) {
         txfifo_write(ERR_NO_DISK);
         return;
@@ -695,7 +701,7 @@ void esp32_write_data(uint8_t data) {
         switch (cmd) {
             case ESPCMD_RESET: {
                 // Close any open descriptors
-                printf("RESET\n");
+                DBGF("RESET\n");
                 close_all_descriptors();
                 free(state.current_path);
                 state.current_path = strdup("");
@@ -850,7 +856,7 @@ uint8_t esp32_read_data(void) {
 }
 
 void esp32_write_ctrl(uint8_t data) {
-    // printf("esp32_write_ctrl: %02X\n", data);
+    // DBGF("esp32_write_ctrl: %02X\n", data);
 
     if (data & 0x80) {
         state.rxbuf_idx = 0;
