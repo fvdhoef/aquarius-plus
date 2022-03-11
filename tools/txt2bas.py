@@ -104,6 +104,9 @@ tokens = {
     # 0xDE: "<reserved>",
     0xDF: "DEL",
     0xE0: "CD",
+    0xE1: "IN",
+    0xE2: "JOY",
+    0xE3: "HEX$",
 }
 
 
