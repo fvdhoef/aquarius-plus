@@ -217,9 +217,9 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
                 emustate.video_sprattr[(addr >> 8) & 0x3F] = data & 0xFE;
                 emustate.video_spridx[(addr >> 8) & 0x3F]  = (emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF) | ((data & 1) << 8);
                 return;
-            case 0xE9: emustate.video_palette_text[(addr >> 8) & 0x0F] = data & 0x3F; return;
-            case 0xEA: emustate.video_palette_tile[(addr >> 8) & 0x0F] = data & 0x3F; return;
-            case 0xEB: emustate.video_palette_sprite[(addr >> 8) & 0x0F] = data & 0x3F; return;
+            case 0xE9: emustate.video_palette_text[(addr >> 8) & 0x0F] = data & 0x7F; return;
+            case 0xEA: emustate.video_palette_tile[(addr >> 8) & 0x0F] = data & 0x7F; return;
+            case 0xEB: emustate.video_palette_sprite[(addr >> 8) & 0x0F] = data & 0x7F; return;
             case 0xEC: return;
             case 0xED: emustate.video_irqline = data; return;
             case 0xEE: emustate.irqmask = data; return;
@@ -312,14 +312,20 @@ static void render_screen(SDL_Renderer *renderer) {
             // Convert from RGB 2:2:2 to RGB 8:8:8
             uint8_t col222 = fb[j * VIDEO_WIDTH + i];
 
-            unsigned r = (col222 >> 0) & 3;
-            unsigned g = (col222 >> 2) & 3;
-            unsigned b = (col222 >> 4) & 3;
+            unsigned r2   = (col222 >> 0) & 3;
+            unsigned g2   = (col222 >> 2) & 3;
+            unsigned b2   = (col222 >> 4) & 3;
+            unsigned bit0 = (col222 >> 6) & 1;
 
-            ((uint32_t *)((uintptr_t)pixels + j * pitch))[i] =
-                (r << 22) | (r << 20) | (r << 18) | (r << 16) |
-                (g << 14) | (g << 12) | (g << 10) | (g << 8) |
-                (b << 6) | (b << 4) | (b << 2) | (b << 0);
+            unsigned r3 = (r2 << 1) | bit0;
+            unsigned g3 = (g2 << 1) | bit0;
+            unsigned b3 = (b2 << 1) | bit0;
+
+            unsigned r8 = (r3 << 5) | (r3 << 2) | (r3 >> 1);
+            unsigned g8 = (g3 << 5) | (g3 << 2) | (g3 >> 1);
+            unsigned b8 = (b3 << 5) | (b3 << 2) | (b3 >> 1);
+
+            ((uint32_t *)((uintptr_t)pixels + j * pitch))[i] = (r8 << 16) | (g8 << 8) | (b8);
         }
     }
 
