@@ -78,8 +78,9 @@ void video_draw_line(void) {
             unsigned tile_idx = ((entry_h & 1) << 8) | entry_l;
             bool     hflip    = (entry_h & (1 << 1)) != 0;
             bool     vflip    = (entry_h & (1 << 2)) != 0;
-            bool     palette  = (entry_h & (1 << 3)) != 0;
-            bool     priority = (entry_h & (1 << 4)) != 0;
+            uint8_t  palette  = (entry_h & (1 << 3)) != 0 ? (2 << 4) : (1 << 4);
+            uint8_t  priority = (entry_h & (1 << 4)) != 0 ? (1 << 6) : 0;
+            uint8_t  attr     = palette | priority;
 
             unsigned pat_offs = (tile_idx << 5) | ((tline & 7) << 2);
             if (vflip)
@@ -88,13 +89,23 @@ void video_draw_line(void) {
             // Next column
             col = (col + 1) & 63;
 
-            for (int i = 0; i < 4; i++) {
-                uint8_t data = emustate.videoram[pat_offs + i];
+            for (int n = 0; n < 4; n++) {
+                int m = n;
+                if (hflip)
+                    m ^= 7;
 
-                line_bitmap[idx++] = (data >> 4) | (1 << 4);
+                uint8_t data = emustate.videoram[pat_offs + m];
+
+                if (!hflip) {
+                    line_bitmap[idx++] = (data >> 4) | attr;
+                    idx &= 511;
+                }
+                line_bitmap[idx++] = (data & 0xF) | attr;
                 idx &= 511;
-                line_bitmap[idx++] = (data & 0xF) | (1 << 4);
-                idx &= 511;
+                if (hflip) {
+                    line_bitmap[idx++] = (data >> 4) | attr;
+                    idx &= 511;
+                }
             }
         }
     }
@@ -121,7 +132,7 @@ void video_draw_line(void) {
         }
 
         uint8_t color = 0;
-        switch (colidx >> 4) {
+        switch ((colidx >> 4) & 3) {
             case 0: color = emustate.video_palette_text[colidx & 0xF]; break;
             case 1: color = emustate.video_palette_tile[colidx & 0xF]; break;
             case 2: color = emustate.video_palette_sprite[colidx & 0xF]; break;
