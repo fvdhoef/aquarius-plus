@@ -130,6 +130,10 @@ addr = 0x3903
 
 # Tokenize lines
 for idx, line in enumerate(args.input.readlines()):
+    line = line.strip()
+    if not line:
+        continue
+
     result = re.search("^([0-9]+)(.*)$", line)
     if result == None:
         error(idx, "Syntax error")
