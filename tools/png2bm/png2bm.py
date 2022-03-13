@@ -18,13 +18,15 @@ if len(palette) > 16:
     exit(1)
 
 palette = [
-    (entry[0] >> 6) | ((entry[1] >> 6) << 2) | ((entry[2] >> 6) << 4)
+    ((entry[0] >> 4) << 8) | ((entry[1] >> 4) << 4) | ((entry[2] >> 4) << 0)
     for entry in palette
 ]
 palette = palette + (16 - len(palette)) * [0]
 
-print(palette)
-
+palbytes = bytearray()
+for entry in palette:
+    palbytes.append(entry & 0xFF)
+    palbytes.append(entry >> 8)
 
 # Generate color RAM
 colorram_data = []
@@ -59,6 +61,8 @@ for line in range(200):
                 bm |= 1 << (7 - i)
 
         bitmapram.append(bm)
+
+bitmapram = bitmapram + palbytes
 bitmapram = bitmapram.ljust(8192, b"\x00")
 
 with open("image.bin", "wb") as f:
