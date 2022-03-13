@@ -1,9 +1,9 @@
 #include "video.h"
 #include "emustate.h"
 
-static uint8_t screen[VIDEO_WIDTH * VIDEO_HEIGHT];
+static uint16_t screen[VIDEO_WIDTH * VIDEO_HEIGHT];
 
-const uint8_t *video_get_fb(void) {
+const uint16_t *video_get_fb(void) {
     return screen;
 }
 
@@ -111,8 +111,8 @@ void video_draw_line(void) {
     }
 
     // Compose layers
-    uint8_t *pd = &screen[line * VIDEO_WIDTH];
-    idx         = 512 - 16;
+    uint16_t *pd = &screen[line * VIDEO_WIDTH];
+    idx          = 512 - 16;
 
     for (int i = 0; i < VIDEO_WIDTH; i++) {
         bool active = idx < 320 && vactive;
@@ -131,7 +131,7 @@ void video_draw_line(void) {
             colidx = line_bitmap[idx];
         }
 
-        uint8_t color = 0;
+        uint16_t color = 0;
         switch ((colidx >> 4) & 3) {
             case 0: color = emustate.video_palette_text[colidx & 0xF]; break;
             case 1: color = emustate.video_palette_tile[colidx & 0xF]; break;

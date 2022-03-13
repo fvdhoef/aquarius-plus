@@ -62,8 +62,9 @@ _reset:
     out     (IO_VCTRL), a
 
     ; Init palettes
-    ld      hl, .default_palette + 15
-    ld      b, 15
+    ld      hl, .default_palette
+    ld      b, 0
+    ld      d, 32
 .palloop:
     ld      a, (hl)
     ld      c, IO_VPALTXT
@@ -72,9 +73,10 @@ _reset:
     out     (c), a
     ld      c, IO_VPALSPR
     out     (c), a
-    dec     hl
-    dec     b
-    jp      p, .palloop
+    inc     hl
+    inc     b
+    dec     d
+    jr      nz, .palloop
 
     ; Initialize character RAM
     call    init_charram
@@ -87,11 +89,8 @@ _reset:
     jp      JMPINI
 
 .default_palette:
-    db $00, $03, $1D, $1F, $30, $33, $69, $7F
-    db $6A, $28, $22, $20, $2F, $59, $02, $40
-
-    ; db $00, $03, $1D, $1F, $30, $33, $29, $3F
-    ; db $2A, $28, $22, $20, $2F, $19, $02, $15
+    dw $111, $F11, $1F1, $FF1, $22E, $F1F, $3CC, $FFF
+    dw $CCC, $3BB, $C2C, $419, $FF7, $2D4, $B22, $333
 
 ;-----------------------------------------------------------------------------
 ; Character RAM initialization

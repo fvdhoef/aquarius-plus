@@ -192,26 +192,38 @@ The character RAM is used by the text mode character generator to display text o
     <tr>
         <td>$E9</td>
         <td>VPALTXT</td>
-        <td align="center" colspan="2">-</td>
-        <td align="center" colspan="2">B</td>
-        <td align="center" colspan="2">G</td>
-        <td align="center" colspan="2">R</td>
+        <td align="center" colspan="4">Green</td>
+        <td align="center" colspan="4">Blue</td>
+    </tr>
+    <tr>
+        <td>$E9</td>
+        <td>VPALTXT</td>
+        <td align="center" colspan="4">-</td>
+        <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
         <td>$EA</td>
         <td>VPALTILE</td>
-        <td align="center" colspan="2">-</td>
-        <td align="center" colspan="2">B</td>
-        <td align="center" colspan="2">G</td>
-        <td align="center" colspan="2">R</td>
+        <td align="center" colspan="4">Green</td>
+        <td align="center" colspan="4">Blue</td>
+    </tr>
+    <tr>
+        <td>$EA</td>
+        <td>VPALTILE</td>
+        <td align="center" colspan="4">-</td>
+        <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
         <td>$EB</td>
         <td>VPALSPR</td>
-        <td align="center" colspan="2">-</td>
-        <td align="center" colspan="2">B</td>
-        <td align="center" colspan="2">G</td>
-        <td align="center" colspan="2">R</td>
+        <td align="center" colspan="4">Green</td>
+        <td align="center" colspan="4">Blue</td>
+    </tr>
+    <tr>
+        <td>$EB</td>
+        <td>VPALSPR</td>
+        <td align="center" colspan="4">-</td>
+        <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
         <td>$EC</td>
