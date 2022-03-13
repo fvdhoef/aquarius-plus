@@ -265,6 +265,10 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
 
 **_Sprites_** can be set partially off-screen by using negative values. For example, a sprite positioned at X-position 508, will show 4 pixels on the left side of the screen.
 
+**Implementation detail**: when writing to the lower byte of a palette entry, the entry itself isn’t yet updated, but the value written is stored in a latch. When writing the upper byte the value is combined with the value of the latch and the complete 12-bit value is written.
+
+Similarly the writing to VSCRX_L will store the value in a latch. Only when writing to VSCRX_H, the latched value is combined with written value and the complete scroll register is updated.
+
 ### Tile map / bitmap mode
 
 | Value | Description       |
