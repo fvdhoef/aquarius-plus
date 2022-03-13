@@ -21,10 +21,15 @@ if len(palette) > 16:
     exit(1)
 
 palette = [
-    (entry[0] >> 6) | ((entry[1] >> 6) << 2) | ((entry[2] >> 6) << 4)
+    ((entry[0] >> 4) << 8) | ((entry[1] >> 4) << 4) | ((entry[2] >> 4) << 0)
     for entry in palette
 ]
 palette = palette + (16 - len(palette)) * [0]
+
+palbytes = bytearray()
+for entry in palette:
+    palbytes.append(entry & 0xFF)
+    palbytes.append(entry >> 8)
 
 patterns = bytearray()
 for row in range(16):
@@ -38,4 +43,4 @@ for row in range(16):
 with open("tiledata.bin", "wb") as f:
     f.write(tilemap)
     f.write(patterns)
-    f.write(bytearray(palette))
+    f.write(bytearray(palbytes))
