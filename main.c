@@ -128,19 +128,19 @@ static uint8_t io_read(size_t param, ushort addr) {
             case 0xE7: return emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF;
             case 0xE8: return (emustate.video_sprattr[(addr >> 8) & 0x3F] & 0xFE) | ((emustate.video_spridx[(addr >> 8) & 0x3F] >> 8) & 1);
             case 0xE9:
-                if ((addr & 1) == 0)
+                if ((addr & (1 << 8)) == 0)
                     return emustate.video_palette_text[(addr >> 9) & 0xF] & 0xFF;
                 else
                     return emustate.video_palette_text[(addr >> 9) & 0xF] >> 8;
 
             case 0xEA:
-                if ((addr & 1) == 0)
+                if ((addr & (1 << 8)) == 0)
                     return emustate.video_palette_tile[(addr >> 9) & 0xF] & 0xFF;
                 else
                     return emustate.video_palette_tile[(addr >> 9) & 0xF] >> 8;
 
             case 0xEB:
-                if ((addr & 1) == 0)
+                if ((addr & (1 << 8)) == 0)
                     return emustate.video_palette_sprite[(addr >> 9) & 0xF] & 0xFF;
                 else
                     return emustate.video_palette_sprite[(addr >> 9) & 0xF] >> 8;
