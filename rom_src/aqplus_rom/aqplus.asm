@@ -480,7 +480,7 @@ ST_LOCATE:
     add     hl, hl              ; HL is now 40 * rows
     add     hl, de              ; Added the columns
     ld      de, SCREEN          ; Screen character-matrix (= 12288 dec)
-    add     hl, de              ; Putting it al together
+    add     hl, de              ; Putting it all together
     jp      TTYFIS              ; Save cursor position and return
 
 ;-----------------------------------------------------------------------------

@@ -182,7 +182,8 @@ The character RAM is used by the text mode character generator to display text o
     <tr>
         <td>$E8</td>
         <td>VSPRATTR</td>
-        <td align="center" colspan="3">-</td>
+        <td align="center" colspan="1">Enable</td>
+        <td align="center" colspan="2">-</td>
         <td align="center" colspan="1">Priority</td>
         <td align="center" colspan="1">Palette</td>
         <td align="center" colspan="1">V-flip</td>
@@ -267,7 +268,8 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
 
 **Implementation detail**: when writing to the lower byte of a palette entry, the entry itself isn’t yet updated, but the value written is stored in a latch. When writing the upper byte the value is combined with the value of the latch and the complete 12-bit value is written.
 
-Similarly the writing to VSCRX_L will store the value in a latch. Only when writing to VSCRX_H, the latched value is combined with written value and the complete scroll register is updated.
+Similarly writing to VSCRX_L or VSPRX_L will store the value in a latch. Only when writing to VSCRX_H or VSPRX_H, the latched value is combined with written value and the complete scroll register is updated.
+
 
 ### Tile map / bitmap mode
 

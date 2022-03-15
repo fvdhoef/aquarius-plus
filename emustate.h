@@ -18,8 +18,7 @@ struct emulation_state {
     uint8_t    handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
     bool       ramexp_enabled;   // RAM expansion enabled?
-    uint8_t    scrx_latch;
-    uint8_t    palette_latch;
+    uint8_t    tmp_latch;
 
     // IO space
     uint8_t       video_ctrl;               // $E0   : Video control register

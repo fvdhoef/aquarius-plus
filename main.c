@@ -223,15 +223,20 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
             case 0xE0: emustate.video_ctrl = data; return;
             case 0xE1:
                 // emustate.video_scrx = (emustate.video_scrx & ~0xFF) | data; return;
-                emustate.scrx_latch = data;
+                emustate.tmp_latch = data;
                 return;
             case 0xE2:
                 // emustate.video_scrx = (emustate.video_scrx & 0xFF) | ((data & 1) << 8);
-                emustate.video_scrx = emustate.scrx_latch | ((data & 1) << 8);
+                emustate.video_scrx = emustate.tmp_latch | ((data & 1) << 8);
                 return;
             case 0xE3: emustate.video_scry = data; return;
-            case 0xE4: emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
-            case 0xE5: emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & 0xFF) | ((data & 1) << 8); return;
+            case 0xE4:
+                emustate.tmp_latch = data;
+                return;
+            case 0xE5:
+                //  emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
+                emustate.video_sprx[(addr >> 8) & 0x3F] = ((data & 1) << 8) | emustate.tmp_latch;
+                return;
             case 0xE6: emustate.video_spry[(addr >> 8) & 0x3F] = data; return;
             case 0xE7: emustate.video_spridx[(addr >> 8) & 0x3F] = (emustate.video_spridx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
             case 0xE8:
@@ -240,21 +245,21 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
                 return;
             case 0xE9:
                 if ((addr & (1 << 8)) == 0)
-                    emustate.palette_latch = data;
+                    emustate.tmp_latch = data;
                 else
-                    emustate.video_palette_text[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.palette_latch;
+                    emustate.video_palette_text[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
                 return;
             case 0xEA:
                 if ((addr & (1 << 8)) == 0)
-                    emustate.palette_latch = data;
+                    emustate.tmp_latch = data;
                 else
-                    emustate.video_palette_tile[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.palette_latch;
+                    emustate.video_palette_tile[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
                 return;
             case 0xEB:
                 if ((addr & (1 << 8)) == 0)
-                    emustate.palette_latch = data;
+                    emustate.tmp_latch = data;
                 else
-                    emustate.video_palette_sprite[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.palette_latch;
+                    emustate.video_palette_sprite[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
                 return;
             case 0xEC: return;
             case 0xED: emustate.video_irqline = data; return;
