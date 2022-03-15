@@ -134,6 +134,7 @@ The character RAM is used by the text mode character generator to display text o
         <th>Bit&nbsp;2</th>
         <th>Bit&nbsp;1 </th>
         <th>Bit&nbsp;0</th>
+        <th>Notes</th>
     </tr>
     <tr>
         <td>$E0</td>
@@ -142,42 +143,50 @@ The character RAM is used by the text mode character generator to display text o
         <td colspan="1" align="center">Sprites enable</td>
         <td colspan="2" align="center">Tile map / bitmap mode</td>
         <td colspan="1" align="center">Text enable</td>
+        <td></td>
     </tr>
     <tr>
         <td>$E1</td>
         <td>VSCRX_L</td>
         <td colspan="8" align="center">Tile map X-scroll (7:0)</td>
+        <td></td>    
     </tr>
     <tr>
         <td>$E2</td>
         <td>VSCRX_H</td>
         <td colspan="7" align="center">-</td>
         <td colspan="1" align="center">Tile map X-scroll (8)</td>
+        <td></td>
     </tr>
     <tr>
         <td>$E3</td>
         <td>VSCRY</td>
         <td colspan="8" align="center">Tile map Y-scroll</td>
+        <td></td>
     </tr>
     <tr>
         <td>$E4</td>
         <td>VSPRX_L</td>
         <td colspan="8" align="center">Sprite X-position (7:0)</td>
+        <td>A13-A8 selects sprite</td>
     </tr>
     <tr>
         <td>$E5</td>
         <td>VSPRX_H</td>
         <td colspan="8" align="center">Sprite X-position (8)</td>
+        <td>A13-A8 selects sprite</td>
     </tr>
     <tr>
         <td>$E6</td>
         <td>VSPRY</td>
         <td colspan="8" align="center">Sprite Y-position</td>
+        <td>A13-A8 selects sprite</td>
     </tr>
     <tr>
         <td>$E7</td>
         <td>VSPRIDX</td>
         <td colspan="8" align="center">Sprite tile index (7:0)</td>
+        <td>A13-A8 selects sprite</td>
     </tr>
     <tr>
         <td>$E8</td>
@@ -189,52 +198,61 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="1">V-flip</td>
         <td align="center" colspan="1">H-flip</td>
         <td align="center" colspan="1">Tile index (8)</td>
+        <td>A13-A8 selects sprite</td>
     </tr>
     <tr>
         <td>$E9</td>
         <td>VPALTXT</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
+        <td>A8=0, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$E9</td>
         <td>VPALTXT</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
+        <td>A8=1, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$EA</td>
         <td>VPALTILE</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
+        <td>A8=0, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$EA</td>
         <td>VPALTILE</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
+        <td>A8=1, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$EB</td>
         <td>VPALSPR</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
+        <td>A8=0, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$EB</td>
         <td>VPALSPR</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
+        <td>A8=1, A12-A9 selects palette entry</td>
     </tr>
     <tr>
         <td>$EC</td>
         <td>VLINE</td>
         <td align="center" colspan="8">Current line number</td>
+        <td></td>
     </tr>
     <tr>
         <td>$ED</td>
         <td>VIRQLINE</td>
         <td align="center" colspan="8">Line number at which to generate IRQ</td>
+        <td></td>
     </tr>
     <tr>
         <td>$EE</td>
@@ -242,6 +260,7 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
         <td align="center" colspan="1">VSync</td>
+        <td></td>
     </tr>
     <tr>
         <td>$EF</td>
@@ -249,13 +268,14 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
         <td align="center" colspan="1">VSync</td>
+        <td></td>
     </tr>
 </table>
 
-For registers $E4-$E8, A11-A8 determines which sprite to read or write. (eg. use a OUT (C),A instruction with B containing palette index)  
-For registers $E9-$EB, A11-A8 determines which palette entry to read or write. (eg. use a OUT (C),A instruction with B containing palette index)
+For registers $E4-$E8, A13-A8 determines which sprite to read or write. (eg. use a OUT (C),A instruction with B containing palette index)  
+For registers $E9-$EB, A12-A8 determines which palette entry to read or write. (eg. use a OUT (C),A instruction with B containing palette index)
 
-The current line number is reflected in the **_VLINE_** register. Internal line number range from 0-261. Line numbers above 255 are reflected in this register as 255.
+The current line number is reflected in the **_VLINE_** register. Internal line numbers range from 0-261. Line numbers above 255 are reflected in this register as 255.
 
 The **_IRQMASK_** register determines which video events generate an interrupt.  
 The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a corresponding bit the event is cleared.
@@ -269,7 +289,6 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
 **Implementation detail**: when writing to the lower byte of a palette entry, the entry itself isn’t yet updated, but the value written is stored in a latch. When writing the upper byte the value is combined with the value of the latch and the complete 12-bit value is written.
 
 Similarly writing to VSCRX_L or VSPRX_L will store the value in a latch. Only when writing to VSCRX_H or VSPRX_H, the latched value is combined with written value and the complete scroll register is updated.
-
 
 ### Tile map / bitmap mode
 
