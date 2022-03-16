@@ -124,56 +124,67 @@ void video_draw_line(void) {
         }
 
         // Render sprites
-        for (int i = 0; i < 64; i++) {
-            unsigned sprattr = emustate.video_sprattr[i];
+        if ((emustate.video_ctrl & (1 << 3)) != 0) {
+            for (int i = 0; i < 64; i++) {
+                unsigned sprattr = emustate.video_sprattr[i];
 
-            // Check if sprite enabled
-            bool enabled = (sprattr & (1 << 7)) != 0;
-            if (!enabled)
-                continue;
+                // Check if sprite enabled
+                bool enabled = (sprattr & (1 << 7)) != 0;
+                if (!enabled)
+                    continue;
 
-            // Check if sprite is visible on this line
-            int sprline = (bmline - emustate.video_spry[i]) & 0xFF;
-            if (sprline > 7)
-                continue;
+                // Check if sprite is visible on this line
+                int sprline = (bmline - emustate.video_spry[i]) & 0xFF;
+                if (sprline > 7)
+                    continue;
 
-            int      sprx     = emustate.video_sprx[i];
-            unsigned tile_idx = emustate.video_spridx[i];
-            bool     hflip    = (sprattr & (1 << 1)) != 0;
-            bool     vflip    = (sprattr & (1 << 2)) != 0;
-            uint8_t  palette  = (sprattr & (1 << 3)) != 0 ? (1 << 4) : (2 << 4);
-            bool     priority = (sprattr & (1 << 4)) != 0;
+                int      sprx     = emustate.video_sprx[i];
+                unsigned tile_idx = emustate.video_spridx[i];
+                bool     hflip    = (sprattr & (1 << 1)) != 0;
+                bool     vflip    = (sprattr & (1 << 2)) != 0;
+                uint8_t  palette  = (sprattr & (1 << 3)) != 0 ? (1 << 4) : (2 << 4);
+                bool     priority = (sprattr & (1 << 4)) != 0;
 
-            idx = sprx;
+                idx = sprx;
 
-            if (vflip)
-                sprline ^= 7;
+                if (vflip)
+                    sprline ^= 7;
 
-            unsigned pat_offs = (tile_idx << 5) | (sprline << 2);
-            if (vflip)
-                pat_offs ^= (7 << 2);
+                unsigned pat_offs = (tile_idx << 5) | (sprline << 2);
+                if (vflip)
+                    pat_offs ^= (7 << 2);
 
-            for (int n = 0; n < 4; n++) {
-                int m = n;
-                if (hflip)
-                    m ^= 3;
+                for (int n = 0; n < 4; n++) {
+                    int m = n;
+                    if (hflip)
+                        m ^= 3;
 
-                uint8_t data = emustate.videoram[pat_offs + m];
+                    uint8_t data = emustate.videoram[pat_offs + m];
 
-                if (!hflip) {
+                    if (!hflip) {
+                        if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
+                            unsigned colidx = (data >> 4);
+
+                            if (colidx != 0)
+                                line_bitmap[idx++] = colidx | palette;
+                            idx &= 511;
+                        }
+                    }
                     if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
-                        line_bitmap[idx++] = (data >> 4) | palette;
+                        unsigned colidx = (data & 0xF);
+
+                        if (colidx != 0)
+                            line_bitmap[idx++] = colidx | palette;
                         idx &= 511;
                     }
-                }
-                if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
-                    line_bitmap[idx++] = (data & 0xF) | palette;
-                    idx &= 511;
-                }
-                if (hflip) {
-                    if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
-                        line_bitmap[idx++] = (data >> 4) | palette;
-                        idx &= 511;
+                    if (hflip) {
+                        if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
+                            unsigned colidx = (data >> 4);
+
+                            if (colidx != 0)
+                                line_bitmap[idx++] = colidx | palette;
+                            idx &= 511;
+                        }
                     }
                 }
             }
