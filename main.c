@@ -263,8 +263,8 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
                 return;
             case 0xEC: return;
             case 0xED: emustate.video_irqline = data; return;
-            case 0xEE: emustate.irqmask = data; return;
-            case 0xEF: emustate.irqstatus = data; return;
+            case 0xEE: emustate.irqmask = data & 3; return;
+            case 0xEF: emustate.irqstatus &= ~data; return;
             case 0xF0: emustate.bankregs[0] = data; return;
             case 0xF1: emustate.bankregs[1] = data; return;
             case 0xF2: emustate.bankregs[2] = data; return;
@@ -420,8 +420,14 @@ static void emulate(SDL_Renderer *renderer) {
             Z80Execute(&emustate.z80context);
             int delta = emustate.z80context.tstates * 2;
 
+            int old_line_hcycles = emustate.line_hcycles;
+
             emustate.line_hcycles += delta;
             emustate.sample_hcycles += delta;
+
+            if (old_line_hcycles < 320 && emustate.line_hcycles >= 320) {
+                emustate.irqstatus |= (1 << 1);
+            }
 
             if (emustate.line_hcycles >= HCYCLES_PER_LINE) {
                 emustate.line_hcycles -= HCYCLES_PER_LINE;
@@ -429,11 +435,19 @@ static void emulate(SDL_Renderer *renderer) {
                 video_draw_line();
 
                 emustate.video_line++;
-                if (emustate.video_line == 262) {
+                if (emustate.video_line == 200) {
+                    emustate.irqstatus |= (1 << 0);
+
+                } else if (emustate.video_line == 262) {
                     render_screen(renderer);
                     emustate.video_line = 0;
                 }
             }
+
+            if ((emustate.irqstatus & emustate.irqmask) != 0) {
+                Z80INT(&emustate.z80context, 0xFF);
+            }
+
         } while (emustate.sample_hcycles < HCYCLES_PER_SAMPLE);
 
         emustate.sample_hcycles -= HCYCLES_PER_SAMPLE;
