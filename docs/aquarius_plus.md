@@ -278,8 +278,8 @@ The character RAM is used by the text mode character generator to display text o
     </tr>
 </table>
 
-For registers $E4-$E8, A13-A8 determines which sprite to read or write. (eg. use a OUT (C),A instruction with B containing palette index)  
-For registers $E9-$EB, A12-A8 determines which palette entry to read or write. (eg. use a OUT (C),A instruction with B containing palette index)
+For registers $E4-$E8, A13-A8 determines which sprite to read or write. (eg. in Assembly (not BASIC), use a OUT (C),A instruction with B containing palette index)  
+For registers $E9-$EB, A12-A8 determines which palette entry to read or write. (eg. in Assembly (not BASIC), use a OUT (C),A instruction with B containing palette index)
 
 The current line number is reflected in the **_VLINE_** register. Internal line numbers range from 0-261. Line numbers above 255 are reflected in this register as 255.
 
