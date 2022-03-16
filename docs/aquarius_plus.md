@@ -140,7 +140,8 @@ The character RAM is used by the text mode character generator to display text o
         <td>$E0</td>
         <td>VCTRL</td>
         <td align="center">-</td>
-        <td colspan="4" align="center">-</td>
+        <td colspan="3" align="center">-</td>
+        <td colspan="1" align="center">Text behind tile/bitmap</td>
         <td colspan="1" align="center">Sprites enable</td>
         <td colspan="2" align="center">Tile map / bitmap mode</td>
         <td colspan="1" align="center">Text enable</td>
