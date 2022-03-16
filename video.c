@@ -8,13 +8,13 @@ const uint16_t *video_get_fb(void) {
 }
 
 enum {
-    VCTRL_TEXT_ENABLE       = (1 << 0),
-    VCTRL_MODE_OFF          = (0 << 1),
-    VCTRL_MODE_TILEMAP      = (1 << 1),
-    VCTRL_MODE_BITMAP       = (2 << 1),
-    VCTRL_MODE_MASK         = (3 << 1),
-    VCTRL_SPRITES_ENABLE    = (1 << 3),
-    VCTRL_TEXT_BEHIND_TILES = (1 << 4),
+    VCTRL_TEXT_ENABLE    = (1 << 0),
+    VCTRL_MODE_OFF       = (0 << 1),
+    VCTRL_MODE_TILEMAP   = (1 << 1),
+    VCTRL_MODE_BITMAP    = (2 << 1),
+    VCTRL_MODE_MASK      = (3 << 1),
+    VCTRL_SPRITES_ENABLE = (1 << 3),
+    VCTRL_TEXT_PRIORITY  = (1 << 4),
 };
 
 void video_draw_line(void) {
@@ -199,9 +199,9 @@ void video_draw_line(void) {
     for (int i = 0; i < VIDEO_WIDTH; i++) {
         bool active = idx < 320 && vactive;
 
-        bool text_behind_tiles = (emustate.video_ctrl & VCTRL_TEXT_BEHIND_TILES) != 0;
-        bool text_enable       = (emustate.video_ctrl & VCTRL_TEXT_ENABLE) != 0;
-        bool tilebm_enable     = (emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF;
+        bool text_priority = (emustate.video_ctrl & VCTRL_TEXT_PRIORITY) != 0;
+        bool text_enable   = (emustate.video_ctrl & VCTRL_TEXT_ENABLE) != 0;
+        bool tilebm_enable = (emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF;
 
         uint8_t colidx = 0;
         if (tilebm_enable && !text_enable) {
@@ -214,7 +214,7 @@ void video_draw_line(void) {
             uint8_t bm_colidx    = line_bitmap[idx];
             bool    render_pixel = (bm_colidx & 0xF) != 0;
 
-            if (!text_behind_tiles && (colidx & 0xF) != 0) {
+            if (text_priority && (colidx & 0xF) != 0) {
                 render_pixel = false;
             }
             if (render_pixel) {
