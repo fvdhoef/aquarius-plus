@@ -124,9 +124,14 @@ The character RAM is used by the text mode character generator to display text o
 
 <table>
     <tr>
-        <th>Addr</th>
-        <th>Name</th>
-        <th>Bits&nbsp;15-8</th>
+        <th align="center">Name</th>
+        <th colspan="2" align="center">Reg Addr</th>
+        <th colspan="8" align="center">Reg Value</th>
+    </tr>
+    <tr>
+        <th></th>
+        <th align="center">LO Byte</th>
+        <th align="center">HI Byte</th>
         <th>Bit&nbsp;7</th>
         <th>Bit&nbsp;6</th>
         <th>Bit&nbsp;5 </th>
@@ -137,8 +142,8 @@ The character RAM is used by the text mode character generator to display text o
         <th>Bit&nbsp;0</th>
     </tr>
     <tr>
-        <td>$E0 - 224</td>
         <td>VCTRL</td>
+        <td>$E0 - 224</td>
         <td align="center">-</td>
         <td colspan="3" align="center">-</td>
         <td colspan="1" align="center">Text priority</td>
@@ -147,51 +152,51 @@ The character RAM is used by the text mode character generator to display text o
         <td colspan="1" align="center">Text enable</td>
     </tr>
     <tr>
-        <td>$E1 - 225</td>
         <td>VSCRX_L</td>
+        <td>$E1 - 225</td>
         <td align="center">-</td>
         <td colspan="8" align="center">Tile map X-scroll (7:0)</td>    
     </tr>
     <tr>
-        <td>$E2 - 226</td>
         <td>VSCRX_H</td>
+        <td>$E2 - 226</td>
         <td align="center">-</td>
         <td colspan="7" align="center">-</td>
         <td colspan="1" align="center">Tile map X-scroll (8)</td>
     </tr>
     <tr>
-        <td>$E3 - 227</td>
         <td>VSCRY</td>
+        <td>$E3 - 227</td>
         <td align="center">-</td>
         <td colspan="8" align="center">Tile map Y-scroll</td>
     </tr>
     <tr>
-        <td>$E4 - 228</td>
         <td>VSPRX_L</td>
+        <td>$E4 - 228</td>
         <td align="center">A13-A8 selects sprite</td>
         <td colspan="8" align="center">Sprite X-position (7:0)</td>
     </tr>
     <tr>
-        <td>$E5 - 229</td>
         <td>VSPRX_H</td>
+        <td>$E5 - 229</td>
         <td align="center">A13-A8 selects sprite</td>
         <td colspan="8" align="center">Sprite X-position (8)</td>
     </tr>
     <tr>
-        <td>$E6 - 230</td>
         <td>VSPRY</td>
+        <td>$E6 - 230</td>
         <td align="center">A13-A8 selects sprite</td>
         <td colspan="8" align="center">Sprite Y-position</td>
     </tr>
     <tr>
-        <td>$E7 - 231</td>
         <td>VSPRIDX</td>
+        <td>$E7 - 231</td>
         <td align="center">A13-A8 selects sprite</td>
         <td colspan="8" align="center">Sprite tile index (7:0)</td>
     </tr>
     <tr>
-        <td>$E8 - 232</td>
         <td>VSPRATTR</td>
+        <td>$E8 - 232</td>
         <td align="center">A13-A8 selects sprite</td>
         <td align="center" colspan="1">Enable</td>
         <td align="center" colspan="2">-</td>
@@ -202,70 +207,70 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="1">Tile index (8)</td>
     </tr>
     <tr>
-        <td>$E9 - 233</td>
         <td>VPALTXT</td>
-        <td align="center">A12-A9 selects palette entry, A8=0</td>
-        <td align="center" colspan="4">Green</td>
-        <td align="center" colspan="4">Blue</td>
-    </tr>
-    <tr>
         <td>$E9 - 233</td>
+        <td align="center">A12-A9 selects palette entry, A8=0</td>
+        <td align="center" colspan="4">Green</td>
+        <td align="center" colspan="4">Blue</td>
+    </tr>
+    <tr>
         <td>VPALTXT</td>
+        <td>$E9 - 233</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EA - 234</td>
         <td>VPALTILE</td>
+        <td>$EA - 234</td>
         <td align="center">A12-A9 selects palette entry, A8=0</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
     </tr>
     <tr>
-        <td>$EA - 234</td>
         <td>VPALTILE</td>
+        <td>$EA - 234</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EB - 235</td>
         <td>VPALSPR</td>
+        <td>$EB - 235</td>
         <td align="center">A12-A9 selects palette entry, A8=0</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
     </tr>
     <tr>
-        <td>$EB - 235</td>
         <td>VPALSPR</td>
+        <td>$EB - 235</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EC - 236</td>
         <td>VLINE</td>
+        <td>$EC - 236</td>
         <td align="center">-</td>
         <td align="center" colspan="8">Current line number</td>
     </tr>
     <tr>
-        <td>$ED - 237</td>
         <td>VIRQLINE</td>
+        <td>$ED - 237</td>
         <td align="center">-</td>
         <td align="center" colspan="8">Line number at which to generate IRQ</td>
     </tr>
     <tr>
-        <td>$EE - 238</td>
         <td>IRQMASK</td>
+        <td>$EE - 238</td>
         <td align="center">-</td>
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
         <td align="center" colspan="1">VSync</td>
     </tr>
     <tr>
-        <td>$EF - 239</td>
         <td>IRQSTAT</td>
+        <td>$EF - 239</td>
         <td align="center">-</td>
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
