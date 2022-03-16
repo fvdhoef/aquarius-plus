@@ -209,54 +209,54 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="4">Blue</td>
     </tr>
     <tr>
-        <td>$E9 - 234</td>
+        <td>$E9 - 233</td>
         <td>VPALTXT</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EA - 235</td>
+        <td>$EA - 234</td>
         <td>VPALTILE</td>
         <td align="center">A12-A9 selects palette entry, A8=0</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
     </tr>
     <tr>
-        <td>$EA - 235</td>
+        <td>$EA - 234</td>
         <td>VPALTILE</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EB - 236</td>
+        <td>$EB - 235</td>
         <td>VPALSPR</td>
         <td align="center">A12-A9 selects palette entry, A8=0</td>
         <td align="center" colspan="4">Green</td>
         <td align="center" colspan="4">Blue</td>
     </tr>
     <tr>
-        <td>$EB - 236</td>
+        <td>$EB - 235</td>
         <td>VPALSPR</td>
         <td align="center">A12-A9 selects palette entry, A8=1</td>
         <td align="center" colspan="4">-</td>
         <td align="center" colspan="4">Red</td>
     </tr>
     <tr>
-        <td>$EC - 237</td>
+        <td>$EC - 236</td>
         <td>VLINE</td>
         <td align="center">-</td>
         <td align="center" colspan="8">Current line number</td>
     </tr>
     <tr>
-        <td>$ED - 238</td>
+        <td>$ED - 237</td>
         <td>VIRQLINE</td>
         <td align="center">-</td>
         <td align="center" colspan="8">Line number at which to generate IRQ</td>
     </tr>
     <tr>
-        <td>$EE - 239</td>
+        <td>$EE - 238</td>
         <td>IRQMASK</td>
         <td align="center">-</td>
         <td align="center" colspan="6">-</td>
@@ -264,7 +264,7 @@ The character RAM is used by the text mode character generator to display text o
         <td align="center" colspan="1">VSync</td>
     </tr>
     <tr>
-        <td>$EF - 240</td>
+        <td>$EF - 239</td>
         <td>IRQSTAT</td>
         <td align="center">-</td>
         <td align="center" colspan="6">-</td>
