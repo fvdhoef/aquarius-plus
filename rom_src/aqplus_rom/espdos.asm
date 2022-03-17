@@ -754,6 +754,8 @@ esp_get_result:
 
 ;-----------------------------------------------------------------------------
 ; Close any open file/directory descriptor
+;
+; Clobbered registers: A
 ;-----------------------------------------------------------------------------
 esp_close_all:
     ld      a, ESPCMD_CLOSEALL
@@ -762,6 +764,8 @@ esp_close_all:
 
 ;-----------------------------------------------------------------------------
 ; Open file in PATHBUF
+;
+; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_open:
     ld      a, ESPCMD_OPEN
@@ -788,6 +792,8 @@ esp_create:
 ;         DE: number of bytes to read
 ; Output: HL: next address (start address if no bytes read)
 ;         DE: number of bytes actually read
+;
+; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_read_bytes:
     ld      a, ESPCMD_READ
@@ -862,6 +868,8 @@ esp_send_bytes:
 ;         DE: number of bytes to write
 ; Output: HL: next address
 ;         DE: number of bytes actually written
+;
+; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_write_bytes:
     ld      a, ESPCMD_WRITE
@@ -894,6 +902,8 @@ esp_write_bytes:
 ;-----------------------------------------------------------------------------
 ; Seek
 ; Input:  DE: offset
+;
+; Clobbered registers: A, DE
 ;-----------------------------------------------------------------------------
 esp_seek:
     ld      a, ESPCMD_SEEK
@@ -962,7 +972,9 @@ check_sync_bytes:
     ret
 
 ;-----------------------------------------------------------------------------
-; Load binary data in PATHBUF into BINSTART
+; Load binary data in PATHBUF into BINSTART;
+;
+; Clobbered registers: A, DE
 ;-----------------------------------------------------------------------------
 load_binary:
     push    hl
