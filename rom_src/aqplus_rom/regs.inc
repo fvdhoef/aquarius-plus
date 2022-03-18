@@ -189,6 +189,12 @@ IO_PSG1ADDR:    equ $F7
 IO_PSG2DATA:    equ $F8
 IO_PSG2ADDR:    equ $F9
 IO_SYSCTRL:     equ $FB
+IO_CASSETTE:    equ $FC
+IO_CPM:         equ $FD     ; Write-only
+IO_VSYNC:       equ $FD     ; Read-only
+IO_PRINTER:     equ $FE
+IO_SCRAMBLE:    equ $FF     ; Write-only
+IO_KEYBOARD:    equ $FF     ; Read-only
 
 ;-----------------------------------------------------------------------------
 ; Other definitions

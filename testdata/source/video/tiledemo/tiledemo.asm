@@ -3,6 +3,9 @@
     include "../../../../rom_src/aqplus_rom/regs.inc"
     include "file.asm"
 
+;-----------------------------------------------------------------------------
+; main
+;-----------------------------------------------------------------------------
 main:
     push    hl
     call    esp_close_all
@@ -36,10 +39,43 @@ main:
     ld      a, 2
     out     (IO_VCTRL), a
 
-loop:
-    jp      loop
+.game_loop:
+    call    wait_vsync
+
+    ; Scroll horizontally
+    ld      hl, scroll_x
+    inc     (hl)
+    jr      nz, .scroll_done
+    ld      hl, scroll_x+1
+    inc     (hl)
+.scroll_done
+
+    ; Set scroll register
+    ld      a, (scroll_x)
+    out     (IO_VSCRX_L), a
+    ld      a, (scroll_x+1)
+    out     (IO_VSCRX_H), a
+
+    jp      .game_loop
 
     pop     hl
     ret
 
 filename: db "tiledata.bin",0
+scroll_x: dw 0
+
+;-----------------------------------------------------------------------------
+; wait_vsync
+;-----------------------------------------------------------------------------
+wait_vsync:
+.wait_high:
+    in      a, (IO_VSYNC)
+    and     1
+    jr      z, .wait_high
+
+.wait_low:
+    in      a, (IO_VSYNC)
+    and     1
+    jr      nz, .wait_low
+    ret
+
