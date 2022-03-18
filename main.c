@@ -401,6 +401,33 @@ static void render_screen(SDL_Renderer *renderer) {
     SDL_RenderPresent(renderer);
 }
 
+static void keyboard_type_in(void) {
+    if (emustate.type_in_release > 0) {
+        emustate.type_in_release--;
+        if (emustate.type_in_release > 0)
+            return;
+        keyboard_char(emustate.type_in_char, false);
+    }
+
+    if (emustate.type_in_str == NULL)
+        return;
+
+    char ch = *(emustate.type_in_str++);
+    if (ch == '\\') {
+        ch = *(emustate.type_in_str++);
+        if (ch == 'n') {
+            ch = '\n';
+        }
+    }
+    if (ch == 0) {
+        emustate.type_in_str = NULL;
+        return;
+    }
+    emustate.type_in_char = ch;
+    keyboard_char(ch, true);
+    emustate.type_in_release = 5;
+}
+
 static void emulate(SDL_Renderer *renderer) {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
@@ -441,13 +468,14 @@ static void emulate(SDL_Renderer *renderer) {
                 } else if (emustate.video_line == 262) {
                     render_screen(renderer);
                     emustate.video_line = 0;
+
+                    keyboard_type_in();
                 }
             }
 
             if ((emustate.irqstatus & emustate.irqmask) != 0) {
                 Z80INT(&emustate.z80context, 0xFF);
             }
-
         } while (emustate.sample_hcycles < HCYCLES_PER_SAMPLE);
 
         emustate.sample_hcycles -= HCYCLES_PER_SAMPLE;
@@ -491,7 +519,7 @@ int main(int argc, char *argv[]) {
 
     int  opt;
     bool params_ok = true;
-    while ((opt = getopt(argc, argv, "r:c:XRu:")) != -1) {
+    while ((opt = getopt(argc, argv, "r:c:XRu:t:")) != -1) {
         if (opt == '?' || opt == ':') {
             params_ok = false;
             break;
@@ -505,6 +533,7 @@ int main(int argc, char *argv[]) {
                 ch376_init(optarg);
                 esp32_init(optarg);
                 break;
+            case 't': emustate.type_in_str = optarg; break;
             default: params_ok = false; break;
         }
     }
@@ -520,6 +549,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "-u <path>   CH376 USB base path\n");
         fprintf(stderr, "-X          Disable mini expander emulation.\n");
         fprintf(stderr, "-R          Disable RAM expansion.\n");
+        fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
     }
@@ -598,6 +628,7 @@ int main(int argc, char *argv[]) {
     reset();
     audio_start();
 
+    emustate.type_in_release = 10;
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
         switch (event.type) {
             case SDL_KEYDOWN:

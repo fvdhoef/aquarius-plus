@@ -10,15 +10,18 @@
 #define BANK_MAP_RAM (1 << 6)
 
 struct emulation_state {
-    Z80Context z80context;       // Z80 emulation core state
-    int        line_hcycles;     // Half-cycles for this line
-    int        sample_hcycles;   // Half-cycles for this sample
-    uint8_t    keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
-    bool       expander_enabled; // Mini-expander enabled?
-    uint8_t    handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
-    uint8_t    handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
-    bool       ramexp_enabled;   // RAM expansion enabled?
-    uint8_t    tmp_latch;
+    Z80Context  z80context;       // Z80 emulation core state
+    int         line_hcycles;     // Half-cycles for this line
+    int         sample_hcycles;   // Half-cycles for this sample
+    uint8_t     keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
+    bool        expander_enabled; // Mini-expander enabled?
+    uint8_t     handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
+    uint8_t     handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
+    bool        ramexp_enabled;   // RAM expansion enabled?
+    uint8_t     tmp_latch;
+    const char *type_in_str;
+    int         type_in_release;
+    char        type_in_char;
 
     // IO space
     uint8_t       video_ctrl;               // $E0   : Video control register
