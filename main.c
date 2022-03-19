@@ -425,7 +425,7 @@ static void keyboard_type_in(void) {
     }
     emustate.type_in_char = ch;
     keyboard_char(ch, true);
-    emustate.type_in_release = 5;
+    emustate.type_in_release = ch == '\n' ? 10 : 1;
 }
 
 static void emulate(SDL_Renderer *renderer) {
