@@ -6,3 +6,6 @@ all: tiledata.bin
 
 tiledata.bin:
 	./convert.py
+
+run: all
+	../../../../build/aquarius_emu -u ../../../usb -t '\nrun"tiledemo.caq"\n'
