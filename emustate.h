@@ -20,6 +20,7 @@ struct emulation_state {
     bool        ramexp_enabled;   // RAM expansion enabled?
     const char *type_in_str;
     int         type_in_release;
+    int         type_in_delay;
     char        type_in_char;
 
     // IO space

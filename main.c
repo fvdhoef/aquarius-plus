@@ -376,6 +376,14 @@ static void keyboard_type_in(void) {
         if (emustate.type_in_release > 0)
             return;
         keyboard_char(emustate.type_in_char, false);
+        emustate.type_in_delay = 1;
+        return;
+    }
+
+    if (emustate.type_in_delay > 0) {
+        emustate.type_in_delay--;
+        if (emustate.type_in_delay > 0)
+            return;
     }
 
     if (emustate.type_in_str == NULL)
