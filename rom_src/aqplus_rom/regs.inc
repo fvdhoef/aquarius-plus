@@ -196,6 +196,13 @@ IO_PRINTER:     equ $FE
 IO_SCRAMBLE:    equ $FF     ; Write-only
 IO_KEYBOARD:    equ $FF     ; Read-only
 
+VCTRL_TEXT_EN:   equ (1<<0)
+VCTRL_MODE_OFF:  equ (0<<1)
+VCTRL_MODE_TILE: equ (1<<1)
+VCTRL_MODE_BM:   equ (2<<1)
+VCTRL_SPR_EN:    equ (1<<3)
+VCTRL_TEXT_PRIO: equ (1<<4)
+
 ;-----------------------------------------------------------------------------
 ; Other definitions
 ;-----------------------------------------------------------------------------

@@ -166,7 +166,9 @@ void video_draw_line(void) {
                             unsigned colidx = (data >> 4);
 
                             if (colidx != 0)
-                                line_bitmap[idx++] = colidx | palette;
+                                line_bitmap[idx] = colidx | palette;
+
+                            idx++;
                             idx &= 511;
                         }
                     }
@@ -174,7 +176,9 @@ void video_draw_line(void) {
                         unsigned colidx = (data & 0xF);
 
                         if (colidx != 0)
-                            line_bitmap[idx++] = colidx | palette;
+                            line_bitmap[idx] = colidx | palette;
+
+                        idx++;
                         idx &= 511;
                     }
                     if (hflip) {
@@ -182,7 +186,9 @@ void video_draw_line(void) {
                             unsigned colidx = (data >> 4);
 
                             if (colidx != 0)
-                                line_bitmap[idx++] = colidx | palette;
+                                line_bitmap[idx] = colidx | palette;
+
+                            idx++;
                             idx &= 511;
                         }
                     }
