@@ -81,6 +81,10 @@ int main(void) {
         ballp->y  = rand() % (200 - 16);
         ballp->dx = rand() % 5 - 2;
         ballp->dy = rand() % 5 - 2;
+        if (ballp->dx == 0)
+            ballp->dx = 1;
+        if (ballp->dy == 0)
+            ballp->dy = 1;
 
         setup_ball_sprites(i);
         update_ball_sprites(i);
