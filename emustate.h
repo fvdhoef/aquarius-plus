@@ -18,7 +18,6 @@ struct emulation_state {
     uint8_t     handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t     handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
     bool        ramexp_enabled;   // RAM expansion enabled?
-    uint8_t     tmp_latch;
     const char *type_in_str;
     int         type_in_release;
     char        type_in_char;
@@ -27,13 +26,13 @@ struct emulation_state {
     uint8_t       video_ctrl;               // $E0   : Video control register
     uint16_t      video_scrx;               // $E1/E2: Tile map horizontal scroll register
     uint8_t       video_scry;               // $E3   : Tile map horizontal scroll register
-    uint16_t      video_sprx[64];           // $E4/E5: Sprite X-position
-    uint8_t       video_spry[64];           // $E6   : Sprite Y-position
-    uint16_t      video_spridx[64];         // $E7/E8: Sprite tile index
-    uint8_t       video_sprattr[64];        // $E8   : Sprite attributes
-    uint16_t      video_palette_text[16];   // $E9   : Text palette
-    uint16_t      video_palette_tile[16];   // $EA   : Tile/bitmap palette
-    uint16_t      video_palette_sprite[16]; // $EB   : Sprite palette
+    uint8_t       video_sprsel;             // $E4   : Sprite select
+    uint16_t      video_sprx[64];           // $E5/E6: Sprite X-position
+    uint8_t       video_spry[64];           // $E7   : Sprite Y-position
+    uint16_t      video_spridx[64];         // $E8/E9: Sprite tile index
+    uint8_t       video_sprattr[64];        // $E9   : Sprite attributes
+    uint8_t       video_palsel;             // $EA   : Palette entry select
+    uint16_t      video_palette[64];        // $EB   : Video palette
     uint16_t      video_line;               // $EC   : Current line number
     uint8_t       video_irqline;            // $ED   : Line number at which to generate IRQ
     uint8_t       irqmask;                  // $EE   : Interrupt mask register

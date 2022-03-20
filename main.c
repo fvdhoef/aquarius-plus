@@ -122,29 +122,16 @@ static uint8_t io_read(size_t param, ushort addr) {
             case 0xE1: return emustate.video_scrx & 0xFF;
             case 0xE2: return emustate.video_scrx >> 8;
             case 0xE3: return emustate.video_scry;
-            case 0xE4: return emustate.video_sprx[(addr >> 8) & 0x3F] & 0xFF;
-            case 0xE5: return emustate.video_sprx[(addr >> 8) & 0x3F] >> 8;
-            case 0xE6: return emustate.video_spry[(addr >> 8) & 0x3F];
-            case 0xE7: return emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF;
-            case 0xE8: return (emustate.video_sprattr[(addr >> 8) & 0x3F] & 0xFE) | ((emustate.video_spridx[(addr >> 8) & 0x3F] >> 8) & 1);
-            case 0xE9:
-                if ((addr & (1 << 8)) == 0)
-                    return emustate.video_palette_text[(addr >> 9) & 0xF] & 0xFF;
-                else
-                    return emustate.video_palette_text[(addr >> 9) & 0xF] >> 8;
-
-            case 0xEA:
-                if ((addr & (1 << 8)) == 0)
-                    return emustate.video_palette_tile[(addr >> 9) & 0xF] & 0xFF;
-                else
-                    return emustate.video_palette_tile[(addr >> 9) & 0xF] >> 8;
-
-            case 0xEB:
-                if ((addr & (1 << 8)) == 0)
-                    return emustate.video_palette_sprite[(addr >> 9) & 0xF] & 0xFF;
-                else
-                    return emustate.video_palette_sprite[(addr >> 9) & 0xF] >> 8;
-
+            case 0xE4: return emustate.video_sprsel;
+            case 0xE5: return emustate.video_sprx[emustate.video_sprsel] & 0xFF;
+            case 0xE6: return emustate.video_sprx[emustate.video_sprsel] >> 8;
+            case 0xE7: return emustate.video_spry[emustate.video_sprsel];
+            case 0xE8: return emustate.video_spridx[emustate.video_sprsel] & 0xFF;
+            case 0xE9: return (
+                (emustate.video_sprattr[emustate.video_sprsel] & 0xFE) |
+                ((emustate.video_spridx[emustate.video_sprsel] >> 8) & 1));
+            case 0xEA: return emustate.video_palsel;
+            case 0xEB: return (emustate.video_palette[emustate.video_palsel >> 1] >> ((emustate.video_palsel & 1) * 8)) & 0xFF;
             case 0xEC: return emustate.video_line < 255 ? emustate.video_line : 255;
             case 0xED: return emustate.video_irqline;
             case 0xEE: return emustate.irqmask;
@@ -221,45 +208,27 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
     if (!emustate.sysctrl_disable_ext) {
         switch (addr & 0xFF) {
             case 0xE0: emustate.video_ctrl = data; return;
-            case 0xE1:
-                // emustate.video_scrx = (emustate.video_scrx & ~0xFF) | data; return;
-                emustate.tmp_latch = data;
-                return;
-            case 0xE2:
-                // emustate.video_scrx = (emustate.video_scrx & 0xFF) | ((data & 1) << 8);
-                emustate.video_scrx = emustate.tmp_latch | ((data & 1) << 8);
-                return;
+            case 0xE1: emustate.video_scrx = (emustate.video_scrx & ~0xFF) | data; return;
+            case 0xE2: emustate.video_scrx = (emustate.video_scrx & 0xFF) | ((data & 1) << 8); return;
             case 0xE3: emustate.video_scry = data; return;
-            case 0xE4:
-                emustate.tmp_latch = data;
-                return;
-            case 0xE5:
-                //  emustate.video_sprx[(addr >> 8) & 0x3F] = (emustate.video_sprx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
-                emustate.video_sprx[(addr >> 8) & 0x3F] = ((data & 1) << 8) | emustate.tmp_latch;
-                return;
-            case 0xE6: emustate.video_spry[(addr >> 8) & 0x3F] = data; return;
-            case 0xE7: emustate.video_spridx[(addr >> 8) & 0x3F] = (emustate.video_spridx[(addr >> 8) & 0x3F] & ~0xFF) | data; return;
-            case 0xE8:
-                emustate.video_sprattr[(addr >> 8) & 0x3F] = data & 0xFE;
-                emustate.video_spridx[(addr >> 8) & 0x3F]  = (emustate.video_spridx[(addr >> 8) & 0x3F] & 0xFF) | ((data & 1) << 8);
-                return;
+            case 0xE4: emustate.video_sprsel = data & 0x3F; return;
+            case 0xE5: emustate.video_sprx[emustate.video_sprsel] = (emustate.video_sprx[emustate.video_sprsel] & ~0xFF) | data; return;
+            case 0xE6: emustate.video_sprx[emustate.video_sprsel] = (emustate.video_sprx[emustate.video_sprsel] & 0xFF) | ((data & 1) << 8); return;
+            case 0xE7: emustate.video_spry[emustate.video_sprsel] = data; return;
+            case 0xE8: emustate.video_spridx[emustate.video_sprsel] = (emustate.video_spridx[emustate.video_sprsel] & ~0xFF) | data; return;
             case 0xE9:
-                if ((addr & (1 << 8)) == 0)
-                    emustate.tmp_latch = data;
-                else
-                    emustate.video_palette_text[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
+                emustate.video_sprattr[emustate.video_sprsel] = data & 0xFE;
+                emustate.video_spridx[emustate.video_sprsel]  = (emustate.video_spridx[emustate.video_sprsel] & 0xFF) | ((data & 1) << 8);
                 return;
-            case 0xEA:
-                if ((addr & (1 << 8)) == 0)
-                    emustate.tmp_latch = data;
-                else
-                    emustate.video_palette_tile[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
-                return;
+            case 0xEA: emustate.video_palsel = data & 0x7F; return;
             case 0xEB:
-                if ((addr & (1 << 8)) == 0)
-                    emustate.tmp_latch = data;
-                else
-                    emustate.video_palette_sprite[(addr >> 9) & 0x0F] = ((data & 0xF) << 8) | emustate.tmp_latch;
+                if ((emustate.video_palsel & 1) == 0) {
+                    emustate.video_palette[emustate.video_palsel >> 1] =
+                        (emustate.video_palette[emustate.video_palsel >> 1] & 0xF00) | data;
+                } else {
+                    emustate.video_palette[emustate.video_palsel >> 1] =
+                        ((data & 0xF) << 8) | (emustate.video_palette[emustate.video_palsel >> 1] & 0xFF);
+                }
                 return;
             case 0xEC: return;
             case 0xED: emustate.video_irqline = data; return;

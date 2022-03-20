@@ -11,49 +11,11 @@
 
 # IO map
 
-| IO address | Name                          | Description                                                      |
-| ---------- | ----------------------------- | ---------------------------------------------------------------- |
-| $00 - $DF  |                               | -                                                                |
-| $E0        | VCTRL                         | Video: Control register                                          |
-| $E1        | VSCRX_L                       | Video: Tilemap horizontal scroll (7:0)                           |
-| $E2        | VSCRX_H                       | Video: Tilemap horizontal scroll (8)                             |
-| $E3        | VSCRY                         | Video: Tilemap vertical scroll                                   |
-| $E4        | VSPRX_L                       | Video: Sprite X-position (7:0)                                   |
-| $E5        | VSPRX_H                       | Video: Sprite X-position (8)                                     |
-| $E6        | VSPRY                         | Video: Sprite Y-position                                         |
-| $E7        | VSPRIDX                       | Video: Sprite tile index (7:0)                                   |
-| $E8        | VSPRATTR                      | Video: Sprite attributes                                         |
-| $E9        | VPALTXT                       | Video: Text palette                                              |
-| $EA        | VPALTILE                      | Video: Tile/bitmap palette                                       |
-| $EB        | VPALSPR                       | Video: Sprite palette                                            |
-| $EC        | VLINE                         | Video: Current line                                              |
-| $ED        | VIRQLINE                      | Video: Line at which to generate interrupt                       |
-| $EE        | IRQMASK                       | Interrupt masking register                                       |
-| $EF        | IRQSTAT                       | Interrupt status register                                        |
-| $F0        | BANK0                         | Bank 0 ($0000-$3FFF) page                                        |
-| $F1        | BANK1                         | Bank 1 ($4000-$7FFF) page                                        |
-| $F2        | BANK2                         | Bank 2 ($8000-$BFFF) page                                        |
-| $F3        | BANK3                         | Bank 3 ($C000-$FFFF) page                                        |
-| $F4        | ESPCTRL                       | ESP32 control/status                                             |
-| $F5        | ESPDATA                       | ESP32 data                                                       |
-| $F6        | PSG1DATA                      | PSG1: AY-3-8910 R: read from PSG, W: write to PSG                |
-| $F7        | PSG1ADDR                      | PSG1: AY-3-8910 R: read from PSG, W: write to latch address      |
-| $F8        | PSG2DATA                      | PSG2: AY-3-8910 R: read from PSG, W: write to PSG                |
-| $F9        | PSG2ADDR                      | PSG2: AY-3-8910 R: read from PSG, W: write to latch address      |
-| $FA        |                               | -                                                                |
-| $FB        | SYSCTRL                       | RW<0>: Disable access to extended registers                      |
-| $FB        | SYSCTRL                       | RW<1>: Disable PSGs (as if mini-expander isn't available)        |
-| $FC        | CASSETTE                      | W<0>: Cassette/Sound output<br/>R<0>: Cassette input             |
-| $FD        | CPM (w)<br/>VSYNC (r)         | W<0>: CP/M mode remapping<br/>R<0>: V-sync signal (0: in v-sync) |
-| $FE        | PRINTER                       | W<0>: Serial printer (1200bps)<br/>R<0>: Clear to send status    |
-| $FF        | SCRAMBLE (w)<br/>KEYBOARD (r) | W<7:0>: External bus scramble value (XOR)<br/>R<5:0>: Keyboard   |
-
-## Banking
-
-### Banking registers
-
 <table>
     <tr>
+        <th>IO reg</th>
+        <th>Name</th>
+        <th>Description</th>
         <th>Bit&nbsp;7</th>
         <th>Bit&nbsp;6</th>
         <th>Bit&nbsp;5 </th>
@@ -64,11 +26,282 @@
         <th>Bit&nbsp;0</th>
     </tr>
     <tr>
+        <td>$00-$DF</td>
+        <td>-</td>
+        <td colspan="1">-</td>
+        <td colspan="8" align="center">-</td>
+    </tr>
+    <tr>
+        <td>$E0/224</td>
+        <td>VCTRL</td>
+        <td colspan="1">Video control register</td>
+        <td colspan="3" align="center">-</td>
+        <td colspan="1" align="center">Text priority</td>
+        <td colspan="1" align="center">Sprites enable</td>
+        <td colspan="2" align="center">Tile map / bitmap mode</td>
+        <td colspan="1" align="center">Text enable</td>
+    </tr>
+    <tr>
+        <td>$E1/225</td>
+        <td>VSCRX_L</td>
+        <td colspan="1">Tilemap horizontal scroll</td>
+        <td colspan="8" align="center">Tile map X-scroll (7:0)</td>    
+    </tr>
+    <tr>
+        <td>$E2/226</td>
+        <td>VSCRX_H</td>
+        <td colspan="1">Tilemap horizontal scroll</td>
+        <td colspan="7" align="center">-</td>
+        <td colspan="1" align="center">Tile map X-scroll (8)</td>
+    </tr>
+    <tr>
+        <td>$E3/227</td>
+        <td>VSCRY</td>
+        <td colspan="1">Tilemap vertical scroll</td>
+        <td colspan="8" align="center">Tile map Y-scroll</td>
+    </tr>
+    <tr>
+        <td>$E4/228</td>
+        <td>VSPRSEL</td>
+        <td colspan="1">Sprite select</td>
+        <td colspan="2" align="center">-</td>
+        <td colspan="6" align="center">Sprite selection (0-63)</td>
+    </tr>
+    <tr>
+        <td>$E5/229</td>
+        <td>VSPRX_L</td>
+        <td colspan="1">Sprite X-position</td>
+        <td colspan="8" align="center">Sprite X-position (7:0)</td>
+    </tr>
+    <tr>
+        <td>$E6/230</td>
+        <td>VSPRX_H</td>
+        <td colspan="1">Sprite X-position</td>
+        <td colspan="7" align="center">-</td>
+        <td colspan="1" align="center">Sprite X-position (8)</td>
+    </tr>
+    <tr>
+        <td>$E7/231</td>
+        <td>VSPRY</td>
+        <td colspan="1">Sprite Y-position</td>
+        <td colspan="8" align="center">Sprite Y-position</td>
+    </tr>
+    <tr>
+        <td>$E8/232</td>
+        <td>VSPRIDX</td>
+        <td colspan="1">Sprite tile index</td>
+        <td colspan="8" align="center">Sprite tile index (7:0)</td>
+    </tr>
+    <tr>
+        <td>$E9/233</td>
+        <td>VSPRATTR</td>
+        <td colspan="1">Sprite attributes</td>
+        <td align="center" colspan="1">Enable</td>
+        <td align="center" colspan="1">Priority</td>
+        <td align="center" colspan="2">Palette</td>
+        <td align="center" colspan="1">Height: 16</td>
+        <td align="center" colspan="1">V-flip</td>
+        <td align="center" colspan="1">H-flip</td>
+        <td align="center" colspan="1">Tile index (8)</td>
+    </tr>
+    <tr>
+        <td>$EA/234</td>
+        <td>VPALSEL</td>
+        <td colspan="1">Palette entry selection</td>
+        <td align="center" colspan="1">-</td>
+        <td align="center" colspan="2">Palette</td>
+        <td align="center" colspan="4">Entry</td>
+        <td align="center" colspan="1">0:GB, 1:R</td>
+    </tr>
+    <tr>
+        <td>$EB/235</td>
+        <td>VPALDATA (GB)</td>
+        <td colspan="1">Palette entry G/B</td>
+        <td align="center" colspan="4">Green</td>
+        <td align="center" colspan="4">Blue</td>
+    </tr>
+    <tr>
+        <td>$EB/235</td>
+        <td>VPALDATA (R)</td>
+        <td colspan="1">Palette entry R</td>
+        <td align="center" colspan="4">-</td>
+        <td align="center" colspan="4">Red</td>
+    </tr>
+    <tr>
+        <td>$EC/236</td>
+        <td>VLINE</td>
+        <td colspan="1">Current video line</td>
+        <td align="center" colspan="8">Current line number</td>
+    </tr>
+    <tr>
+        <td>$ED/237</td>
+        <td>VIRQLINE</td>
+        <td colspan="1">Video line at which to generate interrupt</td>
+        <td align="center" colspan="8">Line number at which to generate IRQ</td>
+    </tr>
+    <tr>
+        <td>$EE/238</td>
+        <td>IRQMASK</td>
+        <td colspan="1">Interrupt masking register</td>
+        <td align="center" colspan="6">-</td>
+        <td align="center" colspan="1">Line</td>
+        <td align="center" colspan="1">VSync</td>
+    </tr>
+    <tr>
+        <td>$EF/239</td>
+        <td>IRQSTAT</td>
+        <td colspan="1">Interrupt status register</td>
+        <td align="center" colspan="6">-</td>
+        <td align="center" colspan="1">Line</td>
+        <td align="center" colspan="1">VSync</td>
+    </tr>
+    <tr>
+        <td>$F0/240</td>
+        <td>BANK0</td>
+        <td colspan="1">Bank 0 ($0000-$3FFF) page</td>
         <td colspan="1" align="center">Read only</td>
         <td colspan="1" align="center">Overlay RAM</td>
         <td colspan="6" align="center">Page</td>
     </tr>
+    <tr>
+        <td>$F1/241</td>
+        <td>BANK1</td>
+        <td colspan="1">Bank 1 ($4000-$7FFF) page</td>
+        <td colspan="1" align="center">Read only</td>
+        <td colspan="1" align="center">Overlay RAM</td>
+        <td colspan="6" align="center">Page</td>
+    </tr>
+    <tr>
+        <td>$F2/242</td>
+        <td>BANK2</td>
+        <td colspan="1">Bank 2 ($8000-$BFFF) page</td>
+        <td colspan="1" align="center">Read only</td>
+        <td colspan="1" align="center">Overlay RAM</td>
+        <td colspan="6" align="center">Page</td>
+    </tr>
+    <tr>
+        <td>$F3/243</td>
+        <td>BANK3</td>
+        <td colspan="1">Bank 3 ($C000-$FFFF) page</td>
+        <td colspan="1" align="center">Read only</td>
+        <td colspan="1" align="center">Overlay RAM</td>
+        <td colspan="6" align="center">Page</td>
+    </tr>
+    <tr>
+        <td>$F4/244</td>
+        <td>ESPCTRL</td>
+        <td colspan="1">ESP32 control/status</td>
+        <td colspan="1" align="center">Start frame</td>
+        <td colspan="5" align="center">-</td>
+        <td colspan="1" align="center">TX FIFO full</td>
+        <td colspan="1" align="center">RX FIFO non-empty</td>
+    </tr>
+    <tr>
+        <td>$F5/245</td>
+        <td>ESPDATA</td>
+        <td colspan="1">ESP32 data</td>
+        <td colspan="8" align="center">FIFO read / write</td>
+    </tr>
+    <tr>
+        <td>$F6/246</td>
+        <td>PSG1DATA</td>
+        <td colspan="1">PSG1: AY-3-8910</td>
+        <td colspan="8" align="center">Data</td>
+    </tr>
+    <tr>
+        <td>$F7/247 W</td>
+        <td>PSG1ADDR</td>
+        <td colspan="1">PSG1: AY-3-8910</td>
+        <td colspan="4" align="center">-</td>
+        <td colspan="4" align="center">Address</td>
+    </tr>
+    <tr>
+        <td>$F8/248</td>
+        <td>PSG1DATA</td>
+        <td colspan="1">PSG2: AY-3-8910</td>
+        <td colspan="8" align="center">Data</td>
+    </tr>
+    <tr>
+        <td>$F9/249 W</td>
+        <td>PSG1ADDR</td>
+        <td colspan="1">PSG2: AY-3-8910</td>
+        <td colspan="4" align="center">-</td>
+        <td colspan="4" align="center">Address</td>
+    </tr>
+    <tr>
+        <td>$FA/250</td>
+        <td>-</td>
+        <td colspan="1">-</td>
+        <td align="center" colspan="8">-</td>
+    </tr>
+    <tr>
+        <td>$FB/251</td>
+        <td>SYSCTRL</td>
+        <td colspan="1">System control register</td>
+        <td align="center" colspan="6">-</td>
+        <td align="center" colspan="1">Disable PSGs</td>
+        <td align="center" colspan="1">Disable regs $E0-$F5, $F8-$F9</td>
+    </tr>
+    <tr>
+        <td>$FC/252 R</td>
+        <td>CASSETTE</td>
+        <td colspan="1">Casette interface</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">Cassette input</td>
+    </tr>
+    <tr>
+        <td>$FC/252 W</td>
+        <td>CASSETTE</td>
+        <td colspan="1">Casette interface</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">Cassette/sound output</td>
+    </tr>
+    <tr>
+        <td>$FD/253 R</td>
+        <td>VSYNC</td>
+        <td colspan="1">V-sync indication</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">V-sync signal (0: in v-sync)</td>
+    </tr>
+    <tr>
+        <td>$FD/253 W</td>
+        <td>CPM</td>
+        <td colspan="1">CP/M memory remapping</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">Enable CP/M remapping</td>
+    </tr>
+    <tr>
+        <td>$FE/254 R</td>
+        <td>PRINTER</td>
+        <td colspan="1">Serial printer</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">Clear to send status</td>
+    </tr>
+    <tr>
+        <td>$FE/254 W</td>
+        <td>PRINTER</td>
+        <td colspan="1">Serial printer</td>
+        <td align="center" colspan="7">-</td>
+        <td align="center" colspan="1">Serial printer output</td>
+    </tr>
+    <tr>
+        <td>$FF/255 R</td>
+        <td>KEYBOARD</td>
+        <td colspan="1">Keyboard</td>
+        <td align="center" colspan="2">-</td>
+        <td align="center" colspan="6">Keyboard</td>
+    </tr>
+    <tr>
+        <td>$FF/255 W</td>
+        <td>SCRAMBLE</td>
+        <td colspan="1">Scramble</td>
+        <td align="center" colspan="8">External bus scramble value (XOR)</td>
+    </tr>
 </table>
+
+# Banking
+
+## Banking registers BANK0-BANK3 ($F0-$F3)
 
 When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 
@@ -78,7 +311,7 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 | $3400 - $37FF | Color RAM (1KB)  |
 | $3800 - $3FFF | Basic RAM (2KB)  |
 
-### Banked memory map
+## Banked memory map
 
 |  Page | Description                                |
 | ----: | ------------------------------------------ |
@@ -120,166 +353,7 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 
 The character RAM is used by the text mode character generator to display text on the screen. The characters can be redefined by writing to the character RAM.
 
-# Video registers (IO space)
-
-<table>
-    <tr>
-        <th align="center">Name</th>
-        <th colspan="2" align="center">Reg Addr</th>
-        <th colspan="8" align="center">Reg Value</th>
-    </tr>
-    <tr>
-        <th></th>
-        <th align="center">LO Byte</th>
-        <th align="center">HI Byte</th>
-        <th>Bit&nbsp;7</th>
-        <th>Bit&nbsp;6</th>
-        <th>Bit&nbsp;5 </th>
-        <th>Bit&nbsp;4</th>
-        <th>Bit&nbsp;3 </th>
-        <th>Bit&nbsp;2</th>
-        <th>Bit&nbsp;1 </th>
-        <th>Bit&nbsp;0</th>
-    </tr>
-    <tr>
-        <td>VCTRL</td>
-        <td>$E0 - 224</td>
-        <td align="center">-</td>
-        <td colspan="3" align="center">-</td>
-        <td colspan="1" align="center">Text priority</td>
-        <td colspan="1" align="center">Sprites enable</td>
-        <td colspan="2" align="center">Tile map / bitmap mode</td>
-        <td colspan="1" align="center">Text enable</td>
-    </tr>
-    <tr>
-        <td>VSCRX_L</td>
-        <td>$E1 - 225</td>
-        <td align="center">-</td>
-        <td colspan="8" align="center">Tile map X-scroll (7:0)</td>    
-    </tr>
-    <tr>
-        <td>VSCRX_H</td>
-        <td>$E2 - 226</td>
-        <td align="center">-</td>
-        <td colspan="7" align="center">-</td>
-        <td colspan="1" align="center">Tile map X-scroll (8)</td>
-    </tr>
-    <tr>
-        <td>VSCRY</td>
-        <td>$E3 - 227</td>
-        <td align="center">-</td>
-        <td colspan="8" align="center">Tile map Y-scroll</td>
-    </tr>
-    <tr>
-        <td>VSPRX_L</td>
-        <td>$E4 - 228</td>
-        <td align="center">A13-A8 selects sprite</td>
-        <td colspan="8" align="center">Sprite X-position (7:0)</td>
-    </tr>
-    <tr>
-        <td>VSPRX_H</td>
-        <td>$E5 - 229</td>
-        <td align="center">A13-A8 selects sprite</td>
-        <td colspan="8" align="center">Sprite X-position (8)</td>
-    </tr>
-    <tr>
-        <td>VSPRY</td>
-        <td>$E6 - 230</td>
-        <td align="center">A13-A8 selects sprite</td>
-        <td colspan="8" align="center">Sprite Y-position</td>
-    </tr>
-    <tr>
-        <td>VSPRIDX</td>
-        <td>$E7 - 231</td>
-        <td align="center">A13-A8 selects sprite</td>
-        <td colspan="8" align="center">Sprite tile index (7:0)</td>
-    </tr>
-    <tr>
-        <td>VSPRATTR</td>
-        <td>$E8 - 232</td>
-        <td align="center">A13-A8 selects sprite</td>
-        <td align="center" colspan="1">Enable</td>
-        <td align="center" colspan="2">-</td>
-        <td align="center" colspan="1">Priority</td>
-        <td align="center" colspan="1">Palette</td>
-        <td align="center" colspan="1">V-flip</td>
-        <td align="center" colspan="1">H-flip</td>
-        <td align="center" colspan="1">Tile index (8)</td>
-    </tr>
-    <tr>
-        <td>VPALTXT</td>
-        <td>$E9 - 233</td>
-        <td align="center">A12-A9 selects palette entry, A8=0</td>
-        <td align="center" colspan="4">Green</td>
-        <td align="center" colspan="4">Blue</td>
-    </tr>
-    <tr>
-        <td>VPALTXT</td>
-        <td>$E9 - 233</td>
-        <td align="center">A12-A9 selects palette entry, A8=1</td>
-        <td align="center" colspan="4">-</td>
-        <td align="center" colspan="4">Red</td>
-    </tr>
-    <tr>
-        <td>VPALTILE</td>
-        <td>$EA - 234</td>
-        <td align="center">A12-A9 selects palette entry, A8=0</td>
-        <td align="center" colspan="4">Green</td>
-        <td align="center" colspan="4">Blue</td>
-    </tr>
-    <tr>
-        <td>VPALTILE</td>
-        <td>$EA - 234</td>
-        <td align="center">A12-A9 selects palette entry, A8=1</td>
-        <td align="center" colspan="4">-</td>
-        <td align="center" colspan="4">Red</td>
-    </tr>
-    <tr>
-        <td>VPALSPR</td>
-        <td>$EB - 235</td>
-        <td align="center">A12-A9 selects palette entry, A8=0</td>
-        <td align="center" colspan="4">Green</td>
-        <td align="center" colspan="4">Blue</td>
-    </tr>
-    <tr>
-        <td>VPALSPR</td>
-        <td>$EB - 235</td>
-        <td align="center">A12-A9 selects palette entry, A8=1</td>
-        <td align="center" colspan="4">-</td>
-        <td align="center" colspan="4">Red</td>
-    </tr>
-    <tr>
-        <td>VLINE</td>
-        <td>$EC - 236</td>
-        <td align="center">-</td>
-        <td align="center" colspan="8">Current line number</td>
-    </tr>
-    <tr>
-        <td>VIRQLINE</td>
-        <td>$ED - 237</td>
-        <td align="center">-</td>
-        <td align="center" colspan="8">Line number at which to generate IRQ</td>
-    </tr>
-    <tr>
-        <td>IRQMASK</td>
-        <td>$EE - 238</td>
-        <td align="center">-</td>
-        <td align="center" colspan="6">-</td>
-        <td align="center" colspan="1">Line</td>
-        <td align="center" colspan="1">VSync</td>
-    </tr>
-    <tr>
-        <td>IRQSTAT</td>
-        <td>$EF - 239</td>
-        <td align="center">-</td>
-        <td align="center" colspan="6">-</td>
-        <td align="center" colspan="1">Line</td>
-        <td align="center" colspan="1">VSync</td>
-    </tr>
-</table>
-
-For registers $E4-$E8, A13-A8 determines which sprite to read or write. (eg. in Assembly (not BASIC), use a OUT (C),A instruction with B containing palette index)  
-For registers $E9-$EB, A12-A8 determines which palette entry to read or write. (eg. in Assembly (not BASIC), use a OUT (C),A instruction with B containing palette index)
+# Video registers
 
 The current line number is reflected in the **_VLINE_** register. Internal line numbers range from 0-261. Line numbers above 255 are reflected in this register as 255.
 
@@ -291,10 +365,6 @@ The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a 
 The **_tile map scroll registers_** determine which part of the **_tile map_** is visible on the screen. They determine the offset within the tile map for the upper left corner of the screen.
 
 **_Sprites_** can be set partially off-screen by using negative values. For example, a sprite positioned at X-position 508, will show 4 pixels on the left side of the screen.
-
-**Implementation detail**: when writing to the lower byte of a palette entry, the entry itself isn’t yet updated, but the value written is stored in a latch. When writing the upper byte the value is combined with the value of the latch and the complete 12-bit value is written.
-
-Similarly writing to VSCRX_L or VSPRX_L will store the value in a latch. Only when writing to VSCRX_H or VSPRX_H, the latched value is combined with written value and the complete scroll register is updated.
 
 ### Tile map / bitmap mode
 
@@ -326,9 +396,10 @@ Similarly writing to VSCRX_L or VSPRX_L will store the value in a latch. Only wh
         <td align="center" colspan="8">Tile index (7:0)</td>
     </tr>
     <tr>
-        <td align="center" colspan="3">-</td>
+        <td align="center" colspan="1">-</td>
         <td align="center" colspan="1">Priority</td>
-        <td align="center" colspan="1">Palette</td>
+        <td align="center" colspan="2">Palette</td>
+        <td align="center" colspan="1">-</td>
         <td align="center" colspan="1">V-flip</td>
         <td align="center" colspan="1">H-flip</td>
         <td align="center" colspan="1">Tile index (8)</td>
@@ -336,7 +407,6 @@ Similarly writing to VSCRX_L or VSPRX_L will store the value in a latch. Only wh
 </table>
 
 If the **_Priority_** bit is set, the tile is displayed in front of sprites (if sprite priority bit is not set as well).  
-If the **_Palette_** bit is set, the sprite palette is used instead of the tile palette.  
 If **_V-flip_** bit is set, the sprite is vertically mirrored.  
 If **_H-flip_** bit is set, the sprite is horizontally mirrored.
 
@@ -344,39 +414,11 @@ If **_H-flip_** bit is set, the sprite is horizontally mirrored.
 
 512 tile pattern entries. Each pattern is 32 bytes in size. Each pattern is 8x8 pixels of 4 bits per pixel. Each byte contains 2 pixels, the upper 4 bits contains the palette index of the left pixel, the lower 4 bits the palette index of the right pixel.
 
-# ESP32 interface
+# ESP32 interface (ESPCTRL/ESPDATA)
 
-The Aq+ has an interface defined to communicate with an ESP32 module. This module is used for file storage and network connectivity.
+The Aq+ has an interface to communicate with an ESP32 module. This interface is used for file storage and network connectivity.
 
-Communication is done via 2 IO registers:
-
-<table>
-    <tr>
-        <th>Addr</th>
-        <th>Name</th>
-        <th>Bit&nbsp;7</th>
-        <th>Bit&nbsp;6</th>
-        <th>Bit&nbsp;5 </th>
-        <th>Bit&nbsp;4</th>
-        <th>Bit&nbsp;3 </th>
-        <th>Bit&nbsp;2</th>
-        <th>Bit&nbsp;1 </th>
-        <th>Bit&nbsp;0</th>
-    </tr>
-    <tr>
-        <td>$F4</td>
-        <td>ESPCTRL</td>
-        <td colspan="1" align="center">Start frame</td>
-        <td colspan="5" align="center">-</td>
-        <td colspan="1" align="center">TX FIFO full</td>
-        <td colspan="1" align="center">RX FIFO non-empty</td>
-    </tr>
-    <tr>
-        <td>$F5</td>
-        <td>ESPDATA</td>
-        <td colspan="8" align="center">FIFO read / write</td>
-    </tr>
-</table>
+Communication is done via 2 IO registers: ESPCTRL and ESPDATA.
 
 Writing a 1 to _Start frame_ will generate a framing sequence.
 

@@ -61,7 +61,7 @@ void video_draw_line(void) {
                     uint8_t bm     = emustate.videoram[0x0000 + bmline * 40 + column];
                     uint8_t color  = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
-                    line_bitmap[i] = color | (1 << 4);
+                    line_bitmap[i] = (1 << 4) | color;
                 }
                 break;
             }
@@ -83,9 +83,7 @@ void video_draw_line(void) {
                     unsigned tile_idx = ((entry_h & 1) << 8) | entry_l;
                     bool     hflip    = (entry_h & (1 << 1)) != 0;
                     bool     vflip    = (entry_h & (1 << 2)) != 0;
-                    uint8_t  palette  = (entry_h & (1 << 3)) != 0 ? (2 << 4) : (1 << 4);
-                    uint8_t  priority = (entry_h & (1 << 4)) != 0 ? (1 << 6) : 0;
-                    uint8_t  attr     = palette | priority;
+                    uint8_t  attr     = entry_h & 0x70;
 
                     unsigned pat_offs = (tile_idx << 5) | ((tline & 7) << 2);
                     if (vflip)
@@ -135,16 +133,17 @@ void video_draw_line(void) {
                     continue;
 
                 // Check if sprite is visible on this line
+                int height  = (sprattr & (1 << 3)) != 0 ? 16 : 8;
                 int sprline = (bmline - emustate.video_spry[i]) & 0xFF;
-                if (sprline > 7)
+                if (sprline >= height)
                     continue;
 
                 int      sprx     = emustate.video_sprx[i];
                 unsigned tile_idx = emustate.video_spridx[i];
                 bool     hflip    = (sprattr & (1 << 1)) != 0;
                 bool     vflip    = (sprattr & (1 << 2)) != 0;
-                uint8_t  palette  = (sprattr & (1 << 3)) != 0 ? (1 << 4) : (2 << 4);
-                bool     priority = (sprattr & (1 << 4)) != 0;
+                uint8_t  palette  = sprattr & 0x30;
+                bool     priority = (sprattr & (1 << 6)) != 0;
 
                 idx = sprx;
 
@@ -201,12 +200,8 @@ void video_draw_line(void) {
 
         bool text_priority = (emustate.video_ctrl & VCTRL_TEXT_PRIORITY) != 0;
         bool text_enable   = (emustate.video_ctrl & VCTRL_TEXT_ENABLE) != 0;
-        bool tilebm_enable = (emustate.video_ctrl & VCTRL_MODE_MASK) != VCTRL_MODE_OFF;
 
         uint8_t colidx = 0;
-        if (tilebm_enable && !text_enable) {
-            colidx |= (1 << 4);
-        }
         if (text_enable) {
             colidx = line_text[idx];
         }
@@ -222,14 +217,7 @@ void video_draw_line(void) {
             }
         }
 
-        uint16_t color = 0;
-        switch ((colidx >> 4) & 3) {
-            case 0: color = emustate.video_palette_text[colidx & 0xF]; break;
-            case 1: color = emustate.video_palette_tile[colidx & 0xF]; break;
-            case 2: color = emustate.video_palette_sprite[colidx & 0xF]; break;
-            default: break;
-        }
-        pd[i] = color;
+        pd[i] = emustate.video_palette[colidx & 0x3F];
 
         idx = (idx + 1) & 511;
     }

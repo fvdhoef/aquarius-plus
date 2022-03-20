@@ -61,18 +61,15 @@ _reset:
     ld      a, 1
     out     (IO_VCTRL), a
 
-    ; Init palettes
+    ; Init palette 0
     ld      hl, .default_palette
+    ld      c, IO_VPALSEL
     ld      b, 0
     ld      d, 32
 .palloop:
+    out     (c), b
     ld      a, (hl)
-    ld      c, IO_VPALTXT
-    out     (c), a
-    ld      c, IO_VPALTILE
-    out     (c), a
-    ld      c, IO_VPALSPR
-    out     (c), a
+    out     (IO_VPALDATA), a
     inc     hl
     inc     b
     dec     d

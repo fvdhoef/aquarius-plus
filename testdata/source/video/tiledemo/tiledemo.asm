@@ -24,16 +24,32 @@ main:
 
     ; Set palette
     ld      hl, $F000
+    ld      c, IO_VPALSEL
     ld      b, 0
-    ld      c, IO_VPALTILE
     ld      d, 32
 .palloop:
+    out     (c), b
     ld      a, (hl)
-    out     (c), a
+    out     (IO_VPALDATA), a
     inc     hl
     inc     b
     dec     d
     jr      nz, .palloop
+
+    ; Setup sprite
+    ; ld      b, 0
+
+    ; ld      c, IO_VSPRX_L
+    ; out     (c), a
+    ; ld      c, IO_VSPRX_H
+    ; out     (c), a
+    ; ld      c, IO_VSPRY
+    ; out     (c), a
+    ; ld      c, IO_VSPRIDX
+    ; out     (c), a
+    ; ld      c, IO_VSPRATTR
+    ; out     (c), a
+
 
     ; Set video mode
     ld      a, 2
@@ -48,7 +64,7 @@ main:
     jr      nz, .scroll_done
     ld      hl, scroll_x+1
     inc     (hl)
-.scroll_done
+.scroll_done:
 
     ; Set scroll register
     ld      a, (scroll_x)
