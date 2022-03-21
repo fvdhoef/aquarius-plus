@@ -5,6 +5,8 @@
 #include "regs.h"
 #include "file_io.h"
 
+// #define PERFMON
+
 static inline void wait_vsync(void) {
     while (IO_VSYNC & 1) {
     }
@@ -34,25 +36,31 @@ static inline void sprite_move(uint8_t sprite_idx, uint16_t x, uint8_t y) {
     IO_VSPRY   = y;
 }
 
-void setup_ball_sprites(uint8_t ball_idx) {
+static inline void setup_ball_sprites(uint8_t ball_idx) {
     uint8_t base = ball_idx * 4;
-    sprite_init(base + 0, 0x8000 | (128 + 227));
-    sprite_init(base + 1, 0x8000 | (128 + 228));
-    sprite_init(base + 2, 0x8000 | (128 + 243));
-    sprite_init(base + 3, 0x8000 | (128 + 244));
+    sprite_init(base++, 0x8000 | (128 + 227));
+    sprite_init(base++, 0x8000 | (128 + 228));
+    sprite_init(base++, 0x8000 | (128 + 243));
+    sprite_init(base, 0x8000 | (128 + 244));
 }
 
-void update_ball_sprites(uint8_t ball_idx) {
-    uint8_t      base  = ball_idx * 4;
+static inline void update_ball_sprites(uint8_t ball_idx) {
     struct ball *ballp = &balls[ball_idx];
+    uint16_t     x     = ballp->x;
+    uint16_t     x8    = ballp->x + 8;
+    uint8_t      y     = ballp->y;
+    uint8_t      y8    = ballp->y + 8;
 
-    sprite_move(base + 0, ballp->x, ballp->y);
-    sprite_move(base + 1, ballp->x + 8, ballp->y);
-    sprite_move(base + 2, ballp->x, ballp->y + 8);
-    sprite_move(base + 3, ballp->x + 8, ballp->y + 8);
+    uint8_t base = ball_idx * 4;
+    sprite_move(base++, x, y);
+    sprite_move(base++, x8, y);
+    sprite_move(base++, x, y8);
+    sprite_move(base, x8, y8);
 }
 
 int main(void) {
+    static uint8_t i;
+
     puts("Tiledemo\n");
 
     // Map video RAM to $C000
@@ -68,13 +76,13 @@ int main(void) {
     }
 
     // Set palette
-    for (uint8_t i = 0; i < 32; i++) {
+    for (i = 0; i < 32; i++) {
         IO_VPALSEL  = i;
         IO_VPALDATA = *(uint8_t *)(0xF000 + i);
     }
 
     // Init balls
-    for (uint8_t i = 0; i < 16; i++) {
+    for (i = 0; i < 16; i++) {
         struct ball *ballp = &balls[i];
 
         ballp->x  = rand() % (320 - 16);
@@ -93,9 +101,24 @@ int main(void) {
     // Set video mode
     IO_VCTRL = VCTRL_MODE_TILE | VCTRL_SPR_EN;
 
+#ifdef PERFMON
+    IO_VPALSEL     = 0;
+    uint8_t col0_l = IO_VPALDATA;
+    IO_VPALSEL     = 1;
+    uint8_t col0_h = IO_VPALDATA;
+#endif
+
     static uint16_t scroll_x = 0;
     while (1) {
         wait_vsync();
+
+#ifdef PERFMON
+        // Background: blue
+        IO_VPALSEL  = 0;
+        IO_VPALDATA = col0_l;
+        IO_VPALSEL  = 1;
+        IO_VPALDATA = col0_h;
+#endif
 
         // Scroll horizontally
         scroll_x++;
@@ -103,7 +126,7 @@ int main(void) {
         IO_VSCRX_H = scroll_x >> 8;
 
         // Move balls
-        for (uint8_t i = 0; i < 16; i++) {
+        for (i = 0; i < 16; i++) {
             struct ball *ballp = &balls[i];
 
             ballp->x += ballp->dx;
@@ -115,6 +138,14 @@ int main(void) {
 
             update_ball_sprites(i);
         }
+
+#ifdef PERFMON
+        // Background: black
+        IO_VPALSEL  = 0;
+        IO_VPALDATA = 0;
+        IO_VPALSEL  = 1;
+        IO_VPALDATA = 0;
+#endif
     }
 
     // return 0;
