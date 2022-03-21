@@ -133,9 +133,9 @@ void video_draw_line(void) {
                     continue;
 
                 // Check if sprite is visible on this line
-                int height  = (sprattr & (1 << 3)) != 0 ? 16 : 8;
-                int sprline = (bmline - emustate.video_spry[i]) & 0xFF;
-                if (sprline >= height)
+                bool h16     = (sprattr & (1 << 3)) != 0;
+                int  sprline = (bmline - emustate.video_spry[i]) & 0xFF;
+                if (sprline >= (h16 ? 16 : 8))
                     continue;
 
                 int      sprx     = emustate.video_sprx[i];
@@ -148,11 +148,11 @@ void video_draw_line(void) {
                 idx = sprx;
 
                 if (vflip)
-                    sprline ^= 7;
+                    sprline ^= (h16 ? 15 : 7);
 
-                unsigned pat_offs = (tile_idx << 5) | (sprline << 2);
-                if (vflip)
-                    pat_offs ^= (7 << 2);
+                tile_idx ^= (sprline >> 3);
+
+                unsigned pat_offs = (tile_idx << 5) | ((sprline & 7) << 2);
 
                 for (int n = 0; n < 4; n++) {
                     int m = n;
