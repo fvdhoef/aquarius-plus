@@ -30,8 +30,6 @@
     pop     hl
     jp      _exit
 
-blaat::
-
     ; Ordering of segments for the linker.
     .area   _HOME
     .area   _CODE
