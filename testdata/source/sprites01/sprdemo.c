@@ -5,12 +5,11 @@
 #include "regs.h"
 #include "file_io.h"
 
+// Uncomment next line to show VBLANK period
 // #define PERFMON
 
 static inline void wait_vsync(void) {
-    while (IO_VSYNC & 1) {
-    }
-    while ((IO_VSYNC & 1) == 0) {
+    while (IO_VLINE < 216) {
     }
 }
 
@@ -37,11 +36,15 @@ static inline void sprite_move(uint8_t sprite_idx, uint16_t x, uint8_t y) {
 }
 
 static inline void setup_ball_sprites(uint8_t ball_idx) {
-    uint8_t base = ball_idx * 4;
-    sprite_init(base++, 0x8000 | (128 + 227));
-    sprite_init(base++, 0x8000 | (128 + 228));
-    sprite_init(base++, 0x8000 | (128 + 243));
-    sprite_init(base, 0x8000 | (128 + 244));
+//    uint8_t base = ball_idx * 4;
+    uint8_t base = ball_idx * 2;
+//    sprite_init(base++, 0x8000 | (128 + 227));
+    sprite_init(base++, 0x8800 | (128 + 227)); // 0x8800 turns on the 16 tall bit
+//    sprite_init(base++, 0x8000 | (128 + 228));
+//    sprite_init(base++, 0x8000 | (128 + 243));
+//    sprite_init(base, 0x8000 | (128 + 243));
+    sprite_init(base, 0x8800 | (128 + 243));   // 0x8800 turns on the 16 tall bit
+//    sprite_init(base, 0x8000 | (128 + 244));
 }
 
 static inline void update_ball_sprites(uint8_t ball_idx) {
@@ -49,13 +52,15 @@ static inline void update_ball_sprites(uint8_t ball_idx) {
     uint16_t     x     = ballp->x;
     uint16_t     x8    = ballp->x + 8;
     uint8_t      y     = ballp->y;
-    uint8_t      y8    = ballp->y + 8;
+//    uint8_t      y8    = ballp->y + 8;
 
-    uint8_t base = ball_idx * 4;
+//    uint8_t base = ball_idx * 4;
+    uint8_t base = ball_idx * 2;
     sprite_move(base++, x, y);
-    sprite_move(base++, x8, y);
-    sprite_move(base++, x, y8);
-    sprite_move(base, x8, y8);
+//    sprite_move(base++, x8, y);
+    sprite_move(base, x8, y);
+//    sprite_move(base++, x, y8);
+//    sprite_move(base, x8, y8);
 }
 
 int main(void) {

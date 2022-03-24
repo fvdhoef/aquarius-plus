@@ -4,7 +4,7 @@
   <export target="tiledemo.json" format="json"/>
  </editorsettings>
  <tileset firstgid="1" name="s1sms_ghz1" tilewidth="8" tileheight="8" tilecount="256" columns="16">
-  <image source="s1sms_ghz1.png" width="128" height="128"/>
+  <image source="sprtiles.png" width="128" height="128"/>
  </tileset>
  <layer id="1" name="Tile Layer 1" width="64" height="32">
   <data encoding="csv">
