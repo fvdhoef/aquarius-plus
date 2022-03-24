@@ -39,11 +39,11 @@ static inline void setup_ball_sprites(uint8_t ball_idx) {
 //    uint8_t base = ball_idx * 4;
     uint8_t base = ball_idx * 2;
 //    sprite_init(base++, 0x8000 | (128 + 227));
-    sprite_init(base++, 0x8800 | (128 + 227)); // 0x8800 turns on the 16 tall bit
+    sprite_init(base++, 0x8800 | (128 + 228)); // 0x8800 turns on the 16 tall bit
 //    sprite_init(base++, 0x8000 | (128 + 228));
 //    sprite_init(base++, 0x8000 | (128 + 243));
 //    sprite_init(base, 0x8000 | (128 + 243));
-    sprite_init(base, 0x8800 | (128 + 243));   // 0x8800 turns on the 16 tall bit
+    sprite_init(base, 0x8800 | (128 + 244));   // 0x8800 turns on the 16 tall bit
 //    sprite_init(base, 0x8000 | (128 + 244));
 }
 
