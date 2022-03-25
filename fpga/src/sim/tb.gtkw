@@ -1,0 +1,24 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Thu Mar 24 16:57:39 2022
+[*]
+[dumpfile] "/Users/frank/Work/aquarius-emu/fpga/src/sim/tb.vcd"
+[dumpfile_mtime] "Thu Mar 24 16:57:19 2022"
+[dumpfile_size] 118482
+[savefile] "/Users/frank/Work/aquarius-emu/fpga/src/sim/tb.gtkw"
+[timestart] 109022600
+[size] 1627 997
+[pos] -1 -1
+*-17.000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb.
+[sst_width] 193
+[signals_width] 150
+[sst_expanded] 1
+[sst_vpaned_height] 563
+@28
+tb.top_inst.sysclk
+tb.top_inst.phi
+@29
+tb.top_inst.phi_div_r[2:0]
+[pattern_trace] 1
+[pattern_trace] 0
