@@ -8,10 +8,13 @@
 // #define PERFMON
 
 static inline void wait_vsync(void) {
-    while (IO_VSYNC & 1) {
+    while (IO_VLINE < 216) {
     }
-    while ((IO_VSYNC & 1) == 0) {
-    }
+
+    // while (IO_VSYNC & 1) {
+    // }
+    // while ((IO_VSYNC & 1) == 0) {
+    // }
 }
 
 struct ball {
@@ -58,31 +61,57 @@ static inline void update_ball_sprites(uint8_t ball_idx) {
     sprite_move(base, x8, y8);
 }
 
-int main(void) {
-    static uint8_t i;
+static inline void sonic_sprite(uint8_t frame, int x, int y) {
+    uint8_t  base   = 32;
+    uint16_t spridx = 128 + 256 + (uint16_t)frame * 16;
+    for (uint8_t j = 0; j < 2; j++) {
+        uint8_t tx = x;
+        for (uint8_t i = 0; i < 3; i++) {
+            sprite_init(base, 0x8800 | spridx);
+            sprite_move(base, tx, y);
+            base++;
+            spridx += 2;
+            tx += 8;
+        }
+        y += 16;
+    }
+}
 
-    puts("Tiledemo\n");
-
+bool init(void) {
     // Map video RAM to $C000
     IO_BANK3 = 20;
 
+    uint8_t palette[32];
+
     // Load in tile data
-    printf("Loading tile data...");
-    if (load_binary("tiledata.bin", (void *)0xC000, 0x4000)) {
-        printf("done\n");
-    } else {
+    printf("Loading tile data...\n");
+    int8_t fd = open("tiledata.bin", FO_RDONLY);
+    if (fd < 0) {
+        return false;
+    }
+    read(fd, (void *)0xC000, 0x4000);
+    read(fd, palette, 32);
+    close(fd);
+
+    // Set palette
+    for (uint8_t i = 0; i < 32; i++) {
+        IO_VPALSEL  = i;
+        IO_VPALDATA = palette[i];
+    }
+    return true;
+}
+
+int main(void) {
+    puts("Tiledemo\n");
+    if (!init()) {
         printf("error\n");
         return 1;
     }
 
-    // Set palette
-    for (i = 0; i < 32; i++) {
-        IO_VPALSEL  = i;
-        IO_VPALDATA = *(uint8_t *)(0xF000 + i);
-    }
+    static uint8_t i;
 
     // Init balls
-    for (i = 0; i < 16; i++) {
+    for (i = 0; i < 8; i++) {
         struct ball *ballp = &balls[i];
 
         ballp->x  = rand() % (320 - 16);
@@ -108,7 +137,10 @@ int main(void) {
     uint8_t col0_h = IO_VPALDATA;
 #endif
 
-    static uint16_t scroll_x = 0;
+    static uint16_t scroll_x   = 0;
+    static uint8_t  anim_frame = 0;
+    static uint8_t  anim_delay = 0;
+
     while (1) {
         wait_vsync();
 
@@ -125,8 +157,19 @@ int main(void) {
         IO_VSCRX_L = scroll_x & 0xFF;
         IO_VSCRX_H = scroll_x >> 8;
 
+        sonic_sprite(anim_frame, 160 - 12, 90);
+
+        anim_delay++;
+        if (anim_delay >= 5) {
+            anim_delay = 0;
+            anim_frame++;
+            if (anim_frame >= 6) {
+                anim_frame = 0;
+            }
+        }
+
         // Move balls
-        for (i = 0; i < 16; i++) {
+        for (i = 0; i < 8; i++) {
             struct ball *ballp = &balls[i];
 
             ballp->x += ballp->dx;

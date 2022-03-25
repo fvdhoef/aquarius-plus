@@ -32,7 +32,7 @@ for entry in palette:
     palbytes.append(entry >> 8)
 
 patterns = bytearray()
-for row in range(16):
+for row in range(24):
     for column in range(16):
         for j in range(8):
             for i in range(4):
