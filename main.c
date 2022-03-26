@@ -152,8 +152,8 @@ static uint8_t io_read(size_t param, ushort addr) {
                 return 0xFF;
             else {
                 switch (emustate.ay_addr) {
-                    case 14: return emustate.handctrl1; break;
-                    case 15: return emustate.handctrl2; break;
+                    case 14: return emustate.handctrl1;
+                    case 15: return emustate.handctrl2;
                     default: return ay8910_read_reg(&emustate.ay_state, emustate.ay_addr);
                 }
             }
@@ -429,7 +429,7 @@ static void emulate(SDL_Renderer *renderer) {
             emustate.line_hcycles += delta;
             emustate.sample_hcycles += delta;
 
-            if (old_line_hcycles < 320 && emustate.line_hcycles >= 320) {
+            if (old_line_hcycles < 320 && emustate.line_hcycles >= 320 && emustate.video_line == emustate.video_irqline) {
                 emustate.irqstatus |= (1 << 1);
             }
 
