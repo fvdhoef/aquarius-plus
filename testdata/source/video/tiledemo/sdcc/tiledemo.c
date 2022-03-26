@@ -8,7 +8,13 @@
 // #define PERFMON
 
 static inline void wait_vsync(void) {
-    while (IO_VLINE < 216) {
+    // while (IO_VLINE < 216) {
+    // }
+
+    // Wait for line 216
+    IO_VIRQLINE = 216;
+    IO_IRQSTAT  = 2;
+    while ((IO_IRQSTAT & 2) == 0) {
     }
 
     // while (IO_VSYNC & 1) {
@@ -65,7 +71,7 @@ static inline void sonic_sprite(uint8_t frame, int x, int y) {
     uint8_t  base   = 32;
     uint16_t spridx = 128 + 256 + (uint16_t)frame * 16;
     for (uint8_t j = 0; j < 2; j++) {
-        uint8_t tx = x;
+        int tx = x;
         for (uint8_t i = 0; i < 3; i++) {
             sprite_init(base, 0x8800 | spridx);
             sprite_move(base, tx, y);
@@ -75,6 +81,11 @@ static inline void sonic_sprite(uint8_t frame, int x, int y) {
         }
         y += 16;
     }
+}
+
+static uint8_t get_joystick(void) {
+    IO_PSG1ADDR = 14;
+    return IO_PSG1DATA;
 }
 
 bool init(void) {
@@ -127,8 +138,27 @@ int main(void) {
         update_ball_sprites(i);
     }
 
+    {
+        uint8_t *tram = (uint8_t *)0x3000;
+        uint8_t *cram = (uint8_t *)0x3400;
+
+        // Clear screen
+        for (int i = 0; i < 1000; i++) {
+            tram[i] = ' ';
+            cram[i] = 0x90;
+        }
+
+        // Put text at top of screen
+        const char *str = "  Score:xxxxx    Lives:x    Time:xxx";
+        const char *ps  = str;
+        uint8_t    *pd  = tram + 1;
+        while (*ps) {
+            *(pd++) = *(ps++);
+        }
+    }
+
     // Set video mode
-    IO_VCTRL = VCTRL_MODE_TILE | VCTRL_SPR_EN;
+    IO_VCTRL = VCTRL_MODE_TILE | VCTRL_SPR_EN | VCTRL_TEXT_EN | VCTRL_TEXT_PRIO;
 
 #ifdef PERFMON
     IO_VPALSEL     = 0;
@@ -140,6 +170,12 @@ int main(void) {
     static uint16_t scroll_x   = 0;
     static uint8_t  anim_frame = 0;
     static uint8_t  anim_delay = 0;
+
+    static int sonic_x;
+    static int sonic_y;
+
+    sonic_x = 160 - 12;
+    sonic_y = 90;
 
     while (1) {
         wait_vsync();
@@ -157,7 +193,7 @@ int main(void) {
         IO_VSCRX_L = scroll_x & 0xFF;
         IO_VSCRX_H = scroll_x >> 8;
 
-        sonic_sprite(anim_frame, 160 - 12, 90);
+        sonic_sprite(anim_frame, sonic_x, sonic_y);
 
         anim_delay++;
         if (anim_delay >= 5) {
@@ -180,6 +216,18 @@ int main(void) {
                 ballp->dy = -ballp->dy;
 
             update_ball_sprites(i);
+        }
+
+        {
+            uint8_t joyval = ~get_joystick();
+            if (joyval & (1 << 0))
+                sonic_y++;
+            if (joyval & (1 << 1))
+                sonic_x++;
+            if (joyval & (1 << 2))
+                sonic_y--;
+            if (joyval & (1 << 3))
+                sonic_x--;
         }
 
 #ifdef PERFMON
