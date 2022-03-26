@@ -48,7 +48,7 @@ void video_draw_line(void) {
     }
 
     // Render bitmap/tile layer
-    uint8_t line_bitmap[512];
+    uint8_t line_gfx[512];
     if (vactive) {
         int bmline = line - 16;
         switch (emustate.video_ctrl & VCTRL_MODE_MASK) {
@@ -61,7 +61,7 @@ void video_draw_line(void) {
                     uint8_t bm     = emustate.videoram[0x0000 + bmline * 40 + column];
                     uint8_t color  = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
-                    line_bitmap[i] = (1 << 4) | color;
+                    line_gfx[i] = (1 << 4) | color;
                 }
                 break;
             }
@@ -100,13 +100,21 @@ void video_draw_line(void) {
                         uint8_t data = emustate.videoram[pat_offs + m];
 
                         if (!hflip) {
-                            line_bitmap[idx++] = (data >> 4) | attr;
+                            uint8_t val = data >> 4;
+                            val |= (attr & ((val == 0) ? 0x30 : 0x70));
+                            line_gfx[idx++] = val;
                             idx &= 511;
                         }
-                        line_bitmap[idx++] = (data & 0xF) | attr;
-                        idx &= 511;
+                        {
+                            uint8_t val = data & 0xF;
+                            val |= (attr & ((val == 0) ? 0x30 : 0x70));
+                            line_gfx[idx++] = val;
+                            idx &= 511;
+                        }
                         if (hflip) {
-                            line_bitmap[idx++] = (data >> 4) | attr;
+                            uint8_t val = data >> 4;
+                            val |= (attr & ((val == 0) ? 0x30 : 0x70));
+                            line_gfx[idx++] = val;
                             idx &= 511;
                         }
                     }
@@ -116,7 +124,7 @@ void video_draw_line(void) {
 
             default: {
                 for (int i = 0; i < 320; i++) {
-                    line_bitmap[i] = 0;
+                    line_gfx[i] = 0;
                 }
                 break;
             }
@@ -162,35 +170,33 @@ void video_draw_line(void) {
                     uint8_t data = emustate.videoram[pat_offs + m];
 
                     if (!hflip) {
-                        if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
+                        if (priority || (line_gfx[idx] & (1 << 6)) == 0) {
                             unsigned colidx = (data >> 4);
 
                             if (colidx != 0)
-                                line_bitmap[idx] = colidx | palette;
-
-                            idx++;
-                            idx &= 511;
+                                line_gfx[idx] = colidx | palette;
                         }
-                    }
-                    if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
-                        unsigned colidx = (data & 0xF);
-
-                        if (colidx != 0)
-                            line_bitmap[idx] = colidx | palette;
-
                         idx++;
                         idx &= 511;
                     }
+                    if (priority || (line_gfx[idx] & (1 << 6)) == 0) {
+                        unsigned colidx = (data & 0xF);
+
+                        if (colidx != 0)
+                            line_gfx[idx] = colidx | palette;
+                    }
+                    idx++;
+                    idx &= 511;
+
                     if (hflip) {
-                        if (priority || (line_bitmap[idx] & (1 << 6)) == 0) {
+                        if (priority || (line_gfx[idx] & (1 << 6)) == 0) {
                             unsigned colidx = (data >> 4);
 
                             if (colidx != 0)
-                                line_bitmap[idx] = colidx | palette;
-
-                            idx++;
-                            idx &= 511;
+                                line_gfx[idx] = colidx | palette;
                         }
+                        idx++;
+                        idx &= 511;
                     }
                 }
             }
@@ -212,7 +218,7 @@ void video_draw_line(void) {
             colidx = line_text[idx];
         }
         if (active) {
-            uint8_t bm_colidx    = line_bitmap[idx];
+            uint8_t bm_colidx    = line_gfx[idx];
             bool    render_pixel = (bm_colidx & 0xF) != 0;
 
             if (text_priority && (colidx & 0xF) != 0) {

@@ -38,7 +38,7 @@
         <td colspan="3" align="center">-</td>
         <td colspan="1" align="center">Text priority</td>
         <td colspan="1" align="center">Sprites enable</td>
-        <td colspan="2" align="center">Tile map / bitmap mode</td>
+        <td colspan="2" align="center">Graphics mode</td>
         <td colspan="1" align="center">Text enable</td>
     </tr>
     <tr>
@@ -366,7 +366,7 @@ The **_tile map scroll registers_** determine which part of the **_tile map_** i
 
 **_Sprites_** can be set partially off-screen by using negative values. For example, a sprite positioned at X-position 508, will show 4 pixels on the left side of the screen.
 
-### Tile map / bitmap mode
+### Graphics mode
 
 | Value | Description       |
 | ----: | ----------------- |

@@ -157,6 +157,19 @@ int main(void) {
         }
     }
 
+    // Manually patch the tilemap; give the palm tree priority
+    {
+        uint16_t *tilemap = (uint16_t *)0xC000;
+        for (int j = 0; j < 5; j++) {
+            for (int i = 0; i < 5; i++) {
+                tilemap[64 * (8 + j) + (7 + i)] |= 0x4000;
+            }
+        }
+        for (int j = 0; j < 5; j++) {
+            tilemap[64 * (13 + j) + 9] |= 0x4000;
+        }
+    }
+
     // Set video mode
     IO_VCTRL = VCTRL_MODE_TILE | VCTRL_SPR_EN | VCTRL_TEXT_EN | VCTRL_TEXT_PRIO;
 
