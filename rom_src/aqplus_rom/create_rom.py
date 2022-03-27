@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-with open("../../aquarius.rom", "wb") as f:
+with open("../../emulator/aquarius.rom", "wb") as f:
     # Patched Aquarius S2 ROM
     with open("../../assets/aquarius_s2.rom", "rb") as f2:
         stockrom = bytearray(f2.read())

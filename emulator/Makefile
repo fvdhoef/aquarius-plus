@@ -39,11 +39,7 @@ all: $(OUT)
 $(OUT): $(BUILD_DIR) $(OBJS)
 	@echo Linking $@
 	@$(CC) $(OBJS) $(CFLAGS) $(LFLAGS) -o $@
-	ln -sf ../aquarius.rom build/aquarius.rom
-
-	@ln -sf ../kernel.bin $(BUILD_DIR)/kernel.bin
-	@ln -sf ../spiflash.bin $(BUILD_DIR)/spiflash.bin
-	@ln -sf ../sdcard.bin $(BUILD_DIR)/sdcard.bin
+	@ln -sf ../aquarius.rom build/aquarius.rom
 
 $(C_OBJS): $(BUILD_DIR)/%.o: %.c
 	@echo Compiling $<
@@ -53,7 +49,7 @@ $(BUILD_DIR):
 	@mkdir -p $(dir $(C_OBJS))
 
 run: $(OUT)
-	$(OUT) -u testdata/usb
+	$(OUT) -u ../testdata/usb
 
 clean:
 	@echo Cleaning...
