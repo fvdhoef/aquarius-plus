@@ -1,6 +1,6 @@
 {
   "board": {
-    "active_layer": 37,
+    "active_layer": 40,
     "active_layer_preset": "",
     "auto_track_width": true,
     "hidden_nets": [],
@@ -61,8 +61,8 @@
       35,
       36
     ],
-    "visible_layers": "7fcf020_80000001",
-    "zone_display_mode": 0
+    "visible_layers": "7fcf02c_80000001",
+    "zone_display_mode": 1
   },
   "meta": {
     "filename": "aquarius-plus.kicad_prl",

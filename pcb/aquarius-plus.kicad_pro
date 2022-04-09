@@ -388,8 +388,8 @@
       "idf": "",
       "netlist": "",
       "specctra_dsn": "",
-      "step": "",
-      "vrml": ""
+      "step": "aquarius-plus.step",
+      "vrml": "aquarius-plus.wrl"
     },
     "page_layout_descr_file": ""
   },
