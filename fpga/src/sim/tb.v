@@ -25,6 +25,7 @@ module tb();
     wire [15:0] bus_a = 16'h0000;
 
     wire reset_n = 1'bZ;
+    pullup(reset_n);
 
     top top_inst(
         .sysclk(sysclk),

@@ -68,6 +68,32 @@ module top(
     output wire        esp_notify
 );
 
+    //////////////////////////////////////////////////////////////////////////
+    // System controller (reset and clock generation)
+    //////////////////////////////////////////////////////////////////////////
+    wire reset;
+
+    sysctrl sysctrl(
+        .sysclk(sysclk),
+        .ext_reset_n(reset_n),
+
+        .phi(phi),
+        .reset(reset));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Video
+    //////////////////////////////////////////////////////////////////////////
+    video video(
+        .clk(sysclk),
+        .reset(reset),
+
+        .vga_r(vga_r),
+        .vga_g(vga_g),
+        .vga_b(vga_b),
+        .vga_hsync(vga_hsync),
+        .vga_vsync(vga_vsync));
+
+
     assign bus_int_n    = 1'bZ;
     assign bus_wait_n   = 1'bZ;
     assign bus_busreq_n = 1'bZ;
@@ -87,49 +113,11 @@ module top(
     assign hctrl_clk    = 1'b0;
     assign hctrl_load_n = 1'b0;
 
-    assign vga_r        = 4'b0;
-    assign vga_g        = 4'b0;
-    assign vga_b        = 4'b0;
-    assign vga_hsync    = 1'b0;
-    assign vga_vsync    = 1'b0;
-
     assign esp_tx       = 1'b0;
     assign esp_rts      = 1'b0;
 
     assign esp_miso     = 1'b0;
     assign esp_notify   = 1'b0;
-
-    //////////////////////////////////////////////////////////////////////////
-    // Generate internal reset signal
-    //////////////////////////////////////////////////////////////////////////
-`ifdef __ICARUS__
-
-    // Simulation: only have a short reset duration
-    reg [4:0] reset_cnt_r = 0;
-    always @(posedge sysclk)
-        if (!reset_cnt_r[4])
-            reset_cnt_r <= reset_cnt_r + 5'b1;
-
-    assign reset_n = reset_cnt_r[4];
-
-`else
-
-    // Synthesis: reset duration ~146ms
-    reg [21:0] reset_cnt_r = 0;
-    always @(posedge sysclk)
-        if (!reset_cnt_r[21])
-            reset_cnt_r <= reset_cnt_r + 22'b1;
-
-    assign reset_n = reset_cnt_r[21];
-
-`endif
-
-    //////////////////////////////////////////////////////////////////////////
-    // Generate phi signal
-    //////////////////////////////////////////////////////////////////////////
-    reg [1:0] phi_div_r = 2'b0;
-    always @(posedge sysclk) phi_div_r <= phi_div_r + 2'b1;
-    assign phi = phi_div_r[1];
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
