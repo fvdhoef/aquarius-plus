@@ -1,5 +1,6 @@
 module video(
     input  wire        clk,
+    input  wire        reset,
 
     // VCTRL
     input  wire        text_enable,

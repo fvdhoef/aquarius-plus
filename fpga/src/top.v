@@ -99,6 +99,30 @@ module top(
     assign esp_miso     = 1'b0;
     assign esp_notify   = 1'b0;
 
+    //////////////////////////////////////////////////////////////////////////
+    // Generate internal reset signal
+    //////////////////////////////////////////////////////////////////////////
+`ifdef __ICARUS__
+
+    // Simulation: only have a short reset duration
+    reg [4:0] reset_cnt_r = 0;
+    always @(posedge sysclk)
+        if (!reset_cnt_r[4])
+            reset_cnt_r <= reset_cnt_r + 5'b1;
+
+    assign reset_n = reset_cnt_r[4];
+
+`else
+
+    // Synthesis: reset duration ~146ms
+    reg [21:0] reset_cnt_r = 0;
+    always @(posedge sysclk)
+        if (!reset_cnt_r[21])
+            reset_cnt_r <= reset_cnt_r + 22'b1;
+
+    assign reset_n = reset_cnt_r[21];
+
+`endif
 
     //////////////////////////////////////////////////////////////////////////
     // Generate phi signal
