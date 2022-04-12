@@ -45,7 +45,7 @@ module top(
     // Hand controller interface
     output wire        hctrl_clk,
     output wire        hctrl_load_n,
-    input wire         hctrl_data,
+    input  wire        hctrl_data,
 
     // VGA output
     output wire  [3:0] vga_r,
@@ -93,6 +93,22 @@ module top(
         .vga_hsync(vga_hsync),
         .vga_vsync(vga_vsync));
 
+    //////////////////////////////////////////////////////////////////////////
+    // Hand controller interface
+    //////////////////////////////////////////////////////////////////////////
+    wire [7:0] hctrl1_data;
+    wire [7:0] hctrl2_data;
+
+    handctrl handctrl(
+        .clk(sysclk),
+        .reset(reset),
+
+        .hctrl_clk(hctrl_clk),
+        .hctrl_load_n(hctrl_load_n),
+        .hctrl_data(hctrl_data),
+
+        .hctrl1_data(hctrl1_data),
+        .hctrl2_data(hctrl2_data));
 
     assign bus_int_n    = 1'bZ;
     assign bus_wait_n   = 1'bZ;
@@ -109,9 +125,6 @@ module top(
     assign printer_out  = 1'b0;
 
     assign exp          = 7'b0;
-
-    assign hctrl_clk    = 1'b0;
-    assign hctrl_load_n = 1'b0;
 
     assign esp_tx       = 1'b0;
     assign esp_rts      = 1'b0;

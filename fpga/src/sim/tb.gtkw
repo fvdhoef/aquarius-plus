@@ -1,21 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Apr 12 15:55:27 2022
+[*] Tue Apr 12 17:18:03 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Apr 12 15:54:29 2022"
-[dumpfile_size] 592895
+[dumpfile_mtime] "Tue Apr 12 17:16:10 2022"
+[dumpfile_size] 46268833
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 0
+[timestart] 14500000
 [size] 1627 997
 [pos] -1 -1
-*-26.000000 34195000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-23.000000 35245000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
+[treeopen] tb.top_inst.sysctrl.
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 356
+[sst_vpaned_height] 632
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -36,11 +37,29 @@ tb.top_inst.vga_vsync
 tb.top_inst.video.hcnt_r[8:0]
 @28
 tb.top_inst.video.hcnt_done
-@201
+@200
 -
 @24
 tb.top_inst.video.vcnt_r[9:0]
 @28
 tb.top_inst.video.vcnt_done
+@200
+-
+@28
+tb.top_inst.handctrl.hctrl_clk
+tb.top_inst.handctrl.hctrl_load_n
+tb.top_inst.handctrl.hctrl_data
+@200
+-
+@22
+tb.top_inst.handctrl.data_r[15:0]
+tb.top_inst.handctrl.hctrl1_data[7:0]
+tb.top_inst.handctrl.hctrl2_data[7:0]
+@28
+tb.top_inst.handctrl.do_shift
+@24
+tb.top_inst.handctrl.bitcnt_r[4:0]
+@29
+tb.top_inst.handctrl.shift_done
 [pattern_trace] 1
 [pattern_trace] 0
