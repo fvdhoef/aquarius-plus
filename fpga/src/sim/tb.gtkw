@@ -1,20 +1,21 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Apr 12 05:55:21 2022
+[*] Tue Apr 12 15:55:27 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Apr 12 05:55:12 2022"
-[dumpfile_size] 542345
+[dumpfile_mtime] "Tue Apr 12 15:54:29 2022"
+[dumpfile_size] 592895
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
 [timestart] 0
 [size] 1627 997
 [pos] -1 -1
-*-21.000000 1040000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-26.000000 34195000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
+[treeopen] tb.top_inst.
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 462
+[sst_vpaned_height] 356
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -29,5 +30,17 @@ tb.top_inst.vga_b[3:0]
 @28
 tb.top_inst.vga_hsync
 tb.top_inst.vga_vsync
+@200
+-
+@24
+tb.top_inst.video.hcnt_r[8:0]
+@28
+tb.top_inst.video.hcnt_done
+@201
+-
+@24
+tb.top_inst.video.vcnt_r[9:0]
+@28
+tb.top_inst.video.vcnt_done
 [pattern_trace] 1
 [pattern_trace] 0
