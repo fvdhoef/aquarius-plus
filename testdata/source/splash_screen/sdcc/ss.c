@@ -23,6 +23,15 @@ static inline void wait_vsync(void) {
     // }
 }
 
+static uint8_t get_keyboard(void) {
+    return IO_KEYBOARD;
+}
+
+static void exit_all(void) {
+        IO_VCTRL = VCTRL_MODE_OFF | VCTRL_TEXT_EN;
+        exit();
+}
+
 bool init(void) {
     // Map video RAM to $C000
     IO_BANK3 = 20;
@@ -30,7 +39,6 @@ bool init(void) {
     uint8_t palette[32];
 
     // Load in tile data
-    printf("Loading tile data...\n");
     int8_t fd = open("ss.bin", FO_RDONLY);
     if (fd < 0) {
         return false;
@@ -66,13 +74,6 @@ int main(void) {
             cram[i] = 0x90;
         }
 
-        // Put text at top of screen
-        //const char *str = "  Score:xxxxx    Lives:x    Time:xxx";
-        //const char *ps  = str;
-        //uint8_t    *pd  = tram + 1;
-        //while (*ps) {
-        //    *(pd++) = *(ps++);
-        //}
     }
 
     // Set video mode
@@ -99,6 +100,12 @@ int main(void) {
         IO_VPALSEL  = 1;
         IO_VPALDATA = col0_h;
 #endif
+
+        {
+            uint8_t keyval = ~get_keyboard();
+            if (keyval != 0)
+                exit_all();
+        }
 
 #ifdef PERFMON
         // Background: black
