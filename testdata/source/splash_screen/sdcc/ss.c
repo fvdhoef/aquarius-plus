@@ -7,6 +7,10 @@
 
 // #define PERFMON
 
+uint8_t old_palette[32];
+uint8_t palette[32];
+uint8_t orig_vmode;
+
 static inline void wait_vsync(void) {
     // while (IO_VLINE < 216) {
     // }
@@ -23,20 +27,34 @@ static inline void wait_vsync(void) {
     // }
 }
 
+static void reset_palette(void) {
+    for (uint8_t i = 0; i < 32; i++) {
+        IO_VPALSEL  = i;
+        IO_VPALDATA = old_palette[i];
+    }
+}
+
 static uint8_t get_keyboard(void) {
     return IO_KEYBOARD;
 }
 
-static void exit_all(void) {
-        IO_VCTRL = VCTRL_MODE_OFF | VCTRL_TEXT_EN;
-        exit();
+static void exit_video_mode(void) {
+    reset_palette();
+    IO_VCTRL = orig_vmode;
 }
 
 bool init(void) {
+    // Save video mode
+    orig_vmode = IO_VCTRL;
+
+    // Save palette
+    for (uint8_t i = 0; i < 32; i++) {
+        IO_VPALSEL  = i;
+        old_palette[i] = IO_VPALDATA;
+    }
+
     // Map video RAM to $C000
     IO_BANK3 = 20;
-
-    uint8_t palette[32];
 
     // Load in tile data
     int8_t fd = open("ss.bin", FO_RDONLY);
@@ -56,9 +74,9 @@ bool init(void) {
 }
 
 int main(void) {
-    puts("Tiledemo\n");
+    //puts("Tiledemo\n");
     if (!init()) {
-        printf("error\n");
+        //printf("error\n");
         return 1;
     }
 
@@ -103,8 +121,9 @@ int main(void) {
 
         {
             uint8_t keyval = ~get_keyboard();
-            if (keyval != 0)
-                exit_all();
+            if ((keyval == 13) | (keyval == 10))
+                exit_video_mode();
+                return 0;
         }
 
 #ifdef PERFMON
