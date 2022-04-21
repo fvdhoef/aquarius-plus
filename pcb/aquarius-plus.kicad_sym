@@ -1176,7 +1176,7 @@
         (number "36" (effects (font (size 1.27 1.27))))
       )
       (pin bidirectional line (at 15.24 -12.7 180) (length 3.81)
-        (name "IO32/TXD0" (effects (font (size 1.27 1.27))))
+        (name "IO43/TXD0" (effects (font (size 1.27 1.27))))
         (number "37" (effects (font (size 1.27 1.27))))
       )
       (pin bidirectional line (at 15.24 -10.16 180) (length 3.81)
