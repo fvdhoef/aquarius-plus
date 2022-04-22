@@ -34,10 +34,6 @@ static void reset_palette(void) {
     }
 }
 
-static uint8_t get_keyboard(void) {
-    return IO_KEYBOARD;
-}
-
 static void exit_video_mode(void) {
     reset_palette();
     IO_VCTRL = orig_vmode;
@@ -120,8 +116,9 @@ int main(void) {
 #endif
 
         {
-            uint8_t keyval = ~get_keyboard();
-            if ((keyval == 13) | (keyval == 10))
+            uint8_t keyval = *(uint8_t*)0x380A;
+            if ((keyval == 13) || (keyval == 10))
+                //printf("keyval = ",keyval);
                 exit_video_mode();
                 return 0;
         }
