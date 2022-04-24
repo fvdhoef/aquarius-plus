@@ -4,7 +4,6 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <usb/usb_host.h>
-#include <esp_log.h>
 #include <esp_intr_alloc.h>
 
 static const char *TAG = "usbhost";

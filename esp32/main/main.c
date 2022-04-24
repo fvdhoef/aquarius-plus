@@ -1,6 +1,7 @@
 #include "common.h"
 #include "usbhost.h"
 #include "sdcard.h"
+#include "fpga.h"
 
 static const char *TAG = "main";
 
@@ -15,8 +16,10 @@ static void init(void) {
         gpio_set_level(IOPIN_LED, 1);
     }
 
-    sdcard_init();
-    usbhost_init();
+    fpga_init();
+
+    // sdcard_init();
+    // usbhost_init();
 }
 
 void app_main(void) {
