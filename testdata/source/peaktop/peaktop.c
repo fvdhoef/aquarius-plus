@@ -15,8 +15,8 @@ struct blinker {
     uint8_t offChr;             // Char when off
     uint8_t onCol;              // Color setting when on
     uint8_t offCol;             // Color setting when off
-    uint16_t *chrLoc;           // Location of character
-    uint16_t *colLoc;           // Location of color toggle
+    uint8_t *chrLoc;            // Location of character
+    uint8_t *colLoc;            // Location of color toggle
     unsigned long startCycle;   // Last ticks start of cycle
 };
 
@@ -32,18 +32,6 @@ static uint8_t get_joystick(void) {
 }
 
 void updateBlinker(struct blinker this) {
-    // Temp blinker
-    if (this.lightOn) {
-        *this.chrLoc = (uint8_t) this.offChr;
-        *this.colLoc = (uint8_t) this.offCol;
-        this.lightOn = false;
-    } else {
-        *this.chrLoc = (uint8_t) this.onChr;
-        *this.colLoc = (uint8_t) this.onCol;
-        this.lightOn = true;    
-    }
-
-    /*
     if (((this.startCycle + this.onTime) > ticks) && this.lightOn) {
         *this.chrLoc = (uint8_t) this.offChr;
         *this.colLoc = (uint8_t) this.offCol;
@@ -55,7 +43,6 @@ void updateBlinker(struct blinker this) {
     } else {
         this.startCycle = ticks;
     }
-    */
 }
 
 static void clear_screen() {
@@ -71,12 +58,10 @@ static void clear_screen() {
 }
 
 static void update_screen() {
-    /*
     updateBlinker(towerLight);
     for (uint8_t i = 0; i < 25; i++) {
         updateBlinker(moveJoyToStart[i]);
     }
-    */
 }
 
 unsigned long the_ticks() {
@@ -100,18 +85,19 @@ bool init(void) {
     read(fd, (void *)0x3000, 0x3800);
     close(fd);
 
-    // Init Tower blinkie
-    towerLight.lightOn    = 1;           // Initial blink status
-    towerLight.onTime     = 20;          // Ticks
-    towerLight.offTime    = 10;          // Ticks
-    towerLight.onChr      = 34;          // Char when on
-    towerLight.offChr     = 34;          // Char when off
-    towerLight.onCol      = 31;          // Color setting when on
-    towerLight.offCol     = 255;         // Color setting when off
-    towerLight.chrLoc    = 12641;       // Location of character
-    towerLight.colLoc    = 13665;       // Location of color toggle
-    towerLight.startCycle = ticks;       // Start the blink cycle
+    // Init Tower blinker
+    towerLight.lightOn    = 1;                          // Initial blink status
+    towerLight.onTime     = 20;                         // Ticks
+    towerLight.offTime    = 10;                         // Ticks
+    towerLight.onChr      = 34;                         // Char when on
+    towerLight.offChr     = 34;                         // Char when off
+    towerLight.onCol      = 31;                         // Color setting when on
+    towerLight.offCol     = 255;                        // Color setting when off
+    *towerLight.chrLoc    = (uint16_t *) 12641;                      // Location of character
+    *towerLight.colLoc    = (uint16_t *) 13665;                      // Location of color toggle
+    towerLight.startCycle = ticks;                      // Start the blink cycle
 
+    // Init Press Control Pad blinker
     for (uint8_t i=0; i<25; i++) {
         moveJoyToStart[i].lightOn    = 1;
         moveJoyToStart[i].onTime     = 90;
@@ -120,8 +106,8 @@ bool init(void) {
         moveJoyToStart[i].offChr     = (uint8_t) " ";
         moveJoyToStart[i].onCol      = 118;
         moveJoyToStart[i].offCol     = 102;
-        moveJoyToStart[i].chrLoc    = 12694 + i;
-        moveJoyToStart[i].colLoc    = 13718 + i;
+        *moveJoyToStart[i].chrLoc    = 12694 + i;
+        *moveJoyToStart[i].colLoc    = 13718 + i;
         moveJoyToStart[i].lightOn    = ticks;
     }
 
@@ -136,7 +122,7 @@ int main(void) {
     // Main Loop
     while (1) {
         wait_vsync();
-        //update_screen();
+        update_screen();
         uint8_t joyval = ~get_joystick();
 
         // Control Pad DOWN
@@ -145,16 +131,21 @@ int main(void) {
             return 0;
         }
 
-        // Control Pad LEFT
+        // Control Pad RIGHT
         if (joyval & (1 << 1)) {
-            //updateBlinker(towerLight);
+            //clear_screen();
+            //return 0;
         }
 
-        /*
+        // Control Pad UP
         if (joyval & (1 << 2)) {
-            clear_screen();
-            return 0;
+            //updateBlinker(towerLight);
+            //clear_screen();
+            //return 0;
         }
+
+        // Control Pad LEFT
+        /*
         if (joyval & (1 << 3)) {
             clear_screen();
             return 0;
