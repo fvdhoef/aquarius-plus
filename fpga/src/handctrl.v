@@ -1,13 +1,13 @@
 module handctrl(
-    input  wire        clk,
-    input  wire        reset,
+    input  wire       clk,
+    input  wire       reset,
 
-    output wire        hctrl_clk,
-    output wire        hctrl_load_n,
-    input  wire        hctrl_data,
+    output wire       hctrl_clk,
+    output wire       hctrl_load_n,
+    input  wire       hctrl_data,
 
-    output reg   [7:0] hctrl1_data,
-    output reg   [7:0] hctrl2_data);
+    output reg  [7:0] hctrl1_data,
+    output reg  [7:0] hctrl2_data);
 
     // Clock divider for hctrl_clk
     reg [7:0] clkdiv_r = 8'd0;

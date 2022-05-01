@@ -81,6 +81,21 @@ module top(
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
+    // Boot ROM
+    //////////////////////////////////////////////////////////////////////////
+    wire [7:0] bootrom_data;
+
+    bootrom bootrom(
+        .addr(bus_a[7:0]),
+        .data(bootrom_data));
+
+    wire bootrom_sel  = bus_mreq_n == 1'b0 && bus_a[15:8] == 8'h00;
+    wire bus_d_enable = !bus_rd_n && bootrom_sel;
+    wire [7:0] rddata = bootrom_data;
+
+    assign bus_d = bus_d_enable ? rddata : 8'bZ;
+
+    //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
     video video(
@@ -110,6 +125,28 @@ module top(
         .hctrl1_data(hctrl1_data),
         .hctrl2_data(hctrl2_data));
 
+    //////////////////////////////////////////////////////////////////////////
+    // Bus interface
+    //////////////////////////////////////////////////////////////////////////
+    // wire  [7:0] bus_wrdata;
+    // wire  [7:0] bus_rddata = bus_d;
+    // wire        bus_d_oe;
+
+    // assign bus_d = bus_d_oe ? bus_rddata : 8'bZ;
+
+    // busif busif(
+    //     .clk(sysclk),
+    //     .reset(reset),
+
+    //     .bus_a(bus_a),
+    //     .bus_wrdata(bus_wrdata),
+    //     .bus_rddata(bus_rddata),
+    //     .bus_d_oe(bus_d_oe),
+    //     .bus_rd_n(bus_rd_n),
+    //     .bus_wr_n(bus_wr_n),
+    //     .bus_mreq_n(bus_mreq_n),
+    //     .bus_iorq_n(bus_iorq_n));
+
     assign bus_int_n    = 1'bZ;
     assign bus_wait_n   = 1'bZ;
     assign bus_busreq_n = 1'bZ;
@@ -117,9 +154,6 @@ module top(
     assign ram_ce_n     = 1'b1;
     assign rom_ce_n     = 1'b1;
     assign cart_ce_n    = 1'b1;
-
-    assign audio_l      = 1'b0;
-    assign audio_r      = 1'b0;
 
     assign cassette_out = 1'b0;
     assign printer_out  = 1'b0;
@@ -129,7 +163,6 @@ module top(
     assign esp_tx       = 1'b0;
     assign esp_rts      = 1'b0;
 
-    assign esp_miso     = 1'b0;
     assign esp_notify   = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
@@ -154,5 +187,37 @@ module top(
         2'd2: bus_ba = bank2_reg_r[4:0];
         2'd3: bus_ba = bank3_reg_r[4:0];
     endcase
+
+    //////////////////////////////////////////////////////////////////////////
+    // SPI slave
+    //////////////////////////////////////////////////////////////////////////
+    spislave spislave(
+        .clk(sysclk),
+        .reset(reset),
+
+        .esp_cs_n(esp_cs_n),
+        .esp_sclk(esp_sclk),
+        .esp_mosi(esp_mosi),
+        .esp_miso(esp_miso));
+
+    //////////////////////////////////////////////////////////////////////////
+    // PWM DAC
+    //////////////////////////////////////////////////////////////////////////
+    wire        next_sample = 1'b0;
+    wire [15:0] left_data   = 16'b0;
+    wire [15:0] right_data  = 16'b0;
+
+    pwm_dac pwm_dac(
+        .rst(reset),
+        .clk(sysclk),
+
+        // Sample input
+        .next_sample(next_sample),
+        .left_data(left_data),
+        .right_data(right_data),
+
+        // PWM audio output
+        .audio_l(audio_l),
+        .audio_r(audio_r));
 
 endmodule

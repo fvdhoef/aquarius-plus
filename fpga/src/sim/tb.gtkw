@@ -1,22 +1,22 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Apr 12 17:18:03 2022
+[*] Sun May  1 12:33:04 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Apr 12 17:16:10 2022"
-[dumpfile_size] 46268833
+[dumpfile_mtime] "Sun May  1 12:32:43 2022"
+[dumpfile_size] 59126330
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 14500000
+[timestart] 0
 [size] 1627 997
 [pos] -1 -1
-*-23.000000 35245000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-31.696974 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.sysctrl.
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 632
+[sst_vpaned_height] 502
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -59,7 +59,28 @@ tb.top_inst.handctrl.hctrl2_data[7:0]
 tb.top_inst.handctrl.do_shift
 @24
 tb.top_inst.handctrl.bitcnt_r[4:0]
-@29
+@28
 tb.top_inst.handctrl.shift_done
+@200
+-
+@28
+tb.top_inst.audio_l
+tb.top_inst.audio_r
+@200
+-
+@22
+tb.top_inst.bus_a[15:0]
+tb.top_inst.bus_d[7:0]
+@28
+tb.top_inst.bus_d_enable
+@22
+tb.top_inst.rddata[7:0]
+@28
+tb.top_inst.bootrom_sel
+@29
+tb.top_inst.bus_mreq_n
+@22
+tb.top_inst.bootrom.addr[7:0]
+tb.top_inst.bootrom.data[7:0]
 [pattern_trace] 1
 [pattern_trace] 0

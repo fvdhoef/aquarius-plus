@@ -1,9 +1,9 @@
 module sysctrl(
-    input  wire    sysclk,
-    inout  wire    ext_reset_n,
+    input  wire sysclk,
+    inout  wire ext_reset_n,
 
-    output wire    phi,
-    output wire    reset);
+    output wire phi,
+    output wire reset);
 
     //////////////////////////////////////////////////////////////////////////
     // Generate external reset signal
