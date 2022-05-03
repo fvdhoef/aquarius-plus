@@ -2,6 +2,8 @@
 
     org     $0
 
+message:
+
     ld      hl, .str
 .1: ld      a, (hl)
     or      a
@@ -10,6 +12,8 @@
     inc     hl
     jr      .1
 .done:
+
+    jr      message
 
 .hang:
     jr      .hang

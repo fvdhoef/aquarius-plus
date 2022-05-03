@@ -19,13 +19,24 @@ module tb();
     reg usbclk = 0;
     always #10.42 usbclk = !usbclk;
 
-    wire [7:0] bus_d;
-    wire [7:0] bus_de;
+    reg [15:0] bus_a = 16'h0000;
 
-    wire [15:0] bus_a = 16'h0000;
+    reg  [7:0] bus_wrdata = 8'b0;
+    reg        bus_wren = 1'b0;
+
+    wire [7:0] bus_d = bus_wren ? bus_wrdata : 8'bZ;
+
+    reg        bus_rd_n = 1'b1;
+    reg        bus_wr_n = 1'b1;
+    reg        bus_mreq_n = 1'b1;
+    reg        bus_iorq_n = 1'b1;
+
+    reg        esp_rx = 1'b1;
 
     wire reset_n = 1'bZ;
     pullup(reset_n);
+
+    wire phi;
 
     top top_inst(
         .sysclk(sysclk),
@@ -33,13 +44,13 @@ module tb();
 
         // Z80 bus interface
         .reset_n(reset_n),
-        .phi(),
+        .phi(phi),
         .bus_a(bus_a),
         .bus_d(bus_d),
-        .bus_rd_n(1'b0),
-        .bus_wr_n(1'b0),
-        .bus_mreq_n(1'b0),
-        .bus_iorq_n(1'b0),
+        .bus_rd_n(bus_rd_n),
+        .bus_wr_n(bus_wr_n),
+        .bus_mreq_n(bus_mreq_n),
+        .bus_iorq_n(bus_iorq_n),
         .bus_int_n(),
         .bus_m1_n(1'bZ),
         .bus_wait_n(),
@@ -85,7 +96,7 @@ module tb();
 
         // ESP32 serial interface
         .esp_tx(),
-        .esp_rx(1'b1),
+        .esp_rx(esp_rx),
         .esp_rts(),
         .esp_cts(1'b1),
 
@@ -95,5 +106,104 @@ module tb();
         .esp_mosi(1'b0),
         .esp_miso(),
         .esp_notify());
+
+    task iowr;
+        input [15:0] addr;
+        input  [7:0] data;
+
+        begin
+            bus_wrdata  = data;
+
+            // T1
+            @(posedge phi)
+            #110
+            bus_a       = addr;
+
+            // T2
+            @(posedge phi)
+            bus_wren    = 1'b1;
+            #65
+            bus_wr_n    = 1'b0;
+            #10
+            bus_iorq_n  = 1'b0;
+
+            // T3
+            @(posedge phi)
+            @(negedge phi);
+            #80
+            bus_wr_n    = 1'b1;
+            #5
+            bus_iorq_n  = 1'b1;
+            #55
+            bus_wren    = 1'b0;
+        end
+    endtask
+
+    task iord;
+        input [15:0] addr;
+
+        begin
+            // T1
+            @(posedge phi)
+            #110
+            bus_a       = addr;
+
+            // T2
+            @(posedge phi)
+            #65
+            bus_rd_n    = 1'b0;
+            #10
+            bus_iorq_n  = 1'b0;
+
+            // T3
+            @(posedge phi)
+            @(negedge phi);
+            #80
+            bus_rd_n    = 1'b1;
+            #5
+            bus_iorq_n  = 1'b1;
+            #55;
+        end
+    endtask
+
+    task esptx;
+        input [7:0] data;
+
+        begin
+            #560 esp_rx = 1'b0;
+            for (integer i=0; i<8; i++)
+                #560 esp_rx = data[i];
+            #560 esp_rx = 1'b1;
+        end
+    endtask
+
+    initial begin
+        #2500;
+        @(posedge phi);
+        @(posedge phi);
+
+        iowr(16'h00F5, 8'h42);
+        iowr(16'h00F5, 8'h5A);
+
+        esptx(8'hF0);
+        esptx(8'hF1);
+        esptx(8'hF2);
+        esptx(8'hF3);
+        esptx(8'hF4);
+        esptx(8'hF5);
+        esptx(8'hF6);
+        esptx(8'hF7);
+        esptx(8'hF8);
+        esptx(8'hF9);
+        esptx(8'hFA);
+        esptx(8'hFB);
+        esptx(8'hFC);
+        esptx(8'hFD);
+        esptx(8'hFE);
+        esptx(8'hFF);
+
+        iord(16'h00F5);
+        iord(16'h00F5);
+    end
 
 endmodule
