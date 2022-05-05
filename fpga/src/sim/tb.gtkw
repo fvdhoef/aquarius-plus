@@ -1,22 +1,23 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun May  1 12:33:04 2022
+[*] Tue May  3 17:06:12 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sun May  1 12:32:43 2022"
-[dumpfile_size] 59126330
+[dumpfile_mtime] "Tue May  3 17:00:40 2022"
+[dumpfile_size] 62830886
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
 [timestart] 0
-[size] 1627 997
+[size] 1624 997
 [pos] -1 -1
-*-31.696974 0 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-24.696974 95245000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
+[treeopen] tb.top_inst.esp_uart.
 [treeopen] tb.top_inst.sysctrl.
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 502
+[sst_vpaned_height] 470
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -68,19 +69,70 @@ tb.top_inst.audio_l
 tb.top_inst.audio_r
 @200
 -
+@28
+tb.top_inst.sysclk
+tb.top_inst.phi
+@200
+-
+---- BUS ---
 @22
+[color] 2
 tb.top_inst.bus_a[15:0]
+[color] 2
 tb.top_inst.bus_d[7:0]
 @28
-tb.top_inst.bus_d_enable
-@22
-tb.top_inst.rddata[7:0]
-@28
-tb.top_inst.bootrom_sel
-@29
+[color] 2
+tb.top_inst.bus_wr_n
+[color] 2
+tb.top_inst.bus_rd_n
+[color] 2
+tb.top_inst.bus_iorq_n
+[color] 2
 tb.top_inst.bus_mreq_n
+@200
+-
+@28
+tb.top_inst.bus_read
+tb.top_inst.bus_write
 @22
-tb.top_inst.bootrom.addr[7:0]
-tb.top_inst.bootrom.data[7:0]
+tb.top_inst.wrdata[7:0]
+@200
+-
+---- ESP UART ---
+@22
+tb.top_inst.esp_uart.esp_uart_tx.tx_data[7:0]
+@28
+tb.top_inst.esp_uart.esp_uart_tx.tx_valid
+tb.top_inst.esp_uart.esp_uart_tx.tx_busy
+tb.top_inst.esp_uart.uart_txd
+@200
+-
+@28
+tb.top_inst.esp_uart.esp_uart_rx.uart_rxd
+@22
+tb.top_inst.esp_uart.esp_uart_rx.rx_data[7:0]
+@28
+tb.top_inst.esp_uart.esp_uart_rx.rx_valid
+@22
+tb.top_inst.esp_uart.esp_uart_rx.clk_cnt_r[2:0]
+@200
+-
+@23
+tb.top_inst.esp_uart.rxfifo_data[7:0]
+@200
+-
+@22
+tb.top_inst.esp_uart.esp_uart_rxfifo.count[3:0]
+@28
+tb.top_inst.esp_uart.esp_uart_rxfifo.empty
+tb.top_inst.esp_uart.esp_uart_rxfifo.full
+@200
+-
+@24
+tb.top_inst.esp_uart.esp_uart_tx.bit_cnt_r[3:0]
+@28
+tb.top_inst.esp_uart.esp_uart_tx.next_bit
+@24
+tb.top_inst.esp_uart.esp_uart_tx.clk_cnt_r[2:0]
 [pattern_trace] 1
 [pattern_trace] 0

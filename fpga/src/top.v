@@ -68,6 +68,9 @@ module top(
     output wire        esp_notify
 );
 
+    wire [7:0] bootrom_data;
+    wire [7:0] esp_rxfifo_data;
+
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
@@ -81,53 +84,88 @@ module top(
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
-    // Boot ROM
+    // Bus interface
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] bootrom_data;
+    wire io_write  = !bus_iorq_n && !bus_wr_n;
+    wire io_read   = !bus_iorq_n && !bus_rd_n;
+    wire mem_write = !bus_mreq_n && !bus_wr_n;
+    wire mem_read  = !bus_mreq_n && !bus_rd_n;
 
-    bootrom bootrom(
-        .addr(bus_a[7:0]),
-        .data(bootrom_data));
+    reg iosel;
 
-    wire bootrom_sel  = bus_mreq_n == 1'b0 && bus_a[15:8] == 8'h00;
-    wire bus_d_enable = !bus_rd_n && bootrom_sel;
-    wire [7:0] rddata = bootrom_data;
+    reg [7:0] wrdata;
+    always @(posedge sysclk) if (!bus_wr_n) wrdata <= bus_d;
+
+    reg [2:0] bus_wr_n_r;
+    reg [2:0] bus_rd_n_r;
+    always @(posedge sysclk) bus_wr_n_r <= {bus_wr_n_r[1:0], bus_wr_n};
+    always @(posedge sysclk) bus_rd_n_r <= {bus_rd_n_r[1:0], bus_rd_n};
+
+    wire bus_read  = bus_rd_n_r[2:1] == 3'b10;
+    wire bus_write = bus_wr_n_r[2:1] == 3'b10;
+
+    // Memory space decoding
+    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:8] == 8'h00;
+
+    // IO space decoding
+    wire sel_io_vctrl    = !bus_iorq_n && bus_a[7:0] == 8'hE0;
+    wire sel_io_vscrx_l  = !bus_iorq_n && bus_a[7:0] == 8'hE1;
+    wire sel_io_vscrx_h  = !bus_iorq_n && bus_a[7:0] == 8'hE2;
+    wire sel_io_vscry    = !bus_iorq_n && bus_a[7:0] == 8'hE3;
+    wire sel_io_vsprsel  = !bus_iorq_n && bus_a[7:0] == 8'hE4;
+    wire sel_io_vsprx_l  = !bus_iorq_n && bus_a[7:0] == 8'hE5;
+    wire sel_io_vsprx_h  = !bus_iorq_n && bus_a[7:0] == 8'hE6;
+    wire sel_io_vspry    = !bus_iorq_n && bus_a[7:0] == 8'hE7;
+    wire sel_io_vspridx  = !bus_iorq_n && bus_a[7:0] == 8'hE8;
+    wire sel_io_vsprattr = !bus_iorq_n && bus_a[7:0] == 8'hE9;
+    wire sel_io_vpalsel  = !bus_iorq_n && bus_a[7:0] == 8'hEA;
+    wire sel_io_vpaldata = !bus_iorq_n && bus_a[7:0] == 8'hEB;
+    wire sel_io_vline    = !bus_iorq_n && bus_a[7:0] == 8'hEC;
+    wire sel_io_virqline = !bus_iorq_n && bus_a[7:0] == 8'hED;
+    wire sel_io_irqmask  = !bus_iorq_n && bus_a[7:0] == 8'hEE;
+    wire sel_io_irqstat  = !bus_iorq_n && bus_a[7:0] == 8'hEF;
+    wire sel_io_bank0    = !bus_iorq_n && bus_a[7:0] == 8'hF0;
+    wire sel_io_bank1    = !bus_iorq_n && bus_a[7:0] == 8'hF1;
+    wire sel_io_bank2    = !bus_iorq_n && bus_a[7:0] == 8'hF2;
+    wire sel_io_bank3    = !bus_iorq_n && bus_a[7:0] == 8'hF3;
+    wire sel_io_espctrl  = !bus_iorq_n && bus_a[7:0] == 8'hF4;
+    wire sel_io_espdata  = !bus_iorq_n && bus_a[7:0] == 8'hF5;
+    wire sel_io_psg1data = !bus_iorq_n && bus_a[7:0] == 8'hF6;
+    wire sel_io_psg1addr = !bus_iorq_n && bus_a[7:0] == 8'hF7;
+    wire sel_io_psg2data = !bus_iorq_n && bus_a[7:0] == 8'hF8;
+    wire sel_io_psg2addr = !bus_iorq_n && bus_a[7:0] == 8'hF9;
+    wire sel_io_sysctrl  = !bus_iorq_n && bus_a[7:0] == 8'hFB;
+    wire sel_io_cassette = !bus_iorq_n && bus_a[7:0] == 8'hFC;
+    wire sel_io_cpm      = !bus_iorq_n && bus_a[7:0] == 8'hFD;
+    wire sel_io_vsync    = !bus_iorq_n && bus_a[7:0] == 8'hFD;
+    wire sel_io_printer  = !bus_iorq_n && bus_a[7:0] == 8'hFE;
+    wire sel_io_scramble = !bus_iorq_n && bus_a[7:0] == 8'hFF;
+    wire sel_io_keyboard = !bus_iorq_n && bus_a[7:0] == 8'hFF;
+
+    wire sel_internal =
+        sel_mem_bootrom |
+        sel_io_vctrl | sel_io_vscrx_l | sel_io_vscrx_h | sel_io_vscry |
+        sel_io_vsprsel | sel_io_vsprx_l | sel_io_vsprx_h | sel_io_vspry |
+        sel_io_vspridx | sel_io_vsprattr | sel_io_vpalsel | sel_io_vpaldata |
+        sel_io_vline | sel_io_virqline | sel_io_irqmask | sel_io_irqstat |
+        sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
+        sel_io_espctrl | sel_io_espdata | sel_io_psg1data | sel_io_psg1addr |
+        sel_io_psg2data | sel_io_psg2addr | sel_io_sysctrl | sel_io_cassette |
+        sel_io_cpm | sel_io_vsync | sel_io_printer | sel_io_scramble | sel_io_keyboard;
+
+
+    reg [7:0] rddata;
+    always @* begin
+        rddata <= 8'h00;
+        if (sel_mem_bootrom) rddata <= bootrom_data;
+        if (sel_io_espctrl)  rddata <= {8'b0};
+        if (sel_io_espdata)  rddata <= esp_rxfifo_data;
+    end
+
+    wire bus_d_enable = !bus_rd_n && sel_internal;
 
     assign bus_d = bus_d_enable ? rddata : 8'bZ;
 
-    //////////////////////////////////////////////////////////////////////////
-    // Video
-    //////////////////////////////////////////////////////////////////////////
-    video video(
-        .clk(sysclk),
-        .reset(reset),
-
-        .vga_r(vga_r),
-        .vga_g(vga_g),
-        .vga_b(vga_b),
-        .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync));
-
-    //////////////////////////////////////////////////////////////////////////
-    // Hand controller interface
-    //////////////////////////////////////////////////////////////////////////
-    wire [7:0] hctrl1_data;
-    wire [7:0] hctrl2_data;
-
-    handctrl handctrl(
-        .clk(sysclk),
-        .reset(reset),
-
-        .hctrl_clk(hctrl_clk),
-        .hctrl_load_n(hctrl_load_n),
-        .hctrl_data(hctrl_data),
-
-        .hctrl1_data(hctrl1_data),
-        .hctrl2_data(hctrl2_data));
-
-    //////////////////////////////////////////////////////////////////////////
-    // Bus interface
-    //////////////////////////////////////////////////////////////////////////
     // wire  [7:0] bus_wrdata;
     // wire  [7:0] bus_rddata = bus_d;
     // wire        bus_d_oe;
@@ -160,18 +198,70 @@ module top(
 
     assign exp          = 7'b0;
 
-    assign esp_tx       = 1'b0;
-    assign esp_rts      = 1'b0;
-
     assign esp_notify   = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
-    // Bus interface
+    // Boot ROM
     //////////////////////////////////////////////////////////////////////////
-    wire iord  =  bus_rd_n && bus_iorq_n;
-    wire iowr  = !bus_rd_n && bus_iorq_n;
-    wire memrd =  bus_rd_n && bus_mreq_n;
-    wire memwr = !bus_rd_n && bus_mreq_n;
+    bootrom bootrom(
+        .addr(bus_a[7:0]),
+        .data(bootrom_data));
+
+    //////////////////////////////////////////////////////////////////////////
+    // ESP32 UART
+    //////////////////////////////////////////////////////////////////////////
+    wire       esp_txvalid = sel_io_espdata && bus_write;
+    wire       esp_txbusy;
+
+    wire       esp_rxfifo_not_empty;
+    wire       esp_rxfifo_read = sel_io_espdata && bus_read;
+
+    esp_uart esp_uart(
+        .rst(reset),
+        .clk(sysclk),
+
+        .tx_data(wrdata),
+        .tx_valid(esp_txvalid),
+        .tx_busy(esp_txbusy),
+
+        .rxfifo_data(esp_rxfifo_data),
+        .rxfifo_not_empty(esp_rxfifo_not_empty),
+        .rxfifo_read(esp_rxfifo_read),
+
+        .uart_rxd(esp_rx),
+        .uart_txd(esp_tx),
+        .uart_cts(esp_cts),
+        .uart_rts(esp_rts));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Video
+    //////////////////////////////////////////////////////////////////////////
+    video video(
+        .clk(sysclk),
+        .reset(reset),
+
+        .vga_r(vga_r),
+        .vga_g(vga_g),
+        .vga_b(vga_b),
+        .vga_hsync(vga_hsync),
+        .vga_vsync(vga_vsync));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Hand controller interface
+    //////////////////////////////////////////////////////////////////////////
+    wire [7:0] hctrl1_data;
+    wire [7:0] hctrl2_data;
+
+    handctrl handctrl(
+        .clk(sysclk),
+        .reset(reset),
+
+        .hctrl_clk(hctrl_clk),
+        .hctrl_load_n(hctrl_load_n),
+        .hctrl_data(hctrl_data),
+
+        .hctrl1_data(hctrl1_data),
+        .hctrl2_data(hctrl2_data));
 
     //////////////////////////////////////////////////////////////////////////
     // Banking registers
