@@ -5,7 +5,10 @@ module esp_uart_rx(
     input  wire        uart_rxd,
 
     output reg  [7:0]  rx_data,
-    output reg         rx_valid);
+    output reg         rx_valid,
+    
+    output reg         framing_error,
+    output reg         break);
 
     reg started_r;
 
@@ -28,32 +31,42 @@ module esp_uart_rx(
     reg [7:0] shift_r;
     always @(posedge clk or posedge rst)
         if (rst) begin
-            started_r <= 0;
-            rx_valid  <= 0;
-            shift_r   <= 0;
-            rx_data   <= 0;
-            bit_cnt_r <= 0;
+            started_r     <= 1'b0;
+            rx_valid      <= 1'b0;
+            shift_r       <= 1'b0;
+            rx_data       <= 1'b0;
+            bit_cnt_r     <= 1'b0;
+            framing_error <= 1'b0;
+            break         <= 1'b0;
 
         end else begin
             rx_valid <= 0;
 
             if (!started_r) begin
-                bit_cnt_r <= 4'd0;
+                bit_cnt_r     <= 4'd0;
+                framing_error <= 1'b0;
+                break         <= 1'b0;
 
                 if (start_condition)
                     started_r <= 1;
 
             end else if (clk_cnt_r == 3'd4) begin
-                shift_r   <= {rx_in, shift_r[7:1]};
-                bit_cnt_r <= bit_cnt_r + 4'd1;
-
                 if (bit_cnt_r == 4'd9) begin
-                    started_r <= 0;
-
                     if (rx_in) begin
-                        rx_data  <= shift_r;
-                        rx_valid <= 1;
+                        started_r <= 0;
+                        if (!(framing_error || break)) begin
+                            rx_data  <= shift_r;
+                            rx_valid <= 1;
+                        end
+                    end else begin
+                        if (shift_r == 8'h00)
+                            break <= 1'b1;
+                        else
+                            framing_error <= 1'b1;
                     end
+                end else begin
+                    shift_r <= {rx_in, shift_r[7:1]};
+                    bit_cnt_r <= bit_cnt_r + 4'd1;
                 end
             end
         end

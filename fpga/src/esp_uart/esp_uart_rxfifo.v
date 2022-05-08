@@ -13,8 +13,7 @@ module esp_uart_rxfifo(
     output wire       full,
     output wire       almost_full);
 
-    reg [8:0] wridx = 0, rdidx = 0;
-
+    reg [3:0] wridx = 0, rdidx = 0;
     reg [7:0] mem_r [15:0];
 
     wire [3:0] wridx_next = wridx + 4'd1;

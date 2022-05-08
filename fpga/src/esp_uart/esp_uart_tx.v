@@ -6,6 +6,7 @@ module esp_uart_tx(
 
     input  wire  [7:0] tx_data,
     input  wire        tx_valid,
+    input  wire        tx_break,
     output wire        tx_busy);
 
     // Bit-timing
@@ -29,21 +30,24 @@ module esp_uart_tx(
 
         end else begin
             if (!busy) begin
-                if (tx_valid) begin
-                    tx_shift_r <= { tx_data, 1'b0 };
+                uart_txd_r <= 1'b1;
+                if (tx_valid || tx_break) begin
+                    tx_shift_r <= tx_break ? 9'b0 : { tx_data, 1'b0 };
                     busy       <= 1'b1;
-                    bit_cnt_r  <= 4'd9;
+                    bit_cnt_r  <= tx_break ? 4'd15 : 4'd9;
                 end
 
             end else if (next_bit) begin
+                uart_txd_r <= tx_shift_r[0];
+
                 if (bit_cnt_r == 4'd0) begin
                     busy <= 1'b0;
+                    uart_txd_r <= 1'b1;
                 end else begin
                     bit_cnt_r <= bit_cnt_r - 4'd1;
                 end
 
-                uart_txd_r <= tx_shift_r[0];
-                tx_shift_r <= { 1'b1, tx_shift_r[8:1] };
+                tx_shift_r <= { 1'b0, tx_shift_r[8:1] };
             end
         end
     end

@@ -68,8 +68,9 @@ module top(
     output wire        esp_notify
 );
 
-    wire [7:0] bootrom_data;
-    wire [7:0] esp_rxfifo_data;
+    wire [7:0] rddata_bootrom;
+    wire [7:0] rddata_espctrl;
+    wire [7:0] rddata_espdata;
 
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
@@ -157,9 +158,9 @@ module top(
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        if (sel_mem_bootrom) rddata <= bootrom_data;
-        if (sel_io_espctrl)  rddata <= {8'b0};
-        if (sel_io_espdata)  rddata <= esp_rxfifo_data;
+        if (sel_mem_bootrom) rddata <= rddata_bootrom;
+        if (sel_io_espctrl)  rddata <= rddata_espctrl;
+        if (sel_io_espdata)  rddata <= rddata_espdata;
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
@@ -205,16 +206,33 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     bootrom bootrom(
         .addr(bus_a[7:0]),
-        .data(bootrom_data));
+        .data(rddata_bootrom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
     wire       esp_txvalid = sel_io_espdata && bus_write;
+    wire       esp_txbreak = sel_io_espctrl && bus_write && wrdata[7];
     wire       esp_txbusy;
 
     wire       esp_rxfifo_not_empty;
     wire       esp_rxfifo_read = sel_io_espdata && bus_read;
+    wire       esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
+
+    reg  [2:0] esp_ctrl_status_r;
+    always @(posedge sysclk, posedge reset) begin
+        if (reset)
+            esp_ctrl_status_r <= 3'b0;
+        else begin
+            if (sel_io_espctrl && bus_write) esp_ctrl_status_r <= esp_ctrl_status_r & ~wrdata[4:2];
+
+            if (esp_rxfifo_overflow)  esp_ctrl_status_r[2] <= 1'b1;
+            if (esp_rx_framing_error) esp_ctrl_status_r[1] <= 1'b1;
+            if (esp_rx_break)         esp_ctrl_status_r[0] <= 1'b1;
+        end
+    end
+
+    assign rddata_espctrl = {3'b0, esp_ctrl_status_r, esp_txbusy, esp_rxfifo_not_empty};
 
     esp_uart esp_uart(
         .rst(reset),
@@ -222,11 +240,15 @@ module top(
 
         .tx_data(wrdata),
         .tx_valid(esp_txvalid),
+        .tx_break(esp_txbreak),
         .tx_busy(esp_txbusy),
 
-        .rxfifo_data(esp_rxfifo_data),
+        .rxfifo_data(rddata_espdata),
         .rxfifo_not_empty(esp_rxfifo_not_empty),
         .rxfifo_read(esp_rxfifo_read),
+        .rxfifo_overflow(esp_rxfifo_overflow),
+        .rx_framing_error(esp_rx_framing_error),
+        .rx_break(esp_rx_break),
 
         .uart_rxd(esp_rx),
         .uart_txd(esp_tx),

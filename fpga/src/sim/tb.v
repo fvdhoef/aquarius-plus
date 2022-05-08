@@ -177,18 +177,40 @@ module tb();
         end
     endtask
 
+    task esptx_fe;
+        input [7:0] data;
+
+        begin
+            #560 esp_rx = 1'b0;
+            for (integer i=0; i<8; i++)
+                #560 esp_rx = data[i];
+            #560 esp_rx = 1'b0;
+            #560 esp_rx = 1'b1;
+        end
+    endtask
+
     initial begin
         #2500;
         @(posedge phi);
         @(posedge phi);
 
         iowr(16'h00F5, 8'h42);
+        #4500;
+
         iowr(16'h00F5, 8'h5A);
 
         esptx(8'hF0);
         esptx(8'hF1);
         esptx(8'hF2);
         esptx(8'hF3);
+
+        esptx_fe(8'hAA);
+
+
+        // Break
+        #560 esp_rx = 1'b0;
+        #30000 esp_rx = 1'b1;
+
         esptx(8'hF4);
         esptx(8'hF5);
         esptx(8'hF6);
@@ -204,6 +226,9 @@ module tb();
 
         iord(16'h00F5);
         iord(16'h00F5);
+
+        iowr(16'h00F4, 8'h80);
+
     end
 
 endmodule

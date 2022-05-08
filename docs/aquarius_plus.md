@@ -191,9 +191,12 @@
         <td>$F4/244</td>
         <td>ESPCTRL</td>
         <td colspan="1">ESP32 control/status</td>
-        <td colspan="1" align="center">Start frame</td>
-        <td colspan="5" align="center">-</td>
-        <td colspan="1" align="center">TX FIFO full</td>
+        <td colspan="1" align="center">Transmit break</td>
+        <td colspan="2" align="center">-</td>
+        <td colspan="1" align="center">RX FIFO overflow</td>
+        <td colspan="1" align="center">RX framing error</td>
+        <td colspan="1" align="center">RX break received</td>
+        <td colspan="1" align="center">TX busy</td>
         <td colspan="1" align="center">RX FIFO non-empty</td>
     </tr>
     <tr>

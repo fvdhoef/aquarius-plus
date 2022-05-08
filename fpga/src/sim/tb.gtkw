@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue May  3 17:06:12 2022
+[*] Sun May  8 13:41:28 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue May  3 17:00:40 2022"
-[dumpfile_size] 62830886
+[dumpfile_mtime] "Sun May  8 13:41:02 2022"
+[dumpfile_size] 62840888
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
 [timestart] 0
 [size] 1624 997
 [pos] -1 -1
-*-24.696974 95245000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-27.696974 1248000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -17,7 +17,7 @@
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 470
+[sst_vpaned_height] 400
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -94,17 +94,38 @@ tb.top_inst.bus_mreq_n
 @28
 tb.top_inst.bus_read
 tb.top_inst.bus_write
-@22
+@c00022
 tb.top_inst.wrdata[7:0]
+@28
+(0)tb.top_inst.wrdata[7:0]
+(1)tb.top_inst.wrdata[7:0]
+(2)tb.top_inst.wrdata[7:0]
+(3)tb.top_inst.wrdata[7:0]
+(4)tb.top_inst.wrdata[7:0]
+(5)tb.top_inst.wrdata[7:0]
+(6)tb.top_inst.wrdata[7:0]
+(7)tb.top_inst.wrdata[7:0]
+@1401200
+-group_end
 @200
 -
 ---- ESP UART ---
+@23
+tb.top_inst.esp_ctrl_data[7:0]
+@28
+tb.top_inst.esp_uart.rx_framing_error
+tb.top_inst.esp_uart.rx_break
+tb.top_inst.esp_txbreak
+tb.top_inst.sel_io_espctrl
+tb.top_inst.sel_io_espdata
 @22
 tb.top_inst.esp_uart.esp_uart_tx.tx_data[7:0]
 @28
 tb.top_inst.esp_uart.esp_uart_tx.tx_valid
 tb.top_inst.esp_uart.esp_uart_tx.tx_busy
 tb.top_inst.esp_uart.uart_txd
+@24
+tb.top_inst.esp_uart.esp_uart_tx.bit_cnt_r[3:0]
 @200
 -
 @28
@@ -115,9 +136,15 @@ tb.top_inst.esp_uart.esp_uart_rx.rx_data[7:0]
 tb.top_inst.esp_uart.esp_uart_rx.rx_valid
 @22
 tb.top_inst.esp_uart.esp_uart_rx.clk_cnt_r[2:0]
+tb.top_inst.esp_uart.esp_uart_rx.bit_cnt_r[3:0]
+@28
+tb.top_inst.esp_uart.esp_uart_rx.framing_error
+tb.top_inst.esp_uart.esp_uart_rx.break
+tb.top_inst.esp_uart.rxfifo_overflow
+tb.top_inst.esp_uart.esp_uart_tx.tx_break
 @200
 -
-@23
+@22
 tb.top_inst.esp_uart.rxfifo_data[7:0]
 @200
 -
