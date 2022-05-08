@@ -7,4 +7,6 @@ module spislave(
     input  wire        esp_mosi,
     output wire        esp_miso);
 
+    assign esp_miso = 1'bZ;
+
 endmodule
