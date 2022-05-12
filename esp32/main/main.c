@@ -48,6 +48,51 @@ static void init(void) {
     // usbhost_init();
 }
 
+void hexdump(const void *buf, size_t length) {
+    size_t         idx = 0;
+    const uint8_t *p   = (const uint8_t *)buf;
+
+    while (length > 0) {
+        size_t len = length;
+        if (len > 16) {
+            len = 16;
+        }
+
+        printf("%08x  ", idx);
+
+        for (unsigned i = 0; i < 16; i++) {
+            if (i < len) {
+                printf("%02x ", p[i]);
+            } else {
+                printf("   ");
+            }
+            if (i == 7) {
+                printf(" ");
+            }
+        }
+        printf(" |");
+
+        for (unsigned i = 0; i < len; i++) {
+            printf("%c", (p[i] >= 32 && p[i] <= 126) ? p[i] : '.');
+        }
+        printf("|\n");
+
+        idx += len;
+        length -= len;
+        p += len;
+    }
+}
+
+#define BUF_SIZE (1024)
+
 void app_main(void) {
     init();
+
+    uint8_t *data = (uint8_t *)malloc(BUF_SIZE);
+
+    while (1) {
+        // Read data from the UART
+        int len = uart_read_bytes(UART_NUM_1, data, BUF_SIZE, 20 / portTICK_RATE_MS);
+        hexdump(data, len);
+    }
 }

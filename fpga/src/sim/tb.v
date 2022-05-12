@@ -166,6 +166,65 @@ module tb();
         end
     endtask
 
+    task memwr;
+        input [15:0] addr;
+        input  [7:0] data;
+
+        begin
+            bus_wrdata  = data;
+
+            // T1
+            @(posedge phi)
+            #110
+            bus_a       = addr;
+
+            // T2
+            @(posedge phi)
+            bus_wren    = 1'b1;
+            #65
+            bus_wr_n    = 1'b0;
+            #10
+            bus_mreq_n  = 1'b0;
+
+            // T3
+            @(posedge phi)
+            @(negedge phi);
+            #80
+            bus_wr_n    = 1'b1;
+            #5
+            bus_mreq_n  = 1'b1;
+            #55
+            bus_wren    = 1'b0;
+        end
+    endtask
+
+    task memrd;
+        input [15:0] addr;
+
+        begin
+            // T1
+            @(posedge phi)
+            #110
+            bus_a       = addr;
+
+            // T2
+            @(posedge phi)
+            #65
+            bus_rd_n    = 1'b0;
+            #10
+            bus_mreq_n  = 1'b0;
+
+            // T3
+            @(posedge phi)
+            @(negedge phi);
+            #80
+            bus_rd_n    = 1'b1;
+            #5
+            bus_mreq_n  = 1'b1;
+            #55;
+        end
+    endtask
+
     task esptx;
         input [7:0] data;
 
@@ -228,6 +287,28 @@ module tb();
         iord(16'h00F5);
 
         iowr(16'h00F4, 8'h80);
+
+        iowr(16'h00F0, 8'hC0);
+        iowr(16'h00F1, 8'h20);
+        iowr(16'h00F2, 8'h21);
+        iowr(16'h00F3, 8'h13);
+
+        memrd(16'h0000);
+        memrd(16'h1000);
+        memrd(16'h2000);
+        memrd(16'h3000);
+        memrd(16'h4000);
+        memrd(16'h5000);
+        memrd(16'h6000);
+        memrd(16'h7000);
+        memrd(16'h8000);
+        memrd(16'h9000);
+        memrd(16'hA000);
+        memrd(16'hB000);
+        memrd(16'hC000);
+        memrd(16'hD000);
+        memrd(16'hE000);
+        memrd(16'hF000);
 
     end
 

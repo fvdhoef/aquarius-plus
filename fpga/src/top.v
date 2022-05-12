@@ -16,7 +16,7 @@ module top(
     output wire        bus_wait_n,      // Open-drain output
     output wire        bus_busreq_n,    // Open-drain output
     input  wire        bus_busack_n,
-    output reg   [4:0] bus_ba,
+    output wire  [4:0] bus_ba,
     inout  wire  [7:0] bus_de,          // External data bus, possibly scrambled
     output wire        bus_de_oe_n,
     output wire        ram_ce_n,        // 512KB RAM
@@ -28,9 +28,9 @@ module top(
     output wire        audio_r,
 
     // Other
-    output wire        cassette_out,
+    output reg         cassette_out,
     input  wire        cassette_in,
-    output wire        printer_out,
+    output reg         printer_out,
     input  wire        printer_in,
 
     // USB
@@ -68,6 +68,14 @@ module top(
     output wire        esp_notify
 );
 
+    reg  [7:0] reg_bank0_r;             // $F0:W
+    reg  [7:0] reg_bank1_r;             // $F1:W
+    reg  [7:0] reg_bank2_r;             // $F2:W
+    reg  [7:0] reg_bank3_r;             // $F3:W
+    reg  [7:0] reg_sysctrl_r;           // $FB:W
+    reg        reg_cpm_remap_r;         // $FD:W
+    reg  [7:0] reg_scramble_value_r;    // $FF:W
+
     wire [7:0] rddata_bootrom;
     wire [7:0] rddata_espctrl;
     wire [7:0] rddata_espdata;
@@ -87,13 +95,6 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
-    wire io_write  = !bus_iorq_n && !bus_wr_n;
-    wire io_read   = !bus_iorq_n && !bus_rd_n;
-    wire mem_write = !bus_mreq_n && !bus_wr_n;
-    wire mem_read  = !bus_mreq_n && !bus_rd_n;
-
-    reg iosel;
-
     reg [7:0] wrdata;
     always @(posedge sysclk) if (!bus_wr_n) wrdata <= bus_d;
 
@@ -154,52 +155,48 @@ module top(
         sel_io_psg2data | sel_io_psg2addr | sel_io_sysctrl | sel_io_cassette |
         sel_io_cpm | sel_io_vsync | sel_io_printer | sel_io_scramble | sel_io_keyboard;
 
-
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
         if (sel_mem_bootrom) rddata <= rddata_bootrom;
+        if (sel_io_bank0)    rddata <= reg_bank0_r;
+        if (sel_io_bank1)    rddata <= reg_bank1_r;
+        if (sel_io_bank2)    rddata <= reg_bank2_r;
+        if (sel_io_bank3)    rddata <= reg_bank3_r;
         if (sel_io_espctrl)  rddata <= rddata_espctrl;
         if (sel_io_espdata)  rddata <= rddata_espdata;
+
+        if (sel_io_sysctrl)  rddata <= reg_sysctrl_r;
+        if (sel_io_cassette) rddata <= {7'b0, cassette_in};
+        if (sel_io_printer)  rddata <= {7'b0, printer_in};
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
 
     assign bus_d = bus_d_enable ? rddata : 8'bZ;
 
-    // wire  [7:0] bus_wrdata;
-    // wire  [7:0] bus_rddata = bus_d;
-    // wire        bus_d_oe;
-
-    // assign bus_d = bus_d_oe ? bus_rddata : 8'bZ;
-
-    // busif busif(
-    //     .clk(sysclk),
-    //     .reset(reset),
-
-    //     .bus_a(bus_a),
-    //     .bus_wrdata(bus_wrdata),
-    //     .bus_rddata(bus_rddata),
-    //     .bus_d_oe(bus_d_oe),
-    //     .bus_rd_n(bus_rd_n),
-    //     .bus_wr_n(bus_wr_n),
-    //     .bus_mreq_n(bus_mreq_n),
-    //     .bus_iorq_n(bus_iorq_n));
-
     assign bus_int_n    = 1'bZ;
     assign bus_wait_n   = 1'bZ;
     assign bus_busreq_n = 1'bZ;
     assign bus_de_oe_n  = 1'b1;
-    assign ram_ce_n     = 1'b1;
-    assign rom_ce_n     = 1'b1;
     assign cart_ce_n    = 1'b1;
-
-    assign cassette_out = 1'b0;
-    assign printer_out  = 1'b0;
 
     assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
+
+    always @(posedge sysclk or posedge reset)
+        if (reset) begin
+            cassette_out     <= 1'b0;
+            sel_io_cpm       <= 1'b0;
+            printer_out      <= 1'b0;
+            reg_scramble_value_r <= 8'b0;
+        end else begin
+            if (sel_io_cassette && bus_write) cassette_out     <= wrdata[0];
+            if (sel_io_cpm      && bus_write) reg_cpm_remap_r      <= wrdata[0];
+            if (sel_io_printer  && bus_write) printer_out      <= wrdata[0];
+            if (sel_io_scramble && bus_write) reg_scramble_value_r <= wrdata;
+        end
 
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
@@ -211,16 +208,16 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
-    wire       esp_txvalid = sel_io_espdata && bus_write;
-    wire       esp_txbreak = sel_io_espctrl && bus_write && wrdata[7];
-    wire       esp_txbusy;
+    wire esp_txvalid = sel_io_espdata && bus_write;
+    wire esp_txbreak = sel_io_espctrl && bus_write && wrdata[7];
+    wire esp_txbusy;
 
-    wire       esp_rxfifo_not_empty;
-    wire       esp_rxfifo_read = sel_io_espdata && bus_read;
-    wire       esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
+    wire esp_rxfifo_not_empty;
+    wire esp_rxfifo_read = sel_io_espdata && bus_read;
+    wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
 
-    reg  [2:0] esp_ctrl_status_r;
-    always @(posedge sysclk, posedge reset) begin
+    reg [2:0] esp_ctrl_status_r;
+    always @(posedge sysclk or posedge reset) begin
         if (reset)
             esp_ctrl_status_r <= 3'b0;
         else begin
@@ -288,17 +285,39 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Banking registers
     //////////////////////////////////////////////////////////////////////////
-    reg [7:0] bank0_reg_r;
-    reg [7:0] bank1_reg_r;
-    reg [7:0] bank2_reg_r;
-    reg [7:0] bank3_reg_r;  
+    always @(posedge sysclk or posedge reset) begin
+        if (reset) begin
+            reg_bank0_r <= 8'h00;
+            reg_bank1_r <= 8'h00;
+            reg_bank2_r <= 8'h00;
+            reg_bank3_r <= 8'h00;
 
+        end else begin
+            if (sel_io_bank0 && bus_write) reg_bank0_r <= wrdata;
+            if (sel_io_bank1 && bus_write) reg_bank1_r <= wrdata;
+            if (sel_io_bank2 && bus_write) reg_bank2_r <= wrdata;
+            if (sel_io_bank3 && bus_write) reg_bank3_r <= wrdata;
+        end
+    end
+
+    reg [7:0] bank_reg;
     always @* case (bus_a[15:14])
-        2'd0: bus_ba = bank0_reg_r[4:0];
-        2'd1: bus_ba = bank1_reg_r[4:0];
-        2'd2: bus_ba = bank2_reg_r[4:0];
-        2'd3: bus_ba = bank3_reg_r[4:0];
+        2'd0: bank_reg = reg_bank0_r;
+        2'd1: bank_reg = reg_bank1_r;
+        2'd2: bank_reg = reg_bank2_r;
+        2'd3: bank_reg = reg_bank3_r;
     endcase
+
+    wire bank_readonly = bank_reg[7];
+    wire bank_overlay  = bank_reg[6];
+
+    assign bus_ba = bank_reg[4:0];
+
+    wire overlay_en   = (bus_a[13:12] == 2'b11) && bank_overlay;
+    wire allow_access = !bus_mreq_n && !overlay_en && (!bus_rd_n || (!bus_wr_n && !bank_readonly));
+
+    assign rom_ce_n = (allow_access && bank_reg[5:4] == 2'b00) ? 1'b0 : 1'b1;
+    assign ram_ce_n = (allow_access && bank_reg[5]   == 1'b1 ) ? 1'b0 : 1'b1;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave

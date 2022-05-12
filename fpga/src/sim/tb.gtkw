@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun May  8 13:41:28 2022
+[*] Wed May 11 16:03:06 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sun May  8 13:41:02 2022"
-[dumpfile_size] 62840888
+[dumpfile_mtime] "Wed May 11 16:02:47 2022"
+[dumpfile_size] 62845189
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 0
+[timestart] 131860000
 [size] 1624 997
 [pos] -1 -1
-*-27.696974 1248000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-22.696974 145370000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -17,56 +17,12 @@
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 400
+[sst_vpaned_height] 320
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
 tb.reset_n
 tb.top_inst.reset
-@200
--
-@24
-tb.top_inst.vga_r[3:0]
-tb.top_inst.vga_g[3:0]
-tb.top_inst.vga_b[3:0]
-@28
-tb.top_inst.vga_hsync
-tb.top_inst.vga_vsync
-@200
--
-@24
-tb.top_inst.video.hcnt_r[8:0]
-@28
-tb.top_inst.video.hcnt_done
-@200
--
-@24
-tb.top_inst.video.vcnt_r[9:0]
-@28
-tb.top_inst.video.vcnt_done
-@200
--
-@28
-tb.top_inst.handctrl.hctrl_clk
-tb.top_inst.handctrl.hctrl_load_n
-tb.top_inst.handctrl.hctrl_data
-@200
--
-@22
-tb.top_inst.handctrl.data_r[15:0]
-tb.top_inst.handctrl.hctrl1_data[7:0]
-tb.top_inst.handctrl.hctrl2_data[7:0]
-@28
-tb.top_inst.handctrl.do_shift
-@24
-tb.top_inst.handctrl.bitcnt_r[4:0]
-@28
-tb.top_inst.handctrl.shift_done
-@200
--
-@28
-tb.top_inst.audio_l
-tb.top_inst.audio_r
 @200
 -
 @28
@@ -75,6 +31,14 @@ tb.top_inst.phi
 @200
 -
 ---- BUS ---
+@29
+tb.top_inst.overlay_en
+@28
+tb.top_inst.cart_ce_n
+tb.top_inst.ram_ce_n
+tb.top_inst.rom_ce_n
+@200
+-
 @22
 [color] 2
 tb.top_inst.bus_a[15:0]
@@ -109,9 +73,8 @@ tb.top_inst.wrdata[7:0]
 -group_end
 @200
 -
+-
 ---- ESP UART ---
-@23
-tb.top_inst.esp_ctrl_data[7:0]
 @28
 tb.top_inst.esp_uart.rx_framing_error
 tb.top_inst.esp_uart.rx_break
