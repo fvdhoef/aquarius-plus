@@ -119,7 +119,7 @@ tokens = {
     0xC8: "RIGHT$",
     0xC9: "MID$",
     0xCA: "POINT",
-    # Start of extended BASIC commands
+    # Start of supplemental USB BASIC commands
     # 0xD4: "<reserved>",
     0xD5: "CLS",
     0xD6: "LOCATE",
