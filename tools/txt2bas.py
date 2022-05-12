@@ -23,6 +23,14 @@
 # ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE
 #-----------------------------------------------------------------------------
+#
+# Prerequisites: Python3 installed and executable defined in PATH
+#       Caveats: Line numbers cannot be less than 0 or greater than 65529
+#                Characters per line should be 72 or less
+#                KILL and DEL commands resolve to same token code
+#         Usage: python3 txt2bas.py progname.txt -o progname.bas
+#
+#-----------------------------------------------------------------------------
 
 import argparse
 import struct
@@ -31,7 +39,7 @@ import re
 from xmlrpc.client import TRANSPORT_ERROR
 
 parser = argparse.ArgumentParser(
-    description="Convert Aquarius BASIC .BAS file to text file"
+    description="Convert text file to Aquarius BASIC .BAS file"
 )
 parser.add_argument("input", help="Input file", type=argparse.FileType("r"))
 parser.add_argument("output", help="Output file", type=argparse.FileType("wb"))
