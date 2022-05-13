@@ -27,7 +27,7 @@
 # Prerequisites: Python3 installed and executable defined in PATH
 #       Caveats: Byte code for line number cannot be greater than 0xFFF9
 #                KILL and DEL tokens resolve to DEL command (your text KILL command will become a DEL command)
-#         Usage: python3 bas2txt.py progname.bas -o progname.txt
+#         Usage: python3 bas2txt.py progname.bas progname.txt
 #
 #-----------------------------------------------------------------------------
 

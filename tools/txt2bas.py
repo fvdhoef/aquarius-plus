@@ -28,7 +28,7 @@
 #       Caveats: Line numbers cannot be less than 0 or greater than 65529
 #                Characters per line should be 72 or less
 #                KILL and DEL commands resolve to same token code
-#         Usage: python3 txt2bas.py progname.txt -o progname.bas
+#         Usage: python3 txt2bas.py progname.txt progname.bas
 #
 #-----------------------------------------------------------------------------
 
