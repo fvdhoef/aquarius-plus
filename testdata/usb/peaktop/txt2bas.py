@@ -1,4 +1,36 @@
 #!/usr/bin/env python3
+#-----------------------------------------------------------------------------
+# Copyright (C) 2022 Frank van den Hoef
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE
+#-----------------------------------------------------------------------------
+#
+# Prerequisites: Python3 installed and executable defined in PATH
+#       Caveats: Line numbers cannot be less than 0 or greater than 65529
+#                Characters per line should be 72 or less
+#                KILL and DEL commands resolve to same token code
+#         Usage: python3 txt2bas.py progname.txt progname.bas
+#
+#-----------------------------------------------------------------------------
 
 import argparse
 import struct
@@ -7,7 +39,7 @@ import re
 from xmlrpc.client import TRANSPORT_ERROR
 
 parser = argparse.ArgumentParser(
-    description="Convert Aquarius BASIC .BAS file to text file"
+    description="Convert text file to Aquarius BASIC .BAS file"
 )
 parser.add_argument("input", help="Input file", type=argparse.FileType("r"))
 parser.add_argument("output", help="Output file", type=argparse.FileType("wb"))
@@ -90,7 +122,7 @@ tokens = {
     0xC8: "RIGHT$",
     0xC9: "MID$",
     0xCA: "POINT",
-    # Start of extended BASIC commands
+    # Start of supplemental USB BASIC commands
     # 0xD4: "<reserved>",
     0xD5: "CLS",
     0xD6: "LOCATE",
