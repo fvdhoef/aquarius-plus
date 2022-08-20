@@ -1,0 +1,13 @@
+12 block rams -> 24KB RAM
+
+18kbit
+- 2048 x  9
+- 1024 x 18
+-  512 x 36
+
+1x  2KB Text / Color RAM
+8x 16KB VRAM
+1x  2KB Character RAM
+1x Line buffer
+
+1 block ram

@@ -187,14 +187,14 @@ module top(
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
-            cassette_out     <= 1'b0;
-            sel_io_cpm       <= 1'b0;
-            printer_out      <= 1'b0;
+            cassette_out         <= 1'b0;
+            reg_cpm_remap_r      <= 1'b0;
+            printer_out          <= 1'b0;
             reg_scramble_value_r <= 8'b0;
         end else begin
-            if (sel_io_cassette && bus_write) cassette_out     <= wrdata[0];
+            if (sel_io_cassette && bus_write) cassette_out         <= wrdata[0];
             if (sel_io_cpm      && bus_write) reg_cpm_remap_r      <= wrdata[0];
-            if (sel_io_printer  && bus_write) printer_out      <= wrdata[0];
+            if (sel_io_printer  && bus_write) printer_out          <= wrdata[0];
             if (sel_io_scramble && bus_write) reg_scramble_value_r <= wrdata;
         end
 

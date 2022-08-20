@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Wed May 11 16:03:06 2022
+[*] Sun May 22 11:13:07 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Wed May 11 16:02:47 2022"
-[dumpfile_size] 62845189
+[dumpfile_mtime] "Sun May 22 11:12:16 2022"
+[dumpfile_size] 67397601
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 131860000
-[size] 1624 997
+[timestart] 65430000
+[size] 2503 1387
 [pos] -1 -1
-*-22.696974 145370000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-23.696974 92155000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -17,7 +17,7 @@
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 320
+[sst_vpaned_height] 589
 @28
 tb.top_inst.sysclk
 tb.top_inst.phi
@@ -31,9 +31,8 @@ tb.top_inst.phi
 @200
 -
 ---- BUS ---
-@29
-tb.top_inst.overlay_en
 @28
+tb.top_inst.overlay_en
 tb.top_inst.cart_ce_n
 tb.top_inst.ram_ce_n
 tb.top_inst.rom_ce_n
@@ -124,5 +123,15 @@ tb.top_inst.esp_uart.esp_uart_tx.bit_cnt_r[3:0]
 tb.top_inst.esp_uart.esp_uart_tx.next_bit
 @24
 tb.top_inst.esp_uart.esp_uart_tx.clk_cnt_r[2:0]
+@200
+-
+@22
+tb.top_inst.vga_r[3:0]
+tb.top_inst.vga_g[3:0]
+tb.top_inst.vga_b[3:0]
+@28
+tb.top_inst.vga_hsync
+@29
+tb.top_inst.vga_vsync
 [pattern_trace] 1
 [pattern_trace] 0
