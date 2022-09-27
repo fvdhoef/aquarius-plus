@@ -1,0 +1,93 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Tue Sep 27 12:39:57 2022
+[*]
+[dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
+[dumpfile_mtime] "Tue Sep 27 12:38:52 2022"
+[dumpfile_size] 81272970
+[savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_video.gtkw"
+[timestart] 1520607000
+[size] 2501 1387
+[pos] 59 0
+*-20.856812 1527709000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb.
+[treeopen] tb.top_inst.
+[treeopen] tb.top_inst.esp_uart.
+[treeopen] tb.top_inst.sysctrl.
+[treeopen] tb.top_inst.video.
+[sst_width] 193
+[signals_width] 232
+[sst_expanded] 1
+[sst_vpaned_height] 744
+@28
+tb.top_inst.sysclk
+tb.top_inst.phi
+tb.reset_n
+tb.top_inst.reset
+@201
+-
+@28
+tb.top_inst.sysclk
+tb.top_inst.phi
+@200
+-
+-
+@22
+tb.top_inst.vga_r[3:0]
+tb.top_inst.vga_g[3:0]
+tb.top_inst.vga_b[3:0]
+@28
+tb.top_inst.vga_hsync
+tb.top_inst.vga_vsync
+@200
+-
+-
+@24
+tb.top_inst.video.hpos[8:0]
+tb.top_inst.video.vpos[7:0]
+@28
+tb.top_inst.video.hsync
+tb.top_inst.video.vsync
+tb.top_inst.video.border
+tb.top_inst.video.hblank
+tb.top_inst.video.vblank
+tb.top_inst.video.hborder
+tb.top_inst.video.vborder
+tb.top_inst.video.next_row
+@200
+-
+@24
+tb.top_inst.video.row_addr_r[9:0]
+tb.top_inst.video.row_addr_next[9:0]
+@200
+-
+@28
+tb.top_inst.video.clk
+tb.top_inst.video.next_char
+@24
+tb.top_inst.video.char_addr_r[9:0]
+tb.top_inst.video.column[5:0]
+@200
+-
+@22
+tb.top_inst.video.text_data[7:0]
+tb.top_inst.video.color_data[7:0]
+@200
+-
+@22
+tb.top_inst.video.charram_addr[10:0]
+tb.top_inst.video.charram_data[7:0]
+@c00024
+tb.top_inst.video.pixel_sel[2:0]
+@28
+(0)tb.top_inst.video.pixel_sel[2:0]
+(1)tb.top_inst.video.pixel_sel[2:0]
+(2)tb.top_inst.video.pixel_sel[2:0]
+@1401200
+-group_end
+@28
+tb.top_inst.video.char_pixel
+@22
+tb.top_inst.video.pixel_colidx[3:0]
+[pattern_trace] 1
+[pattern_trace] 0
