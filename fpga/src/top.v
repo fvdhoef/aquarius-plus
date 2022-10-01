@@ -68,15 +68,14 @@ module top(
     output wire        esp_notify
 );
 
-    reg  [7:0] reg_bank0_r;             // $F0:W
-    reg  [7:0] reg_bank1_r;             // $F1:W
-    reg  [7:0] reg_bank2_r;             // $F2:W
-    reg  [7:0] reg_bank3_r;             // $F3:W
-    reg  [7:0] reg_sysctrl_r;           // $FB:W
+    wire       vga_vblank;
+
     reg        reg_cpm_remap_r;         // $FD:W
     reg  [7:0] reg_scramble_value_r;    // $FF:W
 
     wire [7:0] rddata_bootrom;
+    wire [7:0] rddata_vram;
+    wire [7:0] rddata_sysram;
     wire [7:0] rddata_espctrl;
     wire [7:0] rddata_espdata;
 
@@ -107,68 +106,35 @@ module top(
     wire bus_write = bus_wr_n_r[2:1] == 3'b10;
 
     // Memory space decoding
-    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:8] == 8'h00;
+    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:13] == 3'b000;       // $0000-$1FFF
+    wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;     // $3000-$37FF
+    wire sel_mem_sysram  = !bus_mreq_n && bus_a[15:11] == 5'b00111;     // $3800-$3FFF
 
     // IO space decoding
-    wire sel_io_vctrl    = !bus_iorq_n && bus_a[7:0] == 8'hE0;
-    wire sel_io_vscrx_l  = !bus_iorq_n && bus_a[7:0] == 8'hE1;
-    wire sel_io_vscrx_h  = !bus_iorq_n && bus_a[7:0] == 8'hE2;
-    wire sel_io_vscry    = !bus_iorq_n && bus_a[7:0] == 8'hE3;
-    wire sel_io_vsprsel  = !bus_iorq_n && bus_a[7:0] == 8'hE4;
-    wire sel_io_vsprx_l  = !bus_iorq_n && bus_a[7:0] == 8'hE5;
-    wire sel_io_vsprx_h  = !bus_iorq_n && bus_a[7:0] == 8'hE6;
-    wire sel_io_vspry    = !bus_iorq_n && bus_a[7:0] == 8'hE7;
-    wire sel_io_vspridx  = !bus_iorq_n && bus_a[7:0] == 8'hE8;
-    wire sel_io_vsprattr = !bus_iorq_n && bus_a[7:0] == 8'hE9;
-    wire sel_io_vpalsel  = !bus_iorq_n && bus_a[7:0] == 8'hEA;
-    wire sel_io_vpaldata = !bus_iorq_n && bus_a[7:0] == 8'hEB;
-    wire sel_io_vline    = !bus_iorq_n && bus_a[7:0] == 8'hEC;
-    wire sel_io_virqline = !bus_iorq_n && bus_a[7:0] == 8'hED;
-    wire sel_io_irqmask  = !bus_iorq_n && bus_a[7:0] == 8'hEE;
-    wire sel_io_irqstat  = !bus_iorq_n && bus_a[7:0] == 8'hEF;
-    wire sel_io_bank0    = !bus_iorq_n && bus_a[7:0] == 8'hF0;
-    wire sel_io_bank1    = !bus_iorq_n && bus_a[7:0] == 8'hF1;
-    wire sel_io_bank2    = !bus_iorq_n && bus_a[7:0] == 8'hF2;
-    wire sel_io_bank3    = !bus_iorq_n && bus_a[7:0] == 8'hF3;
-    wire sel_io_espctrl  = !bus_iorq_n && bus_a[7:0] == 8'hF4;
-    wire sel_io_espdata  = !bus_iorq_n && bus_a[7:0] == 8'hF5;
-    wire sel_io_psg1data = !bus_iorq_n && bus_a[7:0] == 8'hF6;
-    wire sel_io_psg1addr = !bus_iorq_n && bus_a[7:0] == 8'hF7;
-    wire sel_io_psg2data = !bus_iorq_n && bus_a[7:0] == 8'hF8;
-    wire sel_io_psg2addr = !bus_iorq_n && bus_a[7:0] == 8'hF9;
-    wire sel_io_sysctrl  = !bus_iorq_n && bus_a[7:0] == 8'hFB;
-    wire sel_io_cassette = !bus_iorq_n && bus_a[7:0] == 8'hFC;
-    wire sel_io_cpm      = !bus_iorq_n && bus_a[7:0] == 8'hFD;
-    wire sel_io_vsync    = !bus_iorq_n && bus_a[7:0] == 8'hFD;
-    wire sel_io_printer  = !bus_iorq_n && bus_a[7:0] == 8'hFE;
-    wire sel_io_scramble = !bus_iorq_n && bus_a[7:0] == 8'hFF;
-    wire sel_io_keyboard = !bus_iorq_n && bus_a[7:0] == 8'hFF;
+    wire sel_io_espctrl           = !bus_iorq_n && bus_a[7:0] == 8'hF4;
+    wire sel_io_espdata           = !bus_iorq_n && bus_a[7:0] == 8'hF5;
+    wire sel_io_cassette          = !bus_iorq_n && bus_a[7:0] == 8'hFC;
+    wire sel_io_vsync_r_cpm_w     = !bus_iorq_n && bus_a[7:0] == 8'hFD;
+    wire sel_io_printer           = !bus_iorq_n && bus_a[7:0] == 8'hFE;
+    wire sel_io_keyb_r_scramble_w = !bus_iorq_n && bus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_bootrom |
-        sel_io_vctrl | sel_io_vscrx_l | sel_io_vscrx_h | sel_io_vscry |
-        sel_io_vsprsel | sel_io_vsprx_l | sel_io_vsprx_h | sel_io_vspry |
-        sel_io_vspridx | sel_io_vsprattr | sel_io_vpalsel | sel_io_vpaldata |
-        sel_io_vline | sel_io_virqline | sel_io_irqmask | sel_io_irqstat |
-        sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
-        sel_io_espctrl | sel_io_espdata | sel_io_psg1data | sel_io_psg1addr |
-        sel_io_psg2data | sel_io_psg2addr | sel_io_sysctrl | sel_io_cassette |
-        sel_io_cpm | sel_io_vsync | sel_io_printer | sel_io_scramble | sel_io_keyboard;
+        sel_mem_bootrom | sel_mem_vram | sel_mem_sysram |
+        sel_io_espctrl | sel_io_espdata |
+        sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        if (sel_mem_bootrom) rddata <= rddata_bootrom;
-        if (sel_io_bank0)    rddata <= reg_bank0_r;
-        if (sel_io_bank1)    rddata <= reg_bank1_r;
-        if (sel_io_bank2)    rddata <= reg_bank2_r;
-        if (sel_io_bank3)    rddata <= reg_bank3_r;
-        if (sel_io_espctrl)  rddata <= rddata_espctrl;
-        if (sel_io_espdata)  rddata <= rddata_espdata;
-
-        if (sel_io_sysctrl)  rddata <= reg_sysctrl_r;
-        if (sel_io_cassette) rddata <= {7'b0, cassette_in};
-        if (sel_io_printer)  rddata <= {7'b0, printer_in};
+        if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
+        if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
+        if (sel_mem_sysram)           rddata <= rddata_sysram;          // RAM  $3800-$3FFF
+        if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
+        if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
+        if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
+        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
+        if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
+        if (sel_io_keyb_r_scramble_w) rddata <= 8'hFF;                  // IO $FF
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
@@ -181,6 +147,10 @@ module top(
     assign bus_de_oe_n  = 1'b1;
     assign cart_ce_n    = 1'b1;
 
+    assign bus_ba = 5'b0;
+    assign ram_ce_n = 1'b1;
+    assign rom_ce_n = 1'b1;
+
     assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
@@ -192,18 +162,31 @@ module top(
             printer_out          <= 1'b0;
             reg_scramble_value_r <= 8'b0;
         end else begin
-            if (sel_io_cassette && bus_write) cassette_out         <= wrdata[0];
-            if (sel_io_cpm      && bus_write) reg_cpm_remap_r      <= wrdata[0];
-            if (sel_io_printer  && bus_write) printer_out          <= wrdata[0];
-            if (sel_io_scramble && bus_write) reg_scramble_value_r <= wrdata;
+            if (sel_io_cassette          && bus_write) cassette_out         <= wrdata[0];
+            if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r      <= wrdata[0];
+            if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
+            if (sel_io_keyb_r_scramble_w && bus_write) reg_scramble_value_r <= wrdata;
         end
 
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
     //////////////////////////////////////////////////////////////////////////
     bootrom bootrom(
-        .addr(bus_a[7:0]),
-        .data(rddata_bootrom));
+        .clk(sysclk),
+        .addr(bus_a[12:0]),
+        .rddata(rddata_bootrom));
+
+    //////////////////////////////////////////////////////////////////////////
+    // System RAM (2kB)
+    //////////////////////////////////////////////////////////////////////////
+    wire sysram_wren = sel_mem_sysram && bus_write;
+
+    sysram sysram(
+        .clk(sysclk),
+        .addr(bus_a[10:0]),
+        .rddata(rddata_sysram),
+        .wrdata(wrdata),
+        .wren(sysram_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -255,17 +238,16 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
-    wire [10:0] vram_addr = 11'd0;
-    wire  [7:0] vram_rddata;
-    wire  [7:0] vram_wrdata = 8'd0;
-    wire        vram_wren = 1'b0;
+    wire [10:0] vram_addr   = bus_a[10:0];
+    wire  [7:0] vram_wrdata = wrdata;
+    wire        vram_wren   = sel_mem_vram && bus_write;
 
     video video(
         .clk(sysclk),
         .reset(reset),
 
         .vram_addr(vram_addr),
-        .vram_rddata(vram_rddata),
+        .vram_rddata(rddata_vram),
         .vram_wrdata(vram_wrdata),
         .vram_wren(vram_wren),
 
@@ -273,7 +255,9 @@ module top(
         .vga_g(vga_g),
         .vga_b(vga_b),
         .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync));
+        .vga_vsync(vga_vsync),
+        
+        .vga_vblank(vga_vblank));
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
@@ -291,43 +275,6 @@ module top(
 
         .hctrl1_data(hctrl1_data),
         .hctrl2_data(hctrl2_data));
-
-    //////////////////////////////////////////////////////////////////////////
-    // Banking registers
-    //////////////////////////////////////////////////////////////////////////
-    always @(posedge sysclk or posedge reset) begin
-        if (reset) begin
-            reg_bank0_r <= 8'h00;
-            reg_bank1_r <= 8'h00;
-            reg_bank2_r <= 8'h00;
-            reg_bank3_r <= 8'h00;
-
-        end else begin
-            if (sel_io_bank0 && bus_write) reg_bank0_r <= wrdata;
-            if (sel_io_bank1 && bus_write) reg_bank1_r <= wrdata;
-            if (sel_io_bank2 && bus_write) reg_bank2_r <= wrdata;
-            if (sel_io_bank3 && bus_write) reg_bank3_r <= wrdata;
-        end
-    end
-
-    reg [7:0] bank_reg;
-    always @* case (bus_a[15:14])
-        2'd0: bank_reg = reg_bank0_r;
-        2'd1: bank_reg = reg_bank1_r;
-        2'd2: bank_reg = reg_bank2_r;
-        2'd3: bank_reg = reg_bank3_r;
-    endcase
-
-    wire bank_readonly = bank_reg[7];
-    wire bank_overlay  = bank_reg[6];
-
-    assign bus_ba = bank_reg[4:0];
-
-    wire overlay_en   = (bus_a[13:12] == 2'b11) && bank_overlay;
-    wire allow_access = !bus_mreq_n && !overlay_en && (!bus_rd_n || (!bus_wr_n && !bank_readonly));
-
-    assign rom_ce_n = (allow_access && bank_reg[5:4] == 2'b00) ? 1'b0 : 1'b1;
-    assign ram_ce_n = (allow_access && bank_reg[5]   == 1'b1 ) ? 1'b0 : 1'b1;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave

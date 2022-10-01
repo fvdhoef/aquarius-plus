@@ -253,62 +253,78 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
-        iowr(16'h00F5, 8'h42);
-        #4500;
+        // iowr(16'h00F5, 8'h42);
+        // #4500;
 
-        iowr(16'h00F5, 8'h5A);
+        // iowr(16'h00F5, 8'h5A);
 
-        esptx(8'hF0);
-        esptx(8'hF1);
-        esptx(8'hF2);
-        esptx(8'hF3);
+        // esptx(8'hF0);
+        // esptx(8'hF1);
+        // esptx(8'hF2);
+        // esptx(8'hF3);
 
-        esptx_fe(8'hAA);
+        // esptx_fe(8'hAA);
 
 
-        // Break
-        #560 esp_rx = 1'b0;
-        #30000 esp_rx = 1'b1;
+        // // Break
+        // #560 esp_rx = 1'b0;
+        // #30000 esp_rx = 1'b1;
 
-        esptx(8'hF4);
-        esptx(8'hF5);
-        esptx(8'hF6);
-        esptx(8'hF7);
-        esptx(8'hF8);
-        esptx(8'hF9);
-        esptx(8'hFA);
-        esptx(8'hFB);
-        esptx(8'hFC);
-        esptx(8'hFD);
-        esptx(8'hFE);
-        esptx(8'hFF);
+        // esptx(8'hF4);
+        // esptx(8'hF5);
+        // esptx(8'hF6);
+        // esptx(8'hF7);
+        // esptx(8'hF8);
+        // esptx(8'hF9);
+        // esptx(8'hFA);
+        // esptx(8'hFB);
+        // esptx(8'hFC);
+        // esptx(8'hFD);
+        // esptx(8'hFE);
+        // esptx(8'hFF);
 
-        iord(16'h00F5);
-        iord(16'h00F5);
+        // iord(16'h00F5);
+        // iord(16'h00F5);
 
-        iowr(16'h00F4, 8'h80);
+        // iowr(16'h00F4, 8'h80);
 
-        iowr(16'h00F0, 8'hC0);
-        iowr(16'h00F1, 8'h20);
-        iowr(16'h00F2, 8'h21);
-        iowr(16'h00F3, 8'h13);
+        // iowr(16'h00F0, 8'hC0);
+        // iowr(16'h00F1, 8'h20);
+        // iowr(16'h00F2, 8'h21);
+        // iowr(16'h00F3, 8'h13);
 
         memrd(16'h0000);
-        memrd(16'h1000);
-        memrd(16'h2000);
+        memrd(16'h0001);
+        memrd(16'h0002);
+        memrd(16'h0003);
+        memrd(16'h0004);
+        memrd(16'h0010);
+
+
         memrd(16'h3000);
-        memrd(16'h4000);
-        memrd(16'h5000);
-        memrd(16'h6000);
-        memrd(16'h7000);
-        memrd(16'h8000);
-        memrd(16'h9000);
-        memrd(16'hA000);
-        memrd(16'hB000);
-        memrd(16'hC000);
-        memrd(16'hD000);
-        memrd(16'hE000);
-        memrd(16'hF000);
+        memwr(16'h3000, 8'h5A);
+        memrd(16'h3001);
+        memrd(16'h3000);
+
+        memrd(16'h0000);
+
+
+        // memrd(16'h0000);
+        // memrd(16'h1000);
+        // memrd(16'h2000);
+        // memrd(16'h3000);
+        // memrd(16'h4000);
+        // memrd(16'h5000);
+        // memrd(16'h6000);
+        // memrd(16'h7000);
+        // memrd(16'h8000);
+        // memrd(16'h9000);
+        // memrd(16'hA000);
+        // memrd(16'hB000);
+        // memrd(16'hC000);
+        // memrd(16'hD000);
+        // memrd(16'hE000);
+        // memrd(16'hF000);
 
     end
 
