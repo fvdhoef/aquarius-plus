@@ -2,10 +2,27 @@
 
     org     $0
 
-    ld      hl, $3001
+    ld      sp, $38A0
 loop:
+    ld      hl, $3001
     inc     (hl)
+
+    call    delay
     jr      loop
+
+delay:
+    ld      hl, 0
+    dec     hl
+
+    xor     b
+.2: xor     a
+.1: dec     a
+    jr      nz, .1
+    dec     b
+    jr      nz, .2
+
+    ret
+
 
 ; message:
 

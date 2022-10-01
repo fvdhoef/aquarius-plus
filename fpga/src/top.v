@@ -73,6 +73,7 @@ module top(
 
     wire [7:0] rddata_bootrom;
     wire [7:0] rddata_vram;
+    wire [7:0] rddata_sysram;
     wire [7:0] rddata_espctrl;
     wire [7:0] rddata_espdata;
 
@@ -104,7 +105,8 @@ module top(
 
     // Memory space decoding
     wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:8] == 8'h00;
-    wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;    // $3000-$37FF
+    wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;     // $3000-$37FF
+    wire sel_mem_sysram  = !bus_mreq_n && bus_a[15:11] == 5'b00111;     // $3800-$3FFF
 
     // IO space decoding
     wire sel_io_espctrl           = !bus_iorq_n && bus_a[7:0] == 8'hF4;
@@ -115,7 +117,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !bus_iorq_n && bus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_bootrom | sel_mem_vram |
+        sel_mem_bootrom | sel_mem_vram | sel_mem_sysram |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
@@ -140,6 +142,10 @@ module top(
     assign bus_de_oe_n  = 1'b1;
     assign cart_ce_n    = 1'b1;
 
+    assign bus_ba = 5'b0;
+    assign ram_ce_n = 1'b1;
+    assign rom_ce_n = 1'b1;
+
     assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
@@ -163,6 +169,18 @@ module top(
     bootrom bootrom(
         .addr(bus_a[7:0]),
         .data(rddata_bootrom));
+
+    //////////////////////////////////////////////////////////////////////////
+    // System RAM (2kB)
+    //////////////////////////////////////////////////////////////////////////
+    wire sysram_wren = sel_mem_sysram && bus_write;
+
+    sysram sysram(
+        .clk(sysclk),
+        .addr(bus_a[10:0]),
+        .rddata(rddata_sysram),
+        .wrdata(wrdata),
+        .wren(sysram_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART

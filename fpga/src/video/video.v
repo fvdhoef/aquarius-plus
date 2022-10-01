@@ -15,10 +15,6 @@ module video(
     output reg        vga_hsync,
     output reg        vga_vsync);
 
-    wire vram_sel = vram_addr[10];
-    reg vram_sel_r;
-    always @(posedge clk) vram_sel_r <= vram_sel;
-
     //////////////////////////////////////////////////////////////////////////
     // Video timing
     //////////////////////////////////////////////////////////////////////////
@@ -75,7 +71,7 @@ module video(
         else if (next_row)
             row_addr_r <= row_addr_next;
 
-    wire next_char = (hpos[2:0] == 3'd7);
+    wire       next_char = (hpos[2:0] == 3'd7);
     wire [5:0] column = hpos[8:3];
 
     always @(posedge(clk))
@@ -89,45 +85,27 @@ module video(
         end
 
     //////////////////////////////////////////////////////////////////////////
-    // Text RAM
+    // Video RAM
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] text_data;
-    wire [7:0] textram_rddata;
-    wire       textram_wren = vram_wren && !vram_sel;
-    
-    textram textram(
-        .clk(clk),
+    wire [15:0] videoram_rddata;
+    wire [10:0] p1_addr = {vram_addr[9:0], vram_addr[10]};
 
-        .addr1(vram_addr[9:0]),
-        .rddata1(textram_rddata),
-        .wrdata1(vram_wrdata),
-        .wren1(textram_wren),
+    videoram videoram(
+        .p1_clk(clk),
+        .p1_addr(p1_addr),
+        .p1_rddata(vram_rddata),
+        .p1_wrdata(vram_wrdata),
+        .p1_wren(vram_wren),
 
-        .addr2(char_addr_r),
-        .rddata2(text_data));
+        .p2_clk(clk),
+        .p2_addr(char_addr_r),
+        .p2_rddata(videoram_rddata));
 
-    //////////////////////////////////////////////////////////////////////////
-    // Color RAM
-    //////////////////////////////////////////////////////////////////////////
-    wire [7:0] color_data;
-    wire [7:0] colorram_rddata;
-    wire       colorram_wren = vram_wren && vram_sel;
-
-    colorram colorram(
-        .clk(clk),
-
-        .addr1(vram_addr[9:0]),
-        .rddata1(colorram_rddata),
-        .wrdata1(vram_wrdata),
-        .wren1(colorram_wren),
-
-        .addr2(char_addr_r),
-        .rddata2(color_data));
+    wire [7:0] text_data  = videoram_rddata[7:0];
+    wire [7:0] color_data = videoram_rddata[15:8];
 
     reg [7:0] color_data_r;
     always @(posedge clk) color_data_r <= color_data;
-
-    assign vram_rddata = vram_sel_r ? colorram_rddata : textram_rddata;
 
     //////////////////////////////////////////////////////////////////////////
     // Character RAM
