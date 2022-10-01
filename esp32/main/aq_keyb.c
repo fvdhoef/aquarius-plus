@@ -1,5 +1,6 @@
 #include "aq_keyb.h"
 #include "aq_keyb_defs.h"
+#include "fpga.h"
 
 static const char *TAG = "keyboard";
 
@@ -208,6 +209,7 @@ void keyboard_update_matrix(void) {
     }
 
     ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
+    fpga_update_keyb_matrix(keyb_matrix);
 
     memcpy(prev_matrix, keyb_matrix, 8);
 }

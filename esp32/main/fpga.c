@@ -112,4 +112,25 @@ void fpga_init(void) {
         return;
     }
     ESP_LOGI(TAG, "Configuration completed");
+
+    {
+        gpio_set_level(IOPIN_SPI_CS_N, 1);
+        gpio_set_direction(IOPIN_SPI_CS_N, GPIO_MODE_OUTPUT);
+    }
+}
+
+void fpga_update_keyb_matrix(uint8_t *buf) {
+    gpio_set_level(IOPIN_SPI_CS_N, 0);
+
+    uint8_t data[9];
+    data[0] = 0x10;
+    memcpy(&data[1], buf, 8);
+
+    spi_transaction_t t = {
+        .length    = sizeof(data) * 8,
+        .tx_buffer = data,
+    };
+    ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev, &t));
+
+    gpio_set_level(IOPIN_SPI_CS_N, 1);
 }
