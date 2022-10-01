@@ -45,7 +45,7 @@ static void init(void) {
     fpga_init();
 
     // sdcard_init();
-    // usbhost_init();
+    usbhost_init();
 }
 
 void hexdump(const void *buf, size_t length) {
