@@ -2,49 +2,22 @@ module video(
     input  wire        clk,
     input  wire        reset,
 
-    // VCTRL
-    // input  wire        text_enable,
-    // input  wire        layer_enable,
-    // input  wire        layer_tile_mode,  // 0: bitmap mode, 1: tile mode 
-    // input  wire        text_priority,
-
-    // VSCRX_L/VSCRX_H/VSCRY
-    // input  wire  [8:0] layer_scroll_x,
-    // input  wire  [7:0] layer_scroll_y,
-
-    // Sprite attribute RAM interface
-    // output wire  [5:0] sprite_sel,
-    // input  wire  [8:0] sprite_x,
-    // input  wire  [7:0] sprite_y,
-    // input  wire  [8:0] sprite_tile_idx,
-    // input  wire        sprite_enable,
-    // input  wire        sprite_priority,
-    // input  wire  [1:0] sprite_palette,
-    // input  wire        sprite_h16,
-    // input  wire        sprite_vflip,
-    // input  wire        sprite_hflip,
-
     // Text RAM interface
-    // output wire  [9:0] tram_addr,
-    // input  wire  [7:0] tram_char,
-    // input  wire  [7:0] tram_color,
+    input  wire [10:0] vram_addr,
+    output wire  [7:0] vram_rddata,
+    input  wire  [7:0] vram_wrdata,
+    input  wire        vram_wren,
 
-    // Video RAM interface
-    // output wire [13:0] vram_addr,
-    // input  wire  [7:0] vram_data,
-
-    // Line buffer interface
-    // output wire  [8:0] lbuf_idx,
-    // output wire  [7:0] lbuf_wrdata,
-    // input  wire  [7:0] lbuf_rddata,
-    // output wire        lbuf_wren
-    
     // VGA output
     output reg  [3:0] vga_r,
     output reg  [3:0] vga_g,
     output reg  [3:0] vga_b,
     output reg        vga_hsync,
     output reg        vga_vsync);
+
+    wire vram_sel = vram_addr[10];
+    reg vram_sel_r;
+    always @(posedge clk) vram_sel_r <= vram_sel;
 
     //////////////////////////////////////////////////////////////////////////
     // Video timing
@@ -119,14 +92,16 @@ module video(
     // Text RAM
     //////////////////////////////////////////////////////////////////////////
     wire [7:0] text_data;
+    wire [7:0] textram_rddata;
+    wire       textram_wren = vram_wren && !vram_sel;
     
     textram textram(
         .clk(clk),
 
-        // input  wire [10:0] addr1,
-        // output reg   [7:0] rddata1,
-        // input  wire  [7:0] wrdata1,
-        // input  wire        wren1,
+        .addr1(vram_addr[9:0]),
+        .rddata1(textram_rddata),
+        .wrdata1(vram_wrdata),
+        .wren1(textram_wren),
 
         .addr2(char_addr_r),
         .rddata2(text_data));
@@ -135,20 +110,24 @@ module video(
     // Color RAM
     //////////////////////////////////////////////////////////////////////////
     wire [7:0] color_data;
-    
+    wire [7:0] colorram_rddata;
+    wire       colorram_wren = vram_wren && vram_sel;
+
     colorram colorram(
         .clk(clk),
 
-        // input  wire [10:0] addr1,
-        // output reg   [7:0] rddata1,
-        // input  wire  [7:0] wrdata1,
-        // input  wire        wren1,
+        .addr1(vram_addr[9:0]),
+        .rddata1(colorram_rddata),
+        .wrdata1(vram_wrdata),
+        .wren1(colorram_wren),
 
         .addr2(char_addr_r),
         .rddata2(color_data));
 
     reg [7:0] color_data_r;
     always @(posedge clk) color_data_r <= color_data;
+
+    assign vram_rddata = vram_sel_r ? colorram_rddata : textram_rddata;
 
     //////////////////////////////////////////////////////////////////////////
     // Character RAM

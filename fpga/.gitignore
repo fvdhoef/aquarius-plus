@@ -70,3 +70,6 @@ _xmsgs/
 *.debug
 planAhead_run_*/
 pa.fromHdl.tcl
+
+# Exception that actually need to be commited
+!top.bit

@@ -255,9 +255,19 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
+    wire [10:0] vram_addr = 11'd0;
+    wire  [7:0] vram_rddata;
+    wire  [7:0] vram_wrdata = 8'd0;
+    wire        vram_wren = 1'b0;
+
     video video(
         .clk(sysclk),
         .reset(reset),
+
+        .vram_addr(vram_addr),
+        .vram_rddata(vram_rddata),
+        .vram_wrdata(vram_wrdata),
+        .vram_wren(vram_wren),
 
         .vga_r(vga_r),
         .vga_g(vga_g),
