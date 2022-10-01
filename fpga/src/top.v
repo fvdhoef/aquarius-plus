@@ -68,6 +68,8 @@ module top(
     output wire        esp_notify
 );
 
+    wire       vga_vblank;
+
     reg        reg_cpm_remap_r;         // $FD:W
     reg  [7:0] reg_scramble_value_r;    // $FF:W
 
@@ -104,7 +106,7 @@ module top(
     wire bus_write = bus_wr_n_r[2:1] == 3'b10;
 
     // Memory space decoding
-    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:8] == 8'h00;
+    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:13] == 3'b000;       // $0000-$1FFF
     wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;     // $3000-$37FF
     wire sel_mem_sysram  = !bus_mreq_n && bus_a[15:11] == 5'b00111;     // $3800-$3FFF
 
@@ -124,12 +126,15 @@ module top(
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        if (sel_mem_bootrom) rddata <= rddata_bootrom;
-        if (sel_mem_vram)    rddata <= rddata_vram;
-        if (sel_io_espctrl)  rddata <= rddata_espctrl;
-        if (sel_io_espdata)  rddata <= rddata_espdata;
-        if (sel_io_cassette) rddata <= {7'b0, cassette_in};
-        if (sel_io_printer)  rddata <= {7'b0, printer_in};
+        if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
+        if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
+        if (sel_mem_sysram)           rddata <= rddata_sysram;          // RAM  $3800-$3FFF
+        if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
+        if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
+        if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
+        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
+        if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
+        if (sel_io_keyb_r_scramble_w) rddata <= 8'hFF;                  // IO $FF
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
@@ -167,8 +172,9 @@ module top(
     // Boot ROM
     //////////////////////////////////////////////////////////////////////////
     bootrom bootrom(
-        .addr(bus_a[7:0]),
-        .data(rddata_bootrom));
+        .clk(sysclk),
+        .addr(bus_a[12:0]),
+        .rddata(rddata_bootrom));
 
     //////////////////////////////////////////////////////////////////////////
     // System RAM (2kB)
@@ -249,7 +255,9 @@ module top(
         .vga_g(vga_g),
         .vga_b(vga_b),
         .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync));
+        .vga_vsync(vga_vsync),
+        
+        .vga_vblank(vga_vblank));
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface

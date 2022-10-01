@@ -13,7 +13,9 @@ module video(
     output reg  [3:0] vga_g,
     output reg  [3:0] vga_b,
     output reg        vga_hsync,
-    output reg        vga_vsync);
+    output reg        vga_vsync,
+    
+    output wire       vga_vblank);
 
     //////////////////////////////////////////////////////////////////////////
     // Video timing
@@ -38,6 +40,8 @@ module video(
         .vnext(vnext),
         
         .blank(blank));
+
+    assign vga_vblank = vblank;
 
     wire hborder = hpos < 9'd16 || hpos >= 9'd336;
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;

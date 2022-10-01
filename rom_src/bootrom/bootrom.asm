@@ -4,6 +4,9 @@
 
     ld      sp, $38A0
 loop:
+    ld      a, $70
+    ld      ($3401), a
+    
     ld      hl, $3001
     inc     (hl)
 
