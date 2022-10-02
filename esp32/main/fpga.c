@@ -8,6 +8,7 @@ extern const uint8_t fpga_image_start[] asm("_binary_top_bit_start");
 extern const uint8_t fpga_image_end[] asm("_binary_top_bit_end");
 
 static spi_device_handle_t fpga_spidev;
+static spi_device_handle_t fpga_spidev_regs;
 
 #define SPIBUS SPI2_HOST // SPI3 host is used by SD card interface
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_CS_N
@@ -44,15 +45,28 @@ void fpga_init(void) {
     };
     ESP_ERROR_CHECK(spi_bus_initialize(SPIBUS, &bus_config, SPI_DMA_CH_AUTO));
 
-    spi_device_interface_config_t dev_config = {
-        .clock_speed_hz = 20000000,
-        .mode           = 0,
-        .spics_io_num   = -1,
-        .queue_size     = 7,
+    {
+        spi_device_interface_config_t dev_config = {
+            .clock_speed_hz = 20000000,
+            .mode           = 0,
+            .spics_io_num   = -1,
+            .queue_size     = 7,
 
-        // .flags = SPI_DEVICE_TXBIT_LSBFIRST,
-    };
-    ESP_ERROR_CHECK(spi_bus_add_device(SPIBUS, &dev_config, &fpga_spidev));
+            // .flags = SPI_DEVICE_TXBIT_LSBFIRST,
+        };
+        ESP_ERROR_CHECK(spi_bus_add_device(SPIBUS, &dev_config, &fpga_spidev));
+    }
+    {
+        spi_device_interface_config_t dev_config = {
+            .clock_speed_hz = 1000000,
+            .mode           = 0,
+            .spics_io_num   = -1,
+            .queue_size     = 7,
+
+            // .flags = SPI_DEVICE_TXBIT_LSBFIRST,
+        };
+        ESP_ERROR_CHECK(spi_bus_add_device(SPIBUS, &dev_config, &fpga_spidev_regs));
+    }
 
     ESP_LOGI(TAG, "Starting configuration");
 
@@ -112,4 +126,23 @@ void fpga_init(void) {
         return;
     }
     ESP_LOGI(TAG, "Configuration completed");
+
+    {
+        gpio_set_level(IOPIN_SPI_CS_N, 1);
+        gpio_set_direction(IOPIN_SPI_CS_N, GPIO_MODE_OUTPUT);
+    }
+}
+
+void fpga_update_keyb_matrix(uint8_t *buf) {
+    uint8_t data[9];
+    data[0] = 0x10;
+    memcpy(&data[1], buf, 8);
+
+    ESP_LOG_BUFFER_HEX(TAG, data, sizeof(data));
+
+    spi_transaction_t t = {.length = sizeof(data) * 8, .tx_buffer = data};
+
+    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
+    gpio_set_level(IOPIN_SPI_CS_N, 1);
 }

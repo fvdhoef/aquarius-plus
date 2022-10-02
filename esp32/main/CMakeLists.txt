@@ -4,6 +4,7 @@ idf_component_register(
         "fpga.c"
         "usbhost.c"
         "sdcard.c"
+        "aq_keyb.c"
 
     INCLUDE_DIRS
         "."

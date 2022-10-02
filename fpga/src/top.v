@@ -79,6 +79,8 @@ module top(
     wire [7:0] rddata_espctrl;
     wire [7:0] rddata_espdata;
 
+    wire [7:0] rddata_keyboard;
+
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
@@ -134,7 +136,7 @@ module top(
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
         if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
-        if (sel_io_keyb_r_scramble_w) rddata <= 8'hFF;                  // IO $FF
+        if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;        // IO $FF
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
@@ -151,7 +153,7 @@ module top(
     assign ram_ce_n = 1'b1;
     assign rom_ce_n = 1'b1;
 
-    assign exp          = 7'b0;
+    // assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
 
@@ -277,16 +279,35 @@ module top(
         .hctrl2_data(hctrl2_data));
 
     //////////////////////////////////////////////////////////////////////////
-    // SPI slave
+    // SPI interface
     //////////////////////////////////////////////////////////////////////////
-    spislave spislave(
+    wire [63:0] keys;
+
+    spiregs spiregs(
         .clk(sysclk),
         .reset(reset),
 
-        .esp_cs_n(esp_cs_n),
+        .esp_ssel_n(esp_cs_n),
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
-        .esp_miso(esp_miso));
+        .esp_miso(esp_miso),
+        
+        .keys(keys));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Keyboard
+    //////////////////////////////////////////////////////////////////////////
+    assign rddata_keyboard =
+        (bus_a[15] ? 8'hFF : keys[63:56]) &
+        (bus_a[14] ? 8'hFF : keys[55:48]) &
+        (bus_a[13] ? 8'hFF : keys[47:40]) &
+        (bus_a[12] ? 8'hFF : keys[39:32]) &
+        (bus_a[11] ? 8'hFF : keys[31:24]) &
+        (bus_a[10] ? 8'hFF : keys[23:16]) &
+        (bus_a[ 9] ? 8'hFF : keys[15: 8]) &
+        (bus_a[ 8] ? 8'hFF : keys[ 7: 0]);
+
+    assign exp = keys[6:0];
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
