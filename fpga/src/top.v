@@ -79,6 +79,8 @@ module top(
     wire [7:0] rddata_espctrl;
     wire [7:0] rddata_espdata;
 
+    wire [7:0] rddata_keyboard;
+
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
@@ -134,7 +136,7 @@ module top(
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
         if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
-        if (sel_io_keyb_r_scramble_w) rddata <= 8'hFF;                  // IO $FF
+        if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;        // IO $FF
     end
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
@@ -277,16 +279,33 @@ module top(
         .hctrl2_data(hctrl2_data));
 
     //////////////////////////////////////////////////////////////////////////
-    // SPI slave
+    // SPI interface
     //////////////////////////////////////////////////////////////////////////
-    spislave spislave(
+    wire [63:0] keys;
+
+    spiregs spiregs(
         .clk(sysclk),
         .reset(reset),
 
-        .esp_cs_n(esp_cs_n),
+        .esp_ssel_n(esp_cs_n),
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
-        .esp_miso(esp_miso));
+        .esp_miso(esp_miso),
+        
+        .keys(keys));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Keyboard
+    //////////////////////////////////////////////////////////////////////////
+    assign rddata_keyboard =
+        (bus_a[15] ? keys[63:56] : 8'hFF) &
+        (bus_a[14] ? keys[55:48] : 8'hFF) &
+        (bus_a[13] ? keys[47:40] : 8'hFF) &
+        (bus_a[12] ? keys[39:32] : 8'hFF) &
+        (bus_a[11] ? keys[31:24] : 8'hFF) &
+        (bus_a[10] ? keys[23:16] : 8'hFF) &
+        (bus_a[ 9] ? keys[15: 8] : 8'hFF) &
+        (bus_a[ 8] ? keys[ 7: 0] : 8'hFF);
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC

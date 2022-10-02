@@ -38,6 +38,10 @@ module tb();
 
     wire phi;
 
+    reg spi_cs_n_r = 1'b1;
+    reg spi_sclk_r = 1'b0;
+    reg spi_mosi_r = 1'b0;
+
     top top_inst(
         .sysclk(sysclk),
         .usbclk(usbclk),
@@ -101,9 +105,9 @@ module tb();
         .esp_cts(1'b1),
 
         // ESP32 SPI interface (also used for loading FPGA image)
-        .esp_cs_n(1'b1),
-        .esp_sclk(1'b0),
-        .esp_mosi(1'b0),
+        .esp_cs_n(spi_cs_n_r),
+        .esp_sclk(spi_sclk_r),
+        .esp_mosi(spi_mosi_r),
         .esp_miso(),
         .esp_notify());
 
@@ -248,10 +252,38 @@ module tb();
         end
     endtask
 
+    task spi_tx;
+        input [7:0] data;
+
+        begin
+            for (integer i=0; i<8; i++) begin
+                #500;
+                spi_sclk_r = 1'b0;
+                spi_mosi_r = data[7-i];
+                
+                #500;
+                spi_sclk_r = 1'b1;
+            end
+            #500 spi_sclk_r = 1'b0;
+        end
+    endtask
+
     initial begin
         #2500;
         @(posedge phi);
         @(posedge phi);
+
+        spi_cs_n_r <= 1'b0;
+        spi_tx(8'h10);
+        spi_tx(8'h01);
+        spi_tx(8'h23);
+        spi_tx(8'h45);
+        spi_tx(8'h67);
+        spi_tx(8'h89);
+        spi_tx(8'hAB);
+        spi_tx(8'hCD);
+        spi_tx(8'hEF);
+        spi_cs_n_r <= 1'b1;
 
         // iowr(16'h00F5, 8'h42);
         // #4500;
