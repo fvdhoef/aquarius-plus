@@ -153,7 +153,7 @@ module top(
     assign ram_ce_n = 1'b1;
     assign rom_ce_n = 1'b1;
 
-    assign exp          = 7'b0;
+    // assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
 
@@ -298,14 +298,16 @@ module top(
     // Keyboard
     //////////////////////////////////////////////////////////////////////////
     assign rddata_keyboard =
-        (bus_a[15] ? keys[63:56] : 8'hFF) &
-        (bus_a[14] ? keys[55:48] : 8'hFF) &
-        (bus_a[13] ? keys[47:40] : 8'hFF) &
-        (bus_a[12] ? keys[39:32] : 8'hFF) &
-        (bus_a[11] ? keys[31:24] : 8'hFF) &
-        (bus_a[10] ? keys[23:16] : 8'hFF) &
-        (bus_a[ 9] ? keys[15: 8] : 8'hFF) &
-        (bus_a[ 8] ? keys[ 7: 0] : 8'hFF);
+        (bus_a[15] ? 8'hFF : keys[63:56]) &
+        (bus_a[14] ? 8'hFF : keys[55:48]) &
+        (bus_a[13] ? 8'hFF : keys[47:40]) &
+        (bus_a[12] ? 8'hFF : keys[39:32]) &
+        (bus_a[11] ? 8'hFF : keys[31:24]) &
+        (bus_a[10] ? 8'hFF : keys[23:16]) &
+        (bus_a[ 9] ? 8'hFF : keys[15: 8]) &
+        (bus_a[ 8] ? 8'hFF : keys[ 7: 0]);
+
+    assign exp = keys[6:0];
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC

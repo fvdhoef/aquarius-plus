@@ -58,9 +58,9 @@ void fpga_init(void) {
     }
     {
         spi_device_interface_config_t dev_config = {
-            .clock_speed_hz = 2000000,
+            .clock_speed_hz = 1000000,
             .mode           = 0,
-            .spics_io_num   = IOPIN_SPI_CS_N,
+            .spics_io_num   = -1,
             .queue_size     = 7,
 
             // .flags = SPI_DEVICE_TXBIT_LSBFIRST,
@@ -138,6 +138,11 @@ void fpga_update_keyb_matrix(uint8_t *buf) {
     data[0] = 0x10;
     memcpy(&data[1], buf, 8);
 
+    ESP_LOG_BUFFER_HEX(TAG, data, sizeof(data));
+
     spi_transaction_t t = {.length = sizeof(data) * 8, .tx_buffer = data};
+
+    gpio_set_level(IOPIN_SPI_CS_N, 0);
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
+    gpio_set_level(IOPIN_SPI_CS_N, 1);
 }

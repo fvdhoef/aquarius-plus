@@ -285,6 +285,15 @@ module tb();
         spi_tx(8'hEF);
         spi_cs_n_r <= 1'b1;
 
+        iord(16'h01FF);
+        iord(16'h02FF);
+        iord(16'h04FF);
+        iord(16'h08FF);
+        iord(16'h10FF);
+        iord(16'h20FF);
+        iord(16'h40FF);
+        iord(16'h80FF);
+
         // iowr(16'h00F5, 8'h42);
         // #4500;
 
