@@ -112,6 +112,12 @@ module top(
     wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;     // $3000-$37FF
     wire sel_mem_sysram  = !bus_mreq_n && bus_a[15:11] == 5'b00111;     // $3800-$3FFF
 
+    wire bank1 = !bus_mreq_n && bus_a[15:14] == 2'b01;
+    wire bank2 = !bus_mreq_n && bus_a[15:14] == 2'b10;
+    wire bank3 = !bus_mreq_n && bus_a[15:14] == 2'b11;
+
+    assign ram_ce_n = !(sel_mem_sysram | bank1 | bank2);
+
     // IO space decoding
     wire sel_io_espctrl           = !bus_iorq_n && bus_a[7:0] == 8'hF4;
     wire sel_io_espdata           = !bus_iorq_n && bus_a[7:0] == 8'hF5;
@@ -121,7 +127,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !bus_iorq_n && bus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_bootrom | sel_mem_vram | sel_mem_sysram |
+        sel_mem_bootrom | sel_mem_vram |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
@@ -130,7 +136,6 @@ module top(
         rddata <= 8'h00;
         if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
-        if (sel_mem_sysram)           rddata <= rddata_sysram;          // RAM  $3800-$3FFF
         if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
         if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
@@ -149,11 +154,10 @@ module top(
     assign bus_de_oe_n  = 1'b1;
     assign cart_ce_n    = 1'b1;
 
-    assign bus_ba = 5'b0;
-    assign ram_ce_n = 1'b1;
-    assign rom_ce_n = 1'b1;
+    assign bus_ba       = 5'b0;
+    assign rom_ce_n     = 1'b1;
 
-    // assign exp          = 7'b0;
+    assign exp          = 7'b0;
 
     assign esp_notify   = 1'b0;
 
@@ -177,18 +181,6 @@ module top(
         .clk(sysclk),
         .addr(bus_a[12:0]),
         .rddata(rddata_bootrom));
-
-    //////////////////////////////////////////////////////////////////////////
-    // System RAM (2kB)
-    //////////////////////////////////////////////////////////////////////////
-    wire sysram_wren = sel_mem_sysram && bus_write;
-
-    sysram sysram(
-        .clk(sysclk),
-        .addr(bus_a[10:0]),
-        .rddata(rddata_sysram),
-        .wrdata(wrdata),
-        .wren(sysram_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -306,8 +298,6 @@ module top(
         (bus_a[10] ? 8'hFF : keys[23:16]) &
         (bus_a[ 9] ? 8'hFF : keys[15: 8]) &
         (bus_a[ 8] ? 8'hFF : keys[ 7: 0]);
-
-    assign exp = keys[6:0];
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
