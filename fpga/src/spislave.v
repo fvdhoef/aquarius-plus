@@ -1,6 +1,5 @@
 module spislave(
     input  wire        clk,
-    input  wire        reset,
 
     input  wire        esp_ssel_n,
     input  wire        esp_sclk,

@@ -68,6 +68,7 @@ module top(
     output wire        esp_notify
 );
 
+    wire       reset_req;
     wire       vga_vblank;
 
     reg        reg_cpm_remap_r;         // $FD:W
@@ -89,6 +90,7 @@ module top(
     sysctrl sysctrl(
         .sysclk(sysclk),
         .ext_reset_n(reset_n),
+        .reset_req(reset_req),
 
         .phi(phi),
         .reset(reset));
@@ -277,13 +279,13 @@ module top(
 
     spiregs spiregs(
         .clk(sysclk),
-        .reset(reset),
 
         .esp_ssel_n(esp_cs_n),
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
         .esp_miso(esp_miso),
         
+        .reset_req(reset_req),
         .keys(keys));
 
     //////////////////////////////////////////////////////////////////////////

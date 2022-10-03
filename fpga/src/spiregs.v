@@ -1,12 +1,12 @@
 module spiregs(
     input  wire        clk,
-    input  wire        reset,
 
     input  wire        esp_ssel_n,
     input  wire        esp_sclk,
     input  wire        esp_mosi,
     output wire        esp_miso,
 
+    output reg         reset_req,
     output reg  [63:0] keys);
 
     //////////////////////////////////////////////////////////////////////////
@@ -17,7 +17,6 @@ module spiregs(
 
     spislave spislave(
         .clk(clk),
-        .reset(reset),
 
         .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),
@@ -59,9 +58,18 @@ module spiregs(
     end
 
     //////////////////////////////////////////////////////////////////////////
-    // Keyboard register
+    // Commands
     //////////////////////////////////////////////////////////////////////////
+
+    // 01h: Reset command
+    always @(posedge clk) begin
+        reset_req <= 1'b0;
+        if (cmd_r == 8'h01 && msg_end) reset_req <= 1'b1;
+    end
+
+    // 10h: Set keyboard matrix
     always @(posedge clk)
         if (cmd_r == 8'h10 && msg_end) keys <= data_r;
+
 
 endmodule

@@ -1,6 +1,7 @@
 module sysctrl(
     input  wire sysclk,
     inout  wire ext_reset_n,
+    input  wire reset_req,
 
     output wire phi,
     output wire reset);
@@ -14,18 +15,26 @@ module sysctrl(
 
     // Simulation: only have a short reset duration
     reg [4:0] ext_reset_cnt_r = 0;
-    always @(posedge sysclk)
+    always @(posedge sysclk) begin
         if (!ext_reset_cnt_r[4])
             ext_reset_cnt_r <= ext_reset_cnt_r + 5'b1;
+        if (reset_req)
+            ext_reset_cnt_r <= 5'b0;
+    end
+
     assign ext_reset = !ext_reset_cnt_r[4];
 
 `else
 
     // Synthesis: reset duration ~146ms
     reg [21:0] ext_reset_cnt_r = 0;
-    always @(posedge sysclk)
+    always @(posedge sysclk) begin
         if (!ext_reset_cnt_r[21])
             ext_reset_cnt_r <= ext_reset_cnt_r + 22'b1;
+        if (reset_req)
+            ext_reset_cnt_r <= 22'b0;
+    end
+
     assign ext_reset = !ext_reset_cnt_r[21];
 
 `endif

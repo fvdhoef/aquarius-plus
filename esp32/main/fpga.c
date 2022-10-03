@@ -15,6 +15,11 @@ static spi_device_handle_t fpga_spidev_regs;
 
 #define MAX_TRANSFER_SIZE (1024)
 
+enum {
+    CMD_RESET           = 0x01,
+    CMD_SET_KEYB_MATRIX = 0x10,
+};
+
 void fpga_init(void) {
     // IOPIN_ESP_NOTIFY  = 12,
     // IOPIN_FPGA_PROG_N = 34,
@@ -133,12 +138,18 @@ void fpga_init(void) {
     }
 }
 
+void fpga_reset_req(void) {
+    spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_RESET, .flags = SPI_TRANS_USE_TXDATA};
+
+    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
+    gpio_set_level(IOPIN_SPI_CS_N, 1);
+}
+
 void fpga_update_keyb_matrix(uint8_t *buf) {
     uint8_t data[9];
-    data[0] = 0x10;
+    data[0] = CMD_SET_KEYB_MATRIX;
     memcpy(&data[1], buf, 8);
-
-    ESP_LOG_BUFFER_HEX(TAG, data, sizeof(data));
 
     spi_transaction_t t = {.length = sizeof(data) * 8, .tx_buffer = data};
 

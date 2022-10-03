@@ -274,6 +274,13 @@ module tb();
         @(posedge phi);
 
         spi_cs_n_r <= 1'b0;
+        spi_tx(8'h01);
+        spi_cs_n_r <= 1'b1;
+
+        #1000;
+        @(posedge phi);
+
+        spi_cs_n_r <= 1'b0;
         spi_tx(8'h10);
         spi_tx(8'h01);
         spi_tx(8'h23);
