@@ -1,6 +1,7 @@
 #include "aq_keyb.h"
 #include "aq_keyb_defs.h"
 #include "fpga.h"
+#include <esp_system.h>
 
 static const char *TAG = "keyboard";
 
@@ -51,7 +52,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     if (scancode == SDL_SCANCODE_RGUI)
         modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
-    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    bool ctrl_pressed = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
     // bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
     bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
     // bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
@@ -94,7 +95,11 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
-                    if (ctrl_pressed) {
+                    if (ctrl_pressed && shift_pressed) {
+                        // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
+                        esp_restart();
+
+                    } else if (ctrl_pressed) {
                         // CTRL-ESCAPE -> reset
                         fpga_reset_req();
                     } else {
