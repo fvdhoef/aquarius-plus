@@ -19,17 +19,11 @@ module tb();
     reg usbclk = 0;
     always #10.42 usbclk = !usbclk;
 
-    reg [15:0] bus_a = 16'h0000;
-
     reg  [7:0] bus_wrdata = 8'b0;
     reg        bus_wren = 1'b0;
 
     wire [7:0] bus_d = bus_wren ? bus_wrdata : 8'bZ;
 
-    reg        bus_rd_n = 1'b1;
-    reg        bus_wr_n = 1'b1;
-    reg        bus_mreq_n = 1'b1;
-    reg        bus_iorq_n = 1'b1;
 
     reg        esp_rx = 1'b1;
 
@@ -41,6 +35,24 @@ module tb();
     reg spi_cs_n_r = 1'b1;
     reg spi_sclk_r = 1'b0;
     reg spi_mosi_r = 1'b0;
+
+    wire busreq_n;
+    reg busack_n = 1'bZ;
+    pullup(busreq_n);
+
+    reg  [15:0] bus_a_r      = 16'h0000;
+    reg         bus_rd_n_r   = 1'b1;
+    reg         bus_wr_n_r   = 1'b1;
+    reg         bus_mreq_n_r = 1'b1;
+    reg         bus_iorq_n_r = 1'b1;
+
+    wire [15:0] bus_a      = (busack_n == 1'b0) ? 16'bZ : bus_a_r;
+    wire        bus_rd_n   = (busack_n == 1'b0) ? 1'bZ  : bus_rd_n_r;
+    wire        bus_wr_n   = (busack_n == 1'b0) ? 1'bZ  : bus_wr_n_r;
+    wire        bus_mreq_n = (busack_n == 1'b0) ? 1'bZ  : bus_mreq_n_r;
+    wire        bus_iorq_n = (busack_n == 1'b0) ? 1'bZ  : bus_iorq_n_r;
+
+    always @(posedge phi) busack_n <= busreq_n;
 
     top top_inst(
         .sysclk(sysclk),
@@ -58,8 +70,8 @@ module tb();
         .bus_int_n(),
         .bus_m1_n(1'bZ),
         .bus_wait_n(),
-        .bus_busreq_n(),
-        .bus_busack_n(1'bZ),
+        .bus_busreq_n(busreq_n),
+        .bus_busack_n(busack_n),
         .bus_ba(),
         .bus_de(),
         .bus_de_oe_n(),
@@ -121,23 +133,23 @@ module tb();
             // T1
             @(posedge phi)
             #110
-            bus_a       = addr;
+            bus_a_r       = addr;
 
             // T2
             @(posedge phi)
             bus_wren    = 1'b1;
             #65
-            bus_wr_n    = 1'b0;
+            bus_wr_n_r    = 1'b0;
             #10
-            bus_iorq_n  = 1'b0;
+            bus_iorq_n_r  = 1'b0;
 
             // T3
             @(posedge phi)
             @(negedge phi);
             #80
-            bus_wr_n    = 1'b1;
+            bus_wr_n_r    = 1'b1;
             #5
-            bus_iorq_n  = 1'b1;
+            bus_iorq_n_r  = 1'b1;
             #55
             bus_wren    = 1'b0;
         end
@@ -150,22 +162,22 @@ module tb();
             // T1
             @(posedge phi)
             #110
-            bus_a       = addr;
+            bus_a_r       = addr;
 
             // T2
             @(posedge phi)
             #65
-            bus_rd_n    = 1'b0;
+            bus_rd_n_r    = 1'b0;
             #10
-            bus_iorq_n  = 1'b0;
+            bus_iorq_n_r  = 1'b0;
 
             // T3
             @(posedge phi)
             @(negedge phi);
             #80
-            bus_rd_n    = 1'b1;
+            bus_rd_n_r    = 1'b1;
             #5
-            bus_iorq_n  = 1'b1;
+            bus_iorq_n_r  = 1'b1;
             #55;
         end
     endtask
@@ -180,23 +192,23 @@ module tb();
             // T1
             @(posedge phi)
             #110
-            bus_a       = addr;
+            bus_a_r     = addr;
 
             // T2
             @(posedge phi)
             bus_wren    = 1'b1;
             #65
-            bus_wr_n    = 1'b0;
+            bus_wr_n_r    = 1'b0;
             #10
-            bus_mreq_n  = 1'b0;
+            bus_mreq_n_r  = 1'b0;
 
             // T3
             @(posedge phi)
             @(negedge phi);
             #80
-            bus_wr_n    = 1'b1;
+            bus_wr_n_r    = 1'b1;
             #5
-            bus_mreq_n  = 1'b1;
+            bus_mreq_n_r  = 1'b1;
             #55
             bus_wren    = 1'b0;
         end
@@ -209,22 +221,22 @@ module tb();
             // T1
             @(posedge phi)
             #110
-            bus_a       = addr;
+            bus_a_r       = addr;
 
             // T2
             @(posedge phi)
             #65
-            bus_rd_n    = 1'b0;
+            bus_rd_n_r    = 1'b0;
             #10
-            bus_mreq_n  = 1'b0;
+            bus_mreq_n_r  = 1'b0;
 
             // T3
             @(posedge phi)
             @(negedge phi);
             #80
-            bus_rd_n    = 1'b1;
+            bus_rd_n_r    = 1'b1;
             #5
-            bus_mreq_n  = 1'b1;
+            bus_mreq_n_r  = 1'b1;
             #55;
         end
     endtask
@@ -252,19 +264,21 @@ module tb();
         end
     endtask
 
+    localparam TSPI = 500;
+
     task spi_tx;
         input [7:0] data;
 
         begin
             for (integer i=0; i<8; i++) begin
-                #500;
+                #TSPI;
                 spi_sclk_r = 1'b0;
                 spi_mosi_r = data[7-i];
                 
-                #500;
+                #TSPI;
                 spi_sclk_r = 1'b1;
             end
-            #500 spi_sclk_r = 1'b0;
+            #TSPI spi_sclk_r = 1'b0;
         end
     endtask
 
@@ -278,8 +292,45 @@ module tb();
         spi_cs_n_r <= 1'b1;
 
         #1000;
+
+        @(posedge phi);
+        spi_cs_n_r <= 1'b0;
+        spi_tx(8'h20);
+        spi_cs_n_r <= 1'b1;
         @(posedge phi);
 
+        @(posedge phi);
+        spi_cs_n_r <= 1'b0;
+        spi_tx(8'h22);
+        spi_tx(8'h00);
+        spi_tx(8'h30);
+        spi_tx(8'h5A);
+        spi_cs_n_r <= 1'b1;
+        @(posedge phi);
+
+        #10000;
+
+        @(posedge phi);
+        spi_cs_n_r <= 1'b0;
+        spi_tx(8'h23);
+        spi_tx(8'h00);
+        spi_tx(8'h30);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_cs_n_r <= 1'b1;
+        @(posedge phi);
+
+        #10000;
+
+        @(posedge phi);
+        spi_cs_n_r <= 1'b0;
+        spi_tx(8'h21);
+        spi_cs_n_r <= 1'b1;
+        @(posedge phi);
+
+        #10000;
+
+        @(posedge phi);
         spi_cs_n_r <= 1'b0;
         spi_tx(8'h10);
         spi_tx(8'h01);

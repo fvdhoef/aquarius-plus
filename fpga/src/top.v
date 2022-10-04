@@ -5,12 +5,12 @@ module top(
     // Z80 bus interface
     inout  wire        reset_n,
     output wire        phi,             // 3.579545MHz
-    input  wire [15:0] bus_a,
+    inout  wire [15:0] bus_a,
     inout  wire  [7:0] bus_d,
-    input  wire        bus_rd_n,
-    input  wire        bus_wr_n,
-    input  wire        bus_mreq_n,
-    input  wire        bus_iorq_n,
+    inout  wire        bus_rd_n,
+    inout  wire        bus_wr_n,
+    inout  wire        bus_mreq_n,
+    inout  wire        bus_iorq_n,
     output wire        bus_int_n,       // Open-drain output
     input  wire        bus_m1_n,
     output wire        bus_wait_n,      // Open-drain output
@@ -67,6 +67,10 @@ module top(
     output wire        esp_miso,
     output wire        esp_notify
 );
+
+    wire  [7:0] spi_bus_wrdata;
+    wire        spi_bus_wrdata_en;
+    wire        spi_bus_en;
 
     wire       reset_req;
     wire       vga_vblank;
@@ -148,11 +152,10 @@ module top(
 
     wire bus_d_enable = !bus_rd_n && sel_internal;
 
-    assign bus_d = bus_d_enable ? rddata : 8'bZ;
+    assign bus_d = (spi_bus_en && spi_bus_wrdata_en) ? spi_bus_wrdata : (bus_d_enable ? rddata : 8'bZ);
 
     assign bus_int_n    = 1'bZ;
     assign bus_wait_n   = 1'bZ;
-    assign bus_busreq_n = 1'bZ;
     assign bus_de_oe_n  = 1'b1;
     assign cart_ce_n    = 1'b1;
 
@@ -277,6 +280,11 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
 
+    wire [15:0] spi_bus_a;
+    wire        spi_bus_rd_n, spi_bus_wr_n, spi_bus_mreq_n, spi_bus_iorq_n;
+
+    wire busreq;
+
     spiregs spiregs(
         .clk(sysclk),
 
@@ -284,9 +292,31 @@ module top(
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
         .esp_miso(esp_miso),
+
+        .busreq(busreq),
         
+        .bus_phi(phi),
+        .bus_a(spi_bus_a),
+        .bus_rddata(bus_d),
+        .bus_wrdata(spi_bus_wrdata),
+        .bus_wrdata_en(spi_bus_wrdata_en),
+        .bus_rd_n(spi_bus_rd_n),
+        .bus_wr_n(spi_bus_wr_n),
+        .bus_mreq_n(spi_bus_mreq_n),
+        .bus_iorq_n(spi_bus_iorq_n),
+
         .reset_req(reset_req),
         .keys(keys));
+
+    assign bus_busreq_n = busreq ? 1'b0 : 1'bZ;
+
+    assign spi_bus_en = busreq && !bus_busack_n;
+
+    assign bus_a      = spi_bus_en ? spi_bus_a      : 16'bZ;
+    assign bus_rd_n   = spi_bus_en ? spi_bus_rd_n   : 1'bZ;
+    assign bus_wr_n   = spi_bus_en ? spi_bus_wr_n   : 1'bZ;
+    assign bus_mreq_n = spi_bus_en ? spi_bus_mreq_n : 1'bZ;
+    assign bus_iorq_n = spi_bus_en ? spi_bus_iorq_n : 1'bZ;
 
     //////////////////////////////////////////////////////////////////////////
     // Keyboard

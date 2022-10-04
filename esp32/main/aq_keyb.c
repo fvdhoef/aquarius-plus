@@ -24,11 +24,11 @@ static inline void aqkey_down(int key, bool shift) {
 }
 
 void keyboard_scancode(unsigned scancode, bool keydown) {
-    if (keydown) {
-        ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
-    } else {
-        ESP_LOGI(TAG, "Key released: %02X", scancode);
-    }
+    // if (keydown) {
+    //     ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
+    // } else {
+    //     ESP_LOGI(TAG, "Key released: %02X", scancode);
+    // }
 
     // Hand controller emulation
     // handcontroller(scancode, keydown);
@@ -66,6 +66,15 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
             pressed_keys[scancode / 8] &= ~(1 << (scancode & 7));
         }
     }
+
+    if (keydown && scancode == SDL_SCANCODE_F1) {
+        fpga_bus_acquire();
+
+        fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
+
+        fpga_bus_release();
+    }
+
 
     enum {
         UP    = (1 << 0),
@@ -224,7 +233,7 @@ void keyboard_update_matrix(void) {
         return;
     }
 
-    ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
+    // ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
     fpga_update_keyb_matrix(keyb_matrix);
 
     memcpy(prev_matrix, keyb_matrix, 8);
