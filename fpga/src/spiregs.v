@@ -8,7 +8,8 @@ module spiregs(
 
     output wire        busreq,
 
-    input  wire        bus_phi,
+    input  wire        ebus_phi,
+
     output reg  [15:0] bus_a,
     input  wire  [7:0] bus_rddata,
     output reg   [7:0] bus_wrdata,
@@ -83,9 +84,9 @@ module spiregs(
     // Commands
     //////////////////////////////////////////////////////////////////////////
     reg phi_r;
-    always @(posedge clk) phi_r <= bus_phi;
-    wire phi_falling = phi_r && !bus_phi;
-    wire phi_rising = !phi_r && bus_phi;
+    always @(posedge clk) phi_r <= ebus_phi;
+    wire phi_falling = phi_r && !ebus_phi;
+    wire phi_rising = !phi_r && ebus_phi;
 
     reg busreq_r = 1'b0;
     assign busreq = busreq_r;

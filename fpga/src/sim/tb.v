@@ -32,7 +32,7 @@ module tb();
 
     wire phi;
 
-    reg spi_cs_n_r = 1'b1;
+    reg spi_ssel_n_r = 1'b1;
     reg spi_sclk_r = 1'b0;
     reg spi_mosi_r = 1'b0;
 
@@ -59,25 +59,25 @@ module tb();
         .usbclk(usbclk),
 
         // Z80 bus interface
-        .reset_n(reset_n),
-        .phi(phi),
-        .bus_a(bus_a),
-        .bus_d(bus_d),
-        .bus_rd_n(bus_rd_n),
-        .bus_wr_n(bus_wr_n),
-        .bus_mreq_n(bus_mreq_n),
-        .bus_iorq_n(bus_iorq_n),
-        .bus_int_n(),
-        .bus_m1_n(1'bZ),
-        .bus_wait_n(),
-        .bus_busreq_n(busreq_n),
-        .bus_busack_n(busack_n),
-        .bus_ba(),
-        .bus_de(),
-        .bus_de_oe_n(),
-        .ram_ce_n(),
-        .rom_ce_n(),
-        .cart_ce_n(),
+        .ebus_reset_n(reset_n),
+        .ebus_phi(phi),
+        .ebus_a(bus_a),
+        .ebus_d(bus_d),
+        .ebus_rd_n(bus_rd_n),
+        .ebus_wr_n(bus_wr_n),
+        .ebus_mreq_n(bus_mreq_n),
+        .ebus_iorq_n(bus_iorq_n),
+        .ebus_int_n(),
+        .ebus_m1_n(1'bZ),
+        .ebus_wait_n(),
+        .ebus_busreq_n(busreq_n),
+        .ebus_busack_n(busack_n),
+        .ebus_ba(),
+        .ebus_cart_d(),
+        .ebus_cart_d_oe_n(),
+        .ebus_ram_ce_n(),
+        .ebus_rom_ce_n(),
+        .ebus_cart_ce_n(),
 
         // PWM audio outputs
         .audio_l(),
@@ -117,7 +117,7 @@ module tb();
         .esp_cts(1'b1),
 
         // ESP32 SPI interface (also used for loading FPGA image)
-        .esp_cs_n(spi_cs_n_r),
+        .esp_ssel_n(spi_ssel_n_r),
         .esp_sclk(spi_sclk_r),
         .esp_mosi(spi_mosi_r),
         .esp_miso(),
@@ -287,51 +287,51 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h01);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
 
         #1000;
 
         @(posedge phi);
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h20);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
         @(posedge phi);
 
         @(posedge phi);
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h22);
         spi_tx(8'h00);
         spi_tx(8'h30);
         spi_tx(8'h5A);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
         @(posedge phi);
 
         #10000;
 
         @(posedge phi);
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h23);
         spi_tx(8'h00);
         spi_tx(8'h30);
         spi_tx(8'h00);
         spi_tx(8'h00);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
         @(posedge phi);
 
         #10000;
 
         @(posedge phi);
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h21);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
         @(posedge phi);
 
         #10000;
 
         @(posedge phi);
-        spi_cs_n_r <= 1'b0;
+        spi_ssel_n_r <= 1'b0;
         spi_tx(8'h10);
         spi_tx(8'h01);
         spi_tx(8'h23);
@@ -341,7 +341,7 @@ module tb();
         spi_tx(8'hAB);
         spi_tx(8'hCD);
         spi_tx(8'hEF);
-        spi_cs_n_r <= 1'b1;
+        spi_ssel_n_r <= 1'b1;
 
         iord(16'h01FF);
         iord(16'h02FF);

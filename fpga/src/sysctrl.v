@@ -1,9 +1,9 @@
 module sysctrl(
     input  wire sysclk,
-    inout  wire ext_reset_n,
+    inout  wire ebus_reset_n,
     input  wire reset_req,
 
-    output wire phi,
+    output wire ebus_phi,
     output wire reset);
 
     //////////////////////////////////////////////////////////////////////////
@@ -40,7 +40,7 @@ module sysctrl(
 `endif
 
     // Tristate reset output
-    assign ext_reset_n = ext_reset ? 1'b0 : 1'bZ;
+    assign ebus_reset_n = ext_reset ? 1'b0 : 1'bZ;
 
     //////////////////////////////////////////////////////////////////////////
     // Generate internal reset signal
@@ -49,7 +49,7 @@ module sysctrl(
 
     // Synchronize external reset to internal clock
     reset_sync ext_reset_sync(
-        .async_rst_in(!ext_reset_n),
+        .async_rst_in(!ebus_reset_n),
         .clk(sysclk),
         .reset_out(ext_reset_synced));
 
@@ -67,6 +67,6 @@ module sysctrl(
     //////////////////////////////////////////////////////////////////////////
     reg [1:0] phi_div_r = 2'b0;
     always @(posedge sysclk) phi_div_r <= phi_div_r + 2'b1;
-    assign phi = phi_div_r[1];
+    assign ebus_phi = phi_div_r[1];
 
 endmodule
