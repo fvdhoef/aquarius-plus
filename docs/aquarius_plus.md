@@ -322,7 +322,8 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 | 16-19 | Cartridge port (data via scrambling register) |
 |    20 | Video RAM                                     |
 |    21 | Character RAM                                 |
-| 22-31 | -                                             |
+| 22-30 | -                                             |
+|    31 | Internal boot ROM (8kB) - to be removed       |
 | 32-63 | RAM (512KB)                                   |
 
 ### Page 4

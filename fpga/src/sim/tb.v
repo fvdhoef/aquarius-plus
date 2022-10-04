@@ -399,6 +399,13 @@ module tb();
         memrd(16'h0004);
         memrd(16'h0010);
 
+        memrd(16'h0000);
+        memrd(16'h3000);
+        memrd(16'h3800);
+        memrd(16'h4000);
+        memrd(16'h8000);
+        memrd(16'hC000);
+
 
         memrd(16'h3000);
         memwr(16'h3000, 8'h5A);

@@ -105,6 +105,21 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
+
+    // Select banking register based on upper address bits
+    reg [7:0] reg_bank;
+    always @* case (ebus_a[15:14])
+        2'd0: reg_bank = reg_bank0_r;
+        2'd1: reg_bank = reg_bank1_r;
+        2'd2: reg_bank = reg_bank2_r;
+        2'd3: reg_bank = reg_bank3_r;
+    endcase
+
+    wire [5:0] reg_bank_page    = reg_bank[5:0];
+    wire       reg_bank_ro      = reg_bank[7];
+    wire       reg_bank_overlay = reg_bank[6];
+
+    // Register data from external bus
     reg [7:0] wrdata;
     always @(posedge sysclk) if (!ebus_wr_n) wrdata <= ebus_d;
 
@@ -117,15 +132,11 @@ module top(
     wire bus_write = ebus_wr_n_r[2:1] == 3'b10;
 
     // Memory space decoding
-    wire sel_mem_bootrom = !ebus_mreq_n && ebus_a[15:13] == 3'b000;       // $0000-$1FFF
-    wire sel_mem_vram    = !ebus_mreq_n && ebus_a[15:11] == 5'b00110;     // $3000-$37FF
-    wire sel_mem_sysram  = !ebus_mreq_n && ebus_a[15:11] == 5'b00111;     // $3800-$3FFF
+    wire sel_mem_vram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
+    wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
+    wire sel_mem_bootrom = !ebus_mreq_n && reg_bank_page == 6'd31 && !(sel_mem_vram || sel_mem_sysram);     // Bank 31: boot rom
 
-    wire bank1 = !ebus_mreq_n && ebus_a[15:14] == 2'b01;
-    wire bank2 = !ebus_mreq_n && ebus_a[15:14] == 2'b10;
-    wire bank3 = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
-
-    assign ebus_ram_ce_n = !(sel_mem_sysram | bank1 | bank2);
+    assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 0
 
     // IO space decoding
     wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
@@ -144,6 +155,15 @@ module top(
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
+
+    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
+
+    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;    // Page  0-15
+    wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;  // Page 16-19
+    wire sel_mem_ram     = allow_sel_mem && reg_bank_page[5];               // Page 32-63
+
+    assign ebus_rom_ce_n = !sel_mem_rom;
+    assign ebus_ram_ce_n = !(sel_mem_sysram || sel_mem_ram);
 
     reg [7:0] rddata;
     always @* begin
@@ -172,17 +192,15 @@ module top(
     assign ebus_cart_d_oe_n = 1'b1;
     assign ebus_cart_d      = 8'bZ;
     assign ebus_cart_ce_n   = 1'b1;
-    assign ebus_ba          = 5'b0;
-    assign ebus_rom_ce_n    = 1'b1;
 
     assign exp              = 7'b0;
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
-            reg_bank0_r          <= 8'h00;
-            reg_bank1_r          <= 8'h00;
-            reg_bank2_r          <= 8'h00;
-            reg_bank3_r          <= 8'h00;
+            reg_bank0_r          <= {2'b11, 6'd31};
+            reg_bank1_r          <= {2'b00, 6'd33};
+            reg_bank2_r          <= {2'b00, 6'd34};
+            reg_bank3_r          <= {2'b00, 6'd19};
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
@@ -198,6 +216,15 @@ module top(
             if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
             if (sel_io_keyb_r_scramble_w && bus_write) reg_scramble_value_r <= wrdata;
         end
+
+
+    // Cartridge data bus
+    // wire [7:0] scrambled_d      = ebus_d      ^ reg_scramble_value_r;
+    // wire [7:0] scrambled_cart_d = ebus_cart_d ^ reg_scramble_value_r;
+
+    // assign ebus_cart_d = !ebus_wr_n ? (ebus_mreq_n ? scrambled_d : ebus_d) : 8'bZ;
+    // assign ebus_cart_d_oe_n = 
+
 
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
