@@ -6,18 +6,17 @@ module spiregs(
     input  wire        esp_mosi,
     output wire        esp_miso,
 
-    output wire        busreq,
-
     input  wire        ebus_phi,
 
-    output reg  [15:0] bus_a,
-    input  wire  [7:0] bus_rddata,
-    output reg   [7:0] bus_wrdata,
-    output reg         bus_wrdata_en,
-    output reg         bus_rd_n,
-    output reg         bus_wr_n,
-    output reg         bus_mreq_n,
-    output reg         bus_iorq_n,
+    output reg  [15:0] spibm_a,
+    input  wire  [7:0] spibm_rddata,
+    output reg   [7:0] spibm_wrdata,
+    output reg         spibm_wrdata_en,
+    output reg         spibm_rd_n,
+    output reg         spibm_wr_n,
+    output reg         spibm_mreq_n,
+    output reg         spibm_iorq_n,
+    output wire        spibm_busreq,
 
     output reg         reset_req,
     output reg  [63:0] keys);
@@ -89,7 +88,7 @@ module spiregs(
     wire phi_rising = !phi_r && ebus_phi;
 
     reg busreq_r = 1'b0;
-    assign busreq = busreq_r;
+    assign spibm_busreq = busreq_r;
 
     localparam
         CMD_RESET           = 8'h01,
@@ -131,22 +130,23 @@ module spiregs(
     always @(posedge clk) begin
         case (bus_state_r)
             BST_IDLE: begin
-                bus_rd_n   <= 1'b1;
-                bus_wr_n   <= 1'b1;
-                bus_mreq_n <= 1'b1;
-                bus_iorq_n <= 1'b1;
-                txdata_r   <= 8'h00;
-                bus_wrdata_en <= 1'b0;
+                spibm_rd_n      <= 1'b1;
+                spibm_wr_n      <= 1'b1;
+                spibm_mreq_n    <= 1'b1;
+                spibm_iorq_n    <= 1'b1;
+                spibm_wrdata_en <= 1'b0;
+
+                txdata_r <= 8'h00;
 
                 if (rxdata_valid) begin
                     case (byte_cnt_r)
-                        3'd1: bus_a[7:0]  <= rxdata;
+                        3'd1: spibm_a[7:0] <= rxdata;
                         3'd2: begin
-                            bus_a[15:8] <= rxdata;
+                            spibm_a[15:8] <= rxdata;
                             if (cmd_r == CMD_MEM_READ || cmd_r == CMD_IO_READ) bus_state_r <= BST_CYCLE0;
                         end
                         3'd3: begin
-                            bus_wrdata <= rxdata;
+                            spibm_wrdata <= rxdata;
                             if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE) bus_state_r <= BST_CYCLE0;
                         end
                     endcase
@@ -155,14 +155,10 @@ module spiregs(
 
             BST_CYCLE0: begin
                 if (phi_falling) begin
-                    if (cmd_r == CMD_MEM_READ || cmd_r == CMD_MEM_WRITE)
-                        bus_mreq_n <= 1'b0;
-                    if (cmd_r == CMD_IO_READ || cmd_r == CMD_IO_WRITE)
-                        bus_iorq_n <= 1'b0;
-                    if (cmd_r == CMD_MEM_READ || cmd_r == CMD_IO_READ)
-                        bus_rd_n <= 1'b0;
-                    if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE)
-                        bus_wrdata_en <= 1'b1;
+                    spibm_mreq_n    <= !(cmd_r == CMD_MEM_READ  || cmd_r == CMD_MEM_WRITE);
+                    spibm_iorq_n    <= !(cmd_r == CMD_IO_READ   || cmd_r == CMD_IO_WRITE);
+                    spibm_rd_n      <= !(cmd_r == CMD_MEM_READ  || cmd_r == CMD_IO_READ);
+                    spibm_wrdata_en <=  (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE);
                     
                     bus_state_r <= BST_CYCLE1;
                 end
@@ -170,8 +166,7 @@ module spiregs(
 
             BST_CYCLE1: begin
                 if (phi_falling) begin
-                    if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE)
-                        bus_wr_n <= 1'b0;
+                    spibm_wr_n <= !(cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE);
 
                     bus_state_r <= BST_CYCLE2;
                 end
@@ -180,19 +175,20 @@ module spiregs(
             BST_CYCLE2: begin
                 if (phi_falling) begin
                     if (cmd_r == CMD_MEM_READ || cmd_r == CMD_IO_READ)
-                        txdata_r <= bus_rddata;
+                        txdata_r <= spibm_rddata;
 
-                    bus_mreq_n <= 1'b1;
-                    bus_iorq_n <= 1'b1;
-                    bus_rd_n   <= 1'b1;
-                    bus_wr_n   <= 1'b1;
+                    spibm_mreq_n <= 1'b1;
+                    spibm_iorq_n <= 1'b1;
+                    spibm_rd_n   <= 1'b1;
+                    spibm_wr_n   <= 1'b1;
+
                     bus_state_r <= BST_DONE;
                 end
             end
 
             BST_DONE: begin
                 if (phi_rising) begin
-                    bus_wrdata_en <= 1'b0;
+                    spibm_wrdata_en <= 1'b0;
                 end
             end
 

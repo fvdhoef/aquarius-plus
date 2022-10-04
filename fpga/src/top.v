@@ -68,9 +68,9 @@ module top(
     output wire        esp_notify
 );
 
-    wire [7:0] spi_bus_wrdata;
-    wire       spi_bus_wrdata_en;
-    wire       spi_bus_en;
+    wire [7:0] spibm_wrdata;
+    wire       spibm_wrdata_en;
+    wire       spibm_en;
 
     wire       reset_req;
     wire       vga_vblank;
@@ -82,6 +82,10 @@ module top(
     wire [7:0] rddata_espdata;          // IO $F5
     wire [7:0] rddata_keyboard;         // IO $FF:R
 
+    reg  [7:0] reg_bank0_r;             // IO $F0
+    reg  [7:0] reg_bank1_r;             // IO $F1
+    reg  [7:0] reg_bank2_r;             // IO $F2
+    reg  [7:0] reg_bank3_r;             // IO $F3
     reg        reg_cpm_remap_r;         // IO $FD:W
     reg  [7:0] reg_scramble_value_r;    // IO $FF:W
 
@@ -124,6 +128,10 @@ module top(
     assign ebus_ram_ce_n = !(sel_mem_sysram | bank1 | bank2);
 
     // IO space decoding
+    wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
+    wire sel_io_bank1             = !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
+    wire sel_io_bank2             = !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
+    wire sel_io_bank3             = !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
     wire sel_io_espctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
     wire sel_io_espdata           = !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
     wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
@@ -133,6 +141,7 @@ module top(
 
     wire sel_internal =
         sel_mem_bootrom | sel_mem_vram |
+        sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
@@ -141,6 +150,11 @@ module top(
         rddata <= 8'h00;
         if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
+
+        if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
+        if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
+        if (sel_io_bank2)             rddata <= reg_bank2_r;            // IO $F2
+        if (sel_io_bank3)             rddata <= reg_bank3_r;            // IO $F3
         if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
         if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
@@ -151,7 +165,7 @@ module top(
 
     wire ebus_d_enable = !ebus_rd_n && sel_internal;
 
-    assign ebus_d = (spi_bus_en && spi_bus_wrdata_en) ? spi_bus_wrdata : (ebus_d_enable ? rddata : 8'bZ);
+    assign ebus_d = (spibm_en && spibm_wrdata_en) ? spibm_wrdata : (ebus_d_enable ? rddata : 8'bZ);
 
     assign ebus_int_n       = 1'bZ;
     assign ebus_wait_n      = 1'bZ;
@@ -165,11 +179,20 @@ module top(
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
+            reg_bank0_r          <= 8'h00;
+            reg_bank1_r          <= 8'h00;
+            reg_bank2_r          <= 8'h00;
+            reg_bank3_r          <= 8'h00;
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
             reg_scramble_value_r <= 8'b0;
+
         end else begin
+            if (sel_io_bank0             && bus_write) reg_bank0_r          <= wrdata;
+            if (sel_io_bank1             && bus_write) reg_bank1_r          <= wrdata;
+            if (sel_io_bank2             && bus_write) reg_bank2_r          <= wrdata;
+            if (sel_io_bank3             && bus_write) reg_bank3_r          <= wrdata;
             if (sel_io_cassette          && bus_write) cassette_out         <= wrdata[0];
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r      <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
@@ -277,10 +300,17 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
 
-    wire [15:0] spi_bus_a;
-    wire        spi_bus_rd_n, spi_bus_wr_n, spi_bus_mreq_n, spi_bus_iorq_n;
+    wire [15:0] spibm_a;
+    wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
+    wire        spibm_busreq;
 
-    wire busreq;
+    assign spibm_en      = spibm_busreq && !ebus_busack_n;
+    assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
+    assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
+    assign ebus_wr_n     = spibm_en ? spibm_wr_n   : 1'bZ;
+    assign ebus_mreq_n   = spibm_en ? spibm_mreq_n : 1'bZ;
+    assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
+    assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
 
     spiregs spiregs(
         .clk(sysclk),
@@ -290,33 +320,22 @@ module top(
         .esp_mosi(esp_mosi),
         .esp_miso(esp_miso),
 
-        .busreq(busreq),
-        
         .ebus_phi(ebus_phi),
 
-        .bus_a(spi_bus_a),
-        .bus_rddata(ebus_d),
-        .bus_wrdata(spi_bus_wrdata),
-        .bus_wrdata_en(spi_bus_wrdata_en),
-        .bus_rd_n(spi_bus_rd_n),
-        .bus_wr_n(spi_bus_wr_n),
-        .bus_mreq_n(spi_bus_mreq_n),
-        .bus_iorq_n(spi_bus_iorq_n),
+        .spibm_a(spibm_a),
+        .spibm_rddata(ebus_d),
+        .spibm_wrdata(spibm_wrdata),
+        .spibm_wrdata_en(spibm_wrdata_en),
+        .spibm_rd_n(spibm_rd_n),
+        .spibm_wr_n(spibm_wr_n),
+        .spibm_mreq_n(spibm_mreq_n),
+        .spibm_iorq_n(spibm_iorq_n),
+        .spibm_busreq(spibm_busreq),
 
         .reset_req(reset_req),
         .keys(keys));
 
-    assign esp_notify       = 1'b0;
-
-    assign ebus_busreq_n = busreq ? 1'b0 : 1'bZ;
-
-    assign spi_bus_en = busreq && !ebus_busack_n;
-
-    assign ebus_a      = spi_bus_en ? spi_bus_a      : 16'bZ;
-    assign ebus_rd_n   = spi_bus_en ? spi_bus_rd_n   : 1'bZ;
-    assign ebus_wr_n   = spi_bus_en ? spi_bus_wr_n   : 1'bZ;
-    assign ebus_mreq_n = spi_bus_en ? spi_bus_mreq_n : 1'bZ;
-    assign ebus_iorq_n = spi_bus_en ? spi_bus_iorq_n : 1'bZ;
+    assign esp_notify = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Keyboard
