@@ -75,7 +75,7 @@ module top(
     wire       reset_req;
     wire       vga_vblank;
 
-    wire [7:0] rddata_bootrom;          // MEM $0000-$1FFF
+    // wire [7:0] rddata_bootrom;          // MEM $0000-$1FFF
     wire [7:0] rddata_vram;             // MEM $3000-$37FF
 
     wire [7:0] rddata_espctrl;          // IO $F4
@@ -134,7 +134,7 @@ module top(
     // Memory space decoding
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
-    wire sel_mem_bootrom = !ebus_mreq_n && reg_bank_page == 6'd31 && !(sel_mem_vram || sel_mem_sysram);     // Bank 31: boot rom
+    // wire sel_mem_bootrom = !ebus_mreq_n && reg_bank_page == 6'd31 && !(sel_mem_vram || sel_mem_sysram);     // Bank 31: boot rom
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 0
 
@@ -151,7 +151,8 @@ module top(
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_bootrom | sel_mem_vram |
+        // sel_mem_bootrom |
+        sel_mem_vram |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
@@ -168,7 +169,7 @@ module top(
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
+        // if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
 
         if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
@@ -197,7 +198,7 @@ module top(
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
-            reg_bank0_r          <= {2'b11, 6'd31};
+            reg_bank0_r          <= {2'b11, 6'd0};
             reg_bank1_r          <= {2'b00, 6'd33};
             reg_bank2_r          <= {2'b00, 6'd34};
             reg_bank3_r          <= {2'b00, 6'd19};
@@ -229,10 +230,10 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
     //////////////////////////////////////////////////////////////////////////
-    bootrom bootrom(
-        .clk(sysclk),
-        .addr(ebus_a[12:0]),
-        .rddata(rddata_bootrom));
+    // bootrom bootrom(
+    //     .clk(sysclk),
+    //     .addr(ebus_a[12:0]),
+    //     .rddata(rddata_bootrom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART

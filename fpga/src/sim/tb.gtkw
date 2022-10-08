@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Oct  4 14:38:18 2022
+[*] Sat Oct  8 12:53:19 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Oct  4 14:37:23 2022"
-[dumpfile_size] 91770367
+[dumpfile_mtime] "Sat Oct  8 12:46:39 2022"
+[dumpfile_size] 92768054
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 209930000
+[timestart] 46960000
 [size] 2501 1387
 [pos] -1 -1
-*-21.880857 225445000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-23.880857 149835000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -18,7 +18,7 @@
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 651
+[sst_vpaned_height] 460
 @28
 tb.top_inst.sysclk
 tb.reset_n
@@ -67,6 +67,39 @@ tb.top_inst.spiregs.phi_rising
 @200
 -
 ---- BUS ---
+@c00022
+#{ROM_A} (0)tb.top_inst.ebus_ba[4:0] (1)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_ba[4:0] (3)tb.top_inst.ebus_ba[4:0] (4)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_a[15:0] (3)tb.top_inst.ebus_a[15:0] (4)tb.top_inst.ebus_a[15:0] (5)tb.top_inst.ebus_a[15:0] (6)tb.top_inst.ebus_a[15:0] (7)tb.top_inst.ebus_a[15:0] (8)tb.top_inst.ebus_a[15:0] (9)tb.top_inst.ebus_a[15:0] (10)tb.top_inst.ebus_a[15:0] (11)tb.top_inst.ebus_a[15:0] (12)tb.top_inst.ebus_a[15:0] (13)tb.top_inst.ebus_a[15:0] (14)tb.top_inst.ebus_a[15:0] (15)tb.top_inst.ebus_a[15:0]
+@28
+(0)tb.top_inst.ebus_ba[4:0]
+(1)tb.top_inst.ebus_ba[4:0]
+(2)tb.top_inst.ebus_ba[4:0]
+(3)tb.top_inst.ebus_ba[4:0]
+(4)tb.top_inst.ebus_ba[4:0]
+(2)tb.top_inst.ebus_a[15:0]
+(3)tb.top_inst.ebus_a[15:0]
+(4)tb.top_inst.ebus_a[15:0]
+(5)tb.top_inst.ebus_a[15:0]
+(6)tb.top_inst.ebus_a[15:0]
+(7)tb.top_inst.ebus_a[15:0]
+(8)tb.top_inst.ebus_a[15:0]
+(9)tb.top_inst.ebus_a[15:0]
+(10)tb.top_inst.ebus_a[15:0]
+(11)tb.top_inst.ebus_a[15:0]
+(12)tb.top_inst.ebus_a[15:0]
+(13)tb.top_inst.ebus_a[15:0]
+(14)tb.top_inst.ebus_a[15:0]
+(15)tb.top_inst.ebus_a[15:0]
+@1401200
+-group_end
+@22
+tb.top_inst.ebus_d[7:0]
+@28
+tb.top_inst.ebus_rom_ce_n
+tb.top_inst.ebus_wr_n
+@29
+tb.top_inst.ebus_rd_n
+@200
+-
 @22
 tb.top_inst.ebus_a[15:0]
 tb.top_inst.ebus_ba[4:0]
@@ -76,8 +109,9 @@ tb.top_inst.ebus_rom_ce_n
 tb.top_inst.ebus_mreq_n
 tb.top_inst.ebus_iorq_n
 tb.top_inst.ebus_rd_n
-@29
 tb.top_inst.ebus_wr_n
+tb.top_inst.ebus_busreq_n
+tb.top_inst.ebus_busack_n
 @200
 -
 @24
@@ -86,6 +120,13 @@ tb.top_inst.reg_bank_ro
 tb.top_inst.reg_bank_overlay
 @200
 -
+-
+@22
+tb.top_inst.reg_bank0_r[7:0]
+tb.top_inst.reg_bank1_r[7:0]
+tb.top_inst.reg_bank2_r[7:0]
+tb.top_inst.reg_bank3_r[7:0]
+@200
 -
 @28
 tb.top_inst.bus_read

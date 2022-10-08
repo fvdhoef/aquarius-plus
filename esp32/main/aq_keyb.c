@@ -1,7 +1,11 @@
 #include "aq_keyb.h"
 #include "aq_keyb_defs.h"
 #include "fpga.h"
+#include "flash.h"
 #include <esp_system.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 static const char *TAG = "keyboard";
 
@@ -21,6 +25,79 @@ static inline void aqkey_down(int key, bool shift) {
     } else {
         _aqkey_up(KEY_SHIFT);
     }
+}
+
+static bool verify_sysrom(void) {
+    bool ok = true;
+
+    fpga_bus_acquire();
+
+    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
+    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
+
+    ESP_LOGI(TAG, "* Verifying boot ROM *");
+    {
+        uint8_t saved_bank = fpga_io_read(IO_BANK0);
+        fpga_io_write(IO_BANK0, 0);
+
+        unsigned       i = 0;
+        const uint8_t *p = rom_image_start;
+        while (p != rom_image_end) {
+            uint8_t flash_val = fpga_mem_read(i);
+            if (flash_val != *p) {
+                ESP_LOGE(TAG, "Verify error @ 0x%X   (%02X != %02X)", i, flash_val, *p);
+                ok = false;
+            }
+            p++;
+            i++;
+        }
+        fpga_io_write(IO_BANK0, saved_bank);
+    }
+    ESP_LOGI(TAG, "Done.");
+
+    fpga_bus_release();
+
+    return ok;
+}
+
+static void flash_sysrom(void) {
+    fpga_bus_acquire();
+
+    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
+    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
+
+    ESP_LOGI(TAG, "* Programming system ROM *");
+
+    bool led = false;
+
+    {
+        flash_prepare();
+
+        unsigned       i = 0;
+        const uint8_t *p = rom_image_start;
+        while (p != rom_image_end) {
+            if ((i & 4095) == 0)
+                flash_erase_4kb_sector(i);
+
+            if ((i & 1023) == 0) {
+                gpio_set_level(IOPIN_LED, led ? 1 : 0);
+                led = !led;
+
+                ESP_LOGI(TAG, "Program @ 0x%X", i);
+            }
+
+            flash_program(i, *p);
+
+            p++;
+            i++;
+        }
+        flash_finish();
+    }
+    ESP_LOGI(TAG, "Done.");
+
+    gpio_set_level(IOPIN_LED, 1);
+
+    fpga_bus_release();
 }
 
 void keyboard_scancode(unsigned scancode, bool keydown) {
@@ -52,10 +129,10 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     if (scancode == SDL_SCANCODE_RGUI)
         modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
-    bool ctrl_pressed = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
-    // bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
+    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
     bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
-    // bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
+    bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
 
     // Keep track of pressed keys
     static uint8_t pressed_keys[8] = {0};
@@ -69,12 +146,17 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
 
     if (keydown && scancode == SDL_SCANCODE_F1) {
         fpga_bus_acquire();
-
         fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
-
         fpga_bus_release();
     }
 
+    if (keydown && scancode == SDL_SCANCODE_F4) {
+        fpga_bus_acquire();
+        for (int i = IO_BANK0; i <= IO_BANK3; i++) {
+            ESP_LOGI(TAG, "IO %02X: %02X", i, fpga_io_read(i));
+        }
+        fpga_bus_release();
+    }
 
     enum {
         UP    = (1 << 0),
@@ -104,7 +186,20 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
-                    if (ctrl_pressed && shift_pressed) {
+                    if (ctrl_pressed && shift_pressed && alt_pressed && gui_pressed) {
+                        // CTRL-SHIFT-ALT-GUI -> reprogram flash
+                        flash_sysrom();
+                        if (!verify_sysrom()) {
+                            for (int i = 0; i < 5; i++) {
+                                gpio_set_level(IOPIN_LED, 0);
+                                vTaskDelay(pdMS_TO_TICKS(200));
+                                gpio_set_level(IOPIN_LED, 1);
+                                vTaskDelay(pdMS_TO_TICKS(200));
+                            }
+                        }
+                        esp_restart();
+
+                    } else if (ctrl_pressed && shift_pressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                         esp_restart();
 
