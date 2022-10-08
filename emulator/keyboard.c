@@ -130,28 +130,32 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     // Hand controller emulation
     handcontroller(scancode, keydown);
 
-    // Reset key
-    if (scancode == SDL_SCANCODE_ESCAPE && keydown) {
-        reset();
-    }
-
-    // Handle modifier keys
-    static uint16_t modifiers       = 0;
-    static uint8_t  pressed_keys[8] = {0};
-
-    if (scancode == SDL_SCANCODE_LSHIFT) {
+    // Keep track of pressed modifier keys
+    static uint16_t modifiers = 0;
+    if (scancode == SDL_SCANCODE_LSHIFT)
         modifiers = (modifiers & ~KMOD_LSHIFT) | (keydown ? KMOD_LSHIFT : 0);
-    }
-    if (scancode == SDL_SCANCODE_RSHIFT) {
+    if (scancode == SDL_SCANCODE_RSHIFT)
         modifiers = (modifiers & ~KMOD_RSHIFT) | (keydown ? KMOD_RSHIFT : 0);
-    }
-    if (scancode == SDL_SCANCODE_LCTRL) {
+    if (scancode == SDL_SCANCODE_LCTRL)
         modifiers = (modifiers & ~KMOD_LCTRL) | (keydown ? KMOD_LCTRL : 0);
-    }
-    if (scancode == SDL_SCANCODE_RCTRL) {
+    if (scancode == SDL_SCANCODE_RCTRL)
         modifiers = (modifiers & ~KMOD_RCTRL) | (keydown ? KMOD_RCTRL : 0);
-    }
+    if (scancode == SDL_SCANCODE_LALT)
+        modifiers = (modifiers & ~KMOD_LALT) | (keydown ? KMOD_LALT : 0);
+    if (scancode == SDL_SCANCODE_RALT)
+        modifiers = (modifiers & ~KMOD_RALT) | (keydown ? KMOD_RALT : 0);
+    if (scancode == SDL_SCANCODE_LGUI)
+        modifiers = (modifiers & ~KMOD_LGUI) | (keydown ? KMOD_LGUI : 0);
+    if (scancode == SDL_SCANCODE_RGUI)
+        modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
+    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    // bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
+    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+    // bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
+
+    // Keep track of pressed keys
+    static uint8_t pressed_keys[8] = {0};
     if (scancode < 64) {
         if (keydown) {
             pressed_keys[scancode / 8] |= 1 << (scancode & 7);
@@ -179,18 +183,25 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     }
 
     // Set keyboard state based on current pressed keys
-    if (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) {
+    if (ctrl_pressed)
         _aqkey_down(KEY_CTRL);
-    }
-
-    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
-    if (shift_pressed) {
+    if (shift_pressed)
         _aqkey_down(KEY_SHIFT);
-    }
 
     for (int i = 0; i < 64; i++) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
             switch (i) {
+                case SDL_SCANCODE_ESCAPE:
+                    if (ctrl_pressed) {
+                        // CTRL-ESCAPE -> reset
+                        reset();
+                    } else {
+                        // ESCAPE -> CTRL-C
+                        _aqkey_down(KEY_CTRL);
+                        _aqkey_down(KEY_C);
+                    }
+                    break;
+
                 case SDL_SCANCODE_RETURN:
                     aqkey_down(KEY_RETURN, shift_pressed);
                     break;
