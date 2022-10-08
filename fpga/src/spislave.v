@@ -1,6 +1,5 @@
 module spislave(
     input  wire        clk,
-    input  wire        reset,
 
     input  wire        esp_ssel_n,
     input  wire        esp_sclk,
@@ -10,9 +9,10 @@ module spislave(
     output wire        msg_start,
     output wire        msg_end,
     output wire  [7:0] rxdata,
-    output wire        rxdata_valid);
-
-    assign esp_miso = 1'bZ;
+    output wire        rxdata_valid,
+    
+    input  wire  [7:0] txdata,
+    output reg         txdata_ack);
 
     // Synchronize SCLK
     reg [2:0] sclk_r;
@@ -44,6 +44,24 @@ module spislave(
             bitcnt_r <= bitcnt_r + 3'd1;
             rx_shift_r <= {rx_shift_r[6:0], mosi_data};
         end
+
+    // Transmit bits
+    reg [7:0] tx_shift_r;
+
+    always @(posedge clk) begin
+        txdata_ack <= 1'b0;
+        
+        if (sclk_falling) begin
+            tx_shift_r <= {tx_shift_r[6:0], 1'b0};
+
+            if (bitcnt_r == 3'd0) begin
+                tx_shift_r <= txdata;
+                txdata_ack <= 1'b1;
+            end
+        end
+    end
+
+    assign esp_miso = !esp_ssel_n ? tx_shift_r[7] : 1'bZ;
 
     // Byte completion
     always @(posedge clk)

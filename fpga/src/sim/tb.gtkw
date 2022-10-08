@@ -1,33 +1,32 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun Oct  2 04:26:23 2022
+[*] Sat Oct  8 12:53:19 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sun Oct  2 04:25:01 2022"
-[dumpfile_size] 89857561
+[dumpfile_mtime] "Sat Oct  8 12:46:39 2022"
+[dumpfile_size] 92768054
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 0
-[size] 2501 997
+[timestart] 46960000
+[size] 2501 1387
 [pos] -1 -1
-*-24.880857 61400000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-23.880857 149835000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
+[treeopen] tb.top_inst.spiregs.
 [treeopen] tb.top_inst.sysctrl.
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 486
+[sst_vpaned_height] 460
 @28
 tb.top_inst.sysclk
-tb.top_inst.phi
 tb.reset_n
 tb.top_inst.reset
 @200
 -
 @28
 tb.top_inst.sysclk
-tb.top_inst.phi
 @200
 -
 ---- SPI ---
@@ -37,40 +36,96 @@ tb.top_inst.spiregs.esp_ssel_n
 tb.top_inst.spiregs.esp_sclk
 tb.top_inst.spiregs.esp_mosi
 tb.top_inst.spiregs.esp_miso
-tb.top_inst.spiregs.msg_start
-@29
+@22
+tb.top_inst.spiregs.txdata_r[7:0]
+@28
+tb.top_inst.spiregs.spislave.txdata_ack
+tb.top_inst.spiregs.spislave.sclk_falling
+@200
+-
+@28
 tb.top_inst.spiregs.msg_end
+tb.top_inst.spiregs.msg_start
 @22
 tb.top_inst.spiregs.rxdata[7:0]
 @28
 tb.top_inst.spiregs.rxdata_valid
+@24
+tb.top_inst.spiregs.byte_cnt_r[2:0]
+tb.top_inst.spiregs.bus_state_r[2:0]
 @200
 -
 @22
 tb.top_inst.keys[63:0]
 @200
 -
----- BUS ---
+@22
+tb.top_inst.spiregs.cmd_r[7:0]
 @28
-tb.top_inst.cart_ce_n
-tb.top_inst.ram_ce_n
-tb.top_inst.rom_ce_n
+tb.top_inst.spiregs.phi_falling
+tb.top_inst.spiregs.phi_rising
+@200
+-
+---- BUS ---
+@c00022
+#{ROM_A} (0)tb.top_inst.ebus_ba[4:0] (1)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_ba[4:0] (3)tb.top_inst.ebus_ba[4:0] (4)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_a[15:0] (3)tb.top_inst.ebus_a[15:0] (4)tb.top_inst.ebus_a[15:0] (5)tb.top_inst.ebus_a[15:0] (6)tb.top_inst.ebus_a[15:0] (7)tb.top_inst.ebus_a[15:0] (8)tb.top_inst.ebus_a[15:0] (9)tb.top_inst.ebus_a[15:0] (10)tb.top_inst.ebus_a[15:0] (11)tb.top_inst.ebus_a[15:0] (12)tb.top_inst.ebus_a[15:0] (13)tb.top_inst.ebus_a[15:0] (14)tb.top_inst.ebus_a[15:0] (15)tb.top_inst.ebus_a[15:0]
+@28
+(0)tb.top_inst.ebus_ba[4:0]
+(1)tb.top_inst.ebus_ba[4:0]
+(2)tb.top_inst.ebus_ba[4:0]
+(3)tb.top_inst.ebus_ba[4:0]
+(4)tb.top_inst.ebus_ba[4:0]
+(2)tb.top_inst.ebus_a[15:0]
+(3)tb.top_inst.ebus_a[15:0]
+(4)tb.top_inst.ebus_a[15:0]
+(5)tb.top_inst.ebus_a[15:0]
+(6)tb.top_inst.ebus_a[15:0]
+(7)tb.top_inst.ebus_a[15:0]
+(8)tb.top_inst.ebus_a[15:0]
+(9)tb.top_inst.ebus_a[15:0]
+(10)tb.top_inst.ebus_a[15:0]
+(11)tb.top_inst.ebus_a[15:0]
+(12)tb.top_inst.ebus_a[15:0]
+(13)tb.top_inst.ebus_a[15:0]
+(14)tb.top_inst.ebus_a[15:0]
+(15)tb.top_inst.ebus_a[15:0]
+@1401200
+-group_end
+@22
+tb.top_inst.ebus_d[7:0]
+@28
+tb.top_inst.ebus_rom_ce_n
+tb.top_inst.ebus_wr_n
+@29
+tb.top_inst.ebus_rd_n
 @200
 -
 @22
-[color] 2
-tb.top_inst.bus_a[15:0]
-[color] 2
-tb.top_inst.bus_d[7:0]
+tb.top_inst.ebus_a[15:0]
+tb.top_inst.ebus_ba[4:0]
 @28
-[color] 2
-tb.top_inst.bus_wr_n
-[color] 2
-tb.top_inst.bus_rd_n
-[color] 2
-tb.top_inst.bus_iorq_n
-[color] 2
-tb.top_inst.bus_mreq_n
+tb.top_inst.ebus_ram_ce_n
+tb.top_inst.ebus_rom_ce_n
+tb.top_inst.ebus_mreq_n
+tb.top_inst.ebus_iorq_n
+tb.top_inst.ebus_rd_n
+tb.top_inst.ebus_wr_n
+tb.top_inst.ebus_busreq_n
+tb.top_inst.ebus_busack_n
+@200
+-
+@24
+tb.top_inst.reg_bank_page[5:0]
+tb.top_inst.reg_bank_ro
+tb.top_inst.reg_bank_overlay
+@200
+-
+-
+@22
+tb.top_inst.reg_bank0_r[7:0]
+tb.top_inst.reg_bank1_r[7:0]
+tb.top_inst.reg_bank2_r[7:0]
+tb.top_inst.reg_bank3_r[7:0]
 @200
 -
 @28

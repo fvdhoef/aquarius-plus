@@ -316,17 +316,15 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 
 ## Banked memory map
 
-|  Page | Description                                |
-| ----: | ------------------------------------------ |
-|  0-15 | Flash memory (256KB)                       |
-|    16 | External bus $0000 - $3FFF                 |
-|    17 | External bus $4000 - $7FFF                 |
-|    18 | External bus $8000 - $BFFF                 |
-|    19 | External bus $C000 - $FFFF (Cartridge ROM) |
-|    20 | Video RAM                                  |
-|    21 | Character RAM                              |
-| 22-31 | -                                          |
-| 32-63 | RAM (512KB)                                |
+|  Page | Description                                   |
+| ----: | --------------------------------------------- |
+|  0-15 | Flash memory (256KB)                          |
+| 16-19 | Cartridge port (data via scrambling register) |
+|    20 | Video RAM                                     |
+|    21 | Character RAM                                 |
+| 22-30 | -                                             |
+|    31 | Internal boot ROM (8kB) - to be removed       |
+| 32-63 | RAM (512KB)                                   |
 
 ### Page 4
 

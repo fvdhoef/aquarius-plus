@@ -3,25 +3,25 @@ module top(
     input  wire        usbclk,          // 48MHz
 
     // Z80 bus interface
-    inout  wire        reset_n,
-    output wire        phi,             // 3.579545MHz
-    input  wire [15:0] bus_a,
-    inout  wire  [7:0] bus_d,
-    input  wire        bus_rd_n,
-    input  wire        bus_wr_n,
-    input  wire        bus_mreq_n,
-    input  wire        bus_iorq_n,
-    output wire        bus_int_n,       // Open-drain output
-    input  wire        bus_m1_n,
-    output wire        bus_wait_n,      // Open-drain output
-    output wire        bus_busreq_n,    // Open-drain output
-    input  wire        bus_busack_n,
-    output wire  [4:0] bus_ba,
-    inout  wire  [7:0] bus_de,          // External data bus, possibly scrambled
-    output wire        bus_de_oe_n,
-    output wire        ram_ce_n,        // 512KB RAM
-    output wire        rom_ce_n,        // 256KB Flash memory
-    output wire        cart_ce_n,       // Cartridge
+    inout  wire        ebus_reset_n,
+    output wire        ebus_phi,        // 3.579545MHz
+    inout  wire [15:0] ebus_a,
+    inout  wire  [7:0] ebus_d,
+    inout  wire        ebus_rd_n,
+    inout  wire        ebus_wr_n,
+    inout  wire        ebus_mreq_n,
+    inout  wire        ebus_iorq_n,
+    output wire        ebus_int_n,      // Open-drain output
+    input  wire        ebus_m1_n,
+    output wire        ebus_wait_n,     // Open-drain output
+    output wire        ebus_busreq_n,   // Open-drain output
+    input  wire        ebus_busack_n,
+    output wire  [4:0] ebus_ba,
+    inout  wire  [7:0] ebus_cart_d,     // Cartridge data bus, possibly scrambled
+    output wire        ebus_cart_d_oe_n,
+    output wire        ebus_ram_ce_n,   // 512KB RAM
+    output wire        ebus_rom_ce_n,   // 256KB Flash memory
+    output wire        ebus_cart_ce_n,  // Cartridge
 
     // PWM audio outputs
     output wire        audio_l,
@@ -61,25 +61,33 @@ module top(
     input  wire        esp_cts,
 
     // ESP32 SPI interface (also used for loading FPGA image)
-    input  wire        esp_cs_n,
+    input  wire        esp_ssel_n,
     input  wire        esp_sclk,        // Connected to EXP7
     input  wire        esp_mosi,
     output wire        esp_miso,
     output wire        esp_notify
 );
 
+    wire [7:0] spibm_wrdata;
+    wire       spibm_wrdata_en;
+    wire       spibm_en;
+
+    wire       reset_req;
     wire       vga_vblank;
 
-    reg        reg_cpm_remap_r;         // $FD:W
-    reg  [7:0] reg_scramble_value_r;    // $FF:W
+    // wire [7:0] rddata_bootrom;          // MEM $0000-$1FFF
+    wire [7:0] rddata_vram;             // MEM $3000-$37FF
 
-    wire [7:0] rddata_bootrom;
-    wire [7:0] rddata_vram;
-    wire [7:0] rddata_sysram;
-    wire [7:0] rddata_espctrl;
-    wire [7:0] rddata_espdata;
+    wire [7:0] rddata_espctrl;          // IO $F4
+    wire [7:0] rddata_espdata;          // IO $F5
+    wire [7:0] rddata_keyboard;         // IO $FF:R
 
-    wire [7:0] rddata_keyboard;
+    reg  [7:0] reg_bank0_r;             // IO $F0
+    reg  [7:0] reg_bank1_r;             // IO $F1
+    reg  [7:0] reg_bank2_r;             // IO $F2
+    reg  [7:0] reg_bank3_r;             // IO $F3
+    reg        reg_cpm_remap_r;         // IO $FD:W
+    reg  [7:0] reg_scramble_value_r;    // IO $FF:W
 
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
@@ -88,49 +96,86 @@ module top(
 
     sysctrl sysctrl(
         .sysclk(sysclk),
-        .ext_reset_n(reset_n),
+        .ebus_reset_n(ebus_reset_n),
+        .reset_req(reset_req),
 
-        .phi(phi),
+        .ebus_phi(ebus_phi),
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
+
+    // Select banking register based on upper address bits
+    reg [7:0] reg_bank;
+    always @* case (ebus_a[15:14])
+        2'd0: reg_bank = reg_bank0_r;
+        2'd1: reg_bank = reg_bank1_r;
+        2'd2: reg_bank = reg_bank2_r;
+        2'd3: reg_bank = reg_bank3_r;
+    endcase
+
+    wire [5:0] reg_bank_page    = reg_bank[5:0];
+    wire       reg_bank_ro      = reg_bank[7];
+    wire       reg_bank_overlay = reg_bank[6];
+
+    // Register data from external bus
     reg [7:0] wrdata;
-    always @(posedge sysclk) if (!bus_wr_n) wrdata <= bus_d;
+    always @(posedge sysclk) if (!ebus_wr_n) wrdata <= ebus_d;
 
-    reg [2:0] bus_wr_n_r;
-    reg [2:0] bus_rd_n_r;
-    always @(posedge sysclk) bus_wr_n_r <= {bus_wr_n_r[1:0], bus_wr_n};
-    always @(posedge sysclk) bus_rd_n_r <= {bus_rd_n_r[1:0], bus_rd_n};
+    reg [2:0] ebus_wr_n_r;
+    reg [2:0] ebus_rd_n_r;
+    always @(posedge sysclk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
+    always @(posedge sysclk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
 
-    wire bus_read  = bus_rd_n_r[2:1] == 3'b10;
-    wire bus_write = bus_wr_n_r[2:1] == 3'b10;
+    wire bus_read  = ebus_rd_n_r[2:1] == 3'b10;
+    wire bus_write = ebus_wr_n_r[2:1] == 3'b10;
 
     // Memory space decoding
-    wire sel_mem_bootrom = !bus_mreq_n && bus_a[15:13] == 3'b000;       // $0000-$1FFF
-    wire sel_mem_vram    = !bus_mreq_n && bus_a[15:11] == 5'b00110;     // $3000-$37FF
-    wire sel_mem_sysram  = !bus_mreq_n && bus_a[15:11] == 5'b00111;     // $3800-$3FFF
+    wire sel_mem_vram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
+    wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
+    // wire sel_mem_bootrom = !ebus_mreq_n && reg_bank_page == 6'd31 && !(sel_mem_vram || sel_mem_sysram);     // Bank 31: boot rom
+
+    assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 0
 
     // IO space decoding
-    wire sel_io_espctrl           = !bus_iorq_n && bus_a[7:0] == 8'hF4;
-    wire sel_io_espdata           = !bus_iorq_n && bus_a[7:0] == 8'hF5;
-    wire sel_io_cassette          = !bus_iorq_n && bus_a[7:0] == 8'hFC;
-    wire sel_io_vsync_r_cpm_w     = !bus_iorq_n && bus_a[7:0] == 8'hFD;
-    wire sel_io_printer           = !bus_iorq_n && bus_a[7:0] == 8'hFE;
-    wire sel_io_keyb_r_scramble_w = !bus_iorq_n && bus_a[7:0] == 8'hFF;
+    wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
+    wire sel_io_bank1             = !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
+    wire sel_io_bank2             = !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
+    wire sel_io_bank3             = !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
+    wire sel_io_espctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
+    wire sel_io_espdata           = !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
+    wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
+    wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
+    wire sel_io_printer           = !ebus_iorq_n && ebus_a[7:0] == 8'hFE;
+    wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_bootrom | sel_mem_vram | sel_mem_sysram |
+        // sel_mem_bootrom |
+        sel_mem_vram |
+        sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
+
+    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
+
+    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;    // Page  0-15
+    wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;  // Page 16-19
+    wire sel_mem_ram     = allow_sel_mem && reg_bank_page[5];               // Page 32-63
+
+    assign ebus_rom_ce_n = !sel_mem_rom;
+    assign ebus_ram_ce_n = !(sel_mem_sysram || sel_mem_ram);
 
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
+        // if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
-        if (sel_mem_sysram)           rddata <= rddata_sysram;          // RAM  $3800-$3FFF
+
+        if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
+        if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
+        if (sel_io_bank2)             rddata <= reg_bank2_r;            // IO $F2
+        if (sel_io_bank3)             rddata <= reg_bank3_r;            // IO $F3
         if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
         if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
@@ -139,56 +184,56 @@ module top(
         if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;        // IO $FF
     end
 
-    wire bus_d_enable = !bus_rd_n && sel_internal;
+    wire ebus_d_enable = !ebus_rd_n && sel_internal;
 
-    assign bus_d = bus_d_enable ? rddata : 8'bZ;
+    assign ebus_d = (spibm_en && spibm_wrdata_en) ? spibm_wrdata : (ebus_d_enable ? rddata : 8'bZ);
 
-    assign bus_int_n    = 1'bZ;
-    assign bus_wait_n   = 1'bZ;
-    assign bus_busreq_n = 1'bZ;
-    assign bus_de_oe_n  = 1'b1;
-    assign cart_ce_n    = 1'b1;
+    assign ebus_int_n       = 1'bZ;
+    assign ebus_wait_n      = 1'bZ;
+    assign ebus_cart_d_oe_n = 1'b1;
+    assign ebus_cart_d      = 8'bZ;
+    assign ebus_cart_ce_n   = 1'b1;
 
-    assign bus_ba = 5'b0;
-    assign ram_ce_n = 1'b1;
-    assign rom_ce_n = 1'b1;
-
-    // assign exp          = 7'b0;
-
-    assign esp_notify   = 1'b0;
+    assign exp              = 7'b0;
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
+            reg_bank0_r          <= {2'b11, 6'd0};
+            reg_bank1_r          <= {2'b00, 6'd33};
+            reg_bank2_r          <= {2'b00, 6'd34};
+            reg_bank3_r          <= {2'b00, 6'd19};
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
             reg_scramble_value_r <= 8'b0;
+
         end else begin
+            if (sel_io_bank0             && bus_write) reg_bank0_r          <= wrdata;
+            if (sel_io_bank1             && bus_write) reg_bank1_r          <= wrdata;
+            if (sel_io_bank2             && bus_write) reg_bank2_r          <= wrdata;
+            if (sel_io_bank3             && bus_write) reg_bank3_r          <= wrdata;
             if (sel_io_cassette          && bus_write) cassette_out         <= wrdata[0];
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r      <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
             if (sel_io_keyb_r_scramble_w && bus_write) reg_scramble_value_r <= wrdata;
         end
 
+
+    // Cartridge data bus
+    // wire [7:0] scrambled_d      = ebus_d      ^ reg_scramble_value_r;
+    // wire [7:0] scrambled_cart_d = ebus_cart_d ^ reg_scramble_value_r;
+
+    // assign ebus_cart_d = !ebus_wr_n ? (ebus_mreq_n ? scrambled_d : ebus_d) : 8'bZ;
+    // assign ebus_cart_d_oe_n = 
+
+
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
     //////////////////////////////////////////////////////////////////////////
-    bootrom bootrom(
-        .clk(sysclk),
-        .addr(bus_a[12:0]),
-        .rddata(rddata_bootrom));
-
-    //////////////////////////////////////////////////////////////////////////
-    // System RAM (2kB)
-    //////////////////////////////////////////////////////////////////////////
-    wire sysram_wren = sel_mem_sysram && bus_write;
-
-    sysram sysram(
-        .clk(sysclk),
-        .addr(bus_a[10:0]),
-        .rddata(rddata_sysram),
-        .wrdata(wrdata),
-        .wren(sysram_wren));
+    // bootrom bootrom(
+    //     .clk(sysclk),
+    //     .addr(ebus_a[12:0]),
+    //     .rddata(rddata_bootrom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -240,7 +285,7 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
-    wire [10:0] vram_addr   = bus_a[10:0];
+    wire [10:0] vram_addr   = ebus_a[10:0];
     wire  [7:0] vram_wrdata = wrdata;
     wire        vram_wren   = sel_mem_vram && bus_write;
 
@@ -283,31 +328,55 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
 
+    wire [15:0] spibm_a;
+    wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
+    wire        spibm_busreq;
+
+    assign spibm_en      = spibm_busreq && !ebus_busack_n;
+    assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
+    assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
+    assign ebus_wr_n     = spibm_en ? spibm_wr_n   : 1'bZ;
+    assign ebus_mreq_n   = spibm_en ? spibm_mreq_n : 1'bZ;
+    assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
+    assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
+
     spiregs spiregs(
         .clk(sysclk),
-        .reset(reset),
 
-        .esp_ssel_n(esp_cs_n),
+        .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
         .esp_miso(esp_miso),
-        
+
+        .ebus_phi(ebus_phi),
+
+        .spibm_a(spibm_a),
+        .spibm_rddata(ebus_d),
+        .spibm_wrdata(spibm_wrdata),
+        .spibm_wrdata_en(spibm_wrdata_en),
+        .spibm_rd_n(spibm_rd_n),
+        .spibm_wr_n(spibm_wr_n),
+        .spibm_mreq_n(spibm_mreq_n),
+        .spibm_iorq_n(spibm_iorq_n),
+        .spibm_busreq(spibm_busreq),
+
+        .reset_req(reset_req),
         .keys(keys));
+
+    assign esp_notify = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Keyboard
     //////////////////////////////////////////////////////////////////////////
     assign rddata_keyboard =
-        (bus_a[15] ? 8'hFF : keys[63:56]) &
-        (bus_a[14] ? 8'hFF : keys[55:48]) &
-        (bus_a[13] ? 8'hFF : keys[47:40]) &
-        (bus_a[12] ? 8'hFF : keys[39:32]) &
-        (bus_a[11] ? 8'hFF : keys[31:24]) &
-        (bus_a[10] ? 8'hFF : keys[23:16]) &
-        (bus_a[ 9] ? 8'hFF : keys[15: 8]) &
-        (bus_a[ 8] ? 8'hFF : keys[ 7: 0]);
-
-    assign exp = keys[6:0];
+        (ebus_a[15] ? 8'hFF : keys[63:56]) &
+        (ebus_a[14] ? 8'hFF : keys[55:48]) &
+        (ebus_a[13] ? 8'hFF : keys[47:40]) &
+        (ebus_a[12] ? 8'hFF : keys[39:32]) &
+        (ebus_a[11] ? 8'hFF : keys[31:24]) &
+        (ebus_a[10] ? 8'hFF : keys[23:16]) &
+        (ebus_a[ 9] ? 8'hFF : keys[15: 8]) &
+        (ebus_a[ 8] ? 8'hFF : keys[ 7: 0]);
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC

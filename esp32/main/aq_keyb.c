@@ -1,6 +1,12 @@
 #include "aq_keyb.h"
 #include "aq_keyb_defs.h"
 #include "fpga.h"
+#include "flash.h"
+#include "screen.h"
+#include <esp_system.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 static const char *TAG = "keyboard";
 
@@ -22,44 +28,166 @@ static inline void aqkey_down(int key, bool shift) {
     }
 }
 
-void keyboard_scancode(unsigned scancode, bool keydown) {
-    if (keydown) {
-        ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
-    } else {
-        ESP_LOGI(TAG, "Key released: %02X", scancode);
+static bool verify_sysrom(void) {
+    bool ok = true;
+
+    fpga_bus_acquire();
+    fpga_save_banks();
+
+    screen_save();
+    screen_show_msg("Verifying system ROM");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
+    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
+
+    ESP_LOGI(TAG, "* Verifying boot ROM *");
+    {
+        uint8_t saved_bank = fpga_io_read(IO_BANK0);
+
+        unsigned       addr = 0;
+        const uint8_t *p    = rom_image_start;
+        while (p != rom_image_end) {
+            fpga_set_bank(0, addr >> 14);
+            uint8_t flash_val = fpga_mem_read(addr & 0x3FFF);
+
+            if (true) { // flash_val != *p) {
+                char str[50];
+                snprintf(str, sizeof(str), "Verify error @ $%05X   (%02X != %02X)", addr, flash_val, *p);
+                screen_show_msg(str);
+
+                ESP_LOGE(TAG, "Verify error @ 0x%X   (%02X != %02X)", addr, flash_val, *p);
+                ok = false;
+            }
+            p++;
+            addr++;
+        }
+        fpga_io_write(IO_BANK0, saved_bank);
     }
+    ESP_LOGI(TAG, "Done.");
+
+    if (ok) {
+        screen_show_msg("Verifying system ROM OK!");
+    } else {
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        screen_show_msg("Verifying system ROM failed!");
+    }
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    screen_restore();
+    fpga_restore_banks();
+    fpga_bus_release();
+
+    return ok;
+}
+
+static void flash_sysrom(void) {
+    fpga_bus_acquire();
+
+    screen_save();
+    screen_show_msg("Programming system ROM");
+
+    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
+    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
+
+    ESP_LOGI(TAG, "* Programming system ROM *");
+
+    bool led = false;
+
+    {
+        flash_prepare();
+
+        unsigned       addr = 0;
+        const uint8_t *p    = rom_image_start;
+        while (p != rom_image_end) {
+            if ((addr & 4095) == 0) {
+                flash_erase_4kb_sector(addr);
+            }
+
+            if ((addr & 1023) == 0) {
+                gpio_set_level(IOPIN_LED, led ? 1 : 0);
+                led = !led;
+
+                char str[40];
+                snprintf(str, sizeof(str), "Programming system ROM @ $%05X", addr);
+                screen_show_msg(str);
+
+                ESP_LOGI(TAG, "Programming @ 0x%X", addr);
+            }
+
+            flash_program(addr, *p);
+
+            p++;
+            addr++;
+        }
+        flash_finish();
+    }
+    ESP_LOGI(TAG, "Done.");
+    gpio_set_level(IOPIN_LED, 1);
+
+    screen_show_msg("Programming system ROM done.");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    screen_restore();
+    fpga_bus_release();
+}
+
+void keyboard_scancode(unsigned scancode, bool keydown) {
+    // if (keydown) {
+    //     ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
+    // } else {
+    //     ESP_LOGI(TAG, "Key released: %02X", scancode);
+    // }
 
     // Hand controller emulation
     // handcontroller(scancode, keydown);
 
-    // Reset key
-    if (scancode == SDL_SCANCODE_ESCAPE && keydown) {
-        // reset();
-    }
-
-    // Handle modifier keys
-    static uint16_t modifiers       = 0;
-    static uint8_t  pressed_keys[8] = {0};
-
-    if (scancode == SDL_SCANCODE_LSHIFT) {
+    // Keep track of pressed modifier keys
+    static uint16_t modifiers = 0;
+    if (scancode == SDL_SCANCODE_LSHIFT)
         modifiers = (modifiers & ~KMOD_LSHIFT) | (keydown ? KMOD_LSHIFT : 0);
-    }
-    if (scancode == SDL_SCANCODE_RSHIFT) {
+    if (scancode == SDL_SCANCODE_RSHIFT)
         modifiers = (modifiers & ~KMOD_RSHIFT) | (keydown ? KMOD_RSHIFT : 0);
-    }
-    if (scancode == SDL_SCANCODE_LCTRL) {
+    if (scancode == SDL_SCANCODE_LCTRL)
         modifiers = (modifiers & ~KMOD_LCTRL) | (keydown ? KMOD_LCTRL : 0);
-    }
-    if (scancode == SDL_SCANCODE_RCTRL) {
+    if (scancode == SDL_SCANCODE_RCTRL)
         modifiers = (modifiers & ~KMOD_RCTRL) | (keydown ? KMOD_RCTRL : 0);
-    }
+    if (scancode == SDL_SCANCODE_LALT)
+        modifiers = (modifiers & ~KMOD_LALT) | (keydown ? KMOD_LALT : 0);
+    if (scancode == SDL_SCANCODE_RALT)
+        modifiers = (modifiers & ~KMOD_RALT) | (keydown ? KMOD_RALT : 0);
+    if (scancode == SDL_SCANCODE_LGUI)
+        modifiers = (modifiers & ~KMOD_LGUI) | (keydown ? KMOD_LGUI : 0);
+    if (scancode == SDL_SCANCODE_RGUI)
+        modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
+    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
+    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+    bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
+
+    // Keep track of pressed keys
+    static uint8_t pressed_keys[8] = {0};
     if (scancode < 64) {
         if (keydown) {
             pressed_keys[scancode / 8] |= 1 << (scancode & 7);
         } else {
             pressed_keys[scancode / 8] &= ~(1 << (scancode & 7));
         }
+    }
+
+    if (keydown && scancode == SDL_SCANCODE_F1) {
+        fpga_bus_acquire();
+        fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
+        fpga_bus_release();
+    }
+
+    if (keydown && scancode == SDL_SCANCODE_F4) {
+        fpga_bus_acquire();
+        for (int i = IO_BANK0; i <= IO_BANK3; i++) {
+            ESP_LOGI(TAG, "IO %02X: %02X", i, fpga_io_read(i));
+        }
+        fpga_bus_release();
     }
 
     enum {
@@ -80,19 +208,44 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         keyb_matrix[i] = 0xFF;
     }
 
-    // Set keyboard state based on current pressed keys
-    if (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) {
+    // Set keyboard state based on currently pressed keys
+    if (ctrl_pressed)
         _aqkey_down(KEY_CTRL);
-    }
-
-    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
-    if (shift_pressed) {
+    if (shift_pressed)
         _aqkey_down(KEY_SHIFT);
-    }
 
     for (int i = 0; i < 64; i++) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
             switch (i) {
+                case SDL_SCANCODE_ESCAPE:
+                    if (ctrl_pressed && shift_pressed && alt_pressed && gui_pressed) {
+                        // CTRL-SHIFT-ALT-GUI -> reprogram flash
+                        flash_sysrom();
+                        if (!verify_sysrom()) {
+                            for (int i = 0; i < 5; i++) {
+                                gpio_set_level(IOPIN_LED, 0);
+                                vTaskDelay(pdMS_TO_TICKS(200));
+                                gpio_set_level(IOPIN_LED, 1);
+                                vTaskDelay(pdMS_TO_TICKS(200));
+                            }
+                        } else {
+                            esp_restart();
+                        }
+
+                    } else if (ctrl_pressed && shift_pressed) {
+                        // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
+                        esp_restart();
+
+                    } else if (ctrl_pressed) {
+                        // CTRL-ESCAPE -> reset
+                        fpga_reset_req();
+                    } else {
+                        // ESCAPE -> CTRL-C
+                        _aqkey_down(KEY_CTRL);
+                        _aqkey_down(KEY_C);
+                    }
+                    break;
+
                 case SDL_SCANCODE_RETURN:
                     aqkey_down(KEY_RETURN, shift_pressed);
                     break;
@@ -208,7 +361,7 @@ void keyboard_update_matrix(void) {
         return;
     }
 
-    ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
+    // ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
     fpga_update_keyb_matrix(keyb_matrix);
 
     memcpy(prev_matrix, keyb_matrix, 8);
