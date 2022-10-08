@@ -5,28 +5,12 @@
 
 static const char *TAG = "flash";
 
-static uint8_t saved_banks[4];
-static uint8_t cur_banks[4];
-
 void flash_prepare(void) {
-    // Save bank registers
-    for (int i = 0; i < 4; i++) {
-        cur_banks[i] = saved_banks[i] = fpga_io_read(IO_BANK0 + i);
-    }
+    fpga_save_banks();
 }
 
 void flash_finish(void) {
-    // Restore bank registers
-    for (int i = 0; i < 4; i++) {
-        fpga_io_write(IO_BANK0 + i, saved_banks[i]);
-    }
-}
-
-static void set_bank(unsigned bank, uint8_t val) {
-    if (cur_banks[bank] == val)
-        return;
-    fpga_io_write(IO_BANK0 + bank, val);
-    cur_banks[bank] = val;
+    fpga_restore_banks();
 }
 
 void flash_program(unsigned addr, uint8_t val) {
@@ -36,9 +20,9 @@ void flash_program(unsigned addr, uint8_t val) {
     }
 
     // Remap memory for flash write
-    set_bank(0, 0);
-    set_bank(1, 1);
-    set_bank(2, addr >> 14);
+    fpga_set_bank(0, 0);
+    fpga_set_bank(1, 1);
+    fpga_set_bank(2, addr >> 14);
 
     // Byte-program
     fpga_mem_write(0x5555, 0xAA);
@@ -58,9 +42,9 @@ void flash_erase_4kb_sector(unsigned addr) {
     ESP_LOGI(TAG, "Erasing sector @ 0x%X", addr);
 
     // Remap memory for flash write
-    set_bank(0, 0);
-    set_bank(1, 1);
-    set_bank(2, addr >> 14);
+    fpga_set_bank(0, 0);
+    fpga_set_bank(1, 1);
+    fpga_set_bank(2, addr >> 14);
 
     // Sector erase
     fpga_mem_write(0x5555, 0xAA);
@@ -78,8 +62,8 @@ void flash_erase_chip(void) {
     ESP_LOGI(TAG, "Erasing chip");
 
     // Remap memory for flash write
-    set_bank(0, 0);
-    set_bank(1, 1);
+    fpga_set_bank(0, 0);
+    fpga_set_bank(1, 1);
 
     // Sector erase
     fpga_mem_write(0x5555, 0xAA);

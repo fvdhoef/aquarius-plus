@@ -2,6 +2,13 @@
 
 #include "common.h"
 
+enum {
+    IO_BANK0 = 0xF0,
+    IO_BANK1 = 0xF1,
+    IO_BANK2 = 0xF2,
+    IO_BANK3 = 0xF3,
+};
+
 void fpga_init(void);
 
 void    fpga_reset_req(void);
@@ -12,3 +19,7 @@ void    fpga_mem_write(uint16_t addr, uint8_t data);
 uint8_t fpga_mem_read(uint16_t addr);
 void    fpga_io_write(uint16_t addr, uint8_t data);
 uint8_t fpga_io_read(uint16_t addr);
+
+void fpga_save_banks(void);
+void fpga_restore_banks(void);
+void fpga_set_bank(unsigned bank, uint8_t val);

@@ -10,6 +10,9 @@ extern const uint8_t fpga_image_end[] asm("_binary_top_bit_end");
 static spi_device_handle_t fpga_spidev;
 static spi_device_handle_t fpga_spidev_regs;
 
+static uint8_t saved_banks[4];
+static uint8_t cur_banks[4];
+
 #define SPIBUS SPI2_HOST // SPI3 host is used by SD card interface
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_CS_N
 
@@ -286,4 +289,25 @@ uint8_t fpga_io_read(uint16_t addr) {
     gpio_set_level(IOPIN_SPI_CS_N, 1);
 
     return result;
+}
+
+void fpga_save_banks(void) {
+    // Save bank registers
+    for (int i = 0; i < 4; i++) {
+        cur_banks[i] = saved_banks[i] = fpga_io_read(IO_BANK0 + i);
+    }
+}
+
+void fpga_restore_banks(void) {
+    // Restore bank registers
+    for (int i = 0; i < 4; i++) {
+        fpga_io_write(IO_BANK0 + i, saved_banks[i]);
+    }
+}
+
+void fpga_set_bank(unsigned bank, uint8_t val) {
+    if (cur_banks[bank] == val)
+        return;
+    fpga_io_write(IO_BANK0 + bank, val);
+    cur_banks[bank] = val;
 }

@@ -2,6 +2,7 @@
 #include "aq_keyb_defs.h"
 #include "fpga.h"
 #include "flash.h"
+#include "screen.h"
 #include <esp_system.h>
 
 #include <freertos/FreeRTOS.h>
@@ -31,6 +32,11 @@ static bool verify_sysrom(void) {
     bool ok = true;
 
     fpga_bus_acquire();
+    fpga_save_banks();
+
+    screen_save();
+    screen_show_msg("Verifying system ROM");
+    vTaskDelay(pdMS_TO_TICKS(1000));
 
     extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
     extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
@@ -38,23 +44,38 @@ static bool verify_sysrom(void) {
     ESP_LOGI(TAG, "* Verifying boot ROM *");
     {
         uint8_t saved_bank = fpga_io_read(IO_BANK0);
-        fpga_io_write(IO_BANK0, 0);
 
-        unsigned       i = 0;
-        const uint8_t *p = rom_image_start;
+        unsigned       addr = 0;
+        const uint8_t *p    = rom_image_start;
         while (p != rom_image_end) {
-            uint8_t flash_val = fpga_mem_read(i);
-            if (flash_val != *p) {
-                ESP_LOGE(TAG, "Verify error @ 0x%X   (%02X != %02X)", i, flash_val, *p);
+            fpga_set_bank(0, addr >> 14);
+            uint8_t flash_val = fpga_mem_read(addr & 0x3FFF);
+
+            if (true) { // flash_val != *p) {
+                char str[50];
+                snprintf(str, sizeof(str), "Verify error @ $%05X   (%02X != %02X)", addr, flash_val, *p);
+                screen_show_msg(str);
+
+                ESP_LOGE(TAG, "Verify error @ 0x%X   (%02X != %02X)", addr, flash_val, *p);
                 ok = false;
             }
             p++;
-            i++;
+            addr++;
         }
         fpga_io_write(IO_BANK0, saved_bank);
     }
     ESP_LOGI(TAG, "Done.");
 
+    if (ok) {
+        screen_show_msg("Verifying system ROM OK!");
+    } else {
+        vTaskDelay(pdMS_TO_TICKS(2000));
+        screen_show_msg("Verifying system ROM failed!");
+    }
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    screen_restore();
+    fpga_restore_banks();
     fpga_bus_release();
 
     return ok;
@@ -62,6 +83,9 @@ static bool verify_sysrom(void) {
 
 static void flash_sysrom(void) {
     fpga_bus_acquire();
+
+    screen_save();
+    screen_show_msg("Programming system ROM");
 
     extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
     extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
@@ -73,30 +97,38 @@ static void flash_sysrom(void) {
     {
         flash_prepare();
 
-        unsigned       i = 0;
-        const uint8_t *p = rom_image_start;
+        unsigned       addr = 0;
+        const uint8_t *p    = rom_image_start;
         while (p != rom_image_end) {
-            if ((i & 4095) == 0)
-                flash_erase_4kb_sector(i);
+            if ((addr & 4095) == 0) {
+                flash_erase_4kb_sector(addr);
+            }
 
-            if ((i & 1023) == 0) {
+            if ((addr & 1023) == 0) {
                 gpio_set_level(IOPIN_LED, led ? 1 : 0);
                 led = !led;
 
-                ESP_LOGI(TAG, "Program @ 0x%X", i);
+                char str[40];
+                snprintf(str, sizeof(str), "Programming system ROM @ $%05X", addr);
+                screen_show_msg(str);
+
+                ESP_LOGI(TAG, "Programming @ 0x%X", addr);
             }
 
-            flash_program(i, *p);
+            flash_program(addr, *p);
 
             p++;
-            i++;
+            addr++;
         }
         flash_finish();
     }
     ESP_LOGI(TAG, "Done.");
-
     gpio_set_level(IOPIN_LED, 1);
 
+    screen_show_msg("Programming system ROM done.");
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    screen_restore();
     fpga_bus_release();
 }
 
@@ -196,8 +228,9 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
                                 gpio_set_level(IOPIN_LED, 1);
                                 vTaskDelay(pdMS_TO_TICKS(200));
                             }
+                        } else {
+                            esp_restart();
                         }
-                        esp_restart();
 
                     } else if (ctrl_pressed && shift_pressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
