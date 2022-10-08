@@ -51,7 +51,7 @@ static bool verify_sysrom(void) {
             fpga_set_bank(0, addr >> 14);
             uint8_t flash_val = fpga_mem_read(addr & 0x3FFF);
 
-            if (true) { // flash_val != *p) {
+            if (flash_val != *p) {
                 char str[50];
                 snprintf(str, sizeof(str), "Verify error @ $%05X   (%02X != %02X)", addr, flash_val, *p);
                 screen_show_msg(str);
