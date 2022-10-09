@@ -677,7 +677,7 @@ static void esp32_write_data(uint8_t data) {
             case ESPCMD_RESET: {
                 // Close any open descriptors
                 ESP_LOGI(TAG, "RESET\n");
-                //     close_all_descriptors();
+                close_all_descriptors();
                 free(state.current_path);
                 state.current_path = strdup("");
                 break;

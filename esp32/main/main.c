@@ -4,6 +4,10 @@
 #include "fpga.h"
 #include "uart_protocol.h"
 
+#include <esp_heap_caps.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
 static const char *TAG = "main";
 
 static void init(void) {
@@ -25,4 +29,9 @@ static void init(void) {
 
 void app_main(void) {
     init();
+
+    // while (1) {
+    //     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
+    //     vTaskDelay(pdMS_TO_TICKS(2000));
+    // }
 }
