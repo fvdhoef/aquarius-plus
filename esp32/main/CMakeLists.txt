@@ -14,4 +14,5 @@ idf_component_register(
     EMBED_FILES
         "../../fpga/top.bit"
         "../../assets/aquarius_s2.rom"
+        "../../emulator/aquarius.rom"
 )

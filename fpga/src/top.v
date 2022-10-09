@@ -156,14 +156,14 @@ module top(
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
-    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
+    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
 
-    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;    // Page  0-15
-    wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;  // Page 16-19
-    wire sel_mem_ram     = allow_sel_mem && reg_bank_page[5];               // Page 32-63
+    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;            // Page  0-15
+    wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
+    wire sel_mem_ram     = (allow_sel_mem && reg_bank_page[5]) || sel_mem_sysram;   // Page 32-63
 
-    assign ebus_rom_ce_n = !(sel_mem_rom && !sel_mem_sysram);
-    assign ebus_ram_ce_n = !(sel_mem_ram ||  sel_mem_sysram);
+    assign ebus_rom_ce_n = !sel_mem_rom;
+    assign ebus_ram_ce_n = !sel_mem_ram;
 
     reg [7:0] rddata;
     always @* begin

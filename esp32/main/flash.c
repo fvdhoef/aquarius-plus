@@ -6,6 +6,14 @@
 
 static const char *TAG = "flash";
 
+#if 1
+extern const uint8_t rom_image_start[] asm("_binary_aquarius_rom_start");
+extern const uint8_t rom_image_end[] asm("_binary_aquarius_rom_end");
+#else
+extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
+extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
+#endif
+
 void flash_prepare(void) {
     fpga_save_banks();
 }
@@ -17,6 +25,10 @@ void flash_finish(void) {
 void flash_program(unsigned addr, uint8_t val) {
     if (addr >= 256 * 1024) {
         ESP_LOGE(TAG, "flash_program - addr out of range! (0x%X)", addr);
+        return;
+    }
+    if (val == 0xFF) {
+        // Erased byte is already 0xFF
         return;
     }
 
@@ -88,9 +100,6 @@ bool verify_sysrom(void) {
     screen_show_msg("Verifying system ROM");
     vTaskDelay(pdMS_TO_TICKS(1000));
 
-    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
-    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
-
     ESP_LOGI(TAG, "* Verifying boot ROM *");
     {
         uint8_t saved_bank = fpga_io_read(IO_BANK0);
@@ -137,15 +146,17 @@ void flash_sysrom(void) {
     screen_save();
     screen_show_msg("Programming system ROM");
 
-    extern const uint8_t rom_image_start[] asm("_binary_aquarius_s2_rom_start");
-    extern const uint8_t rom_image_end[] asm("_binary_aquarius_s2_rom_end");
-
     ESP_LOGI(TAG, "* Programming system ROM *");
 
     bool led = false;
 
     {
         flash_prepare();
+
+        // char str[40];
+        // snprintf(str, sizeof(str), "Erasing system ROM");
+        // screen_show_msg(str);
+        // flash_erase_chip();
 
         unsigned       addr = 0;
         const uint8_t *p    = rom_image_start;
