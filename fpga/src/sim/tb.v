@@ -376,6 +376,10 @@ module tb();
         @(posedge phi);
 
 
+        iowr(16'd244, 8'd128);
+        // iowr(16'd245, 8'd128);
+
+
 /*
         spi_ssel_n_r <= 1'b0;
         spi_tx(8'h01);

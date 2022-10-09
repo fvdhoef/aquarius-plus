@@ -19,7 +19,7 @@ static void init(void) {
 
     uart_protocol_init();
     fpga_init();
-    // sdcard_init();
+    sdcard_init();
     usbhost_init();
 }
 

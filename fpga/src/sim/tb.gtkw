@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sat Oct  8 12:53:19 2022
+[*] Sun Oct  9 10:49:23 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sat Oct  8 12:46:39 2022"
-[dumpfile_size] 92768054
+[dumpfile_mtime] "Sun Oct  9 10:43:33 2022"
+[dumpfile_size] 92974537
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 46960000
+[timestart] 224160000
 [size] 2501 1387
 [pos] -1 -1
-*-23.880857 149835000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-22.880857 263305000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -18,7 +18,7 @@
 [sst_width] 193
 [signals_width] 233
 [sst_expanded] 1
-[sst_vpaned_height] 460
+[sst_vpaned_height] 541
 @28
 tb.top_inst.sysclk
 tb.reset_n
@@ -96,7 +96,6 @@ tb.top_inst.ebus_d[7:0]
 @28
 tb.top_inst.ebus_rom_ce_n
 tb.top_inst.ebus_wr_n
-@29
 tb.top_inst.ebus_rd_n
 @200
 -
@@ -157,6 +156,17 @@ tb.top_inst.video.vram_wren
 @200
 -
 ---- ESP UART ---
+@28
+tb.top_inst.esp_tx
+tb.top_inst.esp_rx
+tb.top_inst.esp_cts
+tb.top_inst.esp_rts
+@201
+-
+@22
+tb.top_inst.rddata_espctrl[7:0]
+@200
+-
 @28
 tb.top_inst.esp_uart.rx_framing_error
 tb.top_inst.esp_uart.rx_break

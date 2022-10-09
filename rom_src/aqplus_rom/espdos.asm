@@ -1204,7 +1204,7 @@ load_rom:
     call    esp_open
 
     ; Map RAM in bank3
-    ld      a, 34
+    ld      a, 35
     out     (IO_BANK3), a
 
     ; Load file
@@ -1253,7 +1253,7 @@ load_rom:
     jr      nz, .loop2
 
     ; Bank3 -> readonly
-    ld      a, 34 | BANK_READONLY
+    ld      a, 35 | BANK_READONLY
     out     (IO_BANK3), a
 
     ; Start ROM

@@ -8,6 +8,8 @@ idf_component_register(
         "flash.c"
         "screen.c"
         "uart_protocol.c"
+        "util.c"
+        "direnum.c"
 
     INCLUDE_DIRS
         "."

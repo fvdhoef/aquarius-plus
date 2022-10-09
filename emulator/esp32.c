@@ -173,6 +173,8 @@ static char *resolve_path(const char *path) {
     *pd = 0;
     // printf("result: '%s'  num_components: %d\n", result, num_components);
 
+    free(tmppath);
+
     return result;
 }
 
