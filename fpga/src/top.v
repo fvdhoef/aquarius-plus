@@ -75,8 +75,8 @@ module top(
     wire       reset_req;
     wire       vga_vblank;
 
-    // wire [7:0] rddata_bootrom;          // MEM $0000-$1FFF
     wire [7:0] rddata_vram;             // MEM $3000-$37FF
+    wire [7:0] rddata_chram;
 
     wire [7:0] rddata_espctrl;          // IO $F4
     wire [7:0] rddata_espdata;          // IO $F5
@@ -134,7 +134,7 @@ module top(
     // Memory space decoding
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
-    // wire sel_mem_bootrom = !ebus_mreq_n && reg_bank_page == 6'd31 && !(sel_mem_vram || sel_mem_sysram);     // Bank 31: boot rom
+    wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 0
 
@@ -151,8 +151,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        // sel_mem_bootrom |
-        sel_mem_vram |
+        sel_mem_vram | sel_mem_chram |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
@@ -169,8 +168,8 @@ module top(
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
-        // if (sel_mem_bootrom)          rddata <= rddata_bootrom;         // ROM  $0000-$1FFF 
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
+        if (sel_mem_chram)            rddata <= rddata_chram;
 
         if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
         if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
@@ -226,15 +225,6 @@ module top(
     // assign ebus_cart_d = !ebus_wr_n ? (ebus_mreq_n ? scrambled_d : ebus_d) : 8'bZ;
     // assign ebus_cart_d_oe_n = 
 
-
-    //////////////////////////////////////////////////////////////////////////
-    // Boot ROM
-    //////////////////////////////////////////////////////////////////////////
-    // bootrom bootrom(
-    //     .clk(sysclk),
-    //     .addr(ebus_a[12:0]),
-    //     .rddata(rddata_bootrom));
-
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
@@ -289,6 +279,10 @@ module top(
     wire  [7:0] vram_wrdata = wrdata;
     wire        vram_wren   = sel_mem_vram && bus_write;
 
+    wire [10:0] chram_addr   = ebus_a[10:0];
+    wire  [7:0] chram_wrdata = wrdata;
+    wire        chram_wren   = sel_mem_chram && bus_write;
+
     video video(
         .clk(sysclk),
         .reset(reset),
@@ -297,6 +291,11 @@ module top(
         .vram_rddata(rddata_vram),
         .vram_wrdata(vram_wrdata),
         .vram_wren(vram_wren),
+
+        .chram_addr(chram_addr),
+        .chram_rddata(rddata_chram),
+        .chram_wrdata(chram_wrdata),
+        .chram_wren(chram_wren),
 
         .vga_r(vga_r),
         .vga_g(vga_g),

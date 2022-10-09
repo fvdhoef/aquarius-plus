@@ -50,11 +50,11 @@ _reset:
     ; Initialize banking registers
     ld      a, 0 | BANK_OVERLAY | BANK_READONLY
     out     (IO_BANK0), a
-    ld      a, 32
-    out     (IO_BANK1), a
     ld      a, 33
+    out     (IO_BANK1), a
+    ld      a, 34
     out     (IO_BANK2), a
-    ld      a, 19 | BANK_READONLY
+    ld      a, 19
     out     (IO_BANK3), a
 
     ; Init video mode

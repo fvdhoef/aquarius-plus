@@ -8,6 +8,12 @@ module video(
     input  wire  [7:0] vram_wrdata,
     input  wire        vram_wren,
 
+    // Char RAM interface
+    input  wire [10:0] chram_addr,
+    output wire  [7:0] chram_rddata,
+    input  wire  [7:0] chram_wrdata,
+    input  wire        chram_wren,
+
     // VGA output
     output reg  [3:0] vga_r,
     output reg  [3:0] vga_g,
@@ -120,10 +126,10 @@ module video(
     charram charram(
         .clk(clk),
 
-        // .addr1(11'b0),
-        // .rddata1(),
-        // .wrdata1(8'h0),
-        // .wren1(1'b0),
+        .addr1(chram_addr),
+        .rddata1(chram_rddata),
+        .wrdata1(chram_wrdata),
+        .wren1(chram_wren),
 
         .addr2(charram_addr),
         .rddata2(charram_data));

@@ -16,9 +16,6 @@ void emustate_init(void) {
     for (unsigned i = 0; i < sizeof(emustate.colorram); i++) {
         emustate.colorram[i] = rand();
     }
-    for (unsigned i = 0; i < sizeof(emustate.basicram); i++) {
-        emustate.basicram[i] = rand();
-    }
     for (unsigned i = 0; i < sizeof(emustate.flashrom); i++) {
         emustate.flashrom[i] = 0xFF;
     }
