@@ -7,6 +7,7 @@ idf_component_register(
         "aq_keyb.c"
         "flash.c"
         "screen.c"
+        "uart_protocol.c"
 
     INCLUDE_DIRS
         "."
