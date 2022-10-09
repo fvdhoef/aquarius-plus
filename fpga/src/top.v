@@ -136,7 +136,7 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;
 
-    assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 0
+    assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
     // IO space decoding
     wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
@@ -162,8 +162,8 @@ module top(
     wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;  // Page 16-19
     wire sel_mem_ram     = allow_sel_mem && reg_bank_page[5];               // Page 32-63
 
-    assign ebus_rom_ce_n = !sel_mem_rom;
-    assign ebus_ram_ce_n = !(sel_mem_sysram || sel_mem_ram);
+    assign ebus_rom_ce_n = !(sel_mem_rom && !sel_mem_sysram);
+    assign ebus_ram_ce_n = !(sel_mem_ram ||  sel_mem_sysram);
 
     reg [7:0] rddata;
     always @* begin
