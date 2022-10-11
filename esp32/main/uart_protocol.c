@@ -627,7 +627,7 @@ static void esp_getcwd(void) {
     if (len == 0) {
         txfifo_write('/');
     } else {
-        for (int i = 0; i < len + 1; i++) {
+        for (int i = 0; i < len; i++) {
             txfifo_write(state.current_path[i]);
         }
     }
