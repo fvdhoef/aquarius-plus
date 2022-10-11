@@ -287,96 +287,106 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
+
+        iowr(16'hF7, 8'h0);
+        iowr(16'hF6, 8'h42);
+
+        iowr(16'hF7, 8'h8);
+        iowr(16'hF6, 8'hF);
+
+        iowr(16'hF7, 8'h7);
+        iowr(16'hF6, 8'h3E);
+
         ////////
         // Flash programming
         ////////
 
-        // fpga_bus_acquire
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h20);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_bus_acquire
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h20);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(0, 0);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF0);
-        spi_tx(8'h00);
-        spi_tx(8'h00);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(0, 0);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF0);
+        // spi_tx(8'h00);
+        // spi_tx(8'h00);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(1, 1);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF1);
-        spi_tx(8'h00);
-        spi_tx(8'h01);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(1, 1);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF1);
+        // spi_tx(8'h00);
+        // spi_tx(8'h01);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(2, addr >> 14);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF2);
-        spi_tx(8'h00);
-        spi_tx(8'h00);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(2, addr >> 14);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF2);
+        // spi_tx(8'h00);
+        // spi_tx(8'h00);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x5555, 0xAA);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h55);
-        spi_tx(8'h55);
-        spi_tx(8'hAA);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x5555, 0xAA);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h55);
+        // spi_tx(8'h55);
+        // spi_tx(8'hAA);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x2AAA, 0x55);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'hAA);
-        spi_tx(8'h2A);
-        spi_tx(8'h55);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x2AAA, 0x55);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'hAA);
+        // spi_tx(8'h2A);
+        // spi_tx(8'h55);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x5555, 0xA0);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h55);
-        spi_tx(8'h55);
-        spi_tx(8'hA0);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x5555, 0xA0);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h55);
+        // spi_tx(8'h55);
+        // spi_tx(8'hA0);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h00);
-        spi_tx(8'h80);
-        spi_tx(8'h42);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h00);
+        // spi_tx(8'h80);
+        // spi_tx(8'h42);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_bus_release
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h21);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_bus_release
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h21);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
 
-        iowr(16'd244, 8'd128);
+        // iowr(16'd244, 8'd128);
         // iowr(16'd245, 8'd128);
 
 
