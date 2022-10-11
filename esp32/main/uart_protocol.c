@@ -66,7 +66,7 @@ enum {
 
 struct state {
     char         *current_path;
-    uint8_t       rxbuf[0x1000];
+    uint8_t       rxbuf[0x10000];
     unsigned      rxbuf_idx;
     direnum_ctx_t dds[MAX_DDS];
     FILE         *fds[MAX_FDS];
@@ -283,8 +283,8 @@ static void esp_read(uint8_t fd, uint16_t size) {
     }
     FILE *f = state.fds[fd];
 
-    static uint8_t tmpbuf[0x10000];
-    int            result = (int)fread(tmpbuf, 1, size, f);
+    // Use RX buffer as temporary storage
+    int result = (int)fread(state.rxbuf, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -294,7 +294,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
     txfifo_write((result >> 0) & 0xFF);
     txfifo_write((result >> 8) & 0xFF);
     for (int i = 0; i < result; i++) {
-        txfifo_write(tmpbuf[i]);
+        txfifo_write(state.rxbuf[i]);
     }
 }
 
