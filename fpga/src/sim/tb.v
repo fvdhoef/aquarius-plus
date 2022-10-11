@@ -289,7 +289,7 @@ module tb();
 
 
         iowr(16'hF7, 8'h0);
-        iowr(16'hF6, 8'h42);
+        iowr(16'hF6, 8'd254);
 
         iowr(16'hF7, 8'h8);
         iowr(16'hF6, 8'hF);
