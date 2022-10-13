@@ -52,7 +52,28 @@ module tb();
     wire        bus_mreq_n = (busack_n == 1'b0) ? 1'bZ  : bus_mreq_n_r;
     wire        bus_iorq_n = (busack_n == 1'b0) ? 1'bZ  : bus_iorq_n_r;
 
+    wire hc_clk, hc_load_n, hc_data;
+    wire hc1_q7;
+
     always @(posedge phi) busack_n <= busreq_n;
+
+    hc166 hc166_1(
+        .pe_n(hc_load_n),
+        .ds(1'b0),
+        .d(8'h01),
+        .mr_n(1'b1),
+        .cp(hc_clk),
+        .ce_n(1'b0),
+        .q7(hc1_q7));
+
+    hc166 hc166_2(
+        .pe_n(hc_load_n),
+        .ds(hc1_q7),
+        .d(8'h80),
+        .mr_n(1'b1),
+        .cp(hc_clk),
+        .ce_n(1'b0),
+        .q7(hc_data));
 
     top top_inst(
         .sysclk(sysclk),
@@ -99,9 +120,9 @@ module tb();
         .exp(),
 
         // Hand controller interface
-        .hctrl_clk(),
-        .hctrl_load_n(),
-        .hctrl_data(1'b0),
+        .hctrl_clk(hc_clk),
+        .hctrl_load_n(hc_load_n),
+        .hctrl_data(hc_data),
 
         // VGA output
         .vga_r(),

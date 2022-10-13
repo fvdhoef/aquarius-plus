@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Oct 11 16:53:12 2022
+[*] Thu Oct 13 17:35:59 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Oct 11 16:51:34 2022"
-[dumpfile_size] 89543520
+[dumpfile_mtime] "Thu Oct 13 17:00:15 2022"
+[dumpfile_size] 89727730
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_audio.gtkw"
-[timestart] 72760000
+[timestart] 0
 [size] 1622 997
 [pos] -1 -1
-*-22.880857 80480000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-30.880857 80480000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -103,9 +103,27 @@ tb.top_inst.ay8910_r[15:0]
 -
 @28
 tb.top_inst.audio_l
-@25
+@24
 tb.top_inst.pwm_dac.left_data[15:0]
 @28
 tb.top_inst.pwm_dac.next_sample
+@200
+-
+-Handcontroller
+@28
+tb.top_inst.hctrl_clk
+tb.top_inst.hctrl_load_n
+tb.top_inst.hctrl_data
+@200
+-
+@29
+tb.hc166_1.cp
+@22
+tb.hc166_1.data_r[7:0]
+@200
+-
+@22
+tb.top_inst.handctrl.hctrl1_data[7:0]
+tb.top_inst.handctrl.hctrl2_data[7:0]
 [pattern_trace] 1
 [pattern_trace] 0
