@@ -77,12 +77,14 @@ module top(
 
     wire [7:0] rddata_vram;             // MEM $3000-$37FF
     wire [7:0] rddata_chram;
+    wire [7:0] rddata_vpaldata;
 
     wire [7:0] rddata_espctrl;          // IO $F4
     wire [7:0] rddata_espdata;          // IO $F5
     wire [7:0] rddata_ay8910;           // IO $F6/F7
     wire [7:0] rddata_keyboard;         // IO $FF:R
 
+    reg  [6:0] vpalsel_r;               // IO $EA
     reg  [7:0] reg_bank0_r;             // IO $F0
     reg  [7:0] reg_bank1_r;             // IO $F1
     reg  [7:0] reg_bank2_r;             // IO $F2
@@ -140,6 +142,8 @@ module top(
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
     // IO space decoding
+    wire sel_io_vpalsel           = !ebus_iorq_n && ebus_a[7:0] == 8'hEA;
+    wire sel_io_vpaldata          = !ebus_iorq_n && ebus_a[7:0] == 8'hEB;
     wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
     wire sel_io_bank1             = !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
     wire sel_io_bank2             = !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
@@ -154,6 +158,7 @@ module top(
 
     wire sel_internal =
         sel_mem_vram | sel_mem_chram |
+        sel_io_vpalsel | sel_io_vpaldata |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
@@ -172,6 +177,9 @@ module top(
         rddata <= 8'h00;
         if (sel_mem_vram)             rddata <= rddata_vram;            // VRAM $3000-$37FF
         if (sel_mem_chram)            rddata <= rddata_chram;
+
+        if (sel_io_vpalsel)           rddata <= {1'b0, vpalsel_r};      // IO $EA
+        if (sel_io_vpaldata)          rddata <= rddata_vpaldata;        // IO $EB
 
         if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
         if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
@@ -200,6 +208,7 @@ module top(
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
+            vpalsel_r            <= 7'b0;
             reg_bank0_r          <= {2'b11, 6'd0};
             reg_bank1_r          <= {2'b00, 6'd33};
             reg_bank2_r          <= {2'b00, 6'd34};
@@ -210,6 +219,7 @@ module top(
             reg_scramble_value_r <= 8'b0;
 
         end else begin
+            if (sel_io_vpalsel           && bus_write) vpalsel_r            <= wrdata[6:0];
             if (sel_io_bank0             && bus_write) reg_bank0_r          <= wrdata;
             if (sel_io_bank1             && bus_write) reg_bank1_r          <= wrdata;
             if (sel_io_bank2             && bus_write) reg_bank2_r          <= wrdata;
@@ -278,27 +288,28 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
-    wire [10:0] vram_addr   = ebus_a[10:0];
-    wire  [7:0] vram_wrdata = wrdata;
-    wire        vram_wren   = sel_mem_vram && bus_write;
-
-    wire [10:0] chram_addr   = ebus_a[10:0];
-    wire  [7:0] chram_wrdata = wrdata;
-    wire        chram_wren   = sel_mem_chram && bus_write;
+    wire vram_wren   = sel_mem_vram    && bus_write;
+    wire chram_wren  = sel_mem_chram   && bus_write;
+    wire palram_wren = sel_io_vpaldata && bus_write;
 
     video video(
         .clk(sysclk),
         .reset(reset),
 
-        .vram_addr(vram_addr),
+        .vram_addr(ebus_a[10:0]),
         .vram_rddata(rddata_vram),
-        .vram_wrdata(vram_wrdata),
+        .vram_wrdata(wrdata),
         .vram_wren(vram_wren),
 
-        .chram_addr(chram_addr),
+        .chram_addr(ebus_a[10:0]),
         .chram_rddata(rddata_chram),
-        .chram_wrdata(chram_wrdata),
+        .chram_wrdata(wrdata),
         .chram_wren(chram_wren),
+
+        .palram_addr(vpalsel_r),
+        .palram_rddata(rddata_vpaldata),
+        .palram_wrdata(wrdata),
+        .palram_wren(palram_wren),
 
         .vga_r(vga_r),
         .vga_g(vga_g),

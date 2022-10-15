@@ -327,6 +327,12 @@ module tb();
         ay_write(4'hD, 8'h0F);
 
 
+        iowr(16'hEA, 8'h00); iowr(16'hEB, 8'h11);
+        iowr(16'hEA, 8'h01); iowr(16'hEB, 8'h01);
+        iowr(16'hEA, 8'h02); iowr(16'hEB, 8'h11);
+        iowr(16'hEA, 8'h03); iowr(16'hEB, 8'h0F);
+
+
         ////////
         // Flash programming
         ////////

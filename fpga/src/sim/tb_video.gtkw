@@ -1,34 +1,44 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Sep 27 12:39:57 2022
+[*] Sat Oct 15 14:14:14 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Sep 27 12:38:52 2022"
-[dumpfile_size] 81272970
+[dumpfile_mtime] "Sat Oct 15 14:08:20 2022"
+[dumpfile_size] 83502286
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_video.gtkw"
-[timestart] 1520607000
+[timestart] 0
 [size] 2501 1387
 [pos] 59 0
-*-20.856812 1527709000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-21.856812 8750000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
 [treeopen] tb.top_inst.sysctrl.
 [treeopen] tb.top_inst.video.
+[treeopen] tb.top_inst.video.palram_gen[0].
+[treeopen] tb.top_inst.video.palram_gen[10].
+[treeopen] tb.top_inst.video.palram_gen[11].
+[treeopen] tb.top_inst.video.palram_gen[1].
+[treeopen] tb.top_inst.video.palram_gen[2].
+[treeopen] tb.top_inst.video.palram_gen[3].
+[treeopen] tb.top_inst.video.palram_gen[4].
+[treeopen] tb.top_inst.video.palram_gen[5].
+[treeopen] tb.top_inst.video.palram_gen[6].
+[treeopen] tb.top_inst.video.palram_gen[7].
+[treeopen] tb.top_inst.video.palram_gen[8].
+[treeopen] tb.top_inst.video.palram_gen[9].
 [sst_width] 193
 [signals_width] 232
 [sst_expanded] 1
-[sst_vpaned_height] 744
+[sst_vpaned_height] 901
 @28
 tb.top_inst.sysclk
-tb.top_inst.phi
 tb.reset_n
 tb.top_inst.reset
-@201
+@200
 -
 @28
 tb.top_inst.sysclk
-tb.top_inst.phi
 @200
 -
 -
@@ -48,7 +58,6 @@ tb.top_inst.video.vpos[7:0]
 @28
 tb.top_inst.video.hsync
 tb.top_inst.video.vsync
-tb.top_inst.video.border
 tb.top_inst.video.hblank
 tb.top_inst.video.vblank
 tb.top_inst.video.hborder
@@ -89,5 +98,36 @@ tb.top_inst.video.pixel_sel[2:0]
 tb.top_inst.video.char_pixel
 @22
 tb.top_inst.video.pixel_colidx[3:0]
+@200
+-
+@28
+tb.top_inst.sel_io_vpalsel
+tb.top_inst.sel_io_vpaldata
+@22
+tb.top_inst.video.palram_addr[6:0]
+tb.top_inst.video.palram_wrdata[7:0]
+@28
+tb.top_inst.video.palram_wren
+tb.top_inst.video.palram_wren_l
+tb.top_inst.video.palram_wren_h
+@200
+-
+-
+@22
+tb.top_inst.video.palram_gen[11].palram.mem[15:0]
+tb.top_inst.video.palram_gen[10].palram.mem[15:0]
+tb.top_inst.video.palram_gen[9].palram.mem[15:0]
+tb.top_inst.video.palram_gen[8].palram.mem[15:0]
+@201
+-
+@22
+tb.top_inst.video.palram_gen[7].palram.mem[15:0]
+tb.top_inst.video.palram_gen[6].palram.mem[15:0]
+tb.top_inst.video.palram_gen[5].palram.mem[15:0]
+tb.top_inst.video.palram_gen[4].palram.mem[15:0]
+tb.top_inst.video.palram_gen[3].palram.mem[15:0]
+tb.top_inst.video.palram_gen[2].palram.mem[15:0]
+tb.top_inst.video.palram_gen[1].palram.mem[15:0]
+tb.top_inst.video.palram_gen[0].palram.mem[15:0]
 [pattern_trace] 1
 [pattern_trace] 0
