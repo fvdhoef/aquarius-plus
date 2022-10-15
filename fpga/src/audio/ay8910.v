@@ -33,6 +33,8 @@ module ay8910(
     reg        envelope_hold_r, envelope_alternate_r, envelope_attack_r, envelope_continue_r;
     reg  [7:0] ioa_out_data_r, iob_out_data_r;
 
+    wire eashape_wr = wren && !a0 && reg_addr_r == 4'hD;
+
     always @(posedge clk)
         if (reset) begin
             a_period_r           <= 12'b0;
@@ -157,15 +159,17 @@ module ay8910(
 
     always @(posedge clk)
         if (reset) begin
-            noise_count_r    <= 5'b0;
+            noise_count_r    <= 5'd0;
             prescale_noise_r <= 1'b0;
             lfsr_r           <= 17'd1;
 
         end else if (tick) begin
             if (noise_count_r >= noise_period_r) begin
-                noise_count_r <= 5'b0;
+                noise_count_r <= 5'd0;
                 prescale_noise_r <= !prescale_noise_r;
                 if (prescale_noise_r) lfsr_r <= {lfsr_r[0] ^ lfsr_r[3], lfsr_r[16:1]};
+            end else begin
+                noise_count_r <= noise_count_r + 5'd1;
             end
         end
 
@@ -179,33 +183,75 @@ module ay8910(
     //////////////////////////////////////////////////////////////////////////
     // Envelope generator
     //////////////////////////////////////////////////////////////////////////
-    reg [16:0] envelope_count_r;
 
-    wire [3:0] envelope_volume = 4'd15;
+    // Period counter
+    reg [16:0] envelope_period_cnt_r;
+    wire       envelope_period_done = envelope_period_cnt_r >= envelope_period_r;
+
+    always @(posedge clk)
+        if (reset)
+            envelope_period_cnt_r <= 17'd0;
+        else if (tick)
+            envelope_period_cnt_r <= envelope_period_done ? 17'd0 : (envelope_period_cnt_r + 17'd1);
+
+    // Envelope counter
+    reg  [3:0] envelope_cnt_r;
+    reg        envelope_updated_r;
+    reg        envelope_cnt_up_r;
+    reg  [3:0] envelope_volume_r;
+    reg        envelope_stop_r;
 
     always @(posedge clk)
         if (reset) begin
-            envelope_count_r <= 17'd0;
+            envelope_cnt_r     <= 4'd0;
+            envelope_updated_r <= 1'b0;
+            envelope_cnt_up_r  <= 1'b0;
+            envelope_volume_r  <= 4'd0;
+            envelope_stop_r    <= 1'b0;
 
-        end else if (tick) begin
-            if (envelope_count_r >= {envelope_period_r, 1'b0}) begin
-                envelope_count_r <= 17'd0;
+        end else begin
+            if (tick && envelope_period_done) begin
+                if (!envelope_stop_r) begin
+                    envelope_cnt_r <= envelope_cnt_r - 1;
 
-            end else begin
-                envelope_count_r <= envelope_count_r <= 17'd1;
+                    if (envelope_cnt_r == 4'd0) begin
+                        if (!envelope_continue_r || envelope_hold_r) begin
+                            envelope_cnt_r <= 4'd0;
+                            envelope_stop_r <= 1'b1;
+                        end
+
+                        if (( envelope_continue_r && envelope_alternate_r) ||
+                            (!envelope_continue_r && envelope_attack_r)) begin
+
+                            envelope_cnt_up_r <= !envelope_cnt_up_r;
+                        end
+                    end
+                end
+
+                envelope_volume_r <= envelope_cnt_up_r ? (envelope_cnt_r ^ 4'hF) : envelope_cnt_r;
+
+                if (envelope_updated_r) begin
+                    envelope_updated_r <= 1'b0;
+                    envelope_cnt_r     <= 4'd15;
+                    envelope_cnt_up_r  <= envelope_attack_r;
+                    envelope_stop_r    <= 1'b0;
+                end
             end
 
+            if (eashape_wr) begin
+                envelope_updated_r <= 1'b1;
+            end
         end
 
     //////////////////////////////////////////////////////////////////////////
     // Mixer
     //////////////////////////////////////////////////////////////////////////
-    wire [3:0] a_volume = a_val ? (a_volume_r[4] ? envelope_volume : a_volume_r[3:0]) : 4'd0;
-    wire [3:0] b_volume = b_val ? (b_volume_r[4] ? envelope_volume : b_volume_r[3:0]) : 4'd0;
-    wire [3:0] c_volume = c_val ? (c_volume_r[4] ? envelope_volume : c_volume_r[3:0]) : 4'd0;
+    wire [3:0] a_volume = a_val ? (a_volume_r[4] ? envelope_volume_r : a_volume_r[3:0]) : 4'd0;
+    wire [3:0] b_volume = b_val ? (b_volume_r[4] ? envelope_volume_r : b_volume_r[3:0]) : 4'd0;
+    wire [3:0] c_volume = c_val ? (c_volume_r[4] ? envelope_volume_r : c_volume_r[3:0]) : 4'd0;
 
     always @(posedge clk)
-        case (a_volume)
+        if (tick) case (a_volume)
             4'h0: ch_a <= 0;
             4'h1: ch_a <= 6;
             4'h2: ch_a <= 9;
@@ -225,7 +271,7 @@ module ay8910(
         endcase
 
     always @(posedge clk)
-        case (b_volume)
+        if (tick) case (b_volume)
             4'h0: ch_b <= 0;
             4'h1: ch_b <= 6;
             4'h2: ch_b <= 9;
@@ -245,7 +291,7 @@ module ay8910(
         endcase
 
     always @(posedge clk)
-        case (c_volume)
+        if (tick) case (c_volume)
             4'h0: ch_c <= 0;
             4'h1: ch_c <= 6;
             4'h2: ch_c <= 9;

@@ -1,24 +1,24 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Thu Oct 13 17:35:59 2022
+[*] Sat Oct 15 08:37:36 2022
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Thu Oct 13 17:00:15 2022"
-[dumpfile_size] 89727730
+[dumpfile_mtime] "Sat Oct 15 08:37:17 2022"
+[dumpfile_size] 83443774
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_audio.gtkw"
 [timestart] 0
-[size] 1622 997
-[pos] -1 -1
-*-30.880857 80480000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[size] 1251 1387
+[pos] 1309 0
+*-28.880857 439000000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
 [treeopen] tb.top_inst.spiregs.
 [treeopen] tb.top_inst.sysctrl.
 [sst_width] 193
-[signals_width] 233
+[signals_width] 290
 [sst_expanded] 1
-[sst_vpaned_height] 758
+[sst_vpaned_height] 560
 @28
 tb.top_inst.sysclk
 tb.reset_n
@@ -109,6 +109,33 @@ tb.top_inst.pwm_dac.left_data[15:0]
 tb.top_inst.pwm_dac.next_sample
 @200
 -
+-Envelope
+@24
+tb.top_inst.ay8910.envelope_period_r[15:0]
+tb.top_inst.ay8910.envelope_period_cnt_r[16:0]
+@28
+tb.top_inst.ay8910.envelope_period_done
+@200
+-
+@28
+tb.top_inst.ay8910.envelope_alternate_r
+tb.top_inst.ay8910.envelope_attack_r
+tb.top_inst.ay8910.envelope_continue_r
+tb.top_inst.ay8910.envelope_hold_r
+@20000
+-
+@29
+tb.top_inst.ay8910.envelope_stop_r
+@28
+tb.top_inst.ay8910.envelope_cnt_up_r
+@24
+tb.top_inst.ay8910.envelope_cnt_r[3:0]
+@8022
+tb.top_inst.ay8910.envelope_volume_r[3:0]
+@20000
+-
+@200
+-
 -Handcontroller
 @28
 tb.top_inst.hctrl_clk
@@ -116,7 +143,7 @@ tb.top_inst.hctrl_load_n
 tb.top_inst.hctrl_data
 @200
 -
-@29
+@28
 tb.hc166_1.cp
 @22
 tb.hc166_1.data_r[7:0]

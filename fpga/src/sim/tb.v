@@ -303,20 +303,29 @@ module tb();
         end
     endtask
 
+    task ay_write;
+        input [3:0] addr;
+        input [7:0] data;
+
+        begin
+            iowr(16'hF7, {4'h0, addr});
+            iowr(16'hF6, data);
+        end
+    endtask
+
     initial begin
         #2500;
         @(posedge phi);
         @(posedge phi);
 
+        ay_write(4'h0, 8'd254);
+        ay_write(4'h8, 8'hF);
+        ay_write(4'h6, 8'h3E);
 
-        iowr(16'hF7, 8'h0);
-        iowr(16'hF6, 8'd254);
+        ay_write(4'hB, 8'h04);
+        ay_write(4'hC, 8'h00);
+        ay_write(4'hD, 8'h0F);
 
-        iowr(16'hF7, 8'h8);
-        iowr(16'hF6, 8'hF);
-
-        iowr(16'hF7, 8'h7);
-        iowr(16'hF6, 8'h3E);
 
         ////////
         // Flash programming
