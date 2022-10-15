@@ -96,7 +96,7 @@ module ay8910(
             4'hA: rddata <= { 3'b0, c_volume_r };
             4'hB: rddata <= envelope_period_r[7:0];
             4'hC: rddata <= envelope_period_r[15:8];
-            4'hD: rddata <= { envelope_continue_r, envelope_attack_r, envelope_alternate_r, envelope_hold_r } <= wrdata[3:0];
+            4'hD: rddata <= { envelope_continue_r, envelope_attack_r, envelope_alternate_r, envelope_hold_r };
             4'hE: rddata <= ioa_out_r ? ioa_out_data_r : ioa_in_data;
             4'hF: rddata <= iob_out_r ? iob_out_data_r : iob_in_data;
         endcase
