@@ -101,12 +101,12 @@ module video(
         end
 
     //////////////////////////////////////////////////////////////////////////
-    // Video RAM
+    // Text RAM
     //////////////////////////////////////////////////////////////////////////
-    wire [15:0] videoram_rddata;
+    wire [15:0] textram_rddata;
     wire [10:0] p1_addr = {vram_addr[9:0], vram_addr[10]};
 
-    videoram videoram(
+    textram textram(
         .p1_clk(clk),
         .p1_addr(p1_addr),
         .p1_rddata(vram_rddata),
@@ -115,10 +115,10 @@ module video(
 
         .p2_clk(clk),
         .p2_addr(char_addr_r),
-        .p2_rddata(videoram_rddata));
+        .p2_rddata(textram_rddata));
 
-    wire [7:0] text_data  = videoram_rddata[7:0];
-    wire [7:0] color_data = videoram_rddata[15:8];
+    wire [7:0] text_data  = textram_rddata[7:0];
+    wire [7:0] color_data = textram_rddata[15:8];
 
     reg [7:0] color_data_r;
     always @(posedge clk) color_data_r <= color_data;
@@ -164,33 +164,16 @@ module video(
         for (i=0; i<12; i=i+1) begin: palram_gen
             RAM16X1D #(
                 .INIT({
-                    PALETTE_INIT[ 0*12+i],
-                    PALETTE_INIT[ 1*12+i],
-                    PALETTE_INIT[ 2*12+i],
-                    PALETTE_INIT[ 3*12+i],
-                    PALETTE_INIT[ 4*12+i],
-                    PALETTE_INIT[ 5*12+i],
-                    PALETTE_INIT[ 6*12+i],
-                    PALETTE_INIT[ 7*12+i],
-                    PALETTE_INIT[ 8*12+i],
-                    PALETTE_INIT[ 9*12+i],
-                    PALETTE_INIT[10*12+i],
-                    PALETTE_INIT[11*12+i],
-                    PALETTE_INIT[12*12+i],
-                    PALETTE_INIT[13*12+i],
-                    PALETTE_INIT[14*12+i],
-                    PALETTE_INIT[15*12+i]
+                    PALETTE_INIT[ 0*12+i], PALETTE_INIT[ 1*12+i], PALETTE_INIT[ 2*12+i], PALETTE_INIT[ 3*12+i],
+                    PALETTE_INIT[ 4*12+i], PALETTE_INIT[ 5*12+i], PALETTE_INIT[ 6*12+i], PALETTE_INIT[ 7*12+i],
+                    PALETTE_INIT[ 8*12+i], PALETTE_INIT[ 9*12+i], PALETTE_INIT[10*12+i], PALETTE_INIT[11*12+i],
+                    PALETTE_INIT[12*12+i], PALETTE_INIT[13*12+i], PALETTE_INIT[14*12+i], PALETTE_INIT[15*12+i]
                 }))
             
             palram(
-                .DPRA3(pixel_colidx[3]), .DPRA2(pixel_colidx[2]), .DPRA1(pixel_colidx[1]), .DPRA0(pixel_colidx[0]),
-                .DPO(pix_color[i]),
-
-                .A3(palram_addr[4]), .A2(palram_addr[3]), .A1(palram_addr[2]), .A0(palram_addr[1]),
-                .SPO(palette_rddata[i]),
-                .WCLK(clk),
-                .D(palram_wrdata[i & 7]),
-                .WE((i<8) ? palram_wren_l : palram_wren_h));
+                .DPRA3(pixel_colidx[3]), .DPRA2(pixel_colidx[2]), .DPRA1(pixel_colidx[1]), .DPRA0(pixel_colidx[0]), .DPO(pix_color[i]),
+                .A3(   palram_addr[4]),  .A2(   palram_addr[3]),  .A1(   palram_addr[2]),  .A0(   palram_addr[1]),  .SPO(palette_rddata[i]),
+                .WCLK(clk), .D(palram_wrdata[i & 7]), .WE((i<8) ? palram_wren_l : palram_wren_h));
         end
     endgenerate
 

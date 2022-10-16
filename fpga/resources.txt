@@ -6,8 +6,8 @@
 -  512 x 36
 
 1x  2KB Text / Color RAM
-8x 16KB VRAM
 1x  2KB Character RAM
+8x 16KB VRAM
 1x Line buffer
 
 1 block ram

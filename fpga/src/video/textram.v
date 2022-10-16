@@ -1,4 +1,4 @@
-module videoram(
+module textram(
     // First port - CPU access
     input  wire        p1_clk,
     input  wire [10:0] p1_addr,

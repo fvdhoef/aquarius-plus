@@ -2,7 +2,7 @@
 import argparse
 
 parser = argparse.ArgumentParser(
-    description="Generate videoram from binary .SCR file (2048 bytes)"
+    description="Generate textram from binary .SCR file (2048 bytes)"
 )
 parser.add_argument("input", help="Binary input file")
 
@@ -21,9 +21,9 @@ bla = [f"{val:04X}" for val in data2]
 
 chunk = bla[0:16]
 
-with open("videoram.v", "w") as f:
+with open("textram.v", "w") as f:
     f.write(
-        """module videoram(
+        """module textram(
     // First port - CPU access
     input  wire        p1_clk,
     input  wire [10:0] p1_addr,
