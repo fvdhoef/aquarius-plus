@@ -1262,9 +1262,18 @@ load_rom:
     or      e
     jr      nz, .loop2
 
+    ; Reinit banks
+    ld      a, 33
+    out     (IO_BANK1), a
+    ld      a, 34
+    out     (IO_BANK2), a
+
     ; Bank3 -> readonly
     ld      a, 35 | BANK_READONLY
     out     (IO_BANK3), a
+
+    ; Reinit stack pointer
+    ld      sp, $38A0
 
     ; Start ROM
     jp      $E010
