@@ -3,10 +3,10 @@ module video(
     input  wire        reset,
 
     // Text RAM interface
-    input  wire [10:0] vram_addr,
-    output wire  [7:0] vram_rddata,
-    input  wire  [7:0] vram_wrdata,
-    input  wire        vram_wren,
+    input  wire [10:0] tram_addr,
+    output wire  [7:0] tram_rddata,
+    input  wire  [7:0] tram_wrdata,
+    input  wire        tram_wren,
 
     // Char RAM interface
     input  wire [10:0] chram_addr,
@@ -104,14 +104,14 @@ module video(
     // Text RAM
     //////////////////////////////////////////////////////////////////////////
     wire [15:0] textram_rddata;
-    wire [10:0] p1_addr = {vram_addr[9:0], vram_addr[10]};
+    wire [10:0] p1_addr = {tram_addr[9:0], tram_addr[10]};
 
     textram textram(
         .p1_clk(clk),
         .p1_addr(p1_addr),
-        .p1_rddata(vram_rddata),
-        .p1_wrdata(vram_wrdata),
-        .p1_wren(vram_wren),
+        .p1_rddata(tram_rddata),
+        .p1_wrdata(tram_wrdata),
+        .p1_wren(tram_wren),
 
         .p2_clk(clk),
         .p2_addr(char_addr_r),
