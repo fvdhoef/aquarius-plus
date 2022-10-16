@@ -20,6 +20,12 @@ module video(
     input  wire  [7:0] palram_wrdata,
     input  wire        palram_wren,
 
+    // Video RAM interface
+    input  wire [13:0] vram_addr,
+    output wire  [7:0] vram_rddata,
+    input  wire  [7:0] vram_wrdata,
+    input  wire        vram_wren,
+
     // VGA output
     output reg   [3:0] vga_r,
     output reg   [3:0] vga_g,
@@ -144,6 +150,24 @@ module video(
 
     wire char_pixel = charram_data[pixel_sel];
     wire [3:0] pixel_colidx = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
+
+    //////////////////////////////////////////////////////////////////////////
+    // VRAM
+    //////////////////////////////////////////////////////////////////////////
+    wire [13:0] vram_addr2 = 14'b0;
+
+    vram vram(
+        // First port - CPU access
+        .p1_clk(clk),
+        .p1_addr(vram_addr),
+        .p1_rddata(vram_rddata),
+        .p1_wrdata(vram_wrdata),
+        .p1_wren(vram_wren),
+
+        // Second port - Video access
+        .p2_clk(clk),
+        .p2_addr(vram_addr2),
+        .p2_rddata());
 
     //////////////////////////////////////////////////////////////////////////
     // Palette

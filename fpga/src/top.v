@@ -78,6 +78,7 @@ module top(
     wire [7:0] rddata_tram;             // MEM $3000-$37FF
     wire [7:0] rddata_chram;
     wire [7:0] rddata_vpaldata;
+    wire [7:0] rddata_vram;
 
     wire [7:0] rddata_espctrl;          // IO $F4
     wire [7:0] rddata_espdata;          // IO $F5
@@ -137,7 +138,8 @@ module top(
     // Memory space decoding
     wire sel_mem_tram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
-    wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;
+    wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
+    wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
@@ -157,7 +159,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_tram | sel_mem_chram |
+        sel_mem_tram | sel_mem_vram | sel_mem_chram |
         sel_io_vpalsel | sel_io_vpaldata |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 |
@@ -176,6 +178,7 @@ module top(
     always @* begin
         rddata <= 8'h00;
         if (sel_mem_tram)             rddata <= rddata_tram;            // TRAM $3000-$37FF
+        if (sel_mem_vram)             rddata <= rddata_vram;
         if (sel_mem_chram)            rddata <= rddata_chram;
 
         if (sel_io_vpalsel)           rddata <= {1'b0, vpalsel_r};      // IO $EA
@@ -289,6 +292,7 @@ module top(
     // Video
     //////////////////////////////////////////////////////////////////////////
     wire tram_wren   = sel_mem_tram    && bus_write;
+    wire vram_wren   = sel_mem_vram    && bus_write;
     wire chram_wren  = sel_mem_chram   && bus_write;
     wire palram_wren = sel_io_vpaldata && bus_write;
 
@@ -310,6 +314,11 @@ module top(
         .palram_rddata(rddata_vpaldata),
         .palram_wrdata(wrdata),
         .palram_wren(palram_wren),
+
+        .vram_addr(ebus_a[13:0]),
+        .vram_rddata(rddata_vram),
+        .vram_wrdata(wrdata),
+        .vram_wren(vram_wren),
 
         .vga_r(vga_r),
         .vga_g(vga_g),
