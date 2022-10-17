@@ -52,7 +52,28 @@ module tb();
     wire        bus_mreq_n = (busack_n == 1'b0) ? 1'bZ  : bus_mreq_n_r;
     wire        bus_iorq_n = (busack_n == 1'b0) ? 1'bZ  : bus_iorq_n_r;
 
+    wire hc_clk, hc_load_n, hc_data;
+    wire hc1_q7;
+
     always @(posedge phi) busack_n <= busreq_n;
+
+    hc166 hc166_1(
+        .pe_n(hc_load_n),
+        .ds(1'b0),
+        .d(8'h01),
+        .mr_n(1'b1),
+        .cp(hc_clk),
+        .ce_n(1'b0),
+        .q7(hc1_q7));
+
+    hc166 hc166_2(
+        .pe_n(hc_load_n),
+        .ds(hc1_q7),
+        .d(8'h80),
+        .mr_n(1'b1),
+        .cp(hc_clk),
+        .ce_n(1'b0),
+        .q7(hc_data));
 
     top top_inst(
         .sysclk(sysclk),
@@ -99,9 +120,9 @@ module tb();
         .exp(),
 
         // Hand controller interface
-        .hctrl_clk(),
-        .hctrl_load_n(),
-        .hctrl_data(1'b0),
+        .hctrl_clk(hc_clk),
+        .hctrl_load_n(hc_load_n),
+        .hctrl_data(hc_data),
 
         // VGA output
         .vga_r(),
@@ -282,98 +303,127 @@ module tb();
         end
     endtask
 
+    task ay_write;
+        input [3:0] addr;
+        input [7:0] data;
+
+        begin
+            iowr(16'hF7, {4'h0, addr});
+            iowr(16'hF6, data);
+        end
+    endtask
+
     initial begin
         #2500;
         @(posedge phi);
         @(posedge phi);
 
+        ay_write(4'h0, 8'd254);
+        ay_write(4'h8, 8'hF);
+        ay_write(4'h6, 8'h3E);
+
+        ay_write(4'hB, 8'h04);
+        ay_write(4'hC, 8'h00);
+        ay_write(4'hD, 8'h0F);
+
+
+        iowr(16'hEA, 8'h00); iowr(16'hEB, 8'h11);
+        iowr(16'hEA, 8'h01); iowr(16'hEB, 8'h01);
+        iowr(16'hEA, 8'h02); iowr(16'hEB, 8'h11);
+        iowr(16'hEA, 8'h03); iowr(16'hEB, 8'h0F);
+
+
         ////////
         // Flash programming
         ////////
 
-        // fpga_bus_acquire
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h20);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_bus_acquire
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h20);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(0, 0);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF0);
-        spi_tx(8'h00);
-        spi_tx(8'h00);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(0, 0);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF0);
+        // spi_tx(8'h00);
+        // spi_tx(8'h00);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(1, 1);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF1);
-        spi_tx(8'h00);
-        spi_tx(8'h01);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(1, 1);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF1);
+        // spi_tx(8'h00);
+        // spi_tx(8'h01);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // set_bank(2, addr >> 14);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h24);
-        spi_tx(8'hF2);
-        spi_tx(8'h00);
-        spi_tx(8'h00);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // set_bank(2, addr >> 14);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h24);
+        // spi_tx(8'hF2);
+        // spi_tx(8'h00);
+        // spi_tx(8'h00);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x5555, 0xAA);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h55);
-        spi_tx(8'h55);
-        spi_tx(8'hAA);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x5555, 0xAA);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h55);
+        // spi_tx(8'h55);
+        // spi_tx(8'hAA);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x2AAA, 0x55);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'hAA);
-        spi_tx(8'h2A);
-        spi_tx(8'h55);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x2AAA, 0x55);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'hAA);
+        // spi_tx(8'h2A);
+        // spi_tx(8'h55);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x5555, 0xA0);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h55);
-        spi_tx(8'h55);
-        spi_tx(8'hA0);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x5555, 0xA0);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h55);
+        // spi_tx(8'h55);
+        // spi_tx(8'hA0);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h22);
-        spi_tx(8'h00);
-        spi_tx(8'h80);
-        spi_tx(8'h42);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h22);
+        // spi_tx(8'h00);
+        // spi_tx(8'h80);
+        // spi_tx(8'h42);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
 
-        // fpga_bus_release
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h21);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        // // fpga_bus_release
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h21);
+        // spi_ssel_n_r <= 1'b1;
+        // @(posedge phi);
+
+
+        // iowr(16'd244, 8'd128);
+        // iowr(16'd245, 8'd128);
 
 
 /*

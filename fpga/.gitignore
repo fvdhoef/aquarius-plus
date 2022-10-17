@@ -1,6 +1,6 @@
 # intermediate build files
 *.bgn
-*.bit
+# *.bit
 *.bld
 *.cmd_log
 *.drc
@@ -69,7 +69,12 @@ _xmsgs/
 # other
 *.debug
 planAhead_run_*/
+planAhead.*.log
 pa.fromHdl.tcl
+pa.fromNetlist.tcl
+.DS_Store
+.Xil
 
 # Exception that actually need to be commited
-!top.bit
+# !top.bit
+

@@ -1,2 +1,2 @@
 #!/bin/bash
-rsync --exclude='.git/' --exclude='*.vcd' --progress -a ./ server:Work/aquarius-plus/fpga/
+rsync --include='**.gitignore' --exclude='.git/' --exclude='*.vcd' --filter=':- .gitignore' --progress -a ./ server:Work/aquarius-plus/fpga/

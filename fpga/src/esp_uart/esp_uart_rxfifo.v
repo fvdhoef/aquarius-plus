@@ -22,7 +22,7 @@ module esp_uart_rxfifo(
 
     assign empty = wridx == rdidx;
     assign full = wridx_next == rdidx;
-    assign almost_full = count >= 4'd13;
+    assign almost_full = count >= 4'd8;
 
     always @(posedge clk) begin
         if (wr_en && !full) begin

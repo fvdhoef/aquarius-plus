@@ -52,7 +52,6 @@ struct emulation_state {
     // Memory space
     uint8_t screenram[1024];      // $3000-33FF: Screen RAM for text mode
     uint8_t colorram[1024];       // $3400-37FF: Color RAM for text mode
-    uint8_t basicram[2048];       // $3800-3FFF: BASIC RAM on a stock Aquarius
     uint8_t flashrom[256 * 1024]; // Flash memory
     uint8_t mainram[512 * 1024];  // Main RAM
     uint8_t gamerom[16 * 1024];   // Cartridge ROM

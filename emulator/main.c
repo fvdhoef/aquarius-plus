@@ -34,7 +34,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
         } else if (addr < 0x3800) {
             return emustate.colorram[addr & 0x3FF];
         } else {
-            return emustate.basicram[addr & 0x7FF];
+            return emustate.mainram[addr];
         }
     }
 
@@ -78,7 +78,7 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
         } else if (addr < 0x3800) {
             emustate.colorram[addr & 0x3FF] = data;
         } else {
-            emustate.basicram[addr & 0x7FF] = data;
+            emustate.mainram[addr] = data;
         }
         return;
     }

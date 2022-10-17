@@ -66,16 +66,15 @@ void ay8910_write_reg(struct ay8910 *ay, uint8_t r, uint8_t v) {
         case AY_CFINE:
         case AY_CCOARSE: ay->tone[2].period = ((ay->regs[AY_CCOARSE] & 0xF) << 8) | ay->regs[AY_CFINE]; break;
         case AY_NOISEPER: break;
+        case AY_ENABLE: break;
         case AY_AVOL: ay->tone[0].volume = ay->regs[AY_AVOL]; break;
         case AY_BVOL: ay->tone[1].volume = ay->regs[AY_BVOL]; break;
         case AY_CVOL: ay->tone[2].volume = ay->regs[AY_CVOL]; break;
-        case AY_EACOARSE:
-        case AY_EAFINE: ay->envelope.period = (ay->regs[AY_EACOARSE] << 8) | ay->regs[AY_EAFINE]; break;
-        case AY_ENABLE: break;
+        case AY_EAFINE:
+        case AY_EACOARSE: ay->envelope.period = (ay->regs[AY_EACOARSE] << 8) | ay->regs[AY_EAFINE]; break;
         case AY_EASHAPE: {
             uint8_t       shape = ay->regs[AY_EASHAPE];
-            const uint8_t mask  = 0x0F;
-            ay->envelope.attack = (shape & 0x04) ? mask : 0x00;
+            ay->envelope.attack = (shape & 0x04) ? 0x0F : 0x00;
             if ((shape & 0x08) == 0) {
                 // if Continue = 0, map the shape to the equivalent one which has Continue = 1
                 ay->envelope.hold      = true;
@@ -84,7 +83,7 @@ void ay8910_write_reg(struct ay8910 *ay, uint8_t r, uint8_t v) {
                 ay->envelope.hold      = (shape & 0x01) != 0;
                 ay->envelope.alternate = (shape & 0x02) != 0;
             }
-            ay->envelope.step    = mask;
+            ay->envelope.step    = 0x0F;
             ay->envelope.holding = false;
             ay->envelope.volume  = (ay->envelope.step ^ ay->envelope.attack);
             break;
