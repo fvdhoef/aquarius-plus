@@ -3,19 +3,37 @@ module video(
     input  wire        reset,
 
     // Text RAM interface
-    input  wire [10:0] vram_addr,
+    input  wire [10:0] tram_addr,
+    output wire  [7:0] tram_rddata,
+    input  wire  [7:0] tram_wrdata,
+    input  wire        tram_wren,
+
+    // Char RAM interface
+    input  wire [10:0] chram_addr,
+    output wire  [7:0] chram_rddata,
+    input  wire  [7:0] chram_wrdata,
+    input  wire        chram_wren,
+
+    // Palette interface
+    input  wire  [6:0] palram_addr,
+    output wire  [7:0] palram_rddata,
+    input  wire  [7:0] palram_wrdata,
+    input  wire        palram_wren,
+
+    // Video RAM interface
+    input  wire [13:0] vram_addr,
     output wire  [7:0] vram_rddata,
     input  wire  [7:0] vram_wrdata,
     input  wire        vram_wren,
 
     // VGA output
-    output reg  [3:0] vga_r,
-    output reg  [3:0] vga_g,
-    output reg  [3:0] vga_b,
-    output reg        vga_hsync,
-    output reg        vga_vsync,
+    output reg   [3:0] vga_r,
+    output reg   [3:0] vga_g,
+    output reg   [3:0] vga_b,
+    output reg         vga_hsync,
+    output reg         vga_vsync,
     
-    output wire       vga_vblank);
+    output wire        vga_vblank);
 
     //////////////////////////////////////////////////////////////////////////
     // Video timing
@@ -89,24 +107,24 @@ module video(
         end
 
     //////////////////////////////////////////////////////////////////////////
-    // Video RAM
+    // Text RAM
     //////////////////////////////////////////////////////////////////////////
-    wire [15:0] videoram_rddata;
-    wire [10:0] p1_addr = {vram_addr[9:0], vram_addr[10]};
+    wire [15:0] textram_rddata;
+    wire [10:0] p1_addr = {tram_addr[9:0], tram_addr[10]};
 
-    videoram videoram(
+    textram textram(
         .p1_clk(clk),
         .p1_addr(p1_addr),
-        .p1_rddata(vram_rddata),
-        .p1_wrdata(vram_wrdata),
-        .p1_wren(vram_wren),
+        .p1_rddata(tram_rddata),
+        .p1_wrdata(tram_wrdata),
+        .p1_wren(tram_wren),
 
         .p2_clk(clk),
         .p2_addr(char_addr_r),
-        .p2_rddata(videoram_rddata));
+        .p2_rddata(textram_rddata));
 
-    wire [7:0] text_data  = videoram_rddata[7:0];
-    wire [7:0] color_data = videoram_rddata[15:8];
+    wire [7:0] text_data  = textram_rddata[7:0];
+    wire [7:0] color_data = textram_rddata[15:8];
 
     reg [7:0] color_data_r;
     always @(posedge clk) color_data_r <= color_data;
@@ -120,10 +138,10 @@ module video(
     charram charram(
         .clk(clk),
 
-        // .addr1(11'b0),
-        // .rddata1(),
-        // .wrdata1(8'h0),
-        // .wren1(1'b0),
+        .addr1(chram_addr),
+        .rddata1(chram_rddata),
+        .wrdata1(chram_wrdata),
+        .wren1(chram_wren),
 
         .addr2(charram_addr),
         .rddata2(charram_data));
@@ -133,26 +151,61 @@ module video(
     wire char_pixel = charram_data[pixel_sel];
     wire [3:0] pixel_colidx = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
 
-    reg [11:0] pix_color;
-    always @* case (pixel_colidx)
-        4'h0: pix_color = 12'h111;
-        4'h1: pix_color = 12'hF11;
-        4'h2: pix_color = 12'h1F1;
-        4'h3: pix_color = 12'hFF1;
-        4'h4: pix_color = 12'h22E;
-        4'h5: pix_color = 12'hF1F;
-        4'h6: pix_color = 12'h3CC;
-        4'h7: pix_color = 12'hFFF;
-        4'h8: pix_color = 12'hCCC;
-        4'h9: pix_color = 12'h3BB;
-        4'hA: pix_color = 12'hC2C;
-        4'hB: pix_color = 12'h419;
-        4'hC: pix_color = 12'hFF7;
-        4'hD: pix_color = 12'h2D4;
-        4'hE: pix_color = 12'hB22;
-        4'hF: pix_color = 12'h333;
-    endcase
+    //////////////////////////////////////////////////////////////////////////
+    // VRAM
+    //////////////////////////////////////////////////////////////////////////
+    wire [13:0] vram_addr2 = 14'b0;
 
+    vram vram(
+        // First port - CPU access
+        .p1_clk(clk),
+        .p1_addr(vram_addr),
+        .p1_rddata(vram_rddata),
+        .p1_wrdata(vram_wrdata),
+        .p1_wren(vram_wren),
+
+        // Second port - Video access
+        .p2_clk(clk),
+        .p2_addr(vram_addr2),
+        .p2_rddata());
+
+    //////////////////////////////////////////////////////////////////////////
+    // Palette
+    //////////////////////////////////////////////////////////////////////////
+    wire [11:0] pix_color;
+    wire [11:0] palette_rddata;
+
+    wire palram_wren_l = palram_wren && !palram_addr[0];
+    wire palram_wren_h = palram_wren &&  palram_addr[0];
+
+    parameter [16*12-1:0] PALETTE_INIT = {
+        12'h111, 12'hF11, 12'h1F1, 12'hFF1, 12'h22E, 12'hF1F, 12'h3CC, 12'hFFF,
+        12'hCCC, 12'h3BB, 12'hC2C, 12'h419, 12'hFF7, 12'h2D4, 12'hB22, 12'h333
+    };
+
+    generate
+        genvar i;
+        for (i=0; i<12; i=i+1) begin: palram_gen
+            RAM16X1D #(
+                .INIT({
+                    PALETTE_INIT[ 0*12+i], PALETTE_INIT[ 1*12+i], PALETTE_INIT[ 2*12+i], PALETTE_INIT[ 3*12+i],
+                    PALETTE_INIT[ 4*12+i], PALETTE_INIT[ 5*12+i], PALETTE_INIT[ 6*12+i], PALETTE_INIT[ 7*12+i],
+                    PALETTE_INIT[ 8*12+i], PALETTE_INIT[ 9*12+i], PALETTE_INIT[10*12+i], PALETTE_INIT[11*12+i],
+                    PALETTE_INIT[12*12+i], PALETTE_INIT[13*12+i], PALETTE_INIT[14*12+i], PALETTE_INIT[15*12+i]
+                }))
+            
+            palram(
+                .DPRA3(pixel_colidx[3]), .DPRA2(pixel_colidx[2]), .DPRA1(pixel_colidx[1]), .DPRA0(pixel_colidx[0]), .DPO(pix_color[i]),
+                .A3(   palram_addr[4]),  .A2(   palram_addr[3]),  .A1(   palram_addr[2]),  .A0(   palram_addr[1]),  .SPO(palette_rddata[i]),
+                .WCLK(clk), .D(palram_wrdata[i & 7]), .WE((i<8) ? palram_wren_l : palram_wren_h));
+        end
+    endgenerate
+
+    assign palram_rddata = palram_addr[0] ? {4'h0, palette_rddata[11:8]} : palette_rddata[7:0];
+
+    //////////////////////////////////////////////////////////////////////////
+    // Output registers
+    //////////////////////////////////////////////////////////////////////////
     always @(posedge(clk))
         if (blank_rr) begin
             vga_r <= 4'b0;

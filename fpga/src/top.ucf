@@ -96,6 +96,15 @@ NET "esp_mosi"          LOC = P65;
 NET "esp_miso"          LOC = P57;
 NET "esp_notify"        LOC = P31;
 
+NET "ebus_d[0]" PULLUP;
+NET "ebus_d[1]" PULLUP;
+NET "ebus_d[2]" PULLUP;
+NET "ebus_d[3]" PULLUP;
+NET "ebus_d[4]" PULLUP;
+NET "ebus_d[5]" PULLUP;
+NET "ebus_d[6]" PULLUP;
+NET "ebus_d[7]" PULLUP;
+
 NET "sysclk"            IOSTANDARD = LVTTL;
 NET "usbclk"            IOSTANDARD = LVTTL;
 NET "ebus_reset_n"      IOSTANDARD = LVTTL;

@@ -4,21 +4,21 @@ module pwm_dac(
 
     // Sample input
     input  wire        next_sample,
-    input  wire [15:0] left_data,       // 2's complement signed left data
-    input  wire [15:0] right_data,      // 2's complement signed right data
+    input  wire [15:0] left_data,
+    input  wire [15:0] right_data,
 
     // PWM audio output
     output reg         audio_l,
     output reg         audio_r);
 
-    reg [15:0] left_sample_r = 16'd10240;
-    reg [15:0] right_sample_r = 16'd10240;
+    reg [15:0] left_sample_r;
+    reg [15:0] right_sample_r;
 
     always @(posedge clk) begin
         if (next_sample) begin
             // Convert to unsigned data
-            left_sample_r  <= {!left_data[15],  left_data[14:0]};
-            right_sample_r <= {!right_data[15], right_data[14:0]};
+            left_sample_r  <= left_data;
+            right_sample_r <= right_data;
         end
     end
 

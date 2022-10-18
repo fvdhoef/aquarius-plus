@@ -7,6 +7,10 @@ struct emulation_state emustate = {
     .handctrl1        = 0xFF,
     .handctrl2        = 0xFF,
     .ramexp_enabled   = true,
+    .video_palette    = {
+           0x111, 0xF11, 0x1F1, 0xFF1, 0x22E, 0xF1F, 0x3CC, 0xFFF,
+           0xCCC, 0x3BB, 0xC2C, 0x419, 0xFF7, 0x2D4, 0xB22, 0x333},
+    .video_ctrl = 1,
 };
 
 void emustate_init(void) {
@@ -15,9 +19,6 @@ void emustate_init(void) {
     }
     for (unsigned i = 0; i < sizeof(emustate.colorram); i++) {
         emustate.colorram[i] = rand();
-    }
-    for (unsigned i = 0; i < sizeof(emustate.basicram); i++) {
-        emustate.basicram[i] = rand();
     }
     for (unsigned i = 0; i < sizeof(emustate.flashrom); i++) {
         emustate.flashrom[i] = 0xFF;

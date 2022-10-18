@@ -421,9 +421,7 @@ The Aq+ has an interface to communicate with an ESP32 module. This interface is 
 
 Communication is done via 2 IO registers: ESPCTRL and ESPDATA.
 
-Writing a 1 to _Start frame_ will generate a framing sequence.
-
-Write a 1 to either _TX FIFO full_ or _RX FIFO non-empty_ will flush the respective FIFO buffer.
+Writing a 1 to _Transmit break_ will transmit a BREAK condition to indicate the start of a new command.
 
 ## Commands
 

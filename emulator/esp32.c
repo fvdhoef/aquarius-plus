@@ -2,9 +2,9 @@
 #include "direnum.h"
 
 #if 0
-#define DBGF(...) printf(__VA_ARGS__)
+#    define DBGF(...) printf(__VA_ARGS__)
 #else
-#define DBGF(...)
+#    define DBGF(...)
 #endif
 
 enum {
@@ -173,6 +173,8 @@ static char *resolve_path(const char *path) {
     *pd = 0;
     // printf("result: '%s'  num_components: %d\n", result, num_components);
 
+    free(tmppath);
+
     return result;
 }
 
@@ -239,7 +241,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
         }
     }
     mode[mi++] = 'b';
-    mode[mi] = 0;
+    mode[mi]   = 0;
 
     // Find free file descriptor
     int fd = -1;
@@ -654,7 +656,7 @@ static void esp_getcwd(void) {
     if (len == 0) {
         txfifo_write('/');
     } else {
-        for (int i = 0; i < len + 1; i++) {
+        for (int i = 0; i < len; i++) {
             txfifo_write(state.current_path[i]);
         }
     }
@@ -862,11 +864,11 @@ void esp32_write_ctrl(uint8_t data) {
         state.rxbuf_idx = 0;
         state.new_path  = NULL;
     }
-    if (data & 0x01) {
-        state.txfifo_cnt   = 0;
-        state.txfifo_rdidx = 0;
-        state.txfifo_wridx = 0;
-    }
+    // if (data & 0x01) {
+    //     state.txfifo_cnt   = 0;
+    //     state.txfifo_rdidx = 0;
+    //     state.txfifo_wridx = 0;
+    // }
 }
 
 uint8_t esp32_read_ctrl(void) {

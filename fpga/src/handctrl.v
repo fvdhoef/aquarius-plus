@@ -42,7 +42,7 @@ module handctrl(
             hctrl1_data <= 8'hFF;
             hctrl2_data <= 8'hFF;
 
-        end else if (bitcnt_r == 5'd0) begin
+        end else if (shift_done) begin
             hctrl1_data <= data_r[7:0];
             hctrl2_data <= data_r[15:8];
         end
