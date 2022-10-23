@@ -47,7 +47,7 @@ struct emulation_state {
     bool          sysctrl_ay_disable;       // $FB<1>: Disable AY PSGs
     bool          sound_output;             // $FC<1>: Cassette/Sound output
     bool          cpm_remap;                // $FD<1>: Remap memory for CP/M
-    uint8_t       extbus_scramble;          // $FF   : External bus scramble (XOR) value
+    // uint8_t       extbus_scramble;          // $FF   : External bus scramble (XOR) value
 
     // Memory space
     uint8_t screenram[1024];      // $3000-33FF: Screen RAM for text mode
