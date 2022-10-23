@@ -248,14 +248,14 @@
     <tr>
         <td>$FC/252 R</td>
         <td>CASSETTE</td>
-        <td colspan="1">Casette interface</td>
+        <td colspan="1">Cassette interface</td>
         <td align="center" colspan="7">-</td>
         <td align="center" colspan="1">Cassette input</td>
     </tr>
     <tr>
         <td>$FC/252 W</td>
         <td>CASSETTE</td>
-        <td colspan="1">Casette interface</td>
+        <td colspan="1">Cassette interface</td>
         <td align="center" colspan="7">-</td>
         <td align="center" colspan="1">Cassette/sound output</td>
     </tr>
