@@ -22,6 +22,7 @@ module top(
     output wire        ebus_ram_ce_n,   // 512KB RAM
     output wire        ebus_rom_ce_n,   // 256KB Flash memory
     output wire        ebus_cart_ce_n,  // Cartridge
+    output wire        ebus_ram_rom_we_n,
 
     // PWM audio outputs
     output wire        audio_l,
@@ -40,7 +41,7 @@ module top(
     inout  wire        usb_dm2,
 
     // Misc
-    output wire  [6:0] exp,
+    output wire  [5:0] exp,
 
     // Hand controller interface
     output wire        hctrl_clk,
@@ -170,6 +171,8 @@ module top(
     wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;            // Page  0-15
     wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
     wire sel_mem_ram     = (allow_sel_mem && reg_bank_page[5]) || sel_mem_sysram;   // Page 32-63
+
+    assign ebus_ram_rom_we_n = !(!ebus_wr_n && (sel_mem_sysram || ((sel_mem_ram || sel_mem_rom) && !reg_bank_ro)));
 
     assign ebus_rom_ce_n = !sel_mem_rom;
     assign ebus_ram_ce_n = !sel_mem_ram;
