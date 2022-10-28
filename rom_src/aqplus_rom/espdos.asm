@@ -1235,6 +1235,7 @@ load_rom:
 .ok:
     call    esp_close_all
 
+descramble_rom:
     ; Determine scramble value
     xor     a
     ld      hl, $E003

@@ -16,6 +16,9 @@ with open("../../emulator/aquarius.rom", "wb") as f:
         # Cold start entry point in ROM
         set_jump(0x010F, 0x2003)
 
+        # Cartridge start
+        set_jump(0x007F, 0x2006)
+
         # Patch to keep scramble register at $00 in BASIC
         stockrom[0x0156] = 0xAF
 

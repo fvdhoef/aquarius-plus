@@ -36,6 +36,7 @@
     org     $2000
     jp      _reset          ; Called from main ROM at reset vector
     jp      _coldboot       ; Called from main ROM for cold boot
+    jp      _start_cart
 
 ;-----------------------------------------------------------------------------
 ; Reset vector
@@ -148,6 +149,32 @@ _coldboot:
 .str_basic:
     db $0D, $0A
     db "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
+
+;-----------------------------------------------------------------------------
+; Cartridge start entry point - A hold scramble value
+;-----------------------------------------------------------------------------
+_start_cart:
+    cp      $00
+    jp      nz, .descramble
+    jp      XINIT
+
+.descramble:
+    ; Map destination RAM in bank2
+    ld      a, 35
+    out     (IO_BANK2), a
+
+    ; Copy ROM cartridge to RAM
+    ld      de, $8000
+    ld      hl, $C000
+    ld      bc, $4000
+    ldir
+
+    ; Map RAM in bank3
+    ld      a, 35
+    out     (IO_BANK3), a
+
+    ; Descramble and start ROM
+    jp      descramble_rom
 
 ;-----------------------------------------------------------------------------
 ; Hook handler

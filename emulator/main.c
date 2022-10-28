@@ -41,7 +41,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
     if (page < 16) {
         return emustate.flashrom[page * 0x4000 + addr];
     } else if (page == 19) {
-        return emustate.gamerom[addr] ^ emustate.extbus_scramble;
+        return emustate.gamerom[addr];  // ^ emustate.extbus_scramble;
     } else if (page == 20) {
         return emustate.videoram[addr];
     } else if (page == 21) {
@@ -273,8 +273,8 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
         case 0xFD: emustate.cpm_remap = (data & 1) != 0; break;
         case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
         case 0xFF:
-            printf("Scramble value: 0x%02x\n", data);
-            emustate.extbus_scramble = data;
+            // printf("Scramble value: 0x%02x\n", data);
+            // emustate.extbus_scramble = data;
             break;
         default: printf("io_write(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
     }
@@ -287,7 +287,7 @@ void reset(void) {
     emustate.z80context.memRead  = mem_read;
     emustate.z80context.memWrite = mem_write;
 
-    emustate.extbus_scramble = 0;
+    // emustate.extbus_scramble = 0;
     emustate.cpm_remap       = false;
 
     ay8910_reset(&emustate.ay_state);

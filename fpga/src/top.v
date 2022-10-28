@@ -84,6 +84,7 @@ module top(
     wire [7:0] rddata_espctrl;          // IO $F4
     wire [7:0] rddata_espdata;          // IO $F5
     wire [7:0] rddata_ay8910;           // IO $F6/F7
+    wire [7:0] rddata_ay8910_2;         // IO $F8/F9
     wire [7:0] rddata_keyboard;         // IO $FF:R
 
     reg  [6:0] vpalsel_r;               // IO $EA
@@ -154,6 +155,8 @@ module top(
     wire sel_io_espctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
     wire sel_io_espdata           = !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
     wire sel_io_ay8910            = !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
+    wire sel_io_ay8910_2          = !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
+    wire sel_sysctrl              = !ebus_iorq_n && ebus_a[7:0] == 8'hFB;
     wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
     wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
     wire sel_io_printer           = !ebus_iorq_n && ebus_a[7:0] == 8'hFE;
@@ -163,7 +166,7 @@ module top(
         sel_mem_tram | sel_mem_vram | sel_mem_chram |
         sel_io_vpalsel | sel_io_vpaldata |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
-        sel_io_espctrl | sel_io_espdata | sel_io_ay8910 |
+        sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
     wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
@@ -194,6 +197,7 @@ module top(
         if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
         if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
         if (sel_io_ay8910)            rddata <= rddata_ay8910;          // IO $F6/F7
+        if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;        // IO $F8/F9
         if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
         if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
@@ -406,8 +410,10 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // AY-3-8910
     //////////////////////////////////////////////////////////////////////////
-    wire       ay8910_wren = sel_io_ay8910 && bus_write;
-    wire [9:0] ay8910_ch_a, ay8910_ch_b, ay8910_ch_c;
+    wire       ay8910_wren   = sel_io_ay8910   && bus_write;
+    wire       ay8910_2_wren = sel_io_ay8910_2 && bus_write;
+    wire [9:0] ay8910_ch_a,   ay8910_ch_b,   ay8910_ch_c;
+    wire [9:0] ay8910_2_ch_a, ay8910_2_ch_b, ay8910_2_ch_c;
 
     wire [9:0] beep = cassette_out ? 10'd1023 : 10'd0;
 
@@ -427,16 +433,39 @@ module top(
         .ch_b(ay8910_ch_b),
         .ch_c(ay8910_ch_c));
 
+    ay8910 ay8910_2(
+        .clk(sysclk),
+        .reset(reset),
+
+        .a0(ebus_a[0]),
+        .wren(ay8910_2_wren),
+        .wrdata(wrdata),
+        .rddata(rddata_ay8910_2),
+
+        .ioa_in_data(8'h00),
+        .iob_in_data(8'h00),
+
+        .ch_a(ay8910_2_ch_a),
+        .ch_b(ay8910_2_ch_b),
+        .ch_c(ay8910_2_ch_c));
+
     // Create stereo mix of output channels and system beep (cassette output)
-    wire [15:0] ay8910_l = {ay8910_ch_a, 1'b0} + {ay8910_ch_b, 1'b0} + {1'b0, ay8910_ch_c} + {1'b0, beep};
-    wire [15:0] ay8910_r = {1'b0, ay8910_ch_a} + {ay8910_ch_b, 1'b0} + {ay8910_ch_c, 1'b0} + {1'b0, beep};
+    wire [13:0] ay8910_l =
+        {ay8910_ch_a,   1'b0} + {ay8910_ch_b,   1'b0} + {1'b0, ay8910_ch_c  } +
+        {ay8910_2_ch_a, 1'b0} + {ay8910_2_ch_b, 1'b0} + {1'b0, ay8910_2_ch_c} +
+        {1'b0, beep};
+
+    wire [13:0] ay8910_r =
+        {1'b0, ay8910_ch_a  } + {ay8910_ch_b,   1'b0} + {ay8910_ch_c,   1'b0} +
+        {1'b0, ay8910_2_ch_a} + {ay8910_2_ch_b, 1'b0} + {ay8910_2_ch_c, 1'b0} +
+        {1'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
     //////////////////////////////////////////////////////////////////////////
     wire        next_sample = 1'b1;
-    wire [15:0] left_data   = {1'b0, ay8910_l, 2'b0};
-    wire [15:0] right_data  = {1'b0, ay8910_r, 2'b0};
+    wire [15:0] left_data   = {ay8910_l, 2'b0};
+    wire [15:0] right_data  = {ay8910_r, 2'b0};
 
     pwm_dac pwm_dac(
         .rst(reset),

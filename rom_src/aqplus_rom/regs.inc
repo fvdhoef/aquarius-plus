@@ -159,6 +159,9 @@ PRNTIT:     equ $1FF2   ; Print copyright message and return
 INT2STR:    equ $1679   ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
 FPSTR:      equ $38E9   ; Floating point string
 
+XINIT:      equ $E010   ; Cartridge entry point
+RESET:      equ $0089
+
 ;-----------------------------------------------------------------------------
 ; IO registers
 ;-----------------------------------------------------------------------------
