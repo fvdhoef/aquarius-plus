@@ -2,6 +2,12 @@ module video(
     input  wire        clk,
     input  wire        reset,
 
+    // IO register interface
+    input  wire  [3:0] io_addr,
+    output reg   [7:0] io_rddata,
+    input  wire  [7:0] io_wrdata,
+    input  wire        io_wren,
+
     // Text RAM interface
     input  wire [10:0] tram_addr,
     output wire  [7:0] tram_rddata,
@@ -13,12 +19,6 @@ module video(
     output wire  [7:0] chram_rddata,
     input  wire  [7:0] chram_wrdata,
     input  wire        chram_wren,
-
-    // Palette interface
-    input  wire  [6:0] palram_addr,
-    output wire  [7:0] palram_rddata,
-    input  wire  [7:0] palram_wrdata,
-    input  wire        palram_wren,
 
     // Video RAM interface
     input  wire [13:0] vram_addr,
@@ -34,6 +34,28 @@ module video(
     output reg         vga_vsync,
     
     output wire        vga_vblank);
+
+    reg  [6:0] vpalsel_r;               // IO $EA
+    wire [7:0] rddata_vpaldata;
+
+    //////////////////////////////////////////////////////////////////////////
+    // IO registers
+    //////////////////////////////////////////////////////////////////////////
+    wire sel_io_vpalsel  = (io_addr == 4'hA);
+    wire sel_io_vpaldata = (io_addr == 4'hB);
+
+    always @* begin
+        io_rddata <= 8'h00;
+        if (sel_io_vpalsel)  io_rddata <= {1'b0, vpalsel_r};    // IO $EA
+        if (sel_io_vpaldata) io_rddata <= rddata_vpaldata;      // IO $EB
+    end
+
+    always @(posedge clk or posedge reset)
+        if (reset) begin
+            vpalsel_r <= 7'b0;
+        end else begin
+            if (io_wren && sel_io_vpalsel) vpalsel_r <= io_wrdata[6:0];
+        end
 
     //////////////////////////////////////////////////////////////////////////
     // Video timing
@@ -146,9 +168,8 @@ module video(
         .addr2(charram_addr),
         .rddata2(charram_data));
 
-    wire [2:0] pixel_sel = hpos_rr[2:0] ^ 3'b111;
-
-    wire char_pixel = charram_data[pixel_sel];
+    wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
+    wire       char_pixel   = charram_data[pixel_sel];
     wire [3:0] pixel_colidx = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
 
     //////////////////////////////////////////////////////////////////////////
@@ -175,8 +196,8 @@ module video(
     wire [11:0] pix_color;
     wire [11:0] palette_rddata;
 
-    wire palram_wren_l = palram_wren && !palram_addr[0];
-    wire palram_wren_h = palram_wren &&  palram_addr[0];
+    wire palram_wren_l = io_wren && sel_io_vpaldata && !vpalsel_r[0];
+    wire palram_wren_h = io_wren && sel_io_vpaldata &&  vpalsel_r[0];
 
     parameter [16*12-1:0] PALETTE_INIT = {
         12'h111, 12'hF11, 12'h1F1, 12'hFF1, 12'h22E, 12'hF1F, 12'h3CC, 12'hFFF,
@@ -196,12 +217,12 @@ module video(
             
             palram(
                 .DPRA3(pixel_colidx[3]), .DPRA2(pixel_colidx[2]), .DPRA1(pixel_colidx[1]), .DPRA0(pixel_colidx[0]), .DPO(pix_color[i]),
-                .A3(   palram_addr[4]),  .A2(   palram_addr[3]),  .A1(   palram_addr[2]),  .A0(   palram_addr[1]),  .SPO(palette_rddata[i]),
-                .WCLK(clk), .D(palram_wrdata[i & 7]), .WE((i<8) ? palram_wren_l : palram_wren_h));
+                .A3(   vpalsel_r[4]),    .A2(   vpalsel_r[3]),    .A1(   vpalsel_r[2]),    .A0(   vpalsel_r[1]),    .SPO(palette_rddata[i]),
+                .WCLK(clk), .D(io_wrdata[i & 7]), .WE((i<8) ? palram_wren_l : palram_wren_h));
         end
     endgenerate
 
-    assign palram_rddata = palram_addr[0] ? {4'h0, palette_rddata[11:8]} : palette_rddata[7:0];
+    assign rddata_vpaldata = vpalsel_r[0] ? {4'h0, palette_rddata[11:8]} : palette_rddata[7:0];
 
     //////////////////////////////////////////////////////////////////////////
     // Output registers
