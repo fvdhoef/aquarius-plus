@@ -35,26 +35,58 @@ module video(
     
     output wire        vga_vblank);
 
-    reg  [6:0] vpalsel_r;               // IO $EA
     wire [7:0] rddata_vpaldata;
+    wire [7:0] rddata_sprattr;
+
+    reg        vctrl_text_priority_r;   // IO $E0
+    reg        vctrl_sprites_enable_r;  // IO $E0
+    reg  [1:0] vctrl_gfx_mode_r;        // IO $E0
+    reg        vctrl_text_enable_r;     // IO $E0
+    reg  [8:0] vscrx_r;                 // IO $E1/2
+    reg  [7:0] vscry_r;                 // IO $E3
+    reg  [6:0] vpalsel_r;               // IO $EA
 
     //////////////////////////////////////////////////////////////////////////
     // IO registers
     //////////////////////////////////////////////////////////////////////////
+    wire sel_io_vctrl    = (io_addr == 4'h0);
+    wire sel_io_vscrx_l  = (io_addr == 4'h1);
+    wire sel_io_vscrx_h  = (io_addr == 4'h2);
+    wire sel_io_vscry    = (io_addr == 4'h3);
     wire sel_io_vpalsel  = (io_addr == 4'hA);
     wire sel_io_vpaldata = (io_addr == 4'hB);
 
     always @* begin
-        io_rddata <= 8'h00;
+        io_rddata <= rddata_sprattr;
+        if (sel_io_vctrl)    io_rddata <= {3'b0, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
+        if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];
+        if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};
+        if (sel_io_vscry)    io_rddata <= vscry_r;
         if (sel_io_vpalsel)  io_rddata <= {1'b0, vpalsel_r};    // IO $EA
         if (sel_io_vpaldata) io_rddata <= rddata_vpaldata;      // IO $EB
     end
 
     always @(posedge clk or posedge reset)
         if (reset) begin
+            vctrl_text_priority_r  <= 1'b0;
+            vctrl_sprites_enable_r <= 1'b0;
+            vctrl_gfx_mode_r       <= 2'b0;
+            vctrl_text_enable_r    <= 1'b0;
+            vscrx_r                <= 9'b0;
+            vscry_r                <= 8'b0;
             vpalsel_r <= 7'b0;
-        end else begin
-            if (io_wren && sel_io_vpalsel) vpalsel_r <= io_wrdata[6:0];
+        end else if (io_wren) begin
+            if (sel_io_vctrl) begin
+                vctrl_text_priority_r  <= io_wrdata[4];
+                vctrl_sprites_enable_r <= io_wrdata[3];
+                vctrl_gfx_mode_r       <= io_wrdata[2:1];
+                vctrl_text_enable_r    <= io_wrdata[0];
+            end
+            if (sel_io_vscrx_l)  vscrx_r[7:0] <= io_wrdata;
+            if (sel_io_vscrx_h)  vscrx_r[8]   <= io_wrdata[0];
+            if (sel_io_vscry)    vscry_r      <= io_wrdata;
+
+            if (sel_io_vpalsel) vpalsel_r <= io_wrdata[6:0];
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -171,6 +203,41 @@ module video(
     wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
     wire [3:0] pixel_colidx = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
+
+    //////////////////////////////////////////////////////////////////////////
+    // Sprite attribute RAM
+    //////////////////////////////////////////////////////////////////////////
+    wire  [5:0] spr_sel = 6'b0;
+    wire  [8:0] spr_x;
+    wire  [7:0] spr_y;
+    wire  [8:0] spr_idx;
+    wire        spr_enable;
+    wire        spr_priority;
+    wire  [1:0] spr_palette;
+    wire        spr_h16;
+    wire        spr_vflip;
+    wire        spr_hflip;
+
+    sprattr sprattr(
+        .clk(clk),
+        .reset(reset),
+
+        .io_addr(io_addr),
+        .io_rddata(rddata_sprattr),
+        .io_wrdata(io_wrdata),
+        .io_wren(io_wren),
+
+        .spr_sel(spr_sel),
+        .spr_x(spr_x),
+        .spr_y(spr_y),
+        .spr_idx(spr_idx),
+        .spr_enable(spr_enable),
+        .spr_priority(spr_priority),
+        .spr_palette(spr_palette),
+        .spr_h16(spr_h16),
+        .spr_vflip(spr_vflip),
+        .spr_hflip(spr_hflip)
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // VRAM

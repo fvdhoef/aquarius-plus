@@ -186,7 +186,6 @@ module top(
         if (sel_mem_chram)            rddata <= rddata_chram;
 
         if (sel_io_video)             rddata <= rddata_io_video;        // IO $E0-$EF
-
         if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
         if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
         if (sel_io_bank2)             rddata <= reg_bank2_r;            // IO $F2
