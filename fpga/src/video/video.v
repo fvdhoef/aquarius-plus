@@ -201,7 +201,7 @@ module video(
 
     wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
-    wire [5:0] pixel_colidx = char_pixel ? {2'b0, color_data_r[7:4]} : {2'b0, color_data_r[3:0]};
+    wire [3:0] text_colidx  = char_pixel ? {color_data_r[7:4]} : {color_data_r[3:0]};
 
     //////////////////////////////////////////////////////////////////////////
     // Sprite attribute RAM
@@ -255,6 +255,19 @@ module video(
         .p2_clk(clk),
         .p2_addr(vram_addr2),
         .p2_rddata());
+
+    //////////////////////////////////////////////////////////////////////////
+    // Compositing
+    //////////////////////////////////////////////////////////////////////////
+    reg  [5:0] pixel_colidx;
+
+    always @* begin
+        pixel_colidx <= 6'b0;
+
+        if (vctrl_text_enable_r)
+            pixel_colidx <= {2'b0, text_colidx};
+
+    end
 
     //////////////////////////////////////////////////////////////////////////
     // Palette

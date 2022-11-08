@@ -318,6 +318,10 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
+        memwr(16'h3000, 8'h5A);
+        memwr(16'h3400, 8'h5A);
+
+
         ay_write(4'h0, 8'd254);
         ay_write(4'h8, 8'hF);
         ay_write(4'h6, 8'h3E);
