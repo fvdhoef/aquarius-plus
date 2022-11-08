@@ -74,7 +74,7 @@ module video(
             vctrl_text_enable_r    <= 1'b0;
             vscrx_r                <= 9'b0;
             vscry_r                <= 8'b0;
-            vpalsel_r <= 7'b0;
+            vpalsel_r              <= 7'b0;
         end else if (io_wren) begin
             if (sel_io_vctrl) begin
                 vctrl_text_priority_r  <= io_wrdata[4];
@@ -85,8 +85,7 @@ module video(
             if (sel_io_vscrx_l)  vscrx_r[7:0] <= io_wrdata;
             if (sel_io_vscrx_h)  vscrx_r[8]   <= io_wrdata[0];
             if (sel_io_vscry)    vscry_r      <= io_wrdata;
-
-            if (sel_io_vpalsel) vpalsel_r <= io_wrdata[6:0];
+            if (sel_io_vpalsel)  vpalsel_r    <= io_wrdata[6:0];
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -202,7 +201,7 @@ module video(
 
     wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
-    wire [3:0] pixel_colidx = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
+    wire [5:0] pixel_colidx = char_pixel ? {2'b0, color_data_r[7:4]} : {2'b0, color_data_r[3:0]};
 
     //////////////////////////////////////////////////////////////////////////
     // Sprite attribute RAM
@@ -260,36 +259,20 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Palette
     //////////////////////////////////////////////////////////////////////////
-    wire [11:0] pix_color;
-    wire [11:0] palette_rddata;
+    wire [3:0] pal_r, pal_g, pal_b;
 
-    wire palram_wren_l = io_wren && sel_io_vpaldata && !vpalsel_r[0];
-    wire palram_wren_h = io_wren && sel_io_vpaldata &&  vpalsel_r[0];
+    palette palette(
+        .clk(clk),
 
-    parameter [16*12-1:0] PALETTE_INIT = {
-        12'h111, 12'hF11, 12'h1F1, 12'hFF1, 12'h22E, 12'hF1F, 12'h3CC, 12'hFFF,
-        12'hCCC, 12'h3BB, 12'hC2C, 12'h419, 12'hFF7, 12'h2D4, 12'hB22, 12'h333
-    };
+        .addr(vpalsel_r),
+        .rddata(rddata_vpaldata),
+        .wrdata(io_wrdata),
+        .wren(io_wren && sel_io_vpaldata),
 
-    generate
-        genvar i;
-        for (i=0; i<12; i=i+1) begin: palram_gen
-            RAM16X1D #(
-                .INIT({
-                    PALETTE_INIT[ 0*12+i], PALETTE_INIT[ 1*12+i], PALETTE_INIT[ 2*12+i], PALETTE_INIT[ 3*12+i],
-                    PALETTE_INIT[ 4*12+i], PALETTE_INIT[ 5*12+i], PALETTE_INIT[ 6*12+i], PALETTE_INIT[ 7*12+i],
-                    PALETTE_INIT[ 8*12+i], PALETTE_INIT[ 9*12+i], PALETTE_INIT[10*12+i], PALETTE_INIT[11*12+i],
-                    PALETTE_INIT[12*12+i], PALETTE_INIT[13*12+i], PALETTE_INIT[14*12+i], PALETTE_INIT[15*12+i]
-                }))
-            
-            palram(
-                .DPRA3(pixel_colidx[3]), .DPRA2(pixel_colidx[2]), .DPRA1(pixel_colidx[1]), .DPRA0(pixel_colidx[0]), .DPO(pix_color[i]),
-                .A3(   vpalsel_r[4]),    .A2(   vpalsel_r[3]),    .A1(   vpalsel_r[2]),    .A0(   vpalsel_r[1]),    .SPO(palette_rddata[i]),
-                .WCLK(clk), .D(io_wrdata[i & 7]), .WE((i<8) ? palram_wren_l : palram_wren_h));
-        end
-    endgenerate
-
-    assign rddata_vpaldata = vpalsel_r[0] ? {4'h0, palette_rddata[11:8]} : palette_rddata[7:0];
+        .palidx(pixel_colidx),
+        .pal_r(pal_r),
+        .pal_g(pal_g),
+        .pal_b(pal_b));
 
     //////////////////////////////////////////////////////////////////////////
     // Output registers
@@ -301,9 +284,9 @@ module video(
             vga_b <= 4'b0;
 
         end else begin
-            vga_r <= pix_color[11:8];
-            vga_g <= pix_color[7:4];
-            vga_b <= pix_color[3:0];
+            vga_r <= pal_r;
+            vga_g <= pal_g;
+            vga_b <= pal_b;
         end
 
     always @(posedge clk) vga_hsync <= hsync_rr;
