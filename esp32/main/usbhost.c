@@ -13,6 +13,7 @@ static const char *TAG = "usbhost";
 #define CLASS_TASK_PRIORITY 3
 #define CLIENT_NUM_EVENT_MSG 5
 #define USB_REQUEST_SET_REPORT 0x09
+#define USB_REQUEST_SET_PROTOCOL 0x0B
 
 enum {
     ACTION_OPEN_DEV  = (1 << 0),
@@ -139,6 +140,31 @@ void keyboard_set_leds(uint8_t leds) {
     }
 }
 
+static void keyboard_set_boot_protocol(void) {
+    usb_transfer_t *transfer;
+
+    ESP_ERROR_CHECK(usb_host_transfer_alloc(sizeof(usb_setup_packet_t), 0, &transfer));
+    transfer->device_handle    = driver_obj.dev_hdl;
+    transfer->bEndpointAddress = 0;
+    transfer->callback         = notif_ctrl_xfer_cb;
+    transfer->context          = NULL;
+    transfer->timeout_ms       = 1000;
+    transfer->num_bytes        = sizeof(usb_setup_packet_t);
+
+    usb_setup_packet_t *req = (usb_setup_packet_t *)(transfer->data_buffer);
+    req->bmRequestType      = USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE;
+    req->bRequest           = USB_REQUEST_SET_PROTOCOL;
+    req->wValue             = 0;
+    req->wIndex             = 0;
+    req->wLength            = 0;
+
+    esp_err_t err = usb_host_transfer_submit_control(driver_obj.client_hdl, transfer);
+    if (err != ESP_OK) {
+        ESP_LOGI(TAG, "usb_host_transfer_submit_control: %s", esp_err_to_name(err));
+        usb_host_transfer_free(transfer);
+    }
+}
+
 static void task_class_driver(void *arg) {
     (void)arg;
 
@@ -198,6 +224,7 @@ static void task_class_driver(void *arg) {
                     ESP_ERROR_CHECK(usb_host_interface_claim(driver_obj.client_hdl, driver_obj.dev_hdl, ki.bInterfaceNumber, ki.bAlternateSetting));
                     assert(driver_obj.dev_hdl != NULL);
 
+                    keyboard_set_boot_protocol();
                     keyboard_set_leds(0);
 
                     ESP_LOGI(TAG, "Starting transfer");
