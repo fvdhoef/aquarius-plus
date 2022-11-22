@@ -82,6 +82,45 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
     bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
 
+    // Handle caps lock
+    if ((led_status & CAPS_LOCK) && !ctrl_pressed && !alt_pressed && !gui_pressed && scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z) {
+        shift_pressed = !shift_pressed;
+    }
+
+    // Handle keypad
+    if (!ctrl_pressed && !alt_pressed && !shift_pressed && !gui_pressed) {
+        switch (scancode) {
+            case SDL_SCANCODE_KP_DIVIDE: scancode = SDL_SCANCODE_SLASH; break;
+            case SDL_SCANCODE_KP_MULTIPLY:
+                scancode      = SDL_SCANCODE_8;
+                shift_pressed = true;
+                break;
+            case SDL_SCANCODE_KP_MINUS: scancode = SDL_SCANCODE_MINUS; break;
+            case SDL_SCANCODE_KP_PLUS:
+                scancode      = SDL_SCANCODE_EQUALS;
+                shift_pressed = true;
+                break;
+            case SDL_SCANCODE_KP_ENTER: scancode = SDL_SCANCODE_RETURN; break;
+        }
+
+        // Handle num lock
+        if (led_status & NUM_LOCK) {
+            switch (scancode) {
+                case SDL_SCANCODE_KP_1: scancode = SDL_SCANCODE_1; break;
+                case SDL_SCANCODE_KP_2: scancode = SDL_SCANCODE_2; break;
+                case SDL_SCANCODE_KP_3: scancode = SDL_SCANCODE_3; break;
+                case SDL_SCANCODE_KP_4: scancode = SDL_SCANCODE_4; break;
+                case SDL_SCANCODE_KP_5: scancode = SDL_SCANCODE_5; break;
+                case SDL_SCANCODE_KP_6: scancode = SDL_SCANCODE_6; break;
+                case SDL_SCANCODE_KP_7: scancode = SDL_SCANCODE_7; break;
+                case SDL_SCANCODE_KP_8: scancode = SDL_SCANCODE_8; break;
+                case SDL_SCANCODE_KP_9: scancode = SDL_SCANCODE_9; break;
+                case SDL_SCANCODE_KP_0: scancode = SDL_SCANCODE_0; break;
+                case SDL_SCANCODE_KP_PERIOD: scancode = SDL_SCANCODE_PERIOD; break;
+            }
+        }
+    }
+
     // Keep track of pressed keys
     static uint8_t pressed_keys[8] = {0};
     if (scancode < 64) {
