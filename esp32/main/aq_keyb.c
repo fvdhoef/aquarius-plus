@@ -4,9 +4,16 @@
 #include "flash.h"
 #include "screen.h"
 #include <esp_system.h>
+#include "usbhost.h"
 
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
+
+enum {
+    NUM_LOCK    = (1 << 0),
+    CAPS_LOCK   = (1 << 1),
+    SCROLL_LOCK = (1 << 2),
+};
 
 static const char *TAG = "keyboard";
 
@@ -29,6 +36,9 @@ static inline void aqkey_down(int key, bool shift) {
 }
 
 void keyboard_scancode(unsigned scancode, bool keydown) {
+    static uint8_t led_status     = 0;
+    uint8_t        new_led_status = led_status;
+
     // if (keydown) {
     //     ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
     // } else {
@@ -37,6 +47,16 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
 
     // Hand controller emulation
     // handcontroller(scancode, keydown);
+
+    if (keydown && scancode == SDL_SCANCODE_CAPSLOCK) {
+        new_led_status ^= CAPS_LOCK;
+    }
+    if (keydown && scancode == SDL_SCANCODE_NUMLOCKCLEAR) {
+        new_led_status ^= NUM_LOCK;
+    }
+    if (keydown && scancode == SDL_SCANCODE_SCROLLLOCK) {
+        new_led_status ^= SCROLL_LOCK;
+    }
 
     // Keep track of pressed modifier keys
     static uint16_t modifiers = 0;
@@ -72,19 +92,19 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         }
     }
 
-    if (keydown && scancode == SDL_SCANCODE_F1) {
-        fpga_bus_acquire();
-        fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
-        fpga_bus_release();
-    }
+    // if (keydown && scancode == SDL_SCANCODE_F1) {
+    //     fpga_bus_acquire();
+    //     fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
+    //     fpga_bus_release();
+    // }
 
-    if (keydown && scancode == SDL_SCANCODE_F4) {
-        fpga_bus_acquire();
-        for (int i = IO_BANK0; i <= IO_BANK3; i++) {
-            ESP_LOGI(TAG, "IO %02X: %02X", i, fpga_io_read(i));
-        }
-        fpga_bus_release();
-    }
+    // if (keydown && scancode == SDL_SCANCODE_F4) {
+    //     fpga_bus_acquire();
+    //     for (int i = IO_BANK0; i <= IO_BANK3; i++) {
+    //         ESP_LOGI(TAG, "IO %02X: %02X", i, fpga_io_read(i));
+    //     }
+    //     fpga_bus_release();
+    // }
 
     enum {
         UP    = (1 << 0),
@@ -248,6 +268,11 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
                     break;
             }
         }
+    }
+
+    if (led_status != new_led_status) {
+        led_status = new_led_status;
+        keyboard_set_leds(led_status);
     }
 }
 

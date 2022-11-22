@@ -35,7 +35,7 @@ void sdcard_init(void) {
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
     slot_config.gpio_cs               = IOPIN_SD_SSEL_N;
     slot_config.gpio_cd               = IOPIN_SD_CD_N;
-    slot_config.gpio_wp               = IOPIN_SD_WP_N;
+    slot_config.gpio_wp               = SDSPI_SLOT_NO_WP;
     slot_config.host_id               = host.slot;
 
     ESP_LOGI(TAG, "Mounting filesystem");
