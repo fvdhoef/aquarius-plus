@@ -174,7 +174,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
                     if (ctrl_pressed && shift_pressed && alt_pressed && gui_pressed) {
-                        // CTRL-SHIFT-ALT-GUI -> reprogram flash
+                        // CTRL-SHIFT-ALT-GUI-ESCAPE -> reprogram flash
                         flash_sysrom();
                         if (!verify_sysrom()) {
                             for (int i = 0; i < 5; i++) {
