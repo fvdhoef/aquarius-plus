@@ -2,11 +2,11 @@
 
   (uuid e63e39d7-6ac0-4ffd-8aa3-1841a4541b55)
 
-  (paper "A2")
+  (paper "User" 445.008 399.999)
 
   (title_block
     (title "Aquarius+")
-    (date "2023-03-15")
+    (date "2023-03-16")
     (rev "2x")
     (company "Designed by Frank van den Hoef")
   )
@@ -5614,9 +5614,6 @@
   (junction (at 27.94 20.32) (diameter 0) (color 0 0 0 0)
     (uuid 9a12cf44-c59b-4aed-aa2b-4876970dfeb3)
   )
-  (junction (at 175.26 92.71) (diameter 0) (color 0 0 0 0)
-    (uuid 9a5e0f1c-3e35-47bc-a501-dc0c79557850)
-  )
   (junction (at 35.56 284.48) (diameter 0) (color 0 0 0 0)
     (uuid 9ceffcf2-b59a-40cc-9b8e-091156e3466b)
   )
@@ -5661,6 +5658,9 @@
   )
   (junction (at 340.36 252.73) (diameter 0) (color 0 0 0 0)
     (uuid b35d4827-ad20-4707-aa01-a8312f89dd2c)
+  )
+  (junction (at 166.37 97.79) (diameter 0) (color 0 0 0 0)
+    (uuid b6019668-537c-40be-a081-edaf51038809)
   )
   (junction (at 44.45 242.57) (diameter 0) (color 0 0 0 0)
     (uuid b6291d24-f9f7-49ca-b5c4-3cfa77aa5cfc)
@@ -6102,6 +6102,10 @@
     (stroke (width 0) (type default))
     (uuid 18bfccb7-026f-4966-b269-58deaa52bd87)
   )
+  (wire (pts (xy 166.37 95.25) (xy 167.64 95.25))
+    (stroke (width 0) (type default))
+    (uuid 18dc8069-65c6-42fa-8404-cf8d27bb1107)
+  )
   (wire (pts (xy 182.88 314.96) (xy 186.69 314.96))
     (stroke (width 0) (type default))
     (uuid 18e0b58d-1c91-44d5-9b2a-423a01190f43)
@@ -6249,10 +6253,6 @@
     (stroke (width 0) (type default))
     (uuid 25b178e0-c451-4ce1-b0d0-b9ef58925be5)
   )
-  (wire (pts (xy 200.66 104.14) (xy 167.64 104.14))
-    (stroke (width 0) (type default))
-    (uuid 275b7a07-01fb-467a-bd1a-76ab7e9b59fc)
-  )
   (polyline (pts (xy 238.76 170.18) (xy 238.76 220.98))
     (stroke (width 0) (type solid))
     (uuid 2819b366-66ec-46c3-ae07-5746b6dd50d4)
@@ -6332,10 +6332,6 @@
     (stroke (width 0) (type default))
     (uuid 3123855f-cc3c-44d4-8061-ebb1e80db804)
   )
-  (wire (pts (xy 158.75 100.33) (xy 152.4 100.33))
-    (stroke (width 0) (type default))
-    (uuid 3174dc86-47a6-466f-8e87-57068bc565cd)
-  )
   (wire (pts (xy 260.35 265.43) (xy 260.35 266.7))
     (stroke (width 0) (type default))
     (uuid 319f8d07-a776-44e7-9091-a12f5cff7962)
@@ -6355,6 +6351,10 @@
   (wire (pts (xy 207.01 24.13) (xy 208.28 24.13))
     (stroke (width 0) (type default))
     (uuid 33438c9e-09df-4c43-a6f2-25d1f633c3c4)
+  )
+  (wire (pts (xy 166.37 95.25) (xy 166.37 97.79))
+    (stroke (width 0) (type default))
+    (uuid 339be621-eb08-46fd-a740-38d429292551)
   )
   (wire (pts (xy 44.45 187.96) (xy 44.45 185.42))
     (stroke (width 0) (type default))
@@ -6649,6 +6649,10 @@
   (wire (pts (xy 115.57 186.69) (xy 120.65 186.69))
     (stroke (width 0) (type default))
     (uuid 512687e7-bc71-4b33-aa91-c0258c8e6529)
+  )
+  (wire (pts (xy 175.26 90.17) (xy 185.42 90.17))
+    (stroke (width 0) (type default))
+    (uuid 526eeed5-9b9d-497d-b98f-bb351a5db375)
   )
   (wire (pts (xy 209.55 181.61) (xy 209.55 184.15))
     (stroke (width 0) (type default))
@@ -7241,10 +7245,6 @@
     (stroke (width 0) (type default))
     (uuid 900604f3-9bea-4031-aa3d-5294c4650182)
   )
-  (wire (pts (xy 158.75 92.71) (xy 175.26 92.71))
-    (stroke (width 0) (type default))
-    (uuid 900d9314-2201-4b27-838a-73cb802ed124)
-  )
   (wire (pts (xy 45.72 35.56) (xy 33.02 35.56))
     (stroke (width 0) (type default))
     (uuid 91189c85-e096-4985-be27-6affe428225d)
@@ -7264,10 +7264,6 @@
   (wire (pts (xy 359.41 290.83) (xy 363.22 290.83))
     (stroke (width 0) (type default))
     (uuid 931ff111-6ed5-4e22-8f8d-43db66b8a26c)
-  )
-  (wire (pts (xy 167.64 97.79) (xy 167.64 104.14))
-    (stroke (width 0) (type default))
-    (uuid 93bd7ab3-096d-4b6b-a3ad-0d75958a14cc)
   )
   (wire (pts (xy 214.63 204.47) (xy 214.63 205.74))
     (stroke (width 0) (type default))
@@ -7406,6 +7402,10 @@
     (uuid 9f793df1-77f4-41b2-8d60-002c81a8ce40)
   )
 
+  (wire (pts (xy 161.29 97.79) (xy 166.37 97.79))
+    (stroke (width 0) (type default))
+    (uuid 9fc3935a-2da7-4540-abd9-bd47124d8f0b)
+  )
   (wire (pts (xy 209.55 189.23) (xy 209.55 191.77))
     (stroke (width 0) (type default))
     (uuid a1361444-cfc1-46bd-ae59-c4dc8c723baa)
@@ -7813,10 +7813,6 @@
     (stroke (width 0) (type default))
     (uuid c5a73461-d450-4bb0-b176-56213a06d268)
   )
-  (wire (pts (xy 175.26 92.71) (xy 185.42 92.71))
-    (stroke (width 0) (type default))
-    (uuid c5cd3d99-e1a4-440f-81c3-fe9bd78eea86)
-  )
   (polyline (pts (xy 237.49 83.82) (xy 237.49 124.46))
     (stroke (width 0) (type solid))
     (uuid c683af57-8187-4e6a-bca5-2509e9d71d2a)
@@ -7880,6 +7876,10 @@
     (stroke (width 0) (type default))
     (uuid cd30aaac-17d0-48b9-98e3-df8b7104719d)
   )
+  (wire (pts (xy 166.37 97.79) (xy 166.37 104.14))
+    (stroke (width 0) (type default))
+    (uuid cd949567-64d3-42fe-9139-dda6d3e745a1)
+  )
   (wire (pts (xy 256.54 149.86) (xy 257.81 149.86))
     (stroke (width 0) (type default))
     (uuid ce45e874-e0f4-44e8-a04c-8351a51e2b51)
@@ -7897,7 +7897,7 @@
     (stroke (width 0) (type default))
     (uuid ceb8144c-1a53-4b10-b2e1-3c2a687a8b50)
   )
-  (wire (pts (xy 142.24 97.79) (xy 152.4 97.79))
+  (wire (pts (xy 142.24 97.79) (xy 153.67 97.79))
     (stroke (width 0) (type default))
     (uuid cef13f5a-4c40-405a-90c8-29bcf0b63244)
   )
@@ -7949,10 +7949,6 @@
   (wire (pts (xy 38.1 20.32) (xy 33.02 20.32))
     (stroke (width 0) (type default))
     (uuid d42929f4-2ab4-467e-b9f8-a30094cdde02)
-  )
-  (wire (pts (xy 152.4 100.33) (xy 152.4 97.79))
-    (stroke (width 0) (type default))
-    (uuid d44cfff1-4edb-4919-ae71-144866e972f0)
   )
   (wire (pts (xy 130.81 124.46) (xy 140.97 124.46))
     (stroke (width 0) (type default))
@@ -8149,6 +8145,10 @@
     (stroke (width 0) (type default))
     (uuid e7d13da0-2948-4379-9567-0613714cf6dc)
   )
+  (wire (pts (xy 200.66 104.14) (xy 166.37 104.14))
+    (stroke (width 0) (type default))
+    (uuid e8305fe2-2fe1-4040-b627-5b866934b26d)
+  )
   (polyline (pts (xy 100.33 13.97) (xy 100.33 358.14))
     (stroke (width 0) (type solid))
     (uuid e86148c0-6216-4708-928b-d0ae3035c7ab)
@@ -8244,7 +8244,7 @@
     (uuid ef88a206-a08a-4f86-8abe-2698c9bd5743)
   )
 
-  (wire (pts (xy 189.23 96.52) (xy 189.23 102.87))
+  (wire (pts (xy 189.23 96.52) (xy 189.23 100.33))
     (stroke (width 0) (type default))
     (uuid efd7f03a-5767-4241-8837-e199cfbb38f7)
   )
@@ -8373,7 +8373,7 @@
     (stroke (width 0) (type default))
     (uuid faff465f-24f5-48b0-b965-bd0b94b2eb0e)
   )
-  (wire (pts (xy 189.23 102.87) (xy 175.26 102.87))
+  (wire (pts (xy 189.23 100.33) (xy 175.26 100.33))
     (stroke (width 0) (type default))
     (uuid fb455e77-4a86-47fc-aa2d-a47cf19b050b)
   )
@@ -10327,10 +10327,10 @@
       (effects (font (size 1.27 1.27)) (justify right) hide)
     )
   )
-  (global_label "SD_WP#" (shape output) (at 185.42 92.71 0) (fields_autoplaced)
+  (global_label "SD_WP#" (shape output) (at 185.42 90.17 0) (fields_autoplaced)
     (effects (font (size 1.27 1.27)) (justify left))
     (uuid a507940e-d8c5-497d-b6d9-60badc48581b)
-    (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 195.2717 92.6306 0)
+    (property "Intersheetrefs" "${INTERSHEET_REFS}" (at 195.2717 90.0906 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
   )
@@ -11438,7 +11438,7 @@
   (symbol (lib_id "Connector:AudioJack3") (at 170.18 204.47 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 00d40a96-635b-492d-b814-850e0ac5cd48)
-    (property "Reference" "J4" (at 167.64 209.55 0)
+    (property "Reference" "J7" (at 167.64 209.55 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "Printer" (at 167.64 212.09 0)
@@ -11456,7 +11456,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J4") (unit 1)
+          (reference "J7") (unit 1)
         )
       )
     )
@@ -11539,7 +11539,7 @@
   (symbol (lib_id "Device:C_Small") (at 35.56 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 02732203-8530-40a4-8af8-b4fc68bba349)
-    (property "Reference" "C6" (at 38.1 285.7562 0)
+    (property "Reference" "C48" (at 38.1 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 38.1 288.2962 0)
@@ -11556,7 +11556,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C6") (unit 1)
+          (reference "C48") (unit 1)
         )
       )
     )
@@ -11640,7 +11640,7 @@
   (symbol (lib_id "Device:R") (at 218.44 119.38 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 03a2f425-1e27-40c2-a364-488cc020359e)
-    (property "Reference" "R52" (at 218.44 116.84 90)
+    (property "Reference" "R5" (at 218.44 116.84 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 119.38 90)
@@ -11657,7 +11657,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R52") (unit 1)
+          (reference "R5") (unit 1)
         )
       )
     )
@@ -11768,7 +11768,7 @@
   (symbol (lib_id "Device:C_Small") (at 107.95 30.48 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0ae36e42-5bf4-4d4b-a555-964638d1bfa9)
-    (property "Reference" "C29" (at 110.49 29.2162 0)
+    (property "Reference" "C57" (at 110.49 29.2162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 110.49 31.7562 0)
@@ -11785,7 +11785,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C29") (unit 1)
+          (reference "C57") (unit 1)
         )
       )
     )
@@ -11819,7 +11819,7 @@
   (symbol (lib_id "Device:R") (at 40.64 87.63 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 0b06878c-f2d4-4984-b1be-84acc8a98f0b)
-    (property "Reference" "R6" (at 38.1 87.63 90)
+    (property "Reference" "R47" (at 38.1 87.63 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 40.64 87.63 90)
@@ -11836,7 +11836,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R6") (unit 1)
+          (reference "R47") (unit 1)
         )
       )
     )
@@ -11870,7 +11870,7 @@
   (symbol (lib_id "Device:C_Small") (at 35.56 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0c087a49-972b-4dd5-b142-8488b36ef9a9)
-    (property "Reference" "C8" (at 38.1 316.2362 0)
+    (property "Reference" "C36" (at 38.1 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 38.1 318.7762 0)
@@ -11887,7 +11887,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C8") (unit 1)
+          (reference "C36") (unit 1)
         )
       )
     )
@@ -11921,7 +11921,7 @@
   (symbol (lib_id "Device:R") (at 120.65 102.87 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 0c711d82-248f-45ee-b75f-ec816f542938)
-    (property "Reference" "R13" (at 118.11 102.87 90)
+    (property "Reference" "R57" (at 118.11 102.87 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 120.65 102.87 90)
@@ -11938,7 +11938,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R13") (unit 1)
+          (reference "R57") (unit 1)
         )
       )
     )
@@ -11947,7 +11947,7 @@
   (symbol (lib_id "Device:C_Small") (at 416.56 335.28 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 0d7ae125-beb0-4119-aed4-c6d7ce73cd38)
-    (property "Reference" "C67" (at 419.1 334.0162 0)
+    (property "Reference" "C34" (at 419.1 334.0162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 419.1 336.5562 0)
@@ -11964,7 +11964,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C67") (unit 1)
+          (reference "C34") (unit 1)
         )
       )
     )
@@ -11998,7 +11998,7 @@
   (symbol (lib_id "Device:R") (at 127 124.46 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 0f7ff864-a31b-4b7a-9ea7-1e67fcfef865)
-    (property "Reference" "R19" (at 127 121.92 90)
+    (property "Reference" "R56" (at 127 121.92 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 127 124.46 90)
@@ -12015,7 +12015,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R19") (unit 1)
+          (reference "R56") (unit 1)
         )
       )
     )
@@ -12074,7 +12074,7 @@
   (symbol (lib_id "Device:C_Small") (at 58.42 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 12964967-5918-4dd5-a605-5276761750ed)
-    (property "Reference" "C18" (at 60.96 316.2362 0)
+    (property "Reference" "C42" (at 60.96 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 60.96 318.7762 0)
@@ -12091,7 +12091,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C18") (unit 1)
+          (reference "C42") (unit 1)
         )
       )
     )
@@ -12150,7 +12150,7 @@
   (symbol (lib_id "Device:C_Small") (at 81.28 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 132f0ccc-55b2-48e7-b1d0-a388701e247e)
-    (property "Reference" "C25" (at 83.82 285.7562 0)
+    (property "Reference" "C21" (at 83.82 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 83.82 288.2962 0)
@@ -12167,7 +12167,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C25") (unit 1)
+          (reference "C21") (unit 1)
         )
       )
     )
@@ -12176,7 +12176,7 @@
   (symbol (lib_id "Device:C_Small") (at 58.42 347.98 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1675c946-ab08-4f77-96f6-af5ec9ff9770)
-    (property "Reference" "C20" (at 60.96 346.7162 0)
+    (property "Reference" "C19" (at 60.96 346.7162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 60.96 349.2562 0)
@@ -12193,7 +12193,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C20") (unit 1)
+          (reference "C19") (unit 1)
         )
       )
     )
@@ -12227,7 +12227,7 @@
   (symbol (lib_id "Device:R") (at 124.46 316.23 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 1b802e91-ad2c-4d76-81f8-2f2ce37ddc8b)
-    (property "Reference" "R14" (at 124.46 313.69 90)
+    (property "Reference" "R28" (at 124.46 313.69 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 124.46 316.23 90)
@@ -12244,7 +12244,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R14") (unit 1)
+          (reference "R28") (unit 1)
         )
       )
     )
@@ -12253,7 +12253,7 @@
   (symbol (lib_id "Device:R") (at 125.73 102.87 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 1c90b76c-659f-4e35-b842-8075c8d96ce6)
-    (property "Reference" "R16" (at 123.19 102.87 90)
+    (property "Reference" "R60" (at 123.19 102.87 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 125.73 102.87 90)
@@ -12270,7 +12270,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R16") (unit 1)
+          (reference "R60") (unit 1)
         )
       )
     )
@@ -12279,7 +12279,7 @@
   (symbol (lib_id "Device:R") (at 201.93 189.23 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 1d3de982-973e-43b7-bb93-067bc049cd34)
-    (property "Reference" "R37" (at 206.375 187.96 90)
+    (property "Reference" "R14" (at 206.375 187.96 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "536" (at 201.93 189.23 90)
@@ -12296,7 +12296,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R37") (unit 1)
+          (reference "R14") (unit 1)
         )
       )
     )
@@ -12330,7 +12330,7 @@
   (symbol (lib_id "Device:R") (at 288.29 307.34 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 1f090fa6-9cc9-45b7-8644-69564ab0ab0e)
-    (property "Reference" "R87" (at 292.735 306.07 90)
+    (property "Reference" "R73" (at 292.735 306.07 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 307.34 90)
@@ -12347,7 +12347,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R87") (unit 1)
+          (reference "R73") (unit 1)
         )
       )
     )
@@ -12356,7 +12356,7 @@
   (symbol (lib_id "aquarius-plus:XC3S200-4TQG144") (at 63.5 153.67 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 1f71f419-84e1-436e-aeeb-8222eb933d60)
-    (property "Reference" "U1" (at 63.5 22.86 0)
+    (property "Reference" "U9" (at 63.5 22.86 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "XC3S200-4TQG144" (at 63.5 25.4 0)
@@ -12515,7 +12515,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U1") (unit 1)
+          (reference "U9") (unit 1)
         )
       )
     )
@@ -12524,7 +12524,7 @@
   (symbol (lib_id "Device:R") (at 229.87 312.42 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 1fc94042-3198-4e9d-ab08-9c17f7d60121)
-    (property "Reference" "R61" (at 234.315 311.15 90)
+    (property "Reference" "R63" (at 234.315 311.15 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 312.42 90)
@@ -12541,7 +12541,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R61") (unit 1)
+          (reference "R63") (unit 1)
         )
       )
     )
@@ -12550,7 +12550,7 @@
   (symbol (lib_id "Connector:DB9_Male_MountingHoles") (at 218.44 307.34 0) (mirror y) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 20217a67-614a-4f0e-81a0-7fa93a072af4)
-    (property "Reference" "J5" (at 219.71 293.37 0)
+    (property "Reference" "J13" (at 219.71 293.37 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "Hand controller 1" (at 213.36 316.23 90)
@@ -12575,7 +12575,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J5") (unit 1)
+          (reference "J13") (unit 1)
         )
       )
     )
@@ -12634,7 +12634,7 @@
   (symbol (lib_id "Device:R") (at 218.44 114.3 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 20b043a9-be9d-4645-8d13-458c66f45484)
-    (property "Reference" "R51" (at 218.44 111.76 90)
+    (property "Reference" "R1" (at 218.44 111.76 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 114.3 90)
@@ -12651,7 +12651,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R51") (unit 1)
+          (reference "R1") (unit 1)
         )
       )
     )
@@ -12685,7 +12685,7 @@
   (symbol (lib_id "Device:R") (at 375.92 290.83 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 21139b06-6dc9-461b-88db-f3d1608df014)
-    (property "Reference" "R99" (at 375.92 288.29 90)
+    (property "Reference" "R50" (at 375.92 288.29 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1" (at 375.92 290.83 90)
@@ -12702,7 +12702,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R99") (unit 1)
+          (reference "R50") (unit 1)
         )
       )
     )
@@ -12711,7 +12711,7 @@
   (symbol (lib_id "Jumper:Jumper_2_Open") (at 262.89 149.86 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 237446a8-94f3-4923-b5d7-492572dbf511)
-    (property "Reference" "JP3" (at 262.89 151.13 0)
+    (property "Reference" "JP1" (at 262.89 151.13 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "USB" (at 262.89 146.05 0)
@@ -12728,7 +12728,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "JP3") (unit 1)
+          (reference "JP1") (unit 1)
         )
       )
     )
@@ -12787,7 +12787,7 @@
   (symbol (lib_id "Device:R") (at 34.29 92.71 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 2544ad44-1ad4-45a7-bf8e-107c56b69645)
-    (property "Reference" "R3" (at 34.29 90.17 90)
+    (property "Reference" "R46" (at 34.29 90.17 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220" (at 34.29 92.71 90)
@@ -12804,7 +12804,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R3") (unit 1)
+          (reference "R46") (unit 1)
         )
       )
     )
@@ -12813,7 +12813,7 @@
   (symbol (lib_id "Device:C_Small") (at 166.37 173.99 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 25ae0cf2-6013-4391-b1bc-8656092094f3)
-    (property "Reference" "C41" (at 168.91 172.7262 0)
+    (property "Reference" "C27" (at 168.91 172.7262 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 168.91 175.2662 0)
@@ -12830,7 +12830,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C41") (unit 1)
+          (reference "C27") (unit 1)
         )
       )
     )
@@ -12839,7 +12839,7 @@
   (symbol (lib_id "Connector:SD_Card") (at 163.83 121.92 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 27195a63-df1c-474d-85f9-9425ca47e06f)
-    (property "Reference" "J3" (at 163.83 104.14 0)
+    (property "Reference" "J12" (at 163.83 104.14 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Amphenol GSD090012SEU" (at 163.83 106.68 0)
@@ -12867,7 +12867,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J3") (unit 1)
+          (reference "J12") (unit 1)
         )
       )
     )
@@ -12876,7 +12876,7 @@
   (symbol (lib_id "Device:C_Small") (at 69.85 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 27d9e46b-aa4e-4620-8422-115d3c1d07f3)
-    (property "Reference" "C21" (at 72.39 285.7562 0)
+    (property "Reference" "C45" (at 72.39 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 72.39 288.2962 0)
@@ -12893,7 +12893,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C21") (unit 1)
+          (reference "C45") (unit 1)
         )
       )
     )
@@ -12977,7 +12977,7 @@
   (symbol (lib_id "aquarius-plus:ESP32-S2-SOLO-N4R2") (at 191.77 21.59 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 29e2af67-f03d-4838-8f6d-c3092e1a0a34)
-    (property "Reference" "U5" (at 192.405 16.51 0)
+    (property "Reference" "U13" (at 192.405 16.51 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "ESP32-S2-SOLO-N4R2" (at 192.405 19.05 0)
@@ -13033,7 +13033,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U5") (unit 1)
+          (reference "U13") (unit 1)
         )
       )
     )
@@ -13042,7 +13042,7 @@
   (symbol (lib_id "Device:R") (at 375.92 331.47 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 2a27ffa8-6591-45ed-b4e2-1059780c320b)
-    (property "Reference" "R101" (at 375.92 328.93 90)
+    (property "Reference" "R45" (at 375.92 328.93 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1" (at 375.92 331.47 90)
@@ -13059,7 +13059,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R101") (unit 1)
+          (reference "R45") (unit 1)
         )
       )
     )
@@ -13143,7 +13143,7 @@
   (symbol (lib_id "Device:R") (at 130.81 102.87 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 2c7b06e5-bcb0-4b62-ad08-de8cd6830ae9)
-    (property "Reference" "R22" (at 128.27 102.87 90)
+    (property "Reference" "R61" (at 128.27 102.87 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 130.81 102.87 90)
@@ -13160,7 +13160,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R22") (unit 1)
+          (reference "R61") (unit 1)
         )
       )
     )
@@ -13169,7 +13169,7 @@
   (symbol (lib_id "Device:C_Small") (at 115.57 179.07 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 2e9a7f62-e402-43d6-b7a8-a3462771a1c2)
-    (property "Reference" "C31" (at 118.745 181.61 90)
+    (property "Reference" "C28" (at 118.745 181.61 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 120.65 181.61 90)
@@ -13186,7 +13186,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C31") (unit 1)
+          (reference "C28") (unit 1)
         )
       )
     )
@@ -13220,7 +13220,7 @@
   (symbol (lib_id "Interface_UART:MAX3221") (at 135.89 191.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 2f87dc42-b231-4b9d-ad65-51c2a67b2d9d)
-    (property "Reference" "U3" (at 139.7 166.37 0)
+    (property "Reference" "U5" (at 139.7 166.37 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "MAX3221ECPWR" (at 139.7 168.91 0)
@@ -13251,7 +13251,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U3") (unit 1)
+          (reference "U5") (unit 1)
         )
       )
     )
@@ -13260,7 +13260,7 @@
   (symbol (lib_id "Device:R") (at 218.44 109.22 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 30443dd8-b63a-4275-b39e-7d0cde1e2ccb)
-    (property "Reference" "R50" (at 218.44 106.68 90)
+    (property "Reference" "R2" (at 218.44 106.68 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 109.22 90)
@@ -13277,7 +13277,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R50") (unit 1)
+          (reference "R2") (unit 1)
         )
       )
     )
@@ -13286,7 +13286,7 @@
   (symbol (lib_id "Connector_Generic:Conn_02x22_Odd_Even") (at 311.15 130.81 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 30979439-95da-46de-bc42-69aac76f1374)
-    (property "Reference" "J15" (at 312.42 99.06 0)
+    (property "Reference" "J10" (at 312.42 99.06 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Expansion port" (at 312.42 101.6 0)
@@ -13345,7 +13345,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J15") (unit 1)
+          (reference "J10") (unit 1)
         )
       )
     )
@@ -13379,7 +13379,7 @@
   (symbol (lib_id "Device:C_Small") (at 24.13 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 320de4ab-03fa-4dd6-ac55-0b6f7d1107cb)
-    (property "Reference" "C4" (at 26.67 331.4762 0)
+    (property "Reference" "C41" (at 26.67 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 26.67 334.0162 0)
@@ -13396,7 +13396,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C4") (unit 1)
+          (reference "C41") (unit 1)
         )
       )
     )
@@ -13405,7 +13405,7 @@
   (symbol (lib_id "Device:R") (at 229.87 299.72 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 3251220b-c820-4d8f-bfcd-b2ac4f61c72c)
-    (property "Reference" "R56" (at 234.315 298.45 90)
+    (property "Reference" "R68" (at 234.315 298.45 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 299.72 90)
@@ -13422,7 +13422,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R56") (unit 1)
+          (reference "R68") (unit 1)
         )
       )
     )
@@ -13456,7 +13456,7 @@
   (symbol (lib_id "Device:R") (at 229.87 302.26 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 32de6cf2-14b2-415c-898a-62a6ce19bace)
-    (property "Reference" "R57" (at 234.315 300.99 90)
+    (property "Reference" "R67" (at 234.315 300.99 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 302.26 90)
@@ -13473,7 +13473,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R57") (unit 1)
+          (reference "R67") (unit 1)
         )
       )
     )
@@ -13482,7 +13482,7 @@
   (symbol (lib_id "Device:C_Small") (at 46.99 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 33a764e9-1930-4c79-9b42-056da8d89b6b)
-    (property "Reference" "C11" (at 49.53 285.7562 0)
+    (property "Reference" "C22" (at 49.53 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 49.53 288.2962 0)
@@ -13499,7 +13499,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C11") (unit 1)
+          (reference "C22") (unit 1)
         )
       )
     )
@@ -13558,7 +13558,7 @@
   (symbol (lib_id "Device:C_Small") (at 81.28 302.26 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 35737dc6-37ce-449f-853a-068c4f528216)
-    (property "Reference" "C26" (at 83.82 300.9962 0)
+    (property "Reference" "C24" (at 83.82 300.9962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 83.82 303.5362 0)
@@ -13575,7 +13575,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C26") (unit 1)
+          (reference "C24") (unit 1)
         )
       )
     )
@@ -13609,7 +13609,7 @@
   (symbol (lib_id "Device:C_Polarized_Small") (at 276.86 110.49 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 35c2b7f9-4955-4902-bb64-0124b6d1770b)
-    (property "Reference" "C54" (at 279.4 108.6738 0)
+    (property "Reference" "C5" (at 279.4 108.6738 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100uF" (at 279.4 111.2138 0)
@@ -13626,7 +13626,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C54") (unit 1)
+          (reference "C5") (unit 1)
         )
       )
     )
@@ -13660,7 +13660,7 @@
   (symbol (lib_id "Jumper:Jumper_2_Open") (at 226.06 59.69 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 39148cd8-fea2-41d0-b723-c3dc575a187a)
-    (property "Reference" "JP1" (at 226.06 53.34 0)
+    (property "Reference" "JP3" (at 226.06 53.34 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Bootloader" (at 226.06 55.88 0)
@@ -13677,7 +13677,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "JP1") (unit 1)
+          (reference "JP3") (unit 1)
         )
       )
     )
@@ -13735,7 +13735,7 @@
   (symbol (lib_id "Device:C_Small") (at 396.24 78.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3a966bb0-d53f-4fce-926b-513e24f5c887)
-    (property "Reference" "C59" (at 398.78 77.4762 0)
+    (property "Reference" "C56" (at 398.78 77.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 398.78 80.0162 0)
@@ -13752,7 +13752,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C59") (unit 1)
+          (reference "C56") (unit 1)
         )
       )
     )
@@ -13791,7 +13791,7 @@
   (symbol (lib_id "Device:C_Small") (at 407.67 314.96 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 3bd0718d-f0f0-4f89-b0da-d68d0f6ee95b)
-    (property "Reference" "C66" (at 410.21 313.6962 0)
+    (property "Reference" "C11" (at 410.21 313.6962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 410.21 316.2362 0)
@@ -13808,7 +13808,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C66") (unit 1)
+          (reference "C11") (unit 1)
         )
       )
     )
@@ -13842,7 +13842,7 @@
   (symbol (lib_id "Device:R") (at 229.87 297.18 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 3c61ee42-a82e-486b-9037-0e20e57bf267)
-    (property "Reference" "R55" (at 234.315 295.91 90)
+    (property "Reference" "R69" (at 234.315 295.91 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 297.18 90)
@@ -13859,7 +13859,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R55") (unit 1)
+          (reference "R69") (unit 1)
         )
       )
     )
@@ -13943,7 +13943,7 @@
   (symbol (lib_id "Device:C_Polarized_Small") (at 363.22 294.64 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 417b706f-5212-4aae-b315-b1c0caa4c2c1)
-    (property "Reference" "C61" (at 365.76 292.8238 0)
+    (property "Reference" "C6" (at 365.76 292.8238 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100uF" (at 365.76 295.3638 0)
@@ -13960,7 +13960,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C61") (unit 1)
+          (reference "C6") (unit 1)
         )
       )
     )
@@ -13994,7 +13994,7 @@
   (symbol (lib_id "Device:R") (at 201.93 199.39 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 42be8edd-936f-4795-8c00-a5f6448a9c8b)
-    (property "Reference" "R41" (at 206.375 198.12 90)
+    (property "Reference" "R18" (at 206.375 198.12 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "536" (at 201.93 199.39 90)
@@ -14011,7 +14011,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R41") (unit 1)
+          (reference "R18") (unit 1)
         )
       )
     )
@@ -14020,7 +14020,7 @@
   (symbol (lib_id "Device:R") (at 229.87 307.34 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 42cc88ba-0dbe-4175-af9b-0ddea8e118c0)
-    (property "Reference" "R59" (at 234.315 306.07 90)
+    (property "Reference" "R65" (at 234.315 306.07 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 307.34 90)
@@ -14037,7 +14037,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R59") (unit 1)
+          (reference "R65") (unit 1)
         )
       )
     )
@@ -14046,7 +14046,7 @@
   (symbol (lib_id "Device:R") (at 218.44 93.98 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 43480419-1e80-48a5-b723-716dc8fbcb71)
-    (property "Reference" "R47" (at 218.44 91.44 90)
+    (property "Reference" "R6" (at 218.44 91.44 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 93.98 90)
@@ -14063,7 +14063,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R47") (unit 1)
+          (reference "R6") (unit 1)
         )
       )
     )
@@ -14097,7 +14097,7 @@
   (symbol (lib_id "Device:C_Small") (at 382.27 294.64 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 448690a7-cc07-4021-92d0-d85b54ce2cc6)
-    (property "Reference" "C62" (at 384.81 293.3762 0)
+    (property "Reference" "C55" (at 384.81 293.3762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 384.81 295.9162 0)
@@ -14114,7 +14114,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C62") (unit 1)
+          (reference "C55") (unit 1)
         )
       )
     )
@@ -14123,7 +14123,7 @@
   (symbol (lib_id "Device:R") (at 229.87 309.88 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 456b6525-ac03-4d6c-a6de-2af406e83f9d)
-    (property "Reference" "R60" (at 234.315 308.61 90)
+    (property "Reference" "R64" (at 234.315 308.61 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 309.88 90)
@@ -14140,7 +14140,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R60") (unit 1)
+          (reference "R64") (unit 1)
         )
       )
     )
@@ -14149,7 +14149,7 @@
   (symbol (lib_id "Device:R") (at 132.08 294.64 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 461e482b-6624-4be2-bf9f-13b440c6b6cc)
-    (property "Reference" "R23" (at 129.54 294.64 90)
+    (property "Reference" "R24" (at 129.54 294.64 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 132.08 294.64 90)
@@ -14166,7 +14166,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R23") (unit 1)
+          (reference "R24") (unit 1)
         )
       )
     )
@@ -14175,7 +14175,7 @@
   (symbol (lib_id "Device:R") (at 288.29 309.88 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 46700078-b790-408b-b6e7-6f18a0632884)
-    (property "Reference" "R88" (at 292.735 308.61 90)
+    (property "Reference" "R72" (at 292.735 308.61 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 309.88 90)
@@ -14192,7 +14192,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R88") (unit 1)
+          (reference "R72") (unit 1)
         )
       )
     )
@@ -14371,19 +14371,19 @@
     )
   )
 
-  (symbol (lib_id "Transistor_FET:2N7002") (at 172.72 97.79 0) (unit 1)
+  (symbol (lib_id "Transistor_FET:2N7002") (at 172.72 95.25 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 4df1aadc-ab26-4261-ad68-bf1032f175b5)
-    (property "Reference" "Q3" (at 179.07 97.155 0)
+    (property "Reference" "Q3" (at 179.07 94.615 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Value" "2N7002" (at 179.07 99.695 0)
+    (property "Value" "2N7002" (at 179.07 97.155 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "Footprint" "Package_TO_SOT_SMD:SOT-23" (at 177.8 99.695 0)
+    (property "Footprint" "Package_TO_SOT_SMD:SOT-23" (at 177.8 97.155 0)
       (effects (font (size 1.27 1.27) italic) (justify left) hide)
     )
-    (property "Datasheet" "https://www.onsemi.com/pub/Collateral/NDS7002A-D.PDF" (at 172.72 97.79 0)
+    (property "Datasheet" "https://www.onsemi.com/pub/Collateral/NDS7002A-D.PDF" (at 172.72 95.25 0)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
     (pin "1" (uuid f1334f83-a910-43b6-bd40-bdf6a0dff903))
@@ -14451,7 +14451,7 @@
   (symbol (lib_id "Device:R") (at 124.46 321.31 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 4e5e25ca-bf95-4980-8945-fc3da4af1f6c)
-    (property "Reference" "R15" (at 124.46 318.77 90)
+    (property "Reference" "R27" (at 124.46 318.77 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 124.46 321.31 90)
@@ -14468,7 +14468,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R15") (unit 1)
+          (reference "R27") (unit 1)
         )
       )
     )
@@ -14502,7 +14502,7 @@
   (symbol (lib_id "Device:C_Small") (at 24.13 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 52d4c05f-c0de-4113-8daf-5e4446b453ca)
-    (property "Reference" "C1" (at 26.67 285.7562 0)
+    (property "Reference" "C44" (at 26.67 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 26.67 288.2962 0)
@@ -14519,7 +14519,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C1") (unit 1)
+          (reference "C44") (unit 1)
         )
       )
     )
@@ -14578,7 +14578,7 @@
   (symbol (lib_id "Device:R") (at 154.94 330.2 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 53b7b82d-a8b5-4592-ac0e-05a41b2ca0e0)
-    (property "Reference" "R29" (at 152.4 330.2 90)
+    (property "Reference" "R36" (at 152.4 330.2 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220" (at 154.94 330.2 90)
@@ -14595,7 +14595,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R29") (unit 1)
+          (reference "R36") (unit 1)
         )
       )
     )
@@ -14629,7 +14629,7 @@
   (symbol (lib_id "aquarius-plus:Z84C0010AEG") (at 266.7 54.61 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 568d85bb-5cf1-48ab-bd16-6673802bcb45)
-    (property "Reference" "U7" (at 266.7 16.51 0)
+    (property "Reference" "U1" (at 266.7 16.51 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Z84C0010AEG" (at 266.7 19.05 0)
@@ -14684,7 +14684,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U7") (unit 1)
+          (reference "U1") (unit 1)
         )
       )
     )
@@ -14743,7 +14743,7 @@
   (symbol (lib_id "Device:R") (at 375.92 311.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 589bcb94-182a-4c2a-aa1d-ea0e5cd76ac6)
-    (property "Reference" "R100" (at 375.92 308.61 90)
+    (property "Reference" "R34" (at 375.92 308.61 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1" (at 375.92 311.15 90)
@@ -14760,7 +14760,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R100") (unit 1)
+          (reference "R34") (unit 1)
         )
       )
     )
@@ -14769,7 +14769,7 @@
   (symbol (lib_id "Device:C_Small") (at 160.02 314.96 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 5916773f-c3d6-4ce1-9888-8ea0a128c731)
-    (property "Reference" "C40" (at 160.02 309.88 90)
+    (property "Reference" "C12" (at 160.02 309.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7uF" (at 160.02 312.42 90)
@@ -14786,7 +14786,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C40") (unit 1)
+          (reference "C12") (unit 1)
         )
       )
     )
@@ -14795,7 +14795,7 @@
   (symbol (lib_id "Device:C_Small") (at 58.42 287.02 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5a26470f-c616-4a11-abaa-7e216a010263)
-    (property "Reference" "C16" (at 60.96 285.7562 0)
+    (property "Reference" "C18" (at 60.96 285.7562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 60.96 288.2962 0)
@@ -14812,7 +14812,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C16") (unit 1)
+          (reference "C18") (unit 1)
         )
       )
     )
@@ -14821,7 +14821,7 @@
   (symbol (lib_id "Device:C_Small") (at 187.96 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5ac54fff-1ee1-41a0-9166-1871d70483b7)
-    (property "Reference" "C50" (at 190.5 269.2462 0)
+    (property "Reference" "C13" (at 190.5 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 190.5 271.7862 0)
@@ -14838,7 +14838,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C50") (unit 1)
+          (reference "C13") (unit 1)
         )
       )
     )
@@ -14872,7 +14872,7 @@
   (symbol (lib_id "Connector:AudioJack3") (at 144.78 292.1 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 5e033f72-e1d4-4626-b864-305d773aa126)
-    (property "Reference" "J2" (at 142.24 297.18 0)
+    (property "Reference" "J5" (at 142.24 297.18 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "Cassette out" (at 142.24 299.72 0)
@@ -14890,7 +14890,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J2") (unit 1)
+          (reference "J5") (unit 1)
         )
       )
     )
@@ -14924,7 +14924,7 @@
   (symbol (lib_id "Device:C_Small") (at 382.27 335.28 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 5e36851f-292b-4439-9dc1-42681bcb3883)
-    (property "Reference" "C64" (at 384.81 334.0162 0)
+    (property "Reference" "C35" (at 384.81 334.0162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 384.81 336.5562 0)
@@ -14941,7 +14941,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C64") (unit 1)
+          (reference "C35") (unit 1)
         )
       )
     )
@@ -14976,7 +14976,7 @@
   (symbol (lib_id "Device:R") (at 257.81 179.07 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 61461007-653b-45be-937e-df9a7a546b13)
-    (property "Reference" "R71" (at 257.81 176.53 90)
+    (property "Reference" "R25" (at 257.81 176.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "330" (at 257.81 179.07 90)
@@ -14993,7 +14993,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R71") (unit 1)
+          (reference "R25") (unit 1)
         )
       )
     )
@@ -15027,7 +15027,7 @@
   (symbol (lib_id "Device:R") (at 127 289.56 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 62dcb0f0-5826-41a3-b013-ddf9b6116d6a)
-    (property "Reference" "R21" (at 127 287.02 90)
+    (property "Reference" "R9" (at 127 287.02 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 127 289.56 90)
@@ -15044,7 +15044,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R21") (unit 1)
+          (reference "R9") (unit 1)
         )
       )
     )
@@ -15053,7 +15053,7 @@
   (symbol (lib_id "Device:C_Small") (at 24.13 347.98 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6308ced0-e94d-4be7-8895-066739c3937c)
-    (property "Reference" "C5" (at 26.67 346.7162 0)
+    (property "Reference" "C38" (at 26.67 346.7162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 26.67 349.2562 0)
@@ -15070,7 +15070,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C5") (unit 1)
+          (reference "C38") (unit 1)
         )
       )
     )
@@ -15129,7 +15129,7 @@
   (symbol (lib_id "Device:C_Small") (at 46.99 302.26 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 64ead233-659d-43f5-9529-5c43f2ee2794)
-    (property "Reference" "C12" (at 49.53 300.9962 0)
+    (property "Reference" "C23" (at 49.53 300.9962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 49.53 303.5362 0)
@@ -15146,7 +15146,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C12") (unit 1)
+          (reference "C23") (unit 1)
         )
       )
     )
@@ -15205,7 +15205,7 @@
   (symbol (lib_id "Device:R") (at 201.93 184.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 66ac37b9-3b01-49b2-9b43-cfdbd82e080c)
-    (property "Reference" "R35" (at 206.375 182.88 90)
+    (property "Reference" "R12" (at 206.375 182.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "2150" (at 201.93 184.15 90)
@@ -15222,7 +15222,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R35") (unit 1)
+          (reference "R12") (unit 1)
         )
       )
     )
@@ -15231,7 +15231,7 @@
   (symbol (lib_id "Device:R") (at 275.59 200.66 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 66ebaef5-7720-4969-ac61-c8ecc1cd9090)
-    (property "Reference" "R82" (at 273.05 200.66 90)
+    (property "Reference" "R8" (at 273.05 200.66 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "150" (at 275.59 200.66 90)
@@ -15248,7 +15248,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R82") (unit 1)
+          (reference "R8") (unit 1)
         )
       )
     )
@@ -15257,7 +15257,7 @@
   (symbol (lib_id "Device:R") (at 201.93 181.61 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 67840716-39ea-4993-b221-ee40774b8bce)
-    (property "Reference" "R34" (at 206.375 180.34 90)
+    (property "Reference" "R11" (at 206.375 180.34 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1070" (at 201.93 181.61 90)
@@ -15274,7 +15274,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R34") (unit 1)
+          (reference "R11") (unit 1)
         )
       )
     )
@@ -15333,7 +15333,7 @@
   (symbol (lib_id "Device:R") (at 201.93 186.69 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 6a5831e0-b4fc-4d66-bed3-074cb238af7d)
-    (property "Reference" "R36" (at 206.375 185.42 90)
+    (property "Reference" "R13" (at 206.375 185.42 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4300" (at 201.93 186.69 90)
@@ -15350,7 +15350,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R36") (unit 1)
+          (reference "R13") (unit 1)
         )
       )
     )
@@ -15359,7 +15359,7 @@
   (symbol (lib_id "Device:C_Small") (at 24.13 302.26 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6cb6ac3f-6fd5-4c85-997b-ad5b83fc594a)
-    (property "Reference" "C2" (at 26.67 300.9962 0)
+    (property "Reference" "C43" (at 26.67 300.9962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 26.67 303.5362 0)
@@ -15376,7 +15376,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C2") (unit 1)
+          (reference "C43") (unit 1)
         )
       )
     )
@@ -15385,7 +15385,7 @@
   (symbol (lib_id "Device:C_Small") (at 142.24 101.6 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 6d68cb02-cbc0-4c03-af90-f927c313db0c)
-    (property "Reference" "C34" (at 144.78 100.3362 0)
+    (property "Reference" "C60" (at 144.78 100.3362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 144.78 102.8762 0)
@@ -15402,7 +15402,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C34") (unit 1)
+          (reference "C60") (unit 1)
         )
       )
     )
@@ -15411,7 +15411,7 @@
   (symbol (lib_id "Device:R") (at 38.1 25.4 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 6e62043b-5742-4c13-856c-771b8be07168)
-    (property "Reference" "R5" (at 35.56 25.4 90)
+    (property "Reference" "R37" (at 35.56 25.4 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 38.1 25.4 90)
@@ -15428,7 +15428,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R5") (unit 1)
+          (reference "R37") (unit 1)
         )
       )
     )
@@ -15490,7 +15490,7 @@
   (symbol (lib_id "Device:R") (at 41.91 43.18 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 6f8ec66c-697a-4aee-8e9b-fd0c3cb519b1)
-    (property "Reference" "R9" (at 41.91 40.64 90)
+    (property "Reference" "R49" (at 41.91 40.64 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220" (at 41.91 43.18 90)
@@ -15507,7 +15507,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R9") (unit 1)
+          (reference "R49") (unit 1)
         )
       )
     )
@@ -15516,7 +15516,7 @@
   (symbol (lib_id "Device:R") (at 33.02 25.4 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 70deb51e-0513-40d5-b646-c5b1ba8942b2)
-    (property "Reference" "R2" (at 30.48 25.4 90)
+    (property "Reference" "R43" (at 30.48 25.4 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 33.02 25.4 90)
@@ -15533,7 +15533,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R2") (unit 1)
+          (reference "R43") (unit 1)
         )
       )
     )
@@ -15567,7 +15567,7 @@
   (symbol (lib_id "74xx:74CBTLV3861") (at 175.26 250.19 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 72874641-ab84-4fdd-aacc-d2b4a70ca339)
-    (property "Reference" "U8" (at 177.2794 229.87 0)
+    (property "Reference" "U4" (at 177.2794 229.87 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "SN74CBTD3861PWR" (at 177.2794 232.41 0)
@@ -15605,7 +15605,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U8") (unit 1)
+          (reference "U4") (unit 1)
         )
       )
     )
@@ -15614,7 +15614,7 @@
   (symbol (lib_id "Regulator_Linear:AP1117-33") (at 396.24 331.47 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 72a53530-456d-46e9-8f16-12924bb54cc4)
-    (property "Reference" "U17" (at 396.24 325.12 0)
+    (property "Reference" "U8" (at 396.24 325.12 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "LD1117S12" (at 396.24 327.66 0)
@@ -15632,7 +15632,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U17") (unit 1)
+          (reference "U8") (unit 1)
         )
       )
     )
@@ -15691,7 +15691,7 @@
   (symbol (lib_id "Device:R") (at 146.05 330.2 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 74a00690-a187-4851-bdb9-64a784dd4e77)
-    (property "Reference" "R26" (at 143.51 330.2 90)
+    (property "Reference" "R30" (at 143.51 330.2 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "47k" (at 146.05 330.2 90)
@@ -15708,7 +15708,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R26") (unit 1)
+          (reference "R30") (unit 1)
         )
       )
     )
@@ -15742,7 +15742,7 @@
   (symbol (lib_id "Device:R") (at 201.93 179.07 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7705a85b-5d98-4e0c-bb10-c11520b4f69e)
-    (property "Reference" "R33" (at 206.375 177.8 90)
+    (property "Reference" "R10" (at 206.375 177.8 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "536" (at 201.93 179.07 90)
@@ -15759,7 +15759,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R33") (unit 1)
+          (reference "R10") (unit 1)
         )
       )
     )
@@ -15768,7 +15768,7 @@
   (symbol (lib_id "Device:R") (at 407.67 336.55 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 795ba982-7bf1-4e73-995d-b012ea0c989b)
-    (property "Reference" "R102" (at 405.13 336.55 90)
+    (property "Reference" "R44" (at 405.13 336.55 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 407.67 336.55 90)
@@ -15785,7 +15785,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R102") (unit 1)
+          (reference "R44") (unit 1)
         )
       )
     )
@@ -15794,7 +15794,7 @@
   (symbol (lib_id "Device:C_Small") (at 35.56 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7a2cec04-b35d-4789-9199-f059f2c358d9)
-    (property "Reference" "C9" (at 38.1 331.4762 0)
+    (property "Reference" "C37" (at 38.1 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 38.1 334.0162 0)
@@ -15811,7 +15811,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C9") (unit 1)
+          (reference "C37") (unit 1)
         )
       )
     )
@@ -15820,7 +15820,7 @@
   (symbol (lib_id "Device:R") (at 288.29 304.8 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7a33a37c-6d1d-42ad-b147-670448cc00d7)
-    (property "Reference" "R86" (at 292.735 303.53 90)
+    (property "Reference" "R74" (at 292.735 303.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 304.8 90)
@@ -15837,7 +15837,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R86") (unit 1)
+          (reference "R74") (unit 1)
         )
       )
     )
@@ -15871,7 +15871,7 @@
   (symbol (lib_id "Device:R") (at 288.29 299.72 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7a862bcc-8c82-497e-8ead-8a9408c44ef2)
-    (property "Reference" "R84" (at 292.735 298.45 90)
+    (property "Reference" "R76" (at 292.735 298.45 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 299.72 90)
@@ -15888,7 +15888,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R84") (unit 1)
+          (reference "R76") (unit 1)
         )
       )
     )
@@ -15897,7 +15897,7 @@
   (symbol (lib_id "Connector:USB_A") (at 247.65 113.03 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7ae64f55-b84d-4fc9-884c-c1d8ba8a2758)
-    (property "Reference" "J12" (at 247.65 100.33 0)
+    (property "Reference" "J4" (at 247.65 100.33 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "ESP USB Host" (at 247.65 102.87 0)
@@ -15917,7 +15917,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J12") (unit 1)
+          (reference "J4") (unit 1)
         )
       )
     )
@@ -15926,7 +15926,7 @@
   (symbol (lib_id "Device:R") (at 218.44 99.06 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7b8bc4e8-baf0-4ac2-9568-c01065c806ed)
-    (property "Reference" "R48" (at 218.44 96.52 90)
+    (property "Reference" "R4" (at 218.44 96.52 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 99.06 90)
@@ -15943,7 +15943,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R48") (unit 1)
+          (reference "R4") (unit 1)
         )
       )
     )
@@ -15952,7 +15952,7 @@
   (symbol (lib_id "Connector:DB15_Female_HighDensity_MountingHoles") (at 223.52 194.31 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 7bcd50df-5b0f-4f9c-b5e7-26ab8d366cce)
-    (property "Reference" "J6" (at 223.52 172.72 0)
+    (property "Reference" "J2" (at 223.52 172.72 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "VGA" (at 223.52 175.26 0)
@@ -15983,7 +15983,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J6") (unit 1)
+          (reference "J2") (unit 1)
         )
       )
     )
@@ -15992,7 +15992,7 @@
   (symbol (lib_id "Device:C_Small") (at 281.94 195.58 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7c4c6f7c-db71-44f1-998e-acad5674cf26)
-    (property "Reference" "C49" (at 281.9463 189.23 90)
+    (property "Reference" "C3" (at 281.9463 189.23 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10uF" (at 281.9463 191.77 90)
@@ -16009,7 +16009,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C49") (unit 1)
+          (reference "C3") (unit 1)
         )
       )
     )
@@ -16018,7 +16018,7 @@
   (symbol (lib_id "74xx:74CBTLV3861") (at 222.25 250.19 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7c4ea2af-0c7b-4978-b3a9-aa55ba670b35)
-    (property "Reference" "U4" (at 224.2694 229.87 0)
+    (property "Reference" "U6" (at 224.2694 229.87 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "SN74CBTD3861PWR" (at 224.2694 232.41 0)
@@ -16056,7 +16056,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U4") (unit 1)
+          (reference "U6") (unit 1)
         )
       )
     )
@@ -16090,7 +16090,7 @@
   (symbol (lib_id "Device:C_Small") (at 407.67 294.64 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 7d360fd5-4979-49a5-8b42-56a41bb54807)
-    (property "Reference" "C65" (at 410.21 293.3762 0)
+    (property "Reference" "C54" (at 410.21 293.3762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 410.21 295.9162 0)
@@ -16107,7 +16107,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C65") (unit 1)
+          (reference "C54") (unit 1)
         )
       )
     )
@@ -16268,7 +16268,7 @@
   (symbol (lib_id "74xx:74CBTLV3861") (at 274.32 250.19 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 83cf63dd-3a3b-4c56-b88c-d48653389efd)
-    (property "Reference" "U6" (at 276.3394 229.87 0)
+    (property "Reference" "U10" (at 276.3394 229.87 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "SN74CBTD3861PWR" (at 276.3394 232.41 0)
@@ -16306,7 +16306,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U6") (unit 1)
+          (reference "U10") (unit 1)
         )
       )
     )
@@ -16315,7 +16315,7 @@
   (symbol (lib_id "Device:C_Small") (at 58.42 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 8405d1da-f39b-413f-af17-79d456e2fea7)
-    (property "Reference" "C19" (at 60.96 331.4762 0)
+    (property "Reference" "C25" (at 60.96 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 60.96 334.0162 0)
@@ -16332,7 +16332,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C19") (unit 1)
+          (reference "C25") (unit 1)
         )
       )
     )
@@ -16366,7 +16366,7 @@
   (symbol (lib_id "Device:R") (at 201.93 194.31 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 86227d3f-88a0-49bb-b768-81d4c895623e)
-    (property "Reference" "R39" (at 206.375 193.04 90)
+    (property "Reference" "R16" (at 206.375 193.04 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "2150" (at 201.93 194.31 90)
@@ -16383,7 +16383,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R39") (unit 1)
+          (reference "R16") (unit 1)
         )
       )
     )
@@ -16392,7 +16392,7 @@
   (symbol (lib_id "Device:R") (at 201.93 201.93 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 86469d6b-4f3e-4ff8-9bf5-dcc84eaa8b54)
-    (property "Reference" "R42" (at 206.375 200.66 90)
+    (property "Reference" "R19" (at 206.375 200.66 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1070" (at 201.93 201.93 90)
@@ -16409,7 +16409,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R42") (unit 1)
+          (reference "R19") (unit 1)
         )
       )
     )
@@ -16442,7 +16442,7 @@
   (symbol (lib_id "Device:C_Small") (at 115.57 191.77 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 8802ad49-0c25-497a-a442-526aa7243784)
-    (property "Reference" "C32" (at 118.745 194.31 90)
+    (property "Reference" "C14" (at 118.745 194.31 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 120.65 194.31 90)
@@ -16459,7 +16459,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C32") (unit 1)
+          (reference "C14") (unit 1)
         )
       )
     )
@@ -16468,7 +16468,7 @@
   (symbol (lib_id "Device:R") (at 201.93 209.55 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 898725f9-b6ce-4790-8629-7fe3ae3a9bb9)
-    (property "Reference" "R45" (at 206.375 208.28 90)
+    (property "Reference" "R22" (at 206.375 208.28 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "820" (at 201.93 209.55 90)
@@ -16485,7 +16485,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R45") (unit 1)
+          (reference "R22") (unit 1)
         )
       )
     )
@@ -16519,7 +16519,7 @@
   (symbol (lib_id "Connector:AudioJack3") (at 113.03 321.31 0) (mirror x) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 8a67a95a-702d-452c-b051-335034717816)
-    (property "Reference" "J1" (at 107.95 326.39 0)
+    (property "Reference" "J6" (at 107.95 326.39 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "Cassette in" (at 116.84 328.93 0)
@@ -16537,7 +16537,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J1") (unit 1)
+          (reference "J6") (unit 1)
         )
       )
     )
@@ -16596,7 +16596,7 @@
   (symbol (lib_id "Device:C_Small") (at 341.63 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 8b04a398-3c4a-40d6-8dab-587abfb967b5)
-    (property "Reference" "C57" (at 344.17 269.2462 0)
+    (property "Reference" "C52" (at 344.17 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 344.17 271.7862 0)
@@ -16613,7 +16613,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C57") (unit 1)
+          (reference "C52") (unit 1)
         )
       )
     )
@@ -16647,7 +16647,7 @@
   (symbol (lib_id "Device:R") (at 201.93 196.85 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 8cb04618-495e-487c-8fdb-62a45ace4de3)
-    (property "Reference" "R40" (at 206.375 195.58 90)
+    (property "Reference" "R17" (at 206.375 195.58 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4300" (at 201.93 196.85 90)
@@ -16664,7 +16664,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R40") (unit 1)
+          (reference "R17") (unit 1)
         )
       )
     )
@@ -16673,7 +16673,7 @@
   (symbol (lib_id "Device:R") (at 201.93 207.01 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 8d420780-6b2b-42e6-8bb9-97be387bd91e)
-    (property "Reference" "R44" (at 206.375 205.74 90)
+    (property "Reference" "R21" (at 206.375 205.74 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4300" (at 201.93 207.01 90)
@@ -16690,7 +16690,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R44") (unit 1)
+          (reference "R21") (unit 1)
         )
       )
     )
@@ -16723,7 +16723,7 @@
   (symbol (lib_id "Device:R") (at 34.29 127 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 8e42c21c-73f1-434a-b2a1-da6c79992086)
-    (property "Reference" "R4" (at 34.29 124.46 90)
+    (property "Reference" "R38" (at 34.29 124.46 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220" (at 34.29 127 90)
@@ -16740,7 +16740,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R4") (unit 1)
+          (reference "R38") (unit 1)
         )
       )
     )
@@ -16774,7 +16774,7 @@
   (symbol (lib_id "Device:R") (at 182.88 309.88 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 907a1cd6-9677-4d37-baf0-8890b4d96954)
-    (property "Reference" "R32" (at 180.34 309.88 90)
+    (property "Reference" "R33" (at 180.34 309.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 182.88 309.88 90)
@@ -16791,7 +16791,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R32") (unit 1)
+          (reference "R33") (unit 1)
         )
       )
     )
@@ -16825,7 +16825,7 @@
   (symbol (lib_id "Device:R") (at 219.71 137.16 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 909a78b7-8fb0-4acc-96d7-7df9d02ddeb5)
-    (property "Reference" "R54" (at 219.71 134.62 90)
+    (property "Reference" "R78" (at 219.71 134.62 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220" (at 219.71 137.16 90)
@@ -16842,7 +16842,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R54") (unit 1)
+          (reference "R78") (unit 1)
         )
       )
     )
@@ -16901,7 +16901,7 @@
   (symbol (lib_id "Device:C_Small") (at 134.62 321.31 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 9360f13c-171c-4b86-b7d6-ae1e236567aa)
-    (property "Reference" "C33" (at 134.62 316.23 90)
+    (property "Reference" "C9" (at 134.62 316.23 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 134.62 318.77 90)
@@ -16918,7 +16918,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C33") (unit 1)
+          (reference "C9") (unit 1)
         )
       )
     )
@@ -16927,7 +16927,7 @@
   (symbol (lib_id "Device:C_Small") (at 264.16 184.15 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 93fde074-e747-4519-bfcd-29b04b06f161)
-    (property "Reference" "C45" (at 267.335 186.69 90)
+    (property "Reference" "C2" (at 267.335 186.69 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 269.24 186.69 90)
@@ -16944,7 +16944,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C45") (unit 1)
+          (reference "C2") (unit 1)
         )
       )
     )
@@ -16953,7 +16953,7 @@
   (symbol (lib_id "Device:R") (at 27.94 25.4 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 95471fd7-086f-4775-80eb-d22254ace891)
-    (property "Reference" "R1" (at 25.4 25.4 90)
+    (property "Reference" "R41" (at 25.4 25.4 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 27.94 25.4 90)
@@ -16970,7 +16970,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R1") (unit 1)
+          (reference "R41") (unit 1)
         )
       )
     )
@@ -16979,7 +16979,7 @@
   (symbol (lib_id "Device:C_Small") (at 308.61 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 96467a6a-bb59-47aa-ae95-5d21b398b8c4)
-    (property "Reference" "C60" (at 311.15 269.2462 0)
+    (property "Reference" "C53" (at 311.15 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 311.15 271.7862 0)
@@ -16996,7 +16996,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C60") (unit 1)
+          (reference "C53") (unit 1)
         )
       )
     )
@@ -17031,7 +17031,7 @@
   (symbol (lib_id "Device:C_Small") (at 81.28 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 9713cee4-958f-4c8e-98e7-0d6b25efc499)
-    (property "Reference" "C28" (at 83.82 331.4762 0)
+    (property "Reference" "C16" (at 83.82 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 83.82 334.0162 0)
@@ -17048,7 +17048,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C28") (unit 1)
+          (reference "C16") (unit 1)
         )
       )
     )
@@ -17057,7 +17057,7 @@
   (symbol (lib_id "Connector:AudioJack3") (at 297.18 181.61 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 98f57a76-a217-4848-b787-430b80037f5d)
-    (property "Reference" "J10" (at 294.64 186.69 0)
+    (property "Reference" "J3" (at 294.64 186.69 0)
       (effects (font (size 1.27 1.27)) (justify right))
     )
     (property "Value" "Audio out" (at 294.64 189.23 0)
@@ -17075,7 +17075,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J10") (unit 1)
+          (reference "J3") (unit 1)
         )
       )
     )
@@ -17084,7 +17084,7 @@
   (symbol (lib_id "Device:C_Small") (at 234.95 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 994deb90-f8a9-4051-98b3-480d8d649d18)
-    (property "Reference" "C42" (at 237.49 269.2462 0)
+    (property "Reference" "C26" (at 237.49 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 237.49 271.7862 0)
@@ -17101,7 +17101,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C42") (unit 1)
+          (reference "C26") (unit 1)
         )
       )
     )
@@ -17110,7 +17110,7 @@
   (symbol (lib_id "Device:C_Small") (at 69.85 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 99cffa94-ee08-43b3-aa6e-991f766aec72)
-    (property "Reference" "C23" (at 72.39 316.2362 0)
+    (property "Reference" "C46" (at 72.39 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 72.39 318.7762 0)
@@ -17127,7 +17127,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C23") (unit 1)
+          (reference "C46") (unit 1)
         )
       )
     )
@@ -17161,7 +17161,7 @@
   (symbol (lib_id "Device:R") (at 41.91 60.96 270) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 9adf61a7-37a5-4873-be00-b0be87627e56)
-    (property "Reference" "R10" (at 41.91 63.5 90)
+    (property "Reference" "R40" (at 41.91 63.5 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "DNP" (at 41.91 60.96 90)
@@ -17178,7 +17178,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R10") (unit 1)
+          (reference "R40") (unit 1)
         )
       )
     )
@@ -17187,7 +17187,7 @@
   (symbol (lib_id "Device:R") (at 201.93 191.77 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid 9b70d295-3ec7-440a-b440-b2e605891a24)
-    (property "Reference" "R38" (at 206.375 190.5 90)
+    (property "Reference" "R15" (at 206.375 190.5 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1070" (at 201.93 191.77 90)
@@ -17204,7 +17204,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R38") (unit 1)
+          (reference "R15") (unit 1)
         )
       )
     )
@@ -17213,7 +17213,7 @@
   (symbol (lib_id "Connector:USB_B_Micro") (at 247.65 146.05 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 9cf176bf-ee66-4248-8959-dd084e3f8091)
-    (property "Reference" "J13" (at 247.65 133.35 0)
+    (property "Reference" "J1" (at 247.65 133.35 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "Power in" (at 247.65 135.89 0)
@@ -17234,7 +17234,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J13") (unit 1)
+          (reference "J1") (unit 1)
         )
       )
     )
@@ -17293,7 +17293,7 @@
   (symbol (lib_id "Device:C_Small") (at 281.94 179.07 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid 9f4b2bc6-63c6-491a-b43a-8a2339d02c39)
-    (property "Reference" "C48" (at 281.9463 172.72 90)
+    (property "Reference" "C1" (at 281.9463 172.72 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10uF" (at 281.9463 175.26 90)
@@ -17310,7 +17310,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C48") (unit 1)
+          (reference "C1") (unit 1)
         )
       )
     )
@@ -17344,7 +17344,7 @@
   (symbol (lib_id "Device:C_Small") (at 287.02 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a2354d82-4893-4b27-9c1c-7a07778e149f)
-    (property "Reference" "C43" (at 289.56 269.2462 0)
+    (property "Reference" "C33" (at 289.56 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 289.56 271.7862 0)
@@ -17361,7 +17361,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C43") (unit 1)
+          (reference "C33") (unit 1)
         )
       )
     )
@@ -17370,7 +17370,7 @@
   (symbol (lib_id "Device:C_Small") (at 69.85 302.26 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid a24bcee5-a1ba-429e-81a6-cb882e8e68a2)
-    (property "Reference" "C22" (at 72.39 300.9962 0)
+    (property "Reference" "C50" (at 72.39 300.9962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 72.39 303.5362 0)
@@ -17387,7 +17387,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C22") (unit 1)
+          (reference "C50") (unit 1)
         )
       )
     )
@@ -17421,7 +17421,7 @@
   (symbol (lib_id "Device:R") (at 40.64 121.92 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid a88ef447-fe4c-4f2d-91cd-86243e5e776c)
-    (property "Reference" "R8" (at 38.1 121.92 90)
+    (property "Reference" "R39" (at 38.1 121.92 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 40.64 121.92 90)
@@ -17438,7 +17438,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R8") (unit 1)
+          (reference "R39") (unit 1)
         )
       )
     )
@@ -17447,7 +17447,7 @@
   (symbol (lib_id "Device:LED") (at 228.6 137.16 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid a965701c-797c-40c0-a305-c8797a8e25e3)
-    (property "Reference" "D4" (at 228.6 130.81 0)
+    (property "Reference" "D3" (at 228.6 130.81 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SD act." (at 228.6 133.35 0)
@@ -17464,7 +17464,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "D4") (unit 1)
+          (reference "D3") (unit 1)
         )
       )
     )
@@ -17523,7 +17523,7 @@
   (symbol (lib_id "Device:C_Small") (at 243.84 83.82 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid af1401e5-bde3-4435-91eb-b1cddd0c8d6f)
-    (property "Reference" "C44" (at 246.38 82.5562 0)
+    (property "Reference" "C8" (at 246.38 82.5562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 246.38 85.0962 0)
@@ -17540,7 +17540,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C44") (unit 1)
+          (reference "C8") (unit 1)
         )
       )
     )
@@ -17549,7 +17549,7 @@
   (symbol (lib_id "Device:C_Small") (at 153.67 184.15 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid af1f6b9b-6889-4982-b337-614128a0f7aa)
-    (property "Reference" "C38" (at 153.6763 177.8 90)
+    (property "Reference" "C29" (at 153.6763 177.8 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 153.6763 180.34 90)
@@ -17566,7 +17566,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C38") (unit 1)
+          (reference "C29") (unit 1)
         )
       )
     )
@@ -17575,7 +17575,7 @@
   (symbol (lib_id "Device:R") (at 218.44 104.14 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b0247e98-5977-440c-b3b7-7bb6f7386f6e)
-    (property "Reference" "R49" (at 218.44 101.6 90)
+    (property "Reference" "R3" (at 218.44 101.6 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 218.44 104.14 90)
@@ -17592,7 +17592,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R49") (unit 1)
+          (reference "R3") (unit 1)
         )
       )
     )
@@ -17651,7 +17651,7 @@
   (symbol (lib_id "Device:R") (at 288.29 314.96 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b140e125-99ee-42dd-85c4-88187b76173a)
-    (property "Reference" "R90" (at 292.735 313.69 90)
+    (property "Reference" "R70" (at 292.735 313.69 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 314.96 90)
@@ -17668,7 +17668,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R90") (unit 1)
+          (reference "R70") (unit 1)
         )
       )
     )
@@ -17702,7 +17702,7 @@
   (symbol (lib_id "Device:R") (at 257.81 195.58 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b20533a8-d5f7-4ba6-86d8-7f4d3630c7f8)
-    (property "Reference" "R72" (at 257.81 193.04 90)
+    (property "Reference" "R26" (at 257.81 193.04 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "330" (at 257.81 195.58 90)
@@ -17719,7 +17719,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R72") (unit 1)
+          (reference "R26") (unit 1)
         )
       )
     )
@@ -17728,7 +17728,7 @@
   (symbol (lib_id "Regulator_Linear:AP1117-33") (at 396.24 290.83 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b23821f2-270b-4c00-bad1-c22771b7d53b)
-    (property "Reference" "U15" (at 396.24 284.48 0)
+    (property "Reference" "U11" (at 396.24 284.48 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "LDL1117S33R" (at 396.24 287.02 0)
@@ -17746,7 +17746,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U15") (unit 1)
+          (reference "U11") (unit 1)
         )
       )
     )
@@ -17780,7 +17780,7 @@
   (symbol (lib_id "Device:R") (at 135.89 102.87 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b33d974f-6b35-4b72-a746-e0118a5eed34)
-    (property "Reference" "R24" (at 133.35 102.87 90)
+    (property "Reference" "R53" (at 133.35 102.87 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 135.89 102.87 90)
@@ -17797,7 +17797,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R24") (unit 1)
+          (reference "R53") (unit 1)
         )
       )
     )
@@ -17831,7 +17831,7 @@
   (symbol (lib_id "Device:R") (at 146.05 309.88 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b4e18a54-d08d-4246-944b-33cfe5f3ec0c)
-    (property "Reference" "R25" (at 143.51 309.88 90)
+    (property "Reference" "R29" (at 143.51 309.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "220k" (at 146.05 309.88 90)
@@ -17848,7 +17848,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R25") (unit 1)
+          (reference "R29") (unit 1)
         )
       )
     )
@@ -17932,7 +17932,7 @@
   (symbol (lib_id "Device:R") (at 201.93 212.09 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid b9602975-6bb3-42aa-8c5d-aace35293610)
-    (property "Reference" "R46" (at 206.375 210.82 90)
+    (property "Reference" "R23" (at 206.375 210.82 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "820" (at 201.93 212.09 90)
@@ -17949,7 +17949,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R46") (unit 1)
+          (reference "R23") (unit 1)
         )
       )
     )
@@ -17983,7 +17983,7 @@
   (symbol (lib_id "Device:C_Small") (at 46.99 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ba100a34-568a-4b64-8620-48bdf23612bb)
-    (property "Reference" "C14" (at 49.53 331.4762 0)
+    (property "Reference" "C31" (at 49.53 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 49.53 334.0162 0)
@@ -18000,7 +18000,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C14") (unit 1)
+          (reference "C31") (unit 1)
         )
       )
     )
@@ -18059,7 +18059,7 @@
   (symbol (lib_id "Device:C_Small") (at 46.99 347.98 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid bc048c39-d479-4464-9ccf-b35f7d1639b3)
-    (property "Reference" "C15" (at 49.53 346.7162 0)
+    (property "Reference" "C39" (at 49.53 346.7162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 49.53 349.2562 0)
@@ -18076,7 +18076,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C15") (unit 1)
+          (reference "C39") (unit 1)
         )
       )
     )
@@ -18085,7 +18085,7 @@
   (symbol (lib_id "Device:R") (at 201.93 204.47 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid bc14f1e0-683f-45a9-a384-0a41d57d71bf)
-    (property "Reference" "R43" (at 206.375 203.2 90)
+    (property "Reference" "R20" (at 206.375 203.2 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "2150" (at 201.93 204.47 90)
@@ -18102,7 +18102,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R43") (unit 1)
+          (reference "R20") (unit 1)
         )
       )
     )
@@ -18161,7 +18161,7 @@
   (symbol (lib_id "Device:R") (at 127 119.38 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c11dab80-7cc9-4bbd-b885-403ef278e56c)
-    (property "Reference" "R18" (at 127 116.84 90)
+    (property "Reference" "R58" (at 127 116.84 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 127 119.38 90)
@@ -18178,7 +18178,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R18") (unit 1)
+          (reference "R58") (unit 1)
         )
       )
     )
@@ -18262,7 +18262,7 @@
   (symbol (lib_id "Device:C_Small") (at 35.56 302.26 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid c2290787-8f0b-4748-8fbe-9f66a5a3be5d)
-    (property "Reference" "C7" (at 38.1 300.9962 0)
+    (property "Reference" "C49" (at 38.1 300.9962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 38.1 303.5362 0)
@@ -18279,7 +18279,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C7") (unit 1)
+          (reference "C49") (unit 1)
         )
       )
     )
@@ -18363,7 +18363,7 @@
   (symbol (lib_id "Connector:DB9_Male_MountingHoles") (at 276.86 307.34 0) (mirror y) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c4a25ddc-7c6f-42dd-922e-defc8af47ba0)
-    (property "Reference" "J11" (at 278.13 293.37 0)
+    (property "Reference" "J14" (at 278.13 293.37 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "Hand controller 2" (at 271.78 316.23 90)
@@ -18388,7 +18388,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J11") (unit 1)
+          (reference "J14") (unit 1)
         )
       )
     )
@@ -18397,7 +18397,7 @@
   (symbol (lib_id "Device:R") (at 288.29 312.42 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c4a929bb-3ea1-472a-a1e5-6787cbabd181)
-    (property "Reference" "R89" (at 292.735 311.15 90)
+    (property "Reference" "R71" (at 292.735 311.15 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 312.42 90)
@@ -18414,25 +18414,25 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R89") (unit 1)
+          (reference "R71") (unit 1)
         )
       )
     )
   )
 
-  (symbol (lib_id "Device:R") (at 158.75 96.52 180) (unit 1)
+  (symbol (lib_id "Device:R") (at 157.48 97.79 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid c5320173-95b7-492d-977a-90eade1c16dd)
-    (property "Reference" "R53" (at 156.21 96.52 90)
+    (property "Reference" "R52" (at 157.48 95.25 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Value" "10k" (at 158.75 96.52 90)
+    (property "Value" "10k" (at 157.48 97.79 90)
       (effects (font (size 1.27 1.27)))
     )
-    (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 160.528 96.52 90)
+    (property "Footprint" "Resistor_SMD:R_0603_1608Metric" (at 157.48 99.568 90)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Datasheet" "~" (at 158.75 96.52 0)
+    (property "Datasheet" "~" (at 157.48 97.79 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (pin "1" (uuid 6ab92296-74eb-43ea-91b2-bd3ba489692f))
@@ -18440,7 +18440,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R53") (unit 1)
+          (reference "R52") (unit 1)
         )
       )
     )
@@ -18549,7 +18549,7 @@
   (symbol (lib_id "Device:C_Small") (at 153.67 196.85 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid cdbab3d1-c911-4754-a919-ed82e4224a7e)
-    (property "Reference" "C39" (at 153.6763 190.5 90)
+    (property "Reference" "C15" (at 153.6763 190.5 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100nF" (at 153.6763 193.04 90)
@@ -18566,7 +18566,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C39") (unit 1)
+          (reference "C15") (unit 1)
         )
       )
     )
@@ -18575,7 +18575,7 @@
   (symbol (lib_id "Device:C_Small") (at 264.16 200.66 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d11d2303-0e2e-4ca0-953c-e8482d59355a)
-    (property "Reference" "C46" (at 267.335 203.2 90)
+    (property "Reference" "C4" (at 267.335 203.2 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 269.24 203.2 90)
@@ -18592,7 +18592,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C46") (unit 1)
+          (reference "C4") (unit 1)
         )
       )
     )
@@ -18626,7 +18626,7 @@
   (symbol (lib_id "Connector_Generic:Conn_02x06_Odd_Even") (at 332.74 186.69 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid d49562a2-35fd-416d-8526-c0b6ec0ae480)
-    (property "Reference" "J16" (at 334.01 175.26 0)
+    (property "Reference" "J9" (at 334.01 175.26 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "ESP32 spare" (at 334.01 177.8 0)
@@ -18653,7 +18653,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J16") (unit 1)
+          (reference "J9") (unit 1)
         )
       )
     )
@@ -18662,7 +18662,7 @@
   (symbol (lib_id "Device:R") (at 127 129.54 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d53a5e69-7745-423c-af50-6b732cc58d0d)
-    (property "Reference" "R20" (at 127 127 90)
+    (property "Reference" "R54" (at 127 127 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 127 129.54 90)
@@ -18679,7 +18679,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R20") (unit 1)
+          (reference "R54") (unit 1)
         )
       )
     )
@@ -18688,7 +18688,7 @@
   (symbol (lib_id "Device:R") (at 43.18 25.4 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d56692c2-c79c-49b3-ad8a-38e3a3bfd519)
-    (property "Reference" "R11" (at 40.64 25.4 90)
+    (property "Reference" "R42" (at 40.64 25.4 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 43.18 25.4 90)
@@ -18705,7 +18705,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R11") (unit 1)
+          (reference "R42") (unit 1)
         )
       )
     )
@@ -18714,7 +18714,7 @@
   (symbol (lib_id "Device:R") (at 127 114.3 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d5d85627-8435-454d-98b1-88232bd2b485)
-    (property "Reference" "R17" (at 127 111.76 90)
+    (property "Reference" "R59" (at 127 111.76 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 127 114.3 90)
@@ -18731,7 +18731,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R17") (unit 1)
+          (reference "R59") (unit 1)
         )
       )
     )
@@ -18790,7 +18790,7 @@
   (symbol (lib_id "Device:R") (at 168.91 321.31 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid d754366f-849b-4a46-94e7-9edfe32b412c)
-    (property "Reference" "R30" (at 168.91 318.77 90)
+    (property "Reference" "R35" (at 168.91 318.77 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "2.2k" (at 168.91 321.31 90)
@@ -18807,7 +18807,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R30") (unit 1)
+          (reference "R35") (unit 1)
         )
       )
     )
@@ -18919,7 +18919,7 @@
   (symbol (lib_id "Device:C_Small") (at 142.24 270.51 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid db22471d-2c82-4c6b-9af1-45ef9b7198a5)
-    (property "Reference" "C35" (at 144.78 269.2462 0)
+    (property "Reference" "C7" (at 144.78 269.2462 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 144.78 271.7862 0)
@@ -18936,7 +18936,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C35") (unit 1)
+          (reference "C7") (unit 1)
         )
       )
     )
@@ -18945,7 +18945,7 @@
   (symbol (lib_id "Device:R") (at 40.64 104.14 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid db5a8821-ccaf-43b8-8cb5-2c1c4d17eca3)
-    (property "Reference" "R7" (at 38.1 104.14 90)
+    (property "Reference" "R48" (at 38.1 104.14 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "1k" (at 40.64 104.14 90)
@@ -18962,7 +18962,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R7") (unit 1)
+          (reference "R48") (unit 1)
         )
       )
     )
@@ -19021,7 +19021,7 @@
   (symbol (lib_id "Device:R") (at 288.29 297.18 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid dd1c08fa-5d79-48f3-b177-d0f9f0ce3032)
-    (property "Reference" "R83" (at 292.735 295.91 90)
+    (property "Reference" "R77" (at 292.735 295.91 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 297.18 90)
@@ -19038,7 +19038,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R83") (unit 1)
+          (reference "R77") (unit 1)
         )
       )
     )
@@ -19047,7 +19047,7 @@
   (symbol (lib_id "Regulator_Linear:MCP1700-2502E_SOT23") (at 396.24 311.15 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid dd3d2c03-1bc2-4508-af52-1aac1fdd4171)
-    (property "Reference" "U16" (at 396.24 304.8 0)
+    (property "Reference" "U3" (at 396.24 304.8 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "MCP1700T-2502E/TT" (at 396.24 307.34 0)
@@ -19065,7 +19065,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U16") (unit 1)
+          (reference "U3") (unit 1)
         )
       )
     )
@@ -19124,7 +19124,7 @@
   (symbol (lib_id "aquarius-plus:IS61C5128AS-25QLI") (at 317.5 52.07 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid dfdf23a1-09b9-491c-86e9-e7c8488384b0)
-    (property "Reference" "U10" (at 317.5 16.51 0)
+    (property "Reference" "U12" (at 317.5 16.51 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "IS61C5128AS-25QLI" (at 317.5 19.05 0)
@@ -19171,7 +19171,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U10") (unit 1)
+          (reference "U12") (unit 1)
         )
       )
     )
@@ -19210,7 +19210,7 @@
   (symbol (lib_id "Device:C_Small") (at 153.67 71.12 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e16c2411-6374-4271-b4fe-984f9a6acaed)
-    (property "Reference" "C37" (at 156.21 69.8562 0)
+    (property "Reference" "C59" (at 156.21 69.8562 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "22uF" (at 156.21 72.3962 0)
@@ -19227,7 +19227,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C37") (unit 1)
+          (reference "C59") (unit 1)
         )
       )
     )
@@ -19236,7 +19236,7 @@
   (symbol (lib_id "Connector_Generic:Conn_02x06_Odd_Even") (at 383.54 189.23 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid e2bd79ff-68e4-44ce-b8af-0802e62c681c)
-    (property "Reference" "J14" (at 384.81 175.26 0)
+    (property "Reference" "J11" (at 384.81 175.26 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "FPGA spare" (at 384.81 177.8 0)
@@ -19263,7 +19263,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J14") (unit 1)
+          (reference "J11") (unit 1)
         )
       )
     )
@@ -19272,7 +19272,7 @@
   (symbol (lib_id "Device:C_Small") (at 81.28 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e60bc704-f703-4a95-9f64-a706dd04c9f4)
-    (property "Reference" "C27" (at 83.82 316.2362 0)
+    (property "Reference" "C51" (at 83.82 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 83.82 318.7762 0)
@@ -19289,7 +19289,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C27") (unit 1)
+          (reference "C51") (unit 1)
         )
       )
     )
@@ -19298,7 +19298,7 @@
   (symbol (lib_id "Device:R") (at 115.57 102.87 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid e63bf991-c4e5-4d5d-af5b-ccab9ebc0de8)
-    (property "Reference" "R12" (at 113.03 102.87 90)
+    (property "Reference" "R55" (at 113.03 102.87 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "10k" (at 115.57 102.87 90)
@@ -19315,7 +19315,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R12") (unit 1)
+          (reference "R55") (unit 1)
         )
       )
     )
@@ -19349,7 +19349,7 @@
   (symbol (lib_id "Connector_Generic:Conn_01x03") (at 228.6 36.83 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid e79df349-82c0-4e73-884c-2ed8c7c60fb6)
-    (property "Reference" "J7" (at 231.14 35.5599 0)
+    (property "Reference" "J8" (at 231.14 35.5599 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "DBG" (at 231.14 38.0999 0)
@@ -19367,7 +19367,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "J7") (unit 1)
+          (reference "J8") (unit 1)
         )
       )
     )
@@ -19376,7 +19376,7 @@
   (symbol (lib_id "Device:R") (at 275.59 184.15 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid e8355409-99f6-492d-a807-ecabbb9dd9f1)
-    (property "Reference" "R81" (at 273.05 184.15 90)
+    (property "Reference" "R7" (at 273.05 184.15 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "150" (at 275.59 184.15 90)
@@ -19393,7 +19393,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R81") (unit 1)
+          (reference "R7") (unit 1)
         )
       )
     )
@@ -19427,7 +19427,7 @@
   (symbol (lib_id "Device:C_Small") (at 153.67 35.56 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ea7a6883-cac3-49cf-913d-57b7a6a5321f)
-    (property "Reference" "C36" (at 156.21 34.2962 0)
+    (property "Reference" "C58" (at 156.21 34.2962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 156.21 36.8362 0)
@@ -19444,7 +19444,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C36") (unit 1)
+          (reference "C58") (unit 1)
         )
       )
     )
@@ -19550,7 +19550,7 @@
   (symbol (lib_id "Device:R") (at 153.67 26.67 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid eda164f6-ed82-41fe-a68d-f1f52f5eb1f3)
-    (property "Reference" "R27" (at 156.21 27.94 90)
+    (property "Reference" "R51" (at 156.21 27.94 90)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "10k" (at 153.67 27.94 90)
@@ -19567,7 +19567,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R27") (unit 1)
+          (reference "R51") (unit 1)
         )
       )
     )
@@ -19576,7 +19576,7 @@
   (symbol (lib_id "aquarius-plus:SST39SF020A-55-4C-WHE") (at 377.19 53.34 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid edcf01f1-a2c3-4698-830a-24210d5607a8)
-    (property "Reference" "U13" (at 377.19 16.51 0)
+    (property "Reference" "U7" (at 377.19 16.51 0)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "SST39SF020A-55-4C-WHE" (at 377.19 19.05 0)
@@ -19623,7 +19623,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "U13") (unit 1)
+          (reference "U7") (unit 1)
         )
       )
     )
@@ -19632,7 +19632,7 @@
   (symbol (lib_id "Device:C_Small") (at 336.55 78.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid edeec946-0dc3-4947-ae3b-b313bf4d6821)
-    (property "Reference" "C55" (at 339.09 77.4762 0)
+    (property "Reference" "C32" (at 339.09 77.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 339.09 80.0162 0)
@@ -19649,7 +19649,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C55") (unit 1)
+          (reference "C32") (unit 1)
         )
       )
     )
@@ -19658,7 +19658,7 @@
   (symbol (lib_id "Device:R") (at 154.94 309.88 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid ee0d5b89-e32c-4a6a-9886-98a756f4aa5b)
-    (property "Reference" "R28" (at 152.4 309.88 90)
+    (property "Reference" "R31" (at 152.4 309.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "4.7k" (at 154.94 309.88 90)
@@ -19675,7 +19675,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R28") (unit 1)
+          (reference "R31") (unit 1)
         )
       )
     )
@@ -19684,7 +19684,7 @@
   (symbol (lib_id "Device:C_Small") (at 46.99 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f063c32b-5c01-4e20-bfdd-895221f6b25c)
-    (property "Reference" "C13" (at 49.53 316.2362 0)
+    (property "Reference" "C40" (at 49.53 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 49.53 318.7762 0)
@@ -19701,25 +19701,25 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C13") (unit 1)
+          (reference "C40") (unit 1)
         )
       )
     )
   )
 
-  (symbol (lib_id "aquarius-plus:AQPLUS_LOGO") (at 496.57 382.27 0) (unit 1)
+  (symbol (lib_id "aquarius-plus:AQPLUS_LOGO") (at 345.44 361.95 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f2172a6b-af69-4d6a-9c2e-361183e2fddd)
-    (property "Reference" "#G1" (at 496.57 379.254 0)
+    (property "Reference" "#G1" (at 345.44 358.934 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Value" "AQPLUS_LOGO" (at 496.57 385.286 0)
+    (property "Value" "AQPLUS_LOGO" (at 345.44 364.966 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Footprint" "aquarius-plus:aqplus_logo" (at 496.57 382.27 0)
+    (property "Footprint" "aquarius-plus:aqplus_logo" (at 345.44 361.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
-    (property "Datasheet" "" (at 496.57 382.27 0)
+    (property "Datasheet" "" (at 345.44 361.95 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (instances
@@ -19734,7 +19734,7 @@
   (symbol (lib_id "Device:C_Small") (at 382.27 314.96 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f2be68b8-949c-44e3-815b-291412df497f)
-    (property "Reference" "C63" (at 384.81 313.6962 0)
+    (property "Reference" "C10" (at 384.81 313.6962 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 384.81 316.2362 0)
@@ -19751,7 +19751,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C63") (unit 1)
+          (reference "C10") (unit 1)
         )
       )
     )
@@ -19785,7 +19785,7 @@
   (symbol (lib_id "Device:C_Small") (at 35.56 347.98 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid f4d8dbe8-2274-47ed-9a72-d6b7e707cb2c)
-    (property "Reference" "C10" (at 38.1 346.7162 0)
+    (property "Reference" "C47" (at 38.1 346.7162 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "4.7uF" (at 38.1 349.2562 0)
@@ -19802,7 +19802,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C10") (unit 1)
+          (reference "C47") (unit 1)
         )
       )
     )
@@ -19811,7 +19811,7 @@
   (symbol (lib_id "Device:R") (at 173.99 309.88 180) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid f5f496b3-4435-4bea-b92a-6133af2d76d4)
-    (property "Reference" "R31" (at 171.45 309.88 90)
+    (property "Reference" "R32" (at 171.45 309.88 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "47k" (at 173.99 309.88 90)
@@ -19828,7 +19828,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R31") (unit 1)
+          (reference "R32") (unit 1)
         )
       )
     )
@@ -19987,7 +19987,7 @@
   (symbol (lib_id "Device:R") (at 229.87 304.8 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid fd760289-fd3f-4161-a0a6-caa53a52171a)
-    (property "Reference" "R58" (at 234.315 303.53 90)
+    (property "Reference" "R66" (at 234.315 303.53 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 229.87 304.8 90)
@@ -20004,7 +20004,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R58") (unit 1)
+          (reference "R66") (unit 1)
         )
       )
     )
@@ -20088,7 +20088,7 @@
   (symbol (lib_id "Device:C_Small") (at 69.85 332.74 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ff2c9be5-1325-4124-b0af-bb01d1c4d0a6)
-    (property "Reference" "C24" (at 72.39 331.4762 0)
+    (property "Reference" "C20" (at 72.39 331.4762 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 72.39 334.0162 0)
@@ -20105,7 +20105,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C24") (unit 1)
+          (reference "C20") (unit 1)
         )
       )
     )
@@ -20114,7 +20114,7 @@
   (symbol (lib_id "Device:C_Small") (at 24.13 317.5 0) (unit 1)
     (in_bom yes) (on_board yes) (dnp no) (fields_autoplaced)
     (uuid ff3c445c-9da4-47d2-b83f-47ce9caf3c12)
-    (property "Reference" "C3" (at 26.67 316.2362 0)
+    (property "Reference" "C30" (at 26.67 316.2362 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
     (property "Value" "100nF" (at 26.67 318.7762 0)
@@ -20131,7 +20131,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "C3") (unit 1)
+          (reference "C30") (unit 1)
         )
       )
     )
@@ -20140,7 +20140,7 @@
   (symbol (lib_id "Device:R") (at 288.29 302.26 90) (unit 1)
     (in_bom yes) (on_board yes) (dnp no)
     (uuid ff4807af-003b-43e4-ab02-5a3973395119)
-    (property "Reference" "R85" (at 292.735 300.99 90)
+    (property "Reference" "R75" (at 292.735 300.99 90)
       (effects (font (size 1.27 1.27)))
     )
     (property "Value" "100" (at 288.29 302.26 90)
@@ -20157,7 +20157,7 @@
     (instances
       (project "aquarius-plus"
         (path "/e63e39d7-6ac0-4ffd-8aa3-1841a4541b55"
-          (reference "R85") (unit 1)
+          (reference "R75") (unit 1)
         )
       )
     )
