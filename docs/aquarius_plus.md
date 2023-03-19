@@ -320,13 +320,13 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 | ----: | --------------------------------------------- |
 |  0-15 | Flash memory (256KB)                          |
 | 16-19 | Cartridge port (data via scrambling register) |
-|    20 | Video RAM                                     |
-|    21 | Character RAM                                 |
+|    [20](#page-20) | [Video RAM](#page-20)                                     |
+|    [21](#page-21) | [Character RAM](#page-21)                                 |
 | 22-30 | -                                             |
 |    31 | Internal boot ROM (8kB) - to be removed       |
 | 32-63 | RAM (512KB)                                   |
 
-### Page 4
+### Page 20
 
 Video RAM used by tile / bitmap / sprite engine.
 
@@ -345,7 +345,7 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 
 **_Sprites_** use the parameters set via the sprite IO registers. The sprites use the same tile map data format as the tile mode, but the color index lookup is performed using the sprite palette instead.
 
-### Page 5
+### Page 21
 
 | Address       | Description       |
 | ------------- | ----------------- |
