@@ -2,12 +2,12 @@
 
 # Memory map
 
-| Memory address | Description |
-| -------------- | ----------- |
-| $0000 - $3FFF  | Bank 0      |
-| $4000 - $7FFF  | Bank 1      |
-| $8000 - $BFFF  | Bank 2      |
-| $C000 - $FFFF  | Bank 3      |
+| Z80 Memory address | Description |
+| ------------------ | ----------- |
+|   $0000 - $3FFF    | Bank 0      |
+|   $4000 - $7FFF    | Bank 1      |
+|   $8000 - $BFFF    | Bank 2      |
+|   $C000 - $FFFF    | Bank 3      |
 
 # IO map
 
