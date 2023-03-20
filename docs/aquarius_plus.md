@@ -330,7 +330,7 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 
 Video RAM used by tile / bitmap / sprite engine.
 
-| Address       | Description                       |
+| Offset        | Description                       |
 | ------------- | --------------------------------- |
 | $0000 - $1F3F | 8KB Bitmap RAM                    |
 | $2000 - $23E7 | 1KB Bitmap color RAM (40x25)      |
@@ -347,7 +347,7 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 
 ### Page 21
 
-| Address       | Description       |
+| Offset        | Description       |
 | ------------- | ----------------- |
 | $0000 - $07FF | 2KB Character RAM |
 | $0800 - $3FFF | -                 |
