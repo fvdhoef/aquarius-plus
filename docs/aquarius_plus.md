@@ -9,6 +9,16 @@
 |   $8000 - $BFFF    | Bank 2      |   $F2 / 242  | 34  = RAM Page 34                        |
 |   $C000 - $FFFF    | Bank 3      |   $F3 / 243  | 19  = Cartridge Port Page 19             |
 
+## Overlay RAM
+
+When setting the **_Overlay RAM_** bit of the **BANK**x registers, the offset $3000-$3FFF for that BANK is replaced with the functions listed in the chart below. This is not limited to BANK0, although the default code for existing Aquarius software expects it to be there. But why? As an example, screen update code could be rewritten to update BANK3 (starting at $C000) with the OVERLAY bit set, placing an access point to CHARRAM at $F000 ($C000 + $3000), COLRAM at $F400, and BASIC RAM at $F800. Since the BASIC interpreter expects its variables and code to start at $3800, this is likely not possible with BASIC. Note also that the OVERLAY bit can be set in all of the banks, which would allow a programmer to update the border character at $3000, $7000, $B000, and $F000.
+
+| Offset        | Description         |
+| ------------- | ------------------- |
+| $3000 - $33FF | CHARRAM       (1KB) |
+| $3400 - $37FF | COLRAM        (1KB) |
+| $3800 - $3FFF | BASIC RAM     (2KB) |
+
 # Banking
 
 ## Banked Memory Pointers
@@ -52,16 +62,6 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 The character RAM is used by the text mode character generator to display text on the screen. The characters can be redefined by writing to the character RAM.
 
 # Video Registers
-
-## Overlay RAM
-
-When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
-
-| Address       | Description      |
-| ------------- | ---------------- |
-| $3000 - $33FF | Screen RAM (1KB) |
-| $3400 - $37FF | Color RAM (1KB)  |
-| $3800 - $3FFF | Basic RAM (2KB)  |
 
 **_Text mode_** and **_sprites_** can be enabled simultaneously with either **_tile map mode_** or **_bitmap mode_**.
 
