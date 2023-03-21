@@ -2,12 +2,12 @@
 
 # Memory map
 
-| Memory address | Description |
-| -------------- | ----------- |
-| $0000 - $3FFF  | Bank 0      |
-| $4000 - $7FFF  | Bank 1      |
-| $8000 - $BFFF  | Bank 2      |
-| $C000 - $FFFF  | Bank 3      |
+| Z80 Memory address | Description |
+| ------------------ | ----------- |
+|   $0000 - $3FFF    | Bank 0      |
+|   $4000 - $7FFF    | Bank 1      |
+|   $8000 - $BFFF    | Bank 2      |
+|   $C000 - $FFFF    | Bank 3      |
 
 # IO map
 
@@ -320,17 +320,17 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 | ----: | --------------------------------------------- |
 |  0-15 | Flash memory (256KB)                          |
 | 16-19 | Cartridge port (data via scrambling register) |
-|    20 | Video RAM                                     |
-|    21 | Character RAM                                 |
+|    [20](#page-20) | [Video RAM](#page-20)                                     |
+|    [21](#page-21) | [Character RAM](#page-21)                                 |
 | 22-30 | -                                             |
 |    31 | Internal boot ROM (8kB) - to be removed       |
 | 32-63 | RAM (512KB)                                   |
 
-### Page 4
+### Page 20
 
 Video RAM used by tile / bitmap / sprite engine.
 
-| Address       | Description                       |
+| Offset        | Description                       |
 | ------------- | --------------------------------- |
 | $0000 - $1F3F | 8KB Bitmap RAM                    |
 | $2000 - $23E7 | 1KB Bitmap color RAM (40x25)      |
@@ -345,9 +345,9 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 
 **_Sprites_** use the parameters set via the sprite IO registers. The sprites use the same tile map data format as the tile mode, but the color index lookup is performed using the sprite palette instead.
 
-### Page 5
+### Page 21
 
-| Address       | Description       |
+| Offset        | Description       |
 | ------------- | ----------------- |
 | $0000 - $07FF | 2KB Character RAM |
 | $0800 - $3FFF | -                 |
