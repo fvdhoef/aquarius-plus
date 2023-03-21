@@ -11,7 +11,7 @@
 
 ## Overlay RAM
 
-When setting the **_Overlay RAM_** bit of the **BANK**x registers, the offset $3000-$3FFF for that BANK is replaced with the functions listed in the chart below. This is not limited to BANK0, although the default code for existing Aquarius software expects it to be there. But why? As an example, screen update code could be rewritten to update BANK3 (starting at $C000) with the OVERLAY bit set, placing an access point to CHARRAM at $F000 ($C000 + $3000), COLRAM at $F400, and BASIC RAM at $F800. Since the BASIC interpreter expects its variables and code to start at $3800, this is likely not possible with BASIC. Note also that the OVERLAY bit can be set in all of the banks, which would allow a programmer to update the border character at $3000, $7000, $B000, and $F000.
+When setting the **_Overlay RAM_** bit of the **BANK**x registers, the offset $3000-$3FFF for that BANK is replaced with the functions listed in the chart below. This is not limited to BANK0, although the default code for existing Aquarius software expects it to be there. But why would anyone want to change this? As an example, screen update code could be rewritten to update BANK3 (starting at $C000) with the OVERLAY bit set, placing an access point to CHARRAM at $F000 ($C000 + $3000), COLRAM at $F400, and BASIC RAM at $F800. Since the BASIC interpreter expects its variables and code to start at $3800, this is likely not possible with BASIC. Note also that the OVERLAY bit can be set in all of the banks, which would allow a programmer to update the border character at $3000, $7000, $B000, and $F000.
 
 | Offset        | Description         |
 | ------------- | ------------------- |
