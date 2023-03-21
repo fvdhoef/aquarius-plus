@@ -1,0 +1,11 @@
+1000 REM Reset to default Aq+ Palette
+1010 REM Load palette data into $BFE0/-16416
+1020 LOAD "aqp-default.pal",-16416
+1030 REM Set palette loop
+1040 FOR I=0TO31
+1050 REM Update VPALSEL
+1060 OUT 234,I
+1070 REM Update VPALDATA
+1080 OUT 235,PEEK(-16416+I)
+1090 NEXT
+1100 CLS

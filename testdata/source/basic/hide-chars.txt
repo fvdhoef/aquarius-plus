@@ -1,0 +1,4 @@
+1100 REM Set Graphics Mode (VCTRL) to TEXT
+1110 OUT 224,1
+1120 REM Set BANK3 Page to default
+1130 OUT 243,19

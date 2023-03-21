@@ -1,0 +1,34 @@
+1000 REM AqPlus Tile Scroll Demo
+1010 REM Set starting tile positions
+1020 X=0:Y=0
+1030 REM Set Tilemap HScroll Registers
+1040 M=225:N=226
+1050 REM Get BANK3 Page and save to A
+1060 A=IN(243)
+1070 REM Set BANK3 to Page 20 VRAM
+1080 OUT 243,20
+1090 REM Load tile data into $C000/-16384
+1100 LOAD "ss.til",-16384
+1110 REM Load palette data into $BFE0/-16416
+1120 LOAD "ss.pal",-16416
+1130 REM Set palette loop
+1140 FOR I=0TO31
+1150 REM Update VPALSEL
+1160 OUT 234,I
+1170 REM Update VPALDATA
+1180 OUT 235,PEEK(-16416+I)
+1190 NEXT
+1200 REM Set VCTRL to 64x32 tilemap mode
+1210 OUT 224,2
+1220 REM Scroll tileset
+1230 X=X+1:IFX>511THENX=0
+1240 Q=XAND255:R=X/256:OUTM,Q:OUTN,R
+1250 REM Uncomment next 2 lines for diag
+1260 Y=Y+1:IFY>255THENY=0
+1270 OUT227,Y
+1280 IF INKEY$="" GOTO 1220
+1290 REM Set VCTRL to text mode
+1300 OUT 224,1
+1310 REM Set BANK3 to original state
+1320 OUT 243,A
+1330 run"reset-pal.bas"
