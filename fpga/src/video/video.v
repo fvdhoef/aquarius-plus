@@ -241,7 +241,8 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // VRAM
     //////////////////////////////////////////////////////////////////////////
-    wire [13:0] vram_addr2 = 14'b0;
+    wire [12:0] vram_addr2;     // = 13'b0;
+    wire [15:0] vram_rddata2;
 
     vram vram(
         // First port - CPU access
@@ -254,7 +255,33 @@ module video(
         // Second port - Video access
         .p2_clk(clk),
         .p2_addr(vram_addr2),
-        .p2_rddata());
+        .p2_rddata(vram_rddata2));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Graphics
+    //////////////////////////////////////////////////////////////////////////
+    gfx gfx(
+        .clk(clk),
+        .reset(reset),
+
+        // Register values
+        .gfx_mode(vctrl_gfx_mode_r),
+        .sprites_enable(vctrl_sprites_enable_r),
+        .scrx(vscrx_r),
+        .scry(vscry_r),
+
+        // Video RAM interface
+        .vaddr(vram_addr2),
+        .vdata(vram_rddata2),
+
+        // Render parameters
+        .vline(vpos),
+        .start(vnext),
+
+        // Line buffer interface
+        .wridx(),
+        .wrdata(),
+        .wren());
 
     //////////////////////////////////////////////////////////////////////////
     // Compositing
