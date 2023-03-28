@@ -35,16 +35,32 @@ module video(
     
     output wire        vga_vblank);
 
+    wire [7:0] vpos;
+    wire       vblank;
+
+    reg vblank_r;
+    always @(posedge clk) vblank_r <= vblank;
+
     wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
 
-    reg        vctrl_text_priority_r;   // IO $E0
-    reg        vctrl_sprites_enable_r;  // IO $E0
-    reg  [1:0] vctrl_gfx_mode_r;        // IO $E0
-    reg        vctrl_text_enable_r;     // IO $E0
+    reg        vctrl_text_priority_r;   // IO $E0 [4]
+    reg        vctrl_sprites_enable_r;  // IO $E0 [3]
+    reg  [1:0] vctrl_gfx_mode_r;        // IO $E0 [2:1]
+    reg        vctrl_text_enable_r;     // IO $E0 [0]
     reg  [8:0] vscrx_r;                 // IO $E1/2
     reg  [7:0] vscry_r;                 // IO $E3
     reg  [6:0] vpalsel_r;               // IO $EA
+    reg  [7:0] virqline_r;              // IO $ED
+    reg        irqmask_line_r;          // IO $EE [0]
+    reg        irqmask_vblank_r;        // IO $EE [1]
+    reg        irqstat_line_r;          // IO $EF [0]
+    reg        irqstat_vblank_r;        // IO $EF [1]
+
+    wire irqline_match = (vpos == virqline_r);
+    reg irqline_match_r;
+    always @(posedge clk) irqline_match_r <= irqline_match;
+    wire irqline_detect = (!irqline_match_r && irqline_match);
 
     //////////////////////////////////////////////////////////////////////////
     // IO registers
@@ -55,15 +71,23 @@ module video(
     wire sel_io_vscry    = (io_addr == 4'h3);
     wire sel_io_vpalsel  = (io_addr == 4'hA);
     wire sel_io_vpaldata = (io_addr == 4'hB);
+    wire sel_io_vline    = (io_addr == 4'hC);
+    wire sel_io_virqline = (io_addr == 4'hD);
+    wire sel_io_irqmask  = (io_addr == 4'hE);
+    wire sel_io_irqstat  = (io_addr == 4'hF);
 
     always @* begin
         io_rddata <= rddata_sprattr;
         if (sel_io_vctrl)    io_rddata <= {3'b0, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
-        if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];
-        if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};
-        if (sel_io_vscry)    io_rddata <= vscry_r;
-        if (sel_io_vpalsel)  io_rddata <= {1'b0, vpalsel_r};    // IO $EA
-        if (sel_io_vpaldata) io_rddata <= rddata_vpaldata;      // IO $EB
+        if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];                             // IO $E1
+        if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};                       // IO $E2
+        if (sel_io_vscry)    io_rddata <= vscry_r;                                  // IO $E3
+        if (sel_io_vpalsel)  io_rddata <= {1'b0, vpalsel_r};                        // IO $EA
+        if (sel_io_vpaldata) io_rddata <= rddata_vpaldata;                          // IO $EB
+        if (sel_io_vline)    io_rddata <= vpos;                                     // IO $EC
+        if (sel_io_virqline) io_rddata <= virqline_r;                               // IO $ED
+        if (sel_io_irqmask)  io_rddata <= {6'b0, irqmask_line_r, irqmask_vblank_r}; // IO $EE
+        if (sel_io_irqstat)  io_rddata <= {6'b0, irqstat_line_r, irqstat_vblank_r}; // IO $EF
     end
 
     always @(posedge clk or posedge reset)
@@ -75,17 +99,37 @@ module video(
             vscrx_r                <= 9'b0;
             vscry_r                <= 8'b0;
             vpalsel_r              <= 7'b0;
-        end else if (io_wren) begin
-            if (sel_io_vctrl) begin
-                vctrl_text_priority_r  <= io_wrdata[4];
-                vctrl_sprites_enable_r <= io_wrdata[3];
-                vctrl_gfx_mode_r       <= io_wrdata[2:1];
-                vctrl_text_enable_r    <= io_wrdata[0];
+            virqline_r             <= 8'b0;
+            irqmask_line_r         <= 1'b0;
+            irqmask_vblank_r       <= 1'b0;
+            irqstat_line_r         <= 1'b0;
+            irqstat_vblank_r       <= 1'b0;
+
+        end else begin
+            if (io_wren) begin
+                if (sel_io_vctrl) begin
+                    vctrl_text_priority_r  <= io_wrdata[4];
+                    vctrl_sprites_enable_r <= io_wrdata[3];
+                    vctrl_gfx_mode_r       <= io_wrdata[2:1];
+                    vctrl_text_enable_r    <= io_wrdata[0];
+                end
+                if (sel_io_vscrx_l)  vscrx_r[7:0] <= io_wrdata;
+                if (sel_io_vscrx_h)  vscrx_r[8]   <= io_wrdata[0];
+                if (sel_io_vscry)    vscry_r      <= io_wrdata;
+                if (sel_io_vpalsel)  vpalsel_r    <= io_wrdata[6:0];
+                if (sel_io_virqline) virqline_r   <= io_wrdata;
+                if (sel_io_irqmask) begin
+                    irqmask_line_r   <= io_wrdata[1];
+                    irqmask_vblank_r <= io_wrdata[0];
+                end
+                if (sel_io_irqstat) begin
+                    irqstat_line_r   <= irqstat_line_r   & !io_wrdata[1];
+                    irqstat_vblank_r <= irqstat_vblank_r & !io_wrdata[0];
+                end
             end
-            if (sel_io_vscrx_l)  vscrx_r[7:0] <= io_wrdata;
-            if (sel_io_vscrx_h)  vscrx_r[8]   <= io_wrdata[0];
-            if (sel_io_vscry)    vscry_r      <= io_wrdata;
-            if (sel_io_vpalsel)  vpalsel_r    <= io_wrdata[6:0];
+
+            if (!irqline_match_r && irqline_match) irqstat_line_r   <= 1'b1;
+            if (!vblank_r        && vblank)        irqstat_vblank_r <= 1'b1;
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -93,8 +137,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     wire [8:0] hpos;
     wire       hsync, hblank, hlast;
-    wire [7:0] vpos;
-    wire       vsync, vblank, vnext;
+    wire       vsync, vnext;
     wire       blank;
 
     video_timing video_timing(
