@@ -86,7 +86,7 @@ void fpga_init(void) {
 
     // Pulse PROG_B to start configuration process
     gpio_set_level(IOPIN_FPGA_PROG_N, 0);
-    ets_delay_us(10);
+    esp_rom_delay_us(10);
     gpio_set_level(IOPIN_FPGA_PROG_N, 1);
 
     // Wait for INIT_B to become high

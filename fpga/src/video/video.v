@@ -260,6 +260,11 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Graphics
     //////////////////////////////////////////////////////////////////////////
+    wire [5:0] linebuf_data;
+    reg  [8:0] linebuf_rdidx;
+
+    always @(posedge clk) linebuf_rdidx <= hpos - 9'd32;
+
     gfx gfx(
         .clk(clk),
         .reset(reset),
@@ -279,9 +284,8 @@ module video(
         .start(vnext),
 
         // Line buffer interface
-        .wridx(),
-        .wrdata(),
-        .wren());
+        .linebuf_rdidx(9'd0),
+        .linebuf_data());
 
     //////////////////////////////////////////////////////////////////////////
     // Compositing
@@ -293,6 +297,8 @@ module video(
 
         if (vctrl_text_enable_r)
             pixel_colidx <= {2'b0, text_colidx};
+        if (vctrl_gfx_mode_r != 2'b00 && !vborder && !hborder && linebuf_data[3:0] != 4'd0)
+            pixel_colidx <= linebuf_data;
 
     end
 

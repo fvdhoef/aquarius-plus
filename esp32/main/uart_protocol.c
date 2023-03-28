@@ -319,7 +319,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 }
 
 static void esp_seek(uint8_t fd, uint32_t offset) {
-    DBGF("SEEK fd: %d  offset: %u\n", fd, offset);
+    DBGF("SEEK fd: %d  offset: %lu\n", fd, offset);
 
     if (fd >= MAX_FDS || state.fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
@@ -923,6 +923,7 @@ void uart_protocol_init(void) {
         .stop_bits           = UART_STOP_BITS_1,
         .flow_ctrl           = UART_HW_FLOWCTRL_CTS_RTS,
         .rx_flow_ctrl_thresh = 122,
+        .source_clk          = UART_SCLK_DEFAULT,
     };
     ESP_ERROR_CHECK(uart_param_config(UART_NUM, &uart_config));
     ESP_ERROR_CHECK(uart_set_pin(UART_NUM, IOPIN_ESP_RX, IOPIN_ESP_TX, IOPIN_ESP_CTS, IOPIN_ESP_RTS));
@@ -933,7 +934,7 @@ void uart_protocol_init(void) {
 
     uint32_t baudrate;
     ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
-    ESP_LOGI(TAG, "Actual baudrate: %u", baudrate);
+    ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
 
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 12, NULL);
 }
