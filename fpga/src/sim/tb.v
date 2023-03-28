@@ -331,7 +331,7 @@ module tb();
         memwr(16'h0F01, 8'h01);
 
         memwr(16'h0F02, 8'h01);
-        memwr(16'h0F03, 8'h01);
+        memwr(16'h0F03, 8'h31);
 
         memwr(16'h0F04, 8'h02);
         memwr(16'h0F05, 8'h01);
