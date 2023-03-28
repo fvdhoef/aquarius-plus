@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Mar 28 11:42:56 2023
+[*] Tue Mar 28 13:39:37 2023
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Mar 28 11:41:27 2023"
-[dumpfile_size] 2050666
+[dumpfile_mtime] "Tue Mar 28 13:39:25 2023"
+[dumpfile_size] 2299712
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_gfx.gtkw"
-[timestart] 0
+[timestart] 125819000
 [size] 2502 1387
 [pos] -1 -1
-*-24.302654 65275100 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-18.302654 127383000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.video.
@@ -17,7 +17,7 @@
 [sst_width] 193
 [signals_width] 263
 [sst_expanded] 1
-[sst_vpaned_height] 655
+[sst_vpaned_height] 693
 @28
 tb.top_inst.video.gfx.clk
 tb.top_inst.video.gfx.reset
@@ -90,7 +90,6 @@ tb.top_inst.video.gfx.state_r[1:0]
 -
 @22
 tb.top_inst.video.gfx.linebuf_rdidx[8:0]
-@23
 tb.top_inst.video.gfx.linebuf_data[5:0]
 @200
 --- Renderer --
@@ -116,5 +115,14 @@ tb.top_inst.video.gfx.renderer.render_data_next[15:0]
 @28
 tb.top_inst.video.vram.p1_wren
 tb.top_inst.video.gfx.linesel_r
+tb.top_inst.video.irqline_match
+tb.top_inst.video.irqline_match_r
+@22
+tb.top_inst.video.vpos[7:0]
+@28
+tb.top_inst.video.irqstat_line_r
+tb.top_inst.video.irqstat_vblank_r
+@29
+tb.top_inst.video.irqline_detect
 [pattern_trace] 1
 [pattern_trace] 0

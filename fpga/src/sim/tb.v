@@ -321,6 +321,10 @@ module tb();
 
         iowr(16'hE0, 8'd03);
 
+        iowr(16'hED, 8'd02);
+        iowr(16'hEF, 8'd03);
+
+
         iowr(16'hF0, 8'd20);
 
         memwr(16'h0F00, 8'h00);
