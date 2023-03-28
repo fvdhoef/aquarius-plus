@@ -29,12 +29,11 @@ module gfx(
     wire [5:0] wrdata;
     wire       wren;
 
-    reg linesel_r, linesel_next;
-
-
     //////////////////////////////////////////////////////////////////////////
     // Line buffer
     //////////////////////////////////////////////////////////////////////////
+    reg linesel_r, linesel_next;
+
     linebuf linebuf(
         .clk(clk),
 
@@ -48,6 +47,11 @@ module gfx(
         .idx2(linebuf_rdidx),
         .rddata2(linebuf_data));
 
+    //////////////////////////////////////////////////////////////////////////
+    // Renderer
+    //////////////////////////////////////////////////////////////////////////
+    reg [1:0] palette;
+
     renderer renderer(
         .clk(clk),
         .reset(reset),
@@ -56,6 +60,7 @@ module gfx(
         .render_idx(render_idx_r),
         .render_data(vdata),
         .render_start(render_start),
+        .palette(palette),
         .last_pixel(render_last_pixel),
         .busy(render_busy),
 
@@ -112,6 +117,7 @@ module gfx(
             busy_next       = 1'b0;
             render_idx_next = 9'd0;
             linesel_next    = 1'b0;
+            palette         = 2'b0;
 
         end else begin
             col_next        = col_r;
@@ -123,6 +129,7 @@ module gfx(
             busy_next       = busy_r;
             render_idx_next = render_idx_r;
             linesel_next    = linesel_r;
+            palette         = 2'b0;
 
             if (start) begin
                 col_next        = scrx[8:3];
@@ -145,6 +152,7 @@ module gfx(
 
                     ST_PAT_L: begin
                         if (!render_busy || render_last_pixel) begin
+                            palette      = tile_palette;
                             render_start = 1'b1;
                             vaddr_next   = vaddr_pat_h;
                             state_next   = ST_PAT_H;
@@ -153,6 +161,7 @@ module gfx(
 
                     ST_PAT_H: begin
                         if (render_last_pixel) begin
+                            palette      = tile_palette;
                             render_start = 1'b1;
                             vaddr_next   = vaddr_map;
                             state_next   = (col_cnt_r == 6'd41) ? ST_DONE : ST_MAP;
