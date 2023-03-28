@@ -49,7 +49,7 @@ module renderer(
             last_pixel_next  = 1'b0;
 
             if (render_start) begin
-                render_data_next = render_data;
+                render_data_next = {render_data[7:0], render_data[15:8]};
                 datasel_next = 2'b00;
                 wren_next    = 1'b1;
                 busy_next    = 1'b1;
@@ -69,10 +69,10 @@ module renderer(
             end
 
             case (datasel_next)
-                2'b00: wrdata_next = render_data_next[3:0];
-                2'b01: wrdata_next = render_data_next[7:4];
-                2'b10: wrdata_next = render_data_next[11:8];
-                2'b11: wrdata_next = render_data_next[15:12];
+                2'b00: wrdata_next = render_data_next[15:12];
+                2'b01: wrdata_next = render_data_next[11:8];
+                2'b10: wrdata_next = render_data_next[7:4];
+                2'b11: wrdata_next = render_data_next[3:0];
             endcase
         end
     end

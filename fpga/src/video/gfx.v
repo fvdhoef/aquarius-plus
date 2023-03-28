@@ -38,7 +38,7 @@ module gfx(
     linebuf linebuf(
         .clk(clk),
 
-        .linesel(),
+        .linesel(linesel_r),
 
         .idx1(wridx),
         .rddata1(),
@@ -76,7 +76,7 @@ module gfx(
 
     reg [1:0] state_r, state_next;
 
-    wire [7:0] bmline = vline - 8'd16;
+    wire [7:0] bmline = vline - 8'd15;
     wire [7:0] tline  = bmline + scry;
     wire [4:0] row    = tline[7:3];
 
@@ -125,12 +125,12 @@ module gfx(
             linesel_next    = linesel_r;
 
             if (start) begin
-                col_next        = 6'd0;
+                col_next        = scrx[8:3];
                 col_cnt_next    = 6'd0;
                 vaddr_next      = vaddr_map;
                 state_next      = ST_MAP;
                 busy_next       = 1'b1;
-                render_idx_next = 9'd0;
+                render_idx_next = 9'd0 - {6'd0, scrx[2:0]};
                 linesel_next    = !linesel_r;
 
             end else if (busy_r) begin

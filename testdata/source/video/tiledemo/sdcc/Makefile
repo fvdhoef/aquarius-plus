@@ -9,4 +9,4 @@ all:
 
 run: all
 	cp build/tiledemo.caq ../../../../usb/
-	../../../../../build/aquarius_emu -u ../../../../usb -t '\nrun"tiledemo.caq"\n'
+	../../../../../emulator/build/aquarius_emu -u ../../../../usb -t '\nrun"tiledemo.caq"\n'

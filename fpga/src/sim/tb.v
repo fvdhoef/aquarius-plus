@@ -319,6 +319,8 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
+        iowr(16'hE0, 8'd03);
+
         iowr(16'hF0, 8'd20);
 
         memwr(16'h0F00, 8'h00);

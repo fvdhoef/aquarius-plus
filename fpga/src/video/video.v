@@ -263,7 +263,14 @@ module video(
     wire [5:0] linebuf_data;
     reg  [8:0] linebuf_rdidx;
 
-    always @(posedge clk) linebuf_rdidx <= hpos - 9'd32;
+    always @(posedge clk) linebuf_rdidx <= hpos - 9'd16;
+
+    reg hborder_r, hborder_rr;
+    always @(posedge clk) hborder_r <= hborder;
+    always @(posedge clk) hborder_rr <= hborder_r;
+
+    reg gfx_start_r;
+    always @(posedge clk) gfx_start_r <= vnext;
 
     gfx gfx(
         .clk(clk),
@@ -281,11 +288,11 @@ module video(
 
         // Render parameters
         .vline(vpos),
-        .start(vnext),
+        .start(gfx_start_r),
 
         // Line buffer interface
-        .linebuf_rdidx(9'd0),
-        .linebuf_data());
+        .linebuf_rdidx(linebuf_rdidx),
+        .linebuf_data(linebuf_data));
 
     //////////////////////////////////////////////////////////////////////////
     // Compositing
@@ -297,7 +304,7 @@ module video(
 
         if (vctrl_text_enable_r)
             pixel_colidx <= {2'b0, text_colidx};
-        if (vctrl_gfx_mode_r != 2'b00 && !vborder && !hborder && linebuf_data[3:0] != 4'd0)
+        if (vctrl_gfx_mode_r != 2'b00 && !vborder && !hborder_rr && linebuf_data[3:0] != 4'd0)
             pixel_colidx <= linebuf_data;
 
     end
