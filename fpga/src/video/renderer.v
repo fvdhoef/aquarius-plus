@@ -53,7 +53,7 @@ module renderer(
             last_pixel_next  = 1'b0;
 
             if (render_start) begin
-                render_data_next = {render_data[7:0], render_data[15:8]};
+                render_data_next = render_data;
                 palette_next = palette;
                 datasel_next = 2'b00;
                 wren_next    = 1'b1;
