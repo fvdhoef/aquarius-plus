@@ -43,7 +43,7 @@ void flash_program(unsigned addr, uint8_t val) {
     fpga_mem_write(0x5555, 0xA0);
     fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
 
-    ets_delay_us(50);
+    esp_rom_delay_us(50);
 }
 
 void flash_erase_4kb_sector(unsigned addr) {

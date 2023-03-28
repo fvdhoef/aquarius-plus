@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun Mar 26 18:11:30 2023
+[*] Tue Mar 28 11:05:43 2023
 [*]
 [dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sun Mar 26 18:09:16 2023"
-[dumpfile_size] 2025321
+[dumpfile_mtime] "Tue Mar 28 11:05:13 2023"
+[dumpfile_size] 2005343
 [savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_gfx.gtkw"
-[timestart] 62886000
-[size] 1382 847
+[timestart] 0
+[size] 2502 1387
 [pos] -1 -1
-*-19.302654 64295000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-24.302654 65275100 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.video.
@@ -17,7 +17,7 @@
 [sst_width] 193
 [signals_width] 263
 [sst_expanded] 1
-[sst_vpaned_height] 275
+[sst_vpaned_height] 709
 @28
 tb.top_inst.video.gfx.clk
 tb.top_inst.video.gfx.reset
@@ -84,7 +84,7 @@ tb.top_inst.video.gfx.row[4:0]
 tb.top_inst.video.gfx.vaddr_map[12:0]
 tb.top_inst.video.gfx.map_entry[15:0]
 tb.top_inst.video.gfx.tile_idx[8:0]
-@29
+@28
 tb.top_inst.video.gfx.state_r[1:0]
 @200
 -
@@ -96,8 +96,9 @@ tb.top_inst.video.gfx.renderer.render_data[15:0]
 tb.top_inst.video.gfx.renderer.render_start
 tb.top_inst.video.gfx.renderer.last_pixel
 tb.top_inst.video.gfx.renderer.busy
-@22
+@24
 tb.top_inst.video.gfx.renderer.wridx[8:0]
+@22
 tb.top_inst.video.gfx.renderer.wrdata[5:0]
 @28
 tb.top_inst.video.gfx.renderer.wren
@@ -107,5 +108,9 @@ tb.top_inst.video.gfx.renderer.wren
 tb.top_inst.video.gfx.renderer.busy_next
 @22
 tb.top_inst.video.gfx.renderer.render_data_next[15:0]
+@28
+tb.top_inst.video.vram.p1_wren
+@29
+tb.top_inst.video.gfx.linesel_r
 [pattern_trace] 1
 [pattern_trace] 0

@@ -32,7 +32,7 @@ module renderer(
     always @* begin
         if (reset) begin
             render_data_next = 16'b0;
-            wridx_next       = 9'd0;
+            wridx_next       = 9'd511;
             wrdata_next      = 6'b0;
             wren_next        = 1'b0;
             datasel_next     = 2'b0;
@@ -53,9 +53,11 @@ module renderer(
                 datasel_next = 2'b00;
                 wren_next    = 1'b1;
                 busy_next    = 1'b1;
+                wridx_next   = render_idx;
             end else if (busy_r) begin
                 datasel_next = datasel_r + 2'b01;
                 wren_next    = 1'b1;
+                wridx_next = wridx_r + 9'd1;
 
                 if (datasel_r == 2'b11) begin
                     busy_next  = 1'b0;
