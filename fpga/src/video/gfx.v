@@ -128,96 +128,93 @@ module gfx(
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
     always @* begin
-        if (reset) begin
-            col_next         = 6'd0;
-            col_cnt_next     = 6'd0;
-            vaddr_next       = 13'b0;
-            state_next       = 2'b00;
-            map_entry_next   = 16'b0;
-            render_start     = 1'b0;
-            busy_next        = 1'b0;
-            render_idx_next  = 9'd0;
-            linesel_next     = 1'b0;
-            render_hlip      = 1'b0;
-            render_palette   = 2'b0;
-            render_data_next = 32'b0;
-            spr_sel_next     = 6'b0;
+        col_next         = col_r;
+        col_cnt_next     = col_cnt_r;
+        vaddr_next       = vaddr_r;
+        state_next       = state_r;
+        map_entry_next   = map_entry_r;
+        render_start     = 1'b0;
+        busy_next        = busy_r;
+        render_idx_next  = render_idx_r;
+        linesel_next     = linesel_r;
+        render_hlip      = 1'b0;
+        render_palette   = 2'b0;
+        render_data_next = render_data_r;
+        spr_sel_next     = spr_sel_r;
 
-        end else begin
-            col_next         = col_r;
-            col_cnt_next     = col_cnt_r;
-            vaddr_next       = vaddr_r;
-            state_next       = state_r;
-            map_entry_next   = map_entry_r;
-            render_start     = 1'b0;
-            busy_next        = busy_r;
-            render_idx_next  = render_idx_r;
-            linesel_next     = linesel_r;
-            render_hlip      = 1'b0;
-            render_palette   = 2'b0;
-            render_data_next = render_data_r;
-            spr_sel_next     = spr_sel_r;
+        if (start) begin
+            col_next        = scrx[8:3];
+            col_cnt_next    = 6'd0;
+            vaddr_next      = vaddr_map;
+            state_next      = ST_MAP;
+            busy_next       = 1'b1;
+            render_idx_next = 9'd0 - {6'd0, scrx[2:0]};
+            linesel_next    = !linesel_r;
 
-            if (start) begin
-                col_next        = scrx[8:3];
-                col_cnt_next    = 6'd0;
-                vaddr_next      = vaddr_map;
-                state_next      = ST_MAP;
-                busy_next       = 1'b1;
-                render_idx_next = 9'd0 - {6'd0, scrx[2:0]};
-                linesel_next    = !linesel_r;
+        end else if (busy_r) begin
+            case (state_r)
+                ST_MAP: begin
+                    map_entry_next = vdata;
+                    vaddr_next     = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
+                    state_next     = ST_PAT1;
+                    col_next       = col_r + 6'd1;
+                    col_cnt_next   = col_cnt_r + 6'd1;
+                end
 
-            end else if (busy_r) begin
-                case (state_r)
-                    ST_MAP: begin
-                        map_entry_next = vdata;
-                        vaddr_next     = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
-                        state_next     = ST_PAT1;
-                        col_next       = col_r + 6'd1;
-                        col_cnt_next   = col_cnt_r + 6'd1;
+                ST_PAT1: begin
+                    render_data_next[31:24] = vdata[ 7:0];
+                    render_data_next[23:16] = vdata[15:8];
+                    vaddr_next[0]           = 1'b1;
+                    state_next              = ST_PAT2;
+                end
+
+                ST_PAT2: begin
+                    if (!render_busy || render_last_pixel) begin
+                        render_data_next[15:8] = vdata[ 7:0];
+                        render_data_next[7:0]  = vdata[15:8];
+                        render_hlip            = tile_hflip;
+                        render_palette         = tile_palette;
+                        render_start           = 1'b1;
+                        vaddr_next             = vaddr_map;
+                        state_next             = (col_cnt_r == 6'd41) ? ST_DONE : ST_MAP;
                     end
+                end
 
-                    ST_PAT1: begin
-                        render_data_next[31:24] = vdata[ 7:0];
-                        render_data_next[23:16] = vdata[15:8];
-                        vaddr_next[0]           = 1'b1;
-                        state_next              = ST_PAT2;
-                    end
+                ST_DONE: begin
 
-                    ST_PAT2: begin
-                        if (!render_busy || render_last_pixel) begin
-                            render_data_next[15:8] = vdata[ 7:0];
-                            render_data_next[7:0]  = vdata[15:8];
-                            render_hlip            = tile_hflip;
-                            render_palette         = tile_palette;
-                            render_start           = 1'b1;
-                            vaddr_next             = vaddr_map;
-                            state_next             = (col_cnt_r == 6'd41) ? ST_DONE : ST_MAP;
-                        end
-                    end
+                end
+            endcase
 
-                    ST_DONE: begin
+            if (render_start) render_idx_next = render_idx_r + 9'd8;
 
-                    end
-                endcase
-
-                if (render_start) render_idx_next = render_idx_r + 9'd8;
-
-            end
         end
     end
 
     always @(posedge clk) begin
-        col_r         <= col_next;
-        col_cnt_r     <= col_cnt_next;
-        vaddr_r       <= vaddr;
-        state_r       <= state_next;
-        map_entry_r   <= map_entry_next;
-        busy_r        <= busy_next;
-        render_idx_r  <= render_idx_next;
-        linesel_r     <= linesel_next;
-        render_data_r <= render_data_next;
-        spr_sel_r     <= spr_sel_next;
+        if (reset) begin
+            col_r         <= 6'd0;
+            col_cnt_r     <= 6'd0;
+            vaddr_r       <= 13'b0;
+            state_r       <= 2'b00;
+            map_entry_r   <= 16'b0;
+            busy_r        <= 1'b0;
+            render_idx_r  <= 9'd0;
+            linesel_r     <= 1'b0;
+            render_data_r <= 32'b0;
+            spr_sel_r     <= 6'b0;
+
+        end else begin
+            col_r         <= col_next;
+            col_cnt_r     <= col_cnt_next;
+            vaddr_r       <= vaddr_next;
+            state_r       <= state_next;
+            map_entry_r   <= map_entry_next;
+            busy_r        <= busy_next;
+            render_idx_r  <= render_idx_next;
+            linesel_r     <= linesel_next;
+            render_data_r <= render_data_next;
+            spr_sel_r     <= spr_sel_next;
+        end
     end
 
 endmodule
