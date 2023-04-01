@@ -8,6 +8,18 @@ module gfx(
     input  wire  [8:0] scrx,
     input  wire  [7:0] scry,
 
+    // Sprite attribute interface
+    output wire  [5:0] spr_sel,
+    input  wire  [8:0] spr_x,
+    input  wire  [7:0] spr_y,
+    input  wire  [8:0] spr_idx,
+    input  wire        spr_enable,
+    input  wire        spr_priority,
+    input  wire  [1:0] spr_palette,
+    input  wire        spr_h16,
+    input  wire        spr_vflip,
+    input  wire        spr_hflip,
+
     // Video RAM interface
     output wire [12:0] vaddr,
     input  wire [15:0] vdata,
@@ -20,18 +32,17 @@ module gfx(
     input  wire  [8:0] linebuf_rdidx,
     output wire  [5:0] linebuf_data);
 
-    reg  [8:0] render_idx_r,   render_idx_next;
-    reg        render_start;
-    wire       render_last_pixel;
-    wire       render_busy;
+    reg  [5:0] spr_sel_r, spr_sel_next;
 
-    wire [8:0] wridx;
-    wire [5:0] wrdata;
-    wire       wren;
+    assign spr_sel = spr_sel_r;
 
     //////////////////////////////////////////////////////////////////////////
     // Line buffer
     //////////////////////////////////////////////////////////////////////////
+    wire [8:0] wridx;
+    wire [5:0] wrdata;
+    wire       wren;
+
     reg linesel_r, linesel_next;
 
     linebuf linebuf(
@@ -48,27 +59,8 @@ module gfx(
         .rddata2(linebuf_data));
 
     //////////////////////////////////////////////////////////////////////////
-    // Renderer
+    // Renderer state
     //////////////////////////////////////////////////////////////////////////
-    reg  [1:0] palette;
-    reg [15:0] render_data;
-
-    renderer renderer(
-        .clk(clk),
-        .reset(reset),
-
-        // Data interface
-        .render_idx(render_idx_r),
-        .render_data(render_data),
-        .render_start(render_start),
-        .palette(palette),
-        .last_pixel(render_last_pixel),
-        .busy(render_busy),
-
-        // Line buffer interface
-        .wridx(wridx),
-        .wrdata(wrdata),
-        .wren(wren));
 
     // Data fetching
     localparam
@@ -99,43 +91,72 @@ module gfx(
     wire       tile_priority = map_entry[14];
 
     wire [12:0] vaddr_map   = {2'b0, row, col_next};
-    wire [12:0] vaddr_pat_l = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
     wire [12:0] vaddr_pat_h = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b1};
 
     reg busy_r, busy_next;
 
-    wire [15:0] patdata         = {vdata[7:0], vdata[15:8]};
-    wire [15:0] patdata_flipped = {patdata[3:0], patdata[7:4], patdata[11:8], patdata[15:12]};
+    //////////////////////////////////////////////////////////////////////////
+    // Renderer
+    //////////////////////////////////////////////////////////////////////////
+    reg  [8:0] render_idx_r,  render_idx_next;
+    reg [31:0] render_data_r, render_data_next;
+    reg        render_start;
+    reg        render_hlip;
+    reg  [1:0] render_palette;
+    wire       render_last_pixel;
+    wire       render_busy;
+
+    renderer renderer(
+        .clk(clk),
+        .reset(reset),
+
+        // Data interface
+        .render_idx(render_idx_r),
+        .render_data(render_data_next),
+        .render_start(render_start),
+        .hflip(render_hlip),
+        .palette(render_palette),
+        .last_pixel(render_last_pixel),
+        .busy(render_busy),
+
+        // Line buffer interface
+        .wridx(wridx),
+        .wrdata(wrdata),
+        .wren(wren));
 
     //////////////////////////////////////////////////////////////////////////
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
     always @* begin
         if (reset) begin
-            col_next        = 6'd0;
-            col_cnt_next    = 6'd0;
-            vaddr_next      = 13'b0;
-            state_next      = 2'b00;
-            map_entry_next  = 16'b0;
-            render_start    = 1'b0;
-            busy_next       = 1'b0;
-            render_idx_next = 9'd0;
-            linesel_next    = 1'b0;
-            palette         = 2'b0;
-            render_data     = 16'b0;
+            col_next         = 6'd0;
+            col_cnt_next     = 6'd0;
+            vaddr_next       = 13'b0;
+            state_next       = 2'b00;
+            map_entry_next   = 16'b0;
+            render_start     = 1'b0;
+            busy_next        = 1'b0;
+            render_idx_next  = 9'd0;
+            linesel_next     = 1'b0;
+            render_hlip      = 1'b0;
+            render_palette   = 2'b0;
+            render_data_next = 32'b0;
+            spr_sel_next     = 6'b0;
 
         end else begin
-            col_next        = col_r;
-            col_cnt_next    = col_cnt_r;
-            vaddr_next      = vaddr_r;
-            state_next      = state_r;
-            map_entry_next  = map_entry_r;
-            render_start    = 1'b0;
-            busy_next       = busy_r;
-            render_idx_next = render_idx_r;
-            linesel_next    = linesel_r;
-            palette         = 2'b0;
-            render_data     = 16'b0;
+            col_next         = col_r;
+            col_cnt_next     = col_cnt_r;
+            vaddr_next       = vaddr_r;
+            state_next       = state_r;
+            map_entry_next   = map_entry_r;
+            render_start     = 1'b0;
+            busy_next        = busy_r;
+            render_idx_next  = render_idx_r;
+            linesel_next     = linesel_r;
+            render_hlip      = 1'b0;
+            render_palette   = 2'b0;
+            render_data_next = render_data_r;
+            spr_sel_next     = spr_sel_r;
 
             if (start) begin
                 col_next        = scrx[8:3];
@@ -150,29 +171,28 @@ module gfx(
                 case (state_r)
                     ST_MAP: begin
                         map_entry_next = vdata;
-                        vaddr_next     = tile_hflip ? vaddr_pat_h : vaddr_pat_l;
+                        vaddr_next     = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
                         state_next     = ST_PAT1;
                         col_next       = col_r + 6'd1;
                         col_cnt_next   = col_cnt_r + 6'd1;
                     end
 
                     ST_PAT1: begin
-                        if (!render_busy || render_last_pixel) begin
-                            palette      = tile_palette;
-                            render_start = 1'b1;
-                            render_data  = tile_hflip ? patdata_flipped : patdata;
-                            vaddr_next   = tile_hflip ? vaddr_pat_l : vaddr_pat_h;
-                            state_next   = ST_PAT2;
-                        end
+                        render_data_next[31:24] = vdata[ 7:0];
+                        render_data_next[23:16] = vdata[15:8];
+                        vaddr_next[0]           = 1'b1;
+                        state_next              = ST_PAT2;
                     end
 
                     ST_PAT2: begin
-                        if (render_last_pixel) begin
-                            palette      = tile_palette;
-                            render_start = 1'b1;
-                            render_data  = tile_hflip ? patdata_flipped : patdata;
-                            vaddr_next   = vaddr_map;
-                            state_next   = (col_cnt_r == 6'd41) ? ST_DONE : ST_MAP;
+                        if (!render_busy || render_last_pixel) begin
+                            render_data_next[15:8] = vdata[ 7:0];
+                            render_data_next[7:0]  = vdata[15:8];
+                            render_hlip            = tile_hflip;
+                            render_palette         = tile_palette;
+                            render_start           = 1'b1;
+                            vaddr_next             = vaddr_map;
+                            state_next             = (col_cnt_r == 6'd41) ? ST_DONE : ST_MAP;
                         end
                     end
 
@@ -181,21 +201,23 @@ module gfx(
                     end
                 endcase
 
-                if (render_start) render_idx_next = render_idx_r + 9'd4;
+                if (render_start) render_idx_next = render_idx_r + 9'd8;
 
             end
         end
     end
 
     always @(posedge clk) begin
-        col_r        <= col_next;
-        col_cnt_r    <= col_cnt_next;
-        vaddr_r      <= vaddr;
-        state_r      <= state_next;
-        map_entry_r  <= map_entry_next;
-        busy_r       <= busy_next;
-        render_idx_r <= render_idx_next;
-        linesel_r    <= linesel_next;
+        col_r         <= col_next;
+        col_cnt_r     <= col_cnt_next;
+        vaddr_r       <= vaddr;
+        state_r       <= state_next;
+        map_entry_r   <= map_entry_next;
+        busy_r        <= busy_next;
+        render_idx_r  <= render_idx_next;
+        linesel_r     <= linesel_next;
+        render_data_r <= render_data_next;
+        spr_sel_r     <= spr_sel_next;
     end
 
 endmodule

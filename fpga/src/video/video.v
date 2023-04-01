@@ -249,7 +249,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Sprite attribute RAM
     //////////////////////////////////////////////////////////////////////////
-    wire  [5:0] spr_sel = 6'b0;
+    wire  [5:0] spr_sel;
     wire  [8:0] spr_x;
     wire  [7:0] spr_y;
     wire  [8:0] spr_idx;
@@ -324,6 +324,18 @@ module video(
         .sprites_enable(vctrl_sprites_enable_r),
         .scrx(vscrx_r),
         .scry(vscry_r),
+
+        // Sprite attribute interface
+        .spr_sel(spr_sel),
+        .spr_x(spr_x),
+        .spr_y(spr_y),
+        .spr_idx(spr_idx),
+        .spr_enable(spr_enable),
+        .spr_priority(spr_priority),
+        .spr_palette(spr_palette),
+        .spr_h16(spr_h16),
+        .spr_vflip(spr_vflip),
+        .spr_hflip(spr_hflip),
 
         // Video RAM interface
         .vaddr(vram_addr2),
