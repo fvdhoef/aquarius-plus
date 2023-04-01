@@ -101,7 +101,7 @@ module gfx(
     reg  [8:0] render_idx_r,  render_idx_next;
     reg [31:0] render_data_r, render_data_next;
     reg        render_start;
-    reg        render_hlip;
+    reg        render_hflip;
     reg  [1:0] render_palette;
     wire       render_last_pixel;
     wire       render_busy;
@@ -114,7 +114,7 @@ module gfx(
         .render_idx(render_idx_r),
         .render_data(render_data_next),
         .render_start(render_start),
-        .hflip(render_hlip),
+        .hflip(render_hflip),
         .palette(render_palette),
         .last_pixel(render_last_pixel),
         .busy(render_busy),
@@ -137,7 +137,7 @@ module gfx(
         busy_next        = busy_r;
         render_idx_next  = render_idx_r;
         linesel_next     = linesel_r;
-        render_hlip      = 1'b0;
+        render_hflip     = 1'b0;
         render_palette   = 2'b0;
         render_data_next = render_data_r;
         spr_sel_next     = spr_sel_r;
@@ -172,7 +172,7 @@ module gfx(
                     if (!render_busy || render_last_pixel) begin
                         render_data_next[15:8] = vdata[ 7:0];
                         render_data_next[7:0]  = vdata[15:8];
-                        render_hlip            = tile_hflip;
+                        render_hflip           = tile_hflip;
                         render_palette         = tile_palette;
                         render_start           = 1'b1;
                         vaddr_next             = vaddr_map;
