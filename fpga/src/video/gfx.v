@@ -116,6 +116,7 @@ module gfx(
     reg  [8:0] render_idx_r,  render_idx_next;
     reg [31:0] render_data_r, render_data_next;
     reg        render_start;
+    reg        render_is_sprite_r, render_is_sprite_next;
     reg        render_hflip_r, render_hflip_next;
     reg  [1:0] render_palette_r, render_palette_next;
     wire       render_last_pixel;
@@ -129,6 +130,7 @@ module gfx(
         .render_idx(render_idx_r),
         .render_data(render_data_next),
         .render_start(render_start),
+        .is_sprite(render_is_sprite_r),
         .hflip(render_hflip_r),
         .palette(render_palette_r),
         .last_pixel(render_last_pixel),
@@ -155,18 +157,20 @@ module gfx(
         render_data_next = render_data_r;
         spr_sel_next     = spr_sel_r;
 
-        render_hflip_next   = render_hflip_r;
-        render_palette_next = render_palette_r;
-        render_start        = 1'b0;
+        render_is_sprite_next = render_is_sprite_r;
+        render_hflip_next     = render_hflip_r;
+        render_palette_next   = render_palette_r;
+        render_start          = 1'b0;
 
         if (start) begin
-            col_next        = scrx[8:3];
-            col_cnt_next    = 6'd0;
-            state_next      = ST_MAP1;
-            busy_next       = 1'b1;
-            render_idx_next = 9'd0 - {6'd0, scrx[2:0]};
-            linesel_next    = !linesel_r;
-            spr_sel_next    = 7'd0;
+            col_next              = scrx[8:3];
+            col_cnt_next          = 6'd0;
+            state_next            = ST_MAP1;
+            busy_next             = 1'b1;
+            render_idx_next       = 9'd0 - {6'd0, scrx[2:0]};
+            linesel_next          = !linesel_r;
+            spr_sel_next          = 7'd0;
+            render_is_sprite_next = 1'b0;
 
         end else if (busy_r) begin
             case (state_r)
@@ -210,6 +214,8 @@ module gfx(
                 end
 
                 ST_SPR: begin
+                    render_is_sprite_next = 1'b1;
+
                     if (spr_sel_r[6]) begin
                         state_next = ST_DONE;
 
@@ -232,34 +238,36 @@ module gfx(
 
     always @(posedge clk) begin
         if (reset) begin
-            col_r            <= 6'd0;
-            col_cnt_r        <= 6'd0;
-            vaddr_r          <= 13'b0;
-            state_r          <= ST_DONE;
-            nxtstate_r       <= ST_DONE;
-            map_entry_r      <= 16'b0;
-            busy_r           <= 1'b0;
-            render_idx_r     <= 9'd0;
-            linesel_r        <= 1'b0;
-            render_data_r    <= 32'b0;
-            spr_sel_r        <= 7'b0;
-            render_hflip_r   <= 1'b0;
-            render_palette_r <= 2'b0;
+            col_r              <= 6'd0;
+            col_cnt_r          <= 6'd0;
+            vaddr_r            <= 13'b0;
+            state_r            <= ST_DONE;
+            nxtstate_r         <= ST_DONE;
+            map_entry_r        <= 16'b0;
+            busy_r             <= 1'b0;
+            render_idx_r       <= 9'd0;
+            linesel_r          <= 1'b0;
+            render_data_r      <= 32'b0;
+            spr_sel_r          <= 7'b0;
+            render_is_sprite_r <= 1'b0;
+            render_hflip_r     <= 1'b0;
+            render_palette_r   <= 2'b0;
 
         end else begin
-            col_r            <= col_next;
-            col_cnt_r        <= col_cnt_next;
-            vaddr_r          <= vaddr_next;
-            state_r          <= state_next;
-            nxtstate_r       <= nxtstate_next;
-            map_entry_r      <= map_entry_next;
-            busy_r           <= busy_next;
-            render_idx_r     <= render_idx_next;
-            linesel_r        <= linesel_next;
-            render_data_r    <= render_data_next;
-            spr_sel_r        <= spr_sel_next;
-            render_hflip_r   <= render_hflip_next;
-            render_palette_r <= render_palette_next;
+            col_r              <= col_next;
+            col_cnt_r          <= col_cnt_next;
+            vaddr_r            <= vaddr_next;
+            state_r            <= state_next;
+            nxtstate_r         <= nxtstate_next;
+            map_entry_r        <= map_entry_next;
+            busy_r             <= busy_next;
+            render_idx_r       <= render_idx_next;
+            linesel_r          <= linesel_next;
+            render_data_r      <= render_data_next;
+            spr_sel_r          <= spr_sel_next;
+            render_is_sprite_r <= render_is_sprite_next;
+            render_hflip_r     <= render_hflip_next;
+            render_palette_r   <= render_palette_next;
         end
     end
 

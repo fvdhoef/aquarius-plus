@@ -6,6 +6,7 @@ module renderer(
     input  wire  [8:0] render_idx,
     input  wire [31:0] render_data,
     input  wire        render_start,
+    input  wire        is_sprite,
     input  wire        hflip,
     input  wire  [1:0] palette,
     output wire        last_pixel,
@@ -25,6 +26,7 @@ module renderer(
     reg  [2:0] datasel_r,     datasel_next;
     reg        busy_r,        busy_next;
     reg        last_pixel_r,  last_pixel_next;
+    reg        is_sprite_r,   is_sprite_next;
     reg        hflip_r,       hflip_next;
 
     assign wridx      = wridx_r;
@@ -33,76 +35,87 @@ module renderer(
     assign busy       = busy_r;
     assign last_pixel = last_pixel_r;
 
+    reg [3:0] pixel_data;
+    always @* case (datasel_next ^ (hflip_next ? 3'b111 : 3'b000))
+        3'b000: pixel_data = render_data_next[31:28];
+        3'b001: pixel_data = render_data_next[27:24];
+        3'b010: pixel_data = render_data_next[23:20];
+        3'b011: pixel_data = render_data_next[19:16];
+        3'b100: pixel_data = render_data_next[15:12];
+        3'b101: pixel_data = render_data_next[11:8];
+        3'b110: pixel_data = render_data_next[7:4];
+        3'b111: pixel_data = render_data_next[3:0];
+    endcase
+
     always @* begin
-        if (reset) begin
-            render_data_next = 32'b0;
-            palette_next     = 2'b0;
-            wridx_next       = 9'd511;
-            wrdata_next      = 6'b0;
-            wren_next        = 1'b0;
-            datasel_next     = 2'b0;
-            busy_next        = 1'b0;
-            last_pixel_next  = 1'b0;
-            hflip_next       = 1'b0;
+        render_data_next = render_data_r;
+        palette_next     = palette_r;
+        wridx_next       = wridx_r;
+        wrdata_next      = wrdata_r;
+        wren_next        = 1'b0;
+        datasel_next     = datasel_r;
+        busy_next        = busy_r;
+        last_pixel_next  = 1'b0;
+        is_sprite_next   = is_sprite_r;
+        hflip_next       = hflip_r;
 
-        end else begin
-            render_data_next = render_data_r;
-            palette_next     = palette_r;
-            wridx_next       = wridx_r;
-            wrdata_next      = wrdata_r;
-            wren_next        = 1'b0;
-            datasel_next     = datasel_r;
-            busy_next        = busy_r;
-            last_pixel_next  = 1'b0;
-            hflip_next       = hflip_r;
+        if (render_start) begin
+            render_data_next = render_data;
+            palette_next     = palette;
+            datasel_next     = 2'b00;
+            wren_next        = 1'b1;
+            busy_next        = 1'b1;
+            wridx_next       = render_idx;
+            is_sprite_next   = is_sprite;
+            hflip_next       = hflip;
 
-            if (render_start) begin
-                render_data_next = render_data;
-                palette_next     = palette;
-                datasel_next     = 2'b00;
-                wren_next        = 1'b1;
-                busy_next        = 1'b1;
-                wridx_next       = render_idx;
-                hflip_next       = hflip;
+        end else if (busy_r) begin
+            datasel_next = datasel_r + 3'd1;
+            wren_next    = 1'b1;
+            wridx_next   = wridx_r + 9'd1;
 
-            end else if (busy_r) begin
-                datasel_next = datasel_r + 3'd1;
-                wren_next    = 1'b1;
-                wridx_next   = wridx_r + 9'd1;
-
-                if (datasel_r == 3'd7) begin
-                    busy_next = 1'b0;
-                    wren_next = 1'b0;
-                end
-                if (datasel_r == 3'd6) begin
-                    last_pixel_next = 1'b1;
-                end
+            if (datasel_r == 3'd7) begin
+                busy_next = 1'b0;
+                wren_next = 1'b0;
             end
-
-            wrdata_next[5:4] = palette_next[1:0];
-            case (datasel_next ^ (hflip_next ? 3'b111 : 3'b000))
-                3'b000: wrdata_next[3:0] = render_data_next[31:28];
-                3'b001: wrdata_next[3:0] = render_data_next[27:24];
-                3'b010: wrdata_next[3:0] = render_data_next[23:20];
-                3'b011: wrdata_next[3:0] = render_data_next[19:16];
-                3'b100: wrdata_next[3:0] = render_data_next[15:12];
-                3'b101: wrdata_next[3:0] = render_data_next[11:8];
-                3'b110: wrdata_next[3:0] = render_data_next[7:4];
-                3'b111: wrdata_next[3:0] = render_data_next[3:0];
-            endcase
+            if (datasel_r == 3'd6) begin
+                last_pixel_next = 1'b1;
+            end
         end
+
+        wrdata_next[5:4] = palette_next[1:0];
+        wrdata_next[3:0] = pixel_data;
+
+        // Don't render transparent sprite pixels
+        if (is_sprite_next && pixel_data == 4'd0)
+            wren_next = 1'b0;
     end
 
     always @(posedge clk) begin
-        render_data_r <= render_data_next;
-        palette_r     <= palette_next;
-        wridx_r       <= wridx_next;
-        wrdata_r      <= wrdata_next;
-        wren_r        <= wren_next;
-        datasel_r     <= datasel_next;
-        busy_r        <= busy_next;
-        last_pixel_r  <= last_pixel_next;
-        hflip_r       <= hflip_next;
+        if (reset) begin
+            render_data_r <= 32'b0;
+            palette_r     <= 2'b0;
+            wridx_r       <= 9'd511;
+            wrdata_r      <= 6'b0;
+            wren_r        <= 1'b0;
+            datasel_r     <= 2'b0;
+            busy_r        <= 1'b0;
+            last_pixel_r  <= 1'b0;
+            is_sprite_r   <= 1'b0;
+            hflip_r       <= 1'b0;
+
+        end else begin
+            render_data_r <= render_data_next;
+            palette_r     <= palette_next;
+            wridx_r       <= wridx_next;
+            wrdata_r      <= wrdata_next;
+            wren_r        <= wren_next;
+            datasel_r     <= datasel_next;
+            busy_r        <= busy_next;
+            last_pixel_r  <= last_pixel_next;
+            is_sprite_r   <= is_sprite_next;
+            hflip_r       <= hflip_next;
+        end
     end
 
 endmodule
