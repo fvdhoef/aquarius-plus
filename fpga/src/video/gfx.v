@@ -91,19 +91,6 @@ module gfx(
 
     assign vaddr = vaddr_next;
 
-    // Sprite searching
-
-    //v input  wire  [8:0] spr_x,
-    //v input  wire  [7:0] spr_y,
-    //v input  wire  [8:0] spr_idx,
-    //v input  wire        spr_enable,
-    // input  wire        spr_priority,
-    //v input  wire  [1:0] spr_palette,
-    //v input  wire        spr_h16,
-    //v input  wire        spr_vflip,
-    //v input  wire        spr_hflip,
-
-
     // Determine if sprite is on current line
     wire [3:0] spr_height  = (spr_h16 ? 4'd15 : 4'd7);
     wire [7:0] ydiff       = line_idx - spr_y;
@@ -113,12 +100,13 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
     // Renderer
     //////////////////////////////////////////////////////////////////////////
-    reg  [8:0] render_idx_r,  render_idx_next;
-    reg [31:0] render_data_r, render_data_next;
+    reg  [8:0] render_idx_r,       render_idx_next;
+    reg [31:0] render_data_r,      render_data_next;
     reg        render_start;
     reg        render_is_sprite_r, render_is_sprite_next;
-    reg        render_hflip_r, render_hflip_next;
-    reg  [1:0] render_palette_r, render_palette_next;
+    reg        render_hflip_r,     render_hflip_next;
+    reg  [1:0] render_palette_r,   render_palette_next;
+    reg        render_priority_r,  render_priority_next;
     wire       render_last_pixel;
     wire       render_busy;
 
@@ -133,6 +121,7 @@ module gfx(
         .is_sprite(render_is_sprite_r),
         .hflip(render_hflip_r),
         .palette(render_palette_r),
+        .priority(render_priority_r),
         .last_pixel(render_last_pixel),
         .busy(render_busy),
 
@@ -160,6 +149,7 @@ module gfx(
         render_is_sprite_next = render_is_sprite_r;
         render_hflip_next     = render_hflip_r;
         render_palette_next   = render_palette_r;
+        render_priority_next  = render_priority_r;
         render_start          = 1'b0;
 
         if (start) begin
@@ -187,14 +177,15 @@ module gfx(
                 end
 
                 ST_MAP2: begin
-                    map_entry_next      = vdata;
-                    vaddr_next          = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
-                    state_next          = ST_PAT1;
-                    nxtstate_next       = ST_MAP1;
-                    col_next            = col_r + 6'd1;
-                    col_cnt_next        = col_cnt_r + 6'd1;
-                    render_hflip_next   = tile_hflip;
-                    render_palette_next = tile_palette;
+                    map_entry_next       = vdata;
+                    vaddr_next           = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
+                    state_next           = ST_PAT1;
+                    nxtstate_next        = ST_MAP1;
+                    col_next             = col_r + 6'd1;
+                    col_cnt_next         = col_cnt_r + 6'd1;
+                    render_hflip_next    = tile_hflip;
+                    render_palette_next  = tile_palette;
+                    render_priority_next = tile_priority;
                 end
 
                 ST_PAT1: begin
@@ -220,11 +211,12 @@ module gfx(
                         state_next = ST_DONE;
 
                     end else if (spr_on_line) begin
-                        render_idx_next     = spr_x;
-                        render_hflip_next   = spr_hflip;
-                        render_palette_next = spr_palette;
-                        vaddr_next          = {spr_idx[8:1], spr_idx[0] ^ spr_line[3], spr_line[2:0], 1'b0};
-                        state_next          = ST_PAT1;
+                        render_idx_next      = spr_x;
+                        render_hflip_next    = spr_hflip;
+                        render_palette_next  = spr_palette;
+                        render_priority_next = spr_priority;
+                        vaddr_next           = {spr_idx[8:1], spr_idx[0] ^ spr_line[3], spr_line[2:0], 1'b0};
+                        state_next           = ST_PAT1;
                     end
 
                     spr_sel_next = spr_sel_r + 7'd1;
@@ -252,6 +244,7 @@ module gfx(
             render_is_sprite_r <= 1'b0;
             render_hflip_r     <= 1'b0;
             render_palette_r   <= 2'b0;
+            render_priority_r  <= 1'b0;
 
         end else begin
             col_r              <= col_next;
@@ -268,6 +261,7 @@ module gfx(
             render_is_sprite_r <= render_is_sprite_next;
             render_hflip_r     <= render_hflip_next;
             render_palette_r   <= render_palette_next;
+            render_priority_r  <= render_priority_next;
         end
     end
 

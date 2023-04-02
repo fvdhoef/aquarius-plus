@@ -80,7 +80,7 @@ module sprattr(
 
     generate
         genvar i;
-        for (i=0; i<NUMBITS; i=i+1) begin: palram_gen
+        for (i=0; i<NUMBITS; i=i+1) begin: sprattr_gen
             ram64x1d ram(
                 .a_clk(clk), .a_addr(sprsel_r), .a_rddata(a_rddata[i]), .a_wrdata(a_wrdata[i]), .a_wren(a_wren[i]),
                 .b_addr(spr_sel), .b_rddata(b_rddata[i]));
