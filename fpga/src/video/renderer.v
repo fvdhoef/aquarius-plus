@@ -9,6 +9,7 @@ module renderer(
     input  wire        is_sprite,
     input  wire        hflip,
     input  wire  [1:0] palette,
+    input  wire        priority,
     output wire        last_pixel,
     output wire        busy,
 
@@ -28,6 +29,7 @@ module renderer(
     reg        last_pixel_r,  last_pixel_next;
     reg        is_sprite_r,   is_sprite_next;
     reg        hflip_r,       hflip_next;
+    reg        priority_r,    priority_next;
 
     assign wridx      = wridx_r;
     assign wrdata     = wrdata_r;
@@ -47,6 +49,18 @@ module renderer(
         3'b111: pixel_data = render_data_next[3:0];
     endcase
 
+    wire lab_priority;
+    wire lab_wrdata = priority_r && (wrdata_r[3:0] != 4'd0);
+
+    lineattrbuf lab(
+        .clk(clk),
+        .idx1(wridx_r),
+        .wrdata1(lab_wrdata),
+        .wren1(wren_r),
+
+        .idx2(wridx_next),
+        .rddata2(lab_priority));
+
     always @* begin
         render_data_next = render_data_r;
         palette_next     = palette_r;
@@ -58,6 +72,7 @@ module renderer(
         last_pixel_next  = 1'b0;
         is_sprite_next   = is_sprite_r;
         hflip_next       = hflip_r;
+        priority_next    = priority_r;
 
         if (render_start) begin
             render_data_next = render_data;
@@ -68,6 +83,7 @@ module renderer(
             wridx_next       = render_idx;
             is_sprite_next   = is_sprite;
             hflip_next       = hflip;
+            priority_next    = priority;
 
         end else if (busy_r) begin
             datasel_next = datasel_r + 3'd1;
@@ -87,8 +103,10 @@ module renderer(
         wrdata_next[3:0] = pixel_data;
 
         // Don't render transparent sprite pixels
-        if (is_sprite_next && pixel_data == 4'd0)
-            wren_next = 1'b0;
+        if (is_sprite_next) begin
+            if (pixel_data == 4'd0 || (lab_priority && !priority_r))
+                wren_next = 1'b0;
+        end
     end
 
     always @(posedge clk) begin
@@ -103,6 +121,7 @@ module renderer(
             last_pixel_r  <= 1'b0;
             is_sprite_r   <= 1'b0;
             hflip_r       <= 1'b0;
+            priority_r    <= 1'b0;
 
         end else begin
             render_data_r <= render_data_next;
@@ -115,6 +134,7 @@ module renderer(
             last_pixel_r  <= last_pixel_next;
             is_sprite_r   <= is_sprite_next;
             hflip_r       <= hflip_next;
+            priority_r    <= priority_next;
         end
     end
 
