@@ -66,9 +66,15 @@ module gfx(
         ST_DONE = 3'd0,
         ST_MAP1 = 3'd1,
         ST_MAP2 = 3'd2,
-        ST_PAT1 = 3'd3,
-        ST_PAT2 = 3'd4,
-        ST_SPR  = 3'd5;
+        ST_BM1  = 3'd3,
+        ST_BM2  = 3'd4,
+        ST_SPR  = 3'd5,
+        ST_PAT1 = 3'd6,
+        ST_PAT2 = 3'd7;
+
+    localparam
+        MODE_TILE = 2'b01,
+        MODE_BM   = 2'b10;
 
     reg   [5:0] col_r,       col_next;
     reg   [5:0] col_cnt_r,   col_cnt_next;
@@ -99,6 +105,8 @@ module gfx(
     wire [7:0] ydiff       = line_idx - spr_y;
     wire       spr_on_line = spr_enable && (ydiff <= {4'd0, spr_height});
     wire [3:0] spr_line    = spr_vflip ? (spr_height - ydiff[3:0]) : ydiff[3:0];
+
+    wire [11:0] bm_offset = vline * 'd20;
 
     //////////////////////////////////////////////////////////////////////////
     // Renderer
@@ -157,15 +165,15 @@ module gfx(
         render_start          = 1'b0;
 
         if (start) begin
-            col_next              = scrx[8:3];
-            col_cnt_next          = 6'd0;
-            state_next            = ST_MAP1;
             busy_next             = 1'b1;
-            render_idx_next       = 9'd0 - {6'd0, scrx[2:0]};
             linesel_next          = !linesel_r;
-            spr_sel_next          = 7'd0;
-            blankout_next         = (gfx_mode == 2'b00);
             render_is_sprite_next = 1'b0;
+            col_cnt_next          = 6'd0;
+            spr_sel_next          = 7'd0;
+            state_next            = (gfx_mode == MODE_BM) ? ST_BM1 : ST_MAP1;
+            blankout_next         = (gfx_mode != MODE_TILE && gfx_mode != MODE_BM);
+            render_idx_next       = (gfx_mode == MODE_TILE) ? (9'd0 - {6'd0, scrx[2:0]}) : 9'd0;
+            col_next              = scrx[8:3];
 
         end else if (busy_r) begin
             case (state_r)
@@ -194,20 +202,10 @@ module gfx(
                     render_priority_next = tile_priority;
                 end
 
-                ST_PAT1: begin
-                    render_data_next[31:24] = vdata2[ 7:0];
-                    render_data_next[23:16] = vdata2[15:8];
-                    vaddr_next[0]           = 1'b1;
-                    state_next              = ST_PAT2;
+                ST_BM1: begin
                 end
 
-                ST_PAT2: begin
-                    if (!render_busy || render_last_pixel) begin
-                        render_data_next[15:8] = vdata2[ 7:0];
-                        render_data_next[7:0]  = vdata2[15:8];
-                        render_start           = 1'b1;
-                        state_next             = nxtstate_r;
-                    end
+                ST_BM2: begin
                 end
 
                 ST_SPR: begin
@@ -227,6 +225,23 @@ module gfx(
 
                     spr_sel_next = spr_sel_r + 7'd1;
                 end
+
+                ST_PAT1: begin
+                    render_data_next[31:24] = vdata2[ 7:0];
+                    render_data_next[23:16] = vdata2[15:8];
+                    vaddr_next[0]           = 1'b1;
+                    state_next              = ST_PAT2;
+                end
+
+                ST_PAT2: begin
+                    if (!render_busy || render_last_pixel) begin
+                        render_data_next[15:8] = vdata2[ 7:0];
+                        render_data_next[7:0]  = vdata2[15:8];
+                        render_start           = 1'b1;
+                        state_next             = nxtstate_r;
+                    end
+                end
+
             endcase
 
             if (render_start) render_idx_next = render_idx_r + 9'd8;
