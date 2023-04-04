@@ -330,8 +330,12 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] hctrl1_data;
-    wire [7:0] hctrl2_data;
+    wire [7:0] spi_hctrl1,  spi_hctrl2;
+    wire [7:0] hctrl1, hctrl2;
+
+    // Combine data from ESP with data from handcontroller input
+    wire [7:0] hctrl1_data = hctrl1 & spi_hctrl1;
+    wire [7:0] hctrl2_data = hctrl2 & spi_hctrl2;
 
     handctrl handctrl(
         .clk(sysclk),
@@ -341,8 +345,8 @@ module top(
         .hctrl_load_n(hctrl_load_n),
         .hctrl_data(hctrl_data),
 
-        .hctrl1_data(hctrl1_data),
-        .hctrl2_data(hctrl2_data));
+        .hctrl1_data(hctrl1),
+        .hctrl2_data(hctrl2));
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
@@ -363,6 +367,7 @@ module top(
 
     spiregs spiregs(
         .clk(sysclk),
+        .reset(reset),
 
         .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),
@@ -382,7 +387,9 @@ module top(
         .spibm_busreq(spibm_busreq),
 
         .reset_req(reset_req),
-        .keys(keys));
+        .keys(keys),
+        .hctrl1(spi_hctrl1),
+        .hctrl2(spi_hctrl2));
 
     assign esp_notify = 1'b0;
 
