@@ -63,14 +63,15 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
 
     localparam
-        ST_DONE = 3'd0,
-        ST_MAP1 = 3'd1,
-        ST_MAP2 = 3'd2,
-        ST_BM1  = 3'd3,
-        ST_BM2  = 3'd4,
-        ST_SPR  = 3'd5,
-        ST_PAT1 = 3'd6,
-        ST_PAT2 = 3'd7;
+        ST_DONE = 4'd0,
+        ST_MAP1 = 4'd1,
+        ST_MAP2 = 4'd2,
+        ST_BM1  = 4'd3,
+        ST_BM2  = 4'd4,
+        ST_BM3  = 4'd5,
+        ST_SPR  = 4'd6,
+        ST_PAT1 = 4'd7,
+        ST_PAT2 = 4'd8;
 
     localparam
         MODE_TILE = 2'b01,
@@ -79,8 +80,8 @@ module gfx(
     reg   [5:0] col_r,       col_next;
     reg   [5:0] col_cnt_r,   col_cnt_next;
     reg  [12:0] vaddr_r,     vaddr_next;
-    reg   [2:0] state_r,     state_next;
-    reg   [2:0] nxtstate_r,  nxtstate_next;
+    reg   [3:0] state_r,     state_next;
+    reg   [3:0] nxtstate_r,  nxtstate_next;
     reg  [15:0] map_entry_r, map_entry_next;
     reg         blankout_r,  blankout_next;
     reg         busy_r,      busy_next;
@@ -106,7 +107,25 @@ module gfx(
     wire       spr_on_line = spr_enable && (ydiff <= {4'd0, spr_height});
     wire [3:0] spr_line    = spr_vflip ? (spr_height - ydiff[3:0]) : ydiff[3:0];
 
-    wire [11:0] bm_offset = vline * 'd20;
+    // Bitmap address calculation
+    wire [12:0] bm_addr   = (line_idx * 'd20) + col_cnt_r[5:1];
+    wire [11:0] bmc_offs  = (line_idx[7:3] * 'd20) + col_cnt_r[5:1];
+    wire [12:0] bmc_addr  = {1'b1, bmc_offs};
+
+    wire [7:0] bm_data  = col_cnt_r[0] ? map_entry_r[7:0] : map_entry_r[15:8];
+    wire [7:0] bmc_data = col_cnt_r[0] ? vdata[7:0] : vdata[15:8];
+    wire [3:0] bmc_fg   = bmc_data[7:4];
+    wire [3:0] bmc_bg   = bmc_data[3:0];
+
+    wire [31:0] bm_render_data;
+    assign bm_render_data[31:28] = bm_data[7] ? bmc_fg : bmc_bg;
+    assign bm_render_data[27:24] = bm_data[6] ? bmc_fg : bmc_bg;
+    assign bm_render_data[23:20] = bm_data[5] ? bmc_fg : bmc_bg;
+    assign bm_render_data[19:16] = bm_data[4] ? bmc_fg : bmc_bg;
+    assign bm_render_data[15:12] = bm_data[3] ? bmc_fg : bmc_bg;
+    assign bm_render_data[11: 8] = bm_data[2] ? bmc_fg : bmc_bg;
+    assign bm_render_data[ 7: 4] = bm_data[1] ? bmc_fg : bmc_bg;
+    assign bm_render_data[ 3: 0] = bm_data[0] ? bmc_fg : bmc_bg;
 
     //////////////////////////////////////////////////////////////////////////
     // Renderer
@@ -203,9 +222,30 @@ module gfx(
                 end
 
                 ST_BM1: begin
+                    if (col_cnt_r == 6'd40) begin
+                        state_next = sprites_enable ? ST_SPR : ST_DONE;
+                    end else begin
+                        vaddr_next = bm_addr;
+                        state_next = ST_BM2;
+                    end
                 end
 
                 ST_BM2: begin
+                    map_entry_next       = vdata;
+                    vaddr_next           = bmc_addr;
+                    state_next           = ST_BM3;
+                    col_cnt_next         = col_cnt_r + 6'd1;
+                    render_hflip_next    = 1'b0;
+                    render_palette_next  = 2'b01;
+                    render_priority_next = 1'b0;
+                end
+
+                ST_BM3: begin
+                    if (!render_busy || render_last_pixel) begin
+                        render_data_next = bm_render_data;
+                        render_start     = 1'b1;
+                        state_next       = ST_BM1;
+                    end
                 end
 
                 ST_SPR: begin
