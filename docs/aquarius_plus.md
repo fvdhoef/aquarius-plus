@@ -2,36 +2,35 @@
 
 # Memory map
 
-| Z80 Memory address | Description | Reg Hex/Int  | Starting Pointer Value                   |
-| ------------------ | ----------- | ------------ | ---------------------------------------- |
-|   $0000 - $3FFF    | Bank 0      |   $F0 / 240  | 192 = Flash Page 0 + [READ ONLY + OVERLAY](#overlay-ram) |
-|   $4000 - $7FFF    | Bank 1      |   $F1 / 241  | 33  = RAM Page 33                        |
-|   $8000 - $BFFF    | Bank 2      |   $F2 / 242  | 34  = RAM Page 34                        |
-|   $C000 - $FFFF    | Bank 3      |   $F3 / 243  | 19  = Cartridge Port Page 19             |
+| Z80 Memory address | Description | Reg Hex/Int | Initial Register Value                                   |
+| ------------------ | ----------- | ----------- | -------------------------------------------------------- |
+| $0000 - $3FFF      | Bank 0      | $F0 / 240   | 192 = Flash Page 0 + [READ ONLY + OVERLAY](#overlay-ram) |
+| $4000 - $7FFF      | Bank 1      | $F1 / 241   | 33 = RAM Page 33                                         |
+| $8000 - $BFFF      | Bank 2      | $F2 / 242   | 34 = RAM Page 34                                         |
+| $C000 - $FFFF      | Bank 3      | $F3 / 243   | 19 = Cartridge Port Page 19                              |
 
 ## Overlay RAM
 
 When setting the **_Overlay RAM_** bit of the **BANK**x registers, the memory at offset $3000-$3FFF for that BANK is replaced with the functions listed in the chart below. This is not limited to BANK0, although the default code for existing Aquarius software expects it to be there. But why would anyone want to change this? As an example, screen update code could be rewritten to update BANK3 (starting at $C000) with the OVERLAY bit set, placing an access point to CHARRAM at $F000 ($C000 + $3000), COLRAM at $F400, and BASIC RAM at $F800. Since the BASIC interpreter expects its variables and code to start at $3800, this is likely not possible with BASIC -- you're pulling the rug out from under your BASIC interpreter -- but it's possible using assembly/machine code. Also, the OVERLAY bit can be set in any/all of the banks simlutaneously, which would allow a programmer to update the border character at $3000, $7000, $B000, and/or $F000.
 
-| Offset        | Description         |
-| ------------- | ------------------- |
-| $3000 - $33FF | CHARRAM       (1KB) |
-| $3400 - $37FF | COLRAM        (1KB) |
-| $3800 - $3FFF | BASIC RAM     (2KB) |
+| Offset        | Description     |
+| ------------- | --------------- |
+| $3000 - $33FF | CHARRAM (1KB)   |
+| $3400 - $37FF | COLRAM (1KB)    |
+| $3800 - $3FFF | BASIC RAM (2KB) |
 
 # Banking
 
 ## Banked Memory Pointers
 
-|  Page | Description                                   |
-| ----: | --------------------------------------------- |
-|  0-15 | Flash memory (256KB)                          |
-| 16-19 | Cartridge port (data via scrambling register) |
-|    [20](#page-20) | [Video RAM](#page-20)                                     |
-|    [21](#page-21) | [Character RAM](#page-21)                                 |
-| 22-30 | -                                             |
-|    31 | Internal boot ROM (8kB) - to be removed       |
-| 32-63 | RAM (512KB)                                   |
+|           Page | Description                                   |
+| -------------: | --------------------------------------------- |
+|           0-15 | Flash memory (256KB)                          |
+|          16-19 | Cartridge port (data via scrambling register) |
+| [20](#page-20) | [Video RAM](#page-20)                         |
+| [21](#page-21) | [Character RAM](#page-21)                     |
+|          22-31 | -                                             |
+|          32-63 | RAM (512KB)                                   |
 
 ### Page 20
 
@@ -61,7 +60,12 @@ As seen in above table, the address ranges overlap. Since bitmap mode and tile m
 
 The character RAM is used by the text mode character generator to display text on the screen. The characters can be redefined by writing to the character RAM.
 
-# Video Registers
+# Video registers
+
+The current line number is reflected in the **_VLINE_** register. Internal line numbers range from 0-261. Line numbers above 255 are reflected in this register as 255.
+
+The **_IRQMASK_** register determines which video events generate an interrupt.  
+The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a corresponding bit the event is cleared.
 
 **_Text mode_** and **_sprites_** can be enabled simultaneously with either **_tile map mode_** or **_bitmap mode_**.
 
