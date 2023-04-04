@@ -244,7 +244,7 @@ module video(
 
     wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
-    wire [3:0] text_colidx  = char_pixel ? {color_data_r[7:4]} : {color_data_r[3:0]};
+    wire [3:0] text_colidx  = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
 
     //////////////////////////////////////////////////////////////////////////
     // Sprite attribute RAM
