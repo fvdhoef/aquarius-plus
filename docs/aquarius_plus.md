@@ -4,10 +4,10 @@
 
 | Z80 Memory address | Description |
 | ------------------ | ----------- |
-|   $0000 - $3FFF    | Bank 0      |
-|   $4000 - $7FFF    | Bank 1      |
-|   $8000 - $BFFF    | Bank 2      |
-|   $C000 - $FFFF    | Bank 3      |
+| $0000 - $3FFF      | Bank 0      |
+| $4000 - $7FFF      | Bank 1      |
+| $8000 - $BFFF      | Bank 2      |
+| $C000 - $FFFF      | Bank 3      |
 
 # IO map
 
@@ -316,15 +316,14 @@ When setting the **_Overlay RAM_** bit, $3000-$3FFF is replaced with:
 
 ## Banked memory map
 
-|  Page | Description                                   |
-| ----: | --------------------------------------------- |
-|  0-15 | Flash memory (256KB)                          |
-| 16-19 | Cartridge port (data via scrambling register) |
-|    [20](#page-20) | [Video RAM](#page-20)                                     |
-|    [21](#page-21) | [Character RAM](#page-21)                                 |
-| 22-30 | -                                             |
-|    31 | Internal boot ROM (8kB) - to be removed       |
-| 32-63 | RAM (512KB)                                   |
+|           Page | Description                                   |
+| -------------: | --------------------------------------------- |
+|           0-15 | Flash memory (256KB)                          |
+|          16-19 | Cartridge port (data via scrambling register) |
+| [20](#page-20) | [Video RAM](#page-20)                         |
+| [21](#page-21) | [Character RAM](#page-21)                     |
+|          22-31 | -                                             |
+|          32-63 | RAM (512KB)                                   |
 
 ### Page 20
 
