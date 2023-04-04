@@ -7,6 +7,7 @@ module video(
     output reg   [7:0] io_rddata,
     input  wire  [7:0] io_wrdata,
     input  wire        io_wren,
+    output wire        irq,
 
     // Text RAM interface
     input  wire [10:0] tram_addr,
@@ -61,6 +62,8 @@ module video(
     reg irqline_match_r;
     always @(posedge clk) irqline_match_r <= irqline_match;
     wire irqline_detect = (!irqline_match_r && irqline_match);
+
+    assign irq = {irqstat_line_r, irqstat_vblank_r} & {irqmask_line_r, irqmask_vblank_r} != 2'b00;
 
     //////////////////////////////////////////////////////////////////////////
     // IO registers
