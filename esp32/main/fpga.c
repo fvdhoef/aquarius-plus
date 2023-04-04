@@ -21,6 +21,7 @@ static uint8_t cur_banks[4];
 enum {
     CMD_RESET           = 0x01,
     CMD_SET_KEYB_MATRIX = 0x10,
+    CMD_SET_HCTRL       = 0x11,
     CMD_BUS_ACQUIRE     = 0x20,
     CMD_BUS_RELEASE     = 0x21,
     CMD_MEM_WRITE       = 0x22,
@@ -162,6 +163,24 @@ void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
     uint8_t buf[9];
     buf[0] = CMD_SET_KEYB_MATRIX;
     memcpy(&buf[1], keyb_matrix, 8);
+
+    // ESP_LOG_BUFFER_HEXDUMP(TAG, buf, sizeof(buf), ESP_LOG_INFO);
+
+    spi_transaction_t t = {.length = sizeof(buf) * 8, .tx_buffer = buf};
+    ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
+
+    gpio_set_level(IOPIN_SPI_CS_N, 1);
+}
+
+void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
+    gpio_set_level(IOPIN_SPI_CS_N, 0);
+
+    uint8_t buf[3];
+    buf[0] = CMD_SET_HCTRL;
+    buf[1] = hctrl1;
+    buf[2] = hctrl2;
+
+    // ESP_LOG_BUFFER_HEXDUMP(TAG, buf, sizeof(buf), ESP_LOG_INFO);
 
     spi_transaction_t t = {.length = sizeof(buf) * 8, .tx_buffer = buf};
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));

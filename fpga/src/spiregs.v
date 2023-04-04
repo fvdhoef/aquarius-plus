@@ -1,5 +1,6 @@
 module spiregs(
     input  wire        clk,
+    input  wire        reset,
 
     input  wire        esp_ssel_n,
     input  wire        esp_sclk,
@@ -19,7 +20,9 @@ module spiregs(
     output wire        spibm_busreq,
 
     output reg         reset_req,
-    output reg  [63:0] keys);
+    output reg  [63:0] keys,
+    output reg   [7:0] hctrl1,
+    output reg   [7:0] hctrl2);
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave
@@ -93,6 +96,7 @@ module spiregs(
     localparam
         CMD_RESET           = 8'h01,
         CMD_SET_KEYB_MATRIX = 8'h10,
+        CMD_SET_HCTRL       = 8'h11,
         CMD_BUS_ACQUIRE     = 8'h20,
         CMD_BUS_RELEASE     = 8'h21,
         CMD_MEM_WRITE       = 8'h22,
@@ -108,7 +112,17 @@ module spiregs(
 
     // 10h: Set keyboard matrix
     always @(posedge clk)
-        if (cmd_r == CMD_SET_KEYB_MATRIX && msg_end) keys <= data_r;
+        if (reset)
+            keys <= 64'hFFFFFFFFFFFFFFFF;
+        else if (cmd_r == CMD_SET_KEYB_MATRIX && msg_end)
+            keys <= data_r;
+
+    // 11h: Set keyboard matrix
+    always @(posedge clk)
+        if (reset)
+            {hctrl2, hctrl1} <= 16'hFFFF;
+        else if (cmd_r == CMD_SET_HCTRL && msg_end)
+            {hctrl2, hctrl1} <= data_r[63:48];
 
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin
