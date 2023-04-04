@@ -92,7 +92,6 @@ module top(
     reg  [7:0] reg_bank2_r;             // IO $F2
     reg  [7:0] reg_bank3_r;             // IO $F3
     reg        reg_cpm_remap_r;         // IO $FD:W
-    reg  [7:0] reg_scramble_value_r;    // IO $FF:W
 
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
@@ -204,7 +203,9 @@ module top(
 
     assign ebus_d = (spibm_en && spibm_wrdata_en) ? spibm_wrdata : (ebus_d_enable ? rddata : 8'bZ);
 
-    assign ebus_int_n       = 1'bZ;
+    wire video_irq;
+
+    assign ebus_int_n       = video_irq ? 1'b0 : 1'bZ;
     assign ebus_wait_n      = 1'bZ;
     assign ebus_cart_d_oe_n = 1'b1;
     assign ebus_cart_d      = 8'bZ;
@@ -221,7 +222,6 @@ module top(
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
-            reg_scramble_value_r <= 8'b0;
 
         end else begin
             if (sel_io_bank0             && bus_write) reg_bank0_r          <= wrdata;
@@ -231,16 +231,7 @@ module top(
             if (sel_io_cassette          && bus_write) cassette_out         <= wrdata[0];
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r      <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
-            if (sel_io_keyb_r_scramble_w && bus_write) reg_scramble_value_r <= wrdata;
         end
-
-
-    // Cartridge data bus
-    // wire [7:0] scrambled_d      = ebus_d      ^ reg_scramble_value_r;
-    // wire [7:0] scrambled_cart_d = ebus_cart_d ^ reg_scramble_value_r;
-
-    // assign ebus_cart_d = !ebus_wr_n ? (ebus_mreq_n ? scrambled_d : ebus_d) : 8'bZ;
-    // assign ebus_cart_d_oe_n = 
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -305,6 +296,7 @@ module top(
         .io_rddata(rddata_io_video),
         .io_wrdata(wrdata),
         .io_wren(io_video_wren),
+        .irq(video_irq),
 
         .tram_addr(ebus_a[10:0]),
         .tram_rddata(rddata_tram),

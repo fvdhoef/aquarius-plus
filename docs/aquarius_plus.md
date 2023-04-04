@@ -260,7 +260,7 @@ The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a 
         <td colspan="1">Interrupt masking register</td>
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
-        <td align="center" colspan="1">VSync</td>
+        <td align="center" colspan="1">V-blank</td>
     </tr>
     <tr>
         <td>$EF/239</td>
@@ -268,7 +268,7 @@ The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a 
         <td colspan="1">Interrupt status register</td>
         <td align="center" colspan="6">-</td>
         <td align="center" colspan="1">Line</td>
-        <td align="center" colspan="1">VSync</td>
+        <td align="center" colspan="1">V-blank</td>
     </tr>
     <tr>
         <td>$F0/240</td>
@@ -413,7 +413,7 @@ The **_IRQSTAT_** indicates pending interrupts when read. When writing a 1 to a 
         <td>$FF/255 W</td>
         <td>SCRAMBLE</td>
         <td colspan="1">Scramble</td>
-        <td align="center" colspan="8">External bus scramble value (XOR)</td>
+        <td align="center" colspan="8">External bus scramble value (XOR) - not present in Aq+</td>
     </tr>
 </table>
 
