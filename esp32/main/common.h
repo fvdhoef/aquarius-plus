@@ -1,15 +1,25 @@
 #pragma once
 
-#include <stdint.h>
 #include <stddef.h>
-#include <stdarg.h>
+#include <stdint.h>
 #include <stdbool.h>
+#include <stdarg.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 
-#include "iopins.h"
+#include <esp_log.h>
+#include <esp_task_wdt.h>
+#include <esp_event.h>
+#include <esp_timer.h>
+#include <esp_mac.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/event_groups.h>
+#include <freertos/semphr.h>
 
 #include <driver/gpio.h>
-#include <esp_log.h>
+
+#include "iopins.h"
