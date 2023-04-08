@@ -1,6 +1,5 @@
 #include "uart_protocol.h"
 #include <driver/uart.h>
-#include "util.h"
 #include "direnum.h"
 #include "sdcard.h"
 #include <errno.h>
@@ -73,7 +72,7 @@ struct state {
     const char   *new_path;
 };
 
-static struct state state;
+static struct state *state;
 
 static QueueHandle_t uart_queue;
 
@@ -86,12 +85,12 @@ static void txfifo_write(uint8_t data) {
 static char *resolve_path(const char *path) {
     // DBGF("resolve_path: '%s'\n", path);
 
-    size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
+    size_t tmppath_size = strlen(state->current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = malloc(tmppath_size);
     assert(tmppath != NULL);
     tmppath[0] = 0;
     if (path[0] != '/' && path[0] != '\\') {
-        strcat(tmppath, state.current_path);
+        strcat(tmppath, state->current_path);
         strcat(tmppath, "/");
     }
     strcat(tmppath, path);
@@ -217,7 +216,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     // Find free file descriptor
     int fd = -1;
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] == NULL) {
+        if (state->fds[i] == NULL) {
             fd = i;
             break;
         }
@@ -253,7 +252,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
         txfifo_write(err);
         return;
     }
-    state.fds[fd] = f;
+    state->fds[fd] = f;
 
     txfifo_write(fd);
 
@@ -263,28 +262,28 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 static void esp_close(uint8_t fd) {
     DBGF("CLOSE fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    FILE *f = state.fds[fd];
+    FILE *f = state->fds[fd];
 
     fclose(f);
-    state.fds[fd] = NULL;
+    state->fds[fd] = NULL;
     txfifo_write(0);
 }
 
 static void esp_read(uint8_t fd, uint16_t size) {
     DBGF("READ fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    FILE *f = state.fds[fd];
+    FILE *f = state->fds[fd];
 
     // Use RX buffer as temporary storage
-    int result = (int)fread(state.rxbuf, 1, size, f);
+    int result = (int)fread(state->rxbuf, 1, size, f);
     if (result < 0) {
         txfifo_write(ERR_OTHER);
         return;
@@ -294,18 +293,18 @@ static void esp_read(uint8_t fd, uint16_t size) {
     txfifo_write((result >> 0) & 0xFF);
     txfifo_write((result >> 8) & 0xFF);
     for (int i = 0; i < result; i++) {
-        txfifo_write(state.rxbuf[i]);
+        txfifo_write(state->rxbuf[i]);
     }
 }
 
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
     DBGF("WRITE fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    FILE *f = state.fds[fd];
+    FILE *f = state->fds[fd];
 
     int result = (int)fwrite(data, 1, size, f);
     if (result < 0) {
@@ -321,11 +320,11 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 static void esp_seek(uint8_t fd, uint32_t offset) {
     DBGF("SEEK fd: %d  offset: %lu\n", fd, offset);
 
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    FILE *f = state.fds[fd];
+    FILE *f = state->fds[fd];
 
     int result = fseek(f, offset, SEEK_SET);
     if (result < 0) {
@@ -338,11 +337,11 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
 static void esp_tell(uint8_t fd) {
     DBGF("TELL fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fds[fd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    FILE *f = state.fds[fd];
+    FILE *f = state->fds[fd];
 
     int result = ftell(f);
     if (result < 0) {
@@ -360,7 +359,7 @@ static void esp_opendir(const char *path_arg) {
     // Find free directory descriptor
     int dd = -1;
     for (int i = 0; i < MAX_DDS; i++) {
-        if (state.dds[i] == NULL) {
+        if (state->dds[i] == NULL) {
             dd = i;
             break;
         }
@@ -391,7 +390,7 @@ static void esp_opendir(const char *path_arg) {
     }
 
     // Return directory descriptor
-    state.dds[dd] = ctx;
+    state->dds[dd] = ctx;
     txfifo_write(dd);
 
     DBGF("OPENDIR dd: %d\n", dd);
@@ -400,14 +399,14 @@ static void esp_opendir(const char *path_arg) {
 static void esp_closedir(uint8_t dd) {
     DBGF("CLOSEDIR dd: %d\n", dd);
 
-    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
+    if (dd >= MAX_DDS || state->dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    direnum_ctx_t ctx = state.dds[dd];
+    direnum_ctx_t ctx = state->dds[dd];
 
     direnum_close(ctx);
-    state.dds[dd] = NULL;
+    state->dds[dd] = NULL;
 
     txfifo_write(0);
 }
@@ -415,11 +414,11 @@ static void esp_closedir(uint8_t dd) {
 static void esp_readdir(uint8_t dd) {
     // DBGF("READDIR dd: %d\n", dd);
 
-    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
+    if (dd >= MAX_DDS || state->dds[dd] == NULL) {
         txfifo_write(ERR_PARAM);
         return;
     }
-    direnum_ctx_t ctx = state.dds[dd];
+    direnum_ctx_t ctx = state->dds[dd];
 
     struct direnum_ent de;
     if (!direnum_read(ctx, &de)) {
@@ -560,8 +559,8 @@ static void esp_chdir(const char *path_arg) {
     free(full_path);
 
     if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
-        free(state.current_path);
-        state.current_path = path;
+        free(state->current_path);
+        state->current_path = path;
         txfifo_write(0);
 
     } else {
@@ -622,13 +621,13 @@ static void esp_getcwd(void) {
     DBGF("GETCWD\n");
 
     txfifo_write(0);
-    int len = (int)strlen(state.current_path);
+    int len = (int)strlen(state->current_path);
 
     if (len == 0) {
         txfifo_write('/');
     } else {
         for (int i = 0; i < len; i++) {
-            txfifo_write(state.current_path[i]);
+            txfifo_write(state->current_path[i]);
         }
     }
     txfifo_write(0);
@@ -637,15 +636,15 @@ static void esp_getcwd(void) {
 static void close_all_descriptors(void) {
     // Close any open descriptors
     for (int i = 0; i < MAX_DDS; i++) {
-        if (state.dds[i] != NULL) {
-            direnum_close(state.dds[i]);
-            state.dds[i] = NULL;
+        if (state->dds[i] != NULL) {
+            direnum_close(state->dds[i]);
+            state->dds[i] = NULL;
         }
     }
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] != NULL) {
-            fclose(state.fds[i]);
-            state.fds[i] = NULL;
+        if (state->fds[i] != NULL) {
+            fclose(state->fds[i]);
+            state->fds[i] = NULL;
         }
     }
 }
@@ -657,79 +656,79 @@ static void esp_closeall(void) {
 }
 
 static void esp32_write_data(uint8_t data) {
-    if (state.current_path == NULL) {
-        state.current_path = strdup("");
+    if (state->current_path == NULL) {
+        state->current_path = strdup("");
     }
-    if (state.rxbuf_idx == 0 && data == 0) {
+    if (state->rxbuf_idx == 0 && data == 0) {
         // Ignore zero-bytes after break
         return;
     }
 
-    state.rxbuf[state.rxbuf_idx] = data;
-    if (state.rxbuf_idx < sizeof(state.rxbuf) - 1) {
-        state.rxbuf_idx++;
+    state->rxbuf[state->rxbuf_idx] = data;
+    if (state->rxbuf_idx < sizeof(state->rxbuf) - 1) {
+        state->rxbuf_idx++;
     }
 
-    if (state.rxbuf_idx > 0) {
-        uint8_t cmd = state.rxbuf[0];
+    if (state->rxbuf_idx > 0) {
+        uint8_t cmd = state->rxbuf[0];
 
         switch (cmd) {
             case ESPCMD_RESET: {
                 // Close any open descriptors
                 ESP_LOGI(TAG, "RESET");
                 close_all_descriptors();
-                free(state.current_path);
-                state.current_path = strdup("");
+                free(state->current_path);
+                state->current_path = strdup("");
                 break;
             }
 
             case ESPCMD_OPEN: {
-                if (data == 0 && state.rxbuf_idx >= 3) {
-                    esp_open(state.rxbuf[1], (const char *)&state.rxbuf[2]);
-                    state.rxbuf_idx = 0;
+                if (data == 0 && state->rxbuf_idx >= 3) {
+                    esp_open(state->rxbuf[1], (const char *)&state->rxbuf[2]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_CLOSE: {
-                if (state.rxbuf_idx == 2) {
-                    esp_close(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                if (state->rxbuf_idx == 2) {
+                    esp_close(state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_READ: {
-                if (state.rxbuf_idx == 4) {
-                    esp_read(state.rxbuf[1], state.rxbuf[2] | (state.rxbuf[3] << 8));
-                    state.rxbuf_idx = 0;
+                if (state->rxbuf_idx == 4) {
+                    esp_read(state->rxbuf[1], state->rxbuf[2] | (state->rxbuf[3] << 8));
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_WRITE: {
-                if (state.rxbuf_idx >= 4) {
-                    unsigned len = state.rxbuf[2] | (state.rxbuf[3] << 8);
-                    if (state.rxbuf_idx == 4 + len) {
-                        esp_write(state.rxbuf[1], len, (const char *)&state.rxbuf[4]);
-                        state.rxbuf_idx = 0;
+                if (state->rxbuf_idx >= 4) {
+                    unsigned len = state->rxbuf[2] | (state->rxbuf[3] << 8);
+                    if (state->rxbuf_idx == 4 + len) {
+                        esp_write(state->rxbuf[1], len, (const char *)&state->rxbuf[4]);
+                        state->rxbuf_idx = 0;
                     }
                 }
                 break;
             }
             case ESPCMD_SEEK: {
-                if (state.rxbuf_idx == 6) {
+                if (state->rxbuf_idx == 6) {
                     esp_seek(
-                        state.rxbuf[1],
-                        ((state.rxbuf[2] << 0) |
-                         (state.rxbuf[3] << 8) |
-                         (state.rxbuf[4] << 16) |
-                         (state.rxbuf[5] << 24)));
-                    state.rxbuf_idx = 0;
+                        state->rxbuf[1],
+                        ((state->rxbuf[2] << 0) |
+                         (state->rxbuf[3] << 8) |
+                         (state->rxbuf[4] << 16) |
+                         (state->rxbuf[5] << 24)));
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_TELL: {
-                if (state.rxbuf_idx == 2) {
-                    esp_tell(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                if (state->rxbuf_idx == 2) {
+                    esp_tell(state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
@@ -737,24 +736,24 @@ static void esp32_write_data(uint8_t data) {
             case ESPCMD_OPENDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_opendir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                    esp_opendir((const char *)&state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
 
             case ESPCMD_CLOSEDIR: {
-                if (state.rxbuf_idx == 2) {
-                    esp_closedir(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                if (state->rxbuf_idx == 2) {
+                    esp_closedir(state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
 
             case ESPCMD_READDIR: {
-                if (state.rxbuf_idx == 2) {
-                    esp_readdir(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                if (state->rxbuf_idx == 2) {
+                    esp_readdir(state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
@@ -762,19 +761,19 @@ static void esp32_write_data(uint8_t data) {
             case ESPCMD_DELETE: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_delete((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                    esp_delete((const char *)&state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_RENAME: {
                 if (data == 0) {
-                    if (state.new_path == NULL) {
-                        state.new_path = (const char *)&state.rxbuf[state.rxbuf_idx];
+                    if (state->new_path == NULL) {
+                        state->new_path = (const char *)&state->rxbuf[state->rxbuf_idx];
                     } else {
-                        esp_rename((const char *)&state.rxbuf[1], state.new_path);
-                        state.new_path  = NULL;
-                        state.rxbuf_idx = 0;
+                        esp_rename((const char *)&state->rxbuf[1], state->new_path);
+                        state->new_path  = NULL;
+                        state->rxbuf_idx = 0;
                     }
                 }
                 break;
@@ -782,35 +781,35 @@ static void esp32_write_data(uint8_t data) {
             case ESPCMD_MKDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_mkdir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                    esp_mkdir((const char *)&state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_CHDIR: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_chdir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                    esp_chdir((const char *)&state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_STAT: {
                 // Wait for zero-termination of path
                 if (data == 0) {
-                    esp_stat((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
+                    esp_stat((const char *)&state->rxbuf[1]);
+                    state->rxbuf_idx = 0;
                 }
                 break;
             }
             case ESPCMD_GETCWD: {
                 esp_getcwd();
-                state.rxbuf_idx = 0;
+                state->rxbuf_idx = 0;
                 break;
             }
             case ESPCMD_CLOSEALL: {
                 esp_closeall();
-                state.rxbuf_idx = 0;
+                state->rxbuf_idx = 0;
                 break;
             }
             default: {
@@ -840,7 +839,6 @@ static void uart_event_task(void *pvParameters) {
 
                     // Read data from the UART
                     uart_read_bytes(UART_NUM, dtmp, event.size, portMAX_DELAY);
-                    // hexdump(dtmp, event.size);
                     for (unsigned i = 0; i < event.size; i++) {
                         esp32_write_data(dtmp[i]);
                     }
@@ -870,8 +868,8 @@ static void uart_event_task(void *pvParameters) {
 
                 // Event of UART RX break detected
                 case UART_BREAK: {
-                    state.rxbuf_idx = 0;
-                    state.new_path  = NULL;
+                    state->rxbuf_idx = 0;
+                    state->new_path  = NULL;
                     break;
                 }
 
@@ -935,6 +933,9 @@ void uart_protocol_init(void) {
     uint32_t baudrate;
     ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
     ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
+
+    state = calloc(sizeof(*state), 1);
+    assert(state != NULL);
 
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 12, NULL);
 }

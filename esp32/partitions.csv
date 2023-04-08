@@ -1,0 +1,11 @@
+# Aq+ ESP32 partition table for 4MB flash size
+
+# This partition table itself is located at 0x8000
+# Area between 0x10000 - 0x1FFFF is still available for future use
+
+# Name,   Type, SubType,   Offset,     Size, Flags
+nvs,      data, nvs,       0x9000,   0x4000,
+otadata,  data, ota,       0xD000,   0x2000,
+phy_init, data, phy,       0xF000,   0x1000,
+ota_0,    app,  ota_0,    0x20000, 0x1F0000,
+ota_1,    app,  ota_1,   0x210000, 0x1F0000,
