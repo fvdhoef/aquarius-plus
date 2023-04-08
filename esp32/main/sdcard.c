@@ -73,9 +73,10 @@ FILE         *fds[MAX_FDS];
 
 static char *get_fullpath(const char *path) {
     // Compose full path
-    char *full_path = malloc(strlen(MOUNT_POINT) + strlen(path) + 1);
+    char *full_path = malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, MOUNT_POINT);
+    strcat(full_path, "/");
     strcat(full_path, path);
     return full_path;
 }

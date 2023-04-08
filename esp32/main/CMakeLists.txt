@@ -10,6 +10,7 @@ idf_component_register(
         "uart_protocol.c"
         "direnum.c"
         "vfs.c"
+        "esp_vfs.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
 
