@@ -9,6 +9,7 @@ idf_component_register(
         "screen.c"
         "uart_protocol.c"
         "direnum.c"
+        "vfs.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
 
