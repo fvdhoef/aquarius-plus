@@ -4,6 +4,8 @@
 #include <esp_vfs_fat.h>
 #include <sdmmc_cmd.h>
 #include <dirent.h>
+#include "direnum.h"
+#include <errno.h>
 
 static const char *TAG = "sdcard";
 
@@ -55,3 +57,264 @@ void sdcard_init(void) {
     // Card has been initialized, print its properties
     sdmmc_card_print_info(stdout, card);
 }
+
+#define MAX_FDS (10)
+#define MAX_DDS (10)
+
+struct state {
+    direnum_ctx_t dds[MAX_DDS];
+    FILE         *fds[MAX_FDS];
+};
+
+static struct state state;
+
+direnum_ctx_t dds[MAX_DDS];
+FILE         *fds[MAX_FDS];
+
+static char *get_fullpath(const char *path) {
+    // Compose full path
+    char *full_path = malloc(strlen(MOUNT_POINT) + strlen(path) + 1);
+    assert(full_path != NULL);
+    strcpy(full_path, MOUNT_POINT);
+    strcat(full_path, path);
+    return full_path;
+}
+
+static int sd_open(uint8_t flags, const char *path) {
+    // Translate flags
+    int  mi = 0;
+    char mode[5];
+
+    // if (flags & FO_CREATE)
+    //     oflag |= O_CREAT;
+
+    switch (flags & FO_ACCMODE) {
+        case FO_RDONLY:
+            mode[mi++] = 'r';
+            break;
+        case FO_WRONLY:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+            } else {
+                mode[mi++] = 'w';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+
+            break;
+        case FO_RDWR:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+                mode[mi++] = '+';
+            } else if (flags & FO_TRUNC) {
+                mode[mi++] = 'w';
+                mode[mi++] = '+';
+            } else {
+                mode[mi++] = 'r';
+                mode[mi++] = '+';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+            break;
+
+        default: {
+            // Error
+            return ERR_PARAM;
+        }
+    }
+    mode[mi++] = 'b';
+    mode[mi]   = 0;
+
+    // Find free file descriptor
+    int fd = -1;
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (state.fds[i] == NULL) {
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1)
+        return ERR_TOO_MANY_OPEN;
+
+    char *full_path = get_fullpath(path);
+    FILE *f         = fopen(full_path, mode);
+    int   err_no    = errno;
+    free(full_path);
+
+    if (f == NULL) {
+        uint8_t err = ERR_NOT_FOUND;
+        switch (err_no) {
+            case EACCES: err = ERR_NOT_FOUND; break;
+            case EEXIST: err = ERR_EXISTS; break;
+            default: err = ERR_NOT_FOUND; break;
+        }
+        return err;
+    }
+    state.fds[fd] = f;
+    return fd;
+}
+
+static int sd_close(int fd) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    fclose(f);
+    state.fds[fd] = NULL;
+    return 0;
+}
+
+static int sd_read(int fd, uint16_t size, void *buf) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    // Use RX buffer as temporary storage
+    int result = (int)fread(buf, 1, size, f);
+    return (result < 0) ? ERR_OTHER : result;
+}
+
+static int sd_write(int fd, uint16_t size, const void *buf) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = (int)fwrite(buf, 1, size, f);
+    return (result < 0) ? ERR_OTHER : result;
+}
+
+static int sd_seek(int fd, uint32_t offset) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = fseek(f, offset, SEEK_SET);
+    return (result < 0) ? ERR_OTHER : 0;
+}
+
+static int sd_tell(int fd) {
+    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = ftell(f);
+    return (result < 0) ? ERR_OTHER : result;
+}
+
+static int sd_opendir(const char *path) {
+    // Find free directory descriptor
+    int dd = -1;
+    for (int i = 0; i < MAX_DDS; i++) {
+        if (state.dds[i] == NULL) {
+            dd = i;
+            break;
+        }
+    }
+    if (dd == -1)
+        return ERR_TOO_MANY_OPEN;
+
+    char *full_path = get_fullpath(path);
+
+    direnum_ctx_t ctx = direnum_open(full_path);
+    free(full_path);
+
+    if (ctx == NULL)
+        return ERR_NOT_FOUND;
+
+    // Return directory descriptor
+    state.dds[dd] = ctx;
+
+    return dd + MAX_FDS;
+}
+
+static int sd_closedir(int dd) {
+    if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
+        return ERR_PARAM;
+    dd -= MAX_FDS;
+
+    direnum_ctx_t ctx = state.dds[dd];
+    direnum_close(ctx);
+    state.dds[dd] = NULL;
+    return 0;
+}
+
+static int sd_readdir(int dd, struct direnum_ent *de) {
+    printf("sd_readdir(%d)\n", dd);
+    if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
+        return ERR_PARAM;
+    dd -= MAX_FDS;
+
+    direnum_ctx_t ctx = state.dds[dd];
+    return direnum_read(ctx, de) ? 0 : ERR_EOF;
+}
+
+static int sd_delete(const char *path) {
+    char *full_path = get_fullpath(path);
+
+    int result = unlink(full_path);
+    if (result < 0) {
+        result = rmdir(full_path);
+    }
+    int err_no = errno;
+    free(full_path);
+
+    if (result < 0) {
+        // Error
+        if (err_no == ENOTEMPTY) {
+            return ERR_NOT_EMPTY;
+        } else {
+            return ERR_NOT_FOUND;
+        }
+    }
+    return 0;
+}
+
+static int sd_rename(const char *path_old, const char *path_new) {
+    char *full_old = get_fullpath(path_old);
+    char *full_new = get_fullpath(path_new);
+
+    int result = rename(full_old, full_new);
+    free(full_old);
+    free(full_new);
+
+    return (result < 0) ? ERR_NOT_FOUND : 0;
+}
+
+static int sd_mkdir(const char *path) {
+    char *full_path = get_fullpath(path);
+
+#if _WIN32
+    int result = mkdir(full_path);
+#else
+    int result = mkdir(full_path, 0775);
+#endif
+    free(full_path);
+
+    return (result < 0) ? ERR_OTHER : 0;
+}
+
+static int sd_stat(const char *path, struct stat *st) {
+    char *full_path = get_fullpath(path);
+    int   result    = stat(full_path, st);
+    free(full_path);
+
+    return result < 0 ? ERR_NOT_FOUND : 0;
+}
+
+struct vfs sdcard_vfs = {
+    .open     = sd_open,
+    .close    = sd_close,
+    .read     = sd_read,
+    .write    = sd_write,
+    .seek     = sd_seek,
+    .tell     = sd_tell,
+    .opendir  = sd_opendir,
+    .closedir = sd_closedir,
+    .readdir  = sd_readdir,
+    .delete   = sd_delete,
+    .rename   = sd_rename,
+    .mkdir    = sd_mkdir,
+    .stat     = sd_stat,
+};
