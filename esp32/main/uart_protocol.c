@@ -3,6 +3,7 @@
 #include "direnum.h"
 #include "sdcard.h"
 #include "vfs.h"
+#include "esp_vfs.h"
 
 static const char *TAG = "uart_protocol";
 #define BUF_SIZE (1024)
@@ -44,10 +45,10 @@ struct state {
     uint8_t  rxbuf[16 + 0x10000];
     unsigned rxbuf_idx;
 
-    struct vfs *fd_vfs[MAX_FDS];
-    uint8_t     fd[MAX_FDS];
-    struct vfs *dd_vfs[MAX_DDS];
-    uint8_t     dd[MAX_DDS];
+    const struct vfs *fd_vfs[MAX_FDS];
+    uint8_t           fd[MAX_FDS];
+    const struct vfs *dd_vfs[MAX_DDS];
+    uint8_t           dd[MAX_DDS];
 };
 
 static struct state *state;
@@ -58,14 +59,21 @@ static void txfifo_write(uint8_t data) {
     uart_write_bytes(UART_NUM, &data, 1);
 }
 
-static char *resolve_path(const char *path) {
+static char *resolve_path(const char *path, const struct vfs **vfs) {
+    bool use_cwd = true;
+    if (path[0] == '/' || path[0] == '\\')
+        use_cwd = false;
+    else if (strncasecmp(path, "esp:", 4) == 0) {
+        use_cwd = false;
+    }
+
     // DBGF("resolve_path: '%s'\n", path);
 
     size_t tmppath_size = strlen(state->current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = malloc(tmppath_size);
     assert(tmppath != NULL);
     tmppath[0] = 0;
-    if (path[0] != '/' && path[0] != '\\') {
+    if (use_cwd) {
         strcat(tmppath, state->current_path);
         strcat(tmppath, "/");
     }
@@ -124,7 +132,8 @@ static char *resolve_path(const char *path) {
         }
 
         // Add leading slash
-        *(pd++) = '/';
+        if (pd != result)
+            *(pd++) = '/';
 
         // Copy path component from source to result string
         while (ps[0] != '/' && ps[0] != '\\' && ps[0] != 0) {
@@ -138,6 +147,10 @@ static char *resolve_path(const char *path) {
 
     free(tmppath);
 
+    *vfs = &sdcard_vfs;
+    if (strncasecmp(result, "esp:", 4) == 0) {
+        *vfs = &esp_vfs;
+    }
     return result;
 }
 
@@ -182,15 +195,21 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     }
 
     // Compose full path
-    char *path = resolve_path(path_arg);
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->open) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
 
-    int vfs_fd = sdcard_vfs.open(flags, path);
+    int vfs_fd = vfs->open(flags, path);
     free(path);
 
     if (vfs_fd < 0) {
         txfifo_write(vfs_fd);
     } else {
-        state->fd_vfs[fd] = &sdcard_vfs;
+        state->fd_vfs[fd] = vfs;
         state->fd[fd]     = vfs_fd;
         txfifo_write(fd);
     }
@@ -204,7 +223,13 @@ static void esp_close(uint8_t fd) {
         return;
     }
 
-    txfifo_write(state->fd_vfs[fd]->close(state->fd[fd]));
+    const struct vfs *vfs = state->fd_vfs[fd];
+    if (!vfs->close) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    txfifo_write(vfs->close(state->fd[fd]));
     state->fd_vfs[fd] = NULL;
 }
 
@@ -216,7 +241,13 @@ static void esp_read(uint8_t fd, uint16_t size) {
         return;
     }
 
-    int result = state->fd_vfs[fd]->read(state->fd[fd], size, state->rxbuf);
+    const struct vfs *vfs = state->fd_vfs[fd];
+    if (!vfs->read) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    int result = vfs->read(state->fd[fd], size, state->rxbuf);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -237,7 +268,13 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
         return;
     }
 
-    int result = state->fd_vfs[fd]->write(state->fd[fd], size, data);
+    const struct vfs *vfs = state->fd_vfs[fd];
+    if (!vfs->write) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    int result = vfs->write(state->fd[fd], size, data);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -255,7 +292,13 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
         return;
     }
 
-    txfifo_write(state->fd_vfs[fd]->seek(state->fd[fd], offset));
+    const struct vfs *vfs = state->fd_vfs[fd];
+    if (!vfs->seek) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    txfifo_write(vfs->seek(state->fd[fd], offset));
 }
 
 static void esp_tell(uint8_t fd) {
@@ -266,7 +309,13 @@ static void esp_tell(uint8_t fd) {
         return;
     }
 
-    int result = state->fd_vfs[fd]->tell(state->fd[fd]);
+    const struct vfs *vfs = state->fd_vfs[fd];
+    if (!vfs->tell) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    int result = vfs->tell(state->fd[fd]);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -296,15 +345,21 @@ static void esp_opendir(const char *path_arg) {
     }
 
     // Compose full path
-    char *path = resolve_path(path_arg);
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->opendir) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
 
-    int vfs_dd = sdcard_vfs.opendir(path);
+    int vfs_dd = vfs->opendir(path);
     free(path);
 
     if (vfs_dd < 0) {
         txfifo_write(dd);
     } else {
-        state->dd_vfs[dd] = &sdcard_vfs;
+        state->dd_vfs[dd] = vfs;
         state->dd[dd]     = vfs_dd;
         txfifo_write(dd);
     }
@@ -318,7 +373,13 @@ static void esp_closedir(uint8_t dd) {
         return;
     }
 
-    txfifo_write(state->dd_vfs[dd]->closedir(state->dd[dd]));
+    const struct vfs *vfs = state->dd_vfs[dd];
+    if (!vfs->closedir) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    txfifo_write(vfs->closedir(state->dd[dd]));
     state->dd_vfs[dd] = NULL;
 }
 
@@ -330,8 +391,14 @@ static void esp_readdir(uint8_t dd) {
         return;
     }
 
+    const struct vfs *vfs = state->dd_vfs[dd];
+    if (!vfs->readdir) {
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
     struct direnum_ent de;
-    int                result = state->dd_vfs[dd]->readdir(state->dd[dd], &de);
+    int                result = vfs->readdir(state->dd[dd], &de);
     txfifo_write(result);
     if (result < 0)
         return;
@@ -369,18 +436,34 @@ static void esp_readdir(uint8_t dd) {
 }
 
 static void esp_delete(const char *path_arg) {
-    char *path = resolve_path(path_arg);
-    txfifo_write(sdcard_vfs.delete(path));
+    DBGF("DELETE %s\n", path_arg);
+
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->delete) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+    txfifo_write(vfs->delete (path));
     free(path);
 }
 
 static void esp_rename(const char *old_arg, const char *new_arg) {
     DBGF("RENAME %s -> %s\n", old_arg, new_arg);
 
-    char *old_path = resolve_path(old_arg);
-    char *new_path = resolve_path(new_arg);
+    const struct vfs *vfs1     = NULL;
+    const struct vfs *vfs2     = NULL;
+    char             *old_path = resolve_path(old_arg, &vfs1);
+    char             *new_path = resolve_path(new_arg, &vfs2);
+    if (!vfs1 || vfs1 != vfs2 || !vfs1->rename) {
+        free(old_path);
+        free(new_path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
 
-    txfifo_write(sdcard_vfs.rename(old_path, new_path));
+    txfifo_write(vfs1->rename(old_path, new_path));
 
     free(old_path);
     free(new_path);
@@ -388,8 +471,16 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
 
 static void esp_mkdir(const char *path_arg) {
     DBGF("MKDIR %s\n", path_arg);
-    char *path = resolve_path(path_arg);
-    txfifo_write(sdcard_vfs.mkdir(path_arg));
+
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->mkdir) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
+
+    txfifo_write(vfs->mkdir(path_arg));
     free(path);
 }
 
@@ -397,10 +488,16 @@ static void esp_chdir(const char *path_arg) {
     DBGF("CHDIR %s\n", path_arg);
 
     // Compose full path
-    char *path = resolve_path(path_arg);
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->stat) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
 
     struct stat st;
-    int         result = sdcard_vfs.stat(path, &st);
+    int         result = vfs->stat(path, &st);
     txfifo_write(result);
 
     if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
@@ -414,10 +511,16 @@ static void esp_chdir(const char *path_arg) {
 static void esp_stat(const char *path_arg) {
     DBGF("STAT %s\n", path_arg);
 
-    struct stat st;
+    const struct vfs *vfs  = NULL;
+    char             *path = resolve_path(path_arg, &vfs);
+    if (!vfs || !vfs->stat) {
+        free(path);
+        txfifo_write(ERR_PARAM);
+        return;
+    }
 
-    char *path   = resolve_path(path_arg);
-    int   result = sdcard_vfs.stat(path_arg, &st);
+    struct stat st;
+    int         result = vfs->stat(path_arg, &st);
     free(path);
 
     txfifo_write(result);
