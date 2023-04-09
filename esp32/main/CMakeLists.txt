@@ -37,6 +37,7 @@ idf_component_register(
         "../../fpga/top.bit"
         "../../assets/aquarius_s2.rom"
         "../../emulator/aquarius.rom"
+        "../../testdata/source/esp_terminal/build/esp_terminal.caq"
 
     EMBED_TXTFILES
         "connectivity/letsencrypt_root_certificate.pem"
