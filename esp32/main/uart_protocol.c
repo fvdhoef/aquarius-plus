@@ -10,7 +10,7 @@ static const char *TAG = "uart_protocol";
 #define RD_BUF_SIZE (BUF_SIZE)
 #define UART_NUM (UART_NUM_1)
 
-#if 1
+#if 0
 #    define DBGF(...) printf(__VA_ARGS__)
 #else
 #    define DBGF(...)
@@ -827,5 +827,6 @@ void uart_protocol_init(void) {
     state = calloc(sizeof(*state), 1);
     assert(state != NULL);
 
+    esp_vfs_init();
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 12, NULL);
 }

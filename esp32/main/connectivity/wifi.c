@@ -3,6 +3,7 @@
 #include <esp_wifi.h>
 #include <esp_event.h>
 #include <nvs_flash.h>
+#include <esp_sntp.h>
 
 static const char *TAG = "wifi";
 
@@ -41,4 +42,9 @@ void wifi_init(void) {
     // Start Wi-Fi station
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     ESP_ERROR_CHECK(esp_wifi_start());
+
+    sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    sntp_setservername(0, "pool.ntp.org");
+    // sntp_set_time_sync_notification_cb();
+    sntp_init();
 }
