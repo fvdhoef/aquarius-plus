@@ -6,6 +6,8 @@
 #include "ca_store.h"
 #include "wifi.h"
 #include "fileserver.h"
+#include "aq_keyb.h"
+#include "tcpserver.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -44,10 +46,13 @@ static void init(void) {
     // Wi-Fi init
     wifi_init();
 
+    keyboard_init();
+
     sdcard_init();
     usbhost_init();
     uart_protocol_init();
     fileserver_init();
+    tcpserver_init();
     fpga_init();
 }
 

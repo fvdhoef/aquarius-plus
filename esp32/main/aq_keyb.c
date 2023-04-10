@@ -6,9 +6,6 @@
 #include <esp_system.h>
 #include "usbhost.h"
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
 enum {
     NUM_LOCK    = (1 << 0),
     CAPS_LOCK   = (1 << 1),
@@ -16,6 +13,8 @@ enum {
 };
 
 static const char *TAG = "keyboard";
+
+static SemaphoreHandle_t mutex;
 
 static uint8_t keyb_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static uint8_t handctrl1      = 0xFF;
@@ -93,6 +92,8 @@ static void handcontroller(unsigned scancode, bool keydown) {
 }
 
 void keyboard_scancode(unsigned scancode, bool keydown) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+
     static uint8_t led_status     = 0;
     uint8_t        new_led_status = led_status;
 
@@ -370,9 +371,13 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         led_status = new_led_status;
         keyboard_set_leds(led_status);
     }
+
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void keyboard_update_matrix(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+
     static uint8_t prev_matrix[8];
     if (memcmp(prev_matrix, keyb_matrix, 8) != 0) {
         fpga_update_keyb_matrix(keyb_matrix);
@@ -386,4 +391,10 @@ void keyboard_update_matrix(void) {
         prev_handctrl1 = handctrl1;
         prev_handctrl2 = handctrl2;
     }
+
+    xSemaphoreGiveRecursive(mutex);
+}
+
+void keyboard_init(void) {
+    mutex = xSemaphoreCreateRecursiveMutex();
 }
