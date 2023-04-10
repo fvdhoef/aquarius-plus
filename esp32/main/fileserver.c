@@ -44,15 +44,16 @@ esp_err_t handler_options(httpd_req_t *req) {
         req, "Allow",
         "OPTIONS, "  // Done
         "PROPFIND, " // Done
-        "PROPPATCH, "
-        "MKCOL, "
-        "GET, " // Done
-        "HEAD, "
+        // "PROPPATCH, "
+        "MKCOL, " // Done
+        "GET, "   // Done
+        // "HEAD, "
         "POST, "
         "DELETE, " // Done
-        "PUT, "
-        "COPY, "
-        "MOVE");
+        "PUT, "    // Done
+        "COPY, "   // Done
+        "MOVE"     // Done
+    );
     httpd_resp_set_status(req, HTTPD_204);
     httpd_resp_send(req, NULL, 0);
     return ESP_OK;
@@ -112,7 +113,7 @@ esp_err_t handler_propfind(httpd_req_t *req) {
     get_path_from_uri(uripath, path_size, req->uri);
     snprintf(path, path_size, "%s%s", MOUNT_POINT, uripath);
 
-    ESP_LOGI(TAG, "PROPFIND: %s", path);
+    // ESP_LOGI(TAG, "PROPFIND: %s", path);
 
     httpd_resp_set_hdr(req, "DAV", "1");
 
@@ -186,8 +187,7 @@ esp_err_t handler_delete(httpd_req_t *req) {
         httpd_resp_set_status(req, HTTPD_204);
         httpd_resp_send(req, NULL, 0);
     } else if (errno == ENOENT) {
-        httpd_resp_set_status(req, HTTPD_404);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send_404(req);
     } else {
         goto error;
     }
@@ -215,12 +215,11 @@ esp_err_t handler_get(httpd_req_t *req) {
     get_path_from_uri(tmp, tmp_size, req->uri);
     snprintf(path, path_size, "%s%s", MOUNT_POINT, tmp);
 
-    printf("GET %s\n", path);
+    // printf("GET %s\n", path);
 
     FILE *f = fopen(path, "rb");
     if (!f) {
-        httpd_resp_set_status(req, HTTPD_404);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send_404(req);
     } else {
         httpd_resp_set_type(req, "application/octet-stream");
         while (1) {
@@ -256,7 +255,7 @@ esp_err_t handler_put(httpd_req_t *req) {
     get_path_from_uri(tmp, tmp_size, req->uri);
     snprintf(path, path_size, "%s%s", MOUNT_POINT, tmp);
 
-    printf("PUT %s\n", path);
+    // printf("PUT %s\n", path);
 
     FILE *f = fopen(path, "wb");
     if (!f)
@@ -330,20 +329,18 @@ esp_err_t handler_move(httpd_req_t *req) {
 
     char *p = strcasestr(tmp, host);
     if (p == NULL || p - tmp > 8) {
-        httpd_resp_set_status(req, HTTPD_404);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send_404(req);
         goto done;
     }
     p += strlen(host);
 
     snprintf(path2, path_size, "%s%s", MOUNT_POINT, p);
-    printf("MOVE %s to %s\n", path, path2);
+    // printf("MOVE %s to %s\n", path, path2);
     if (rename(path, path2) == 0) {
         httpd_resp_set_status(req, HTTPD_204);
         httpd_resp_send(req, NULL, 0);
     } else {
-        httpd_resp_set_status(req, HTTPD_404);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send_404(req);
     }
 
 done:
@@ -357,12 +354,109 @@ error:
     goto done;
 }
 
-esp_err_t download_get_handler(httpd_req_t *req) {
-    ESP_LOGI(TAG, "method: %d  uri: %s  content_len: %u", req->method, req->uri, req->content_len);
+esp_err_t handler_mkcol(httpd_req_t *req) {
+    // Allocate buffers
+    const size_t path_size = 512;
+    char        *uripath   = malloc(path_size);
+    char        *path      = malloc(path_size);
+    if (!uripath || !path)
+        goto error;
 
+    // Get path
+    get_path_from_uri(uripath, path_size, req->uri);
+    snprintf(path, path_size, "%s%s", MOUNT_POINT, uripath);
+
+    // Unlink file
+    if (mkdir(path, 0775) == 0) {
+        httpd_resp_set_status(req, HTTPD_204);
+        httpd_resp_send(req, NULL, 0);
+    } else {
+        goto error;
+    }
+
+done:
+    free(uripath);
+    free(path);
+    return ESP_OK;
+
+error:
     httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Internal server error.");
+    goto done;
+}
 
-    return ESP_FAIL;
+esp_err_t handler_copy(httpd_req_t *req) {
+    FILE *f  = NULL;
+    FILE *f2 = NULL;
+
+    // Allocate buffers
+    const size_t path_size = 512;
+    const size_t tmp_size  = 16384;
+    char        *path      = malloc(path_size);
+    char        *path2     = malloc(path_size);
+    char        *tmp       = malloc(tmp_size);
+    if (!path || !path2 || !tmp)
+        goto error;
+
+    // Get path
+    get_path_from_uri(tmp, tmp_size, req->uri);
+    snprintf(path, path_size, "%s%s", MOUNT_POINT, tmp);
+
+    // Get destination path from request header
+    if (httpd_req_get_hdr_value_str(req, "Destination", tmp, tmp_size) != ESP_OK)
+        goto error;
+
+    char host[64];
+    if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
+        goto error;
+
+    char *p = strcasestr(tmp, host);
+    if (p == NULL || p - tmp > 8) {
+        httpd_resp_send_404(req);
+        goto done;
+    }
+    p += strlen(host);
+
+    snprintf(path2, path_size, "%s%s", MOUNT_POINT, p);
+    // printf("COPY %s to %s\n", path, path2);
+
+    if ((f = fopen(path, "rb")) == NULL) {
+        httpd_resp_send_404(req);
+        goto done;
+    }
+    if ((f2 = fopen(path2, "wb")) == NULL) {
+        goto error;
+    }
+
+    while (1) {
+        size_t size = fread(tmp, 1, tmp_size, f);
+        if (size == 0)
+            break;
+
+        if (fwrite(tmp, 1, size, f2) != size) {
+            fclose(f2);
+            f2 = NULL;
+            unlink(path2);
+            goto error;
+        }
+    }
+
+    httpd_resp_set_status(req, HTTPD_204);
+    httpd_resp_send(req, NULL, 0);
+
+done:
+    if (f != NULL)
+        fclose(f);
+    if (f2 != NULL)
+        fclose(f2);
+
+    free(path);
+    free(path2);
+    free(tmp);
+    return ESP_OK;
+
+error:
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Internal server error.");
+    goto done;
 }
 
 void fileserver_init(void) {
@@ -388,6 +482,8 @@ void fileserver_init(void) {
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_DELETE, .handler = handler_delete});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_GET, .handler = handler_get});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PUT, .handler = handler_put});
+    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_COPY, .handler = handler_copy});
+    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_MKCOL, .handler = handler_mkcol});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_MOVE, .handler = handler_move});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_OPTIONS, .handler = handler_options});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PROPFIND, .handler = handler_propfind});
