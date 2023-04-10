@@ -10,7 +10,8 @@ idf_component_register(
         "uart_protocol.c"
         "direnum.c"
         "vfs.c"
-        "esp_vfs.c"
+        "vfs_esp.c"
+        "fileserver.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
 
@@ -28,6 +29,7 @@ idf_component_register(
         "nvs_flash"
         "esp_wifi"
         "esp_http_client"
+        "esp_http_server"
         "json"
         "app_update"
         "usb"

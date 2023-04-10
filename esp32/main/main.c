@@ -5,6 +5,7 @@
 #include "uart_protocol.h"
 #include "ca_store.h"
 #include "wifi.h"
+#include "fileserver.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -46,6 +47,7 @@ static void init(void) {
     sdcard_init();
     usbhost_init();
     uart_protocol_init();
+    fileserver_init();
     fpga_init();
 }
 

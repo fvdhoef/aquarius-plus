@@ -3,6 +3,6 @@
 #include "common.h"
 #include "vfs.h"
 
-extern struct vfs esp_vfs;
+extern struct vfs vfs_esp;
 
-void esp_vfs_init(void);
+void vfs_esp_init(void);

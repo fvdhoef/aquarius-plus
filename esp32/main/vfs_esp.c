@@ -1,4 +1,4 @@
-#include "esp_vfs.h"
+#include "vfs_esp.h"
 #include "wifi.h"
 #include <freertos/stream_buffer.h>
 #include <esp_ota_ops.h>
@@ -310,14 +310,14 @@ static void console_task(void *pvParameters) {
     }
 }
 
-void esp_vfs_init(void) {
+void vfs_esp_init(void) {
     tx_buffer = xStreamBufferCreate(256, 1);
     rx_buffer = xStreamBufferCreate(256, 1);
 
     xTaskCreate(console_task, "console", 8192, NULL, 12, NULL);
 }
 
-struct vfs esp_vfs = {
+struct vfs vfs_esp = {
     .open  = esp_open,
     .close = esp_close,
     .read  = esp_read,

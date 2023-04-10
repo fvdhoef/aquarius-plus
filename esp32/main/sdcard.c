@@ -242,7 +242,6 @@ static int sd_closedir(int dd) {
 }
 
 static int sd_readdir(int dd, struct direnum_ent *de) {
-    printf("sd_readdir(%d)\n", dd);
     if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
         return ERR_PARAM;
     dd -= MAX_FDS;

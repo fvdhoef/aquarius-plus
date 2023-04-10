@@ -3,7 +3,7 @@
 #include "direnum.h"
 #include "sdcard.h"
 #include "vfs.h"
-#include "esp_vfs.h"
+#include "vfs_esp.h"
 
 static const char *TAG = "uart_protocol";
 #define BUF_SIZE (1024)
@@ -149,7 +149,7 @@ static char *resolve_path(const char *path, const struct vfs **vfs) {
 
     *vfs = &sdcard_vfs;
     if (strncasecmp(result, "esp:", 4) == 0) {
-        *vfs = &esp_vfs;
+        *vfs = &vfs_esp;
     }
     return result;
 }
@@ -827,6 +827,6 @@ void uart_protocol_init(void) {
     state = calloc(sizeof(*state), 1);
     assert(state != NULL);
 
-    esp_vfs_init();
+    vfs_esp_init();
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 12, NULL);
 }
