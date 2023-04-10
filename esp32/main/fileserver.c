@@ -274,33 +274,85 @@ static esp_err_t handler_get(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
+    char        *uripath   = malloc(path_size);
     char        *path      = malloc(path_size);
     char        *tmp       = malloc(tmp_size);
-    if (!path || !tmp)
+    if (!uripath || !path || !tmp)
         goto error;
 
     // Get path
     get_path_from_uri(tmp, tmp_size, req->uri);
     snprintf(path, path_size, "%s%s", MOUNT_POINT, tmp);
 
-    // printf("GET %s\n", path);
-
-    FILE *f = fopen(path, "rb");
-    if (!f) {
+    struct stat st;
+    int         result = stat(path, &st);
+    if (result < 0) {
         httpd_resp_send_404(req);
-    } else {
-        httpd_resp_set_type(req, "application/octet-stream");
-        while (1) {
-            size_t size = fread(tmp, 1, tmp_size, f);
-            httpd_resp_send_chunk(req, (const char *)tmp, size);
-            if (size == 0) {
-                break;
+        goto done;
+    }
+
+    if (S_ISDIR(st.st_mode)) {
+        httpd_resp_set_type(req, "text/html; charset=utf-8");
+
+        httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
+        httpd_resp_sendstr_chunk(
+            req,
+            "<table class=\"fixed\" border=\"1\">"
+            "<thead><tr><th>Name</th><th align=\"right\">Size (Bytes)</th></tr></thead>"
+            "<tbody>");
+
+        DIR *dir = opendir(path);
+        if (dir != NULL) {
+            // printf("Host: %s\n", host);
+            while (1) {
+                struct dirent *de = readdir(dir);
+                if (de == NULL)
+                    break;
+
+                snprintf(tmp, tmp_size, "%s/%s", path, de->d_name);
+                int result = stat(tmp, &st);
+                if (result < 0) {
+                    continue;
+                }
+
+                char *encoded = urlencode(de->d_name);
+                snprintf(tmp, tmp_size, "<tr><td><a href=\"%s%s\">%s</href></td>", req->uri, encoded, de->d_name);
+                free(encoded);
+                httpd_resp_sendstr_chunk(req, tmp);
+
+                if (S_ISDIR(st.st_mode)) {
+                    snprintf(tmp, tmp_size, "<td align=\"right\">Directory</td></tr>");
+                } else {
+                    snprintf(tmp, tmp_size, "<td align=\"right\">%lu</td></tr>", st.st_size);
+                }
+                httpd_resp_sendstr_chunk(req, tmp);
             }
+            closedir(dir);
         }
-        fclose(f);
+
+        httpd_resp_sendstr_chunk(req, "</tbody></table>");
+        httpd_resp_sendstr_chunk(req, "</body></html>");
+        httpd_resp_sendstr_chunk(req, NULL);
+
+    } else {
+        FILE *f = fopen(path, "rb");
+        if (!f) {
+            httpd_resp_send_404(req);
+        } else {
+            httpd_resp_set_type(req, "application/octet-stream");
+            while (1) {
+                size_t size = fread(tmp, 1, tmp_size, f);
+                httpd_resp_send_chunk(req, (const char *)tmp, size);
+                if (size == 0) {
+                    break;
+                }
+            }
+            fclose(f);
+        }
     }
 
 done:
+    free(uripath);
     free(path);
     free(tmp);
     return ESP_OK;
@@ -540,11 +592,7 @@ void fileserver_init(void) {
 
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-
-    /* Use the URI wildcard matching function in order to
-     * allow the same handler to respond to multiple different
-     * target URIs which match the wildcard scheme */
-    config.uri_match_fn = httpd_uri_match_wildcard;
+    config.uri_match_fn   = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "Starting HTTP Server on port: '%d'", config.server_port);
     if (httpd_start(&server, &config) != ESP_OK) {
@@ -552,11 +600,6 @@ void fileserver_init(void) {
         return;
     }
 
-    /* URI handler for getting uploaded files */
-    // {
-    //     httpd_uri_t file_download = {.uri = "/*", .method = HTTP_GET, .handler = download_get_handler};
-    //     httpd_register_uri_handler(server, &file_download);
-    // }
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_DELETE, .handler = handler_delete});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_GET, .handler = handler_get});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PUT, .handler = handler_put});
