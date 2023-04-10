@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include "sdcard.h"
 #include <errno.h>
+#include <mdns.h>
 
 // #include <esp_vfs.h>
 
@@ -13,6 +14,64 @@ static const char *TAG = "fileserver";
 #ifndef MIN
 #    define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #endif
+
+static char *urlencode(const char *s) {
+    size_t len    = strlen(s);
+    char  *result = malloc(3 * len + 1);
+    if (result == NULL) {
+        return NULL;
+    }
+
+    const char  hexlut[] = "0123456789ABCDEF";
+    const char *ps       = s;
+    char       *pd       = result;
+
+    while (*ps != '\0') {
+        char ch = *(ps++);
+
+        if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') ||
+            (ch == '_' || ch == '-' || ch == '.' || ch == '/')) {
+            *(pd++) = ch;
+        } else if (ch == ' ') {
+            *(pd++) = '+';
+        } else {
+            *(pd++) = '%';
+            *(pd++) = hexlut[ch >> 4];
+            *(pd++) = hexlut[ch & 15];
+        }
+    }
+    *(pd++) = 0;
+    return result;
+}
+
+static void urldecode(char *s) {
+    char *ps = s;
+    char *pd = s;
+
+    while (*ps != '\0') {
+        char ch = *(ps++);
+
+        if (ch == '%') {
+            ch = 0;
+            for (int i = 0; i < 2; i++) {
+                uint8_t tmp = *(ps++);
+                if (tmp >= '0' && tmp <= '9')
+                    tmp -= '0';
+                else if (tmp >= 'a' && tmp <= 'z')
+                    tmp = tmp - 'a' + 10;
+                else if (tmp >= 'A' && tmp <= 'Z')
+                    tmp = tmp - 'A' + 10;
+                else
+                    goto done;
+
+                ch = (ch << 4) | tmp;
+            }
+        }
+        *(pd++) = ch;
+    }
+done:
+    *(pd++) = 0;
+}
 
 static const char *get_path_from_uri(char *dest, size_t destsize, const char *uri) {
     size_t pathlen = strlen(uri);
@@ -35,10 +94,13 @@ static const char *get_path_from_uri(char *dest, size_t destsize, const char *ur
     strlcpy(dest, uri, pathlen + 1);
 
     /* Return pointer to path, skipping the base */
+
+    urldecode(dest);
+
     return dest;
 }
 
-esp_err_t handler_options(httpd_req_t *req) {
+static esp_err_t handler_options(httpd_req_t *req) {
     httpd_resp_set_hdr(req, "DAV", "1");
     httpd_resp_set_hdr(
         req, "Allow",
@@ -85,7 +147,7 @@ static void propfind_st(httpd_req_t *req, const char *href_tag, struct stat *st)
     httpd_resp_sendstr_chunk(req, "</prop><status>HTTP/1.1 200 OK</status></propstat></response>");
 }
 
-esp_err_t handler_propfind(httpd_req_t *req) {
+static esp_err_t handler_propfind(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 1024;
@@ -130,7 +192,10 @@ esp_err_t handler_propfind(httpd_req_t *req) {
     httpd_resp_sendstr_chunk(req, "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
     httpd_resp_sendstr_chunk(req, "<multistatus xmlns=\"DAV:\">");
 
-    snprintf(tmp, tmp_size, "<href>http://%s%s</href>", host, uripath);
+    char *encoded = urlencode(uripath);
+    snprintf(tmp, tmp_size, "<href>http://%s%s</href>", host, encoded);
+    free(encoded);
+
     propfind_st(req, tmp, &st);
 
     if (S_ISDIR(st.st_mode) && depth[0] != '0') {
@@ -148,7 +213,10 @@ esp_err_t handler_propfind(httpd_req_t *req) {
                     continue;
                 }
 
-                snprintf(tmp, tmp_size, "<href>http://%s%s%s</href>", host, uripath, de->d_name);
+                char *encoded = urlencode(de->d_name);
+                snprintf(tmp, tmp_size, "<href>http://%s%s%s</href>", host, uripath, encoded);
+                free(encoded);
+
                 propfind_st(req, tmp, &st);
             }
             closedir(dir);
@@ -170,7 +238,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_delete(httpd_req_t *req) {
+static esp_err_t handler_delete(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     char        *uripath   = malloc(path_size);
@@ -202,7 +270,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_get(httpd_req_t *req) {
+static esp_err_t handler_get(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
@@ -242,7 +310,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_put(httpd_req_t *req) {
+static esp_err_t handler_put(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
@@ -305,7 +373,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_move(httpd_req_t *req) {
+static esp_err_t handler_move(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 1024;
@@ -333,6 +401,7 @@ esp_err_t handler_move(httpd_req_t *req) {
         goto done;
     }
     p += strlen(host);
+    urldecode(p);
 
     snprintf(path2, path_size, "%s%s", MOUNT_POINT, p);
     // printf("MOVE %s to %s\n", path, path2);
@@ -354,7 +423,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_mkcol(httpd_req_t *req) {
+static esp_err_t handler_mkcol(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
     char        *uripath   = malloc(path_size);
@@ -384,7 +453,7 @@ error:
     goto done;
 }
 
-esp_err_t handler_copy(httpd_req_t *req) {
+static esp_err_t handler_copy(httpd_req_t *req) {
     FILE *f  = NULL;
     FILE *f2 = NULL;
 
@@ -415,6 +484,7 @@ esp_err_t handler_copy(httpd_req_t *req) {
         goto done;
     }
     p += strlen(host);
+    urldecode(p);
 
     snprintf(path2, path_size, "%s%s", MOUNT_POINT, p);
     // printf("COPY %s to %s\n", path, path2);
@@ -460,6 +530,14 @@ error:
 }
 
 void fileserver_init(void) {
+    esp_err_t err = mdns_init();
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "MDNS Init failed: %d\n", err);
+    } else {
+        mdns_hostname_set(CONFIG_LWIP_LOCAL_HOSTNAME);
+        mdns_instance_name_set("Aquarius+");
+    }
+
     httpd_handle_t server = NULL;
     httpd_config_t config = HTTPD_DEFAULT_CONFIG();
 
