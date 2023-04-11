@@ -183,7 +183,7 @@ static void wifi_status(void) {
     if (esp_wifi_sta_get_ap_info(&war) == ESP_OK) {
         cprintf("SSID    :%s\n", war.ssid);
         cprintf("Channel :%u\n", war.primary);
-        cprintf("RSSI    :%d\n", war.rssi);
+        cprintf("RSSI    :%d dBm\n", war.rssi);
     }
 
     const char *hostname;

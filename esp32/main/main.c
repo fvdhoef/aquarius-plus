@@ -59,6 +59,21 @@ static void init(void) {
 void app_main(void) {
     init();
 
+#if 0
+    while (1) {
+        char *buf = malloc(16384);
+        if (buf) {
+            vTaskList(buf);
+            printf(
+                "Name           State  Priority  Stack   Num     Core\n"
+                "----------------------------------------------------\n"
+                "%s\n",
+                buf);
+            free(buf);
+        }
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+#endif
     // while (1) {
     //     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
     //     vTaskDelay(pdMS_TO_TICKS(2000));
