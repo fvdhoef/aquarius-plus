@@ -2,7 +2,9 @@
 #include "wifi.h"
 #include <freertos/stream_buffer.h>
 #include <esp_ota_ops.h>
+#include <esp_app_format.h>
 #include <esp_wifi.h>
+#include "sdcard.h"
 
 extern const uint8_t terminal_caq_start[] asm("_binary_esp_terminal_caq_start");
 extern const uint8_t terminal_caq_end[] asm("_binary_esp_terminal_caq_end");
@@ -165,11 +167,12 @@ static void creadline(char *buf, size_t max_len, bool is_password) {
 }
 
 static void show_help(void) {
-    cprintf("help     | this help\n");
-    cprintf("wifi     | show WiFi status\n");
-    cprintf("wifi set | set WiFi network\n");
-    cprintf("date     | show current time/date\n");
-    cprintf("ctrl-c   | exit to BASIC\n");
+    cprintf("help    |this help\n");
+    cprintf("wifi    |show WiFi status\n");
+    cprintf("wifi set|set WiFi network\n");
+    cprintf("date    |show current time/date\n");
+    cprintf("update  |system update from SD card\n");
+    cprintf("ctrl-c  |exit to BASIC\n");
 }
 
 static void wifi_status(void) {
@@ -294,7 +297,7 @@ static void wifi_set(void) {
     ESP_ERROR_CHECK(esp_wifi_start());
 }
 
-void show_date(void) {
+static void show_date(void) {
     time_t    now;
     struct tm timeinfo;
     time(&now);
@@ -303,6 +306,124 @@ void show_date(void) {
     char strftime_buf[64];
     strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S (%Z)", &timeinfo);
     cprintf("%s\n", strftime_buf);
+}
+
+#define UPDATEFILE_NAME "aquarius-plus.bin"
+
+static void system_update(void) {
+    esp_ota_handle_t ota_handle  = 0;
+    FILE            *f           = NULL;
+    const size_t     tmpbuf_size = 65536;
+    void            *tmpbuf      = malloc(tmpbuf_size);
+    bool             success     = false;
+    char             str[4];
+
+    if (tmpbuf == NULL) {
+        cprintf("Out of memory\n");
+        goto done;
+    }
+
+    if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == NULL) {
+        cprintf("File not found (%s)\n", UPDATEFILE_NAME);
+        goto done;
+    }
+
+    fseek(f, 0, SEEK_END);
+    size_t update_size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    cprintf("Update file size: %u\n", update_size);
+
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_app_desc_t         running_app_info;
+    if (esp_ota_get_partition_description(running, &running_app_info) != ESP_OK) {
+        goto done;
+    }
+
+    esp_app_desc_t app_info;
+
+    const int app_desc_offset = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
+    fseek(f, app_desc_offset, SEEK_SET);
+    if (fread(&app_info, sizeof(app_info), 1, f) != 1) {
+        goto done;
+    }
+    if (app_info.magic_word != ESP_APP_DESC_MAGIC_WORD) {
+        ESP_LOGE("update", "Incorrect app descriptor magic");
+        cprintf("Invalid update file\n");
+        goto done;
+    }
+
+    if (strcmp(running_app_info.project_name, app_info.project_name) != 0) {
+        ESP_LOGE("update", "Project name does not match");
+        cprintf("Invalid update file\n");
+        goto done;
+    }
+
+    cprintf("Running:%s\n", running_app_info.version);
+    cprintf("Update :%s\nUpdate :%s %s\n", app_info.version, app_info.date, app_info.time);
+    cprintf("Do you want to continue?\nType yes to confirm\n");
+    creadline(str, sizeof(str), false);
+    if (strcmp(str, "yes") != 0) {
+        cprintf("Aborting update\n");
+        success = true;
+        goto done;
+    }
+
+    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
+    if (update_partition == NULL) {
+        cprintf("Error: can't find update partition\n");
+        return;
+    }
+
+    cprintf("Initiating update.\n");
+    esp_err_t err = esp_ota_begin(update_partition, update_size, &ota_handle);
+    if (err != ESP_OK) {
+        ESP_LOGE("update", "esp_ota_begin: %s", esp_err_to_name(err));
+        goto done;
+    }
+
+    cprintf("Writing:");
+    fseek(f, 0, SEEK_SET);
+
+    while (1) {
+        size_t size = fread(tmpbuf, 1, tmpbuf_size, f);
+        if (size == 0)
+            break;
+
+        cprintf(".");
+        if ((err = esp_ota_write(ota_handle, tmpbuf, size)) != ESP_OK) {
+            ESP_LOGE("update", "esp_ota_write: %s", esp_err_to_name(err));
+            goto done;
+        }
+    }
+
+    err        = esp_ota_end(ota_handle);
+    ota_handle = 0;
+    if (err != ESP_OK) {
+        ESP_LOGE("update", "esp_ota_end: %s", esp_err_to_name(err));
+        goto done;
+    }
+
+    err = esp_ota_set_boot_partition(update_partition);
+    if (err != ESP_OK) {
+        ESP_LOGE("update", "esp_ota_set_boot_partition: %s", esp_err_to_name(err));
+        if (err == ESP_ERR_OTA_VALIDATE_FAILED) {
+            cprintf("Invalid update\n");
+        }
+        goto done;
+    }
+
+    success = true;
+    cprintf("Done.\nPress enter to reboot.\n");
+    creadline(str, sizeof(str), false);
+    esp_restart();
+
+done:
+    fclose(f);
+
+    if (!success)
+        cprintf("Error during update, aborting.\n");
+    if (ota_handle)
+        esp_ota_abort(ota_handle);
 }
 
 static void console_task(void *pvParameters) {
@@ -330,6 +451,8 @@ static void console_task(void *pvParameters) {
             wifi_status();
         else if (strcasecmp(line, "date") == 0)
             show_date();
+        else if (strcasecmp(line, "update") == 0)
+            system_update();
         else if (line[0])
             cprintf("Unknown command\n");
 
