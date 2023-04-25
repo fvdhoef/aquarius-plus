@@ -6,3 +6,4 @@
 #define WIFI_MAX_RSSI (-55)
 
 void wifi_init(void);
+bool wifi_is_connected(void);

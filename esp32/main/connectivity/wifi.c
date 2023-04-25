@@ -49,3 +49,7 @@ void wifi_init(void) {
     // sntp_set_time_sync_notification_cb();
     sntp_init();
 }
+
+bool wifi_is_connected(void) {
+    return connected;
+}

@@ -179,36 +179,40 @@ static void wifi_status(void) {
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     cprintf("MAC     :%02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    wifi_ap_record_t war;
-    if (esp_wifi_sta_get_ap_info(&war) == ESP_OK) {
-        cprintf("SSID    :%s\n", war.ssid);
-        cprintf("Channel :%u\n", war.primary);
-        cprintf("RSSI    :%d dBm\n", war.rssi);
-    }
+    if (!wifi_is_connected()) {
+        cprintf("Disconnected from WiFi.\n");
+    } else {
+        wifi_ap_record_t war;
+        if (esp_wifi_sta_get_ap_info(&war) == ESP_OK) {
+            cprintf("SSID    :%s\n", war.ssid);
+            cprintf("Channel :%u\n", war.primary);
+            cprintf("RSSI    :%d dBm\n", war.rssi);
+        }
 
-    const char *hostname;
-    if (esp_netif_get_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &hostname) == ESP_OK) {
-        if (hostname && *hostname)
-            cprintf("Hostname:%s\n", hostname);
-    }
-    esp_netif_ip_info_t ip_info;
-    if (esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info) == ESP_OK) {
-        cprintf("IP      :" IPSTR "\n", IP2STR(&ip_info.ip));
-        cprintf("Netmask :" IPSTR "\n", IP2STR(&ip_info.netmask));
-        cprintf("Gateway :" IPSTR "\n", IP2STR(&ip_info.gw));
-    }
+        const char *hostname;
+        if (esp_netif_get_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &hostname) == ESP_OK) {
+            if (hostname && *hostname)
+                cprintf("Hostname:%s\n", hostname);
+        }
+        esp_netif_ip_info_t ip_info;
+        if (esp_netif_get_ip_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &ip_info) == ESP_OK) {
+            cprintf("IP      :" IPSTR "\n", IP2STR(&ip_info.ip));
+            cprintf("Netmask :" IPSTR "\n", IP2STR(&ip_info.netmask));
+            cprintf("Gateway :" IPSTR "\n", IP2STR(&ip_info.gw));
+        }
 
-    esp_netif_dns_info_t dns_info;
-    if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_MAIN, &dns_info) == ESP_OK) {
-        cprintf("DNS     :" IPSTR "\n", IP2STR(&dns_info.ip.u_addr.ip4));
-    }
-    if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_BACKUP, &dns_info) == ESP_OK) {
-        if (dns_info.ip.u_addr.ip4.addr)
+        esp_netif_dns_info_t dns_info;
+        if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_MAIN, &dns_info) == ESP_OK) {
             cprintf("DNS     :" IPSTR "\n", IP2STR(&dns_info.ip.u_addr.ip4));
-    }
-    if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_FALLBACK, &dns_info) == ESP_OK) {
-        if (dns_info.ip.u_addr.ip4.addr)
-            cprintf("DNS     :" IPSTR "\n", IP2STR(&dns_info.ip.u_addr.ip4));
+        }
+        if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_BACKUP, &dns_info) == ESP_OK) {
+            if (dns_info.ip.u_addr.ip4.addr)
+                cprintf("DNS     :" IPSTR "\n", IP2STR(&dns_info.ip.u_addr.ip4));
+        }
+        if (esp_netif_get_dns_info(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), ESP_NETIF_DNS_FALLBACK, &dns_info) == ESP_OK) {
+            if (dns_info.ip.u_addr.ip4.addr)
+                cprintf("DNS     :" IPSTR "\n", IP2STR(&dns_info.ip.u_addr.ip4));
+        }
     }
 }
 
@@ -227,22 +231,22 @@ static void wifi_set(void) {
     }
     if (result != ESP_OK) {
         cprintf("Error during scan!\n");
+        return;
     }
-
     for (int i = 0; i < ap_count; i++) {
-        cprintf("%d) %s\n", i, ap_info[i].ssid);
+        cprintf("%d) %-23s (RSSI:%d)\n", i, ap_info[i].ssid, ap_info[i].rssi);
     }
 
     cprintf("Select network:");
 
-    char str[16];
+    char str[4];
     creadline(str, sizeof(str), false);
     if (new_session)
         return;
 
     char    *endp;
     unsigned idx = strtoul(str, &endp, 10);
-    if (*endp != '\0' || idx > ap_count) {
+    if (*str == '\0' || *endp != '\0' || idx > ap_count) {
         cprintf("Invalid entry, aborting.\n");
         return;
     }
