@@ -173,15 +173,14 @@ static void show_help(void) {
 }
 
 static void wifi_status(void) {
-    cprintf("WiFi status:\n");
+    bool connected = wifi_is_connected();
+    cprintf("WiFi status: %s\n", wifi_get_status_str());
 
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     cprintf("MAC     :%02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    if (!wifi_is_connected()) {
-        cprintf("Disconnected from WiFi.\n");
-    } else {
+    if (connected) {
         wifi_ap_record_t war;
         if (esp_wifi_sta_get_ap_info(&war) == ESP_OK) {
             cprintf("SSID    :%s\n", war.ssid);
@@ -223,6 +222,8 @@ static void wifi_set(void) {
 
     uint16_t         ap_count = MAX_SCAN_AP;
     wifi_ap_record_t ap_info[MAX_SCAN_AP];
+    unsigned         idxs[MAX_SCAN_AP];
+    unsigned         idxs_count = 0;
 
     esp_err_t result = esp_wifi_scan_start(NULL, true);
     if (result == ESP_OK) {
@@ -230,11 +231,34 @@ static void wifi_set(void) {
         result = esp_wifi_scan_get_ap_records(&ap_count, ap_info);
     }
     if (result != ESP_OK) {
+        ESP_LOGE("wifi", "Error during scan: %s", esp_err_to_name(result));
         cprintf("Error during scan!\n");
         return;
     }
+    if (ap_count == 0) {
+        cprintf("No APs found!\n");
+        return;
+    }
+
+    // Remove doubles using an indirect index table
     for (int i = 0; i < ap_count; i++) {
-        cprintf("%d) %-23s (RSSI:%d)\n", i, ap_info[i].ssid, ap_info[i].rssi);
+        bool is_new = true;
+
+        for (int j = 0; j < idxs_count; j++) {
+            if (strcmp((const char *)ap_info[i].ssid, (const char *)ap_info[idxs[j]].ssid) == 0) {
+                is_new = false;
+                break;
+            }
+        }
+
+        if (is_new) {
+            idxs[idxs_count++] = i;
+        }
+    }
+
+    for (int i = 0; i < idxs_count; i++) {
+        unsigned ap_idx = idxs[i];
+        cprintf("%d) %-23s (RSSI:%d)\n", i, ap_info[ap_idx].ssid, ap_info[ap_idx].rssi);
     }
 
     cprintf("Select network:");
@@ -246,10 +270,11 @@ static void wifi_set(void) {
 
     char    *endp;
     unsigned idx = strtoul(str, &endp, 10);
-    if (*str == '\0' || *endp != '\0' || idx > ap_count) {
+    if (*str == '\0' || *endp != '\0' || idx > idxs_count) {
         cprintf("Invalid entry, aborting.\n");
         return;
     }
+    idx = idxs[idx];
 
     cprintf("Selected:%s\n", ap_info[idx].ssid);
     char password[65] = {0};
