@@ -8,4 +8,4 @@ all:
 
 run: all
 	cp build/sdcc_test.caq ../../usb/
-	../../../build/aquarius_emu -u ../../usb -t '\nrun"sdcc_test.caq"\n'
+	../../../emulator/build/aquarius_emu -u ../../usb -t '\nrun"sdcc_test.caq"\n'

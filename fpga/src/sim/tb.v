@@ -8,7 +8,8 @@ module tb();
     end
 
     initial begin
-        #20000000 $finish;
+        // #20000000 $finish;
+        #200000 $finish;
     end
 
     // Generate approx. 14.31818MHz sysclk
@@ -318,23 +319,80 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
-        memwr(16'h3000, 8'h5A);
-        memwr(16'h3400, 8'h5A);
+        iowr(16'hE0, 8'd03);
+
+        iowr(16'hED, 8'd02);
+        iowr(16'hEF, 8'd03);
 
 
-        ay_write(4'h0, 8'd254);
-        ay_write(4'h8, 8'hF);
-        ay_write(4'h6, 8'h3E);
+        iowr(16'hF0, 8'd20);
 
-        ay_write(4'hB, 8'h04);
-        ay_write(4'hC, 8'h00);
-        ay_write(4'hD, 8'h0F);
+        memwr(16'h0F00, 8'h00);
+        memwr(16'h0F01, 8'h01);
+
+        memwr(16'h0F02, 8'h01);
+        memwr(16'h0F03, 8'h31);
+
+        memwr(16'h0F04, 8'h02);
+        memwr(16'h0F05, 8'h01);
+
+        memwr(16'h0F06, 8'h03);
+        memwr(16'h0F07, 8'h01);
+
+        for (integer i=0; i<256; i++) begin
+            memwr(16'h2000 + i, i);
+        end
+
+        // memwr(16'h2000, 8'h00);
+        // memwr(16'h2001, 8'h01);
+        // memwr(16'h2002, 8'h02);
+        // memwr(16'h2003, 8'h03);
+        // memwr(16'h2004, 8'h04);
+        // memwr(16'h2005, 8'h05);
+        // memwr(16'h2006, 8'h06);
+        // memwr(16'h2007, 8'h07);
+        // memwr(16'h2008, 8'h08);
+        // memwr(16'h2009, 8'h09);
+        // memwr(16'h200a, 8'h0a);
+        // memwr(16'h200b, 8'h0b);
+        // memwr(16'h200c, 8'h0c);
+        // memwr(16'h200d, 8'h0d);
+        // memwr(16'h200e, 8'h0e);
+        // memwr(16'h200f, 8'h0f);
+        // memwr(16'h2010, 8'h10);
+        // memwr(16'h2011, 8'h11);
+        // memwr(16'h2012, 8'h12);
+        // memwr(16'h2013, 8'h13);
+        // memwr(16'h2014, 8'h14);
+        // memwr(16'h2015, 8'h15);
+        // memwr(16'h2016, 8'h16);
+        // memwr(16'h2017, 8'h17);
+        // memwr(16'h2018, 8'h18);
+        // memwr(16'h2019, 8'h19);
+        // memwr(16'h201a, 8'h1a);
+        // memwr(16'h201b, 8'h1b);
+        // memwr(16'h201c, 8'h1c);
+        // memwr(16'h201d, 8'h1d);
+        // memwr(16'h201e, 8'h1e);
+        // memwr(16'h201f, 8'h1f);
+
+        // memwr(16'h3000, 8'h5A);
+        // memwr(16'h3400, 8'h5A);
 
 
-        iowr(16'hEA, 8'h00); iowr(16'hEB, 8'h11);
-        iowr(16'hEA, 8'h01); iowr(16'hEB, 8'h01);
-        iowr(16'hEA, 8'h02); iowr(16'hEB, 8'h11);
-        iowr(16'hEA, 8'h03); iowr(16'hEB, 8'h0F);
+        // ay_write(4'h0, 8'd254);
+        // ay_write(4'h8, 8'hF);
+        // ay_write(4'h6, 8'h3E);
+
+        // ay_write(4'hB, 8'h04);
+        // ay_write(4'hC, 8'h00);
+        // ay_write(4'hD, 8'h0F);
+
+
+        // iowr(16'hEA, 8'h00); iowr(16'hEB, 8'h11);
+        // iowr(16'hEA, 8'h01); iowr(16'hEB, 8'h01);
+        // iowr(16'hEA, 8'h02); iowr(16'hEB, 8'h11);
+        // iowr(16'hEA, 8'h03); iowr(16'hEB, 8'h0F);
 
 
         ////////

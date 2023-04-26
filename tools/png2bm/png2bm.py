@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
+import argparse
 import PIL.Image
 
-image = PIL.Image.open("middleearth_b_ntsc.png")
+parser = argparse.ArgumentParser(
+    description="Convert image file to Aq+ bitmap file"
+)
+parser.add_argument("input", help="Input file")
+parser.add_argument("output", help="Output file", type=argparse.FileType("wb"))
+args = parser.parse_args()
+
+image = PIL.Image.open(args.input)
 
 if image.width != 320 or image.height != 200:
     print("Image must be 320x200")
@@ -65,6 +73,5 @@ for line in range(200):
 bitmapram = bitmapram + palbytes
 bitmapram = bitmapram.ljust(8192, b"\x00")
 
-with open("image.bin", "wb") as f:
-    f.write(bitmapram)
-    f.write(colorram)
+args.output.write(bitmapram)
+args.output.write(colorram)

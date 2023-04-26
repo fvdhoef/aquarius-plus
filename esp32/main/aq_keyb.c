@@ -6,9 +6,6 @@
 #include <esp_system.h>
 #include "usbhost.h"
 
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-
 enum {
     NUM_LOCK    = (1 << 0),
     CAPS_LOCK   = (1 << 1),
@@ -17,7 +14,11 @@ enum {
 
 static const char *TAG = "keyboard";
 
+static SemaphoreHandle_t mutex;
+
 static uint8_t keyb_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t handctrl1      = 0xFF;
+static uint8_t handctrl2      = 0xFF;
 
 static inline void _aqkey_up(int key) {
     keyb_matrix[key / 6] |= (1 << (key % 6));
@@ -35,7 +36,64 @@ static inline void aqkey_down(int key, bool shift) {
     }
 }
 
+static void handcontroller(unsigned scancode, bool keydown) {
+    enum {
+        UP    = (1 << 0),
+        DOWN  = (1 << 1),
+        LEFT  = (1 << 2),
+        RIGHT = (1 << 3),
+        K1    = (1 << 4),
+        K2    = (1 << 5),
+        K3    = (1 << 6),
+        K4    = (1 << 7),
+        K5    = (1 << 8),
+        K6    = (1 << 9),
+    };
+
+    static int handctrl_pressed = 0;
+
+    switch (scancode) {
+        case SDL_SCANCODE_UP: handctrl_pressed = (keydown) ? (handctrl_pressed | UP) : (handctrl_pressed & ~UP); break;
+        case SDL_SCANCODE_DOWN: handctrl_pressed = (keydown) ? (handctrl_pressed | DOWN) : (handctrl_pressed & ~DOWN); break;
+        case SDL_SCANCODE_LEFT: handctrl_pressed = (keydown) ? (handctrl_pressed | LEFT) : (handctrl_pressed & ~LEFT); break;
+        case SDL_SCANCODE_RIGHT: handctrl_pressed = (keydown) ? (handctrl_pressed | RIGHT) : (handctrl_pressed & ~RIGHT); break;
+        case SDL_SCANCODE_F1: handctrl_pressed = (keydown) ? (handctrl_pressed | K1) : (handctrl_pressed & ~K1); break;
+        case SDL_SCANCODE_F2: handctrl_pressed = (keydown) ? (handctrl_pressed | K2) : (handctrl_pressed & ~K2); break;
+        case SDL_SCANCODE_F3: handctrl_pressed = (keydown) ? (handctrl_pressed | K3) : (handctrl_pressed & ~K3); break;
+        case SDL_SCANCODE_F4: handctrl_pressed = (keydown) ? (handctrl_pressed | K4) : (handctrl_pressed & ~K4); break;
+        case SDL_SCANCODE_F5: handctrl_pressed = (keydown) ? (handctrl_pressed | K5) : (handctrl_pressed & ~K5); break;
+        case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
+    }
+
+    handctrl1 = 0xFF;
+    switch (handctrl_pressed & 0xF) {
+        case LEFT: handctrl1 &= ~(1 << 3); break;
+        case UP | LEFT: handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+        case UP: handctrl1 &= ~(1 << 2); break;
+        case UP | RIGHT: handctrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+        case RIGHT: handctrl1 &= ~(1 << 1); break;
+        case DOWN | RIGHT: handctrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+        case DOWN: handctrl1 &= ~(1 << 0); break;
+        case DOWN | LEFT: handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+        default: break;
+    }
+    if (handctrl_pressed & K1)
+        handctrl1 &= ~(1 << 6);
+    if (handctrl_pressed & K2)
+        handctrl1 &= ~((1 << 7) | (1 << 2));
+    if (handctrl_pressed & K3)
+        handctrl1 &= ~((1 << 7) | (1 << 5));
+    if (handctrl_pressed & K4)
+        handctrl1 &= ~(1 << 5);
+    if (handctrl_pressed & K5)
+        handctrl1 &= ~((1 << 7) | (1 << 1));
+    if (handctrl_pressed & K6)
+        handctrl1 &= ~((1 << 7) | (1 << 0));
+}
+
 void keyboard_scancode(unsigned scancode, bool keydown) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+
     static uint8_t led_status     = 0;
     uint8_t        new_led_status = led_status;
 
@@ -46,7 +104,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     // }
 
     // Hand controller emulation
-    // handcontroller(scancode, keydown);
+    handcontroller(scancode, keydown);
 
     if (keydown && scancode == SDL_SCANCODE_CAPSLOCK) {
         new_led_status ^= CAPS_LOCK;
@@ -313,16 +371,30 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         led_status = new_led_status;
         keyboard_set_leds(led_status);
     }
+
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void keyboard_update_matrix(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+
     static uint8_t prev_matrix[8];
-    if (memcmp(prev_matrix, keyb_matrix, 8) == 0) {
-        return;
+    if (memcmp(prev_matrix, keyb_matrix, 8) != 0) {
+        fpga_update_keyb_matrix(keyb_matrix);
+        memcpy(prev_matrix, keyb_matrix, 8);
     }
 
-    // ESP_LOG_BUFFER_HEX(TAG, keyb_matrix, 8);
-    fpga_update_keyb_matrix(keyb_matrix);
+    static uint8_t prev_handctrl1;
+    static uint8_t prev_handctrl2;
+    if (prev_handctrl1 != handctrl1 || prev_handctrl2 != handctrl2) {
+        fpga_update_handctrl(handctrl1, handctrl2);
+        prev_handctrl1 = handctrl1;
+        prev_handctrl2 = handctrl2;
+    }
 
-    memcpy(prev_matrix, keyb_matrix, 8);
+    xSemaphoreGiveRecursive(mutex);
+}
+
+void keyboard_init(void) {
+    mutex = xSemaphoreCreateRecursiveMutex();
 }

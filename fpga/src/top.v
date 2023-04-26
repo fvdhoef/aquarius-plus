@@ -92,7 +92,6 @@ module top(
     reg  [7:0] reg_bank2_r;             // IO $F2
     reg  [7:0] reg_bank3_r;             // IO $F3
     reg        reg_cpm_remap_r;         // IO $FD:W
-    reg  [7:0] reg_scramble_value_r;    // IO $FF:W
 
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
@@ -110,6 +109,8 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
+    reg sysctrl_dis_regs_r;
+    reg sysctrl_dis_psgs_r;
 
     // Select banking register based on upper address bits
     reg [7:0] reg_bank;
@@ -145,16 +146,16 @@ module top(
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
     // IO space decoding
-    wire sel_io_video             = !ebus_iorq_n && ebus_a[7:4] == 4'hE;
-    wire sel_io_bank0             = !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
-    wire sel_io_bank1             = !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
-    wire sel_io_bank2             = !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
-    wire sel_io_bank3             = !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
-    wire sel_io_espctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
-    wire sel_io_espdata           = !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
-    wire sel_io_ay8910            = !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
-    wire sel_io_ay8910_2          = !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
-    wire sel_sysctrl              = !ebus_iorq_n && ebus_a[7:0] == 8'hFB;
+    wire sel_io_video             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:4] == 4'hE;
+    wire sel_io_bank0             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
+    wire sel_io_bank1             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
+    wire sel_io_bank2             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
+    wire sel_io_bank3             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
+    wire sel_io_espctrl           = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
+    wire sel_io_espdata           = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
+    wire sel_io_ay8910            = !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
+    wire sel_io_ay8910_2          = !sysctrl_dis_regs_r && !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
+    wire sel_io_sysctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hFB;
     wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
     wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
     wire sel_io_printer           = !ebus_iorq_n && ebus_a[7:0] == 8'hFE;
@@ -185,26 +186,29 @@ module top(
         if (sel_mem_vram)             rddata <= rddata_vram;
         if (sel_mem_chram)            rddata <= rddata_chram;
 
-        if (sel_io_video)             rddata <= rddata_io_video;        // IO $E0-$EF
-        if (sel_io_bank0)             rddata <= reg_bank0_r;            // IO $F0
-        if (sel_io_bank1)             rddata <= reg_bank1_r;            // IO $F1
-        if (sel_io_bank2)             rddata <= reg_bank2_r;            // IO $F2
-        if (sel_io_bank3)             rddata <= reg_bank3_r;            // IO $F3
-        if (sel_io_espctrl)           rddata <= rddata_espctrl;         // IO $F4
-        if (sel_io_espdata)           rddata <= rddata_espdata;         // IO $F5
-        if (sel_io_ay8910)            rddata <= rddata_ay8910;          // IO $F6/F7
-        if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;        // IO $F8/F9
-        if (sel_io_cassette)          rddata <= {7'b0, cassette_in};    // IO $FC
-        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};    // IO $FD
-        if (sel_io_printer)           rddata <= {7'b0, printer_in};     // IO $FE
-        if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;        // IO $FF
+        if (sel_io_video)             rddata <= rddata_io_video;                                // IO $E0-$EF
+        if (sel_io_bank0)             rddata <= reg_bank0_r;                                    // IO $F0
+        if (sel_io_bank1)             rddata <= reg_bank1_r;                                    // IO $F1
+        if (sel_io_bank2)             rddata <= reg_bank2_r;                                    // IO $F2
+        if (sel_io_bank3)             rddata <= reg_bank3_r;                                    // IO $F3
+        if (sel_io_espctrl)           rddata <= rddata_espctrl;                                 // IO $F4
+        if (sel_io_espdata)           rddata <= rddata_espdata;                                 // IO $F5
+        if (sel_io_ay8910)            rddata <= rddata_ay8910;                                  // IO $F6/F7
+        if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;                                // IO $F8/F9
+        if (sel_io_sysctrl)           rddata <= {6'b0, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
+        if (sel_io_cassette)          rddata <= {7'b0, cassette_in};                            // IO $FC
+        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};                            // IO $FD
+        if (sel_io_printer)           rddata <= {7'b0, printer_in};                             // IO $FE
+        if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;                                // IO $FF
     end
 
     wire ebus_d_enable = !ebus_rd_n && sel_internal;
 
     assign ebus_d = (spibm_en && spibm_wrdata_en) ? spibm_wrdata : (ebus_d_enable ? rddata : 8'bZ);
 
-    assign ebus_int_n       = 1'bZ;
+    wire video_irq;
+
+    assign ebus_int_n       = video_irq ? 1'b0 : 1'bZ;
     assign ebus_wait_n      = 1'bZ;
     assign ebus_cart_d_oe_n = 1'b1;
     assign ebus_cart_d      = 8'bZ;
@@ -218,29 +222,22 @@ module top(
             reg_bank1_r          <= {2'b00, 6'd33};
             reg_bank2_r          <= {2'b00, 6'd34};
             reg_bank3_r          <= {2'b00, 6'd19};
+            sysctrl_dis_regs_r   <= 1'b0;
+            sysctrl_dis_psgs_r   <= 1'b0;
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
-            reg_scramble_value_r <= 8'b0;
 
         end else begin
-            if (sel_io_bank0             && bus_write) reg_bank0_r          <= wrdata;
-            if (sel_io_bank1             && bus_write) reg_bank1_r          <= wrdata;
-            if (sel_io_bank2             && bus_write) reg_bank2_r          <= wrdata;
-            if (sel_io_bank3             && bus_write) reg_bank3_r          <= wrdata;
-            if (sel_io_cassette          && bus_write) cassette_out         <= wrdata[0];
-            if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r      <= wrdata[0];
-            if (sel_io_printer           && bus_write) printer_out          <= wrdata[0];
-            if (sel_io_keyb_r_scramble_w && bus_write) reg_scramble_value_r <= wrdata;
+            if (sel_io_bank0             && bus_write) reg_bank0_r                              <= wrdata;
+            if (sel_io_bank1             && bus_write) reg_bank1_r                              <= wrdata;
+            if (sel_io_bank2             && bus_write) reg_bank2_r                              <= wrdata;
+            if (sel_io_bank3             && bus_write) reg_bank3_r                              <= wrdata;
+            if (sel_io_sysctrl           && bus_write) {sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[1:0];
+            if (sel_io_cassette          && bus_write) cassette_out                             <= wrdata[0];
+            if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r                          <= wrdata[0];
+            if (sel_io_printer           && bus_write) printer_out                              <= wrdata[0];
         end
-
-
-    // Cartridge data bus
-    // wire [7:0] scrambled_d      = ebus_d      ^ reg_scramble_value_r;
-    // wire [7:0] scrambled_cart_d = ebus_cart_d ^ reg_scramble_value_r;
-
-    // assign ebus_cart_d = !ebus_wr_n ? (ebus_mreq_n ? scrambled_d : ebus_d) : 8'bZ;
-    // assign ebus_cart_d_oe_n = 
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -305,6 +302,7 @@ module top(
         .io_rddata(rddata_io_video),
         .io_wrdata(wrdata),
         .io_wren(io_video_wren),
+        .irq(video_irq),
 
         .tram_addr(ebus_a[10:0]),
         .tram_rddata(rddata_tram),
@@ -332,8 +330,12 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] hctrl1_data;
-    wire [7:0] hctrl2_data;
+    wire [7:0] spi_hctrl1,  spi_hctrl2;
+    wire [7:0] hctrl1, hctrl2;
+
+    // Combine data from ESP with data from handcontroller input
+    wire [7:0] hctrl1_data = hctrl1 & spi_hctrl1;
+    wire [7:0] hctrl2_data = hctrl2 & spi_hctrl2;
 
     handctrl handctrl(
         .clk(sysclk),
@@ -343,8 +345,8 @@ module top(
         .hctrl_load_n(hctrl_load_n),
         .hctrl_data(hctrl_data),
 
-        .hctrl1_data(hctrl1_data),
-        .hctrl2_data(hctrl2_data));
+        .hctrl1_data(hctrl1),
+        .hctrl2_data(hctrl2));
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
@@ -365,6 +367,7 @@ module top(
 
     spiregs spiregs(
         .clk(sysclk),
+        .reset(reset),
 
         .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),
@@ -384,7 +387,9 @@ module top(
         .spibm_busreq(spibm_busreq),
 
         .reset_req(reset_req),
-        .keys(keys));
+        .keys(keys),
+        .hctrl1(spi_hctrl1),
+        .hctrl2(spi_hctrl2));
 
     assign esp_notify = 1'b0;
 
