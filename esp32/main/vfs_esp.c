@@ -288,7 +288,14 @@ static void wifi_set(void) {
             return;
     }
 
-    wifi_config_t wifi_config = {0};
+    wifi_config_t wifi_config = {
+        .sta = {
+            .scan_method = WIFI_ALL_CHANNEL_SCAN,
+            .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
+            .pmf_cfg     = {.capable = true},
+            .threshold   = {.rssi = -127},
+        },
+    };
     snprintf((char *)wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid), (const char *)ap_info[idx].ssid);
     snprintf((char *)wifi_config.sta.password, sizeof(wifi_config.sta.password), password);
 
