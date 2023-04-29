@@ -6,10 +6,13 @@ OUT          = $(BUILD_DIR)/$(OUTFILE)
 INC_DIRS    += . lib
 SRC_DIRS    += . lib
 
-S_SRCS      += lib/crt0.s lib/getchar.s lib/putchar.s
+S_SRCS      += lib/crt0.s
 S_SRCS      += assets/tiledata.s
-C_SRCS      += lib/file_io.c
 C_SRCS      += main.c
+
+# S_SRCS      += lib/getchar.s lib/putchar.s
+# C_SRCS      += lib/file_io.c
+
 
 S_OBJS      := $(addprefix $(BUILD_DIR)/, $(S_SRCS:.s=.rel))
 C_OBJS      := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.rel))
@@ -47,3 +50,7 @@ clean:
 run: all
 	cp $(OUT) ../../usb/
 	../../../emulator/build/aquarius_emu -u ../../usb -t "\nrun\"$(OUTFILE)\"\n"
+
+run2: all
+	curl -T $(OUT) http://aqplus.local/
+	/bin/echo -e '\x1E\nRUN"$(OUTFILE)"' | nc -N aqplus.local 23
