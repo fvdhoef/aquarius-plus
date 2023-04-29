@@ -159,7 +159,14 @@ static void set_tile(uint8_t i, uint8_t j, uint8_t idx) {
     vram_tilemap[((uint16_t)j << 6) | i] = 0x1100 | idx;
 }
 
-static void draw_tetromino(uint8_t i, uint8_t j, char tetromino, uint8_t rot) {
+static uint8_t get_tile(uint8_t i, uint8_t j) {
+    return vram_tilemap[((uint16_t)j << 6) | i] & 0xFF;
+}
+
+// This function will draw the given tetromino at coordinate i,j. If check is set,
+// instead of drawing the function will return if the tetromino can be drawn without
+// intersecting with existing blocks.
+static uint8_t draw_tetromino(uint8_t i, uint8_t j, char tetromino, uint8_t rot, bool check) {
     rot &= 3;
     const uint8_t *p = NULL;
 
@@ -197,13 +204,26 @@ static void draw_tetromino(uint8_t i, uint8_t j, char tetromino, uint8_t rot) {
             break;
     }
 
-    for (uint8_t y = 0; y < sz; y++) {
-        for (uint8_t x = 0; x < sz; x++) {
-            uint8_t val = *(p++);
-            if (val)
-                set_tile(i + x, j + y, val);
+    if (check) {
+        for (uint8_t y = 0; y < sz; y++) {
+            for (uint8_t x = 0; x < sz; x++) {
+                uint8_t val = *(p++);
+                if (val && get_tile(i + x, j + y) != bg_tile)
+                    return 1;
+            }
+        }
+        return 0;
+
+    } else {
+        for (uint8_t y = 0; y < sz; y++) {
+            for (uint8_t x = 0; x < sz; x++) {
+                uint8_t val = *(p++);
+                if (val)
+                    set_tile(i + x, j + y, val);
+            }
         }
     }
+    return 0;
 }
 
 static void set_tetromino_sprites(uint8_t x, uint8_t y, char tetromino, uint8_t rot) {
@@ -299,6 +319,13 @@ static void draw_static_screen(void) {
         set_tile(i + 10, 22, 33);
     }
 
+    // Draw playfield content
+    for (uint8_t j = 0; j < 20; j++) {
+        for (uint8_t i = 0; i < 10; i++) {
+            set_tile(i + 11, j + 2, bg_tile);
+        }
+    }
+
     // Draw tetromino preview borders
     set_tile(26, 4, 33);
     set_tile(27, 4, 34);
@@ -342,20 +369,13 @@ static void draw_stats(void) {
 }
 
 static void draw_dynamic_screen(void) {
-    // Draw playfield content
-    for (uint8_t j = 0; j < 20; j++) {
-        for (uint8_t i = 0; i < 10; i++) {
-            set_tile(i + 11, j + 2, bg_tile);
-        }
-    }
-
     // Draw tetromino preview content
     for (uint8_t j = 0; j < 4; j++) {
         for (uint8_t i = 0; i < 4; i++) {
             set_tile(i + 27, j + 5, 1);
         }
     }
-    draw_tetromino(27, 5, next_tetromino, 0);
+    draw_tetromino(27, 5, next_tetromino, 0, false);
     draw_stats();
 }
 
@@ -392,16 +412,24 @@ static uint8_t getkeys(void) {
 }
 
 static void move_left(void) {
-    if (cur_posx > 0)
+    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, true) == 0) {
         cur_posx--;
+    }
 }
 
 static void move_right(void) {
-    cur_posx++;
+    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, true) == 0) {
+        cur_posx++;
+    }
 }
 
-static void move_down(void) {
-    cur_posy++;
+static bool move_down(void) {
+    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, true) == 0) {
+        cur_posy++;
+        return true;
+    } else {
+        return false;
+    }
 }
 
 int main(void) {
@@ -448,10 +476,6 @@ int main(void) {
     bgtiles_src  = vram_tiledata + 32 * 48;
     bgtiles_src2 = bgtiles_src;
 
-    // for (int i = 0; i < 4; i++) {
-    //     draw_tetromino(0, i * 4, 'j', i);
-    // }
-
     uint8_t prev_keys = 0;
 
     uint8_t gravity_delay = speed_curve[level];
@@ -459,6 +483,11 @@ int main(void) {
     uint8_t left_delay  = 0;
     uint8_t right_delay = 0;
     uint8_t down_delay  = 0;
+
+    cur_posx = 11;
+    cur_posy = 2;
+
+    uint8_t tetromino_random = 0;
 
     while (1) {
         // Wait for VSync
@@ -472,15 +501,29 @@ int main(void) {
             // Animate background by updating 2 tile patterns
             memcpy(bgtiles_dst, bgtiles_src2, 64);
         }
-        set_tetromino_sprites((cur_posx + 11) << 3, (cur_posy + 2) << 3, cur_tetromino, cur_rot);
+        set_tetromino_sprites(cur_posx << 3, cur_posy << 3, cur_tetromino, cur_rot);
 
         // Move tetromino down when gravity delay expires
         if (gravity_delay == 0) {
             gravity_delay = speed_curve[level];
-            cur_posy++;
+            if (!move_down()) {
+                // Lock in place
+                draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false);
+
+                cur_posx       = 11;
+                cur_posy       = 2;
+                cur_tetromino  = next_tetromino;
+                next_tetromino = tetrominoes[tetromino_random];
+                draw_dynamic_screen();
+            }
         } else {
             gravity_delay--;
         }
+
+        // Update 'random' tetromino index
+        tetromino_random++;
+        if (tetromino_random >= 7)
+            tetromino_random = 0;
 
         // Handle keyboard interaction
         uint8_t keys    = getkeys();
@@ -507,7 +550,8 @@ int main(void) {
             right_delay = 0;
         }
         if (keys & KBM_UP) {
-            cur_posy--;
+            if (cur_posy > 2)
+                cur_posy--;
         }
         if (keys & KBM_DOWN) {
             if (down_delay == 0) {
