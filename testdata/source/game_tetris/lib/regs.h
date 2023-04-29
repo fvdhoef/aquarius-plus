@@ -10,6 +10,14 @@
         static unsigned char name
 #endif
 
+#ifdef __SDCC
+#    define IOREG16(ioaddr, name) \
+        static __sfr __banked __at ioaddr name
+#else
+#    define IOREG16(ioaddr, name) \
+        static unsigned char name
+#endif
+
 IOREG(0xE0, IO_VCTRL);
 IOREG(0xE1, IO_VSCRX_L);
 IOREG(0xE2, IO_VSCRX_H);
@@ -43,6 +51,16 @@ IOREG(0xFD, IO_VSYNC);
 IOREG(0xFE, IO_PRINTER);
 IOREG(0xFF, IO_SCRAMBLE);
 IOREG(0xFF, IO_KEYBOARD);
+
+IOREG16(0x00FF, IO_KEYBOARD_ALL);
+IOREG16(0x7FFF, IO_KEYBOARD_COL7);
+IOREG16(0xBFFF, IO_KEYBOARD_COL6);
+IOREG16(0xDFFF, IO_KEYBOARD_COL5);
+IOREG16(0xEFFF, IO_KEYBOARD_COL4);
+IOREG16(0xF7FF, IO_KEYBOARD_COL3);
+IOREG16(0xFBFF, IO_KEYBOARD_COL2);
+IOREG16(0xFDFF, IO_KEYBOARD_COL1);
+IOREG16(0xFEFF, IO_KEYBOARD_COL0);
 
 enum {
     ESPCMD_RESET    = 0x01, // Reset ESP
@@ -94,6 +112,58 @@ enum {
     VCTRL_MODE_BM   = (2 << 1),
     VCTRL_SPR_EN    = (1 << 3),
     VCTRL_TEXT_PRIO = (1 << 4),
+};
+
+// Aquarius keyboard scancodes
+enum {
+    KEY_EQUALS    = 0,  // = +
+    KEY_BACKSPACE = 1,  // BS Backslash
+    KEY_COLON     = 2,  // : *
+    KEY_RETURN    = 3,  // Return
+    KEY_SEMICOLON = 4,  // ; @
+    KEY_PERIOD    = 5,  // . >
+    KEY_MINUS     = 8,  // - _
+    KEY_SLASH     = 9,  // / ^
+    KEY_0         = 10, // 0 ?
+    KEY_P         = 11, // P
+    KEY_L         = 12, // L
+    KEY_COMMA     = 13, // , <
+    KEY_9         = 16, // 9 )
+    KEY_O         = 17, // O
+    KEY_K         = 18, // K
+    KEY_M         = 19, // M
+    KEY_N         = 20, // N
+    KEY_J         = 21, // J
+    KEY_8         = 22, // 8 (
+    KEY_I         = 23, // I
+    KEY_7         = 24, // 7 '
+    KEY_U         = 25, // U
+    KEY_H         = 26, // H
+    KEY_B         = 27, // B
+    KEY_6         = 32, // 6 &
+    KEY_Y         = 33, // Y
+    KEY_G         = 34, // G
+    KEY_V         = 35, // V
+    KEY_C         = 36, // C
+    KEY_F         = 37, // F
+    KEY_5         = 40, // 5 %
+    KEY_T         = 41, // T
+    KEY_4         = 42, // 4 $
+    KEY_R         = 43, // R
+    KEY_D         = 44, // D
+    KEY_X         = 45, // X
+    KEY_3         = 48, // 3 #
+    KEY_E         = 49, // E
+    KEY_S         = 50, // S
+    KEY_Z         = 51, // Z
+    KEY_SPACE     = 52, // Space
+    KEY_A         = 53, // A
+    KEY_2         = 56, // 2 "
+    KEY_W         = 57, // W
+    KEY_1         = 58, // 1 !
+    KEY_Q         = 59, // Q
+    KEY_SHIFT     = 60, // Shift
+    KEY_CTRL      = 61, // Ctrl
 };
 
 #endif

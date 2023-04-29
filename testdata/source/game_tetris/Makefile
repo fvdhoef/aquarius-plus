@@ -10,7 +10,7 @@ S_SRCS      += lib/crt0.s
 S_SRCS      += assets/tiledata.s
 C_SRCS      += main.c
 
-# S_SRCS      += lib/getchar.s lib/putchar.s
+S_SRCS      += lib/getchar.s lib/putchar.s
 # C_SRCS      += lib/file_io.c
 
 
