@@ -29,11 +29,25 @@ static uint8_t cur_rot       = 0;
 static uint8_t cur_posx      = 0;
 static uint8_t cur_posy      = 0;
 
+static uint8_t bg_tile = 13;
+
 static uint8_t pressed_keys[8];
 
 static char next_tetromino = 'j';
 
 static char tmpstr[16];
+
+static uint8_t speed_curve[21] = {52, 48, 44, 40, 36, 32, 27, 21, 16, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2};
+
+// Keyboard bitmap
+enum {
+    KBM_LEFT       = (1 << 0),
+    KBM_RIGHT      = (1 << 1),
+    KBM_UP         = (1 << 2),
+    KBM_DOWN       = (1 << 3),
+    KBM_ROTATE_CCW = (1 << 4),
+    KBM_ROTATE_CW  = (1 << 5),
+};
 
 static const uint8_t tetromino_i[4][16] = {
     {0, 0, 0, 0,
@@ -317,11 +331,21 @@ static void draw_static_screen(void) {
     draw_text(25, 17, "  LINES ");
 }
 
+static void draw_stats(void) {
+    // Draw stats
+    sprintf(tmpstr, "%7lu ", score);
+    draw_text(25, 12, tmpstr);
+    sprintf(tmpstr, "%7u ", level);
+    draw_text(25, 15, tmpstr);
+    sprintf(tmpstr, "%7u ", lines);
+    draw_text(25, 18, tmpstr);
+}
+
 static void draw_dynamic_screen(void) {
     // Draw playfield content
     for (uint8_t j = 0; j < 20; j++) {
         for (uint8_t i = 0; i < 10; i++) {
-            set_tile(i + 11, j + 2, 13);
+            set_tile(i + 11, j + 2, bg_tile);
         }
     }
 
@@ -332,14 +356,7 @@ static void draw_dynamic_screen(void) {
         }
     }
     draw_tetromino(27, 5, next_tetromino, 0);
-
-    // Draw stats
-    sprintf(tmpstr, "%7lu ", score);
-    draw_text(25, 12, tmpstr);
-    sprintf(tmpstr, "%7u ", level);
-    draw_text(25, 15, tmpstr);
-    sprintf(tmpstr, "%7u ", lines);
-    draw_text(25, 18, tmpstr);
+    draw_stats();
 }
 
 static void scankeys(void) {
@@ -360,18 +377,31 @@ static bool key_pressed(uint8_t scancode) {
 static uint8_t getkeys(void) {
     uint8_t result = 0;
     if (key_pressed(KEY_A))
-        result |= (1 << 0);
+        result |= KBM_LEFT;
     if (key_pressed(KEY_D))
-        result |= (1 << 1);
+        result |= KBM_RIGHT;
     if (key_pressed(KEY_W))
-        result |= (1 << 2);
+        result |= KBM_UP;
     if (key_pressed(KEY_S))
-        result |= (1 << 3);
+        result |= KBM_DOWN;
     if (key_pressed(KEY_N))
-        result |= (1 << 4);
+        result |= KBM_ROTATE_CCW;
     if (key_pressed(KEY_M))
-        result |= (1 << 5);
+        result |= KBM_ROTATE_CW;
     return result;
+}
+
+static void move_left(void) {
+    if (cur_posx > 0)
+        cur_posx--;
+}
+
+static void move_right(void) {
+    cur_posx++;
+}
+
+static void move_down(void) {
+    cur_posy++;
 }
 
 int main(void) {
@@ -424,39 +454,86 @@ int main(void) {
 
     uint8_t prev_keys = 0;
 
+    uint8_t gravity_delay = speed_curve[level];
+
+    uint8_t left_delay  = 0;
+    uint8_t right_delay = 0;
+    uint8_t down_delay  = 0;
+
     while (1) {
+        // Wait for VSync
         wait_vsync();
+
+        // Scan keys
         scankeys();
+
+        // Update screen during non-visible part
         if (bgdelay == 0) {
+            // Animate background by updating 2 tile patterns
             memcpy(bgtiles_dst, bgtiles_src2, 64);
         }
-
         set_tetromino_sprites((cur_posx + 11) << 3, (cur_posy + 2) << 3, cur_tetromino, cur_rot);
 
+        // Move tetromino down when gravity delay expires
+        if (gravity_delay == 0) {
+            gravity_delay = speed_curve[level];
+            cur_posy++;
+        } else {
+            gravity_delay--;
+        }
+
+        // Handle keyboard interaction
         uint8_t keys    = getkeys();
         uint8_t newkeys = ~prev_keys & keys;
 
-        if (newkeys & (1 << 0)) {
-            cur_posx--;
+        if (keys & KBM_LEFT) {
+            if (left_delay == 0) {
+                left_delay = 5;
+                move_left();
+            } else {
+                left_delay--;
+            }
+        } else {
+            left_delay = 0;
         }
-        if (newkeys & (1 << 1)) {
-            cur_posx++;
+        if (keys & KBM_RIGHT) {
+            if (right_delay == 0) {
+                right_delay = 5;
+                move_right();
+            } else {
+                right_delay--;
+            }
+        } else {
+            right_delay = 0;
         }
-        if (newkeys & (1 << 2)) {
+        if (keys & KBM_UP) {
             cur_posy--;
         }
-        if (newkeys & (1 << 3)) {
-            cur_posy++;
+        if (keys & KBM_DOWN) {
+            if (down_delay == 0) {
+                gravity_delay = speed_curve[level];
+                down_delay    = 3;
+                move_down();
+                score++;
+            } else {
+                down_delay--;
+            }
+        } else {
+            down_delay = 0;
         }
-        if (newkeys & (1 << 4)) {
+        if (newkeys & KBM_ROTATE_CCW) {
             cur_rot = (cur_rot - 1) & 3;
         }
-        if (newkeys & (1 << 5)) {
+        if (newkeys & KBM_ROTATE_CW) {
             cur_rot = (cur_rot + 1) & 3;
         }
 
+        // draw_stats();
+
+        // Keep track of keys pressed during this round
         prev_keys = keys;
 
+        // Animate background
         if (bgdelay == 0) {
             bgdelay = 2;
 
