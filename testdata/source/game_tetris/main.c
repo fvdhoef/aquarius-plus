@@ -5,6 +5,8 @@
 #include "file_io.h"
 #include "regs.h"
 
+#define SHOWPERF
+
 extern const uint8_t tile_palette[32];
 extern const uint8_t tile_data[];
 extern const uint8_t tile_data_end[];
@@ -25,15 +27,16 @@ static uint8_t  bgdelay     = 0;
 static const char *tetrominoes = "ijlostz";
 
 static char    cur_tetromino = 't';
-static uint8_t cur_rot       = 0;
-static uint8_t cur_posx      = 0;
-static uint8_t cur_posy      = 0;
+static uint8_t cur_rot;
+static uint8_t cur_posx;
+static uint8_t cur_posy;
 
 static uint8_t bg_tile = 13;
 
 static uint8_t pressed_keys[8];
 
-static char next_tetromino = 'j';
+static char    next_tetromino   = 'j';
+static uint8_t tetromino_random = 0;
 
 static char tmpstr[16];
 
@@ -432,6 +435,74 @@ static bool move_down(void) {
     }
 }
 
+static void rotate(bool cw) {
+    uint8_t new_rot = (cur_rot + (cw ? 1 : -1)) & 3;
+    if (draw_tetromino(cur_posx, cur_posy, cur_tetromino, new_rot, true) == 0) {
+        cur_rot = new_rot;
+    } else {
+        // Collision during rotation, try alternate rotation point
+        uint8_t new_posx = cur_posx;
+        uint8_t new_posy = cur_posy;
+
+        // TODO: set alternate rotation point
+
+        if (draw_tetromino(cur_posx, cur_posy, cur_tetromino, new_rot, true) == 0) {
+            cur_rot  = new_rot;
+            cur_posx = new_posx;
+            cur_posy = new_posy;
+        }
+    }
+}
+
+static void frame(void) {
+#ifdef SHOWPERF
+    IO_VPALSEL  = 0;
+    IO_VPALDATA = 0;
+#endif
+
+    // Wait for VSync
+    wait_vsync();
+
+#ifdef SHOWPERF
+    IO_VPALSEL  = 0;
+    IO_VPALDATA = 15;
+#endif
+
+    // Scan keys
+    scankeys();
+
+    // Update screen during non-visible part
+    if (bgdelay == 0) {
+        // Animate background by updating 2 tile patterns
+        memcpy(bgtiles_dst, bgtiles_src2, 64);
+    }
+    set_tetromino_sprites(cur_posx << 3, cur_posy << 3, cur_tetromino, cur_rot);
+
+    // Animate background
+    if (bgdelay == 0) {
+        bgdelay = 2;
+
+        if (bgtiles_idx == 7) {
+            bgtiles_idx  = 0;
+            bgtiles_src2 = bgtiles_src;
+        } else {
+            bgtiles_idx++;
+            bgtiles_src2 += 64;
+        }
+    } else {
+        bgdelay--;
+    }
+}
+
+static void next_piece(void) {
+    cur_posx       = 15;
+    cur_posy       = 2;
+    cur_rot        = 0;
+    cur_tetromino  = next_tetromino;
+    next_tetromino = tetrominoes[tetromino_random];
+    draw_dynamic_screen();
+}
+
 int main(void) {
     // while (1) {
     //     scankeys();
@@ -484,24 +555,12 @@ int main(void) {
     uint8_t right_delay = 0;
     uint8_t down_delay  = 0;
 
-    cur_posx = 11;
-    cur_posy = 2;
+    tetromino_random = IO_VLINE % 7;
 
-    uint8_t tetromino_random = 0;
+    next_piece();
 
     while (1) {
-        // Wait for VSync
-        wait_vsync();
-
-        // Scan keys
-        scankeys();
-
-        // Update screen during non-visible part
-        if (bgdelay == 0) {
-            // Animate background by updating 2 tile patterns
-            memcpy(bgtiles_dst, bgtiles_src2, 64);
-        }
-        set_tetromino_sprites(cur_posx << 3, cur_posy << 3, cur_tetromino, cur_rot);
+        frame();
 
         // Move tetromino down when gravity delay expires
         if (gravity_delay == 0) {
@@ -509,12 +568,7 @@ int main(void) {
             if (!move_down()) {
                 // Lock in place
                 draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false);
-
-                cur_posx       = 11;
-                cur_posy       = 2;
-                cur_tetromino  = next_tetromino;
-                next_tetromino = tetrominoes[tetromino_random];
-                draw_dynamic_screen();
+                next_piece();
             }
         } else {
             gravity_delay--;
@@ -555,10 +609,11 @@ int main(void) {
         }
         if (keys & KBM_DOWN) {
             if (down_delay == 0) {
-                gravity_delay = speed_curve[level];
-                down_delay    = 3;
-                move_down();
-                score++;
+                down_delay = 3;
+                if (move_down()) {
+                    gravity_delay = speed_curve[level];
+                    score++;
+                }
             } else {
                 down_delay--;
             }
@@ -566,31 +621,16 @@ int main(void) {
             down_delay = 0;
         }
         if (newkeys & KBM_ROTATE_CCW) {
-            cur_rot = (cur_rot - 1) & 3;
+            rotate(false);
         }
         if (newkeys & KBM_ROTATE_CW) {
-            cur_rot = (cur_rot + 1) & 3;
+            rotate(true);
         }
 
-        // draw_stats();
+        draw_stats();
 
         // Keep track of keys pressed during this round
         prev_keys = keys;
-
-        // Animate background
-        if (bgdelay == 0) {
-            bgdelay = 2;
-
-            if (bgtiles_idx == 7) {
-                bgtiles_idx  = 0;
-                bgtiles_src2 = bgtiles_src;
-            } else {
-                bgtiles_idx++;
-                bgtiles_src2 += 64;
-            }
-        } else {
-            bgdelay--;
-        }
     }
 
     // return 0;
