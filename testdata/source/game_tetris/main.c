@@ -26,9 +26,9 @@ extern const uint8_t tile_data_end[];
 static uint16_t *vram_tilemap  = (uint16_t *)0xC000;
 static uint8_t  *vram_tiledata = (uint8_t *)0xE000;
 
-static uint8_t  level = 1;
-static uint16_t lines = 0;
 static uint32_t score = 0;
+static uint8_t  level = 0;
+static uint16_t lines = 0;
 
 static uint8_t *bgtiles_dst;
 static uint8_t *bgtiles_src;
@@ -49,6 +49,7 @@ static char    next_tetromino;
 static uint8_t tetromino_random = 0;
 
 static char tmpstr[16];
+static char tmpstr2[16];
 
 static uint8_t speed_curve[21] = {52, 48, 44, 40, 36, 32, 27, 21, 16, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2};
 
@@ -173,6 +174,9 @@ static void set_tile(uint8_t i, uint8_t j, uint8_t idx) {
 }
 
 static uint8_t get_tile(uint8_t i, uint8_t j) {
+    if (j < 2)
+        return bg_tile;
+
     return vram_tilemap[((uint16_t)j << 6) | i] & 0xFF;
 }
 
@@ -371,14 +375,70 @@ static void draw_static_screen(void) {
     draw_text(25, 17, "  LINES ");
 }
 
+// sprintf is way too slow, so we make our own specialized function to update the scores
+static void u16tos(uint16_t val) {
+    __uitoa(val, tmpstr2, 10);
+
+    const char *p = tmpstr2;
+    while (*p)
+        p++;
+
+    tmpstr[8] = '\0';
+    tmpstr[7] = ' ';
+
+    int8_t idx = 6;
+    while (p != tmpstr2) {
+        tmpstr[idx--] = *(--p);
+    }
+    while (idx >= 0) {
+        tmpstr[idx--] = ' ';
+    }
+}
+
+static void u32tos(uint32_t val) {
+    __ultoa(val, tmpstr2, 10);
+
+    const char *p = tmpstr2;
+    while (*p)
+        p++;
+
+    tmpstr[8] = '\0';
+    tmpstr[7] = ' ';
+
+    int8_t idx = 6;
+    while (p != tmpstr2) {
+        tmpstr[idx--] = *(--p);
+    }
+    while (idx >= 0) {
+        tmpstr[idx--] = ' ';
+    }
+}
+
 static void draw_stats(void) {
-    // Draw stats
-    sprintf(tmpstr, "%7lu ", score);
-    draw_text(25, 12, tmpstr);
-    sprintf(tmpstr, "%7u ", level);
-    draw_text(25, 15, tmpstr);
-    sprintf(tmpstr, "%7u ", lines);
-    draw_text(25, 18, tmpstr);
+    static uint32_t old_score = 0xFFFFFFFFUL;
+    static uint8_t  old_level = 0xFF;
+    static uint16_t old_lines = 0xFFFF;
+
+    tmpstr[8] = '\0';
+    tmpstr[7] = ' ';
+
+    if (old_score != score) {
+        old_score = score;
+        u32tos(score);
+        draw_text(25, 12, tmpstr);
+    }
+
+    if (old_level != level) {
+        old_level = level;
+        u16tos(level);
+        draw_text(25, 15, tmpstr);
+    }
+
+    if (old_lines != lines) {
+        old_lines = lines;
+        u16tos(lines);
+        draw_text(25, 18, tmpstr);
+    }
 }
 
 static void draw_dynamic_screen(void) {
@@ -389,7 +449,6 @@ static void draw_dynamic_screen(void) {
         }
     }
     draw_tetromino(27, 5, next_tetromino, 0, false);
-    draw_stats();
 }
 
 static void scankeys(void) {
@@ -506,7 +565,7 @@ static void frame(void) {
 
 static void next_piece(void) {
     cur_posx       = 15;
-    cur_posy       = 2;
+    cur_posy       = 1;
     cur_rot        = 0;
     cur_tetromino  = next_tetromino;
     next_tetromino = tetromino_random;
@@ -637,7 +696,7 @@ int main(void) {
             rotate(true);
         }
 
-        // draw_stats();
+        draw_stats();
 
         // Keep track of keys pressed during this round
         prev_keys = keys;

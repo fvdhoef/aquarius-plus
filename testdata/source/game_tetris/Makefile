@@ -18,7 +18,7 @@ S_OBJS      := $(addprefix $(BUILD_DIR)/, $(S_SRCS:.s=.rel))
 C_OBJS      := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.rel))
 OBJS        := $(S_OBJS) $(C_OBJS)
 
-CFLAGS      += -mz80
+CFLAGS      += -mz80 --opt-code-speed
 CFLAGS      += $(addprefix -I,$(INC_DIRS))
 LFLAGS      += -mz80 --code-loc 0x391B --data-loc 0 --no-std-crt0
 
