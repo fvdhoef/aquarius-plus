@@ -7,6 +7,18 @@
 
 #define SHOWPERF
 
+// Tetrominoes
+enum {
+    TM_I = 0,
+    TM_J,
+    TM_L,
+    TM_O,
+    TM_S,
+    TM_T,
+    TM_Z,
+    TM_TOTAL,
+};
+
 extern const uint8_t tile_palette[32];
 extern const uint8_t tile_data[];
 extern const uint8_t tile_data_end[];
@@ -24,9 +36,7 @@ static uint8_t *bgtiles_src2;
 static uint8_t  bgtiles_idx = 0;
 static uint8_t  bgdelay     = 0;
 
-static const char *tetrominoes = "ijlostz";
-
-static char    cur_tetromino = 't';
+static char    cur_tetromino;
 static uint8_t cur_rot;
 static uint8_t cur_posx;
 static uint8_t cur_posy;
@@ -35,7 +45,7 @@ static uint8_t bg_tile = 13;
 
 static uint8_t pressed_keys[8];
 
-static char    next_tetromino   = 'j';
+static char    next_tetromino;
 static uint8_t tetromino_random = 0;
 
 static char tmpstr[16];
@@ -169,7 +179,7 @@ static uint8_t get_tile(uint8_t i, uint8_t j) {
 // This function will draw the given tetromino at coordinate i,j. If check is set,
 // instead of drawing the function will return if the tetromino can be drawn without
 // intersecting with existing blocks.
-static uint8_t draw_tetromino(uint8_t i, uint8_t j, char tetromino, uint8_t rot, bool check) {
+static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t rot, bool check) {
     rot &= 3;
     const uint8_t *p = NULL;
 
@@ -177,31 +187,31 @@ static uint8_t draw_tetromino(uint8_t i, uint8_t j, char tetromino, uint8_t rot,
 
     switch (tetromino) {
         default:
-        case 'o':
+        case TM_O:
             sz = 2;
             p  = tetromino_o;
             break;
-        case 'j':
+        case TM_J:
             sz = 3;
             p  = tetromino_j[rot];
             break;
-        case 'l':
+        case TM_L:
             sz = 3;
             p  = tetromino_l[rot];
             break;
-        case 's':
+        case TM_S:
             sz = 3;
             p  = tetromino_s[rot];
             break;
-        case 't':
+        case TM_T:
             sz = 3;
             p  = tetromino_t[rot];
             break;
-        case 'z':
+        case TM_Z:
             sz = 3;
             p  = tetromino_z[rot];
             break;
-        case 'i':
+        case TM_I:
             sz = 4;
             p  = tetromino_i[rot];
             break;
@@ -237,31 +247,31 @@ static void set_tetromino_sprites(uint8_t x, uint8_t y, char tetromino, uint8_t 
 
     switch (tetromino) {
         default:
-        case 'o':
+        case TM_O:
             sz = 2;
             p  = tetromino_o;
             break;
-        case 'j':
+        case TM_J:
             sz = 3;
             p  = tetromino_j[rot];
             break;
-        case 'l':
+        case TM_L:
             sz = 3;
             p  = tetromino_l[rot];
             break;
-        case 's':
+        case TM_S:
             sz = 3;
             p  = tetromino_s[rot];
             break;
-        case 't':
+        case TM_T:
             sz = 3;
             p  = tetromino_t[rot];
             break;
-        case 'z':
+        case TM_Z:
             sz = 3;
             p  = tetromino_z[rot];
             break;
-        case 'i':
+        case TM_I:
             sz = 4;
             p  = tetromino_i[rot];
             break;
@@ -499,7 +509,7 @@ static void next_piece(void) {
     cur_posy       = 2;
     cur_rot        = 0;
     cur_tetromino  = next_tetromino;
-    next_tetromino = tetrominoes[tetromino_random];
+    next_tetromino = tetromino_random;
     draw_dynamic_screen();
 }
 
@@ -576,7 +586,7 @@ int main(void) {
 
         // Update 'random' tetromino index
         tetromino_random++;
-        if (tetromino_random >= 7)
+        if (tetromino_random >= TM_TOTAL)
             tetromino_random = 0;
 
         // Handle keyboard interaction
@@ -627,7 +637,7 @@ int main(void) {
             rotate(true);
         }
 
-        draw_stats();
+        // draw_stats();
 
         // Keep track of keys pressed during this round
         prev_keys = keys;
