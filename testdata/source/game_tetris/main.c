@@ -5,7 +5,7 @@
 #include "file_io.h"
 #include "regs.h"
 
-#define SHOWPERF
+// #define SHOWPERF
 
 // Platfield dimensions
 #define PLAYFIELD_W 10
@@ -14,6 +14,10 @@
 #define PLAYFIELD_YB (PLAYFIELD_YT + PLAYFIELD_H - 1)
 #define PLAYFIELD_XL 11
 #define PLAYFIELD_XR (PLAYFIELD_XL + PLAYFIELD_W - 1)
+
+#define MARKER_TILE (1)
+#define DELAY_LEFT_RIGHT (5)
+#define DELAY_DOWN (3)
 
 // Tetrominoes enum
 enum {
@@ -61,7 +65,7 @@ static uint8_t bg_tile = 13;
 static uint8_t pressed_keys[8];
 
 // Next tetromino (shown in preview area)
-static char next_tetromino;
+static uint8_t next_tetromino;
 
 // Random selection for next tetromino
 static uint8_t tetromino_random = 0;
@@ -189,27 +193,31 @@ static const uint8_t tetromino_z[4][9] = {
 };
 
 // Offsets used for rotation
-static const int8_t wall_kick_offsets_jlstz[8][5][2] = {
-    {{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}, // 0->R
-    {{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}, // R->0
-    {{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}, // R->2
-    {{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}, // 2->R
-    {{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}, // 2->L
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}, // L->2
-    {{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}, // L->0
-    {{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}, // 0->L
+typedef struct {
+    int8_t x, y;
+} offset_t;
+
+static const offset_t wall_kick_offsets_jlstz[8][5] = {
+    {{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}, // CCW:0->L
+    {{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}, // CW :0->R
+    {{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}, // CCW:R->0
+    {{0, 0}, {+1, 0}, {+1, -1}, {0, +2}, {+1, +2}}, // CW :R->2
+    {{0, 0}, {-1, 0}, {-1, +1}, {0, -2}, {-1, -2}}, // CCW:2->R
+    {{0, 0}, {+1, 0}, {+1, +1}, {0, -2}, {+1, -2}}, // CW :2->L
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}, // CCW:L->2
+    {{0, 0}, {-1, 0}, {-1, -1}, {0, +2}, {-1, +2}}, // CW :L->0
 };
 
 // Offsets used for rotation
-static const int8_t wall_kick_offsets_i[8][5][2] = {
-    {{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}, // 0->R
-    {{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}, // R->0
-    {{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}, // R->2
-    {{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}, // 2->R
-    {{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}, // 2->L
-    {{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}, // L->2
-    {{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}, // L->0
-    {{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}, // 0->L
+static const offset_t wall_kick_offsets_i[8][5] = {
+    {{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}, // CCW:0->L
+    {{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}, // CW :0->R
+    {{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}, // CCW:R->0
+    {{0, 0}, {-1, 0}, {+2, 0}, {-1, +2}, {+2, -1}}, // CW :R->2
+    {{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}, // CCW:2->R
+    {{0, 0}, {+2, 0}, {-1, 0}, {+2, +1}, {-1, -2}}, // CW :2->L
+    {{0, 0}, {-2, 0}, {+1, 0}, {-2, -1}, {+1, +2}}, // CCW:L->2
+    {{0, 0}, {+1, 0}, {-2, 0}, {+1, -2}, {-2, +1}}, // CW :L->0
 };
 
 // Set tile 'tile_idx' at position i,j
@@ -227,8 +235,8 @@ static uint8_t get_tile(uint8_t i, uint8_t j) {
 
 // This function will draw the given tetromino at coordinate i,j. If check is set,
 // instead of drawing the function will return if the tetromino can be drawn without
-// intersecting with existing blocks.
-static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t rot, bool check) {
+// intersecting with existing blocks (returns true on collision).
+static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t rot, bool check, bool lock) {
     rot &= 3;
     const uint8_t *p = NULL;
 
@@ -269,6 +277,9 @@ static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t r
     if (sz == 3) {
         i -= 1;
         j -= 1;
+    } else if (sz == 4) {
+        i -= 1;
+        j -= 1;
     }
 
     if (check) {
@@ -286,7 +297,7 @@ static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t r
             for (uint8_t x = 0; x < sz; x++) {
                 uint8_t val = *(p++);
                 if (val)
-                    set_tile(i + x, j + y, val);
+                    set_tile(i + x, j + y, lock ? MARKER_TILE : val);
             }
         }
     }
@@ -333,6 +344,9 @@ static void set_tetromino_sprites(uint8_t x, uint8_t y, char tetromino, uint8_t 
     }
 
     if (sz == 3) {
+        x -= 8;
+        y -= 8;
+    } else if (sz == 4) {
         x -= 8;
         y -= 8;
     }
@@ -514,11 +528,11 @@ static void draw_preview(void) {
     if (next_tetromino == TM_O) {
         y = 6;
     } else if (next_tetromino == TM_I) {
-        x = 27;
+        x = 28;
         y = 6;
     }
 
-    draw_tetromino(x, y, next_tetromino, 0, false);
+    draw_tetromino(x, y, next_tetromino, 0, false, false);
 }
 
 // Scan keyboard and store in pressed_keys
@@ -558,21 +572,21 @@ static uint8_t getkeys(void) {
 
 // Move tetromino left
 static void move_left(void) {
-    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, true) == 0) {
+    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, true, false) == 0) {
         cur_posx--;
     }
 }
 
 // Move tetromino right
 static void move_right(void) {
-    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, true) == 0) {
+    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, true, false) == 0) {
         cur_posx++;
     }
 }
 
 // Move tetromino down
 static bool move_down(void) {
-    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, true) == 0) {
+    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, true, false) == 0) {
         cur_posy++;
         return true;
     } else {
@@ -584,21 +598,14 @@ static bool move_down(void) {
 static void rotate(bool cw) {
     uint8_t new_rot = (cur_rot + (cw ? 1 : -1)) & 3;
 
-    const int8_t(*wall_kick_offsets)[5];
-
-    uint8_t idx = (cur_rot << 1) + (cw ? 0 : 1);
-    if (cur_tetromino == TM_I) {
-        wall_kick_offsets = wall_kick_offsets_i[idx];
-    } else {
-        wall_kick_offsets = wall_kick_offsets_jlstz[idx];
-    }
-
-    uint8_t max_i = cur_tetromino == TM_O ? 0 : 4;
+    uint8_t         idx               = (cur_rot << 1) | (cw ? 1 : 0);
+    const offset_t *wall_kick_offsets = (cur_tetromino == TM_I) ? wall_kick_offsets_i[idx] : wall_kick_offsets_jlstz[idx];
+    uint8_t         max_i             = cur_tetromino == TM_O ? 0 : 4;
 
     for (uint8_t i = 0; i <= max_i; i++) {
-        uint8_t new_posx = cur_posx + wall_kick_offsets[i][0];
-        uint8_t new_posy = cur_posy + wall_kick_offsets[i][1];
-        if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, true) == 0) {
+        uint8_t new_posx = cur_posx + wall_kick_offsets[i].x;
+        uint8_t new_posy = cur_posy + wall_kick_offsets[i].y;
+        if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, true, false) == 0) {
             cur_rot  = new_rot;
             cur_posx = new_posx;
             cur_posy = new_posy;
@@ -661,13 +668,90 @@ static void next_piece(void) {
     draw_preview();
 }
 
+// Check if given line is full
+static bool check_line(uint8_t line) {
+    for (uint8_t i = 0; i < PLAYFIELD_W; i++) {
+        if (get_tile(i + PLAYFIELD_XL, line + PLAYFIELD_YT) == bg_tile)
+            return false;
+    }
+    return true;
+}
+
+// Check for full lines
+static void check_lines(void) {
+    uint8_t lines_full = 0;
+
+    for (uint8_t j = 0; j < PLAYFIELD_H; j++) {
+        if (check_line(j)) {
+            for (uint8_t i = 0; i < PLAYFIELD_W; i++) {
+                set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, MARKER_TILE);
+            }
+            lines_full++;
+        }
+    }
+
+    if (lines_full == 0) {
+        return;
+    }
+
+    // Small delay
+    for (uint8_t i = 0; i < 5; i++)
+        frame();
+
+    // Remove all marked lines
+    int8_t line = PLAYFIELD_H - 1;
+    while (line >= 0) {
+        if (get_tile(PLAYFIELD_XL, line + PLAYFIELD_YT) == MARKER_TILE) {
+            // Remove line by copying all lines above it one line down
+            for (int8_t j = line; j >= 0; j--) {
+                for (uint8_t i = 0; i < PLAYFIELD_W; i++) {
+                    set_tile(PLAYFIELD_XL + i, PLAYFIELD_YT + j, get_tile(PLAYFIELD_XL + i, PLAYFIELD_YT + j - 1));
+                }
+            }
+            lines++;
+            if (lines % 10 == 0) {
+                level++;
+                if (level > 20)
+                    level = 20;
+            }
+            frame();
+
+        } else {
+            line--;
+        }
+    }
+
+    switch (lines_full) {
+        case 1: score += 40 * (level + 1); break;
+        case 2: score += 100 * (level + 1); break;
+        case 3: score += 300 * (level + 1); break;
+        case 4: score += 1200 * (level + 1); break;
+    }
+    if (score > 9999999)
+        score = 9999999;
+}
+
 // Lock current tetromino in place and switch to the next one
 static void lock_piece(void) {
     // Lock in place
-    draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false);
+    draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false, true);
+
+    // Hide sprites
+    IO_VCTRL &= ~VCTRL_SPR_EN;
+
+    // Small delay
+    for (uint8_t i = 0; i < 5; i++)
+        frame();
+    draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false, false);
 
     // Switch to next piece
     next_piece();
+
+    // Show sprites
+    IO_VCTRL |= VCTRL_SPR_EN;
+
+    // Check for full lines
+    check_lines();
 }
 
 // Our main function
@@ -724,6 +808,7 @@ int main(void) {
     uint8_t down_delay  = 0;
 
     tetromino_random = IO_VLINE % 7;
+    cur_tetromino    = tetromino_random;
 
     next_piece();
 
@@ -751,7 +836,7 @@ int main(void) {
 
         if (keys & KBM_LEFT) {
             if (left_delay == 0) {
-                left_delay = 5;
+                left_delay = DELAY_LEFT_RIGHT;
                 move_left();
             } else {
                 left_delay--;
@@ -761,7 +846,7 @@ int main(void) {
         }
         if (keys & KBM_RIGHT) {
             if (right_delay == 0) {
-                right_delay = 5;
+                right_delay = DELAY_LEFT_RIGHT;
                 move_right();
             } else {
                 right_delay--;
@@ -769,10 +854,10 @@ int main(void) {
         } else {
             right_delay = 0;
         }
-        if (keys & KBM_UP) {
-            if (cur_posy > PLAYFIELD_YT - 1)
-                cur_posy--;
-        }
+        // if (keys & KBM_UP) {
+        //     if (cur_posy > PLAYFIELD_YT - 1)
+        //         cur_posy--;
+        // }
         if (keys & KBM_DOWN) {
             if (down_delay == 0) {
                 down_delay = 3;
