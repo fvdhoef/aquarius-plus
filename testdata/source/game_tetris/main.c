@@ -41,9 +41,11 @@ static uint16_t *vram_tilemap  = (uint16_t *)0xC000;
 static uint8_t  *vram_tiledata = (uint8_t *)0xE000;
 
 // Game statistics
-static uint32_t score = 0;
-static uint8_t  level = 0;
-static uint16_t lines = 0;
+static uint32_t score;
+static uint8_t  level;
+static uint16_t lines;
+static bool     gameover;
+static bool     quit;
 
 // Background animation variables
 static uint8_t *bgtiles_dst;
@@ -76,6 +78,29 @@ static char tmpstr2[16];
 
 // Level speed curve (number of frames delay per gravity drop)
 static const uint8_t speed_curve[21] = {52, 48, 44, 40, 36, 32, 27, 21, 16, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2};
+
+static const uint16_t gameover_playfield[20][10] = {
+    {0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09},
+    {0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09},
+    {0x09, 0x4A, 0x4B, 0x4C, 0x4C, 0x4C, 0x4C, 0x24B, 0x24A, 0x09},
+    {0x09, 0x6A, 0x6B, 0x6C, 0x6C, 0x6C, 0x6C, 0x26B, 0x26A, 0x09},
+    {0x09, 0x6D, 0x6E, 0x0F + 'G', 0x0F + 'A', 0x0F + 'M', 0x0F + 'E', 0x26E, 0x26D, 0x09},
+    {0x09, 0x6D, 0x6E, 0x01, 0x01, 0x01, 0x01, 0x26E, 0x26D, 0x09},
+    {0x09, 0x6D, 0x6E, 0x0F + 'O', 0x0F + 'V', 0x0F + 'E', 0x0F + 'R', 0x26E, 0x26D, 0x09},
+    {0x09, 0x46A, 0x46B, 0x46C, 0x46C, 0x46C, 0x46C, 0x66B, 0x66A, 0x09},
+    {0x09, 0x44A, 0x44B, 0x44C, 0x44C, 0x44C, 0x44C, 0x64B, 0x64A, 0x09},
+    {0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09},
+    {0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x0F + 'P', 0x0F + 'L', 0x0F + 'E', 0x0F + 'A', 0x0F + 'S', 0x0F + 'E', 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x0F + 'T', 0x0F + 'R', 0x0F + 'Y', 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x0F + 'A', 0x0F + 'G', 0x0F + 'A', 0x0F + 'I', 0x0F + 'N', 0x4F, 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+    {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01},
+};
 
 // Keyboard bitmap
 enum {
@@ -225,6 +250,10 @@ static void set_tile(uint8_t i, uint8_t j, uint8_t tile_idx) {
     vram_tilemap[((uint16_t)j << 6) | i] = 0x1100 | tile_idx;
 }
 
+static void set_tile2(uint8_t i, uint8_t j, uint16_t val) {
+    vram_tilemap[((uint16_t)j << 6) | i] = 0x1100 | val;
+}
+
 // Get tile at position i,j
 static uint8_t get_tile(uint8_t i, uint8_t j) {
     if (j < PLAYFIELD_YT && (i >= PLAYFIELD_XL && i <= PLAYFIELD_XR))
@@ -235,8 +264,8 @@ static uint8_t get_tile(uint8_t i, uint8_t j) {
 
 // This function will draw the given tetromino at coordinate i,j. If check is set,
 // instead of drawing the function will return if the tetromino can be drawn without
-// intersecting with existing blocks (returns true on collision).
-static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t rot, bool check, bool lock) {
+// intersecting with existing blocks (returns false on collision).
+static bool draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t rot, bool check, bool lock) {
     rot &= 3;
     const uint8_t *p = NULL;
 
@@ -287,21 +316,26 @@ static uint8_t draw_tetromino(uint8_t i, uint8_t j, uint8_t tetromino, uint8_t r
             for (uint8_t x = 0; x < sz; x++) {
                 uint8_t val = *(p++);
                 if (val && get_tile(i + x, j + y) != bg_tile)
-                    return 1;
+                    return false;
             }
         }
-        return 0;
+        return true;
 
     } else {
         for (uint8_t y = 0; y < sz; y++) {
             for (uint8_t x = 0; x < sz; x++) {
                 uint8_t val = *(p++);
-                if (val)
-                    set_tile(i + x, j + y, lock ? MARKER_TILE : val);
+                if (val) {
+                    uint8_t jy = j + y;
+                    if (jy < PLAYFIELD_YT) {
+                        return false;
+                    }
+                    set_tile(i + x, jy, lock ? MARKER_TILE : val);
+                }
             }
         }
+        return true;
     }
-    return 0;
 }
 
 // Update sprites used to display moving tetromino
@@ -392,13 +426,6 @@ static void draw_text(uint8_t i, uint8_t j, const char *str) {
 
 // Draw static part of screen. Only drawn at start
 static void draw_static_screen(void) {
-    // Draw background
-    for (uint8_t j = 0; j < 25; j++) {
-        for (uint8_t i = 0; i < 40; i++) {
-            set_tile(i, j, ((i ^ j) & 1) ? 47 : 46);
-        }
-    }
-
     // Draw playfield borders
     for (uint8_t j = 0; j < PLAYFIELD_H; j++) {
         set_tile(PLAYFIELD_XL - 1, j + PLAYFIELD_YT, 32);
@@ -572,21 +599,21 @@ static uint8_t getkeys(void) {
 
 // Move tetromino left
 static void move_left(void) {
-    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, true, false) == 0) {
+    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, true, false)) {
         cur_posx--;
     }
 }
 
 // Move tetromino right
 static void move_right(void) {
-    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, true, false) == 0) {
+    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, true, false)) {
         cur_posx++;
     }
 }
 
 // Move tetromino down
 static bool move_down(void) {
-    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, true, false) == 0) {
+    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, true, false)) {
         cur_posy++;
         return true;
     } else {
@@ -605,7 +632,7 @@ static void rotate(bool cw) {
     for (uint8_t i = 0; i <= max_i; i++) {
         uint8_t new_posx = cur_posx + wall_kick_offsets[i].x;
         uint8_t new_posy = cur_posy + wall_kick_offsets[i].y;
-        if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, true, false) == 0) {
+        if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, true, false)) {
             cur_rot  = new_rot;
             cur_posx = new_posx;
             cur_posy = new_posy;
@@ -734,7 +761,9 @@ static void check_lines(void) {
 // Lock current tetromino in place and switch to the next one
 static void lock_piece(void) {
     // Lock in place
-    draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false, true);
+    if (!draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, false, true)) {
+        gameover = true;
+    }
 
     // Hide sprites
     IO_VCTRL &= ~VCTRL_SPR_EN;
@@ -754,18 +783,7 @@ static void lock_piece(void) {
     check_lines();
 }
 
-// Our main function
-int main(void) {
-    // while (1) {
-    //     scankeys();
-    //     for (int i = 0; i < 8; i++) {
-    //         printf("%02X ", pressed_keys[i]);
-    //     }
-    //     printf("\n");
-
-    //     // printf("%02X\n", getkeys());
-    // }
-
+static void init(void) {
     // Map video RAM to 0xC000
     IO_BANK3 = 20;
 
@@ -788,31 +806,49 @@ int main(void) {
         IO_VSPRATTR = 0;
     }
 
+    bgtiles_dst  = vram_tiledata + 32 * 46;
+    bgtiles_src  = vram_tiledata + 32 * 48;
+    bgtiles_src2 = bgtiles_src;
+
+    tetromino_random = IO_VLINE % 7;
+
+    // Draw background
+    for (uint8_t j = 0; j < 25; j++) {
+        for (uint8_t i = 0; i < 40; i++) {
+            set_tile(i, j, ((i ^ j) & 1) ? 47 : 46);
+        }
+    }
+}
+
+static void play_marathon(void) {
+    uint8_t prev_keys = 0;
+
+    score    = 0;
+    level    = 0;
+    lines    = 0;
+    gameover = false;
+
+    uint8_t gravity_delay = speed_curve[level];
+    uint8_t left_delay    = 0;
+    uint8_t right_delay   = 0;
+    uint8_t down_delay    = 0;
+
+    cur_tetromino = tetromino_random;
+
+    // Disable video
+    // IO_VCTRL = 0;
+
     // Initial screen drawing
     draw_static_screen();
     draw_preview();
 
     // Switch video mode to tile mode
     IO_VCTRL = VCTRL_SPR_EN | VCTRL_MODE_TILE;
-
-    bgtiles_dst  = vram_tiledata + 32 * 46;
-    bgtiles_src  = vram_tiledata + 32 * 48;
-    bgtiles_src2 = bgtiles_src;
-
-    uint8_t prev_keys = 0;
-
-    uint8_t gravity_delay = speed_curve[level];
-
-    uint8_t left_delay  = 0;
-    uint8_t right_delay = 0;
-    uint8_t down_delay  = 0;
-
-    tetromino_random = IO_VLINE % 7;
-    cur_tetromino    = tetromino_random;
-
     next_piece();
 
-    while (1) {
+    bool wait_down_release = false;
+
+    while (!gameover) {
         frame();
 
         // Move tetromino down when gravity delay expires
@@ -857,21 +893,26 @@ int main(void) {
         // if (keys & KBM_UP) {
         //     if (cur_posy > PLAYFIELD_YT - 1)
         //         cur_posy--;
+        //     return;
         // }
         if (keys & KBM_DOWN) {
-            if (down_delay == 0) {
-                down_delay = 3;
-                if (move_down()) {
-                    gravity_delay = speed_curve[level];
-                    score++;
+            if (!wait_down_release) {
+                if (down_delay == 0) {
+                    down_delay = 3;
+                    if (move_down()) {
+                        gravity_delay = speed_curve[level];
+                        score++;
+                    } else {
+                        lock_piece();
+                        wait_down_release = true;
+                    }
                 } else {
-                    lock_piece();
+                    down_delay--;
                 }
-            } else {
-                down_delay--;
             }
         } else {
-            down_delay = 0;
+            wait_down_release = false;
+            down_delay        = 0;
         }
         if (newkeys & KBM_ROTATE_CCW) {
             rotate(false);
@@ -886,5 +927,71 @@ int main(void) {
         prev_keys = keys;
     }
 
-    // return 0;
+    // Disable sprites
+    IO_VCTRL = VCTRL_MODE_TILE;
+
+    // Animation
+
+    // Draw playfield content
+    for (int8_t j = PLAYFIELD_H - 1; j >= 0; j--) {
+        for (uint8_t i = 0; i < PLAYFIELD_W; i++) {
+            set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, 31);
+        }
+        frame();
+        frame();
+    }
+    for (uint8_t j = 0; j < PLAYFIELD_H; j++) {
+        for (uint8_t i = 0; i < PLAYFIELD_W; i++) {
+            set_tile2(i + PLAYFIELD_XL, j + PLAYFIELD_YT, gameover_playfield[j][i] | 0x1100);
+        }
+        frame();
+        frame();
+    }
+
+    bool blink = false;
+    bool wait  = true;
+    while (wait) {
+        // Short blink delay
+        for (int i = 0; i < 20; i++) {
+            frame();
+
+            // Quit game on CTRL-C (or ESCAPE)
+            if (key_pressed(KEY_C) && key_pressed(KEY_CTRL)) {
+                quit = true;
+                wait = false;
+            }
+
+            // Start a new game when one of the game keys is pressed
+            uint8_t keys = getkeys();
+            if (~prev_keys & keys)
+                wait = false;
+            prev_keys = keys;
+        }
+        set_tile2(7 + PLAYFIELD_XL, 17 + PLAYFIELD_YT, blink ? 0x4F : 0x01);
+        blink = !blink;
+    }
+}
+
+// Our main function
+int main(void) {
+    // while (1) {
+    //     scankeys();
+    //     for (int i = 0; i < 8; i++) {
+    //         printf("%02X ", pressed_keys[i]);
+    //     }
+    //     printf("\n");
+
+    //     // printf("%02X\n", getkeys());
+    // }
+
+    uint8_t iobank3_old = IO_BANK3;
+
+    init();
+    while (!quit)
+        play_marathon();
+
+    IO_BANK3 = iobank3_old;
+    IO_VCTRL = VCTRL_TEXT_EN;
+
+    return 0;
 }

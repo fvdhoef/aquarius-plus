@@ -33,7 +33,7 @@ for i in range(0, 32, 8):
 
 tiledata = []
 
-for tileidx in range(112 - 6):
+for tileidx in range(112):
     for j in range(8):
         y = (tileidx // 16) * 8 + j
 
