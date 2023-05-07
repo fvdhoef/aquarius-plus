@@ -1,0 +1,7 @@
+- Remove front USB connectors
+- Change ESP32-S2-SOLO to ESP32-S3-WROOM-1-N4R2
+- Remove flash memory
+- Remove shift registers
+- Remove 48MHz oscillator
+- Add reset button for ESP32
+- Change components to what is available at JLCPCB
