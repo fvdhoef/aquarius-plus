@@ -3,7 +3,7 @@ aquarius-emu
 
 by Frank van den Hoef
 
-Updated FEB 08 2022
+[CLICK HERE FOR THE MOST RECENT DOC UPDATES](docs/aquarius_plus.md).
 
 ## Purpose
 The purpose of this project is to create a virtual Aquarius as a platform from which a future Z80-based hobbyist computer can be developed. Below are a list of possible future enhancements:
