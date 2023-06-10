@@ -4114,10 +4114,10 @@
       (net 2 "GND") (pintype "passive") (tstamp e993f68a-9659-4d3f-98ac-7449cdaafd2b))
     (pad "T" smd rect locked (at -3.7 5.8 90) (size 2.8 2.8) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 212 "Net-(J6-PadT)") (pintype "passive") (tstamp 51000c53-7dac-4c7f-b12e-56a7adea4358))
-    (model "${KICAD6_3DMODEL_DIR}/Connector_Audio.3dshapes/Jack_3.5mm_CUI_SJ-3523-SMT_Horizontal.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/aquarius-plus.pretty/35RASMT2BHNTRX/35RASMT2BHNTRX.step"
+      (offset (xyz 0 6 2.5))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 90 180 0))
     )
   )
 
@@ -7237,10 +7237,10 @@
       (net 2 "GND") (pintype "passive") (tstamp fbbb7c88-63c9-4d6c-a998-ad7aa0057f47))
     (pad "T" smd rect locked (at -3.7 5.8 90) (size 2.8 2.8) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 215 "Net-(U5-DOUT)") (pintype "passive") (tstamp 8386361f-1486-4852-a3af-99256c5d19bc))
-    (model "${KICAD6_3DMODEL_DIR}/Connector_Audio.3dshapes/Jack_3.5mm_CUI_SJ-3523-SMT_Horizontal.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/aquarius-plus.pretty/35RASMT2BHNTRX/35RASMT2BHNTRX.step"
+      (offset (xyz 0 6 2.5))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 90 180 0))
     )
   )
 
@@ -7967,6 +7967,11 @@
       (net 2 "GND") (pinfunction "SHELL1") (pintype "input") (tstamp 513a78cc-c0ef-4afd-b26e-79aede748a3a))
     (pad "13" smd rect locked (at -14.535 21.65) (size 2 2) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 2 "GND") (pinfunction "SHELL2") (pintype "input") (tstamp 7a3a23f8-7f72-4c09-8cf5-bfa3ce6a22f4))
+    (model "${KIPRJMOD}/aquarius-plus.pretty/TF-03A.kicad_mod"
+      (offset (xyz 0 0 0))
+      (scale (xyz 1 1 1))
+      (rotate (xyz 0 0 0))
+    )
   )
 
   (footprint "Package_TO_SOT_SMD:SOT-23-5" (layer "F.Cu")
@@ -10871,9 +10876,9 @@
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp b1fc0e29-52d3-42e2-af0d-f4e1d01653f4))
     (fp_line (start 1.6 0.8) (end -1.6 0.8)
       (stroke (width 0.1) (type solid)) (layer "F.Fab") (tstamp ee90e711-43fc-4bc8-817a-a433a7773dea))
-    (pad "1" smd roundrect (at -1.475 0 270) (size 1.15 1.8) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.217391)
+    (pad "1" smd roundrect (at -1.475 0 270) (size 1.15 1.8) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.2173913043)
       (net 3 "+3V3") (pintype "passive") (tstamp adda9f2e-8459-492c-8d2d-ad6954ca9e0e))
-    (pad "2" smd roundrect (at 1.475 0 270) (size 1.15 1.8) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.217391)
+    (pad "2" smd roundrect (at 1.475 0 270) (size 1.15 1.8) (layers "F.Cu" "F.Paste" "F.Mask") (roundrect_rratio 0.2173913043)
       (net 2 "GND") (pintype "passive") (tstamp 6a54f5d6-6560-4f28-b5db-7419b8777f40))
     (model "${KICAD6_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_1206_3216Metric.wrl"
       (offset (xyz 0 0 0))
@@ -11071,10 +11076,10 @@
       (net 2 "GND") (pintype "passive") (tstamp 69ec7009-74ba-4091-b2f5-bf1aac8e9c1d))
     (pad "T" smd rect locked (at -3.7 5.8) (size 2.8 2.8) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 183 "Net-(C1-Pad2)") (pintype "passive") (tstamp c8f7580b-56ef-471a-95e9-f14d87d12117))
-    (model "${KICAD6_3DMODEL_DIR}/Connector_Audio.3dshapes/Jack_3.5mm_CUI_SJ-3523-SMT_Horizontal.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/aquarius-plus.pretty/35RASMT2BHNTRX/35RASMT2BHNTRX.step"
+      (offset (xyz 0 6 2.5))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz -90 0 180))
     )
   )
 
@@ -12365,10 +12370,10 @@
       (net 2 "GND") (pintype "passive") (tstamp b4f1ca7c-d3d6-4878-bfdc-2d8704ce5d28))
     (pad "T" smd rect locked (at -3.7 5.8 90) (size 2.8 2.8) (layers "F.Cu" "F.Paste" "F.Mask")
       (net 210 "Net-(J5-PadR)") (pintype "passive") (tstamp 823d30f5-d0b7-46ab-99a2-6065ab6f27f7))
-    (model "${KICAD6_3DMODEL_DIR}/Connector_Audio.3dshapes/Jack_3.5mm_CUI_SJ-3523-SMT_Horizontal.wrl"
-      (offset (xyz 0 0 0))
+    (model "${KIPRJMOD}/aquarius-plus.pretty/35RASMT2BHNTRX/35RASMT2BHNTRX.step"
+      (offset (xyz 0 6.13 2.5))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 90 180 0))
     )
   )
 
@@ -13286,6 +13291,8 @@
     )
   )
 
+  (gr_circle (center 111.142223 109.879875) (end 111.442223 109.879875)
+    (stroke (width 0.15) (type solid)) (fill solid) (layer "F.SilkS") (tstamp 0cf6d2ef-b728-40eb-b3ae-b1d7fabb471b))
   (gr_circle (center 87.562938 65.930888) (end 87.862938 65.930888)
     (stroke (width 0.15) (type solid)) (fill solid) (layer "F.SilkS") (tstamp 1b081fa4-dce4-436d-b98a-8b87b9361c05))
   (gr_circle (center 80.718128 125.890806) (end 81.018128 125.890806)
