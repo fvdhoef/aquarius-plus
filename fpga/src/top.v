@@ -312,16 +312,24 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] spi_hctrl1,  spi_hctrl2;
+    wire [7:0] spi_hctrl1, spi_hctrl2;
+
     wire [7:0] hctrl1 = hc1[7:0];
     wire [7:0] hctrl2 = hc2[7:0];
-
-    // Combine data from ESP with data from handcontroller input
-    wire [7:0] hctrl1_data = hctrl1 & spi_hctrl1;
-    wire [7:0] hctrl2_data = hctrl2 & spi_hctrl2;
-
     assign hc1[8] = 1'b0;
     assign hc2[8] = 1'b0;
+
+    // Synchronize inputs
+    reg [7:0] hctrl1_r, hctrl1_rr;
+    reg [7:0] hctrl2_r, hctrl2_rr;
+    always @(posedge sysclk) hctrl1_r  <= hctrl1;
+    always @(posedge sysclk) hctrl1_rr <= hctrl1_r;
+    always @(posedge sysclk) hctrl2_r  <= hctrl2;
+    always @(posedge sysclk) hctrl2_rr <= hctrl2_r;
+
+    // Combine data from ESP with data from handcontroller input
+    wire [7:0] hctrl1_data = hctrl1_rr & spi_hctrl1;
+    wire [7:0] hctrl2_data = hctrl2_rr & spi_hctrl2;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface

@@ -212,7 +212,7 @@ module ay8910(
         end else begin
             if (tick && envelope_period_done) begin
                 if (!envelope_stop_r) begin
-                    envelope_cnt_r <= envelope_cnt_r - 1;
+                    envelope_cnt_r <= envelope_cnt_r - 4'd1;
 
                     if (envelope_cnt_r == 4'd0) begin
                         if (!envelope_continue_r || envelope_hold_r) begin
