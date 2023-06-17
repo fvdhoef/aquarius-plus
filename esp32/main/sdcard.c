@@ -11,6 +11,8 @@ static const char *TAG = "sdcard";
 
 #if CONFIG_IDF_TARGET_ESP32S2
 #    define SPI_DMA_CHAN host.slot
+#else
+#    define SPI_DMA_CHAN SPI_DMA_CH_AUTO
 #endif
 
 void sdcard_init(void) {
