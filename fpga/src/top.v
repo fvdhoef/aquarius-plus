@@ -66,6 +66,7 @@ module top(
     wire [7:0] rddata_tram;             // MEM $3000-$37FF
     wire [7:0] rddata_chram;
     wire [7:0] rddata_vram;
+    wire [7:0] rddata_rom;
 
     wire [7:0] rddata_io_video;         // IO $E0-$EF
     wire [7:0] rddata_espctrl;          // IO $F4
@@ -129,6 +130,7 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
+    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page == 6'd0;                         // Page 0
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
@@ -149,7 +151,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_tram | sel_mem_vram | sel_mem_chram |
+        sel_mem_tram | sel_mem_vram | sel_mem_chram | sel_mem_rom |
         sel_io_video |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 |
@@ -157,11 +159,10 @@ module top(
 
     wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
 
-    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;            // Page  0-15
     wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
     wire sel_mem_ram     = (allow_sel_mem && reg_bank_page[5]) || sel_mem_sysram;   // Page 32-63
 
-    assign ebus_ram_we_n = !(!ebus_wr_n && (sel_mem_sysram || ((sel_mem_ram || sel_mem_rom) && !reg_bank_ro)));
+    assign ebus_ram_we_n = !(!ebus_wr_n && (sel_mem_sysram || (sel_mem_ram && !reg_bank_ro)));
     assign ebus_ram_ce_n = !sel_mem_ram;
 
     reg [7:0] rddata;
@@ -170,6 +171,7 @@ module top(
         if (sel_mem_tram)             rddata <= rddata_tram;            // TRAM $3000-$37FF
         if (sel_mem_vram)             rddata <= rddata_vram;
         if (sel_mem_chram)            rddata <= rddata_chram;
+        if (sel_mem_rom)              rddata <= rddata_rom;
 
         if (sel_io_video)             rddata <= rddata_io_video;                                // IO $E0-$EF
         if (sel_io_bank0)             rddata <= reg_bank0_r;                                    // IO $F0
@@ -220,6 +222,14 @@ module top(
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r                          <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out                              <= wrdata[0];
         end
+
+    //////////////////////////////////////////////////////////////////////////
+    // System ROM
+    //////////////////////////////////////////////////////////////////////////
+    rom rom(
+        .clk(sysclk),
+        .addr(ebus_a[13:0]),
+        .rddata(rddata_rom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
