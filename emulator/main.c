@@ -41,7 +41,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
     if (page < 16) {
         return emustate.flashrom[page * 0x4000 + addr];
     } else if (page == 19) {
-        return emustate.gamerom[addr];  // ^ emustate.extbus_scramble;
+        return emustate.gamerom[addr]; // ^ emustate.extbus_scramble;
     } else if (page == 20) {
         return emustate.videoram[addr];
     } else if (page == 21) {
@@ -288,7 +288,7 @@ void reset(void) {
     emustate.z80context.memWrite = mem_write;
 
     // emustate.extbus_scramble = 0;
-    emustate.cpm_remap       = false;
+    emustate.cpm_remap = false;
 
     ay8910_reset(&emustate.ay_state);
     ay8910_reset(&emustate.ay2_state);
@@ -494,6 +494,9 @@ int main(int argc, char *argv[]) {
     char cartrom_path[1024];
     cartrom_path[0] = 0;
 
+    char usb_path[1024];
+    usb_path[0] = 0;
+
     int  opt;
     bool params_ok = true;
     while ((opt = getopt(argc, argv, "r:c:XRu:t:")) != -1) {
@@ -506,10 +509,7 @@ int main(int argc, char *argv[]) {
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
             case 'X': emustate.expander_enabled = false; break;
             case 'R': emustate.ramexp_enabled = false; break;
-            case 'u':
-                ch376_init(optarg);
-                esp32_init(optarg);
-                break;
+            case 'u': snprintf(usb_path, sizeof(usb_path), "%s", optarg); break;
             case 't': emustate.type_in_str = optarg; break;
             default: params_ok = false; break;
         }
@@ -529,6 +529,19 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
+    }
+
+#ifdef __APPLE__
+    if (!usb_path[0]) {
+        const char *homedir = getpwuid(getuid())->pw_dir;
+        snprintf(usb_path, sizeof(usb_path), "%s/Documents/AquariusPlusDisk", homedir);
+        mkdir(usb_path, 0755);
+    }
+#endif
+
+    if (*usb_path) {
+        ch376_init(usb_path);
+        esp32_init(usb_path);
     }
 
     emustate_init();

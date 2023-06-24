@@ -13,6 +13,13 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#ifdef __APPLE__
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <pwd.h>
+#include <uuid/uuid.h>
+#endif
+
 #if _WIN32
 #    include "getopt.h"
 #    include <direct.h>

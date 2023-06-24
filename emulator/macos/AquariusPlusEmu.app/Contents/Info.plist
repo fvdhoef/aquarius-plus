@@ -9,25 +9,19 @@
         <key>CFBundleGetInfoString</key>
         <string>The official Aquarius+ emulator</string>
         <key>CFBundleIconFile</key>
-        <string>AquariusEmu.icns</string>
+        <string>AquariusPlusEmu.icns</string>
         <key>CFBundleIdentifier</key>
         <string>net.aquariusplus.aquariusemu</string>
         <key>CFBundleInfoDictionaryVersion</key>
         <string>6.0</string>
-        <key>CFBundleLongVersionString</key>
-        <string>3.11 [build 4311]</string>
         <key>CFBundleName</key>
-        <string>AquariusEmu</string>
+        <string>AquariusPlusEmu</string>
         <key>CFBundlePackageType</key>
         <string>APPL</string>
         <key>CFBundleShortVersionString</key>
-        <string>3.11</string>
+        <string>#VERSION#</string>
         <key>CFBundleSignature</key>
         <string>????</string>
-        <key>CFBundleVersion</key>
-        <string>3.11.0.4311</string>
-        <key>CSResourcesFileMapped</key>
-        <true/>
         <key>NSPrincipalClass</key>
         <string>NSApplication</string>
         <key>NSHighResolutionCapable</key>
