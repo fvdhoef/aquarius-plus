@@ -10,8 +10,7 @@ else
     detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
 endif
 
-GIT_DIRTY    := $(if $(shell git status --porcelain)$(shell git diff --shortstat)$(shell git submodule --quiet foreach git status --porcelain)$(shell git submodule --quiet foreach git diff --shortstat),-dirty)
-VERSION_STR  := $(shell date -u "+%Y-%m-%d")_$(shell git describe --always)$(GIT_DIRTY)
+VERSION_STR  := $(shell date -u "+%Y-%m-%d")_$(shell git describe --always)
 
 INC_DIRS    += . libz80
 SRC_DIRS    += .
@@ -70,7 +69,7 @@ ifeq ($(detected_OS),Darwin)
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu
 	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Resources/
 	@sed -i '' 's/#VERSION#/$(VERSION_STR)/' $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Info.plist
-	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu_$(VERSION_STR).zip AquariusPlusEmu.app
+	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu_macOS_$(VERSION_STR).zip AquariusPlusEmu.app
 endif
 
 $(C_OBJS): $(BUILD_DIR)/%.o: %.c
