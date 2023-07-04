@@ -25,7 +25,8 @@ When setting the **_Overlay RAM_** bit of the **BANK**x registers, the memory at
 
 |           Page | Description                                   |
 | -------------: | --------------------------------------------- |
-|           0-15 | Flash memory (256KB)                          |
+|              0 | Flash memory (256KB)                          |
+|           1-15 | -                                             |
 |          16-19 | Cartridge port (data via scrambling register) |
 | [20](#page-20) | [Video RAM](#page-20)                         |
 | [21](#page-21) | [Character RAM](#page-21)                     |
