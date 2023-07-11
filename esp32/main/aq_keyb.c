@@ -1,7 +1,6 @@
 #include "aq_keyb.h"
 #include "aq_keyb_defs.h"
 #include "fpga.h"
-#include "flash.h"
 #include "screen.h"
 #include <esp_system.h>
 #include "usbhost.h"
@@ -231,24 +230,9 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
-                    if (ctrl_pressed && shift_pressed && alt_pressed && gui_pressed) {
-                        // CTRL-SHIFT-ALT-GUI-ESCAPE -> reprogram flash
-                        flash_sysrom();
-                        if (!verify_sysrom()) {
-                            for (int i = 0; i < 5; i++) {
-                                gpio_set_level(IOPIN_LED, 0);
-                                vTaskDelay(pdMS_TO_TICKS(200));
-                                gpio_set_level(IOPIN_LED, 1);
-                                vTaskDelay(pdMS_TO_TICKS(200));
-                            }
-                        } else {
-                            esp_restart();
-                        }
-
-                    } else if (ctrl_pressed && shift_pressed) {
+                    if (ctrl_pressed && shift_pressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                         esp_restart();
-
                     } else if (ctrl_pressed) {
                         // CTRL-ESCAPE -> reset
                         fpga_reset_req();
