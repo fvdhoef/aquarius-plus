@@ -5,6 +5,7 @@
 #include <esp_app_format.h>
 #include <esp_wifi.h>
 #include "sdcard.h"
+#include "led.h"
 
 extern const uint8_t terminal_caq_start[] asm("_binary_esp_terminal_caq_start");
 extern const uint8_t terminal_caq_end[] asm("_binary_esp_terminal_caq_end");
@@ -21,7 +22,13 @@ static StreamBufferHandle_t tx_buffer;
 static StreamBufferHandle_t rx_buffer;
 
 static int esp_open(uint8_t flags, const char *path) {
-    if (strcasecmp(path + 4, fn_com) == 0) {
+    // Skip leading slashes
+    while (*path == '/')
+        path++;
+
+    printf("esp_open(%u, \"%s\")\n", flags, path);
+
+    if (strcasecmp(path, fn_com) == 0) {
         new_session = true;
 
         // Flush any data still in TX buffer
@@ -36,7 +43,7 @@ static int esp_open(uint8_t flags, const char *path) {
         }
         return 1;
     }
-    if (strcasecmp(path + 4, fn_terminal) == 0) {
+    if (strcasecmp(path, fn_terminal) == 0) {
         file_idx = 0;
     } else {
         file_idx = -1;
@@ -80,7 +87,7 @@ static int esp_close(int fd) {
 }
 
 static int esp_opendir(const char *path) {
-    printf("esp_opendir: %s\n", path);
+    printf("esp_opendir(\"%s\")\n", path);
     dir_idx = 0;
     return 0;
 }
@@ -102,7 +109,7 @@ static int esp_readdir(int dd, struct direnum_ent *de) {
 }
 
 static int esp_stat(const char *path, struct stat *st) {
-    if (strcasecmp(path, "esp:") == 0) {
+    if (strcasecmp(path, "") == 0) {
         memset(st, 0, sizeof(*st));
         st->st_mode = S_IFDIR;
         return 0;
@@ -330,14 +337,18 @@ static void system_update(void) {
         goto done;
     }
 
+    led_flash_start();
     if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == NULL) {
         cprintf("File not found (%s)\n", UPDATEFILE_NAME);
         goto done;
     }
+    led_flash_stop();
 
+    led_flash_start();
     fseek(f, 0, SEEK_END);
     size_t update_size = ftell(f);
     fseek(f, 0, SEEK_SET);
+    led_flash_stop();
     cprintf("Update file size: %u\n", update_size);
 
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -349,10 +360,12 @@ static void system_update(void) {
     esp_app_desc_t app_info;
 
     const int app_desc_offset = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
+    led_flash_start();
     fseek(f, app_desc_offset, SEEK_SET);
     if (fread(&app_info, sizeof(app_info), 1, f) != 1) {
         goto done;
     }
+    led_flash_stop();
     if (app_info.magic_word != ESP_APP_DESC_MAGIC_WORD) {
         ESP_LOGE("update", "Incorrect app descriptor magic");
         cprintf("Invalid update file\n");
@@ -389,10 +402,14 @@ static void system_update(void) {
     }
 
     cprintf("Writing:");
+    led_flash_start();
     fseek(f, 0, SEEK_SET);
+    led_flash_stop();
 
     while (1) {
+        led_flash_start();
         size_t size = fread(tmpbuf, 1, tmpbuf_size, f);
+        led_flash_stop();
         if (size == 0)
             break;
 
@@ -426,6 +443,7 @@ static void system_update(void) {
 
 done:
     fclose(f);
+    led_flash_stop();
 
     if (!success)
         cprintf("Error during update, aborting.\n");

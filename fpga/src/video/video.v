@@ -63,7 +63,7 @@ module video(
     always @(posedge clk) irqline_match_r <= irqline_match;
     wire irqline_detect = (!irqline_match_r && irqline_match);
 
-    assign irq = {irqstat_line_r, irqstat_vblank_r} & {irqmask_line_r, irqmask_vblank_r} != 2'b00;
+    assign irq = ({irqstat_line_r, irqstat_vblank_r} & {irqmask_line_r, irqmask_vblank_r}) != 2'b00;
 
     //////////////////////////////////////////////////////////////////////////
     // IO registers

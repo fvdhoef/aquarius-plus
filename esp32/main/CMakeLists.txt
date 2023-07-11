@@ -5,7 +5,6 @@ idf_component_register(
         "usbhost.c"
         "sdcard.c"
         "aq_keyb.c"
-        "flash.c"
         "screen.c"
         "uart_protocol.c"
         "direnum.c"
@@ -13,6 +12,7 @@ idf_component_register(
         "vfs_esp.c"
         "fileserver.c"
         "tcpserver.c"
+        "led.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
 
@@ -38,8 +38,6 @@ idf_component_register(
 
     EMBED_FILES
         "../../fpga/top.bit"
-        "../../assets/aquarius_s2.rom"
-        "../../emulator/aquarius.rom"
         "../../testdata/source/esp_terminal/build/esp_terminal.caq"
 
     EMBED_TXTFILES

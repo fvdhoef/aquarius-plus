@@ -62,7 +62,7 @@ module sprattr(
         if (reset)
             sprsel_r <= 6'b0;
         else if (io_wren && io_addr == 4'h4)
-            sprsel_r <= io_wrdata;
+            sprsel_r <= io_wrdata[5:0];
 
     wire wren_vsprx_l  = io_wren && io_addr == 4'h5;
     wire wren_vsprx_h  = io_wren && io_addr == 4'h6;

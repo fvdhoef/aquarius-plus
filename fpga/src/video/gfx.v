@@ -261,6 +261,7 @@ module gfx(
                         render_priority_next = spr_priority;
                         vaddr_next           = {spr_idx[8:1], spr_idx[0] ^ spr_line[3], spr_line[2:0], 1'b0};
                         state_next           = ST_PAT1;
+                        nxtstate_next        = ST_SPR;
                     end
 
                     spr_sel_next = spr_sel_r + 7'd1;
