@@ -16,15 +16,9 @@ module tb();
     reg sysclk = 0;
     always #35 sysclk = !sysclk;
 
-    // Generate 48MHz usbclk
-    reg usbclk = 0;
-    always #10.42 usbclk = !usbclk;
-
     reg  [7:0] bus_wrdata = 8'b0;
     reg        bus_wren = 1'b0;
-
     wire [7:0] bus_d = bus_wren ? bus_wrdata : 8'bZ;
-
 
     reg        esp_rx = 1'b1;
 
@@ -53,32 +47,10 @@ module tb();
     wire        bus_mreq_n = (busack_n == 1'b0) ? 1'bZ  : bus_mreq_n_r;
     wire        bus_iorq_n = (busack_n == 1'b0) ? 1'bZ  : bus_iorq_n_r;
 
-    wire hc_clk, hc_load_n, hc_data;
-    wire hc1_q7;
-
     always @(posedge phi) busack_n <= busreq_n;
-
-    hc166 hc166_1(
-        .pe_n(hc_load_n),
-        .ds(1'b0),
-        .d(8'h01),
-        .mr_n(1'b1),
-        .cp(hc_clk),
-        .ce_n(1'b0),
-        .q7(hc1_q7));
-
-    hc166 hc166_2(
-        .pe_n(hc_load_n),
-        .ds(hc1_q7),
-        .d(8'h80),
-        .mr_n(1'b1),
-        .cp(hc_clk),
-        .ce_n(1'b0),
-        .q7(hc_data));
 
     top top_inst(
         .sysclk(sysclk),
-        .usbclk(usbclk),
 
         // Z80 bus interface
         .ebus_reset_n(reset_n),
@@ -90,16 +62,12 @@ module tb();
         .ebus_mreq_n(bus_mreq_n),
         .ebus_iorq_n(bus_iorq_n),
         .ebus_int_n(),
-        .ebus_m1_n(1'bZ),
-        .ebus_wait_n(),
         .ebus_busreq_n(busreq_n),
         .ebus_busack_n(busack_n),
         .ebus_ba(),
-        .ebus_cart_d(),
-        .ebus_cart_d_oe_n(),
         .ebus_ram_ce_n(),
-        .ebus_rom_ce_n(),
         .ebus_cart_ce_n(),
+        .ebus_ram_we_n(),
 
         // PWM audio outputs
         .audio_l(),
@@ -111,19 +79,12 @@ module tb();
         .printer_out(),
         .printer_in(1'b1),
 
-        // USB
-        .usb_dp1(),
-        .usb_dm1(),
-        .usb_dp2(),
-        .usb_dm2(),
-
         // Misc
         .exp(),
 
         // Hand controller interface
-        .hctrl_clk(hc_clk),
-        .hctrl_load_n(hc_load_n),
-        .hctrl_data(hc_data),
+        .hc1(),
+        .hc2(),
 
         // VGA output
         .vga_r(),

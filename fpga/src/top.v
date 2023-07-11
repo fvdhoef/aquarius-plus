@@ -1,6 +1,5 @@
 module top(
     input  wire        sysclk,          // 14.31818MHz
-    input  wire        usbclk,          // 48MHz
 
     // Z80 bus interface
     inout  wire        ebus_reset_n,
@@ -12,17 +11,12 @@ module top(
     inout  wire        ebus_mreq_n,
     inout  wire        ebus_iorq_n,
     output wire        ebus_int_n,      // Open-drain output
-    input  wire        ebus_m1_n,
-    output wire        ebus_wait_n,     // Open-drain output
     output wire        ebus_busreq_n,   // Open-drain output
     input  wire        ebus_busack_n,
     output wire  [4:0] ebus_ba,
-    inout  wire  [7:0] ebus_cart_d,     // Cartridge data bus, possibly scrambled
-    output wire        ebus_cart_d_oe_n,
     output wire        ebus_ram_ce_n,   // 512KB RAM
-    output wire        ebus_rom_ce_n,   // 256KB Flash memory
     output wire        ebus_cart_ce_n,  // Cartridge
-    output wire        ebus_ram_rom_we_n,
+    output wire        ebus_ram_we_n,
 
     // PWM audio outputs
     output wire        audio_l,
@@ -34,19 +28,12 @@ module top(
     output reg         printer_out,
     input  wire        printer_in,
 
-    // USB
-    inout  wire        usb_dp1,
-    inout  wire        usb_dm1,
-    inout  wire        usb_dp2,
-    inout  wire        usb_dm2,
-
     // Misc
-    output wire  [5:0] exp,
+    output wire  [9:0] exp,
 
     // Hand controller interface
-    output wire        hctrl_clk,
-    output wire        hctrl_load_n,
-    input  wire        hctrl_data,
+    inout  wire  [8:0] hc1,
+    inout  wire  [8:0] hc2,
 
     // VGA output
     output wire  [3:0] vga_r,
@@ -79,6 +66,7 @@ module top(
     wire [7:0] rddata_tram;             // MEM $3000-$37FF
     wire [7:0] rddata_chram;
     wire [7:0] rddata_vram;
+    wire [7:0] rddata_rom;
 
     wire [7:0] rddata_io_video;         // IO $E0-$EF
     wire [7:0] rddata_espctrl;          // IO $F4
@@ -142,6 +130,7 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
+    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page == 6'd0 && !sel_mem_sysram;      // Page 0
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
@@ -162,7 +151,7 @@ module top(
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
 
     wire sel_internal =
-        sel_mem_tram | sel_mem_vram | sel_mem_chram |
+        sel_mem_tram | sel_mem_vram | sel_mem_chram | sel_mem_rom |
         sel_io_video |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 |
@@ -170,18 +159,17 @@ module top(
 
     wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
 
-    wire sel_mem_rom     = allow_sel_mem && reg_bank_page[5:4] == 2'b00;            // Page  0-15
     wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
     wire sel_mem_ram     = (allow_sel_mem && reg_bank_page[5]) || sel_mem_sysram;   // Page 32-63
 
-    assign ebus_ram_rom_we_n = !(!ebus_wr_n && (sel_mem_sysram || ((sel_mem_ram || sel_mem_rom) && !reg_bank_ro)));
-
-    assign ebus_rom_ce_n = !sel_mem_rom;
-    assign ebus_ram_ce_n = !sel_mem_ram;
+    assign ebus_ram_we_n  = !(!ebus_wr_n && (sel_mem_sysram || (sel_mem_ram && !reg_bank_ro)));
+    assign ebus_ram_ce_n  = !sel_mem_ram;
+    assign ebus_cart_ce_n = !sel_mem_cart;
 
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'h00;
+        if (sel_mem_rom)              rddata <= rddata_rom;
         if (sel_mem_tram)             rddata <= rddata_tram;            // TRAM $3000-$37FF
         if (sel_mem_vram)             rddata <= rddata_vram;
         if (sel_mem_chram)            rddata <= rddata_chram;
@@ -209,12 +197,8 @@ module top(
     wire video_irq;
 
     assign ebus_int_n       = video_irq ? 1'b0 : 1'bZ;
-    assign ebus_wait_n      = 1'bZ;
-    assign ebus_cart_d_oe_n = 1'b1;
-    assign ebus_cart_d      = 8'bZ;
-    assign ebus_cart_ce_n   = 1'b1;
 
-    assign exp              = 7'b0;
+    assign exp              = 10'b0;
 
     always @(posedge sysclk or posedge reset)
         if (reset) begin
@@ -238,6 +222,14 @@ module top(
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r                          <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out                              <= wrdata[0];
         end
+
+    //////////////////////////////////////////////////////////////////////////
+    // System ROM
+    //////////////////////////////////////////////////////////////////////////
+    rom rom(
+        .clk(sysclk),
+        .addr(ebus_a[13:0]),
+        .rddata(rddata_rom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -330,23 +322,24 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] spi_hctrl1,  spi_hctrl2;
-    wire [7:0] hctrl1, hctrl2;
+    wire [7:0] spi_hctrl1, spi_hctrl2;
+
+    wire [7:0] hctrl1 = hc1[7:0];
+    wire [7:0] hctrl2 = hc2[7:0];
+    assign hc1[8] = 1'b0;
+    assign hc2[8] = 1'b0;
+
+    // Synchronize inputs
+    reg [7:0] hctrl1_r, hctrl1_rr;
+    reg [7:0] hctrl2_r, hctrl2_rr;
+    always @(posedge sysclk) hctrl1_r  <= hctrl1;
+    always @(posedge sysclk) hctrl1_rr <= hctrl1_r;
+    always @(posedge sysclk) hctrl2_r  <= hctrl2;
+    always @(posedge sysclk) hctrl2_rr <= hctrl2_r;
 
     // Combine data from ESP with data from handcontroller input
-    wire [7:0] hctrl1_data = hctrl1 & spi_hctrl1;
-    wire [7:0] hctrl2_data = hctrl2 & spi_hctrl2;
-
-    handctrl handctrl(
-        .clk(sysclk),
-        .reset(reset),
-
-        .hctrl_clk(hctrl_clk),
-        .hctrl_load_n(hctrl_load_n),
-        .hctrl_data(hctrl_data),
-
-        .hctrl1_data(hctrl1),
-        .hctrl2_data(hctrl2));
+    wire [7:0] hctrl1_data = hctrl1_rr & spi_hctrl1;
+    wire [7:0] hctrl2_data = hctrl2_rr & spi_hctrl2;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface

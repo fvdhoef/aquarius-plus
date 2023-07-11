@@ -40,6 +40,8 @@ enum {
 #define MAX_DDS (10)
 #define MAX_COMPONENTS (20)
 
+#define ESP_PREFIX "esp:"
+
 struct state {
     char    *current_path;
     uint8_t  rxbuf[16 + 0x10000];
@@ -59,11 +61,11 @@ static void txfifo_write(uint8_t data) {
     uart_write_bytes(UART_NUM, &data, 1);
 }
 
-static char *resolve_path(const char *path, const struct vfs **vfs) {
+static char *resolve_path(const char *path, const struct vfs **vfs, bool remove_vfs_prefix) {
     bool use_cwd = true;
     if (path[0] == '/' || path[0] == '\\')
         use_cwd = false;
-    else if (strncasecmp(path, "esp:", 4) == 0) {
+    else if (strncasecmp(path, ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
         use_cwd = false;
     }
 
@@ -148,7 +150,10 @@ static char *resolve_path(const char *path, const struct vfs **vfs) {
     free(tmppath);
 
     *vfs = &sdcard_vfs;
-    if (strncasecmp(result, "esp:", 4) == 0) {
+    if (strncasecmp(result, ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+        if (remove_vfs_prefix) {
+            strcpy(result, result + 4);
+        }
         *vfs = &vfs_esp;
     }
     return result;
@@ -196,7 +201,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 
     // Compose full path
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, true);
     if (!vfs || !vfs->open) {
         free(path);
         txfifo_write(ERR_PARAM);
@@ -346,7 +351,7 @@ static void esp_opendir(const char *path_arg) {
 
     // Compose full path
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, true);
     if (!vfs || !vfs->opendir) {
         free(path);
         txfifo_write(ERR_PARAM);
@@ -439,7 +444,7 @@ static void esp_delete(const char *path_arg) {
     DBGF("DELETE %s\n", path_arg);
 
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, true);
     if (!vfs || !vfs->delete) {
         free(path);
         txfifo_write(ERR_PARAM);
@@ -454,8 +459,8 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
 
     const struct vfs *vfs1     = NULL;
     const struct vfs *vfs2     = NULL;
-    char             *old_path = resolve_path(old_arg, &vfs1);
-    char             *new_path = resolve_path(new_arg, &vfs2);
+    char             *old_path = resolve_path(old_arg, &vfs1, true);
+    char             *new_path = resolve_path(new_arg, &vfs2, true);
     if (!vfs1 || vfs1 != vfs2 || !vfs1->rename) {
         free(old_path);
         free(new_path);
@@ -473,7 +478,7 @@ static void esp_mkdir(const char *path_arg) {
     DBGF("MKDIR %s\n", path_arg);
 
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, true);
     if (!vfs || !vfs->mkdir) {
         free(path);
         txfifo_write(ERR_PARAM);
@@ -489,15 +494,20 @@ static void esp_chdir(const char *path_arg) {
 
     // Compose full path
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, false);
     if (!vfs || !vfs->stat) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
+    const char *vfs_path = path;
+    if (vfs == &vfs_esp) {
+        vfs_path += strlen(ESP_PREFIX);
+    }
+
     struct stat st;
-    int         result = vfs->stat(path, &st);
+    int         result = vfs->stat(vfs_path, &st);
     txfifo_write(result);
 
     if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
@@ -512,7 +522,7 @@ static void esp_stat(const char *path_arg) {
     DBGF("STAT %s\n", path_arg);
 
     const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs);
+    char             *path = resolve_path(path_arg, &vfs, true);
     if (!vfs || !vfs->stat) {
         free(path);
         txfifo_write(ERR_PARAM);

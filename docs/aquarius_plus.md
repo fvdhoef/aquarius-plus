@@ -2,12 +2,12 @@
 
 # Memory map
 
-| Z80 Memory address | Description | Reg Hex/Int | Initial Register Value                                   |
-| ------------------ | ----------- | ----------- | -------------------------------------------------------- |
-| $0000 - $3FFF      | Bank 0      | $F0 / 240   | 192 = Flash Page 0 + [READ ONLY + OVERLAY](#overlay-ram) |
-| $4000 - $7FFF      | Bank 1      | $F1 / 241   | 33 = RAM Page 33                                         |
-| $8000 - $BFFF      | Bank 2      | $F2 / 242   | 34 = RAM Page 34                                         |
-| $C000 - $FFFF      | Bank 3      | $F3 / 243   | 19 = Cartridge Port Page 19                              |
+| Z80 Memory address | Description | Reg Hex/Int | Initial Register Value                                 |
+| ------------------ | ----------- | ----------- | ------------------------------------------------------ |
+| $0000 - $3FFF      | Bank 0      | $F0 / 240   | 192 = ROM Page 0 + [READ ONLY + OVERLAY](#overlay-ram) |
+| $4000 - $7FFF      | Bank 1      | $F1 / 241   | 33 = RAM Page 33                                       |
+| $8000 - $BFFF      | Bank 2      | $F2 / 242   | 34 = RAM Page 34                                       |
+| $C000 - $FFFF      | Bank 3      | $F3 / 243   | 19 = Cartridge Port Page 19                            |
 
 ## Overlay RAM
 
@@ -25,7 +25,7 @@ When setting the **_Overlay RAM_** bit of the **BANK**x registers, the memory at
 
 |           Page | Description                                   |
 | -------------: | --------------------------------------------- |
-|              0 | Flash memory (256KB)                          |
+|              0 | System ROM memory (16KB)                      |
 |           1-15 | -                                             |
 |          16-19 | Cartridge port (data via scrambling register) |
 | [20](#page-20) | [Video RAM](#page-20)                         |

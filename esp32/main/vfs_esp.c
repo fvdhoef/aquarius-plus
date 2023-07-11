@@ -21,7 +21,13 @@ static StreamBufferHandle_t tx_buffer;
 static StreamBufferHandle_t rx_buffer;
 
 static int esp_open(uint8_t flags, const char *path) {
-    if (strcasecmp(path + 4, fn_com) == 0) {
+    // Skip leading slashes
+    while (*path == '/')
+        path++;
+
+    printf("esp_open(%u, \"%s\")\n", flags, path);
+
+    if (strcasecmp(path, fn_com) == 0) {
         new_session = true;
 
         // Flush any data still in TX buffer
@@ -36,7 +42,7 @@ static int esp_open(uint8_t flags, const char *path) {
         }
         return 1;
     }
-    if (strcasecmp(path + 4, fn_terminal) == 0) {
+    if (strcasecmp(path, fn_terminal) == 0) {
         file_idx = 0;
     } else {
         file_idx = -1;
@@ -80,7 +86,7 @@ static int esp_close(int fd) {
 }
 
 static int esp_opendir(const char *path) {
-    printf("esp_opendir: %s\n", path);
+    printf("esp_opendir(\"%s\")\n", path);
     dir_idx = 0;
     return 0;
 }
@@ -102,7 +108,7 @@ static int esp_readdir(int dd, struct direnum_ent *de) {
 }
 
 static int esp_stat(const char *path, struct stat *st) {
-    if (strcasecmp(path, "esp:") == 0) {
+    if (strcasecmp(path, "") == 0) {
         memset(st, 0, sizeof(*st));
         st->st_mode = S_IFDIR;
         return 0;

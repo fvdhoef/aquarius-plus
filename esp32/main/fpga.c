@@ -13,7 +13,7 @@ static spi_device_handle_t fpga_spidev_regs;
 static uint8_t saved_banks[4];
 static uint8_t cur_banks[4];
 
-#define SPIBUS SPI2_HOST // SPI3 host is used by SD card interface
+#define SPIBUS SPI3_HOST // SPI2 host is used by SD card interface
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_CS_N
 
 #define MAX_TRANSFER_SIZE (1024)
