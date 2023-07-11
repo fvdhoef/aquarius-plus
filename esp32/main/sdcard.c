@@ -6,6 +6,7 @@
 #include <dirent.h>
 #include "direnum.h"
 #include <errno.h>
+#include "led.h"
 
 static const char *TAG = "sdcard";
 
@@ -142,8 +143,10 @@ static int sd_open(uint8_t flags, const char *path) {
         return ERR_TOO_MANY_OPEN;
 
     char *full_path = get_fullpath(path);
-    FILE *f         = fopen(full_path, mode);
-    int   err_no    = errno;
+    led_flash_start();
+    FILE *f = fopen(full_path, mode);
+    led_flash_stop();
+    int err_no = errno;
     free(full_path);
 
     if (f == NULL) {
@@ -175,7 +178,9 @@ static int sd_read(int fd, uint16_t size, void *buf) {
     FILE *f = state.fds[fd];
 
     // Use RX buffer as temporary storage
+    led_flash_start();
     int result = (int)fread(buf, 1, size, f);
+    led_flash_stop();
     return (result < 0) ? ERR_OTHER : result;
 }
 
@@ -184,7 +189,9 @@ static int sd_write(int fd, uint16_t size, const void *buf) {
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
+    led_flash_start();
     int result = (int)fwrite(buf, 1, size, f);
+    led_flash_stop();
     return (result < 0) ? ERR_OTHER : result;
 }
 
@@ -193,7 +200,9 @@ static int sd_seek(int fd, uint32_t offset) {
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
+    led_flash_start();
     int result = fseek(f, offset, SEEK_SET);
+    led_flash_stop();
     return (result < 0) ? ERR_OTHER : 0;
 }
 
@@ -202,7 +211,9 @@ static int sd_tell(int fd) {
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
+    led_flash_start();
     int result = ftell(f);
+    led_flash_stop();
     return (result < 0) ? ERR_OTHER : result;
 }
 
@@ -220,7 +231,9 @@ static int sd_opendir(const char *path) {
 
     char *full_path = get_fullpath(path);
 
+    led_flash_start();
     direnum_ctx_t ctx = direnum_open(full_path);
+    led_flash_stop();
     free(full_path);
 
     if (ctx == NULL)
@@ -238,7 +251,9 @@ static int sd_closedir(int dd) {
     dd -= MAX_FDS;
 
     direnum_ctx_t ctx = state.dds[dd];
+    led_flash_start();
     direnum_close(ctx);
+    led_flash_stop();
     state.dds[dd] = NULL;
     return 0;
 }
@@ -249,16 +264,21 @@ static int sd_readdir(int dd, struct direnum_ent *de) {
     dd -= MAX_FDS;
 
     direnum_ctx_t ctx = state.dds[dd];
-    return direnum_read(ctx, de) ? 0 : ERR_EOF;
+    led_flash_start();
+    int result = direnum_read(ctx, de) ? 0 : ERR_EOF;
+    led_flash_stop();
+    return result;
 }
 
 static int sd_delete(const char *path) {
     char *full_path = get_fullpath(path);
 
+    led_flash_start();
     int result = unlink(full_path);
     if (result < 0) {
         result = rmdir(full_path);
     }
+    led_flash_stop();
     int err_no = errno;
     free(full_path);
 
@@ -277,7 +297,9 @@ static int sd_rename(const char *path_old, const char *path_new) {
     char *full_old = get_fullpath(path_old);
     char *full_new = get_fullpath(path_new);
 
+    led_flash_start();
     int result = rename(full_old, full_new);
+    led_flash_stop();
     free(full_old);
     free(full_new);
 
@@ -287,11 +309,13 @@ static int sd_rename(const char *path_old, const char *path_new) {
 static int sd_mkdir(const char *path) {
     char *full_path = get_fullpath(path);
 
+    led_flash_start();
 #if _WIN32
     int result = mkdir(full_path);
 #else
     int result = mkdir(full_path, 0775);
 #endif
+    led_flash_stop();
     free(full_path);
 
     return (result < 0) ? ERR_OTHER : 0;
@@ -299,7 +323,9 @@ static int sd_mkdir(const char *path) {
 
 static int sd_stat(const char *path, struct stat *st) {
     char *full_path = get_fullpath(path);
-    int   result    = stat(full_path, st);
+    led_flash_start();
+    int result = stat(full_path, st);
+    led_flash_stop();
     free(full_path);
 
     return result < 0 ? ERR_NOT_FOUND : 0;
