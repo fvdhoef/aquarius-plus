@@ -446,7 +446,11 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
                     default: break;
                 }
 
-                fpga_update_handctrl(handctrl, 0xFF);
+                static uint8_t old_handctrl = 0xFF;
+                if (old_handctrl != handctrl) {
+                    fpga_update_handctrl(handctrl, 0xFF);
+                    old_handctrl = handctrl;
+                }
             }
 
             break;
