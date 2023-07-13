@@ -4,6 +4,8 @@
 
 static const char *TAG = "fpga";
 
+static SemaphoreHandle_t mutex;
+
 extern const uint8_t fpga_image_start[] asm("_binary_top_bit_start");
 extern const uint8_t fpga_image_end[] asm("_binary_top_bit_end");
 
@@ -33,6 +35,8 @@ enum {
 void fpga_init(void) {
     // IOPIN_ESP_NOTIFY  = 12,
     // IOPIN_FPGA_PROG_N = 34,
+    mutex = xSemaphoreCreateRecursiveMutex();
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
 
     {
         gpio_config_t io_conf = {
@@ -146,18 +150,22 @@ void fpga_init(void) {
         gpio_set_level(IOPIN_SPI_CS_N, 1);
         gpio_set_direction(IOPIN_SPI_CS_N, GPIO_MODE_OUTPUT);
     }
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_reset_req(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_RESET, .flags = SPI_TRANS_USE_TXDATA};
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     uint8_t buf[9];
@@ -170,9 +178,11 @@ void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     uint8_t buf[3];
@@ -186,27 +196,33 @@ void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_bus_acquire(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_BUS_ACQUIRE, .flags = SPI_TRANS_USE_TXDATA};
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_bus_release(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_BUS_RELEASE, .flags = SPI_TRANS_USE_TXDATA};
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_mem_write(uint16_t addr, uint8_t data) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     spi_transaction_t t = {
@@ -222,9 +238,11 @@ void fpga_mem_write(uint16_t addr, uint8_t data) {
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 uint8_t fpga_mem_read(uint16_t addr) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     {
@@ -255,10 +273,12 @@ uint8_t fpga_mem_read(uint16_t addr) {
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
 
+    xSemaphoreGiveRecursive(mutex);
     return result;
 }
 
 void fpga_io_write(uint16_t addr, uint8_t data) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     spi_transaction_t t = {
@@ -274,9 +294,11 @@ void fpga_io_write(uint16_t addr, uint8_t data) {
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
+    xSemaphoreGiveRecursive(mutex);
 }
 
 uint8_t fpga_io_read(uint16_t addr) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     gpio_set_level(IOPIN_SPI_CS_N, 0);
 
     {
@@ -306,27 +328,33 @@ uint8_t fpga_io_read(uint16_t addr) {
     }
 
     gpio_set_level(IOPIN_SPI_CS_N, 1);
-
+    xSemaphoreGiveRecursive(mutex);
     return result;
 }
 
 void fpga_save_banks(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     // Save bank registers
     for (int i = 0; i < 4; i++) {
         cur_banks[i] = saved_banks[i] = fpga_io_read(IO_BANK0 + i);
     }
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_restore_banks(void) {
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
     // Restore bank registers
     for (int i = 0; i < 4; i++) {
         fpga_io_write(IO_BANK0 + i, saved_banks[i]);
     }
+    xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_set_bank(unsigned bank, uint8_t val) {
-    if (cur_banks[bank] == val)
-        return;
-    fpga_io_write(IO_BANK0 + bank, val);
-    cur_banks[bank] = val;
+    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+    if (cur_banks[bank] != val) {
+        fpga_io_write(IO_BANK0 + bank, val);
+        cur_banks[bank] = val;
+    }
+    xSemaphoreGiveRecursive(mutex);
 }

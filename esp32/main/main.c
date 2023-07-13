@@ -5,6 +5,7 @@
 #include "uart_protocol.h"
 #include "ca_store.h"
 #include "wifi.h"
+#include "bluetooth.h"
 #include "fileserver.h"
 #include "aq_keyb.h"
 #include "tcpserver.h"
@@ -46,8 +47,10 @@ static void init(void) {
     // Wi-Fi init
     wifi_init();
 
-    keyboard_init();
+    // Bluetooth init
+    bluetooth_init();
 
+    keyboard_init();
     sdcard_init();
     usbhost_init();
     uart_protocol_init();

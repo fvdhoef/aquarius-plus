@@ -15,6 +15,7 @@ idf_component_register(
         "led.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
+        "connectivity/bluetooth.c"
 
     INCLUDE_DIRS
         "."
@@ -35,6 +36,8 @@ idf_component_register(
         "app_update"
         "usb"
         "fatfs"
+        "bt"
+        "nimble_central_utils"
 
     EMBED_FILES
         "../../fpga/top.bit"
