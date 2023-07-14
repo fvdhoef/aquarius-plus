@@ -1,6 +1,9 @@
+#include <stdio.h>
+#include <stdint.h>
 #include <string.h>
-#include "lib/file_io.h"
-#include "lib/regs.h"
+#include <stdlib.h>
+#include "file_io.h"
+#include "regs.h"
 
 typedef unsigned char byte;
 typedef unsigned short word;
@@ -71,9 +74,7 @@ typedef enum {
   AY_ENV_SHAPE
 } AY8910Register;
 
-///
-
-void main();
+// void main();
 
 void start() __naked {
 __asm
