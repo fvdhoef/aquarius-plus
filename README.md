@@ -13,4 +13,4 @@ What would the Aquarius have evolved into if Mattel hadn't abandoned the system 
 * Integrated SD card and commands (remove dependence on cassette loading)
 * WiFi and Bluetooth capabilities
 
-[CLICK HERE FOR THE MOST RECENT DOC UPDATES](docs/aquarius_plus.md).
+[CLICK HERE FOR THE MOST RECENT DOC UPDATES](SDK/docs/aquarius_plus.md).
