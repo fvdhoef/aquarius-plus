@@ -53,10 +53,9 @@ Volume   = 28
 CHP_size = 29
 
 ;---------------------------------------------------------
-; Variables (and self-mofifying code, if present) in RAM
+; Variables (and self-modifying code, if present) in RAM
 ; NOTE: must be initialized before use!
 ;---------------------------------------------------------
-;
 
 VARMEM:
 SETUP:     .db 0     ; bit7 = 1 when loop point reached
@@ -132,7 +131,7 @@ _pt3play_init::
     ret
 
 ; Wrapper to call PLAY from C
-; void pt3play_play(void);
+; bool pt3play_play(void);
 _pt3play_play::
     push ix
     push iy
@@ -326,8 +325,7 @@ L1: PUSH BC
     EX   DE,HL
     LD   DE,#23
 
-
-    .db 0xDD,0x26,0x08; LD   IXH,#8
+    .db 0xDD,0x26,0x08      ; TODO: use correct syntax instead for: LD   IXH,#8
 
 L2: SRL  B
     RR   C

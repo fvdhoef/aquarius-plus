@@ -2,9 +2,10 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include "file_io.h"
-#include "regs.h"
-#include "pt3play.h"
+
+#include <file_io.h>
+#include <regs.h>
+#include <pt3play.h>
 
 extern const unsigned char ingarden_pt3[];
 

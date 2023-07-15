@@ -2,6 +2,7 @@
 #define _PT3PLAY_H
 
 #include <stdint.h>
+#include <stdbool.h>
 
 struct ayregs {
     uint16_t tone_a;
@@ -18,8 +19,8 @@ struct ayregs {
 
 extern struct ayregs pt3play_ayregs;
 
-void    pt3play_init(void *pt3);
-uint8_t pt3play_play(void); // Non-zero return value at end-of-song (loop point)
-void    pt3play_mute(void);
+void pt3play_init(void *pt3);
+bool pt3play_play(void); // Returns true at end-of-song (loop point)
+void pt3play_mute(void);
 
 #endif
