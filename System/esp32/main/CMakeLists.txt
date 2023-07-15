@@ -41,7 +41,7 @@ idf_component_register(
 
     EMBED_FILES
         "../../fpga/top.bit"
-        "../../testdata/source/esp_terminal/build/esp_terminal.caq"
+        "../../rom_src/esp_terminal/build/esp_terminal.caq"
 
     EMBED_TXTFILES
         "connectivity/letsencrypt_root_certificate.pem"

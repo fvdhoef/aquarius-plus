@@ -1,13 +1,33 @@
 #!/bin/bash
 idf.py build
 
-mkdir -p $1 $1/bootloader $1/partition_table
-cp build/bootloader/bootloader.bin $1/bootloader/
-cp build/aquarius-plus.bin $1/
-cp build/partition_table/partition-table.bin $1/partition_table/
-cp build/ota_data_initial.bin $1/
-cp build/flash_args $1/
-echo "esptool.py --chip esp32s3 -p COM3 write_flash `cat build/flash_args | tr '\n' ' '`" > $1/write.bat
-unix2dos $1/write.bat
-zip -rv $1.zip $1
-rm -rf $1
+NAME=firmware-`git describe`
+
+# Remove temp directory and zip if existant
+rm -rf $NAME $NAME.zip
+
+# Create temp directory
+mkdir -p $NAME $NAME/bootloader $NAME/partition_table
+
+# Copy files into temp directory
+cp release_readme.txt $NAME/README.txt
+cp build/bootloader/bootloader.bin $NAME/bootloader/
+cp build/aquarius-plus.bin $NAME/
+cp build/partition_table/partition-table.bin $NAME/partition_table/
+cp build/ota_data_initial.bin $NAME/
+cp build/flash_args $NAME/
+
+# Windows batch file
+echo "esptool.py --chip esp32s3 -p COM3 write_flash `cat build/flash_args | tr '\n' ' '`" > $NAME/write.bat
+unix2dos $NAME/write.bat
+
+# macOS/Linux shell script
+echo "#!/bin/sh" > $NAME/write.sh
+echo "esptool.py --chip esp32s3 write_flash `cat build/flash_args | tr '\n' ' '`" >> $NAME/write.sh
+chmod +x $NAME/write.sh
+
+# Create ZIP file
+zip -rv $NAME.zip $NAME
+
+# Remove temp directory
+rm -rf $NAME
