@@ -1,55 +1,6 @@
-;===============================================================================
-;    AQUBASIC: Extended BASIC ROM for Mattel Aquarius With USB MicroExpander
-;===============================================================================
-; By Bruce Abbott                                            www.bhabbott.net.nz
-;                                                        bruce.abbott@xtra.co.nz
-;
-; For use with my micro-expander (CH376 USB interface, 32K RAM, AY-3-8910 PSG)
-; Incudes commands from BLBasic by Martin Steenoven  http://www.vdSteenoven.com
-; changes:-
-; 2015-11-4  V0.0  created
-; 2015-11-5        EDIT command provides enhanced editing of BASIC lines.
-; 2015-11-6  V0.01 PRINT token expands to '?' on edit line (allows editing longer lines).
-; 2015-11-9  V0.02 Added Turboload cassette routines
-;                  Faster power-on memtest
-; 2015-11-13 V0.03 Turbo tape commands TSAVE and TLOAD
-;                  Enhanced edit functions on command line (immediate mode)
-;                  Fixed scroll issue caused by conflicting ROWCOUNT definitions
-; 2015-12-22 V0.04 fixed ctrl-c not removing colored cursor
-; 2015-01-17 V0.05 CAT catalog files (minimalist directory listing)
-; 2016-01-18 V0.06 RUN command can take name of file (BASIC or BINARY) to load and run
-; 2016-01-30 V0.07 added PROGST to allow for extra system variables.
-; 2016-02-21 V0.08 CALL passes txt pointer (in HL) to user code.
-; 2016-04-11 V0.09 disk function vectors at $C000
-; 2016-10-10 V0.10 changed cold boot menu to suit uexp (no ROM menu)
-; 2017-01-22 V0.11 DOS commands take fully evaluated arguments eg. LOAD LEFT$(A$,11)
-;                  DIR with wildcards
-;                  CAT prints 3 filenames per line
-; 2017-02-20 V0.12 DEBUG
-; 2017-03-03 V0.13 change displayed name to AQUARIUS USB BASIC
-; 2017-03-06 V0.14 Incorporate ROM initialization, boot menu, ROM loader.
-; 2017-03-09 V0.15 add PT3 player, tidy vector and function names
-; 2017-03-12 V0.16 HEX$() function: convert number to Hexadecimal string
-; 2017-04-14 V0.17 HL = 0 on entry to debugger from splash screen
-; 2017-04-18 V0.18 CRTL-R = retype line
-; 2017-04-25 V0.19 Reserve high RAM for retype buffer, debugger, DOS
-; 2017-04-29 V0.20 FileName, FileType, DOSflags moved from BASIC variables to private RAM
-; 2017-05-04 V0.21 sys_KeyChk: replacement keyboard scan routine
-; 2017-05-06 V0.22 clear history buffer before entering BASIC
-;                  bugfix: ST_EDIT buffer length equate 1 less than actual buffer size
-; 2017-05-08 V0.23 refactored code to get more space in ROM!
-; 2017-05-16 V0.24 CLS clears 1000 chars/colors, doesn't touch last 24 bytes.
-; 2017-05-22 V0.25 updated vectors
-;                  moved wait_key from aqubug.asm to here
-; 2017-05-30 V0.26 increased path.size from 36 to 37 (space for at least 4 subdirecties)
-; 2017-06-11 V0.27 return to root dir after debug, pt3play etc. in boot menu
-; 2017-06-12 V1.0  bumped to release version
-
 VERSION  = 1
 REVISION = 0
 
-; code options
-;softrom  equ 1    ; loaded from disk into upper 16k of 32k RAM
 aqubug   equ 1    ; full featured debugger (else lite version without screen save etc.)
 ;debug    equ 1    ; debugging our code. Undefine for release version!
 ;
@@ -90,7 +41,6 @@ aqubug   equ 1    ; full featured debugger (else lite version without screen sav
     include  "aquarius.i" ; aquarius hardware and system ROM
     include  "macros.i"   ; structure macros
     include  "windows.i"  ; fast windowed text functions
-    include  "pcg.i"      ; programmable character generator
 
 ; alternative system variable names
 VARTAB      = BASEND     ; $38D6 variables table (at end of BASIC program)
@@ -230,12 +180,8 @@ WIN_reserved2     jp  break
 ; windowed text functions
    include "windows.asm"
 
-debugger
- ifdef aqubug
+; debugger
    include "aqubug.asm"
- else
-   include "debug.asm"
- endif
 
 ; fill with $FF to $E000
      assert !($E000 < $) ; low rom full!!!
@@ -258,51 +204,10 @@ RECOGNIZATION:
 
 ROM_ENTRY:
 
-; initialize Programmble Character Generator
-  ifdef init_pcg
-     ld      hl,PCG_UNLOCK
-     ld      (hl),$ff      ; unlock PCG registers
-     ld      hl,PCG_MODE   ; PCG_CHAR is first
-     ld      b,3           ; 3 registers to clear
-     xor     a
-.reset_pcg:
-     ld      (hl),a        ; clear registers PCG_MODE, DBANK, WBANK
-     inc     hl
-     djnz    .reset_pcg
-     inc     hl            ; skip CHRSET
-     ld      (hl),a
-     dec     hl            ; back to WBANK
-     ld      (hl),a        ; load character set #0
-  endif
-
 ; set flag for NTSC or PAL
-     call    PAL__NTSC     ; measure video frame period: nc = PAL, c = NTSC
-     ld      a,0
-     jr      nc,.set_sysflags
-     set     SF_NTSC,a
-.set_sysflags:
+     ld      a,SF_NTSC
      ld      (Sysflags),a
-;
-; init debugger
-     ld      hl,vars
-     ld      bc,v.size
-.clrbugmem:
-     ld      (hl),0             ; clear all debugger variables
-     inc     hl
-     dec     bc
-     ld      a,b
-     or      c
-     jr      nz,.clrbugmem
-     ld      a,$C3
-     ld      (USRJMP),a
-     ld      HL,0
-     ld      (USRADDR),HL       ; set system RST $38 vector
-  ifdef aqubug
-     ld      de,MemWindows
-     ld      hl,dflt_winaddrs
-     ld      bc,2*4             ; initialize default memory window addresses
-     ldir
-  endif
+
 ;
 ; init CH376
      call    usb__check_exists  ; CH376 present?
@@ -319,6 +224,7 @@ ROM_ENTRY:
 ; show splash screen (Boot menu)
 SPLASH:
      call    usb__root          ; root directory
+
      ld      a,CYAN
      call    clearscreen
      ld      b,40
@@ -330,55 +236,10 @@ SPLASH:
      res     2,h
      inc     hl
      djnz    .topline
-     ld      ix,BootbdrWindow
-     call    OpenWindow
-     ld      ix,bootwindow
-     call    OpenWindow
-     ld      hl,bootmenutext
-     call    WinPrtStr
 
-; wait for Boot option key
-SPLKEY:
-     call    Key_Check
-     jr      z,SPLKEY           ; loop until key pressed
-  ifndef softrom
-     cp      "1"                ; '1' = load ROM
-     jr      z,LoadROM
-  endif
-     cp      "2"                ; '2' = debugger
-     jr      z,DEBUG
-     cp      "3"                ; '3' = PT3 player
-     jr      z,PTPLAY
-     cp      $0d                ; RTN = cold boot
-     jp      z, COLDBOOT
-     cp      $03                ;  ^C = warm boot
-     jp      z, WARMBOOT
-     jr      SPLKEY
-
-DEBUG:
-     call    InitBreak          ; set RST $38 vector to Trace Break
-     ld      hl,0               ; HL = 0 (no BASIC text)
-     ; call    ST_DEBUG           ; invoke Debugger
-     JR      SPLASH
-
-LoadROM:
-     call    Load_ROM           ; ROM loader
-     JR      SPLASH
-
-PTPLAY:
      CALL    PT3_PLAY           ; Music player
      JR      SPLASH
 
-; CTRL-C pressed in boot menu
-WARMBOOT:
-     xor     a
-     ld      (RETYPBUF),a       ; clear history buffer
-     ld      a,$0b
-     rst     $18                ; clear screen
-     call    $0be5              ; clear workspace and prepare to enter BASIC
-     call    $1a40              ; enter BASIC at KEYBREAK
-JUMPSTART:
-     jp      COLDBOOT           ; if BASIC returns then cold boot it
 
 ;
 ; Show copyright message
@@ -473,7 +334,7 @@ MEMSIZE:
 ;---------------------------------------------------------------------
 ;                         ROM loader
 ;---------------------------------------------------------------------
-     include "load_rom.asm"
+     ; include "load_rom.asm"
 
 
 ;---------------------------------------------------------------------
@@ -481,44 +342,6 @@ MEMSIZE:
 ;---------------------------------------------------------------------
     include "ch376.asm"
 
-
-;-------------------------------------------------------------------
-;                  Test for PAL or NTSC
-;-------------------------------------------------------------------
-; Measure video frame period, compare to 1.80ms
-; NTSC = 16.7ms, PAL = 20ms
-;
-; out: nc = PAL, c = NTSC
-;
-; NOTE: waits for ~17-41ms. Do not use in timing-critical code!
-;
-PAL__NTSC:
-    PUSH BC
-.wait_vbl1:
-    IN   A,($FD)
-    RRA                   ; wait for start of vertical blank
-    JR   C,.wait_vbl1
-.wait_vbh1:
-    IN   A,($FD)
-    RRA                   ; wait for end of vertical blank
-    JR   NC,.wait_vbh1
-    LD   BC,0
-.wait_vbl2:               ; 1.117us/cycle
-    INC  BC               ; 2 count                 ]
-    IN   A,($FD)          ; 3 read status reg       ]
-    RRA                   ; 1 test VBL bit          ]   9 cycles per loop
-    JR   C,.wait_vbl2     ; 3 loop until VLB high   ]   10.06us/loop
-.wait_vbh2:               ; cycles (1.12us/cycle)
-    INC  BC               ; 2 count                 ]
-    IN   A,($FD)          ; 3 read status reg       ]   9 cycles per loop
-    RRA                   ; 1 test VBL bit          ]   10.06us/loop
-    JR   NC,.wait_vbh2    ; 3 loop until VLB high   ]
-    LD   C,A
-    LD   A,B              ; ~1657 = 60Hz, ~1989 = 50Hz
-    CP   7                ; c = NTSC, nc = PAL
-    LD   A,C
-    POP  BC
-    RET
 
 ; boot window with border
 BootBdrWindow:
@@ -541,14 +364,6 @@ BootWinTitle:
      db     VERSION+'0','.',REVISION+'0',' ',0
 
 BootMenuText:
-     db     CR
-  ifdef softrom
-     db     "    1. (disabled)",CR
-  else
-     db     "    1. Load ROM",CR
-  endif
-     db     CR,CR
-     db     "    2. Debug",CR
      db     CR,CR
      db     "    3. PT3 Player",CR
      db     CR,CR,CR,CR

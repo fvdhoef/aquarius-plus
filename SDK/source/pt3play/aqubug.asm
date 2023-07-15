@@ -569,7 +569,7 @@ _goHL: LD    (PC_reg),HL     ; set PC
 _trace_go:
        call  restore_screen  ; show system screem
        CALL  SetBreakpoints  ; set all breakpoints
-       CALL  InitBreak       ; redirect RST $38 to Break
+       ; CALL  InitBreak       ; redirect RST $38 to Break
 ; continue tracing
 _trace_cont:
        DI
@@ -3122,19 +3122,19 @@ POKE:  PUSH AF
 Say_Error
        RET
 
-;-------------------------------------------------------
-;       Rediract RST $38 Vector to Trace Break
-;-------------------------------------------------------
-InitBreak:
-     push    hl
-     ld      a,$C3
-     ld      (USRJMP),a       ; create JP instruction
-     ld      HL,(USRADDR)
-     ld      (UserAddr),HL    ; save current RST $38 vector
-     ld      hl,Break
-     ld      (USRADDR),HL     ; redirect to Trace Break
-     pop     hl
-     ret
+; ;-------------------------------------------------------
+; ;       Rediract RST $38 Vector to Trace Break
+; ;-------------------------------------------------------
+; InitBreak:
+;      push    hl
+;      ld      a,$C3
+;      ld      (USRJMP),a       ; create JP instruction
+;      ld      HL,(USRADDR)
+;      ld      (UserAddr),HL    ; save current RST $38 vector
+;      ld      hl,Break
+;      ld      (USRADDR),HL     ; redirect to Trace Break
+;      pop     hl
+;      ret
 
 
 ;
