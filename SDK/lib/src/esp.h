@@ -18,9 +18,16 @@ static inline void esp_cmd(uint8_t cmd) {
     esp_send_byte(cmd);
 }
 
-static void esp_send_bytes(const void *buf, uint16_t length) {
+static inline void esp_send_bytes(const void *buf, uint16_t length) {
     const uint8_t *p = buf;
     while (length--) {
         esp_send_byte(*(p++));
+    }
+}
+
+static inline void esp_get_bytes(void *buf, uint16_t length) {
+    uint8_t *p = buf;
+    while (length--) {
+        *(p++) = esp_get_byte();
     }
 }
