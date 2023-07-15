@@ -1,4 +1,6 @@
 #!/bin/bash
+set -e
+
 idf.py build
 
 NAME=firmware-`git describe`
@@ -31,3 +33,5 @@ zip -rv $NAME.zip $NAME
 
 # Remove temp directory
 rm -rf $NAME
+
+echo Done!
