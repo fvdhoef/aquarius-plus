@@ -23,38 +23,38 @@
 DEBOUNCE = 70   ; number of key-up scans before believing key is up
 
 Key_Check:
-        push    hl
-        push    bc
-        ld      bc,$00ff        ; Scan all columns at once
-        in      a,(c)           ; Read the results
-        cpl                     ; invert - (a key down now gives 1)
-        and     $3f             ; check all rows
-        ld      hl,LASTKEY      ; HL = &LASTKEY (scan code of last key pressed)
-        jr      z,.nokeys
-        ld      b,$7f           ; 01111111 - scanning column 8
-        in      a,(c)
-        cpl                     ; invert bits
-        and     $0f             ; check lower 4 bits
-        jr      nz,.keydown     ; if any keys in column 8 pressed then do KEYDOWN
+    push    hl
+    push    bc
+    ld      bc,$00ff        ; Scan all columns at once
+    in      a,(c)           ; Read the results
+    cpl                     ; invert - (a key down now gives 1)
+    and     $3f             ; check all rows
+    ld      hl,LASTKEY      ; HL = &LASTKEY (scan code of last key pressed)
+    jr      z,.nokeys
+    ld      b,$7f           ; 01111111 - scanning column 8
+    in      a,(c)
+    cpl                     ; invert bits
+    and     $0f             ; check lower 4 bits
+    jr      nz,.keydown     ; if any keys in column 8 pressed then do KEYDOWN
 .scncols:
-        ld      b,$bf           ; 10111111 - start with column 7
+    ld      b,$bf           ; 10111111 - start with column 7
 .keycolumn:
-        in      a,(c)
-        cpl                     ; invert bits
-        and     $3f             ; is any key down?
-        jr      nz,.keydown     ; yes,
-        rrc     b               ; no, try next column
-        jr      c,.keycolumn    ; until all columns scanned
+    in      a,(c)
+    cpl                     ; invert bits
+    and     $3f             ; is any key down?
+    jr      nz,.keydown     ; yes,
+    rrc     b               ; no, try next column
+    jr      c,.keycolumn    ; until all columns scanned
 
 ; key up debouncer
 .nokeys:                        ; no keys are down.
-        inc     hl              ; HL = &SCANCNT, counts how many times the same
-        ld      a,DEBOUNCE      ;                code has been scanned in a row.
-        cp      (hl)            ; compare scan count to debounce value
-        jr      c,.nokey        ; if scanned more than DEBOUNCE times then done
-        jr      z,.keyup        ; if scanned DEBOUNCE times then do KEY UP
-        inc     (hl)            ; else increment SCANCNT
-        jr      .nokey
+    inc     hl              ; HL = &SCANCNT, counts how many times the same
+    ld      a,DEBOUNCE      ;                code has been scanned in a row.
+    cp      (hl)            ; compare scan count to debounce value
+    jr      c,.nokey        ; if scanned more than DEBOUNCE times then done
+    jr      z,.keyup        ; if scanned DEBOUNCE times then do KEY UP
+    inc     (hl)            ; else increment SCANCNT
+    jr      .nokey
 
 ; HL = &LASTKEY
 ; B  = bit pattern of column being scanned.
@@ -66,66 +66,66 @@ Key_Check:
 ; There are 8 columns of 6 keys giving a total of 48 keys.
 ;
 .keydown:
-       ld      c,0             ; C = column count
+    ld      c,0             ; C = column count
 .krowcnt:
-       inc     c               ; column count + 1
-       rra
-       jr      nc,.krowcnt     ; Count how many rotations to get the bit into Carry.
-       ld      a,c             ; A = number of bit which was set
+    inc     c               ; column count + 1
+    rra
+    jr      nc,.krowcnt     ; Count how many rotations to get the bit into Carry.
+    ld      a,c             ; A = number of bit which was set
 .kcolcnt:
-       rr      b
-       jr      nc,.krowcol     ; jump when 0 bit gets to CARRY
-       add     a,6             ; add 6 for each rotate, to give the column number.
-       jr      .kcolcnt
+    rr      b
+    jr      nc,.krowcol     ; jump when 0 bit gets to CARRY
+    add     a,6             ; add 6 for each rotate, to give the column number.
+    jr      .kcolcnt
 ; A = (column*6)+row
 .krowcol:
-       cp      (hl)            ; is scancode same as last time?
-       ld      (hl),a          ; (LASTKEY) = scancode
-       inc     hl              ; HL = &SCANCOUNT
-       jr      nz,.newkey      ; no,
-       ld      a,4             ; yes, has it been down for 4 scans? (debounce)
-       cp      (hl)
-       jr      c,.scan6        ; if more than 4 counts then we are already handling it
-       jr      z,.kdecode      ; if key has been down for exactly 4 scans then decode it
-       inc     (hl)            ; otherwise increment SCANCOUNT
-       jr      .nokey          ; exit with no key
+    cp      (hl)            ; is scancode same as last time?
+    ld      (hl),a          ; (LASTKEY) = scancode
+    inc     hl              ; HL = &SCANCOUNT
+    jr      nz,.newkey      ; no,
+    ld      a,4             ; yes, has it been down for 4 scans? (debounce)
+    cp      (hl)
+    jr      c,.scan6        ; if more than 4 counts then we are already handling it
+    jr      z,.kdecode      ; if key has been down for exactly 4 scans then decode it
+    inc     (hl)            ; otherwise increment SCANCOUNT
+    jr      .nokey          ; exit with no key
 .scan6:
-       ld      (hl),6          ; SCANCOUNT = 6
-       jr      .nokey          ; exit with no key
+    ld      (hl),6          ; SCANCOUNT = 6
+    jr      .nokey          ; exit with no key
 
 ; The same key has now been down for 4 scans.
 ; so it's time to find out what it is.
 ;  in: HL = &SCANCOUNT
 .kdecode:
-       inc     (hl)           ; increment the scan count
-       ld      bc,$7fff       ; read column 8 ($7f = 01111111)
-       in      a,(c)
-       ld      hl,CTLTBL-1    ; point to start of CTRL key lookup table
-       bit     5,a            ; CTRL key down?
-       jr      z,.klookup     ; yes,
-       ld      hl,SHFTBL-1    ; point to start of SHIFT key lookup table
-       bit     4,a            ; SHIFT key down?
-       jr      z,.klookup     ; yes,
-       ld      hl,KEYTBL-1    ; else point to start of normal key lookup table.
+    inc     (hl)           ; increment the scan count
+    ld      bc,$7fff       ; read column 8 ($7f = 01111111)
+    in      a,(c)
+    ld      hl,CTLTBL-1    ; point to start of CTRL key lookup table
+    bit     5,a            ; CTRL key down?
+    jr      z,.klookup     ; yes,
+    ld      hl,SHFTBL-1    ; point to start of SHIFT key lookup table
+    bit     4,a            ; SHIFT key down?
+    jr      z,.klookup     ; yes,
+    ld      hl,KEYTBL-1    ; else point to start of normal key lookup table.
 .klookup:
-       ld      b,0
-       ld      a,(LASTKEY)    ; get scancode
-       ld      c,a
-       add     hl,bc          ; offset into table
-       ld      a,(hl)         ; A = ASCII key
-       or      a
-       jr      .exit          ; return nz with ASCII key in A
+    ld      b,0
+    ld      a,(LASTKEY)    ; get scancode
+    ld      c,a
+    add     hl,bc          ; offset into table
+    ld      a,(hl)         ; A = ASCII key
+    or      a
+    jr      .exit          ; return nz with ASCII key in A
 .keyup:
-       inc     (hl)           ; increment SCANCNT
-       dec     hl             ; HL = &LASTKEY
+    inc     (hl)           ; increment SCANCNT
+    dec     hl             ; HL = &LASTKEY
 .newkey:
-       ld      (hl),0         ; set SCANCNT/LASTKEY to 0
+    ld      (hl),0         ; set SCANCNT/LASTKEY to 0
 .nokey:
-       xor     a              ; return z, A = no key
+    xor     a              ; return z, A = no key
 .exit:
-       pop     bc
-       pop     hl
-       ret
+    pop     bc
+    pop     hl
+    ret
 
 ;-------------------------------------------------------
 ;                     KEY TABLES

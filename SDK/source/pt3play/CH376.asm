@@ -1,122 +1,3 @@
-;******************************************************************************
-;                      CH376 USB Driver for Z80 CPU
-;******************************************************************************
-; Based on code for the MZ800 by Michal Hucík http://www.8bit.8u.cz
-;
-;   Date      Ver                     Changes                         Author
-; 2015-10-4  V0.00 started                                         Bruce Abbott
-; 2015-10-24 V0.01 it works! (reading binary files only)
-; 2015-10-25 V0.02 usb_read_bytes returns end address + 1 in HL, length in DE
-; 2015-11-11 V0.03 usb_dir returns NZ if no disk, wildcard filter
-; 2015-12-11 V0.04 increased mount timeout
-; 2016-01-01 V0.05 write_bytes
-; 2016-01-10 V0.06 add '/' to begining of filename
-;                  add usb_seek
-; 2016-01-12 V0.07 read_byte
-; 2016-01-18 V0.08 add usb_delete, usb_close_file, usb_set_filename
-; 2016-02-19 V0.09 bugfix: usb_file_exist sometimes failed when file existed!
-; 2016-04-07 V0.10 changed I/O address to suit micro-expander
-; 2017-03-03       added documentation for read byte, write byte
-; 2017-03-08 V0.11 usb_dir fills array with directory info
-;                  usb_wild_card (moved to here from dos.asm)
-; 2017-04-07 V0.12 usb_set_path
-;                  usb_dir now returns CH376 interrupt code
-; 2017-04-10 V0.13 usb_MSDOS convert filename char to MSDOS compatible
-; 2017-04-20 V0.14 check exists, set usb mode.
-; 2017-04-23 V0.15 usb_get_path
-; 2017-04-24 V0.16 usb_open_path
-; 2017-05-01 V0.17 usb_delete opens path before deleting file
-; 2017-06-08 V0.18 sort_dir: subdirectories before files
-; 2017-06-12 V1.0  bumped to release version
-;
-; usb_sort:
-;   sort filename array
-;   input:  A = sort options  0 = directories before files only (no other sorting)
-;           C = number of filenames in array
-;
-; usb_ready:
-;   check for disk, mount if present
-;   output:  Z = OK
-;           NZ = error, A = error code (1 = no CH376, 2 = no disk, 3 = mount fail)
-;
-; usb_open_read:
-;   open file or directory for reading
-;   input:  HL = address of filename (null-terminated string)
-;   output:  Z = OK
-;           NZ = fail, A = error code
-;
-; usb_read_byte:
-;    read byte from open file
-;    Input: none
-;   Output:  Z = successful read, byte returned in A
-;           NZ = fail, A = error code
-;
-; usb_read_bytes:
-;    read data from open file and store in RAM
-;    Input: HL = address where data will be stored
-;           DE = number of bytes to read (-1 = load any file up to 65535 bytes)
-;   output: HL = actual end address + 1
-;           DE = number of bytes actually read
-;            Z = OK
-;           NZ = fail, A = error code
-;
-; usb_open_write:
-;   open file for writing. create new file if none exists.
-;   input:  HL = address of filename (null-terminated string)
-;   output:  Z = OK
-;           NZ = fail, A = error code
-;
-; usb_write_byte:
-;    write byte to file (opened with usb_open_write)
-;    Input:  A = byte
-;   Output:  Z = successful write
-;           NZ = fail, A = error code
-;
-; usb_write_bytes:
-;    write data from RAM to file opened for writing
-;    Input: HL = address of data in RAM
-;           DE = number of bytes to write
-;   output:  Z = OK
-;           NZ = fail, A = error code
-;
-; usb_seek:
-;    seek into open file
-;    input: DE = byte offset from beginning of file (0-65535)
-;   output:  Z = OK
-;           NZ = fail, A = error code
-;
-; usb_delete:
-;    delete file
-;   input:  HL = filename
-;  output:   Z = OK
-;           NZ = fail, A = error code
-;
-; usb_open_dir:
-;    open current directory  (if not found then open root directory)
-;  out: z = directory opened
-;      nz = error
-;
-; usb_dir:
-;   read directory into array, 16 bytes per entry (DIR_filename:11, DIR_attr:1, DIR_filesize:4)
-;   input:  HL = address of array
-;            B = number of elements in array
-;           DE = wildcard pattern ("*" for all files)
-;   output:  C = number of matching files found
-;            Z = OK
-;           NZ = fail, A = error code
-;
-; usb_wildcard:
-;   pattern match filename against wildcard pattern
-;   input:  HL-> filename 11 chars (spaces bwteen name and extn)
-;           DE-> pattern (null-terminated string)
-;  output:   Z = match
-;           NZ = no match
-;
-; usb_set_filename:
-;   send filename to CH376
-;    input: HL = filename
-;   output:  A = CH376 interrupt code
-;
 ;
 ; I/O ports
 CH376_DATA_PORT         equ     $40     ; change this to match your hardware!
@@ -580,10 +461,6 @@ usb__wait_int:
         LD      A,B
         OR      C
         JR      NZ,.wait_int_loop       ; loop until timeout
-     ifdef debug
-        ld      a,"?"
-        ld      ($3000),a
-     endif
 .wait_int_end:
         LD      A,CH376_CMD_GET_STATUS
         OUT     (CH376_CONTROL_PORT),A  ; command: get status
@@ -611,11 +488,6 @@ usb__check_exists:
         IN      A,(CH376_DATA_PORT)
         CP      $E5                     ; byte inverted?
         RET     Z
-  ifdef debug
-        ld      a,"1"+10
-        sub     b
-        ld      ($3001),a
-  endif
         DJNZ    .retry
         LD      A,1                     ; error code = no CH376
         OR      A                       ; NZ
@@ -640,11 +512,6 @@ usb__set_usb_mode:
         IN      A,(CH376_DATA_PORT)
         CP      $51                     ; status = $51?
         RET     Z
-  ifdef debug
-        ld      a,"1"+10
-        sub     b
-        ld      ($3002),a
-  endif
         DJNZ    .retry
         LD      A,2                     ; error code 2 = no USB
         OR      A                       ; NZ
@@ -677,18 +544,9 @@ usb__ready:
 .mountloop:
         CALL    usb__mount              ; try to mount disk
         JR      z,.done                 ; return OK if mounted
-     ifdef debug
-        ld      a,'5'
-        sub     b
-        ld      ($3003),a
-     endif
         call    usb__root               ; may be different disk so reset path
         DJNZ    .mountloop
 ; mount failed,
-     ifdef debug
-        ld      a,"S"
-        ld      ($3004),a
-     endif
         DEC     C                       ; already tried set_usb_mode ?
         JR      NZ,.done                ; yes, fail
         call    usb__set_usb_mode       ; put CH376 into USB mode
