@@ -27,59 +27,18 @@ BLACK2    = 15
 LASTKEY  = $380E ; 14350           SCAN CODE of last key pressed
 SCANCNT  = $380f ; 14351           number of SCANS key has been down for
 
-; start a structure definition
-; eg. STRUCTURE mystruct,0
-STRUCTURE MACRO name,offset
-`name`_offset EQU offset
-count     = offset
-ENDM
-
-; allocate 1 byte in structure
-; eg. BYTE char1
-BYTE      MACRO name
-name      EQU   count
-count     = count+1
-ENDM
-
-; allocate 2 bytes in structure
-; eg. WORD int1
-WORD      MACRO name
-name      EQU count
-count     = count+2
-ENDM
-
-; allocate 4 bytes in structure
-; eg. LONG longint1
-LONG      MACRO name
-name      EQU count
-count     = count+4
-ENDM
-
-; allocate multiple bytes
-; typically used to embed a structure inside another
-; eg. STRUCT filename,11
-STRUCT    MACRO name,size
-name      EQU   count
-count     = count+size
-ENDM
-
-; finish defining structure
-; eg. ENDSTRUCT mystruct
-ENDSTRUCT MACRO name
-`name`.size EQU count-`name`_offset
-ENDM
 
 ; window structure
-STRUCTURE window,0
-    BYTE win_flags    ; window attributes
-    BYTE win_color    ; text color (foreground*16+background)
-    BYTE win_bcolor   ; border color
-    BYTE win_x        ; x position (column)
-    BYTE win_y        ; y position (line)
-    BYTE win_w        ; width of interior
-    BYTE win_h        ; height of interior
-    WORD win_title    ; pointer to title string
-ENDSTRUCT window
+; STRUCTURE window,0
+win_flags  = 0  ; BYTE window attributes
+win_color  = 1  ; BYTE text color (foreground*16+background)
+win_bcolor = 2  ; BYTE  ; border color
+win_x      = 3  ; BYTE x position (column)
+win_y      = 4  ; BYTE y position (line)
+win_w      = 5  ; BYTE width of interior
+win_h      = 6  ; BYTE height of interior
+win_title  = 7  ; WORD pointer to title string
+; ENDSTRUCT window
 
 ; window flag bits
 WA_BORDER = 0           ; window has a border

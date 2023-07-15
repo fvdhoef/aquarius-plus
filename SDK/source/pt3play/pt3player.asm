@@ -92,9 +92,6 @@ VT_:       defs 256     ; 256 bytes CreatedVolumeTableAddress
 NT_:       defs 192     ; 192 bytes Note Table
 VAREND:
 
-numsongs:  db 0          ; number of songs (1-36)
-song:      db 0              ; current song number (0-35)
-pt3_files: defs (36*16) ; array to store 36 file infos
 
 Ns_Base_AddToNs = Ns_Base
 

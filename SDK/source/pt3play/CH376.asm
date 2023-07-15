@@ -31,20 +31,20 @@ CH376_INT_DISK_WRITE    equ     $1E     ; write again (more bytes to write)
 CH376_ERR_OPEN_DIR      equ     $41     ; is directory, not file
 CH376_ERR_MISS_FILE     equ     $42     ; file not found
 
- structure FAT_DIR_INFO,0
-    STRUCT DIR_Name,11          ; $00 0
-     BYTE  DIR_Attr             ; $0B 11
-     BYTE  DIR_NTRes            ; $0C 12
-     BYTE  DIR_CrtTimeTenth     ; $0D 13
-     WORD  DIR_CrtTime          ; $0E 14
-     WORD  DIR_CrtDate          ; $10 16
-     WORD  DIR_LstAccDate       ; $12 18
-     WORD  DIR_FstClusHI        ; $14 20
-     WORD  DIR_WrtTime          ; $16 22
-     WORD  DIR_WrtDate          ; $18 24
-     WORD  DIR_FstClusLO        ; $1A 26
-     LONG  DIR_FileSize         ; $1C 28
- endstruct FAT_DIR_INFO         ; $20 32
+
+DIR_Name          = 0
+DIR_Attr          = 11
+DIR_NTRes         = 12
+DIR_CrtTimeTenth  = 13
+DIR_CrtTime       = 14
+DIR_CrtDate       = 16
+DIR_LstAccDate    = 18
+DIR_FstClusHI     = 20
+DIR_WrtTime       = 22
+DIR_WrtDate       = 24
+DIR_FstClusLO     = 26
+DIR_FileSize      = 28
+
 
 ; attribute masks
 ATTR_READ_ONLY      EQU $01
@@ -566,12 +566,10 @@ usb__mount:
         OUT     (CH376_CONTROL_PORT),A  ; command: mount disk
         JP      usb__wait_int           ; wait until done
 
-
-  STRUCTURE FileInfo,0
-    STRUCT  FI_NAME,11
-    BYTE    FI_ATTR
-    LONG    FI_SIZE
-  ENDSTRUCT FileInfo
+FI_NAME = 0
+FI_ATTR = 11
+FI_SIZE = 12
+FileInfo.size = 16
 
 
 ;-----------------------------------------------------------------------------

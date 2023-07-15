@@ -22,6 +22,14 @@ PT3pat:
 PT3help:
       db   "SPACE = next song    RTN = playlist",0
 
+
+numsongs:  db 0          ; number of songs (1-36)
+song:      db 0              ; current song number (0-35)
+pt3_files: defs (36*16) ; array to store 36 file infos
+
+
+
+
 PT3_PLAY:
     LD   IX, SelectWindow
     CALL OpenWindow
