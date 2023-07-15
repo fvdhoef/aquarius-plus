@@ -27,12 +27,6 @@ BLACK2    = 15
 LASTKEY  = $380E ; 14350           SCAN CODE of last key pressed
 SCANCNT  = $380f ; 14351           number of SCANS key has been down for
 
-;----------------------------------------------------------------------------
-;                          system routines
-;----------------------------------------------------------------------------
-PRNCHR      = $1d94  ; print character in A
-
-
 ; start a structure definition
 ; eg. STRUCTURE mystruct,0
 STRUCTURE MACRO name,offset
@@ -76,16 +70,16 @@ ENDSTRUCT MACRO name
 ENDM
 
 ; window structure
- STRUCTURE window,0
-      BYTE win_flags    ; window attributes
-      BYTE win_color    ; text color (foreground*16+background)
-      BYTE win_bcolor   ; border color
-      BYTE win_x        ; x position (column)
-      BYTE win_y        ; y position (line)
-      BYTE win_w        ; width of interior
-      BYTE win_h        ; height of interior
-      WORD win_title    ; pointer to title string
- ENDSTRUCT window
+STRUCTURE window,0
+    BYTE win_flags    ; window attributes
+    BYTE win_color    ; text color (foreground*16+background)
+    BYTE win_bcolor   ; border color
+    BYTE win_x        ; x position (column)
+    BYTE win_y        ; y position (line)
+    BYTE win_w        ; width of interior
+    BYTE win_h        ; height of interior
+    WORD win_title    ; pointer to title string
+ENDSTRUCT window
 
 ; window flag bits
 WA_BORDER = 0           ; window has a border
@@ -94,53 +88,35 @@ WA_CENTER = 2           ; title is centered
 WA_SCROLL = 3           ; scroll enabled
 
 
-; alternative system variable names
-RAMEND      = $C000           ; we are in ROM, 32k expansion RAM available
+    org $38E1
+
+    ; Header and BASIC stub
+    db $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+    db "AQPLUS"
+    db $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+    db $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
+    jp main
+
 
 path.size = 37           ; length of file path buffer
 
-; high RAM usage
-STRUCTURE _sysvars,0
-    STRUCT _pathname,path.size  ; file path eg. "/root/subdir1/subdir2",0
-    STRUCT _filename,13         ; USB file name 1-11 chars + '.', NULL
-    BYTE   _filetype            ; file type BASIC/array/binary/etc.
-    WORD   _binstart            ; binary file load/save address
-    WORD   _binlen              ; binary file length
-    BYTE   _dosflags            ; DOS flags
-ENDSTRUCT _sysvars
-
-SysVars  = RAMEND-_sysvars.size
-PathName = sysvars+_pathname
-FileName = sysvars+_filename
-FileType = sysvars+_filetype
-BinStart = sysvars+_binstart
-BinLen   = sysvars+_binlen
-DosFlags = sysvars+_dosflags
-
-;=======================================
-;             ROM Code
-;=======================================
-
-     ; 16k ROM start address
-     ORG $C000
+PathName: defs path.size 
+FileName: defs 13
+FileType: db 0
+BinStart: dw 0
+BinLen:   dw 0
+DosFlags: db 0
 
 
-     ; fill with $FF to $E000
-     assert !($E000 < $) ; low rom full!!!
-     dc  $E000-$,$FF
+main:
 
-;=================================================================
-;                     AquBASIC BOOT ROM
-;=================================================================
 
-    ORG $E000
+; ; Rom recognization
+; ; 16 bytes
+; RECOGNIZATION:
+;     db  66, 79, 79, 84, 83, 156, 84, 176, 82, 108, 65, 100, 80, 168, 128, 112
 
-; Rom recognization
-; 16 bytes
-RECOGNIZATION:
-    db  66, 79, 79, 84, 83, 156, 84, 176, 82, 108, 65, 100, 80, 168, 128, 112
-
-ROM_ENTRY:
+    ; ROM_ENTRY:
     ; init CH376
     call    usb__check_exists  ; CH376 present?
     jr      nz,.no_ch376
@@ -203,33 +179,6 @@ clearscreen:
     pop     hl
     ret
 
-;--------------------------
-;   print hex byte
-;--------------------------
-; in: A = byte
-PRINTHEX:
-    push    bc
-    ld      b,a
-    and     $f0
-    rra
-    rra
-    rra
-    rra
-    cp      10
-    jr      c,.hi_nib
-    add     7
-.hi_nib:
-    add     '0'
-    call    PRNCHR
-    ld      a,b
-    and     $0f
-    cp      10
-    jr      c,.low_nib
-    add     7
-.low_nib:
-    add     '0'
-    pop     bc
-    jp      PRNCHR
 
 ;----------------------------------------------------------------
 ;                         Set Path
@@ -509,7 +458,5 @@ Wait_key:
     ; PT3 music player
     include "pt3play.asm"
 
-    ; fill with $FF to end of ROM
-    assert !($FFFF<$)   ; ROM full!
-    dc $FFFF-$+1,$FF
-    end
+
+SongData:

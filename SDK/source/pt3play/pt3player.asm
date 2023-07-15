@@ -1,3 +1,123 @@
+60Hz = -1  ; make this -1 to play 50Hz songs on 60Hz machine
+
+; address of variables in RAM
+; VARMEM = $B800  ; top of stack at boot (before initializing BASIC)
+
+; AY registers
+; STRUCT AYREGS
+TonA     = 0
+TonB     = 2
+TonC     = 4
+Noise    = 6
+Mixer    = 7
+AmplA    = 8
+AmplB    = 9
+AmplC    = 10
+Env      = 11
+EnvTp    = 13
+
+;ChannelsVars
+; STRUCT  CHP
+;reset group
+PsInOr   =  0
+PsInSm   =  1
+CrAmSl   =  2
+CrNsSl   =  3
+CrEnSl   =  4
+TSlCnt   =  5
+CrTnSl   =  6
+TnAcc    =  8
+COnOff   = 10
+;reset group
+
+OnOffD   = 11
+
+;IX for PTDECOD here (+12)
+OffOnD   = 12
+OrnPtr   = 13
+SamPtr   = 15
+NNtSkp   = 17
+Note     = 18
+SlToNt   = 19
+Env_En   = 20
+PtFlags  = 21
+ ;Enabled - 0,SimpleGliss - 2
+TnSlDl   = 22
+TSlStp   = 23
+TnDelt   = 25
+NtSkCn   = 27
+Volume   = 28
+;   ENDS
+CHP_size = 29
+
+;---------------------------------------------------------
+; Variables (and self-mofifying code, if present) in RAM
+; NOTE: must be initialized before use!
+;---------------------------------------------------------
+;
+
+VARMEM:
+SETUP:     db 0     ; bit7 = 1 when loop point reached
+CrPsPtr:   dw 0
+AddToEn:   db 0
+AdInPtA:   dw 0
+AdInPtB:   dw 0
+AdInPtC:   dw 0
+Env_Del:   db 0
+MODADDR:   dw 0
+ESldAdd:   dw 0
+Delay:     db 0
+SaveSP:    dw 0
+SamPtrs:   dw 0
+OrnPtrs:   dw 0
+PatsPtr:   dw 0
+LPosPtr:   dw 0
+PrSlide:   dw 0
+PrNote:    db 0
+PtVersion: db 0
+;end of variables and self-modifying code
+;start of cleared data area
+ChanA:     defs CHP_size
+ChanB:     defs CHP_size
+ChanC:     defs CHP_size
+
+;GlobalVars
+DelyCnt:   db 0
+CurESld:   dw 0
+CurEDel:   dw 0
+;arrays
+Ns_Base:   db 0
+AddToNs:   db 0
+VT_:       defs 256     ; 256 bytes CreatedVolumeTableAddress
+NT_:       defs 192     ; 192 bytes Note Table
+VAREND:
+
+numsongs:  db 0          ; number of songs (1-36)
+song:      db 0              ; current song number (0-35)
+pt3_files: defs (36*16) ; array to store 36 file infos
+
+Ns_Base_AddToNs = Ns_Base
+
+L3       = PrSlide    ; opcode + RET
+M2       = PrSlide
+
+AYREGS   = VT_      ; 14 AY-3-8910 registers
+EnvBase  = VT_+14
+VAR0END  = VT_+16   ; end of cleared data area
+
+T1_      = VT_+16   ; Tone table data depacked here
+T_OLD_1  = T1_
+T_OLD_2  = T_OLD_1+24
+T_OLD_3  = T_OLD_2+24
+T_OLD_0  = T_OLD_3+2
+T_NEW_0  = T_OLD_0
+T_NEW_1  = T_OLD_1
+T_NEW_2  = T_NEW_0+24
+T_NEW_3  = T_OLD_3
+
+;local vars
+Ampl     = AYREGS+AmplC
+
 
 ;PT3 player version
     DB   "=VTII PT3 Player r.7ROM="
