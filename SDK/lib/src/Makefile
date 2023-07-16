@@ -1,10 +1,10 @@
 BUILD_DIR   ?= build
 
 OUTFILE      = aqplus.lib
-OUT          = $(OUTFILE)
+OUT          = ../$(OUTFILE)
 
-INC_DIRS    += ../include
-SRC_DIRS    += src
+INC_DIRS    += ../../include
+SRC_DIRS    += . file_io
 
 S_SRCS      += $(wildcard $(addsuffix /*.s, $(SRC_DIRS)))
 C_SRCS      += $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
@@ -18,13 +18,13 @@ CFLAGS      += $(addprefix -I,$(INC_DIRS))
 
 .PHONY: all clean run
 
-all: $(OUT) crt0.rel
+all: $(OUT) ../crt0.rel
 
 $(OUT): $(OBJS)
 	@echo Creating library archive $@
 	sdar -rc $(OUT) $(OBJS)
 
-crt0.rel: src/crt0/crt0.s
+../crt0.rel: crt0/crt0.s
 	@echo Assembling $<
 	@sdasz80 -o $@ $<
 
