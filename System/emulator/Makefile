@@ -66,6 +66,7 @@ ifeq ($(detected_OS),Darwin)
 	@echo Building app bundle
 	@rm -rf $(BUILD_DIR)/AquariusPlusEmu.app
 	@cp -r macos/AquariusPlusEmu.app build/
+	@mkdir -p build/AquariusPlusEmu.app/Contents/MacOS/
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu
 	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Resources/
 	@sed -i '' 's/#VERSION#/$(VERSION_STR)/' $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Info.plist
