@@ -1,5 +1,7 @@
     .z80
 
+    .area _CODE
+
 ; 60Hz = -1  ; make this -1 to play 50Hz songs on 60Hz machine
 
 ; address of variables in RAM

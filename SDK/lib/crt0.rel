@@ -18,8 +18,8 @@ A _INITIALIZER size 0 flags 0 addr 0
 A _GSINIT size 25 flags 0 addr 0
 S gsinit Def000000
 A _GSFINAL size 1 flags 0 addr 0
-A _DATA size 0 flags 0 addr 0
 A _INITIALIZED size 0 flags 0 addr 0
+A _DATA size 0 flags 0 addr 0
 A _BSEG size 0 flags 0 addr 0
 A _BSS size 0 flags 0 addr 0
 A _HEAP size 0 flags 0 addr 0

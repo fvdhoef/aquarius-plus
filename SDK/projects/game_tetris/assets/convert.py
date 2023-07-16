@@ -25,7 +25,7 @@ for entry in palette:
     palbytes.append(entry & 0xFF)
     palbytes.append(entry >> 8)
 
-print(f"    .area CODE", file=f)
+print(f"    .area _CODE", file=f)
 print(f"_tile_palette::", file=f)
 for i in range(0, 32, 8):
     tmp = ", ".join([f"0x{val:02X}" for val in palbytes[i : i + 8]])

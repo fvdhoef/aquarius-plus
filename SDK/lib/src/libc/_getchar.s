@@ -1,4 +1,4 @@
-    .area   CODE
+    .area   _CODE
 _getchar::
     push    ix
     call    0x1E7E

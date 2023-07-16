@@ -24,7 +24,7 @@ $(OUT): $(OBJS)
 	@echo Linking $@
 	@mkdir -p $(dir $@)
 	@sdcc $(LFLAGS) $(AQPLUS_SDK)/lib/crt0.rel $(OBJS) -o $(OUT).ihx
-	@makebin -p -o 0x38E1 $(OUT).ihx $(OUT)
+	@sdobjcopy -I ihex -O binary $(OUT).ihx $(OUT)
 
 $(S_OBJS): $(BUILD_DIR)/%.rel: %.s
 	@echo Assembling $<

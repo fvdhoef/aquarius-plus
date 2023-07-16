@@ -1,4 +1,4 @@
-    .area   CODE
+    .area   _CODE
 _putchar::
     push    ix
 
