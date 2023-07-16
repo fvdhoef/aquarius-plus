@@ -1,11 +1,6 @@
     .z80
 
-    .area _CODE
-
 ; 60Hz = -1  ; make this -1 to play 50Hz songs on 60Hz machine
-
-; address of variables in RAM
-; VARMEM = 0xB800  ; top of stack at boot (before initializing BASIC)
 
 ; AY registers
 ; STRUCT AYREGS
@@ -59,7 +54,8 @@ CHP_size = 29
 ; NOTE: must be initialized before use!
 ;---------------------------------------------------------
 
-VARMEM:
+    .area _DATA
+
 SETUP:     .db 0     ; bit7 = 1 when loop point reached
 CrPsPtr:   .dw 0
 AddToEn:   .db 0
@@ -92,7 +88,6 @@ CurEDel:   .dw 0
 Ns_Base:   .db 0
 AddToNs:   .db 0
 
-_pt3play_ayregs::
 VT_:       .ds 256     ; 256 bytes CreatedVolumeTableAddress
 NT_:       .ds 192     ; 192 bytes Note Table
 VAREND:
@@ -103,7 +98,10 @@ Ns_Base_AddToNs = Ns_Base
 L3       = PrSlide    ; opcode + RET
 M2       = PrSlide
 
-AYREGS   = VT_      ; 14 AY-3-8910 registers
+AYREGS   == VT_      ; 14 AY-3-8910 registers
+_pt3play_ayregs == AYREGS
+
+
 EnvBase  = VT_+14
 VAR0END  = VT_+16   ; end of cleared data area
 
@@ -119,6 +117,9 @@ T_NEW_3  = T_OLD_3
 
 ;local vars
 Ampl     = AYREGS+AmplC
+
+
+    .area _CODE
 
 ; Wrapper to call INIT from C
 ; void pt3play_init(void *pt3);

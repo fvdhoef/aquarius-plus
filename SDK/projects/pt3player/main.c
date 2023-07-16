@@ -9,8 +9,6 @@ static uint8_t    *cp;
 static uint8_t     col;
 static int         fileidx[36];
 
-static const char *keys = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-
 static void draw_str(const char *str) {
     while (*str) {
         *(tp++) = *(str++);
@@ -108,7 +106,14 @@ static void scandir(void) {
             }
         }
 
-        *(tp++) = keys[idx];
+        char key;
+        if (idx < 10) {
+            key = '0' + idx;
+        } else {
+            key = 'A' + idx - 10;
+        }
+        *(tp++) = key;
+
         *(tp++) = (st.attr & 1) ? '<' : ' ';
         draw_str(filename);
         *(tp++) = (st.attr & 1) ? '>' : ' ';
@@ -149,25 +154,60 @@ static void playsong(void) {
     if (st.size > max_size)
         return;
 
+    draw_window(filename);
+
     load_binary(filename, load_addr, max_size);
-
     pt3play_init(load_addr);
-    // while (1) {
-    //     // Wait for end-of-frame (line 216)
-    //     video_wait_eof();
+    while (1) {
+        // Wait for end-of-frame (line 216)
+        video_wait_eof();
 
-    //     // Play 1 frame of PT3 data. Break out of loop if end-of-song.
-    // if (pt3play_play())
-    // break;
-    // }
+        // Play 1 frame of PT3 data. Break out of loop if end-of-song.
+        if (pt3play_play())
+            break;
+
+        char ch = getchar();
+        if (ch == '\r')
+            break;
+
+        tp = tram + 40 * 4 + 4;
+
+        // Visualization
+        {
+            uint8_t *cp = cram + 20 * 40 + 13;
+
+            uint8_t va = pt3play_ayregs.ampl_a;
+            uint8_t vb = pt3play_ayregs.ampl_b;
+            uint8_t vc = pt3play_ayregs.ampl_c;
+
+            for (uint8_t i = 0; i < 16; i++) {
+                uint8_t col;
+
+                col   = (va >= i) ? 0x11 : 0x00;
+                cp[0] = col;
+                cp[1] = col;
+                cp[2] = col;
+
+                col   = (vb >= i) ? 0x22 : 0x00;
+                cp[5] = col;
+                cp[6] = col;
+                cp[7] = col;
+
+                col    = (vc >= i) ? 0x44 : 0x00;
+                cp[10] = col;
+                cp[11] = col;
+                cp[12] = col;
+
+                cp -= 40;
+            }
+        }
+    }
 
     // Mute any remaining sound
     pt3play_mute();
 }
 
 int main(void) {
-    // chdir("songs1");
-
     while (1) {
         scandir();
 
@@ -201,20 +241,5 @@ int main(void) {
             }
         }
     }
-
-    // pt3play_init(ingarden_pt3);
-
-    // while (1) {
-    //     // Wait for end of frame (line 216)
-    //     IO_VIRQLINE = 216;
-    //     IO_IRQSTAT  = 2;
-    //     while ((IO_IRQSTAT & 2) == 0) {
-    //     }
-
-    //     if (pt3play_play())
-    //         break;
-    // }
-    // pt3play_mute();
-
     return 0;
 }
