@@ -1,13 +1,8 @@
-#include <stdio.h>
-#include <stdint.h>
-#include <string.h>
-#include <stdlib.h>
-#include "file_io.h"
-#include "regs.h"
+#include <aqplus.h>
 
 // #define SHOWPERF
 
-// Platfield dimensions
+// Playfield dimensions
 #define PLAYFIELD_W 10
 #define PLAYFIELD_H 20
 #define PLAYFIELD_YT 2
@@ -649,10 +644,9 @@ static void frame(void) {
 #endif
 
     // Wait for end of frame (line 216)
-    IO_VIRQLINE = 216;
-    IO_IRQSTAT  = 2;
-    while ((IO_IRQSTAT & 2) == 0) {
-    }
+    video_wait_eof();
+
+    pt3play_play();
 
 #ifdef SHOWPERF
     IO_VPALSEL  = 0;
@@ -972,21 +966,14 @@ static void play_marathon(void) {
     }
 }
 
-// Our main function
 int main(void) {
-    // while (1) {
-    //     scankeys();
-    //     for (int i = 0; i < 8; i++) {
-    //         printf("%02X ", pressed_keys[i]);
-    //     }
-    //     printf("\n");
-
-    //     // printf("%02X\n", getkeys());
-    // }
-
     uint8_t iobank3_old = IO_BANK3;
 
     init();
+
+    extern const unsigned char __21_2F_pt3[];
+    pt3play_init(__21_2F_pt3);
+
     while (!quit)
         play_marathon();
 

@@ -20,21 +20,21 @@ LFLAGS      += -mz80 --code-loc 0x391B --data-loc 0 --no-std-crt0 -L $(AQPLUS_SD
 
 all: $(OUT) $(DEPS)
 
-$(OUT): $(BUILD_DIR) $(OBJS)
+$(OUT): $(OBJS)
 	@echo Linking $@
+	@mkdir -p $(dir $@)
 	@sdcc $(LFLAGS) $(AQPLUS_SDK)/lib/crt0.rel $(OBJS) -o $(OUT).ihx
 	@makebin -p -o 0x38E1 $(OUT).ihx $(OUT)
 
 $(S_OBJS): $(BUILD_DIR)/%.rel: %.s
 	@echo Assembling $<
+	@mkdir -p $(dir $@)
 	@sdasz80 -o $@ $<
 
 $(C_OBJS): $(BUILD_DIR)/%.rel: %.c
 	@echo Compiling $<
+	@mkdir -p $(dir $@)
 	@sdcc $(CFLAGS) -o $@ -c $<
-
-$(BUILD_DIR):
-	@mkdir -p $(dir $(OBJS))
 
 clean:
 	@rm -rf $(BUILD_DIR)
