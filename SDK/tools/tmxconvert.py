@@ -3,6 +3,7 @@ from sys import stderr
 import xml.etree.ElementTree as ET
 import PIL.Image
 import argparse
+from pathlib import Path
 
 parser = argparse.ArgumentParser(
     description="Convert Tiled .tmx file and .png file to Aquarius+ VRAM format"
@@ -22,7 +23,7 @@ root = tree.getroot()
 tileset = root.find("tileset")
 firstgid = int(tileset.get("firstgid"))
 image = tileset.find("image")
-tileset_img = image.get("source")
+tileset_img = Path(args.tilemap).parent.joinpath(image.get("source"))
 
 layer = root.find("layer")
 if int(layer.get("width")) != 64 or int(layer.get("height")) != 32:

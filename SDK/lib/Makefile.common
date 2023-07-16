@@ -1,0 +1,52 @@
+BUILD_DIR   ?= build
+AQPLUS_SDK  ?= ../..
+AQPLUS_HOST ?= aqplus
+
+OUT           ?= $(BUILD_DIR)/$(OUTFILE)
+FILES_TO_COPY += $(OUT)
+
+S_SRCS      += $(wildcard $(addsuffix /*.s, $(SRC_DIRS)))
+C_SRCS      += $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
+
+S_OBJS      := $(addprefix $(BUILD_DIR)/, $(S_SRCS:.s=.rel))
+C_OBJS      := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.rel))
+OBJS        := $(S_OBJS) $(C_OBJS)
+
+CFLAGS      += -mz80 --opt-code-speed
+CFLAGS      += -I$(AQPLUS_SDK)/include $(addprefix -I,$(INC_DIRS))
+LFLAGS      += -mz80 --code-loc 0x391B --data-loc 0 --no-std-crt0 -L $(AQPLUS_SDK)/lib aqplus.lib
+
+.PHONY: all clean run_emu run_aqp
+
+all: $(OUT) $(DEPS)
+
+$(OUT): $(BUILD_DIR) $(OBJS)
+	@echo Linking $@
+	@sdcc $(LFLAGS) $(AQPLUS_SDK)/lib/crt0.rel $(OBJS) -o $(OUT).ihx
+	@makebin -p -o 0x38E1 $(OUT).ihx $(OUT)
+
+$(S_OBJS): $(BUILD_DIR)/%.rel: %.s
+	@echo Assembling $<
+	@sdasz80 -o $@ $<
+
+$(C_OBJS): $(BUILD_DIR)/%.rel: %.c
+	@echo Compiling $<
+	@sdcc $(CFLAGS) -o $@ -c $<
+
+$(BUILD_DIR):
+	@mkdir -p $(dir $(OBJS))
+
+clean:
+	@rm -rf $(BUILD_DIR)
+
+run_emu: all
+	@cp $(FILES_TO_COPY) ~/Documents/AquariusPlusDisk/
+	@../../../System/emulator/build/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -t "\nrun\"$(OUTFILE)\"\n"
+
+run_aqp: all
+	@$(foreach NAME,$(FILES_TO_COPY), \
+		echo Uploading $(NAME); \
+		curl -T $(NAME) http://$(AQPLUS_HOST)/; \
+	)
+	@echo Running $(OUTFILE)
+	@printf '\x1E\nRUN"$(OUTFILE)"\n' | netcat -c $(AQPLUS_HOST) 23

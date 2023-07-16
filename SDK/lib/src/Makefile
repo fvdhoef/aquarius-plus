@@ -4,7 +4,7 @@ OUTFILE      = aqplus.lib
 OUT          = ../$(OUTFILE)
 
 INC_DIRS    += ../../include
-SRC_DIRS    += . file_io
+SRC_DIRS    += . file_io video
 
 S_SRCS      += $(wildcard $(addsuffix /*.s, $(SRC_DIRS)))
 C_SRCS      += $(wildcard $(addsuffix /*.c, $(SRC_DIRS)))
