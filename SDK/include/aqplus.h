@@ -6,6 +6,7 @@
 
 #include <file_io.h>
 #include <regs.h>
+#include <kb.h>
 #include <video.h>
 #include <pt3play.h>
 

@@ -170,9 +170,13 @@ static uint8_t playsong(void) {
         if (pt3play_play())
             break;
 
-        char ch = getchar();
-        if (ch == '\r' || ch == ' ') {
-            result = ch;
+        kb_scan();
+        if (kb_pressed(KEY_SPACE)) {
+            result = KEY_SPACE;
+            break;
+        }
+        if (kb_pressed(KEY_RETURN)) {
+            result = KEY_RETURN;
             break;
         }
 
@@ -243,7 +247,7 @@ int main(void) {
                 if (st.attr & 1) {
                     chdir(filename);
                 } else {
-                    while (playsong() == ' ') {
+                    while (playsong() == KEY_SPACE) {
                         idx++;
                         if (idx >= 36 || fileidx[idx] < 0)
                             idx = 0;

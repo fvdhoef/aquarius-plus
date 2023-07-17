@@ -557,37 +557,20 @@ static void draw_preview(void) {
     draw_tetromino(x, y, next_tetromino, 0, false, false);
 }
 
-// Scan keyboard and store in pressed_keys
-static void scankeys(void) {
-    pressed_keys[0] = ~IO_KEYBOARD_COL0;
-    pressed_keys[1] = ~IO_KEYBOARD_COL1;
-    pressed_keys[2] = ~IO_KEYBOARD_COL2;
-    pressed_keys[3] = ~IO_KEYBOARD_COL3;
-    pressed_keys[4] = ~IO_KEYBOARD_COL4;
-    pressed_keys[5] = ~IO_KEYBOARD_COL5;
-    pressed_keys[6] = ~IO_KEYBOARD_COL6;
-    pressed_keys[7] = ~IO_KEYBOARD_COL7;
-}
-
-// Check if key with specified scancode is pressed
-static bool key_pressed(uint8_t scancode) {
-    return (pressed_keys[scancode / 8] & (1 << (scancode & 7)));
-}
-
 // Compose keys bitmap with only the keys used by the game
 static uint8_t getkeys(void) {
     uint8_t result = 0;
-    if (key_pressed(KEY_A))
+    if (kb_pressing(KEY_A))
         result |= KBM_LEFT;
-    if (key_pressed(KEY_D))
+    if (kb_pressing(KEY_D))
         result |= KBM_RIGHT;
-    if (key_pressed(KEY_W))
+    if (kb_pressing(KEY_W))
         result |= KBM_UP;
-    if (key_pressed(KEY_S))
+    if (kb_pressing(KEY_S))
         result |= KBM_DOWN;
-    if (key_pressed(KEY_N))
+    if (kb_pressing(KEY_N))
         result |= KBM_ROTATE_CCW;
-    if (key_pressed(KEY_M))
+    if (kb_pressing(KEY_M))
         result |= KBM_ROTATE_CW;
     return result;
 }
@@ -654,7 +637,7 @@ static void frame(void) {
 #endif
 
     // Scan keys
-    scankeys();
+    kb_scan();
 
     // Update screen during non-visible part
     if (bgdelay == 0) {
@@ -950,7 +933,7 @@ static void play_marathon(void) {
             frame();
 
             // Quit game on CTRL-C (or ESCAPE)
-            if (key_pressed(KEY_C) && key_pressed(KEY_CTRL)) {
+            if (kb_pressed(KEY_C) && kb_pressed(KEY_CTRL)) {
                 quit = true;
                 wait = false;
             }
