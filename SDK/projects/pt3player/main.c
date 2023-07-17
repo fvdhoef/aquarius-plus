@@ -148,13 +148,17 @@ static void getfile(int idx) {
     closedir(dd);
 }
 
-static void playsong(void) {
+static uint8_t playsong(void) {
     void    *load_addr = getheap();
     uint16_t max_size  = 0xC000 - (uint16_t)load_addr;
     if (st.size > max_size)
-        return;
+        return 0;
 
     draw_window(filename);
+    tp = tram + 23 * 40 + 2;
+    draw_str("SPACE = next song    RTN = stop song");
+
+    uint8_t result = 0;
 
     load_binary(filename, load_addr, max_size);
     pt3play_init(load_addr);
@@ -167,33 +171,35 @@ static void playsong(void) {
             break;
 
         char ch = getchar();
-        if (ch == '\r')
+        if (ch == '\r' || ch == ' ') {
+            result = ch;
             break;
+        }
 
         tp = tram + 40 * 4 + 4;
 
         // Visualization
         {
-            uint8_t *cp = cram + 20 * 40 + 13;
+            uint8_t *cp = cram + 19 * 40 + 13;
 
             uint8_t va = pt3play_ayregs.ampl_a;
             uint8_t vb = pt3play_ayregs.ampl_b;
             uint8_t vc = pt3play_ayregs.ampl_c;
 
-            for (uint8_t i = 0; i < 16; i++) {
+            for (uint8_t i = 1; i < 16; i++) {
                 uint8_t col;
 
-                col   = (va >= i) ? 0x11 : 0x00;
+                col   = (va >= i) ? 0x11 : 0xFF;
                 cp[0] = col;
                 cp[1] = col;
                 cp[2] = col;
 
-                col   = (vb >= i) ? 0x22 : 0x00;
+                col   = (vb >= i) ? 0x22 : 0xFF;
                 cp[5] = col;
                 cp[6] = col;
                 cp[7] = col;
 
-                col    = (vc >= i) ? 0x44 : 0x00;
+                col    = (vc >= i) ? 0x44 : 0xFF;
                 cp[10] = col;
                 cp[11] = col;
                 cp[12] = col;
@@ -205,6 +211,8 @@ static void playsong(void) {
 
     // Mute any remaining sound
     pt3play_mute();
+
+    return result;
 }
 
 int main(void) {
@@ -235,7 +243,12 @@ int main(void) {
                 if (st.attr & 1) {
                     chdir(filename);
                 } else {
-                    playsong();
+                    while (playsong() == ' ') {
+                        idx++;
+                        if (idx >= 36 || fileidx[idx] < 0)
+                            idx = 0;
+                        getfile(fileidx[idx]);
+                    }
                 }
                 break;
             }
