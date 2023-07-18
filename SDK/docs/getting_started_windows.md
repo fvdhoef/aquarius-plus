@@ -30,7 +30,7 @@ Download the latest version from https://www.msys2.org/, at the time of writing 
 
 Once downloaded, locate the file in your downloads folder and double click it. This will start the setup process. Use the default installation location. At the last step of the installer, it will run MSYS2. If you skipped this step, open the MSYS2 from your Start menu by running MSYS2 UCRT64. This will open a MSYS2 terminal window.
 
-Type the following command (follow by ENTER) in the terminal:
+Type the following command (followed by ENTER) in the terminal:
 ```
 pacman -S make curl gnu-netcat
 ```
@@ -49,20 +49,20 @@ Now we are going to add MSYS2 to the PATH:
 
 ## Step 3: Download the Aquarius+ SDK
 
-Download the Aquarius+ SDK, either by cloning the repository via git or by downloading a ZIP with the contents of the repository:
+Download the Aquarius+ SDK, either by cloning the repository via Git (if you're familiar with this) or by downloading a ZIP with the contents of the repository:
 
 https://github.com/fvdhoef/aquarius-plus/archive/refs/heads/master.zip
 
-Unpack this ZIP file and either at least copy the SDK folder within or the whole contents of the ZIP to a location of your liking (preferably to a location without any spaces in the path).
+Unpack this ZIP file and either, copy the SDK folder within or the whole contents of the ZIP, to a location of your liking (preferably to a location without any spaces in the path).
 
 Now set the following environment variables:
 
 | Name            | Description                                                                                                                                                                                               |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | AQPLUS_SDK      | Path to the Aquarius+ SDK folder, for example C:\Aquarius+\SDK                                                                                                                                            |
-| AQPLUS_HOST     | (defaults to aqplus) Hostname (or IP address) of your real Aquarius+. Used for easily remotely running code from your PC on your Aquarius+.                                                               |
-| AQPLUS_EMU      | (defaults to $(USERPROFILE)/Documents/Aquarius+/Emulator/aquarius-emu.exe) Full path to the Aquarius+ emulator executable.                                                                                |
-| AQPLUS_EMU_DISK | (defaults to $(USERPROFILE)/Documents/Aquarius+/Emulator/sdcard/) Full path a directory that the emulator uses as disk. The Makefile will install your application here when you run it via the Makefile. |
+| AQPLUS_HOST     | (defaults to **aqplus**)<br>Hostname (or IP address) of your real Aquarius+. Used for easily remotely running code from your PC on your Aquarius+.                                                               |
+| AQPLUS_EMU      | (defaults to **%USERPROFILE%\\Documents\\Aquarius+\\Emulator\\aquarius-emu.exe**)<br>Full path to the Aquarius+ emulator executable.                                                                                |
+| AQPLUS_EMU_DISK | (defaults to **%USERPROFILE%\\Documents\\Aquarius+\\Emulator\\sdcard\\**)<br>Full path to a directory that the emulator uses as disk. The Makefile will install your application here when you run it via the Makefile. |
 
 You can set these environment variables as follows:
 
