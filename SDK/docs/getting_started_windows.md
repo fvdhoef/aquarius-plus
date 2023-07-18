@@ -91,11 +91,11 @@ There are many more useful extensions, but the ones mentioned above will suffice
 ## Step 5: Try out your setup
 
 - Start Visual Studio Code.
-- Open an example project folder from the SDK folder using the **File > Open Folder...** menu item (for example SDK\examples\hello_world)
-- You can click the main.c file to see the code of this example.
+- Open an example project folder from the SDK folder using the **File > Open Folder...** menu item, for example **SDK\examples\hello_world**
+- You can click the **main.c** file to see the source code for this example.
 - Press CTRL+SHIFT+B to run a build task. A list will open where you can select several different options. Choose **Run project in emulator** from this menu. If everything is set up correctly, this will build your project. Copy the files into the emulator's sdcard directory, start the emulator and run your program.
 
-Each of example projects in the SDK contain a **.vscode** directory. This directory contains 2 important files:
+Each of the example projects in the SDK contain a **.vscode** directory. This directory contains 2 important files:
 
 | Name                  | Description                                                                                                                    |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
