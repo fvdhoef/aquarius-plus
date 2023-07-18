@@ -31,7 +31,9 @@ Download the latest version from https://www.msys2.org/, at the time of writing 
 Once downloaded, locate the file in your downloads folder and double click it. This will start the setup process. Use the default installation location. At the last step of the installer, it will run MSYS2. If you skipped this step, open the MSYS2 from your Start menu by running MSYS2 UCRT64. This will open a MSYS2 terminal window.
 
 Type the following command (follow by ENTER) in the terminal:
-```pacman -S make curl gnu-netcat```
+```
+pacman -S make curl gnu-netcat
+```
 At the confirmation prompt type Y and ENTER.
 This will install the **make** command needed to run Makefiles. It will also install the programs **curl** and **netcat**, used to remotely start programs on your real Aquarius+. You can now close the terminal window.
 
