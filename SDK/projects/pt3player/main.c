@@ -158,7 +158,7 @@ static uint8_t playsong(void) {
     tp = tram + 23 * 40 + 2;
     draw_str("SPACE = next song    RTN = stop song");
 
-    uint8_t result = 0;
+    uint8_t result = KEY_SPACE;
 
     load_binary(filename, load_addr, max_size);
     pt3play_init(load_addr);
@@ -243,7 +243,7 @@ int main(void) {
 
             if (idx < 36 && fileidx[idx] >= 0) {
                 getfile(fileidx[idx]);
-                puts(filename);
+                // puts(filename);
                 if (st.attr & 1) {
                     chdir(filename);
                 } else {
