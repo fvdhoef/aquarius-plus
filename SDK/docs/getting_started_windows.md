@@ -1,5 +1,6 @@
 # Gettings started on Windows
 
+This guide will explain how to get a development environment set up on your PC for Aquarius+ development.
 These instructions assume you're running a 64-bit version of Windows 11, but should also work on older (64-bit) versions of Windows.
 
 ## Step 1: Installing SDCC
