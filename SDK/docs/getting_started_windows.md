@@ -1,4 +1,4 @@
-# Gettings started on Windows
+# Getting started on Windows
 
 This guide will explain how to get a development environment set up on your PC for Aquarius+ development.
 These instructions assume you're running a 64-bit version of Windows 11, but should also work on older (64-bit) versions of Windows.
@@ -24,11 +24,11 @@ By default, the installer will install the compiler to C:\Program Files\SDCC.
 
 ## Step 2: Installing MSYS2
 
-In this step we're going to install an enviroment called MSYS2. This will provide the necessary tools to be able to build projects.
+In this step we're going to install an environment called MSYS2. This will provide the necessary tools to be able to build projects.
 
 Download the latest version from https://www.msys2.org/, at the time of writing this guide that is https://github.com/msys2/msys2-installer/releases/download/2023-07-18/msys2-x86_64-20230718.exe.
 
-Once downloaded, locate the file in your downloads folder and double click it. This will start the Setup process. Use the default installation location. At the last step of the installer, it will run MSYS2. If you skipped this open the MSYS2 from your Start menu by running MSYS2 UCRT64. This will open a terminal window.
+Once downloaded, locate the file in your downloads folder and double click it. This will start the setup process. Use the default installation location. At the last step of the installer, it will run MSYS2. If you skipped this open the MSYS2 from your Start menu by running MSYS2 UCRT64. This will open a terminal window.
 
 Type the following command (follow by ENTER):
 `pacman -S make curl gnu-netcat`
