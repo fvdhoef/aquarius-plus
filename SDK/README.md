@@ -9,3 +9,5 @@
 | [tools](tools/)       | Useful tools for software development              |
 | [examples](examples/) | Example programs demonstrating individual concepts |
 | [projects](projects/) | More complex, complete projects                    |
+
+To get started on Windows please read [this](docs/getting_started_windows.md) document.

@@ -2,6 +2,19 @@ BUILD_DIR   ?= build
 AQPLUS_SDK  ?= ../..
 AQPLUS_HOST ?= aqplus
 
+# Detect OS
+ifeq ($(OS),Windows_NT)
+	OS = Windows
+	AQPLUS_EMU_DISK ?= "$(USERPROFILE)/Documents/Aquarius+/Emulator/sdcard/"
+	AQPLUS_EMU ?= "$(USERPROFILE)/Documents/Aquarius+/Emulator/aquarius-emu.exe"
+else ifeq ($(shell uname -s),Darwin)
+	OS = MacOS
+	AQPLUS_EMU_DISK ?= $(HOME)/Documents/AquariusPlusDisk/
+	AQPLUS_EMU ?= open -a AquariusPlusEmu --args
+else ifeq ($(shell uname -s),Linux)
+	OS = Linux
+endif
+
 OUT           ?= $(BUILD_DIR)/$(OUTFILE)
 FILES_TO_COPY += $(OUT)
 
@@ -37,11 +50,14 @@ $(C_OBJS): $(BUILD_DIR)/%.rel: %.c
 	@sdcc $(CFLAGS) -o $@ -c $<
 
 clean:
+	@echo Removing build directory
 	@rm -rf $(BUILD_DIR)
 
 run_emu: all
-	@cp $(FILES_TO_COPY) ~/Documents/AquariusPlusDisk/
-	@../../../System/emulator/build/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -t "\nrun\"$(OUTFILE)\"\n"
+	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)
+	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)"
+	@echo Starting $(OUTFILE) in emulator
+	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\nrun\"$(OUTFILE)\"\n"
 
 run_aqp: all
 	@$(foreach NAME,$(FILES_TO_COPY), \
