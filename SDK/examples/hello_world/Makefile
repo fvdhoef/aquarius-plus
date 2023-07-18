@@ -1,4 +1,3 @@
-AQPLUS_SDK  ?= ../..
 OUTFILE      = hello.caq
 INC_DIRS    += .
 SRC_DIRS    += .

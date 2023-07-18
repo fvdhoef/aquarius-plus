@@ -1,4 +1,3 @@
-AQPLUS_SDK  ?= ../..
 OUTFILE      = pt3player.caq
 INC_DIRS    += .
 SRC_DIRS    += .

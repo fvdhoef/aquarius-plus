@@ -1,4 +1,3 @@
-AQPLUS_SDK  ?= ../..
 OUTFILE      = tiledemo.caq
 INC_DIRS    += .
 SRC_DIRS    += .

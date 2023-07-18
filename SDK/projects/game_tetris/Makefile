@@ -1,4 +1,3 @@
-AQPLUS_SDK  ?= ../..
 OUTFILE      = tetris.caq
 INC_DIRS    += .
 SRC_DIRS    += .
