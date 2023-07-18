@@ -186,7 +186,7 @@ module ay8910(
 
     // Period counter
     reg [16:0] envelope_period_cnt_r;
-    wire       envelope_period_done = envelope_period_cnt_r >= envelope_period_r;
+    wire       envelope_period_done = envelope_period_cnt_r >= {envelope_period_r, 1'b0};
 
     always @(posedge clk)
         if (reset)
