@@ -5,7 +5,6 @@ idf_component_register(
         "usbhost.c"
         "sdcard.c"
         "aq_keyb.c"
-        "screen.c"
         "uart_protocol.c"
         "direnum.c"
         "vfs.c"
