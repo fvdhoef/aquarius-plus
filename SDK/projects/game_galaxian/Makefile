@@ -6,6 +6,8 @@ OUT          = $(BUILD_DIR)/$(OUTFILE)
 INC_DIRS    += . lib
 SRC_DIRS    += . lib
 
+# FILES_TO_COPY += . assets/galax_start.png
+
 S_SRCS      += lib/crt0.s
 S_SRCS      += assets/tiledata.s
 C_SRCS      += main.c
