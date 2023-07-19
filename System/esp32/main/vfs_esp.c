@@ -7,9 +7,9 @@
 #include "sdcard.h"
 #include "led.h"
 
-extern const uint8_t terminal_caq_start[] asm("_binary_esp_terminal_caq_start");
-extern const uint8_t terminal_caq_end[] asm("_binary_esp_terminal_caq_end");
-static const char   *fn_terminal = "terminal.caq";
+extern const uint8_t settings_caq_start[] asm("_binary_settings_caq_start");
+extern const uint8_t settings_caq_end[] asm("_binary_settings_caq_end");
+static const char   *fn_settings = "settings.caq";
 static const char   *fn_com      = "com";
 
 static int dir_idx     = 0;
@@ -43,7 +43,7 @@ static int esp_open(uint8_t flags, const char *path) {
         }
         return 1;
     }
-    if (strcasecmp(path, fn_terminal) == 0) {
+    if (strcasecmp(path, fn_settings) == 0) {
         file_idx = 0;
     } else {
         file_idx = -1;
@@ -55,13 +55,13 @@ static int esp_open(uint8_t flags, const char *path) {
 
 static int esp_read(int fd, uint16_t size, void *buf) {
     if (fd == 0) {
-        int filesize  = terminal_caq_end - terminal_caq_start;
+        int filesize  = settings_caq_end - settings_caq_start;
         int remaining = filesize - file_offset;
 
         if (size > remaining) {
             size = remaining;
         }
-        memcpy(buf, terminal_caq_start + file_offset, size);
+        memcpy(buf, settings_caq_start + file_offset, size);
         file_offset += size;
         return size;
 
@@ -98,9 +98,9 @@ static int esp_closedir(int dd) {
 
 static int esp_readdir(int dd, struct direnum_ent *de) {
     if (dir_idx++ == 0) {
-        snprintf(de->filename, sizeof(de->filename), fn_terminal);
+        snprintf(de->filename, sizeof(de->filename), fn_settings);
         de->attr = 0;
-        de->size = terminal_caq_end - terminal_caq_start;
+        de->size = settings_caq_end - settings_caq_start;
         de->t    = 0;
         return 0;
     }
