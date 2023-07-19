@@ -41,7 +41,7 @@ Ports (Left to Right):
 **Note that on early versions of rev2 PCB, the Audio Out Port jack is surface-mounted to the PCB, and can be very delicate. It has since been changed to a through-hole mount for better stability, but care should be taken.*
 
 ### Top
-The top of the Aquarius+ case features an inset logo and five "racing lines", reminiscent of the design of other Mattel Electronics devices from the late 1970's through early 1980's. The components inside the Aquarius+ don't usually get warm, but it's best if no other items or equipment is placed on top of the device while it's turned on.
+The top of the Aquarius+ case features an inset logo and five "racing lines", reminiscent of the design of other Mattel Electronics devices from the late 1970's through early 1980's. The components inside the Aquarius+ don't usually get warm, but it's best if no other items or equipment are placed on top of the device while it's turned on.
 
 ### Bottom
 The bottom of the Aquarius+ case has stylized ventilation grills that mimic those on the original Aquarius, surrounded by four rubber feet. While the Aquarius+ does not usually get warm, it's best to leave the area around the unit open so that airflow can naturally cool the components as needed.
