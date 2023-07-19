@@ -286,7 +286,7 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
                 return 0;
             }
 
-            /* An advertisment report was received during GAP discovery. */
+            /* An advertisement report was received during GAP discovery. */
             print_adv_fields2(&fields);
 
             if (fields.appearance_is_present && fields.appearance == 0x03C4) {
