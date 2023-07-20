@@ -626,12 +626,12 @@ void set_sounds() {
   }
 
   // Play enemy explosion sound.
-  if (enemy_exploding) {
-    // set8910a(AY_PITCH_B_HI, enemy_exploding);
-    pt3play_ayregs.tone_a = enemy_exploding;
-    // set8910a(AY_ENV_VOL_B, 15);
-    pt3play_ayregs.ampl_b = 15;
-    enable |= 0x2;
+  if (enemy_exploding) {                                              // If enemy exploding is 1 or greater...
+    // set8910a(AY_PITCH_B_HI, enemy_exploding);                      // (old code)
+    pt3play_ayregs.tone_b = enemy_exploding;                          // ...set tone channel B to enemy exploding value...
+    // set8910a(AY_ENV_VOL_B, 15);                                    // (old code)
+    pt3play_ayregs.ampl_b = 15;                                       // ...and set the volume of channel B to full (15).
+    enable |= 0x2;                                                    // Set bit 2 to enable CH B.
   }
 
   // Play player explosion sound.
