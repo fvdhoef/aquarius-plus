@@ -9,6 +9,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <ff.h>
+#include "led.h"
 
 struct direnum_ctx {
     struct direnum_ent *entries;
@@ -48,6 +49,8 @@ static struct direnum_ctx *readall(const char *path) {
     // Allocate context
     if ((ctx = calloc(1, sizeof(*ctx))) == NULL)
         goto error;
+
+    led_flash_start();
 
     // Open directory
     FF_DIR dir;
@@ -92,12 +95,16 @@ static struct direnum_ctx *readall(const char *path) {
     f_closedir(&dir);
     dir_valid = false;
 
+    led_flash_stop();
+
     // Sort directory entries
     qsort(ctx->entries, ctx->num_entries, sizeof(*ctx->entries), de_compare);
 
     return ctx;
 
 error:
+    led_flash_stop();
+
     if (dir_valid) {
         f_closedir(&dir);
     }

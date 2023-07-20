@@ -99,7 +99,7 @@ static int esp_closedir(int dd) {
 struct direnum_ent *esp_readdir(int dd) {
     if (dir_idx++ == 0) {
         static struct direnum_ent de;
-        de.filename = fn_settings;
+        de.filename = (char *)fn_settings;
         de.attr     = 0;
         de.size     = settings_caq_end - settings_caq_start;
         de.fdate    = 0;

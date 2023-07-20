@@ -231,9 +231,7 @@ static int sd_opendir(const char *path) {
 
     char *full_path = get_fullpath(path);
 
-    led_flash_start();
     direnum_ctx_t ctx = direnum_open(full_path);
-    led_flash_stop();
     free(full_path);
 
     if (ctx == NULL)
@@ -251,22 +249,18 @@ static int sd_closedir(int dd) {
     dd -= MAX_FDS;
 
     direnum_ctx_t ctx = state.dds[dd];
-    led_flash_start();
     direnum_close(ctx);
-    led_flash_stop();
     state.dds[dd] = NULL;
     return 0;
 }
 
 static struct direnum_ent *sd_readdir(int dd) {
     if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
-        return ERR_PARAM;
+        return NULL;
     dd -= MAX_FDS;
 
     direnum_ctx_t ctx = state.dds[dd];
-    led_flash_start();
     struct direnum_ent *result = direnum_read(ctx);
-    led_flash_stop();
     return result;
 }
 
