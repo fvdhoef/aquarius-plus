@@ -12,14 +12,15 @@ enum {
 };
 
 struct direnum_ent {
-    char     filename[256];
+    char    *filename;
     uint32_t size;
     uint8_t  attr;
-    time_t   t;
+    uint16_t ftime;
+    uint16_t fdate;
 };
 
 typedef void *direnum_ctx_t;
 
-direnum_ctx_t direnum_open(const char *path);
-bool          direnum_read(direnum_ctx_t ctx, struct direnum_ent *dee);
-void          direnum_close(direnum_ctx_t ctx);
+direnum_ctx_t       direnum_open(const char *path);
+struct direnum_ent *direnum_read(direnum_ctx_t ctx);
+void                direnum_close(direnum_ctx_t ctx);

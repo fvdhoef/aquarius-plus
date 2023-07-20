@@ -258,14 +258,14 @@ static int sd_closedir(int dd) {
     return 0;
 }
 
-static int sd_readdir(int dd, struct direnum_ent *de) {
+static struct direnum_ent *sd_readdir(int dd) {
     if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
         return ERR_PARAM;
     dd -= MAX_FDS;
 
     direnum_ctx_t ctx = state.dds[dd];
     led_flash_start();
-    int result = direnum_read(ctx, de) ? 0 : ERR_EOF;
+    struct direnum_ent *result = direnum_read(ctx);
     led_flash_stop();
     return result;
 }

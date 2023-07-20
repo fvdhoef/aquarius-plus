@@ -96,16 +96,18 @@ static int esp_closedir(int dd) {
     return 0;
 }
 
-static int esp_readdir(int dd, struct direnum_ent *de) {
+struct direnum_ent *esp_readdir(int dd) {
     if (dir_idx++ == 0) {
-        snprintf(de->filename, sizeof(de->filename), fn_settings);
-        de->attr = 0;
-        de->size = settings_caq_end - settings_caq_start;
-        de->t    = 0;
-        return 0;
+        static struct direnum_ent de;
+        de.filename = fn_settings;
+        de.attr     = 0;
+        de.size     = settings_caq_end - settings_caq_start;
+        de.fdate    = 0;
+        de.ftime    = 0;
+        return &de;
     }
 
-    return ERR_EOF;
+    return NULL;
 }
 
 static int esp_stat(const char *path, struct stat *st) {
