@@ -91,9 +91,9 @@ static void draw_window(const char *path) {         // Take the pathname as a se
 // This method reads the list of PT3 files in the current path and creates a list of those files (up to 36 max) on screen.
 static void scandir(void) {
     getcwd(filename, sizeof(filename));             // 
-    draw_window(filename);                          // Redraw a blank window with the current path
+    draw_window(filename);                          // Redraw a blank window with the current path at the top
 
-    for (int i = 0; i < 36; i++) {
+    for (int i = 0; i < 36; i++) {                  // Initialize the fileidx array values to -1
         fileidx[i] = -1;
     }
 

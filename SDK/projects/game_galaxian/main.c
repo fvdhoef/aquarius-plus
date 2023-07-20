@@ -34,7 +34,7 @@ volatile byte __at (0x8100) input0;
 volatile byte __at (0x8101) input1;
 volatile byte __at (0x8102) input2;
 
-#define LEFT1 !(input0 & 0x20)
+#define LEFT1 !(input0 & 0x20)                          // Left button is the value of the input0 matrix & bit 6, inverted
 #define RIGHT1 !(input0 & 0x10)
 #define FIRE1 !(input0 & 0x8)
 
@@ -421,25 +421,27 @@ void formation_to_attacker(byte formation_index) {
   }
 }
 
+// Draws the player's ship on the screen
 void draw_player() {
-  vcolumns[29].attrib = 1;
-  vcolumns[30].attrib = 1;
-  vram[30][29] = 0x60;
-  vram[31][29] = 0x62;
-  vram[30][30] = 0x61;
-  vram[31][30] = 0x63;
+  vcolumns[29].attrib = 1;                                      // Activate the video columns attribute for the left half of the player sprite (???)
+  vcolumns[30].attrib = 1;                                      // Activate the video columns attribute for the right half of the player sprite (???)
+  vram[30][29] = 0x60;                                          // Set the tile index of the upper left quarter of the player sprite
+  vram[31][29] = 0x62;                                          // Set the tile index of the lower left quarter of the player sprite
+  vram[30][30] = 0x61;                                          // Set the tile index of the upper right quarter of the player sprite
+  vram[31][30] = 0x63;                                          // Set the tile index of the lower right quarter of the player sprite
 }
 
+// Checks control input to move player or fire missile
 void move_player() {
-  if (LEFT1 && player_x > 16) player_x--;
-  if (RIGHT1 && player_x < 224) player_x++;
-  if (FIRE1 && missiles[7].ypos == 0) {
-    missiles[7].ypos = 252-player_y; // must be multiple of missile speed
-    missiles[7].xpos = player_x+8; // player X position
-    missiles[7].dy = 4; // player missile speed
+  if (LEFT1 && player_x > 16) player_x--;                       // If the left move button is active and player x coord is greater than 16, move one position left
+  if (RIGHT1 && player_x < 224) player_x++;                     // If the right move button is active and player x coord is less than 224, move one position right
+  if (FIRE1 && missiles[7].ypos == 0) {                         // If the fire button is active and at least one missile is unfired (y pos equal to 0)...
+    missiles[7].ypos = 252-player_y;                            // ...set the y pos of the missile to just above the player (must be multiple of missile speed, below)...
+    missiles[7].xpos = player_x+8;                              // ...and set the x pos of the missle to the middle of the player's sprite (x + 8)...
+    missiles[7].dy = 4;                                         // ...and set the missile speed.
   }
-  vcolumns[29].scroll = player_x;
-  vcolumns[30].scroll = player_x;
+  vcolumns[29].scroll = player_x;                               // Update the video columns to draw the left half of the player sprite (???)
+  vcolumns[30].scroll = player_x;                               // Update the video columns to draw the right half of the player sprite (???)
 }
 
 void move_missiles() {
@@ -659,8 +661,8 @@ void play_round() {
         }
       }
     } else {
-      if ((framecount & 0x7f) == 0 && enemies_left > 8) {
-        new_attack_wave();
+      if ((framecount & 0x7f) == 0 && enemies_left > 8) {     // If framecount is either 0 or 128 (???), and there are more than eight enemies, do an attack run.
+        new_attack_wave();                                    // Pick an available alien to attack.
       }
       move_player();
       does_missile_hit_player();
@@ -686,30 +688,33 @@ void play_round() {
 }
 
 /* 
+// Original 8bitworkshop main loop
 void main() {
-  clrscr();
-  clrobjs();
-  enable_stars = 0xff;
-  enable_irq = 0;
-  play_round();
-  main();
+  clrscr();                                         // Clears the screen
+  clrobjs();                                        // Resets all the sprites, setting them to Y pos 64
+  enable_stars = 0xff;                              // Turns on the starfield generator flag
+  enable_irq = 0;                                   // Turns off the IRQ flag
+  play_round();                                     // Plays a round of the game (see play_round function above)
+  main();                                           // Loops back to main? Maybe this is how Galaxian hardware handles looping?
 }
 
  */
+
+// Tetris main loop
 int main(void) {
-    uint8_t iobank3_old = IO_BANK3;
+    uint8_t iobank3_old = IO_BANK3;                 // Stores the current iobank3 value so that it can be reset at end of main loop.
 
-    init();
+    init();                                         // Perform initialization function (to be created for Galaxian).
 
-    extern const unsigned char __21_2F_pt3[];
-    pt3play_init(__21_2F_pt3);
+    extern const unsigned char __21_2F_pt3[];       // Create a char array for the filename of the "21_2F.pt3" file in the assets folder of Tetris. Change for Galaxian.
+    pt3play_init(__21_2F_pt3);                      // Initialize the pt3player to play the "21_2F.pt3" song file.
 
-    while (!quit) {
-        play_round();
+    while (!quit) {                                 // This is the LOOP in the main loop. Variable quit doesn't do anything (yet), so game plays until system reset.
+        play_round();                               // Used to be play_marathon in Tetris; changed for Galaxian
     }
 
-    IO_BANK3 = iobank3_old;
-    IO_VCTRL = VCTRL_TEXT_EN;
+    IO_BANK3 = iobank3_old;                         // Restore original iobank3 value
+    IO_VCTRL = VCTRL_TEXT_EN;                       // Set the IO_VCTRL (io registers for Video Control) to enable text mode.
 
-    return 0;
+    return 0;                                       // If this code were reachable (no funciton to read quit yet), it would exit the game.
 }
