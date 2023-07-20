@@ -1,4 +1,5 @@
-![Aquarius+ Logo](System/docs/images/revised_logo_06.png)
+![Aquarius+ Logo](EndUser/images/aquarius_plus_logo_BLUE.png)
+
 **Next-generation Z80-based retro computer system**
 
 ## Abstract:
