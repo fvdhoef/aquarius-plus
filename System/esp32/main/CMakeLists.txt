@@ -5,13 +5,12 @@ idf_component_register(
         "usbhost.c"
         "sdcard.c"
         "aq_keyb.c"
-        "screen.c"
+        "aq_keyb_press_key.c"
         "uart_protocol.c"
         "direnum.c"
         "vfs.c"
         "vfs_esp.c"
         "fileserver.c"
-        "tcpserver.c"
         "led.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
@@ -41,7 +40,7 @@ idf_component_register(
 
     EMBED_FILES
         "../../fpga/top.bit"
-        "../../rom_src/esp_terminal/build/esp_terminal.caq"
+        "../../rom_src/settings/build/settings.caq"
 
     EMBED_TXTFILES
         "connectivity/letsencrypt_root_certificate.pem"

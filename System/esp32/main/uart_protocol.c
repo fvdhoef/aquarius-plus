@@ -402,38 +402,22 @@ static void esp_readdir(uint8_t dd) {
         return;
     }
 
-    struct direnum_ent de;
-    int                result = vfs->readdir(state->dd[dd], &de);
-    txfifo_write(result);
-    if (result < 0)
+    struct direnum_ent *de = vfs->readdir(state->dd[dd]);
+    txfifo_write(de == NULL ? ERR_EOF : 0);
+    if (de == NULL)
         return;
 
-    struct tm *tm       = localtime(&de.t);
-    uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
-    uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
+    txfifo_write((de->fdate >> 0) & 0xFF);
+    txfifo_write((de->fdate >> 8) & 0xFF);
+    txfifo_write((de->ftime >> 0) & 0xFF);
+    txfifo_write((de->ftime >> 8) & 0xFF);
+    txfifo_write(de->attr);
+    txfifo_write((de->size >> 0) & 0xFF);
+    txfifo_write((de->size >> 8) & 0xFF);
+    txfifo_write((de->size >> 16) & 0xFF);
+    txfifo_write((de->size >> 24) & 0xFF);
 
-    txfifo_write((fat_date >> 0) & 0xFF);
-    txfifo_write((fat_date >> 8) & 0xFF);
-    txfifo_write((fat_time >> 0) & 0xFF);
-    txfifo_write((fat_time >> 8) & 0xFF);
-    txfifo_write(de.attr);
-    txfifo_write((de.size >> 0) & 0xFF);
-    txfifo_write((de.size >> 8) & 0xFF);
-    txfifo_write((de.size >> 16) & 0xFF);
-    txfifo_write((de.size >> 24) & 0xFF);
-
-    // DBGF(
-    //     "%02u-%02u-%02u %02u:%02u ",
-    //     tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
-    //     tm->tm_hour, tm->tm_min);
-    // if (de.attr & DE_DIR) {
-    //     DBGF("<DIR>");
-    // } else {
-    //     DBGF("%5u", de.size);
-    // }
-    // DBGF(" %s\n", de.filename);
-
-    const char *p = de.filename;
+    const char *p = de->filename;
     while (*p) {
         txfifo_write(*(p++));
     }

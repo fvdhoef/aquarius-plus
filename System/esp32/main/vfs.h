@@ -21,10 +21,10 @@ enum {
     FO_RDWR    = 0x02, // Open for reading and writing
     FO_ACCMODE = 0x03, // Mask for above modes
 
-    FO_APPEND = 0x04, // Append mode
-    FO_CREATE = 0x08, // Create if non-existant
-    FO_TRUNC  = 0x10, // Truncate to zero length
-    FO_EXCL   = 0x20, // Error if already exists
+    FO_APPEND = 0x04,  // Append mode
+    FO_CREATE = 0x08,  // Create if non-existant
+    FO_TRUNC  = 0x10,  // Truncate to zero length
+    FO_EXCL   = 0x20,  // Error if already exists
 };
 
 struct vfs {
@@ -39,7 +39,7 @@ struct vfs {
     // Directory operations
     int (*opendir)(const char *path);
     int (*closedir)(int dd);
-    int (*readdir)(int dd, struct direnum_ent *de);
+    struct direnum_ent *(*readdir)(int dd);
 
     // Filesystem operations
     int (*delete)(const char *path);

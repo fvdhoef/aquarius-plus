@@ -69,10 +69,10 @@ void wifi_init(void) {
     // ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    sntp_setservername(0, "pool.ntp.org");
-    // sntp_set_time_sync_notification_cb();
-    sntp_init();
+    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+    esp_sntp_setservername(0, "pool.ntp.org");
+    // esp_sntp_set_time_sync_notification_cb();
+    esp_sntp_init();
 }
 
 bool wifi_is_connected(void) {

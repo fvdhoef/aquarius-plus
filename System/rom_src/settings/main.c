@@ -1,7 +1,4 @@
-#include <stdio.h>
-#include <stdint.h>
-#include "file_io.h"
-#include "regs.h"
+#include <aqplus.h>
 
 static uint8_t buf[32];
 
