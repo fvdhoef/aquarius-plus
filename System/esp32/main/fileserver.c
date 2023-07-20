@@ -6,6 +6,7 @@
 #include "sdcard.h"
 #include <errno.h>
 #include <mdns.h>
+#include "aq_keyb.h"
 
 // #include <esp_vfs.h>
 
@@ -581,6 +582,48 @@ error:
     goto done;
 }
 
+static esp_err_t handler_post_keyboard(httpd_req_t *req) {
+    // Allocate buffers
+    const size_t tmp_size = 16384;
+    char        *tmp      = malloc(tmp_size);
+    if (!tmp)
+        goto error;
+
+    int remaining = req->content_len;
+
+    while (remaining > 0) {
+        // ESP_LOGI(TAG, "Remaining size : %d", remaining);
+        // Receive the file part by part into a buffer
+        int received;
+        if ((received = httpd_req_recv(req, tmp, MIN(remaining, tmp_size))) <= 0) {
+            if (received == HTTPD_SOCK_ERR_TIMEOUT) {
+                // Retry if timeout occurred
+                continue;
+            }
+            goto error;
+        }
+
+        // Write buffer to keyboard
+        for (int i = 0; i < received; i++) {
+            keyboard_press_key(tmp[i]);
+        }
+
+        // Keep track of remaining size of the file left to be uploaded
+        remaining -= received;
+    }
+
+    httpd_resp_set_status(req, HTTPD_204);
+    httpd_resp_send(req, NULL, 0);
+
+done:
+    free(tmp);
+    return ESP_OK;
+
+error:
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Internal server error.");
+    goto done;
+}
+
 void fileserver_init(void) {
     esp_err_t err = mdns_init();
     if (err != ESP_OK) {
@@ -600,6 +643,7 @@ void fileserver_init(void) {
         return;
     }
 
+    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/keyboard", .method = HTTP_POST, .handler = handler_post_keyboard});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_DELETE, .handler = handler_delete});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_GET, .handler = handler_get});
     httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PUT, .handler = handler_put});

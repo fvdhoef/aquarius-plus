@@ -11,7 +11,6 @@ idf_component_register(
         "vfs.c"
         "vfs_esp.c"
         "fileserver.c"
-        "tcpserver.c"
         "led.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"

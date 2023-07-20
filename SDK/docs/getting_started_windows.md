@@ -32,10 +32,10 @@ Once downloaded, locate the file in your downloads folder and double click it. T
 
 Type the following command (followed by ENTER) in the terminal:
 ```
-pacman -S make curl gnu-netcat
+pacman -S make curl
 ```
 At the confirmation prompt type Y and ENTER.
-This will install the **make** command needed to run Makefiles. It will also install the programs **curl** and **netcat**, used to remotely start programs on your real Aquarius+. You can now close the terminal window.
+This will install the **make** command needed to run Makefiles. It will also install the program **curl**, used to remotely start programs on your real Aquarius+. You can now close the terminal window.
 
 Now we are going to add MSYS2 to the PATH:
 
