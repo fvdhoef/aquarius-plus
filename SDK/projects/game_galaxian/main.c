@@ -7,7 +7,7 @@ Adapted for Aquarius+
 by Sean P. Harrington, sph@1stage.com
 
 Abstract -
-This is an exercise in transcribing and porting code from a legacy game system to the Aquarius+ platform. The game being modeled is Galaxian, as implemented on Scramble hardware, featuring a Z80 processor, 2-bit graphics, and sound.
+This is an exercise in transcribing and porting code from a legacy hardware game system to the Aquarius+ platform. The game being modeled is Galaxian, as implemented on Scramble hardware, featuring a Z80 processor, 2-bit graphics, and sound.
 
 Version History -
 2023-07-20  v0.01  - Begin the documentation / commenting of code. - SPH
@@ -98,7 +98,7 @@ typedef enum {
   AY_ENV_SHAPE
 } AY8910Register;
 
-// This was from the old code. A vestige? Error?
+// Line beneath this was from the old code. A vestige? Error?
 // void main();
 
 void start() __naked {
@@ -503,30 +503,30 @@ void animate_player_explosion() {
       memset_safe(&vram[31][28], BLANK, 4);                     // ...then set the middle right column of four four tiles to blank...
       memset_safe(&vram[0][28], BLANK, 4);                      // ...and then set the right column of four tiles to blank.
     } else {                                                    // Otherwise, we're going to continue animation the player explosion.
-      z = 0xb0 + (z<<4);                                        // Multiply our frame value (z) by 10, and add 176 to that.
-      vcolumns[28].scroll = player_x;
-      vcolumns[31].scroll = player_x;
-      vcolumns[28].attrib = 2;
-      vcolumns[29].attrib = 2;
-      vcolumns[30].attrib = 2;
-      vcolumns[31].attrib = 2;
+      z = 0xb0 + (z<<4);                                        // Multiply our frame value (z) by 10, and add 176 to that, to turn z into a tile reference number.
+      vcolumns[28].scroll = player_x;                           // Shift the offset of v column 28 to the player x pos (???).
+      vcolumns[31].scroll = player_x;                           // Shift the offset of v column 31 to the player x pos (???).
+      vcolumns[28].attrib = 2;                                  // Set the visibiliy (???) of v column 28 to "exploding" (???).
+      vcolumns[29].attrib = 2;                                  // Set the visibiliy (???) of v column 29 to "exploding" (???).
+      vcolumns[30].attrib = 2;                                  // Set the visibiliy (???) of v column 30 to "exploding" (???).
+      vcolumns[31].attrib = 2;                                  // Set the visibiliy (???) of v column 31 to "exploding" (???).
       // The explosion animation takes up a 16 tile grid (4x4)
-      vram[29][28] = z+0x0;                                     // Set the upper left area of the ship to frame number plus 0 tile locations.
-      vram[29][29] = z+0x1;                                     // Set the upper right area of the ship to frame number plus 1 tile locations.
-      vram[29][30] = z+0x4;                                     // Set the lower left area of the ship to frame number plus 4 tile locations.
-      vram[29][31] = z+0x5;                                     // Set the lower right area of the ship to frame number plus 5 tile locations.
-      vram[30][28] = z+0x2;
-      vram[30][29] = z+0x3;
-      vram[30][30] = z+0x6;
-      vram[30][31] = z+0x7;
-      vram[31][28] = z+0x8;
-      vram[31][29] = z+0x9;
-      vram[31][30] = z+0xc;
-      vram[31][31] = z+0xd;
-      vram[0][28]  = z+0xa;
-      vram[0][29]  = z+0xb;
-      vram[0][30]  = z+0xe;
-      vram[0][31]  = z+0xf;
+      vram[29][28] = z+0x0;                                     // Set the left column row 1 to tile reference plus 0 offset.
+      vram[29][29] = z+0x1;                                     // Set the left column row 1 to tile reference plus 1 offset.
+      vram[29][30] = z+0x4;                                     // Set the left column row 1 to tile reference plus 4 offset.
+      vram[29][31] = z+0x5;                                     // Set the left column row 1 to tile reference plus 5 offset.
+      vram[30][28] = z+0x2;                                     // Set the middle left column row 2 to tile reference plus 2 offset.
+      vram[30][29] = z+0x3;                                     // Set the middle left column row 2 to tile reference plus 3 offset.
+      vram[30][30] = z+0x6;                                     // Set the middle left column row 2 to tile reference plus 6 offset.
+      vram[30][31] = z+0x7;                                     // Set the middle left column row 2 to tile reference plus 7 offset.
+      vram[31][28] = z+0x8;                                     // Set the middle right column row 3 to tile reference plus 8 offset.
+      vram[31][29] = z+0x9;                                     // Set the middle right column row 3 to tile reference plus 9 offset.
+      vram[31][30] = z+0xc;                                     // Set the middle right column row 3 to tile reference plus c offset.
+      vram[31][31] = z+0xd;                                     // Set the middle right column row 3 to tile reference plus d offset.
+      vram[0][28]  = z+0xa;                                     // Set the right column row 4 to tile reference plus a offset.
+      vram[0][29]  = z+0xb;                                     // Set the right column row 4 to tile reference plus b offset.
+      vram[0][30]  = z+0xe;                                     // Set the right column row 4 to tile reference plus e offset.
+      vram[0][31]  = z+0xf;                                     // Set the right column row 4 to tile reference plus f offset.
     }
   }
 }
@@ -613,42 +613,50 @@ void new_player_ship() {
 }
 
 void set_sounds() {
-  byte i;
-  byte enable = 0;
+  byte i;                                                             // Create an incrementer i for loops below.
+  byte enable = 0;                                                    // Create an enable byte to store bit flags for channel activation.
 
-  // missile fire sound
-  if (missiles[7].ypos) {
-    set8910a(AY_PITCH_A_LO, missiles[7].ypos);
-    set8910a(AY_ENV_VOL_A, 15-(missiles[7].ypos>>4));
-    enable |= 0x1;
+  // Play missile fire sound.
+  if (missiles[7].ypos) {                                             // If missle 7's y pos is 1 or greater...
+    // set8910a(AY_PITCH_A_LO, missiles[7].ypos);                     // (old code)
+    pt3play_ayregs.tone_a = missiles[7].ypos;                         // ...set tone channel A to missile 7 y pos...
+    // set8910a(AY_ENV_VOL_A, 15-(missiles[7].ypos>>4));              // (old code)
+    pt3play_ayregs.ampl_a = 15-(missiles[7].ypos>>4);                 // ...and set volume of channel A to y pos divided by 10.
+    enable |= 0x1;                                                    // Set bit 1 to enable CH A.
   }
 
-  // enemy explosion sound
+  // Play enemy explosion sound.
   if (enemy_exploding) {
-    set8910a(AY_PITCH_B_HI, enemy_exploding);
-    set8910a(AY_ENV_VOL_B, 15);
+    // set8910a(AY_PITCH_B_HI, enemy_exploding);
+    pt3play_ayregs.tone_a = enemy_exploding;
+    // set8910a(AY_ENV_VOL_B, 15);
+    pt3play_ayregs.ampl_b = 15;
     enable |= 0x2;
   }
 
-  // player explosion
-  if (player_exploding && player_exploding < 15) {
-    set8910a(AY_ENV_VOL_C, 15-player_exploding);
-    enable |= 0x4 << 3;
+  // Play player explosion sound.
+  if (player_exploding && player_exploding < 15) {                    // If player is exploding and it's less than 15...
+    // set8910a(AY_ENV_VOL_C, 15-player_exploding);                   // (old code)
+    pt3play_ayregs.ampl_c = 15 - player_exploding;                    // ...set the volume of channel C to 15 subtract the player exploding value.
+    enable |= 0x4 << 3;                                               // Set bit 3 to enable CH C.
   }
 
-  set8910a(AY_ENABLE, ~enable);
+  // set8910a(AY_ENABLE, ~enable);                                    // (old code)
+  pt3play_ayregs.mixer = ~enable;                                     // Set mixer flags the bitwise inverse of enable to turn on and off Channels A, B, C
 
-  // set diving sounds for spaceships
-  enable = 0;
-  for (i=0; i<3; i++) {
-    byte y = attackers[i].y >> 8;
-    if (y >= 0x80) {
-      set8910b(AY_PITCH_A_LO+i, y);
-      set8910b(AY_ENV_VOL_A+i, 7);
+  // Play diving sounds for spaceships on second AY.
+  enable = 0;                                                         // Reset our enable flag to zero.
+  for (i=0; i<3; i++) {                                               // Loop three times to update up to three attacker dive sounds.
+    byte y = attackers[i].y >> 8;                                     // Take the y position (word) of attacker i and divide it's value by 256 (???)
+    if (y >= 0x80) {                                                  // If this new y value is greater than or equal to 128...
+      // set8910b(AY_PITCH_A_LO+i, y);                                // (old code)
+      pt3play_ayregs.tone_a 
+      // set8910b(AY_ENV_VOL_A+i, 7);
+
       enable |= 1<<i;
     }
   }
-  set8910b(AY_ENABLE, ~enable);
+  // set8910b(AY_ENABLE, ~enable);
 }
 
 void wait_for_frame() {
