@@ -1,4 +1,20 @@
-#include <aqplus.h>
+/*
+Galaxians
+Based on the code by Steven Hugg
+8bitworkshop.com, https://8bitworkshop.com/v3.10.1/?file=shoot2.c&platform=galaxian-scramble
+
+Adapted for Aquarius+
+by Sean P. Harrington, sph@1stage.com
+
+Abstract -
+This is an exercise in transcribing and porting code from a legacy game system to the Aquarius+ platform. The game being modeled is Galaxian, as implemented on Scramble hardware, featuring a Z80 processor, 2-bit graphics, and sound.
+
+Version History -
+2023-07-20  v0.01  - Begin the documentation / commenting of code. - SPH
+
+*/
+
+#include <aqplus.h>                                         // Include the master header file for Aquarius+ code. It is in ../../include.
 
 typedef unsigned char byte;
 typedef unsigned short word;
@@ -82,6 +98,7 @@ typedef enum {
   AY_ENV_SHAPE
 } AY8910Register;
 
+// This was from the old code. A vestige? Error?
 // void main();
 
 void start() __naked {
@@ -440,64 +457,64 @@ void move_player() {
     missiles[7].xpos = player_x+8;                              // ...and set the x pos of the missle to the middle of the player's sprite (x + 8)...
     missiles[7].dy = 4;                                         // ...and set the missile speed.
   }
-  vcolumns[29].scroll = player_x;                               // Update the video columns to draw the left half of the player sprite (???)
-  vcolumns[30].scroll = player_x;                               // Update the video columns to draw the right half of the player sprite (???)
+  vcolumns[29].scroll = player_x;                               // (???) Update the video columns to draw the left half of the player sprite (???)
+  vcolumns[30].scroll = player_x;                               // (???) Update the video columns to draw the right half of the player sprite (???)
 }
 
+// Update the position of the missiles, (???) and move unused missiles to the top of the array (???)
 void move_missiles() {
-  byte i;
-  for (i=0; i<8; i++) { 
-    if (missiles[i].ypos) {
-      // hit the bottom or top?
-      if ((byte)(missiles[i].ypos += missiles[i].dy) < 4) {
-        missiles[i].xpos = 0xff; // hide offscreen
-        missiles[i].ypos = 0;
+  byte i;                                                       // Iterator i to regulate the for loop
+  for (i=0; i<8; i++) {                                         // Go through each item in the missiles array...
+    if (missiles[i].ypos) {                                     // ...if it's y pos is NOT zero...
+      if ((byte)(missiles[i].ypos += missiles[i].dy) < 4) {     // ...and if the y pos incremented by the missile speed is less than four (near the top of screen)...
+        missiles[i].xpos = 0xff;                                // ...move the missile's x pos to off screen...
+        missiles[i].ypos = 0;                                   // ...and set it's y pos to zero.
       }
     }
   }
-  // copy all "shadow missiles" to video memory
-  memcpy(vmissiles, missiles, sizeof(missiles));
+  memcpy(vmissiles, missiles, sizeof(missiles));                // Copy all "shadow missiles" to video memory
 }
 
-void blowup_at(byte x, byte y) {
-  vsprites[6].color = 1;
-  vsprites[6].code = 28;
-  vsprites[6].xpos = x;
-  vsprites[6].ypos = y;
-  enemy_exploding = 1;
+// Set enemy as ready to "blow up". There is only one enemy explosion shown at a time on the screen. A new enemy explosion resets this process and moves sprite 6 to the new location.
+void blowup_at(byte x, byte y) {                                // Take in the x and y position of the destroyed alien.
+  vsprites[6].color = 1;                                        // Set the sprite 6 color (palette???) to 1.
+  vsprites[6].code = 28;                                        // Set the sprite 6 code (tile number) to 28, the first frame of the alien exploding animation.
+  vsprites[6].xpos = x;                                         // Set the sprite 6 x pos to the former position of the alien.
+  vsprites[6].ypos = y;                                         // Set the sprite 6 y pos to the former position of the alien.
+  enemy_exploding = 1;                                          // Set the enemy explode (frame) counter to 1.
 }
 
+// Animate an enemy explosion.
 void animate_enemy_explosion() {
-  if (enemy_exploding) {
-    // animate next frame
-    vsprites[6].code = 28 + enemy_exploding++;
-    if (enemy_exploding > 4)
-      enemy_exploding = 0; // hide explosion after 4 frames
+  if (enemy_exploding) {                                        // If the enemy is exploding...
+    vsprites[6].code = 28 + enemy_exploding++;                  // ...set the sprite 6 code (tile number) to 28 plus the current "frame", and increment that frame counter.
+    if (enemy_exploding > 4)                                    // If the enemy frame counter is greater than four frames...
+      enemy_exploding = 0;                                      // ...hide the explosion.
   }
 }
 
+// Animate a player explosion. This animation is in a 16 tile grid (4x4), centered on the last player location.
 void animate_player_explosion() {
-  byte z = player_exploding;
-  if (z <= 5) {
-    if (z == 5) {
-      // erase explosion
-      memset_safe(&vram[29][28], BLANK, 4);
-      memset_safe(&vram[30][28], BLANK, 4);
-      memset_safe(&vram[31][28], BLANK, 4);
-      memset_safe(&vram[0][28], BLANK, 4);
-    } else {
-      // draw explosion
-      z = 0xb0 + (z<<4);
+  byte z = player_exploding;                                    // Set variable z to the value (frame) of the player explosion
+  if (z <= 5) {                                                 // If there are still animation frames left (<5)...
+    if (z == 5) {                                               // ...and if we are on the final frame (5) of player explosion animation...
+      memset_safe(&vram[29][28], BLANK, 4);                     // ...set the left column of four tiles to blank...
+      memset_safe(&vram[30][28], BLANK, 4);                     // ...then set the middle left column of four tiles to blank...
+      memset_safe(&vram[31][28], BLANK, 4);                     // ...then set the middle right column of four four tiles to blank...
+      memset_safe(&vram[0][28], BLANK, 4);                      // ...and then set the right column of four tiles to blank.
+    } else {                                                    // Otherwise, we're going to continue animation the player explosion.
+      z = 0xb0 + (z<<4);                                        // Multiply our frame value (z) by 10, and add 176 to that.
       vcolumns[28].scroll = player_x;
       vcolumns[31].scroll = player_x;
       vcolumns[28].attrib = 2;
       vcolumns[29].attrib = 2;
       vcolumns[30].attrib = 2;
       vcolumns[31].attrib = 2;
-      vram[29][28] = z+0x0;
-      vram[29][29] = z+0x1;
-      vram[29][30] = z+0x4;
-      vram[29][31] = z+0x5;
+      // The explosion animation takes up a 16 tile grid (4x4)
+      vram[29][28] = z+0x0;                                     // Set the upper left area of the ship to frame number plus 0 tile locations.
+      vram[29][29] = z+0x1;                                     // Set the upper right area of the ship to frame number plus 1 tile locations.
+      vram[29][30] = z+0x4;                                     // Set the lower left area of the ship to frame number plus 4 tile locations.
+      vram[29][31] = z+0x5;                                     // Set the lower right area of the ship to frame number plus 5 tile locations.
       vram[30][28] = z+0x2;
       vram[30][29] = z+0x3;
       vram[30][30] = z+0x6;
@@ -506,10 +523,10 @@ void animate_player_explosion() {
       vram[31][29] = z+0x9;
       vram[31][30] = z+0xc;
       vram[31][31] = z+0xd;
-      vram[0][28] = z+0xa;
-      vram[0][29] = z+0xb;
-      vram[0][30] = z+0xe;
-      vram[0][31] = z+0xf;
+      vram[0][28]  = z+0xa;
+      vram[0][29]  = z+0xb;
+      vram[0][30]  = z+0xe;
+      vram[0][31]  = z+0xf;
     }
   }
 }
@@ -653,16 +670,16 @@ void play_round() {
   while (end_timer) {
     enable_irq = 0;
     enable_irq = 1;
-    if (player_exploding) {
-      if ((framecount & 7) == 1) {
-        animate_player_explosion();
-        if (++player_exploding > 32 && enemies_left) {
-          new_player_ship();
+    if (player_exploding) {                                   // If player exploding frame is 1 or greater...
+      if ((framecount & 7) == 1) {                            // ...and if framecount is a multiple of 7 (???)...
+        animate_player_explosion();                           // ...update the player explosion animation frame.
+        if (++player_exploding > 32 && enemies_left) {        // If the player exploding frame is greater than 32 and there is at least one enemy left...
+          new_player_ship();                                  // ...initiate a new player ship to be created.
         }
       }
     } else {
-      if ((framecount & 0x7f) == 0 && enemies_left > 8) {     // If framecount is either 0 or 128 (???), and there are more than eight enemies, do an attack run.
-        new_attack_wave();                                    // Pick an available alien to attack.
+      if ((framecount & 0x7f) == 0 && enemies_left > 8) {     // If framecount is a multiple of 128 (???), and there are more than eight enemies...
+        new_attack_wave();                                    // ...do an attack run.
       }
       move_player();
       does_missile_hit_player();
