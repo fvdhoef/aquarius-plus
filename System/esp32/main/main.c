@@ -5,7 +5,7 @@
 #include "uart_protocol.h"
 #include "ca_store.h"
 #include "wifi.h"
-#include "bluetooth.h"
+#include "ble.h"
 #include "fileserver.h"
 #include "aq_keyb.h"
 
@@ -47,7 +47,7 @@ static void init(void) {
     wifi_init();
 
     // Bluetooth init
-    bluetooth_init();
+    ble_init();
 
     keyboard_init();
     sdcard_init();

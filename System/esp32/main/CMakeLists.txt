@@ -12,9 +12,11 @@ idf_component_register(
         "vfs_esp.c"
         "fileserver.c"
         "led.c"
+        "hid.c"
         "connectivity/ca_store.c"
         "connectivity/wifi.c"
-        "connectivity/bluetooth.c"
+        "connectivity/ble.c"
+        "connectivity/ble_util.c"
 
     INCLUDE_DIRS
         "."

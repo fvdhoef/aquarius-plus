@@ -2,4 +2,4 @@
 
 #include "common.h"
 
-void bluetooth_init(void);
+void ble_init(void);
