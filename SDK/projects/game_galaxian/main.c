@@ -635,7 +635,7 @@ void set_sounds() {
   }
 
   // Play player explosion sound.
-  if (player_exploding && player_exploding < 15) {                    // If player is exploding and it's less than 15...
+  if (player_exploding && player_exploding < 15) {                    // If player is exploding and it's value is less than 15...
     // set8910a(AY_ENV_VOL_C, 15-player_exploding);                   // (old code)
     pt3play_ayregs.ampl_c = 15 - player_exploding;                    // ...set the volume of channel C to 15 subtract the player exploding value.
     enable |= 0x4 << 3;                                               // Set bit 3 to enable CH C.
