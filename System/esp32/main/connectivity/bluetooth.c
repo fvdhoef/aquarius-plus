@@ -20,6 +20,7 @@ static void print_uuid2(const ble_uuid_t *uuid) {
     printf("%s", ble_uuid_to_str(uuid, buf));
 }
 
+#if 0
 static void print_bytes2(const uint8_t *bytes, int len) {
     int i;
 
@@ -141,6 +142,7 @@ static void print_adv_fields2(const struct ble_hs_adv_fields *fields) {
         printf("\n");
     }
 }
+#endif
 
 void print_mbuf2(const struct os_mbuf *om) {
     int colon, i;
@@ -279,6 +281,8 @@ struct hid_data {
 static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
     switch (event->type) {
         case BLE_GAP_EVENT_DISC: {
+            // ESP_LOGW(TAG, "BLE_GAP_EVENT_DISC");
+
             struct ble_hs_adv_fields fields;
 
             int rc = ble_hs_adv_parse_fields(&fields, event->disc.data, event->disc.length_data);
@@ -287,7 +291,7 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
             }
 
             /* An advertisement report was received during GAP discovery. */
-            print_adv_fields2(&fields);
+            // print_adv_fields2(&fields);
 
             if (fields.appearance_is_present && fields.appearance == 0x03C4) {
                 ble_gap_disc_cancel();
@@ -301,6 +305,8 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
             break;
         }
         case BLE_GAP_EVENT_CONNECT: {
+            ESP_LOGW(TAG, "BLE_GAP_EVENT_CONNECT");
+
             if (event->connect.status != 0) {
                 // Connection attempt failed, resume scanning
                 ESP_LOGE(TAG, "Connect failed");
@@ -344,7 +350,7 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
             break;
         }
         case BLE_GAP_EVENT_DISCONNECT: {
-            printf("BLE_GAP_EVENT_DISCONNECT\n");
+            ESP_LOGW(TAG, "BLE_GAP_EVENT_DISCONNECT");
 
             MODLOG_DFLT(INFO, "disconnect; reason=%d ", event->disconnect.reason);
             print_conn_desc(&event->disconnect.conn);
@@ -357,12 +363,9 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
             blecent_scan();
             break;
         }
-        case BLE_GAP_EVENT_DISC_COMPLETE: {
-            printf("BLE_GAP_EVENT_DISC_COMPLETE\n");
-            break;
-        }
+        case BLE_GAP_EVENT_DISC_COMPLETE: ESP_LOGW(TAG, "BLE_GAP_EVENT_DISC_COMPLETE"); break;
         case BLE_GAP_EVENT_ENC_CHANGE: {
-            printf("BLE_GAP_EVENT_ENC_CHANGE\n");
+            ESP_LOGW(TAG, "BLE_GAP_EVENT_ENC_CHANGE");
 
             int rc = peer_disc_all(event->connect.conn_handle, blecent_on_disc_complete, NULL);
             if (rc != 0) {
@@ -456,19 +459,23 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
             break;
         }
         case BLE_GAP_EVENT_MTU: {
-            printf("BLE_GAP_EVENT_MTU\n");
+            ESP_LOGW(TAG, "BLE_GAP_EVENT_MTU");
             break;
         }
         case BLE_GAP_EVENT_REPEAT_PAIRING: {
-            printf("BLE_GAP_EVENT_REPEAT_PAIRING\n");
+            ESP_LOGW(TAG, "BLE_GAP_EVENT_REPEAT_PAIRING");
             struct ble_gap_conn_desc desc;
             int                      rc = ble_gap_conn_find(event->repeat_pairing.conn_handle, &desc);
             assert(rc == 0);
             ble_store_util_delete_peer(&desc.peer_id_addr);
             return BLE_GAP_REPEAT_PAIRING_RETRY;
         }
+
+        case BLE_GAP_EVENT_CONN_UPDATE: ESP_LOGW(TAG, "BLE_GAP_EVENT_CONN_UPDATE"); break;
+        case BLE_GAP_EVENT_L2CAP_UPDATE_REQ: ESP_LOGW(TAG, "BLE_GAP_EVENT_L2CAP_UPDATE_REQ"); break;
+
         default: {
-            printf("blecent_gap_event: %u\n", event->type);
+            ESP_LOGW(TAG, "blecent_gap_event: %u", event->type);
             break;
         }
     }
