@@ -8,8 +8,6 @@ static NimBLEAdvertisedDevice *advDevice;
 static bool                    scanning  = false;
 static bool                    connected = false;
 
-static NimBLEUUID uuidServiceHid("1812");
-
 class ClientCallbacks : public NimBLEClientCallbacks {
     void onConnect(NimBLEClient *pClient) {
         ESP_LOGI(TAG, "Connected");
@@ -52,6 +50,8 @@ class ClientCallbacks : public NimBLEClientCallbacks {
     };
 };
 
+static ClientCallbacks clientCB;
+
 // Define a class to handle the callbacks when advertisements are received
 class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     void onResult(NimBLEAdvertisedDevice *advertisedDevice) {
@@ -77,34 +77,6 @@ static void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t 
 static void scanEndedCB(NimBLEScanResults results) {
     ESP_LOGI(TAG, "Scan Ended");
     scanning = false;
-}
-
-static ClientCallbacks clientCB;
-
-static bool afterConnect(NimBLEClient *pClient) {
-    for (auto pService : *pClient->getServices(true)) {
-        auto sUuid = pService->getUUID();
-        if (!sUuid.equals(uuidServiceHid)) {
-            continue; // skip
-        }
-        for (auto chr : *pService->getCharacteristics(true)) {
-            if (chr->canRead()) {
-                auto str = chr->readValue();
-                if (str.size() == 0) {
-                    str = chr->readValue();
-                }
-            }
-            if (chr->canNotify()) {
-                if (chr->subscribe(true, notifyCB, true)) {
-                    ESP_LOGI(TAG, "Subscribed!");
-                    // return true;
-                } else {
-                    ESP_LOGE(TAG, "Failed to subscribe!");
-                }
-            }
-        }
-    }
-    return true;
 }
 
 // Handles the provisioning of clients and connects / interfaces with the server
@@ -140,7 +112,7 @@ static bool connectToServer(NimBLEAdvertisedDevice *advDevice) {
         if (retryCount <= 0) {
             return false;
         } else {
-            ESP_LOGI(TAG, "try connection again ");
+            ESP_LOGW(TAG, "try connection again");
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
 
@@ -151,20 +123,36 @@ static bool connectToServer(NimBLEAdvertisedDevice *advDevice) {
         --retryCount;
     }
 
-    ESP_LOGI(TAG, "Connected to: %s, (RSSI: %d dBm)\n", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
+    ESP_LOGI(TAG, "Connected to: %s (RSSI: %d dBm)\n", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
 
-    pClient->discoverAttributes();
-
-    bool result = afterConnect(pClient);
-    if (!result) {
-        return result;
+    auto hidSvc = pClient->getService("1812");
+    if (!hidSvc) {
+        pClient->disconnect();
+        return false;
+    }
+    for (auto chr : *hidSvc->getCharacteristics(true)) {
+        if (chr->canRead()) {
+            auto str = chr->readValue();
+            if (str.size() == 0) {
+                str = chr->readValue();
+            }
+        }
+        if (chr->canNotify()) {
+            if (chr->subscribe(true, notifyCB, true)) {
+                ESP_LOGI(TAG, "Subscribed!");
+            } else {
+                ESP_LOGE(TAG, "Failed to subscribe!");
+                pClient->disconnect();
+                return false;
+            }
+        }
     }
 
     ESP_LOGI(TAG, "Done with this device!");
     return true;
 }
 
-static void connectTask(void *parameter) {
+static void bleTask(void *parameter) {
     ESP_LOGI(TAG, "Starting NimBLE Client");
     NimBLEDevice::init("");
     NimBLEDevice::setSecurityAuth(true, true, true);
@@ -195,5 +183,5 @@ static void connectTask(void *parameter) {
 }
 
 void ble_init(void) {
-    xTaskCreate(connectTask, "connectTask", 5000, NULL, 3, NULL);
+    xTaskCreate(bleTask, "ble", 5000, NULL, 3, NULL);
 }

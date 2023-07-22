@@ -13,7 +13,7 @@ void fpga_init(void);
 
 void    fpga_reset_req(void);
 void    fpga_update_keyb_matrix(uint8_t *keyb_matrix);
-void    fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2);
+void    fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait = portMAX_DELAY);
 void    fpga_bus_acquire(void);
 void    fpga_bus_release(void);
 void    fpga_mem_write(uint16_t addr, uint8_t data);

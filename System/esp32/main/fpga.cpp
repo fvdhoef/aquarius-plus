@@ -184,8 +184,9 @@ void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
     xSemaphoreGiveRecursive(mutex);
 }
 
-void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
-    xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait) {
+    if (xSemaphoreTakeRecursive(mutex, ticks_to_wait) != pdTRUE)
+        return;
     gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
     uint8_t buf[3];

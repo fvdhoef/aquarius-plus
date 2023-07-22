@@ -108,7 +108,7 @@ void handle_xbox_data(const uint8_t data[16]) {
 
     static uint8_t old_handctrl = 0xFF;
     if (old_handctrl != handctrl) {
-        fpga_update_handctrl(handctrl, 0xFF);
+        fpga_update_handctrl(handctrl, 0xFF, pdMS_TO_TICKS(100));
         old_handctrl = handctrl;
     }
 }
