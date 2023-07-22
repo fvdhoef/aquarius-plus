@@ -822,5 +822,5 @@ void uart_protocol_init(void) {
     assert(state != NULL);
 
     vfs_esp_init();
-    xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 12, NULL);
+    xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 1, NULL);
 }
