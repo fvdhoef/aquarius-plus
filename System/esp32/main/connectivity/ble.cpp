@@ -5,76 +5,83 @@
 static const char *TAG = "ble";
 
 static NimBLEAdvertisedDevice *advDevice;
-static volatile bool           doConnect = false;
+static bool                    scanning  = false;
+static bool                    connected = false;
 
-static NimBLEUUID uuidServiceHid((uint16_t)0x1812);
+static NimBLEUUID uuidServiceHid("1812");
 
 class ClientCallbacks : public NimBLEClientCallbacks {
     void onConnect(NimBLEClient *pClient) {
-        ESP_LOGI(TAG, "Connected\n");
+        ESP_LOGI(TAG, "Connected");
+        connected = true;
         // pClient->updateConnParams(120,120,0,60);
     };
 
-    void onDisconnect(NimBLEClient *pClient, int reason) {
-        ESP_LOGI(TAG, "%s Disconnected, reason = %d - Starting scan", pClient->getPeerAddress().toString().c_str(), reason);
-        NimBLEDevice::getScan()->start(0);
+    void onDisconnect(NimBLEClient *pClient) {
+        ESP_LOGI(TAG, "%s Disconnected", pClient->getPeerAddress().toString().c_str());
+        connected = false;
     };
 
+    // Called when the peripheral requests a change to the connection parameters.
+    // Return true to accept and apply them or false to reject and keep
+    // the currently used parameters. Default will return true.
     bool onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params) {
         ESP_LOGI(TAG, "onConnParamsUpdateRequest");
-        if (params->itvl_min < 24) {                    /** 1.25ms units */
+        if (params->itvl_min < 24) {                    // 1.25ms units
             return false;
-        } else if (params->itvl_max > 40) {             /** 1.25ms units */
+        } else if (params->itvl_max > 40) {             // 1.25ms units
             return false;
-        } else if (params->latency > 2) {               /** Number of intervals allowed to skip */
+        } else if (params->latency > 2) {               // Number of intervals allowed to skip
             return false;
-        } else if (params->supervision_timeout > 100) { /** 10ms units */
+        } else if (params->supervision_timeout > 100) { // 10ms units
             return false;
         }
         return true;
     };
 
-    // Pairing process complete, we can check the results in connInfo
-    void onAuthenticationComplete(NimBLEConnInfo &connInfo) {
-        if (!connInfo.isEncrypted()) {
-            ESP_LOGE(TAG, "Encrypt connection failed - disconnecting\n");
+    // Pairing process complete, we can check the results in ble_gap_conn_desc
+    void onAuthenticationComplete(ble_gap_conn_desc *desc) {
+        ESP_LOGI(TAG, "onAuthenticationComplete");
+        if (!desc->sec_state.encrypted) {
+            ESP_LOGE(TAG, "Encrypt connection failed - disconnecting");
+
             // Find the client with the connection handle provided in desc
-            NimBLEDevice::getClientByID(connInfo.getConnHandle())->disconnect();
+            NimBLEDevice::getClientByID(desc->conn_handle)->disconnect();
             return;
         }
     };
 };
 
-/** Define a class to handle the callbacks when advertisements are received */
-class ScanCallbacks : public NimBLEScanCallbacks {
+// Define a class to handle the callbacks when advertisements are received
+class AdvertisedDeviceCallbacks : public NimBLEAdvertisedDeviceCallbacks {
     void onResult(NimBLEAdvertisedDevice *advertisedDevice) {
         if (advertisedDevice->getAppearance() == 0x03C4) {
             ESP_LOGI(TAG, "Found Our Service");
+
+            // Stop scan before connecting
             NimBLEDevice::getScan()->stop();
+
+            // Save the device reference in a global for the client to use
             advDevice = advertisedDevice;
-            doConnect = true;
         }
     };
 };
 
-/** Notification / Indication receiving handler callback */
-void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-    if (length == 16 && isNotify) {
+// Notification / Indication receiving handler callback
+static void notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
+    if (length == 16) {
         handle_xbox_data(pData);
     }
+}
 
-    // std::string str = (isNotify == true) ? "Notification" : "Indication";
-    // str += " from ";
-    // str += pRemoteCharacteristic->getRemoteService()->getClient()->getPeerAddress().toString();
-    // str += ": Service = " + pRemoteCharacteristic->getRemoteService()->getUUID().toString();
-    // str += ", Characteristic = " + pRemoteCharacteristic->getUUID().toString();
-    // str += ", Value = " + std::string((char *)pData, length);
-    // ESP_LOGI(TAG, "%s", str.c_str());
+static void scanEndedCB(NimBLEScanResults results) {
+    ESP_LOGI(TAG, "Scan Ended");
+    scanning = false;
 }
 
 static ClientCallbacks clientCB;
 
-bool afterConnect(NimBLEClient *pClient) {
+static bool afterConnect(NimBLEClient *pClient) {
     for (auto pService : *pClient->getServices(true)) {
         auto sUuid = pService->getUUID();
         if (!sUuid.equals(uuidServiceHid)) {
@@ -82,56 +89,34 @@ bool afterConnect(NimBLEClient *pClient) {
         }
         for (auto chr : *pService->getCharacteristics(true)) {
             if (chr->canRead()) {
-                puts(" canRead");
                 auto str = chr->readValue();
                 if (str.size() == 0) {
                     str = chr->readValue();
                 }
-
-                printf("str: %s\n", str.c_str());
-                printf("hex:");
-                for (auto v : str) {
-                    printf(" %02x", v);
-                }
-                puts("");
             }
-
             if (chr->canNotify()) {
-                puts(" canNotify ");
                 if (chr->subscribe(true, notifyCB, true)) {
-                    puts("set notifyCb");
+                    ESP_LOGI(TAG, "Subscribed!");
                     // return true;
                 } else {
-                    puts("failed to subscribe");
+                    ESP_LOGE(TAG, "Failed to subscribe!");
                 }
             }
         }
     }
-
     return true;
 }
 
 // Handles the provisioning of clients and connects / interfaces with the server
-bool connectToServer() {
-    if (!advDevice)
-        return false;
-
+static bool connectToServer(NimBLEAdvertisedDevice *advDevice) {
     NimBLEClient *pClient = nullptr;
 
     // Check if we have a client we should reuse first
     if (NimBLEDevice::getClientListSize()) {
         pClient = NimBLEDevice::getClientByPeerAddress(advDevice->getAddress());
         if (pClient) {
-            if (!pClient->connect(advDevice, false)) {
-                ESP_LOGE(TAG, "Reconnect failed");
-                return false;
-            }
-            ESP_LOGI(TAG, "Reconnected client");
+            pClient->connect();
         }
-    }
-    // We don't already have a client that knows this device, we will check for a client that is disconnected that we can use.
-    else {
-        pClient = NimBLEDevice::getDisconnectedClient();
     }
 
     // No client to reuse? Create a new one.
@@ -144,80 +129,69 @@ bool connectToServer() {
         pClient = NimBLEDevice::createClient();
 
         ESP_LOGI(TAG, "New client created");
-
         pClient->setClientCallbacks(&clientCB, false);
-        pClient->setConnectionParams(6, 6, 0, 15);
-        // pClient->setConnectionParams(12, 12, 0, 51);
-        pClient->setConnectTimeout(30);
-
-        if (!pClient->connect(advDevice)) {
-            // Created a client but failed to connect, don't need to keep it as it has no data
-            NimBLEDevice::deleteClient(pClient);
-            ESP_LOGE(TAG, "Failed to connect, deleted client");
-            return false;
-        }
+        pClient->setConnectionParams(12, 12, 0, 51);
+        pClient->setConnectTimeout(5);
+        pClient->connect(advDevice, false);
     }
 
-    if (!pClient->isConnected()) {
-        if (!pClient->connect(advDevice)) {
-            ESP_LOGE(TAG, "Failed to connect");
+    int retryCount = 5;
+    while (!pClient->isConnected()) {
+        if (retryCount <= 0) {
             return false;
+        } else {
+            ESP_LOGI(TAG, "try connection again ");
+            vTaskDelay(pdMS_TO_TICKS(1000));
         }
+
+        NimBLEDevice::getScan()->stop();
+        pClient->disconnect();
+        vTaskDelay(pdMS_TO_TICKS(500));
+        pClient->connect(true);
+        --retryCount;
     }
 
-    ESP_LOGI(TAG, "Connected to: %s RSSI: %d", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
+    ESP_LOGI(TAG, "Connected to: %s, (RSSI: %d dBm)\n", pClient->getPeerAddress().toString().c_str(), pClient->getRssi());
 
     pClient->discoverAttributes();
 
-    auto svc = pClient->getService("1812");
-    if (svc) {
-        for (auto chr : *svc->getCharacteristics(true)) {
-            if (chr->canRead()) {
-                chr->readValue();
-            }
-            if (chr->canNotify()) {
-                chr->subscribe(true, notifyCB, true);
-            }
-        }
+    bool result = afterConnect(pClient);
+    if (!result) {
+        return result;
     }
 
-    puts("Done with this device!");
+    ESP_LOGI(TAG, "Done with this device!");
     return true;
 }
 
 static void connectTask(void *parameter) {
+    ESP_LOGI(TAG, "Starting NimBLE Client");
     NimBLEDevice::init("");
-    // NimBLEDevice::setOwnAddrType(BLE_OWN_ADDR_RANDOM);
     NimBLEDevice::setSecurityAuth(true, true, true);
-    NimBLEDevice::setPower(ESP_PWR_LVL_P9);
+    NimBLEDevice::setPower(ESP_PWR_LVL_P9); /** +9db */
 
-    auto pScan = NimBLEDevice::getScan();
-    pScan->setScanCallbacks(new ScanCallbacks());
-    pScan->setInterval(45);
-    pScan->setWindow(15);
-    pScan->setActiveScan(true);
-    pScan->start(0);
-
-    // Loop here until we find a device we want to connect to
-    for (;;) {
-        if (doConnect) {
-            doConnect = false;
-
-            ESP_LOGI(TAG, "Connecting to found device!");
-
-            // Found a device we want to connect to, do it now
-            if (connectToServer()) {
-                ESP_LOGI(TAG, "Success! we should now be getting notifications!"); //, scanning for more!");
-            } else {
-                ESP_LOGE(TAG, "Failed to connect, starting scan");
-                NimBLEDevice::getScan()->start(0);
+    while (1) {
+        if (!connected) {
+            if (!scanning && advDevice == nullptr) {
+                scanning   = true;
+                auto pScan = NimBLEDevice::getScan();
+                pScan->setAdvertisedDeviceCallbacks(new AdvertisedDeviceCallbacks());
+                // pScan->setInterval(45);
+                // pScan->setWindow(15);
+                ESP_LOGI(TAG, "Start scan");
+                pScan->start(0, scanEndedCB);
+            }
+            if (advDevice != nullptr) {
+                if (connectToServer(advDevice)) {
+                    ESP_LOGI(TAG, "Success! we should now be getting notifications");
+                } else {
+                    ESP_LOGE(TAG, "Failed to connect");
+                }
+                advDevice = nullptr;
             }
         }
-
-        // ESP_LOGI(TAG, "Waiting");
-        vTaskDelay(pdTICKS_TO_MS(500));
+        vTaskDelay(pdMS_TO_TICKS(1000));
     }
-    vTaskDelete(NULL);
 }
 
 void ble_init(void) {

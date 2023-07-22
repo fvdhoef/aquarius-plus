@@ -17,9 +17,34 @@ idf_component_register(
         "connectivity/wifi.cpp"
         "connectivity/ble.cpp"
 
+        "connectivity/nimble-cpp/NimBLE2904.cpp"
+        "connectivity/nimble-cpp/NimBLEAddress.cpp"
+        "connectivity/nimble-cpp/NimBLEAdvertisedDevice.cpp"
+        "connectivity/nimble-cpp/NimBLEAdvertising.cpp"
+        "connectivity/nimble-cpp/NimBLEBeacon.cpp"
+        "connectivity/nimble-cpp/NimBLECharacteristic.cpp"
+        "connectivity/nimble-cpp/NimBLEClient.cpp"
+        "connectivity/nimble-cpp/NimBLEDescriptor.cpp"
+        "connectivity/nimble-cpp/NimBLEDevice.cpp"
+        "connectivity/nimble-cpp/NimBLEEddystoneTLM.cpp"
+        "connectivity/nimble-cpp/NimBLEEddystoneURL.cpp"
+        "connectivity/nimble-cpp/NimBLEExtAdvertising.cpp"
+        "connectivity/nimble-cpp/NimBLEHIDDevice.cpp"
+        "connectivity/nimble-cpp/NimBLERemoteCharacteristic.cpp"
+        "connectivity/nimble-cpp/NimBLERemoteDescriptor.cpp"
+        "connectivity/nimble-cpp/NimBLERemoteService.cpp"
+        "connectivity/nimble-cpp/NimBLEScan.cpp"
+        "connectivity/nimble-cpp/NimBLESecurity.cpp"
+        "connectivity/nimble-cpp/NimBLEServer.cpp"
+        "connectivity/nimble-cpp/NimBLEService.cpp"
+        "connectivity/nimble-cpp/NimBLEUUID.cpp"
+        "connectivity/nimble-cpp/NimBLEUtils.cpp"
+
+
     INCLUDE_DIRS
         "."
         "connectivity"
+        "connectivity/nimble-cpp"
 
     REQUIRES
         "driver"
@@ -37,7 +62,7 @@ idf_component_register(
         "usb"
         "fatfs"
         "bt"
-        "esp-nimble-cpp"
+        # "esp-nimble-cpp"
 
     EMBED_FILES
         "../../fpga/top.bit"
