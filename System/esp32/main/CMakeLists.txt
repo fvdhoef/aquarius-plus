@@ -16,7 +16,6 @@ idf_component_register(
         "connectivity/ca_store.cpp"
         "connectivity/wifi.cpp"
         "connectivity/ble.cpp"
-        "connectivity/ble_util.cpp"
 
     INCLUDE_DIRS
         "."
@@ -38,7 +37,7 @@ idf_component_register(
         "usb"
         "fatfs"
         "bt"
-        "nimble_central_utils"
+        "esp-nimble-cpp"
 
     EMBED_FILES
         "../../fpga/top.bit"

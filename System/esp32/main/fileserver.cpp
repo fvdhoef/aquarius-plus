@@ -643,9 +643,10 @@ void fileserver_init(void) {
         mdns_instance_name_set("Aquarius+");
     }
 
-    httpd_handle_t server = NULL;
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.uri_match_fn   = httpd_uri_match_wildcard;
+    httpd_handle_t server   = NULL;
+    httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
+    config.max_uri_handlers = 10;
+    config.uri_match_fn     = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "Starting HTTP Server on port: '%d'", config.server_port);
     if (httpd_start(&server, &config) != ESP_OK) {

@@ -1,6 +1,3 @@
-// Platform-independent directory enumeration
-// Supports Windows, Linux, macOS
-
 #pragma once
 
 #include <stdint.h>

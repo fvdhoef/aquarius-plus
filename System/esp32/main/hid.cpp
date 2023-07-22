@@ -41,14 +41,14 @@ void handle_xbox_data(const uint8_t data[16]) {
     memcpy(&hd, data, sizeof(hd));
     // printf("%d\n", sizeof(hd));
 
-    ESP_LOGI(
-        TAG, "lx:%6d ly:%6d rx:%6d ru:%6d lt:%4u rt:%4u dpad:%u A:%u B:%u X:%u Y:%u LB:%u RB:%u VIEW:%u MENU:%u XBOX:%u L3:%u R3:%u SHARE:%u",
-        (int)hd.lx - 0x8000, (int)hd.ly - 0x8000,
-        (int)hd.rx - 0x8000, (int)hd.ry - 0x8000,
-        hd.lt, hd.rt, hd.dpad,
-        hd.btn_a, hd.btn_b, hd.btn_x, hd.btn_y, hd.btn_lb, hd.btn_rb,
-        hd.btn_view, hd.btn_menu, hd.btn_xbox, hd.btn_l3, hd.btn_r3,
-        hd.btn_share);
+    // ESP_LOGI(
+    //     TAG, "lx:%6d ly:%6d rx:%6d ru:%6d lt:%4u rt:%4u dpad:%u A:%u B:%u X:%u Y:%u LB:%u RB:%u VIEW:%u MENU:%u XBOX:%u L3:%u R3:%u SHARE:%u",
+    //     (int)hd.lx - 0x8000, (int)hd.ly - 0x8000,
+    //     (int)hd.rx - 0x8000, (int)hd.ry - 0x8000,
+    //     hd.lt, hd.rt, hd.dpad,
+    //     hd.btn_a, hd.btn_b, hd.btn_x, hd.btn_y, hd.btn_lb, hd.btn_rb,
+    //     hd.btn_view, hd.btn_menu, hd.btn_xbox, hd.btn_l3, hd.btn_r3,
+    //     hd.btn_share);
 
     uint8_t handctrl = 0xFF;
     if (hd.btn_a)
