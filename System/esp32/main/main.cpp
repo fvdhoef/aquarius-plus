@@ -24,7 +24,7 @@ static void init(void) {
             .mode         = GPIO_MODE_OUTPUT,
         };
         gpio_config(&io_conf);
-        gpio_set_level(IOPIN_LED, 1);
+        gpio_set_level((gpio_num_t)IOPIN_LED, 1);
     }
 
     // Initialize NVS
@@ -57,12 +57,14 @@ static void init(void) {
     fpga_init();
 }
 
+extern "C" void app_main(void);
+
 void app_main(void) {
     init();
 
 #if 0
     while (1) {
-        char *buf = malloc(16384);
+        char *buf = (char *)malloc(16384);
         if (buf) {
             vTaskList(buf);
             printf(

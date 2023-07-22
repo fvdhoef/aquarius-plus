@@ -301,8 +301,8 @@ static void wifi_set(void) {
         .sta = {
             .scan_method = WIFI_ALL_CHANNEL_SCAN,
             .sort_method = WIFI_CONNECT_AP_BY_SIGNAL,
-            .pmf_cfg     = {.capable = true},
             .threshold   = {.rssi = -127},
+            .pmf_cfg     = {.capable = true},
         },
     };
     snprintf((char *)wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid), (const char *)ap_info[idx].ssid);
@@ -327,6 +327,11 @@ static void show_date(void) {
 #define UPDATEFILE_NAME "aquarius-plus.bin"
 
 static void system_update(void) {
+    const int              app_desc_offset  = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
+    size_t                 update_size      = 0;
+    const esp_partition_t *update_partition = nullptr;
+    esp_err_t              err;
+
     esp_ota_handle_t ota_handle  = 0;
     FILE            *f           = NULL;
     const size_t     tmpbuf_size = 65536;
@@ -348,20 +353,18 @@ static void system_update(void) {
 
     led_flash_start();
     fseek(f, 0, SEEK_END);
-    size_t update_size = ftell(f);
+    update_size = ftell(f);
     fseek(f, 0, SEEK_SET);
     led_flash_stop();
     cprintf("Update file size: %u\n", update_size);
 
-    const esp_partition_t *running = esp_ota_get_running_partition();
-    esp_app_desc_t         running_app_info;
-    if (esp_ota_get_partition_description(running, &running_app_info) != ESP_OK) {
+    esp_app_desc_t running_app_info;
+    if (esp_ota_get_partition_description(esp_ota_get_running_partition(), &running_app_info) != ESP_OK) {
         goto done;
     }
 
     esp_app_desc_t app_info;
 
-    const int app_desc_offset = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
     led_flash_start();
     fseek(f, app_desc_offset, SEEK_SET);
     if (fread(&app_info, sizeof(app_info), 1, f) != 1) {
@@ -390,14 +393,13 @@ static void system_update(void) {
         goto done;
     }
 
-    const esp_partition_t *update_partition = esp_ota_get_next_update_partition(NULL);
-    if (update_partition == NULL) {
+    if ((update_partition = esp_ota_get_next_update_partition(NULL)) == NULL) {
         cprintf("Error: can't find update partition\n");
         return;
     }
 
     cprintf("Initiating update.\n");
-    esp_err_t err = esp_ota_begin(update_partition, update_size, &ota_handle);
+    err = esp_ota_begin(update_partition, update_size, &ota_handle);
     if (err != ESP_OK) {
         ESP_LOGE("update", "esp_ota_begin: %s", esp_err_to_name(err));
         goto done;

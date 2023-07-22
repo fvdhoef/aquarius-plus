@@ -42,7 +42,7 @@ struct vfs {
     struct direnum_ent *(*readdir)(int dd);
 
     // Filesystem operations
-    int (*delete)(const char *path);
+    int (*delete_)(const char *path);
     int (*rename)(const char *path_old, const char *path_new);
     int (*mkdir)(const char *path);
     int (*stat)(const char *path, struct stat *st);

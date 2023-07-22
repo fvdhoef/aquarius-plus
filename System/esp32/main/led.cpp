@@ -11,7 +11,7 @@ static void timercb(TimerHandle_t xTimer) {
         led_level = true;
         xTimerStop(th, portMAX_DELAY);
     }
-    gpio_set_level(IOPIN_LED, led_level);
+    gpio_set_level((gpio_num_t)IOPIN_LED, led_level);
 }
 
 void led_flash_start(void) {
@@ -23,7 +23,7 @@ void led_flash_start(void) {
     }
     if (!xTimerIsTimerActive(th)) {
         led_level = false;
-        gpio_set_level(IOPIN_LED, led_level);
+        gpio_set_level((gpio_num_t)IOPIN_LED, led_level);
         xTimerReset(th, portMAX_DELAY);
     }
 }

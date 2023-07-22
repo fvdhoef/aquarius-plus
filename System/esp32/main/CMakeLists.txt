@@ -1,22 +1,22 @@
 idf_component_register(
     SRCS
-        "main.c"
-        "fpga.c"
-        "usbhost.c"
-        "sdcard.c"
-        "aq_keyb.c"
-        "aq_keyb_press_key.c"
-        "uart_protocol.c"
-        "direnum.c"
-        "vfs.c"
-        "vfs_esp.c"
-        "fileserver.c"
-        "led.c"
-        "hid.c"
-        "connectivity/ca_store.c"
-        "connectivity/wifi.c"
-        "connectivity/ble.c"
-        "connectivity/ble_util.c"
+        "main.cpp"
+        "fpga.cpp"
+        "usbhost.cpp"
+        "sdcard.cpp"
+        "aq_keyb.cpp"
+        "aq_keyb_press_key.cpp"
+        "uart_protocol.cpp"
+        "direnum.cpp"
+        "vfs.cpp"
+        "vfs_esp.cpp"
+        "fileserver.cpp"
+        "led.cpp"
+        "hid.cpp"
+        "connectivity/ca_store.cpp"
+        "connectivity/wifi.cpp"
+        "connectivity/ble.cpp"
+        "connectivity/ble_util.cpp"
 
     INCLUDE_DIRS
         "."
@@ -47,3 +47,5 @@ idf_component_register(
     EMBED_TXTFILES
         "connectivity/letsencrypt_root_certificate.pem"
 )
+
+target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

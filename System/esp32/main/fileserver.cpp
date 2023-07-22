@@ -18,7 +18,7 @@ static const char *TAG = "fileserver";
 
 static char *urlencode(const char *s) {
     size_t len    = strlen(s);
-    char  *result = malloc(3 * len + 1);
+    char  *result = (char *)malloc(3 * len + 1);
     if (result == NULL) {
         return NULL;
     }
@@ -149,12 +149,18 @@ static void propfind_st(httpd_req_t *req, const char *href_tag, struct stat *st)
 }
 
 static esp_err_t handler_propfind(httpd_req_t *req) {
+    char  depth[16] = "0";
+    int   size      = 0;
+    int   result    = 0;
+    char *encoded   = NULL;
+
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 1024;
-    char        *uripath   = malloc(path_size);
-    char        *path      = malloc(path_size);
-    char        *tmp       = malloc(tmp_size);
+    char        *uripath   = (char *)malloc(path_size);
+    char        *path      = (char *)malloc(path_size);
+    char        *tmp       = (char *)malloc(tmp_size);
+
     if (!uripath || !path || !tmp)
         goto error;
 
@@ -163,11 +169,10 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
         goto error;
 
-    char depth[16] = "0";
     httpd_req_get_hdr_value_str(req, "Depth", depth, sizeof(depth));
 
     // Get payload
-    int size = httpd_req_recv(req, tmp, tmp_size - 1);
+    size = httpd_req_recv(req, tmp, tmp_size - 1);
     if (size > 0) {
         tmp[size] = '\0';
     }
@@ -182,7 +187,7 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
 
     // Check file
     struct stat st;
-    int         result = stat(path, &st);
+    result = stat(path, &st);
     if (result < 0) {
         httpd_resp_send_404(req);
         goto done;
@@ -193,7 +198,7 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
     httpd_resp_sendstr_chunk(req, "<?xml version=\"1.0\" encoding=\"utf-8\"?>");
     httpd_resp_sendstr_chunk(req, "<multistatus xmlns=\"DAV:\">");
 
-    char *encoded = urlencode(uripath);
+    encoded = urlencode(uripath);
     snprintf(tmp, tmp_size, "<href>http://%s%s</href>", host, encoded);
     free(encoded);
 
@@ -242,8 +247,8 @@ error:
 static esp_err_t handler_delete(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
-    char        *uripath   = malloc(path_size);
-    char        *path      = malloc(path_size);
+    char        *uripath   = (char *)malloc(path_size);
+    char        *path      = (char *)malloc(path_size);
     if (!uripath || !path)
         goto error;
 
@@ -272,12 +277,14 @@ error:
 }
 
 static esp_err_t handler_get(httpd_req_t *req) {
+    int result = 0;
+
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
-    char        *uripath   = malloc(path_size);
-    char        *path      = malloc(path_size);
-    char        *tmp       = malloc(tmp_size);
+    char        *uripath   = (char *)malloc(path_size);
+    char        *path      = (char *)malloc(path_size);
+    char        *tmp       = (char *)malloc(tmp_size);
     if (!uripath || !path || !tmp)
         goto error;
 
@@ -286,7 +293,7 @@ static esp_err_t handler_get(httpd_req_t *req) {
     snprintf(path, path_size, "%s%s", MOUNT_POINT, tmp);
 
     struct stat st;
-    int         result = stat(path, &st);
+    result = stat(path, &st);
     if (result < 0) {
         httpd_resp_send_404(req);
         goto done;
@@ -364,11 +371,14 @@ error:
 }
 
 static esp_err_t handler_put(httpd_req_t *req) {
+    int   remaining = req->content_len;
+    FILE *f         = nullptr;
+
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
-    char        *path      = malloc(path_size);
-    char        *tmp       = malloc(tmp_size);
+    char        *path      = (char *)malloc(path_size);
+    char        *tmp       = (char *)malloc(tmp_size);
     if (!path || !tmp)
         goto error;
 
@@ -378,11 +388,8 @@ static esp_err_t handler_put(httpd_req_t *req) {
 
     // printf("PUT %s\n", path);
 
-    FILE *f = fopen(path, "wb");
-    if (!f)
+    if ((f = fopen(path, "wb")) == nullptr)
         goto error;
-
-    int remaining = req->content_len;
 
     while (remaining > 0) {
         // ESP_LOGI(TAG, "Remaining size : %d", remaining);
@@ -427,12 +434,14 @@ error:
 }
 
 static esp_err_t handler_move(httpd_req_t *req) {
+    char *p = nullptr;
+
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 1024;
-    char        *path      = malloc(path_size);
-    char        *path2     = malloc(path_size);
-    char        *tmp       = malloc(tmp_size);
+    char        *path      = (char *)malloc(path_size);
+    char        *path2     = (char *)malloc(path_size);
+    char        *tmp       = (char *)malloc(tmp_size);
     if (!path || !path2 || !tmp)
         goto error;
 
@@ -448,7 +457,7 @@ static esp_err_t handler_move(httpd_req_t *req) {
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
         goto error;
 
-    char *p = strcasestr(tmp, host);
+    p = strcasestr(tmp, host);
     if (p == NULL || p - tmp > 8) {
         httpd_resp_send_404(req);
         goto done;
@@ -479,8 +488,8 @@ error:
 static esp_err_t handler_mkcol(httpd_req_t *req) {
     // Allocate buffers
     const size_t path_size = 512;
-    char        *uripath   = malloc(path_size);
-    char        *path      = malloc(path_size);
+    char        *uripath   = (char *)malloc(path_size);
+    char        *path      = (char *)malloc(path_size);
     if (!uripath || !path)
         goto error;
 
@@ -509,13 +518,14 @@ error:
 static esp_err_t handler_copy(httpd_req_t *req) {
     FILE *f  = NULL;
     FILE *f2 = NULL;
+    char *p  = NULL;
 
     // Allocate buffers
     const size_t path_size = 512;
     const size_t tmp_size  = 16384;
-    char        *path      = malloc(path_size);
-    char        *path2     = malloc(path_size);
-    char        *tmp       = malloc(tmp_size);
+    char        *path      = (char *)malloc(path_size);
+    char        *path2     = (char *)malloc(path_size);
+    char        *tmp       = (char *)malloc(tmp_size);
     if (!path || !path2 || !tmp)
         goto error;
 
@@ -531,7 +541,7 @@ static esp_err_t handler_copy(httpd_req_t *req) {
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
         goto error;
 
-    char *p = strcasestr(tmp, host);
+    p = strcasestr(tmp, host);
     if (p == NULL || p - tmp > 8) {
         httpd_resp_send_404(req);
         goto done;
@@ -583,13 +593,13 @@ error:
 }
 
 static esp_err_t handler_post_keyboard(httpd_req_t *req) {
+    int remaining = req->content_len;
+
     // Allocate buffers
     const size_t tmp_size = 16384;
-    char        *tmp      = malloc(tmp_size);
+    char        *tmp      = (char *)malloc(tmp_size);
     if (!tmp)
         goto error;
-
-    int remaining = req->content_len;
 
     while (remaining > 0) {
         // ESP_LOGI(TAG, "Remaining size : %d", remaining);
@@ -643,13 +653,40 @@ void fileserver_init(void) {
         return;
     }
 
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/keyboard", .method = HTTP_POST, .handler = handler_post_keyboard});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_DELETE, .handler = handler_delete});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_GET, .handler = handler_get});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PUT, .handler = handler_put});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_COPY, .handler = handler_copy});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_MKCOL, .handler = handler_mkcol});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_MOVE, .handler = handler_move});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_OPTIONS, .handler = handler_options});
-    httpd_register_uri_handler(server, &(httpd_uri_t){.uri = "/*", .method = HTTP_PROPFIND, .handler = handler_propfind});
+    {
+        httpd_uri_t hu = {.uri = "/keyboard", .method = HTTP_POST, .handler = handler_post_keyboard};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_DELETE, .handler = handler_delete};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_GET, .handler = handler_get};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_PUT, .handler = handler_put};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_COPY, .handler = handler_copy};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_MKCOL, .handler = handler_mkcol};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_MOVE, .handler = handler_move};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_OPTIONS, .handler = handler_options};
+        httpd_register_uri_handler(server, &hu);
+    }
+    {
+        httpd_uri_t hu = {.uri = "/*", .method = HTTP_PROPFIND, .handler = handler_propfind};
+        httpd_register_uri_handler(server, &hu);
+    }
 }

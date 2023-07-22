@@ -3,6 +3,7 @@
 #include "hid.h"
 #include <host/ble_hs_pvcy.h>
 
+#if 0
 static const char *TAG = "ble";
 
 static void blecent_scan(void);
@@ -67,7 +68,24 @@ static int blecent_subscribe(const struct peer *peer, const ble_uuid_t *svc_uuid
 
 static int blecent_on_read(uint16_t conn_handle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg) {
     ESP_LOGI(TAG, "Read complete; status=%d conn_handle=%d", error->status, conn_handle);
+    if (error->status != 0) {
+        goto fail;
+    }
+
+    struct peer *peer;
+    if ((peer = peer_find(conn_handle)) == NULL) {
+        ESP_LOGE(TAG, "Error in finding peer, aborting...");
+        goto fail;
+    }
+
+    if (blecent_subscribe(peer, BLE_UUID16_DECLARE(0x1812), BLE_UUID16_DECLARE(0x2a4d)) != 0) {
+        goto fail;
+    }
     return 0;
+
+fail:
+    // Failed, disconnect device.
+    return ble_gap_terminate(conn_handle, BLE_ERR_REM_USER_CONN_TERM);
 }
 
 static void blecent_on_disc_complete(const struct peer *peer, int status, void *arg) {
@@ -84,9 +102,18 @@ static void blecent_on_disc_complete(const struct peer *peer, int status, void *
     print_peer_svcs(peer);
 
     // Subscribe
-    if (blecent_subscribe(peer, BLE_UUID16_DECLARE(0x1812), BLE_UUID16_DECLARE(0x2a4d)) != 0) {
+    const struct peer_chr *chr = peer_chr_find_uuid(peer, BLE_UUID16_DECLARE(0x1812), BLE_UUID16_DECLARE(0x2a4d));
+    if (chr == NULL) {
         goto fail;
     }
+
+    if (ble_gattc_read(peer->conn_handle, chr->chr.val_handle, blecent_on_read, NULL) != 0) {
+        goto fail;
+    }
+
+    // if (blecent_subscribe(peer, BLE_UUID16_DECLARE(0x1812), BLE_UUID16_DECLARE(0x2a4d)) != 0) {
+    //     goto fail;
+    // }
     return;
 
 fail:
@@ -142,7 +169,7 @@ static void blecent_connect_if_interesting(const struct ble_gap_disc_desc *disc)
 static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
     switch (event->type) {
         case BLE_GAP_EVENT_DISC: {
-#if 0
+#    if 0
             ESP_LOGW(TAG, "BLE_GAP_EVENT_DISC");
             struct ble_hs_adv_fields fields;
 
@@ -153,7 +180,7 @@ static int blecent_gap_event(struct ble_gap_event *event, void *arg) {
 
             /* An advertisement report was received during GAP discovery. */
             print_adv_fields2(&fields);
-#endif
+#    endif
             blecent_connect_if_interesting(&event->disc);
             return 0;
         }
@@ -274,8 +301,10 @@ static void blecent_host_task(void *param) {
     nimble_port_run();
     nimble_port_freertos_deinit();
 }
+#endif
 
 void ble_init(void) {
+#if 0
     int       rc;
     esp_err_t ret = nimble_port_init();
     if (ret != ESP_OK) {
@@ -289,12 +318,12 @@ void ble_init(void) {
     ble_hs_cfg.store_status_cb = ble_store_util_status_rr;
 
     // Set initial security capabilities
-    // ble_hs_cfg.sm_io_cap         = BLE_HS_IO_NO_INPUT_OUTPUT;
-    // ble_hs_cfg.sm_bonding        = 0;
-    // ble_hs_cfg.sm_mitm           = 0;
-    // ble_hs_cfg.sm_sc             = 1;
-    // ble_hs_cfg.sm_our_key_dist   = 1;
-    // ble_hs_cfg.sm_their_key_dist = 3;
+    ble_hs_cfg.sm_io_cap         = BLE_HS_IO_NO_INPUT_OUTPUT;
+    ble_hs_cfg.sm_bonding        = 0;
+    ble_hs_cfg.sm_mitm           = 0;
+    ble_hs_cfg.sm_sc             = 1;
+    ble_hs_cfg.sm_our_key_dist   = 1;
+    ble_hs_cfg.sm_their_key_dist = 3;
 
     // Initialize data structures to track connected peers
     rc = peer_init(MYNEWT_VAL(BLE_MAX_CONNECTIONS), 64, 64, 64);
@@ -313,4 +342,5 @@ void ble_init(void) {
     //         ESP_LOGE(TAG, "ble_hs_pvcy_rpa_config rc=%d", rc);
     //     }
     // }
+#endif
 }

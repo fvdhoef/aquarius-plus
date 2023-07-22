@@ -22,14 +22,14 @@ void sdcard_init(void) {
     esp_err_t        ret;
     sdmmc_host_t     host    = SDSPI_HOST_DEFAULT();
     spi_bus_config_t bus_cfg = {
-        .mosi_io_num     = IOPIN_SD_MOSI,
-        .miso_io_num     = IOPIN_SD_MISO,
-        .sclk_io_num     = IOPIN_SD_SCK,
+        .mosi_io_num     = (gpio_num_t)IOPIN_SD_MOSI,
+        .miso_io_num     = (gpio_num_t)IOPIN_SD_MISO,
+        .sclk_io_num     = (gpio_num_t)IOPIN_SD_SCK,
         .quadwp_io_num   = -1,
         .quadhd_io_num   = -1,
         .max_transfer_sz = 4000,
     };
-    ret = spi_bus_initialize(host.slot, &bus_cfg, SPI_DMA_CHAN);
+    ret = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN);
     if (ret != ESP_OK) {
         ESP_LOGE(TAG, "Failed to initialize bus.");
         return;
@@ -38,10 +38,10 @@ void sdcard_init(void) {
     const char *mount_point = MOUNT_POINT;
 
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
-    slot_config.gpio_cs               = IOPIN_SD_SSEL_N;
-    slot_config.gpio_cd               = IOPIN_SD_CD_N;
-    slot_config.gpio_wp               = IOPIN_SD_WP_N;
-    slot_config.host_id               = host.slot;
+    slot_config.gpio_cs               = (gpio_num_t)IOPIN_SD_SSEL_N;
+    slot_config.gpio_cd               = (gpio_num_t)IOPIN_SD_CD_N;
+    slot_config.gpio_wp               = (gpio_num_t)IOPIN_SD_WP_N;
+    slot_config.host_id               = (spi_host_device_t)host.slot;
 
     ESP_LOGI(TAG, "Mounting filesystem");
 
@@ -76,7 +76,7 @@ FILE         *fds[MAX_FDS];
 
 static char *get_fullpath(const char *path) {
     // Compose full path
-    char *full_path = malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, MOUNT_POINT);
     strcat(full_path, "/");
@@ -259,7 +259,7 @@ static struct direnum_ent *sd_readdir(int dd) {
         return NULL;
     dd -= MAX_FDS;
 
-    direnum_ctx_t ctx = state.dds[dd];
+    direnum_ctx_t       ctx    = state.dds[dd];
     struct direnum_ent *result = direnum_read(ctx);
     return result;
 }
@@ -335,7 +335,7 @@ struct vfs sdcard_vfs = {
     .opendir  = sd_opendir,
     .closedir = sd_closedir,
     .readdir  = sd_readdir,
-    .delete   = sd_delete,
+    .delete_  = sd_delete,
     .rename   = sd_rename,
     .mkdir    = sd_mkdir,
     .stat     = sd_stat,

@@ -51,7 +51,7 @@ void fpga_init(void) {
             .mode         = GPIO_MODE_OUTPUT,
         };
         gpio_config(&io_conf);
-        gpio_set_level(IOPIN_FPGA_PROG_N, 1);
+        gpio_set_level((gpio_num_t)IOPIN_FPGA_PROG_N, 1);
     }
 
     spi_bus_config_t bus_config = {
@@ -66,8 +66,8 @@ void fpga_init(void) {
 
     {
         spi_device_interface_config_t dev_config = {
-            .clock_speed_hz = 20000000,
             .mode           = 0,
+            .clock_speed_hz = 20000000,
             .spics_io_num   = -1,
             .queue_size     = 7,
 
@@ -77,8 +77,8 @@ void fpga_init(void) {
     }
     {
         spi_device_interface_config_t dev_config = {
-            .clock_speed_hz = 1000000,
             .mode           = 0,
+            .clock_speed_hz = 1000000,
             .spics_io_num   = -1,
             .queue_size     = 7,
 
@@ -90,17 +90,17 @@ void fpga_init(void) {
     ESP_LOGI(TAG, "Starting configuration");
 
     // Pulse PROG_B to start configuration process
-    gpio_set_level(IOPIN_FPGA_PROG_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_FPGA_PROG_N, 0);
     esp_rom_delay_us(10);
-    gpio_set_level(IOPIN_FPGA_PROG_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_FPGA_PROG_N, 1);
 
     // Wait for INIT_B to become high
     for (int i = 0; i < 100; i++) {
         vTaskDelay(pdMS_TO_TICKS(1));
-        if (gpio_get_level(IOPIN_FPGA_INIT_B))
+        if (gpio_get_level((gpio_num_t)IOPIN_FPGA_INIT_B))
             break;
     }
-    if (!gpio_get_level(IOPIN_FPGA_INIT_B)) {
+    if (!gpio_get_level((gpio_num_t)IOPIN_FPGA_INIT_B)) {
         ESP_LOGE(TAG, "Error: INIT_B didn't become high, aborting!");
         return;
     }
@@ -117,10 +117,9 @@ void fpga_init(void) {
         if (txsize > MAX_TRANSFER_SIZE)
             txsize = MAX_TRANSFER_SIZE;
 
-        spi_transaction_t t = {
-            .length    = txsize * 8,
-            .tx_buffer = image_p,
-        };
+        spi_transaction_t t = {0};
+        t.length            = txsize * 8;
+        t.tx_buffer         = image_p;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev, &t));
 
         image_p += txsize;
@@ -131,42 +130,44 @@ void fpga_init(void) {
 
     // Keep sending clock pulses until DONE becomes high
     for (int i = 0; i < 1000; i++) {
-        if (gpio_get_level(IOPIN_FPGA_DONE))
+        if (gpio_get_level((gpio_num_t)IOPIN_FPGA_DONE))
             break;
 
-        spi_transaction_t t = {
-            .length = 8,
-            .flags  = SPI_TRANS_USE_TXDATA,
-        };
+        spi_transaction_t t = {0};
+        t.flags             = SPI_TRANS_USE_TXDATA;
+        t.length            = 8;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev, &t));
     }
-    if (!gpio_get_level(IOPIN_FPGA_DONE)) {
+    if (!gpio_get_level((gpio_num_t)IOPIN_FPGA_DONE)) {
         ESP_LOGE(TAG, "Error: DONE didn't become high, aborting!");
         return;
     }
     ESP_LOGI(TAG, "Configuration completed");
 
     {
-        gpio_set_level(IOPIN_SPI_CS_N, 1);
-        gpio_set_direction(IOPIN_SPI_CS_N, GPIO_MODE_OUTPUT);
+        gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
+        gpio_set_direction((gpio_num_t)IOPIN_SPI_CS_N, GPIO_MODE_OUTPUT);
     }
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_reset_req(void) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
-    spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_RESET, .flags = SPI_TRANS_USE_TXDATA};
+    spi_transaction_t t = {0};
+    t.flags             = SPI_TRANS_USE_TXDATA;
+    t.length            = 8;
+    t.tx_data[0]        = CMD_RESET;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
     uint8_t buf[9];
     buf[0] = CMD_SET_KEYB_MATRIX;
@@ -174,16 +175,18 @@ void fpga_update_keyb_matrix(uint8_t *keyb_matrix) {
 
     // ESP_LOG_BUFFER_HEXDUMP(TAG, buf, sizeof(buf), ESP_LOG_INFO);
 
-    spi_transaction_t t = {.length = sizeof(buf) * 8, .tx_buffer = buf};
+    spi_transaction_t t = {0};
+    t.length            = sizeof(buf) * 8;
+    t.tx_buffer         = buf;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
     uint8_t buf[3];
     buf[0] = CMD_SET_HCTRL;
@@ -192,86 +195,87 @@ void fpga_update_handctrl(uint8_t hctrl1, uint8_t hctrl2) {
 
     // ESP_LOG_BUFFER_HEXDUMP(TAG, buf, sizeof(buf), ESP_LOG_INFO);
 
-    spi_transaction_t t = {.length = sizeof(buf) * 8, .tx_buffer = buf};
+    spi_transaction_t t = {0};
+    t.length            = sizeof(buf) * 8;
+    t.tx_buffer         = buf;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_bus_acquire(void) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
-    spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_BUS_ACQUIRE, .flags = SPI_TRANS_USE_TXDATA};
+    spi_transaction_t t = {0};
+    t.flags             = SPI_TRANS_USE_TXDATA;
+    t.length            = 8;
+    t.tx_data[0]        = CMD_BUS_ACQUIRE;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_bus_release(void) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
-    spi_transaction_t t = {.length = 8, .tx_data[0] = CMD_BUS_RELEASE, .flags = SPI_TRANS_USE_TXDATA};
+    spi_transaction_t t = {0};
+    t.flags             = SPI_TRANS_USE_TXDATA;
+    t.length            = 8;
+    t.tx_data[0]        = CMD_BUS_RELEASE;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void fpga_mem_write(uint16_t addr, uint8_t data) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
-    spi_transaction_t t = {
-        .length  = 4 * 8,
-        .tx_data = {
-            CMD_MEM_WRITE,
-            (addr >> 0) & 0xFF,
-            (addr >> 8) & 0xFF,
-            data,
-        },
-        .flags = SPI_TRANS_USE_TXDATA,
-    };
+    spi_transaction_t t = {0};
+    t.flags             = SPI_TRANS_USE_TXDATA;
+    t.length            = 4 * 8;
+    t.tx_data[0]        = CMD_MEM_WRITE;
+    t.tx_data[1]        = (addr >> 0) & 0xFF,
+    t.tx_data[2]        = (addr >> 8) & 0xFF,
+    t.tx_data[3]        = data;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 uint8_t fpga_mem_read(uint16_t addr) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
     {
-        spi_transaction_t t = {
-            .length  = 4 * 8,
-            .tx_data = {
-                CMD_MEM_READ,
-                (addr >> 0) & 0xFF,
-                (addr >> 8) & 0xFF,
-                0x00,
-            },
-            .flags = SPI_TRANS_USE_TXDATA,
-        };
+        spi_transaction_t t = {0};
+        t.length            = 4 * 8;
+        t.tx_data[0]        = CMD_MEM_READ;
+        t.tx_data[1]        = (addr >> 0) & 0xFF;
+        t.tx_data[2]        = (addr >> 8) & 0xFF;
+        t.tx_data[3]        = 0x00;
+        t.flags             = SPI_TRANS_USE_TXDATA;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
     }
 
     uint8_t result = 0;
     {
-        spi_transaction_t t = {
-            .length   = 8,
-            .rxlength = 8,
-            .flags    = SPI_TRANS_USE_RXDATA,
-        };
+        spi_transaction_t t = {0};
+        t.flags             = SPI_TRANS_USE_RXDATA;
+        t.length            = 8;
+        t.rxlength          = 8;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
         result = t.rx_data[0];
     }
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
 
     xSemaphoreGiveRecursive(mutex);
     return result;
@@ -279,55 +283,48 @@ uint8_t fpga_mem_read(uint16_t addr) {
 
 void fpga_io_write(uint16_t addr, uint8_t data) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
-    spi_transaction_t t = {
-        .length  = 4 * 8,
-        .tx_data = {
-            CMD_IO_WRITE,
-            (addr >> 0) & 0xFF,
-            (addr >> 8) & 0xFF,
-            data,
-        },
-        .flags = SPI_TRANS_USE_TXDATA,
-    };
+    spi_transaction_t t = {0};
+    t.flags             = SPI_TRANS_USE_TXDATA;
+    t.length            = 4 * 8;
+    t.tx_data[0]        = CMD_IO_WRITE;
+    t.tx_data[1]        = (addr >> 0) & 0xFF;
+    t.tx_data[2]        = (addr >> 8) & 0xFF;
+    t.tx_data[3]        = data;
     ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
 }
 
 uint8_t fpga_io_read(uint16_t addr) {
     xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
-    gpio_set_level(IOPIN_SPI_CS_N, 0);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 0);
 
     {
-        spi_transaction_t t = {
-            .length  = 4 * 8,
-            .tx_data = {
-                CMD_IO_READ,
-                (addr >> 0) & 0xFF,
-                (addr >> 8) & 0xFF,
-                0x00,
-            },
-            .flags = SPI_TRANS_USE_TXDATA,
-        };
+        spi_transaction_t t = {0};
+        t.flags             = SPI_TRANS_USE_TXDATA;
+        t.length            = 4 * 8;
+        t.tx_data[0]        = CMD_IO_READ;
+        t.tx_data[1]        = (addr >> 0) & 0xFF;
+        t.tx_data[2]        = (addr >> 8) & 0xFF;
+        t.tx_data[3]        = 0x00;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
     }
 
     uint8_t result = 0;
     {
-        spi_transaction_t t = {
-            .length   = 8,
-            .rxlength = 8,
-            .flags    = SPI_TRANS_USE_RXDATA,
-        };
+        spi_transaction_t t = {0};
+        t.flags             = SPI_TRANS_USE_RXDATA;
+        t.length            = 8;
+        t.rxlength          = 8;
         ESP_ERROR_CHECK(spi_device_transmit(fpga_spidev_regs, &t));
 
         result = t.rx_data[0];
     }
 
-    gpio_set_level(IOPIN_SPI_CS_N, 1);
+    gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, 1);
     xSemaphoreGiveRecursive(mutex);
     return result;
 }

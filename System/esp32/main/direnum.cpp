@@ -31,8 +31,8 @@ static void free_ctx(struct direnum_ctx *ctx) {
 }
 
 static int de_compare(const void *a, const void *b) {
-    const struct direnum_ent *de_a = a;
-    const struct direnum_ent *de_b = b;
+    const struct direnum_ent *de_a = (const struct direnum_ent *)a;
+    const struct direnum_ent *de_b = (const struct direnum_ent *)b;
 
     // Sort directories at the top
     if ((de_a->attr & DE_DIR) != (de_b->attr & DE_DIR)) {
@@ -47,7 +47,7 @@ static struct direnum_ctx *readall(const char *path) {
     struct direnum_ctx *ctx       = NULL;
 
     // Allocate context
-    if ((ctx = calloc(1, sizeof(*ctx))) == NULL)
+    if ((ctx = (struct direnum_ctx *)calloc(1, sizeof(*ctx))) == NULL)
         goto error;
 
     led_flash_start();
@@ -78,7 +78,7 @@ static struct direnum_ctx *readall(const char *path) {
             void *newbuf = realloc(ctx->entries, sizeof(*ctx->entries) * ctx->cap_entries);
             if (newbuf == NULL)
                 goto error;
-            ctx->entries = newbuf;
+            ctx->entries = (direnum_ent *)newbuf;
         }
 
         struct direnum_ent *de = &ctx->entries[ctx->num_entries++];
@@ -123,7 +123,7 @@ direnum_ctx_t direnum_open(const char *path) {
 
 struct direnum_ent *direnum_read(direnum_ctx_t _ctx) {
     if (_ctx == NULL) {
-        return false;
+        return NULL;
     }
     struct direnum_ctx *ctx = (struct direnum_ctx *)_ctx;
 

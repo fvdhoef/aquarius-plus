@@ -72,7 +72,7 @@ static char *resolve_path(const char *path, const struct vfs **vfs, bool remove_
     // DBGF("resolve_path: '%s'\n", path);
 
     size_t tmppath_size = strlen(state->current_path) + 1 + strlen(path) + 1;
-    char  *tmppath      = malloc(tmppath_size);
+    char  *tmppath      = (char *)malloc(tmppath_size);
     assert(tmppath != NULL);
     tmppath[0] = 0;
     if (use_cwd) {
@@ -83,7 +83,7 @@ static char *resolve_path(const char *path, const struct vfs **vfs, bool remove_
 
     char *components[MAX_COMPONENTS];
     int   num_components = 0;
-    char *result         = malloc(strlen(tmppath) + 1);
+    char *result         = (char *)malloc(strlen(tmppath) + 1);
     assert(result != NULL);
 
     const char *ps = tmppath;
@@ -429,12 +429,12 @@ static void esp_delete(const char *path_arg) {
 
     const struct vfs *vfs  = NULL;
     char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->delete) {
+    if (!vfs || !vfs->delete_) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
-    txfifo_write(vfs->delete (path));
+    txfifo_write(vfs->delete_(path));
     free(path);
 }
 
@@ -818,7 +818,7 @@ void uart_protocol_init(void) {
     ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
     ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
 
-    state = calloc(sizeof(*state), 1);
+    state = (struct state *)calloc(sizeof(*state), 1);
     assert(state != NULL);
 
     vfs_esp_init();
