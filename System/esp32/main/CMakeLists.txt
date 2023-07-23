@@ -11,6 +11,8 @@ idf_component_register(
         "VFS/SDCardVFS.cpp"
         "VFS/EspVFS.cpp"
 
+        "EspSettingsConsole.cpp"
+
         "fileserver.cpp"
         "led.cpp"
         "hid.cpp"

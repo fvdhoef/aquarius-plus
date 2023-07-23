@@ -2,7 +2,6 @@
 
 #include "common.h"
 #include "VFS.h"
-#include <freertos/stream_buffer.h>
 
 class EspVFS : public VFS {
     EspVFS();
