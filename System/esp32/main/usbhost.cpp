@@ -45,7 +45,7 @@ static bool find_keyboard_info(const uint8_t *desc, usb_keyboard_info_t *ki);
 static class_driver_t driver_obj = {0};
 
 void usbhost_init(void) {
-    xTaskCreatePinnedToCore(task_host_lib_daemon, "daemon", 4096, NULL, DAEMON_TASK_PRIORITY, NULL, 0);
+    xTaskCreatePinnedToCore(task_host_lib_daemon, "daemon", 4096, nullptr, DAEMON_TASK_PRIORITY, nullptr, 0);
 }
 
 static void task_host_lib_daemon(void *arg) {
@@ -57,11 +57,11 @@ static void task_host_lib_daemon(void *arg) {
     ESP_ERROR_CHECK(usb_host_install(&host_config));
 
     // Create class driver task
-    xTaskCreatePinnedToCore(task_class_driver, "class", 4096, NULL, CLASS_TASK_PRIORITY, NULL, 0);
+    xTaskCreatePinnedToCore(task_class_driver, "class", 4096, nullptr, CLASS_TASK_PRIORITY, nullptr, 0);
     vTaskDelay(10); // Short delay to let client task spin up
 
     while (1) {
-        ESP_ERROR_CHECK(usb_host_lib_handle_events(portMAX_DELAY, NULL));
+        ESP_ERROR_CHECK(usb_host_lib_handle_events(portMAX_DELAY, nullptr));
     }
 }
 
@@ -78,7 +78,7 @@ static void client_event_cb(const usb_host_client_event_msg_t *event_msg, void *
             break;
 
         case USB_HOST_CLIENT_EVENT_DEV_GONE:
-            if (driver_obj->dev_hdl != NULL) {
+            if (driver_obj->dev_hdl != nullptr) {
                 // Cancel any other actions and close the device next
                 driver_obj->actions = ACTION_CLOSE_DEV;
             }
@@ -119,7 +119,7 @@ void keyboard_set_leds(uint8_t leds) {
     transfer->device_handle    = driver_obj.dev_hdl;
     transfer->bEndpointAddress = 0;
     transfer->callback         = notif_ctrl_xfer_cb;
-    transfer->context          = NULL;
+    transfer->context          = nullptr;
     transfer->timeout_ms       = 1000;
     transfer->num_bytes        = sizeof(usb_setup_packet_t) + 1;
 
@@ -147,7 +147,7 @@ static void keyboard_set_boot_protocol(void) {
     transfer->device_handle    = driver_obj.dev_hdl;
     transfer->bEndpointAddress = 0;
     transfer->callback         = notif_ctrl_xfer_cb;
-    transfer->context          = NULL;
+    transfer->context          = nullptr;
     transfer->timeout_ms       = 1000;
     transfer->num_bytes        = sizeof(usb_setup_packet_t);
 
@@ -186,7 +186,7 @@ static void task_class_driver(void *arg) {
                 assert(driver_obj.dev_addr != 0);
                 ESP_LOGI(TAG, "Opening device at address %d", driver_obj.dev_addr);
                 ESP_ERROR_CHECK(usb_host_device_open(driver_obj.client_hdl, driver_obj.dev_addr, &driver_obj.dev_hdl));
-                assert(driver_obj.dev_hdl != NULL);
+                assert(driver_obj.dev_hdl != nullptr);
 
                 // ESP_LOGI(TAG, "Getting device information");
                 ESP_ERROR_CHECK(usb_host_device_info(driver_obj.dev_hdl, &driver_obj.dev_info));
@@ -213,7 +213,7 @@ static void task_class_driver(void *arg) {
 
                 // ESP_LOGI(TAG, "Getting config descriptor");
                 ESP_ERROR_CHECK(usb_host_get_active_config_descriptor(driver_obj.dev_hdl, &driver_obj.cfg_desc));
-                // usb_print_config_descriptor(driver_obj.cfg_desc, NULL);
+                // usb_print_config_descriptor(driver_obj.cfg_desc, nullptr);
 
                 usb_keyboard_info_t ki;
                 if (find_keyboard_info((const uint8_t *)driver_obj.cfg_desc, &ki)) {
@@ -222,7 +222,7 @@ static void task_class_driver(void *arg) {
                     // Claim interface
                     bInterfaceNumber = ki.bInterfaceNumber;
                     ESP_ERROR_CHECK(usb_host_interface_claim(driver_obj.client_hdl, driver_obj.dev_hdl, ki.bInterfaceNumber, ki.bAlternateSetting));
-                    assert(driver_obj.dev_hdl != NULL);
+                    assert(driver_obj.dev_hdl != nullptr);
 
                     keyboard_set_boot_protocol();
                     keyboard_set_leds(0);
@@ -234,7 +234,7 @@ static void task_class_driver(void *arg) {
                     transfer->bEndpointAddress = ki.bEndpointAddress;
                     transfer->num_bytes        = 8;
                     transfer->callback         = notif_xfer_cb;
-                    transfer->context          = NULL;
+                    transfer->context          = nullptr;
                     transfer->timeout_ms       = 1000;
 
                     esp_err_t err = usb_host_transfer_submit(transfer);
@@ -254,8 +254,8 @@ static void task_class_driver(void *arg) {
 
                 usb_host_device_close(driver_obj.client_hdl, driver_obj.dev_hdl);
                 driver_obj.dev_addr = 0;
-                driver_obj.dev_hdl  = NULL;
-                driver_obj.cfg_desc = NULL;
+                driver_obj.dev_hdl  = nullptr;
+                driver_obj.cfg_desc = nullptr;
                 driver_obj.actions &= ~ACTION_CLOSE_DEV;
             }
         }

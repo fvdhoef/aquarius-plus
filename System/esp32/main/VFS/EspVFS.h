@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "vfs.h"
+#include "VFS.h"
 #include <freertos/stream_buffer.h>
 
 class EspVFS : public VFS {

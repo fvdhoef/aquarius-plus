@@ -1,9 +1,9 @@
-#include "vfs_esp.h"
+#include "EspVFS.h"
 #include "wifi.h"
 #include <esp_ota_ops.h>
 #include <esp_app_format.h>
 #include <esp_wifi.h>
-#include "sdcard.h"
+#include "SDCardVFS.h"
 #include "led.h"
 
 extern const uint8_t settings_caq_start[] asm("_binary_settings_caq_start");
@@ -31,7 +31,7 @@ EspVFS &EspVFS::instance() {
 void EspVFS::init(void) {
     tx_buffer = xStreamBufferCreate(256, 1);
     rx_buffer = xStreamBufferCreate(256, 1);
-    xTaskCreate(console_task, "console", 8192, NULL, 1, NULL);
+    xTaskCreate(console_task, "console", 8192, nullptr, 1, nullptr);
 }
 
 int EspVFS::open(uint8_t flags, const char *path) {
@@ -232,7 +232,7 @@ static void wifi_set(void) {
     unsigned         idxs[MAX_SCAN_AP];
     unsigned         idxs_count = 0;
 
-    esp_err_t result = esp_wifi_scan_start(NULL, true);
+    esp_err_t result = esp_wifi_scan_start(nullptr, true);
     if (result == ESP_OK) {
         memset(ap_info, 0, sizeof(ap_info));
         result = esp_wifi_scan_get_ap_records(&ap_count, ap_info);
@@ -328,19 +328,19 @@ static void system_update(void) {
     esp_err_t              err;
 
     esp_ota_handle_t ota_handle  = 0;
-    FILE            *f           = NULL;
+    FILE            *f           = nullptr;
     const size_t     tmpbuf_size = 65536;
     void            *tmpbuf      = malloc(tmpbuf_size);
     bool             success     = false;
     char             str[4];
 
-    if (tmpbuf == NULL) {
+    if (tmpbuf == nullptr) {
         cprintf("Out of memory\n");
         goto done;
     }
 
     led_flash_start();
-    if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == NULL) {
+    if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == nullptr) {
         cprintf("File not found (%s)\n", UPDATEFILE_NAME);
         goto done;
     }
@@ -388,7 +388,7 @@ static void system_update(void) {
         goto done;
     }
 
-    if ((update_partition = esp_ota_get_next_update_partition(NULL)) == NULL) {
+    if ((update_partition = esp_ota_get_next_update_partition(nullptr)) == nullptr) {
         cprintf("Error: can't find update partition\n");
         return;
     }

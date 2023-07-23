@@ -56,8 +56,8 @@ void wifi_init(void) {
     ESP_ERROR_CHECK(esp_netif_init());
 
     // Register our event handler for Wi-Fi, IP and Provisioning related events
-    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, NULL));
-    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, NULL));
+    ESP_ERROR_CHECK(esp_event_handler_register(WIFI_EVENT, ESP_EVENT_ANY_ID, &event_handler, nullptr));
+    ESP_ERROR_CHECK(esp_event_handler_register(IP_EVENT, IP_EVENT_STA_GOT_IP, &event_handler, nullptr));
 
     // Initialize Wi-Fi including netif with default config
     esp_netif_create_default_wifi_sta();

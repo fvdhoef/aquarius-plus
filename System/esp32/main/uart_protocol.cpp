@@ -1,8 +1,8 @@
 #include "uart_protocol.h"
 #include <driver/uart.h>
-#include "sdcard.h"
-#include "vfs.h"
-#include "vfs_esp.h"
+#include "SDCardVFS.h"
+#include "VFS.h"
+#include "EspVFS.h"
 #include <algorithm>
 
 static const char *TAG = "uart_protocol";
@@ -74,7 +74,7 @@ static char *resolve_path(const char *path, VFS **vfs, bool remove_vfs_prefix) {
 
     size_t tmppath_size = strlen(state->current_path) + 1 + strlen(path) + 1;
     char  *tmppath      = (char *)malloc(tmppath_size);
-    assert(tmppath != NULL);
+    assert(tmppath != nullptr);
     tmppath[0] = 0;
     if (use_cwd) {
         strcat(tmppath, state->current_path);
@@ -85,7 +85,7 @@ static char *resolve_path(const char *path, VFS **vfs, bool remove_vfs_prefix) {
     char *components[MAX_COMPONENTS];
     int   num_components = 0;
     char *result         = (char *)malloc(strlen(tmppath) + 1);
-    assert(result != NULL);
+    assert(result != nullptr);
 
     const char *ps = tmppath;
     char       *pd = result;
@@ -163,9 +163,9 @@ static char *resolve_path(const char *path, VFS **vfs, bool remove_vfs_prefix) {
 static void close_all_descriptors(void) {
     // Close any open descriptors
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state->fd_vfs[i] != NULL) {
+        if (state->fd_vfs[i] != nullptr) {
             state->fd_vfs[i]->close(state->fd[i]);
-            state->fd_vfs[i] = NULL;
+            state->fd_vfs[i] = nullptr;
         }
     }
     for (int i = 0; i < MAX_DDS; i++) {
@@ -186,7 +186,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     // Find free file descriptor
     int fd = -1;
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state->fd_vfs[i] == NULL) {
+        if (state->fd_vfs[i] == nullptr) {
             fd = i;
             break;
         }
@@ -198,7 +198,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     }
 
     // Compose full path
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, true);
     if (!vfs) {
         free(path);
@@ -221,19 +221,19 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 static void esp_close(uint8_t fd) {
     DBGF("CLOSE fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state->fd_vfs[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fd_vfs[fd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
 
     txfifo_write(state->fd_vfs[fd]->close(state->fd[fd]));
-    state->fd_vfs[fd] = NULL;
+    state->fd_vfs[fd] = nullptr;
 }
 
 static void esp_read(uint8_t fd, uint16_t size) {
     DBGF("READ fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state->fd_vfs[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fd_vfs[fd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -254,7 +254,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
 static void esp_write(uint8_t fd, uint16_t size, const void *data) {
     DBGF("WRITE fd: %d  size: %u\n", fd, size);
 
-    if (fd >= MAX_FDS || state->fd_vfs[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fd_vfs[fd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -272,7 +272,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
 static void esp_seek(uint8_t fd, uint32_t offset) {
     DBGF("SEEK fd: %d  offset: %lu\n", fd, offset);
 
-    if (fd >= MAX_FDS || state->fd_vfs[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fd_vfs[fd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -283,7 +283,7 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
 static void esp_tell(uint8_t fd) {
     DBGF("TELL fd: %d\n", fd);
 
-    if (fd >= MAX_FDS || state->fd_vfs[fd] == NULL) {
+    if (fd >= MAX_FDS || state->fd_vfs[fd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
@@ -318,7 +318,7 @@ static void esp_opendir(const char *path_arg) {
     }
 
     // Compose full path
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, true);
     if (!vfs) {
         free(path);
@@ -393,7 +393,7 @@ static void esp_readdir(uint8_t dd) {
 static void esp_delete(const char *path_arg) {
     DBGF("DELETE %s\n", path_arg);
 
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, true);
     if (!vfs) {
         free(path);
@@ -407,8 +407,8 @@ static void esp_delete(const char *path_arg) {
 static void esp_rename(const char *old_arg, const char *new_arg) {
     DBGF("RENAME %s -> %s\n", old_arg, new_arg);
 
-    VFS  *vfs1     = NULL;
-    VFS  *vfs2     = NULL;
+    VFS  *vfs1     = nullptr;
+    VFS  *vfs2     = nullptr;
     char *old_path = resolve_path(old_arg, &vfs1, true);
     char *new_path = resolve_path(new_arg, &vfs2, true);
     if (!vfs1 || vfs1 != vfs2) {
@@ -427,7 +427,7 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
 static void esp_mkdir(const char *path_arg) {
     DBGF("MKDIR %s\n", path_arg);
 
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, true);
     if (!vfs) {
         free(path);
@@ -443,7 +443,7 @@ static void esp_chdir(const char *path_arg) {
     DBGF("CHDIR %s\n", path_arg);
 
     // Compose full path
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, false);
     if (!vfs) {
         free(path);
@@ -471,7 +471,7 @@ static void esp_chdir(const char *path_arg) {
 static void esp_stat(const char *path_arg) {
     DBGF("STAT %s\n", path_arg);
 
-    VFS  *vfs  = NULL;
+    VFS  *vfs  = nullptr;
     char *path = resolve_path(path_arg, &vfs, true);
     if (!vfs) {
         free(path);
@@ -527,7 +527,7 @@ static void esp_closeall(void) {
 }
 
 static void esp32_write_data(uint8_t data) {
-    if (state->current_path == NULL) {
+    if (state->current_path == nullptr) {
         state->current_path = strdup("");
     }
     if (state->rxbuf_idx == 0 && data == 0) {
@@ -645,16 +645,16 @@ static void esp32_write_data(uint8_t data) {
             case ESPCMD_RENAME: {
                 static const char *new_path;
                 if (state->rxbuf_idx == 1) {
-                    new_path = NULL;
+                    new_path = nullptr;
                 }
 
                 if (data == 0) {
                     const char *old_path = (const char *)&state->rxbuf[1];
-                    if (new_path == NULL) {
+                    if (new_path == nullptr) {
                         new_path = (const char *)&state->rxbuf[state->rxbuf_idx];
                     } else {
                         esp_rename(old_path, new_path);
-                        new_path         = NULL;
+                        new_path         = nullptr;
                         state->rxbuf_idx = 0;
                     }
                 }
@@ -778,8 +778,8 @@ void uart_protocol_init(void) {
     ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
 
     state = (struct state *)calloc(sizeof(*state), 1);
-    assert(state != NULL);
+    assert(state != nullptr);
 
     EspVFS::instance().init();
-    xTaskCreate(uart_event_task, "uart_event_task", 6144, NULL, 1, NULL);
+    xTaskCreate(uart_event_task, "uart_event_task", 6144, nullptr, 1, nullptr);
 }

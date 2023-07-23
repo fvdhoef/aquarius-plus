@@ -1,4 +1,4 @@
-#include "sdcard.h"
+#include "SDCardVFS.h"
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <esp_vfs_fat.h>
@@ -7,7 +7,7 @@
 #include <errno.h>
 #include "led.h"
 
-static const char *TAG = "sdcard";
+static const char *TAG = "SDCardVFS";
 
 #if CONFIG_IDF_TARGET_ESP32S2
 #    define SPI_DMA_CHAN host.slot
@@ -79,7 +79,7 @@ void SDCardVFS::init(void) {
 static char *get_fullpath(const char *path) {
     // Compose full path
     char *full_path = (char *)malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
-    assert(full_path != NULL);
+    assert(full_path != nullptr);
     strcpy(full_path, MOUNT_POINT);
     strcat(full_path, "/");
     strcat(full_path, path);
@@ -136,7 +136,7 @@ int SDCardVFS::open(uint8_t flags, const char *path) {
     // Find free file descriptor
     int fd = -1;
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] == NULL) {
+        if (state.fds[i] == nullptr) {
             fd = i;
             break;
         }
@@ -151,7 +151,7 @@ int SDCardVFS::open(uint8_t flags, const char *path) {
     int err_no = errno;
     free(full_path);
 
-    if (f == NULL) {
+    if (f == nullptr) {
         uint8_t err = ERR_NOT_FOUND;
         switch (err_no) {
             case EACCES: err = ERR_NOT_FOUND; break;
@@ -165,17 +165,17 @@ int SDCardVFS::open(uint8_t flags, const char *path) {
 }
 
 int SDCardVFS::close(int fd) {
-    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
     fclose(f);
-    state.fds[fd] = NULL;
+    state.fds[fd] = nullptr;
     return 0;
 }
 
 int SDCardVFS::read(int fd, uint16_t size, void *buf) {
-    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
@@ -187,7 +187,7 @@ int SDCardVFS::read(int fd, uint16_t size, void *buf) {
 }
 
 int SDCardVFS::write(int fd, uint16_t size, const void *buf) {
-    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
@@ -198,7 +198,7 @@ int SDCardVFS::write(int fd, uint16_t size, const void *buf) {
 }
 
 int SDCardVFS::seek(int fd, uint32_t offset) {
-    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
@@ -209,7 +209,7 @@ int SDCardVFS::seek(int fd, uint32_t offset) {
 }
 
 int SDCardVFS::tell(int fd) {
-    if (fd >= MAX_FDS || state.fds[fd] == NULL)
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 

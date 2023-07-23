@@ -16,7 +16,7 @@ static void timercb(TimerHandle_t xTimer) {
 
 void led_flash_start(void) {
     if (!th) {
-        th = xTimerCreate("led", pdMS_TO_TICKS(20), 1, NULL, timercb);
+        th = xTimerCreate("led", pdMS_TO_TICKS(20), 1, nullptr, timercb);
     }
     if (stop) {
         stop = false;

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "common.h"
-#include "vfs.h"
+#include "VFS.h"
 
 #define MOUNT_POINT "/sdcard"
 

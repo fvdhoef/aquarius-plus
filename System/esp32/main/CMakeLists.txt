@@ -3,12 +3,14 @@ idf_component_register(
         "main.cpp"
         "fpga.cpp"
         "usbhost.cpp"
-        "sdcard.cpp"
         "aq_keyb.cpp"
         "aq_keyb_press_key.cpp"
         "uart_protocol.cpp"
-        "vfs.cpp"
-        "vfs_esp.cpp"
+
+        "VFS/VFS.cpp"
+        "VFS/SDCardVFS.cpp"
+        "VFS/EspVFS.cpp"
+
         "fileserver.cpp"
         "led.cpp"
         "hid.cpp"
@@ -42,6 +44,7 @@ idf_component_register(
 
     INCLUDE_DIRS
         "."
+        "VFS"
         "connectivity"
         "connectivity/nimble-cpp"
 

@@ -3,7 +3,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <dirent.h>
-#include "sdcard.h"
+#include "SDCardVFS.h"
 #include <errno.h>
 #include <mdns.h>
 #include "aq_keyb.h"
@@ -19,8 +19,8 @@ static const char *TAG = "fileserver";
 static char *urlencode(const char *s) {
     size_t len    = strlen(s);
     char  *result = (char *)malloc(3 * len + 1);
-    if (result == NULL) {
-        return NULL;
+    if (result == nullptr) {
+        return nullptr;
     }
 
     const char  hexlut[] = "0123456789ABCDEF";
@@ -88,7 +88,7 @@ static const char *get_path_from_uri(char *dest, size_t destsize, const char *ur
 
     if (pathlen + 1 > destsize) {
         /* Full path string won't fit into destination buffer */
-        return NULL;
+        return nullptr;
     }
 
     /* Construct full path (base + path) */
@@ -118,7 +118,7 @@ static esp_err_t handler_options(httpd_req_t *req) {
         "MOVE"     // Done
     );
     httpd_resp_set_status(req, HTTPD_204);
-    httpd_resp_send(req, NULL, 0);
+    httpd_resp_send(req, nullptr, 0);
     return ESP_OK;
 }
 
@@ -152,7 +152,7 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
     char  depth[16] = "0";
     int   size      = 0;
     int   result    = 0;
-    char *encoded   = NULL;
+    char *encoded   = nullptr;
 
     // Allocate buffers
     const size_t path_size = 512;
@@ -206,11 +206,11 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
 
     if (S_ISDIR(st.st_mode) && depth[0] != '0') {
         DIR *dir = opendir(path);
-        if (dir != NULL) {
+        if (dir != nullptr) {
             // printf("Host: %s\n", host);
             while (1) {
                 struct dirent *de = readdir(dir);
-                if (de == NULL)
+                if (de == nullptr)
                     break;
 
                 snprintf(tmp, tmp_size, "%s/%s", path, de->d_name);
@@ -229,7 +229,7 @@ static esp_err_t handler_propfind(httpd_req_t *req) {
         }
     }
     httpd_resp_sendstr_chunk(req, "</multistatus>");
-    httpd_resp_sendstr_chunk(req, NULL);
+    httpd_resp_sendstr_chunk(req, nullptr);
 
 done:
     free(uripath);
@@ -259,7 +259,7 @@ static esp_err_t handler_delete(httpd_req_t *req) {
     // Unlink file
     if (unlink(path) == 0) {
         httpd_resp_set_status(req, HTTPD_204);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send(req, nullptr, 0);
     } else if (errno == ENOENT) {
         httpd_resp_send_404(req);
     } else {
@@ -310,11 +310,11 @@ static esp_err_t handler_get(httpd_req_t *req) {
             "<tbody>");
 
         DIR *dir = opendir(path);
-        if (dir != NULL) {
+        if (dir != nullptr) {
             // printf("Host: %s\n", host);
             while (1) {
                 struct dirent *de = readdir(dir);
-                if (de == NULL)
+                if (de == nullptr)
                     break;
 
                 snprintf(tmp, tmp_size, "%s/%s", path, de->d_name);
@@ -340,7 +340,7 @@ static esp_err_t handler_get(httpd_req_t *req) {
 
         httpd_resp_sendstr_chunk(req, "</tbody></table>");
         httpd_resp_sendstr_chunk(req, "</body></html>");
-        httpd_resp_sendstr_chunk(req, NULL);
+        httpd_resp_sendstr_chunk(req, nullptr);
 
     } else {
         FILE *f = fopen(path, "rb");
@@ -421,7 +421,7 @@ static esp_err_t handler_put(httpd_req_t *req) {
     fclose(f);
 
     httpd_resp_set_status(req, HTTPD_204);
-    httpd_resp_send(req, NULL, 0);
+    httpd_resp_send(req, nullptr, 0);
 
 done:
     free(path);
@@ -458,7 +458,7 @@ static esp_err_t handler_move(httpd_req_t *req) {
         goto error;
 
     p = strcasestr(tmp, host);
-    if (p == NULL || p - tmp > 8) {
+    if (p == nullptr || p - tmp > 8) {
         httpd_resp_send_404(req);
         goto done;
     }
@@ -469,7 +469,7 @@ static esp_err_t handler_move(httpd_req_t *req) {
     // printf("MOVE %s to %s\n", path, path2);
     if (rename(path, path2) == 0) {
         httpd_resp_set_status(req, HTTPD_204);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send(req, nullptr, 0);
     } else {
         httpd_resp_send_404(req);
     }
@@ -500,7 +500,7 @@ static esp_err_t handler_mkcol(httpd_req_t *req) {
     // Unlink file
     if (mkdir(path, 0775) == 0) {
         httpd_resp_set_status(req, HTTPD_204);
-        httpd_resp_send(req, NULL, 0);
+        httpd_resp_send(req, nullptr, 0);
     } else {
         goto error;
     }
@@ -516,9 +516,9 @@ error:
 }
 
 static esp_err_t handler_copy(httpd_req_t *req) {
-    FILE *f  = NULL;
-    FILE *f2 = NULL;
-    char *p  = NULL;
+    FILE *f  = nullptr;
+    FILE *f2 = nullptr;
+    char *p  = nullptr;
 
     // Allocate buffers
     const size_t path_size = 512;
@@ -542,7 +542,7 @@ static esp_err_t handler_copy(httpd_req_t *req) {
         goto error;
 
     p = strcasestr(tmp, host);
-    if (p == NULL || p - tmp > 8) {
+    if (p == nullptr || p - tmp > 8) {
         httpd_resp_send_404(req);
         goto done;
     }
@@ -552,11 +552,11 @@ static esp_err_t handler_copy(httpd_req_t *req) {
     snprintf(path2, path_size, "%s%s", MOUNT_POINT, p);
     // printf("COPY %s to %s\n", path, path2);
 
-    if ((f = fopen(path, "rb")) == NULL) {
+    if ((f = fopen(path, "rb")) == nullptr) {
         httpd_resp_send_404(req);
         goto done;
     }
-    if ((f2 = fopen(path2, "wb")) == NULL) {
+    if ((f2 = fopen(path2, "wb")) == nullptr) {
         goto error;
     }
 
@@ -567,19 +567,19 @@ static esp_err_t handler_copy(httpd_req_t *req) {
 
         if (fwrite(tmp, 1, size, f2) != size) {
             fclose(f2);
-            f2 = NULL;
+            f2 = nullptr;
             unlink(path2);
             goto error;
         }
     }
 
     httpd_resp_set_status(req, HTTPD_204);
-    httpd_resp_send(req, NULL, 0);
+    httpd_resp_send(req, nullptr, 0);
 
 done:
-    if (f != NULL)
+    if (f != nullptr)
         fclose(f);
-    if (f2 != NULL)
+    if (f2 != nullptr)
         fclose(f2);
 
     free(path);
@@ -623,7 +623,7 @@ static esp_err_t handler_post_keyboard(httpd_req_t *req) {
     }
 
     httpd_resp_set_status(req, HTTPD_204);
-    httpd_resp_send(req, NULL, 0);
+    httpd_resp_send(req, nullptr, 0);
 
 done:
     free(tmp);
@@ -643,7 +643,7 @@ void fileserver_init(void) {
         mdns_instance_name_set("Aquarius+");
     }
 
-    httpd_handle_t server   = NULL;
+    httpd_handle_t server   = nullptr;
     httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
     config.max_uri_handlers = 10;
     config.uri_match_fn     = httpd_uri_match_wildcard;

@@ -183,5 +183,5 @@ static void bleTask(void *parameter) {
 }
 
 void ble_init(void) {
-    xTaskCreate(bleTask, "ble", 5000, NULL, 3, NULL);
+    xTaskCreate(bleTask, "ble", 5000, nullptr, 3, nullptr);
 }

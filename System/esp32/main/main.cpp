@@ -1,6 +1,6 @@
 #include "common.h"
 #include "usbhost.h"
-#include "sdcard.h"
+#include "SDCardVFS.h"
 #include "fpga.h"
 #include "uart_protocol.h"
 #include "ca_store.h"
