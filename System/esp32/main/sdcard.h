@@ -5,6 +5,31 @@
 
 #define MOUNT_POINT "/sdcard"
 
-void sdcard_init(void);
+class SDCardVFS : public VFS {
+    SDCardVFS();
 
-extern struct vfs sdcard_vfs;
+public:
+    static SDCardVFS &instance();
+    void              init();
+
+    // File operations
+    int open(uint8_t flags, const char *path) override;
+    int close(int fd) override;
+    int read(int fd, uint16_t size, void *buf) override;
+    int write(int fd, uint16_t size, const void *buf) override;
+    int seek(int fd, uint32_t offset) override;
+    int tell(int fd) override;
+
+    // Directory operations
+    int                 opendir(const char *path) override;
+    int                 closedir(int dd) override;
+    struct direnum_ent *readdir(int dd) override;
+
+    // Filesystem operations
+    int delete_(const char *path) override;
+    int rename(const char *path_old, const char *path_new) override;
+    int mkdir(const char *path) override;
+    int stat(const char *path, struct stat *st) override;
+
+private:
+};

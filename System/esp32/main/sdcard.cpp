@@ -16,7 +16,25 @@ static const char *TAG = "sdcard";
 #    define SPI_DMA_CHAN SPI_DMA_CH_AUTO
 #endif
 
-void sdcard_init(void) {
+#define MAX_FDS (10)
+#define MAX_DDS (10)
+
+struct state {
+    direnum_ctx_t dds[MAX_DDS];
+    FILE         *fds[MAX_FDS];
+};
+
+static struct state state;
+
+SDCardVFS::SDCardVFS() {
+}
+
+SDCardVFS &SDCardVFS::instance() {
+    static SDCardVFS vfs;
+    return vfs;
+}
+
+void SDCardVFS::init(void) {
     ESP_LOGI(TAG, "Initializing SD card");
 
     esp_err_t        ret;
@@ -61,19 +79,6 @@ void sdcard_init(void) {
     sdmmc_card_print_info(stdout, card);
 }
 
-#define MAX_FDS (10)
-#define MAX_DDS (10)
-
-struct state {
-    direnum_ctx_t dds[MAX_DDS];
-    FILE         *fds[MAX_FDS];
-};
-
-static struct state state;
-
-direnum_ctx_t dds[MAX_DDS];
-FILE         *fds[MAX_FDS];
-
 static char *get_fullpath(const char *path) {
     // Compose full path
     char *full_path = (char *)malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
@@ -84,7 +89,7 @@ static char *get_fullpath(const char *path) {
     return full_path;
 }
 
-static int sd_open(uint8_t flags, const char *path) {
+int SDCardVFS::open(uint8_t flags, const char *path) {
     // Translate flags
     int  mi = 0;
     char mode[5];
@@ -162,7 +167,7 @@ static int sd_open(uint8_t flags, const char *path) {
     return fd;
 }
 
-static int sd_close(int fd) {
+int SDCardVFS::close(int fd) {
     if (fd >= MAX_FDS || state.fds[fd] == NULL)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -172,7 +177,7 @@ static int sd_close(int fd) {
     return 0;
 }
 
-static int sd_read(int fd, uint16_t size, void *buf) {
+int SDCardVFS::read(int fd, uint16_t size, void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == NULL)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -184,7 +189,7 @@ static int sd_read(int fd, uint16_t size, void *buf) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-static int sd_write(int fd, uint16_t size, const void *buf) {
+int SDCardVFS::write(int fd, uint16_t size, const void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == NULL)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -195,7 +200,7 @@ static int sd_write(int fd, uint16_t size, const void *buf) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-static int sd_seek(int fd, uint32_t offset) {
+int SDCardVFS::seek(int fd, uint32_t offset) {
     if (fd >= MAX_FDS || state.fds[fd] == NULL)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -206,7 +211,7 @@ static int sd_seek(int fd, uint32_t offset) {
     return (result < 0) ? ERR_OTHER : 0;
 }
 
-static int sd_tell(int fd) {
+int SDCardVFS::tell(int fd) {
     if (fd >= MAX_FDS || state.fds[fd] == NULL)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -217,7 +222,7 @@ static int sd_tell(int fd) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-static int sd_opendir(const char *path) {
+int SDCardVFS::opendir(const char *path) {
     // Find free directory descriptor
     int dd = -1;
     for (int i = 0; i < MAX_DDS; i++) {
@@ -243,7 +248,7 @@ static int sd_opendir(const char *path) {
     return dd + MAX_FDS;
 }
 
-static int sd_closedir(int dd) {
+int SDCardVFS::closedir(int dd) {
     if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
         return ERR_PARAM;
     dd -= MAX_FDS;
@@ -254,7 +259,7 @@ static int sd_closedir(int dd) {
     return 0;
 }
 
-static struct direnum_ent *sd_readdir(int dd) {
+struct direnum_ent *SDCardVFS::readdir(int dd) {
     if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
         return NULL;
     dd -= MAX_FDS;
@@ -264,7 +269,7 @@ static struct direnum_ent *sd_readdir(int dd) {
     return result;
 }
 
-static int sd_delete(const char *path) {
+int SDCardVFS::delete_(const char *path) {
     char *full_path = get_fullpath(path);
 
     led_flash_start();
@@ -287,7 +292,7 @@ static int sd_delete(const char *path) {
     return 0;
 }
 
-static int sd_rename(const char *path_old, const char *path_new) {
+int SDCardVFS::rename(const char *path_old, const char *path_new) {
     char *full_old = get_fullpath(path_old);
     char *full_new = get_fullpath(path_new);
 
@@ -300,22 +305,18 @@ static int sd_rename(const char *path_old, const char *path_new) {
     return (result < 0) ? ERR_NOT_FOUND : 0;
 }
 
-static int sd_mkdir(const char *path) {
+int SDCardVFS::mkdir(const char *path) {
     char *full_path = get_fullpath(path);
 
     led_flash_start();
-#if _WIN32
-    int result = mkdir(full_path);
-#else
-    int result = mkdir(full_path, 0775);
-#endif
+    int result = ::mkdir(full_path, 0775);
     led_flash_stop();
     free(full_path);
 
     return (result < 0) ? ERR_OTHER : 0;
 }
 
-static int sd_stat(const char *path, struct stat *st) {
+int SDCardVFS::stat(const char *path, struct stat *st) {
     char *full_path = get_fullpath(path);
     led_flash_start();
     int result = stat(full_path, st);
@@ -324,19 +325,3 @@ static int sd_stat(const char *path, struct stat *st) {
 
     return result < 0 ? ERR_NOT_FOUND : 0;
 }
-
-struct vfs sdcard_vfs = {
-    .open     = sd_open,
-    .close    = sd_close,
-    .read     = sd_read,
-    .write    = sd_write,
-    .seek     = sd_seek,
-    .tell     = sd_tell,
-    .opendir  = sd_opendir,
-    .closedir = sd_closedir,
-    .readdir  = sd_readdir,
-    .delete_  = sd_delete,
-    .rename   = sd_rename,
-    .mkdir    = sd_mkdir,
-    .stat     = sd_stat,
-};

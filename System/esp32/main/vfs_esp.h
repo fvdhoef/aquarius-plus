@@ -2,7 +2,31 @@
 
 #include "common.h"
 #include "vfs.h"
+#include <freertos/stream_buffer.h>
 
-extern struct vfs vfs_esp;
+class EspVFS : public VFS {
+    EspVFS();
 
-void vfs_esp_init(void);
+public:
+    static EspVFS &instance();
+    void           init();
+
+    // File operations
+    int open(uint8_t flags, const char *path) override;
+    int close(int fd) override;
+    int read(int fd, uint16_t size, void *buf) override;
+    int write(int fd, uint16_t size, const void *buf) override;
+
+    // Directory operations
+    int                 opendir(const char *path) override;
+    int                 closedir(int dd) override;
+    struct direnum_ent *readdir(int dd) override;
+
+    // Filesystem operations
+    int stat(const char *path, struct stat *st) override;
+
+private:
+    int dir_idx;
+    int file_offset;
+    int file_idx;
+};

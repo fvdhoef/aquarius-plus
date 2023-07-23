@@ -27,23 +27,29 @@ enum {
     FO_EXCL   = 0x20,  // Error if already exists
 };
 
-struct vfs {
+class VFS {
+public:
+    VFS() {
+    }
+    virtual ~VFS() {
+    }
+
     // File operations
-    int (*open)(uint8_t flags, const char *path);
-    int (*close)(int fd);
-    int (*read)(int fd, uint16_t size, void *buf);
-    int (*write)(int fd, uint16_t size, const void *buf);
-    int (*seek)(int fd, uint32_t offset);
-    int (*tell)(int fd);
+    virtual int open(uint8_t flags, const char *path);
+    virtual int close(int fd);
+    virtual int read(int fd, uint16_t size, void *buf);
+    virtual int write(int fd, uint16_t size, const void *buf);
+    virtual int seek(int fd, uint32_t offset);
+    virtual int tell(int fd);
 
     // Directory operations
-    int (*opendir)(const char *path);
-    int (*closedir)(int dd);
-    struct direnum_ent *(*readdir)(int dd);
+    virtual int                 opendir(const char *path);
+    virtual int                 closedir(int dd);
+    virtual struct direnum_ent *readdir(int dd);
 
     // Filesystem operations
-    int (*delete_)(const char *path);
-    int (*rename)(const char *path_old, const char *path_new);
-    int (*mkdir)(const char *path);
-    int (*stat)(const char *path, struct stat *st);
+    virtual int delete_(const char *path);
+    virtual int rename(const char *path_old, const char *path_new);
+    virtual int mkdir(const char *path);
+    virtual int stat(const char *path, struct stat *st);
 };

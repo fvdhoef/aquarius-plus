@@ -47,10 +47,10 @@ struct state {
     uint8_t  rxbuf[16 + 0x10000];
     unsigned rxbuf_idx;
 
-    const struct vfs *fd_vfs[MAX_FDS];
-    uint8_t           fd[MAX_FDS];
-    const struct vfs *dd_vfs[MAX_DDS];
-    uint8_t           dd[MAX_DDS];
+    VFS    *fd_vfs[MAX_FDS];
+    uint8_t fd[MAX_FDS];
+    VFS    *dd_vfs[MAX_DDS];
+    uint8_t dd[MAX_DDS];
 };
 
 static struct state *state;
@@ -61,7 +61,7 @@ static void txfifo_write(uint8_t data) {
     uart_write_bytes(UART_NUM, &data, 1);
 }
 
-static char *resolve_path(const char *path, const struct vfs **vfs, bool remove_vfs_prefix) {
+static char *resolve_path(const char *path, VFS **vfs, bool remove_vfs_prefix) {
     bool use_cwd = true;
     if (path[0] == '/' || path[0] == '\\')
         use_cwd = false;
@@ -149,12 +149,12 @@ static char *resolve_path(const char *path, const struct vfs **vfs, bool remove_
 
     free(tmppath);
 
-    *vfs = &sdcard_vfs;
+    *vfs = &SDCardVFS::instance();
     if (strncasecmp(result, ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
         if (remove_vfs_prefix) {
             strcpy(result, result + 4);
         }
-        *vfs = &vfs_esp;
+        *vfs = &EspVFS::instance();
     }
     return result;
 }
@@ -200,9 +200,9 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     }
 
     // Compose full path
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->open) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, true);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
@@ -228,13 +228,7 @@ static void esp_close(uint8_t fd) {
         return;
     }
 
-    const struct vfs *vfs = state->fd_vfs[fd];
-    if (!vfs->close) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    txfifo_write(vfs->close(state->fd[fd]));
+    txfifo_write(state->fd_vfs[fd]->close(state->fd[fd]));
     state->fd_vfs[fd] = NULL;
 }
 
@@ -246,13 +240,7 @@ static void esp_read(uint8_t fd, uint16_t size) {
         return;
     }
 
-    const struct vfs *vfs = state->fd_vfs[fd];
-    if (!vfs->read) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    int result = vfs->read(state->fd[fd], size, state->rxbuf);
+    int result = state->fd_vfs[fd]->read(state->fd[fd], size, state->rxbuf);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -273,13 +261,7 @@ static void esp_write(uint8_t fd, uint16_t size, const void *data) {
         return;
     }
 
-    const struct vfs *vfs = state->fd_vfs[fd];
-    if (!vfs->write) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    int result = vfs->write(state->fd[fd], size, data);
+    int result = state->fd_vfs[fd]->write(state->fd[fd], size, data);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -297,13 +279,7 @@ static void esp_seek(uint8_t fd, uint32_t offset) {
         return;
     }
 
-    const struct vfs *vfs = state->fd_vfs[fd];
-    if (!vfs->seek) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    txfifo_write(vfs->seek(state->fd[fd], offset));
+    txfifo_write(state->fd_vfs[fd]->seek(state->fd[fd], offset));
 }
 
 static void esp_tell(uint8_t fd) {
@@ -314,13 +290,7 @@ static void esp_tell(uint8_t fd) {
         return;
     }
 
-    const struct vfs *vfs = state->fd_vfs[fd];
-    if (!vfs->tell) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    int result = vfs->tell(state->fd[fd]);
+    int result = state->fd_vfs[fd]->tell(state->fd[fd]);
     if (result < 0) {
         txfifo_write(result);
     } else {
@@ -350,9 +320,9 @@ static void esp_opendir(const char *path_arg) {
     }
 
     // Compose full path
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->opendir) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, true);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
@@ -378,13 +348,7 @@ static void esp_closedir(uint8_t dd) {
         return;
     }
 
-    const struct vfs *vfs = state->dd_vfs[dd];
-    if (!vfs->closedir) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    txfifo_write(vfs->closedir(state->dd[dd]));
+    txfifo_write(state->dd_vfs[dd]->closedir(state->dd[dd]));
     state->dd_vfs[dd] = NULL;
 }
 
@@ -396,13 +360,7 @@ static void esp_readdir(uint8_t dd) {
         return;
     }
 
-    const struct vfs *vfs = state->dd_vfs[dd];
-    if (!vfs->readdir) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-
-    struct direnum_ent *de = vfs->readdir(state->dd[dd]);
+    struct direnum_ent *de = state->dd_vfs[dd]->readdir(state->dd[dd]);
     txfifo_write(de == NULL ? ERR_EOF : 0);
     if (de == NULL)
         return;
@@ -427,9 +385,9 @@ static void esp_readdir(uint8_t dd) {
 static void esp_delete(const char *path_arg) {
     DBGF("DELETE %s\n", path_arg);
 
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->delete_) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, true);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
@@ -441,11 +399,11 @@ static void esp_delete(const char *path_arg) {
 static void esp_rename(const char *old_arg, const char *new_arg) {
     DBGF("RENAME %s -> %s\n", old_arg, new_arg);
 
-    const struct vfs *vfs1     = NULL;
-    const struct vfs *vfs2     = NULL;
-    char             *old_path = resolve_path(old_arg, &vfs1, true);
-    char             *new_path = resolve_path(new_arg, &vfs2, true);
-    if (!vfs1 || vfs1 != vfs2 || !vfs1->rename) {
+    VFS  *vfs1     = NULL;
+    VFS  *vfs2     = NULL;
+    char *old_path = resolve_path(old_arg, &vfs1, true);
+    char *new_path = resolve_path(new_arg, &vfs2, true);
+    if (!vfs1 || vfs1 != vfs2) {
         free(old_path);
         free(new_path);
         txfifo_write(ERR_PARAM);
@@ -461,9 +419,9 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
 static void esp_mkdir(const char *path_arg) {
     DBGF("MKDIR %s\n", path_arg);
 
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->mkdir) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, true);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
@@ -477,16 +435,16 @@ static void esp_chdir(const char *path_arg) {
     DBGF("CHDIR %s\n", path_arg);
 
     // Compose full path
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, false);
-    if (!vfs || !vfs->stat) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, false);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
     const char *vfs_path = path;
-    if (vfs == &vfs_esp) {
+    if (vfs == &EspVFS::instance()) {
         vfs_path += strlen(ESP_PREFIX);
     }
 
@@ -505,9 +463,9 @@ static void esp_chdir(const char *path_arg) {
 static void esp_stat(const char *path_arg) {
     DBGF("STAT %s\n", path_arg);
 
-    const struct vfs *vfs  = NULL;
-    char             *path = resolve_path(path_arg, &vfs, true);
-    if (!vfs || !vfs->stat) {
+    VFS  *vfs  = NULL;
+    char *path = resolve_path(path_arg, &vfs, true);
+    if (!vfs) {
         free(path);
         txfifo_write(ERR_PARAM);
         return;
@@ -521,14 +479,7 @@ static void esp_stat(const char *path_arg) {
     if (result < 0)
         return;
 
-    time_t t;
-#ifdef __APPLE__
-    t = st.st_mtimespec.tv_sec;
-#elif _WIN32
-    t = st.st_mtime;
-#else
-    t = st.st_mtim.tv_sec;
-#endif
+    time_t t = st.st_mtim.tv_sec;
 
     struct tm *tm       = localtime(&t);
     uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
@@ -821,6 +772,6 @@ void uart_protocol_init(void) {
     state = (struct state *)calloc(sizeof(*state), 1);
     assert(state != NULL);
 
-    vfs_esp_init();
+    EspVFS::instance().init();
     xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 1, NULL);
 }

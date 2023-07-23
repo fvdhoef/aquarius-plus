@@ -50,7 +50,7 @@ static void init(void) {
     ble_init();
 
     keyboard_init();
-    sdcard_init();
+    SDCardVFS::instance().init();
     usbhost_init();
     uart_protocol_init();
     fileserver_init();

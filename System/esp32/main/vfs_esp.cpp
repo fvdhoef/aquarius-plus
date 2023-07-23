@@ -1,6 +1,5 @@
 #include "vfs_esp.h"
 #include "wifi.h"
-#include <freertos/stream_buffer.h>
 #include <esp_ota_ops.h>
 #include <esp_app_format.h>
 #include <esp_wifi.h>
@@ -12,16 +11,30 @@ extern const uint8_t settings_caq_end[] asm("_binary_settings_caq_end");
 static const char   *fn_settings = "settings.caq";
 static const char   *fn_com      = "com";
 
-static int dir_idx     = 0;
-static int file_offset = 0;
-static int file_idx    = 0;
+static void console_task(void *pvParameters);
 
-static volatile bool new_session = true;
+static StreamBufferHandle_t tx_buffer   = nullptr;
+static StreamBufferHandle_t rx_buffer   = nullptr;
+static volatile bool        new_session = true;
 
-static StreamBufferHandle_t tx_buffer;
-static StreamBufferHandle_t rx_buffer;
+EspVFS::EspVFS() {
+    dir_idx     = 0;
+    file_offset = 0;
+    file_idx    = 0;
+}
 
-static int esp_open(uint8_t flags, const char *path) {
+EspVFS &EspVFS::instance() {
+    static EspVFS vfs;
+    return vfs;
+}
+
+void EspVFS::init(void) {
+    tx_buffer = xStreamBufferCreate(256, 1);
+    rx_buffer = xStreamBufferCreate(256, 1);
+    xTaskCreate(console_task, "console", 8192, NULL, 1, NULL);
+}
+
+int EspVFS::open(uint8_t flags, const char *path) {
     // Skip leading slashes
     while (*path == '/')
         path++;
@@ -53,7 +66,7 @@ static int esp_open(uint8_t flags, const char *path) {
     return file_idx < 0 ? ERR_NOT_FOUND : 0;
 }
 
-static int esp_read(int fd, uint16_t size, void *buf) {
+int EspVFS::read(int fd, uint16_t size, void *buf) {
     if (fd == 0) {
         int filesize  = settings_caq_end - settings_caq_start;
         int remaining = filesize - file_offset;
@@ -74,7 +87,7 @@ static int esp_read(int fd, uint16_t size, void *buf) {
     }
 }
 
-static int esp_write(int fd, uint16_t size, const void *buf) {
+int EspVFS::write(int fd, uint16_t size, const void *buf) {
     if (fd == 1) {
         return xStreamBufferSend(rx_buffer, buf, size, 0);
     } else {
@@ -82,21 +95,21 @@ static int esp_write(int fd, uint16_t size, const void *buf) {
     }
 }
 
-static int esp_close(int fd) {
+int EspVFS::close(int fd) {
     return 0;
 }
 
-static int esp_opendir(const char *path) {
+int EspVFS::opendir(const char *path) {
     printf("esp_opendir(\"%s\")\n", path);
     dir_idx = 0;
     return 0;
 }
 
-static int esp_closedir(int dd) {
+int EspVFS::closedir(int dd) {
     return 0;
 }
 
-struct direnum_ent *esp_readdir(int dd) {
+struct direnum_ent *EspVFS::readdir(int dd) {
     if (dir_idx++ == 0) {
         static struct direnum_ent de;
         de.filename = (char *)fn_settings;
@@ -110,7 +123,7 @@ struct direnum_ent *esp_readdir(int dd) {
     return NULL;
 }
 
-static int esp_stat(const char *path, struct stat *st) {
+int EspVFS::stat(const char *path, struct stat *st) {
     if (strcasecmp(path, "") == 0) {
         memset(st, 0, sizeof(*st));
         st->st_mode = S_IFDIR;
@@ -490,22 +503,3 @@ static void console_task(void *pvParameters) {
         // }
     }
 }
-
-void vfs_esp_init(void) {
-    tx_buffer = xStreamBufferCreate(256, 1);
-    rx_buffer = xStreamBufferCreate(256, 1);
-
-    xTaskCreate(console_task, "console", 8192, NULL, 12, NULL);
-}
-
-struct vfs vfs_esp = {
-    .open  = esp_open,
-    .close = esp_close,
-    .read  = esp_read,
-    .write = esp_write,
-
-    .opendir  = esp_opendir,
-    .closedir = esp_closedir,
-    .readdir  = esp_readdir,
-    .stat     = esp_stat,
-};
