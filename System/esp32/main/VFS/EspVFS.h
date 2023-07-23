@@ -11,16 +11,16 @@ public:
     void           init();
 
     // File operations
-    int open(uint8_t flags, const char *path) override;
+    int open(uint8_t flags, const std::string &path) override;
     int close(int fd) override;
-    int read(int fd, uint16_t size, void *buf) override;
-    int write(int fd, uint16_t size, const void *buf) override;
+    int read(int fd, size_t size, void *buf) override;
+    int write(int fd, size_t size, const void *buf) override;
 
     // Directory operations
-    DirEnumCtx direnum(const char *path) override;
+    DirEnumCtx direnum(const std::string &path) override;
 
     // Filesystem operations
-    int stat(const char *path, struct stat *st) override;
+    int stat(const std::string &path, struct stat *st) override;
 
 private:
     int dir_idx;

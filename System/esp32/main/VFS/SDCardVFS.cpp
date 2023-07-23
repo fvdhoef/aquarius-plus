@@ -76,17 +76,15 @@ void SDCardVFS::init(void) {
     sdmmc_card_print_info(stdout, card);
 }
 
-static char *get_fullpath(const char *path) {
+static std::string get_fullpath(const std::string &path) {
     // Compose full path
-    char *full_path = (char *)malloc(strlen(MOUNT_POINT) + 1 + strlen(path) + 1);
-    assert(full_path != nullptr);
-    strcpy(full_path, MOUNT_POINT);
-    strcat(full_path, "/");
-    strcat(full_path, path);
-    return full_path;
+    std::string result = MOUNT_POINT;
+    result += "/";
+    result += path;
+    return result;
 }
 
-int SDCardVFS::open(uint8_t flags, const char *path) {
+int SDCardVFS::open(uint8_t flags, const std::string &path) {
     // Translate flags
     int  mi = 0;
     char mode[5];
@@ -144,12 +142,11 @@ int SDCardVFS::open(uint8_t flags, const char *path) {
     if (fd == -1)
         return ERR_TOO_MANY_OPEN;
 
-    char *full_path = get_fullpath(path);
+    auto full_path = get_fullpath(path);
     led_flash_start();
-    FILE *f = fopen(full_path, mode);
+    FILE *f = fopen(full_path.c_str(), mode);
     led_flash_stop();
     int err_no = errno;
-    free(full_path);
 
     if (f == nullptr) {
         uint8_t err = ERR_NOT_FOUND;
@@ -174,7 +171,7 @@ int SDCardVFS::close(int fd) {
     return 0;
 }
 
-int SDCardVFS::read(int fd, uint16_t size, void *buf) {
+int SDCardVFS::read(int fd, size_t size, void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -186,7 +183,7 @@ int SDCardVFS::read(int fd, uint16_t size, void *buf) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-int SDCardVFS::write(int fd, uint16_t size, const void *buf) {
+int SDCardVFS::write(int fd, size_t size, const void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -197,7 +194,7 @@ int SDCardVFS::write(int fd, uint16_t size, const void *buf) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-int SDCardVFS::seek(int fd, uint32_t offset) {
+int SDCardVFS::seek(int fd, size_t offset) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -219,9 +216,9 @@ int SDCardVFS::tell(int fd) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-DirEnumCtx SDCardVFS::direnum(const char *path) {
+DirEnumCtx SDCardVFS::direnum(const std::string &path) {
     FF_DIR dir;
-    if (f_opendir(&dir, path) != F_OK) {
+    if (f_opendir(&dir, path.c_str()) != F_OK) {
         return nullptr;
     }
 
@@ -248,17 +245,16 @@ DirEnumCtx SDCardVFS::direnum(const char *path) {
     return result;
 }
 
-int SDCardVFS::delete_(const char *path) {
-    char *full_path = get_fullpath(path);
+int SDCardVFS::delete_(const std::string &path) {
+    auto full_path = get_fullpath(path);
 
     led_flash_start();
-    int result = unlink(full_path);
+    int result = unlink(full_path.c_str());
     if (result < 0) {
-        result = rmdir(full_path);
+        result = rmdir(full_path.c_str());
     }
     led_flash_stop();
     int err_no = errno;
-    free(full_path);
 
     if (result < 0) {
         // Error
@@ -271,36 +267,32 @@ int SDCardVFS::delete_(const char *path) {
     return 0;
 }
 
-int SDCardVFS::rename(const char *path_old, const char *path_new) {
-    char *full_old = get_fullpath(path_old);
-    char *full_new = get_fullpath(path_new);
+int SDCardVFS::rename(const std::string &path_old, const std::string &path_new) {
+    auto full_old = get_fullpath(path_old);
+    auto full_new = get_fullpath(path_new);
 
     led_flash_start();
-    int result = ::rename(full_old, full_new);
+    int result = ::rename(full_old.c_str(), full_new.c_str());
     led_flash_stop();
-    free(full_old);
-    free(full_new);
 
     return (result < 0) ? ERR_NOT_FOUND : 0;
 }
 
-int SDCardVFS::mkdir(const char *path) {
-    char *full_path = get_fullpath(path);
+int SDCardVFS::mkdir(const std::string &path) {
+    auto full_path = get_fullpath(path);
 
     led_flash_start();
-    int result = ::mkdir(full_path, 0775);
+    int result = ::mkdir(full_path.c_str(), 0775);
     led_flash_stop();
-    free(full_path);
 
     return (result < 0) ? ERR_OTHER : 0;
 }
 
-int SDCardVFS::stat(const char *path, struct stat *st) {
-    char *full_path = get_fullpath(path);
+int SDCardVFS::stat(const std::string &path, struct stat *st) {
+    auto full_path = get_fullpath(path);
     led_flash_start();
-    int result = ::stat(full_path, st);
+    int result = ::stat(full_path.c_str(), st);
     led_flash_stop();
-    free(full_path);
 
     return result < 0 ? ERR_NOT_FOUND : 0;
 }

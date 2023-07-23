@@ -52,19 +52,19 @@ public:
     }
 
     // File operations
-    virtual int open(uint8_t flags, const char *path);
+    virtual int open(uint8_t flags, const std::string &path);
     virtual int close(int fd);
-    virtual int read(int fd, uint16_t size, void *buf);
-    virtual int write(int fd, uint16_t size, const void *buf);
-    virtual int seek(int fd, uint32_t offset);
+    virtual int read(int fd, size_t size, void *buf);
+    virtual int write(int fd, size_t size, const void *buf);
+    virtual int seek(int fd, size_t offset);
     virtual int tell(int fd);
 
     // Directory operations
-    virtual DirEnumCtx direnum(const char *path);
+    virtual DirEnumCtx direnum(const std::string &path);
 
     // Filesystem operations
-    virtual int delete_(const char *path);
-    virtual int rename(const char *path_old, const char *path_new);
-    virtual int mkdir(const char *path);
-    virtual int stat(const char *path, struct stat *st);
+    virtual int delete_(const std::string &path);
+    virtual int rename(const std::string &path_old, const std::string &path_new);
+    virtual int mkdir(const std::string &path);
+    virtual int stat(const std::string &path, struct stat *st);
 };
