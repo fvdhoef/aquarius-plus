@@ -188,17 +188,17 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     }
 
     // if (keydown && scancode == SDL_SCANCODE_F1) {
-    //     fpga_bus_acquire();
-    //     fpga_mem_write(0x3000 + 40, fpga_mem_read(0x3000 + 40) + 1);
-    //     fpga_bus_release();
+    //     FPGA::instance().aqpAqcuireBus();
+    //     FPGA::instance().aqpWriteMem(0x3000 + 40, FPGA::instance().aqpReadMem(0x3000 + 40) + 1);
+    //     FPGA::instance().aqpReleaseBus();
     // }
 
     // if (keydown && scancode == SDL_SCANCODE_F4) {
-    //     fpga_bus_acquire();
+    //     FPGA::instance().aqpAqcuireBus();
     //     for (int i = IO_BANK0; i <= IO_BANK3; i++) {
-    //         ESP_LOGI(TAG, "IO %02X: %02X", i, fpga_io_read(i));
+    //         ESP_LOGI(TAG, "IO %02X: %02X", i, FPGA::instance().aqpReadIO(i));
     //     }
-    //     fpga_bus_release();
+    //     FPGA::instance().aqpReleaseBus();
     // }
 
     enum {
@@ -234,7 +234,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
                         esp_restart();
                     } else if (ctrl_pressed) {
                         // CTRL-ESCAPE -> reset
-                        fpga_reset_req();
+                        FPGA::instance().aqpReset();
                     } else {
                         // ESCAPE -> CTRL-C
                         _aqkey_down(KEY_CTRL);
@@ -363,14 +363,14 @@ void keyboard_update_matrix(void) {
 
     static uint8_t prev_matrix[8];
     if (memcmp(prev_matrix, keyb_matrix, 8) != 0) {
-        fpga_update_keyb_matrix(keyb_matrix);
+        FPGA::instance().aqpUpdateKeybMatrix(keyb_matrix);
         memcpy(prev_matrix, keyb_matrix, 8);
     }
 
     static uint8_t prev_handctrl1;
     static uint8_t prev_handctrl2;
     if (prev_handctrl1 != handctrl1 || prev_handctrl2 != handctrl2) {
-        fpga_update_handctrl(handctrl1, handctrl2);
+        FPGA::instance().aqpUpdateHandCtrl(handctrl1, handctrl2);
         prev_handctrl1 = handctrl1;
         prev_handctrl2 = handctrl2;
     }

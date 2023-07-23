@@ -23,3 +23,17 @@
 #include <driver/gpio.h>
 
 #include "iopins.h"
+
+class RecursiveMutexLock {
+public:
+    RecursiveMutexLock(SemaphoreHandle_t _mutex)
+        : mutex(_mutex) {
+        xSemaphoreTakeRecursive(mutex, portMAX_DELAY);
+    }
+    ~RecursiveMutexLock() {
+        xSemaphoreGiveRecursive(mutex);
+    }
+
+private:
+    SemaphoreHandle_t mutex;
+};
