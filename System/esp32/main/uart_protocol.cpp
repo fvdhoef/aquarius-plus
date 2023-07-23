@@ -1,9 +1,9 @@
 #include "uart_protocol.h"
 #include <driver/uart.h>
-#include "direnum.h"
 #include "sdcard.h"
 #include "vfs.h"
 #include "vfs_esp.h"
+#include <algorithm>
 
 static const char *TAG = "uart_protocol";
 #define BUF_SIZE (1024)
@@ -49,8 +49,9 @@ struct state {
 
     VFS    *fd_vfs[MAX_FDS];
     uint8_t fd[MAX_FDS];
-    VFS    *dd_vfs[MAX_DDS];
-    uint8_t dd[MAX_DDS];
+
+    DirEnumCtx dd[MAX_DDS];
+    int        ddIdx[MAX_DDS];
 };
 
 static struct state *state;
@@ -168,10 +169,7 @@ static void close_all_descriptors(void) {
         }
     }
     for (int i = 0; i < MAX_DDS; i++) {
-        if (state->dd_vfs[i] != NULL) {
-            state->dd_vfs[i]->close(state->dd[i]);
-            state->dd_vfs[i] = NULL;
-        }
+        state->dd[i] = nullptr;
     }
 }
 
@@ -308,7 +306,7 @@ static void esp_opendir(const char *path_arg) {
     // Find free directory descriptor
     int dd = -1;
     for (int i = 0; i < MAX_DDS; i++) {
-        if (state->dd_vfs[i] == NULL) {
+        if (state->dd[i] == nullptr) {
             dd = i;
             break;
         }
@@ -328,14 +326,22 @@ static void esp_opendir(const char *path_arg) {
         return;
     }
 
-    int vfs_dd = vfs->opendir(path);
+    auto deCtx = vfs->direnum(path);
     free(path);
 
-    if (vfs_dd < 0) {
-        txfifo_write(dd);
+    if (!deCtx) {
+        txfifo_write(ERR_NOT_FOUND);
     } else {
-        state->dd_vfs[dd] = vfs;
-        state->dd[dd]     = vfs_dd;
+        std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
+            // Sort directories at the top
+            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
+                return (a.attr & DE_DIR) != 0;
+            }
+            return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
+        });
+
+        state->dd[dd]    = deCtx;
+        state->ddIdx[dd] = 0;
         txfifo_write(dd);
     }
 }
@@ -343,39 +349,41 @@ static void esp_opendir(const char *path_arg) {
 static void esp_closedir(uint8_t dd) {
     DBGF("CLOSEDIR dd: %d\n", dd);
 
-    if (dd >= MAX_DDS || state->dd_vfs[dd] == NULL) {
+    if (dd >= MAX_DDS || state->dd[dd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
-
-    txfifo_write(state->dd_vfs[dd]->closedir(state->dd[dd]));
-    state->dd_vfs[dd] = NULL;
+    state->dd[dd] = nullptr;
+    txfifo_write(0);
 }
 
 static void esp_readdir(uint8_t dd) {
     DBGF("READDIR dd: %d\n", dd);
 
-    if (dd >= MAX_DDS || state->dd_vfs[dd] == NULL) {
+    if (dd >= MAX_DDS || state->dd[dd] == nullptr) {
         txfifo_write(ERR_PARAM);
         return;
     }
 
-    struct direnum_ent *de = state->dd_vfs[dd]->readdir(state->dd[dd]);
-    txfifo_write(de == NULL ? ERR_EOF : 0);
-    if (de == NULL)
+    auto ctx = state->dd[dd];
+    if (state->ddIdx[dd] >= (*ctx).size()) {
+        txfifo_write(ERR_EOF);
         return;
+    }
 
-    txfifo_write((de->fdate >> 0) & 0xFF);
-    txfifo_write((de->fdate >> 8) & 0xFF);
-    txfifo_write((de->ftime >> 0) & 0xFF);
-    txfifo_write((de->ftime >> 8) & 0xFF);
-    txfifo_write(de->attr);
-    txfifo_write((de->size >> 0) & 0xFF);
-    txfifo_write((de->size >> 8) & 0xFF);
-    txfifo_write((de->size >> 16) & 0xFF);
-    txfifo_write((de->size >> 24) & 0xFF);
+    auto &de = (*ctx)[state->ddIdx[dd]++];
+    txfifo_write(0);
+    txfifo_write((de.fdate >> 0) & 0xFF);
+    txfifo_write((de.fdate >> 8) & 0xFF);
+    txfifo_write((de.ftime >> 0) & 0xFF);
+    txfifo_write((de.ftime >> 8) & 0xFF);
+    txfifo_write(de.attr);
+    txfifo_write((de.size >> 0) & 0xFF);
+    txfifo_write((de.size >> 8) & 0xFF);
+    txfifo_write((de.size >> 16) & 0xFF);
+    txfifo_write((de.size >> 24) & 0xFF);
 
-    const char *p = de->filename;
+    const char *p = de.filename.c_str();
     while (*p) {
         txfifo_write(*(p++));
     }
@@ -773,5 +781,5 @@ void uart_protocol_init(void) {
     assert(state != NULL);
 
     EspVFS::instance().init();
-    xTaskCreate(uart_event_task, "uart_event_task", 4096, NULL, 1, NULL);
+    xTaskCreate(uart_event_task, "uart_event_task", 6144, NULL, 1, NULL);
 }

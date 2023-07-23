@@ -1,7 +1,6 @@
 #pragma once
 
 #include "common.h"
-#include "direnum.h"
 #include <sys/stat.h>
 
 enum {
@@ -27,6 +26,24 @@ enum {
     FO_EXCL   = 0x20,  // Error if already exists
 };
 
+enum {
+    DE_DIR = (1 << 0),
+};
+
+struct DirEnumEntry {
+    DirEnumEntry(const std::string &filename, uint32_t size, uint8_t attr, uint16_t fdate, uint16_t ftime)
+        : filename(filename), size(size), attr(attr), fdate(fdate), ftime(ftime) {
+    }
+
+    std::string filename;
+    uint32_t    size;
+    uint8_t     attr;
+    uint16_t    fdate;
+    uint16_t    ftime;
+};
+
+using DirEnumCtx = std::shared_ptr<std::vector<DirEnumEntry>>;
+
 class VFS {
 public:
     VFS() {
@@ -43,9 +60,7 @@ public:
     virtual int tell(int fd);
 
     // Directory operations
-    virtual int                 opendir(const char *path);
-    virtual int                 closedir(int dd);
-    virtual struct direnum_ent *readdir(int dd);
+    virtual DirEnumCtx direnum(const char *path);
 
     // Filesystem operations
     virtual int delete_(const char *path);

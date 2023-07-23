@@ -4,7 +4,6 @@
 #include <esp_vfs_fat.h>
 #include <sdmmc_cmd.h>
 #include <dirent.h>
-#include "direnum.h"
 #include <errno.h>
 #include "led.h"
 
@@ -17,11 +16,9 @@ static const char *TAG = "sdcard";
 #endif
 
 #define MAX_FDS (10)
-#define MAX_DDS (10)
 
 struct state {
-    direnum_ctx_t dds[MAX_DDS];
-    FILE         *fds[MAX_FDS];
+    FILE *fds[MAX_FDS];
 };
 
 static struct state state;
@@ -222,50 +219,32 @@ int SDCardVFS::tell(int fd) {
     return (result < 0) ? ERR_OTHER : result;
 }
 
-int SDCardVFS::opendir(const char *path) {
-    // Find free directory descriptor
-    int dd = -1;
-    for (int i = 0; i < MAX_DDS; i++) {
-        if (state.dds[i] == NULL) {
-            dd = i;
+DirEnumCtx SDCardVFS::direnum(const char *path) {
+    FF_DIR dir;
+    if (f_opendir(&dir, path) != F_OK) {
+        return nullptr;
+    }
+
+    auto result = std::make_shared<std::vector<DirEnumEntry>>();
+
+    // Read directory contents
+    FILINFO fno;
+    while (1) {
+        if (f_readdir(&dir, &fno) != FR_OK || fno.fname[0] == 0) {
+            // Done
             break;
         }
+
+        // Skip hidden and system files
+        if ((fno.fattrib & (AM_SYS | AM_HID)))
+            continue;
+
+        result->emplace_back(fno.fname, fno.fsize, (fno.fattrib & AM_DIR) ? DE_DIR : 0, fno.fdate, fno.ftime);
     }
-    if (dd == -1)
-        return ERR_TOO_MANY_OPEN;
 
-    char *full_path = get_fullpath(path);
+    // Close directory
+    f_closedir(&dir);
 
-    direnum_ctx_t ctx = direnum_open(full_path);
-    free(full_path);
-
-    if (ctx == NULL)
-        return ERR_NOT_FOUND;
-
-    // Return directory descriptor
-    state.dds[dd] = ctx;
-
-    return dd + MAX_FDS;
-}
-
-int SDCardVFS::closedir(int dd) {
-    if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
-        return ERR_PARAM;
-    dd -= MAX_FDS;
-
-    direnum_ctx_t ctx = state.dds[dd];
-    direnum_close(ctx);
-    state.dds[dd] = NULL;
-    return 0;
-}
-
-struct direnum_ent *SDCardVFS::readdir(int dd) {
-    if (dd < MAX_FDS || dd >= MAX_FDS + MAX_DDS || state.dds[dd - MAX_FDS] == NULL)
-        return NULL;
-    dd -= MAX_FDS;
-
-    direnum_ctx_t       ctx    = state.dds[dd];
-    struct direnum_ent *result = direnum_read(ctx);
     return result;
 }
 
@@ -297,7 +276,7 @@ int SDCardVFS::rename(const char *path_old, const char *path_new) {
     char *full_new = get_fullpath(path_new);
 
     led_flash_start();
-    int result = rename(full_old, full_new);
+    int result = ::rename(full_old, full_new);
     led_flash_stop();
     free(full_old);
     free(full_new);
@@ -319,7 +298,7 @@ int SDCardVFS::mkdir(const char *path) {
 int SDCardVFS::stat(const char *path, struct stat *st) {
     char *full_path = get_fullpath(path);
     led_flash_start();
-    int result = stat(full_path, st);
+    int result = ::stat(full_path, st);
     led_flash_stop();
     free(full_path);
 

@@ -21,9 +21,7 @@ public:
     int tell(int fd) override;
 
     // Directory operations
-    int                 opendir(const char *path) override;
-    int                 closedir(int dd) override;
-    struct direnum_ent *readdir(int dd) override;
+    DirEnumCtx direnum(const char *path) override;
 
     // Filesystem operations
     int delete_(const char *path) override;

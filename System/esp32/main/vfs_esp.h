@@ -18,9 +18,7 @@ public:
     int write(int fd, uint16_t size, const void *buf) override;
 
     // Directory operations
-    int                 opendir(const char *path) override;
-    int                 closedir(int dd) override;
-    struct direnum_ent *readdir(int dd) override;
+    DirEnumCtx direnum(const char *path) override;
 
     // Filesystem operations
     int stat(const char *path, struct stat *st) override;

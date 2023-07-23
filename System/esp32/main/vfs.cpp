@@ -18,13 +18,7 @@ int VFS::seek(int fd, uint32_t offset) {
 int VFS::tell(int fd) {
     return ERR_OTHER;
 }
-int VFS::opendir(const char *path) {
-    return ERR_OTHER;
-}
-int VFS::closedir(int dd) {
-    return ERR_OTHER;
-}
-struct direnum_ent *VFS::readdir(int dd) {
+DirEnumCtx VFS::direnum(const char *path) {
     return nullptr;
 }
 int VFS::delete_(const char *path) {

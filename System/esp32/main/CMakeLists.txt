@@ -7,7 +7,6 @@ idf_component_register(
         "aq_keyb.cpp"
         "aq_keyb_press_key.cpp"
         "uart_protocol.cpp"
-        "direnum.cpp"
         "vfs.cpp"
         "vfs_esp.cpp"
         "fileserver.cpp"

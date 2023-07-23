@@ -22,6 +22,10 @@
 
 #include <driver/gpio.h>
 
+#include <string>
+#include <vector>
+#include <memory>
+
 #include "iopins.h"
 
 class RecursiveMutexLock {

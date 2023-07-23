@@ -99,28 +99,10 @@ int EspVFS::close(int fd) {
     return 0;
 }
 
-int EspVFS::opendir(const char *path) {
-    printf("esp_opendir(\"%s\")\n", path);
-    dir_idx = 0;
-    return 0;
-}
-
-int EspVFS::closedir(int dd) {
-    return 0;
-}
-
-struct direnum_ent *EspVFS::readdir(int dd) {
-    if (dir_idx++ == 0) {
-        static struct direnum_ent de;
-        de.filename = (char *)fn_settings;
-        de.attr     = 0;
-        de.size     = settings_caq_end - settings_caq_start;
-        de.fdate    = 0;
-        de.ftime    = 0;
-        return &de;
-    }
-
-    return NULL;
+DirEnumCtx EspVFS::direnum(const char *path) {
+    auto result = std::make_shared<std::vector<DirEnumEntry>>();
+    result->emplace_back(fn_settings, settings_caq_end - settings_caq_start, 0, 0, 0);
+    return result;
 }
 
 int EspVFS::stat(const char *path, struct stat *st) {
