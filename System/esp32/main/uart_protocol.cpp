@@ -43,7 +43,6 @@ enum {
 #define ESP_PREFIX "esp:"
 
 struct state {
-    char    *current_path;
     uint8_t  rxbuf[16 + 0x10000];
     unsigned rxbuf_idx;
 
@@ -54,6 +53,8 @@ struct state {
     int        ddIdx[MAX_DDS];
 };
 
+static std::string current_path;
+
 static struct state *state;
 
 static QueueHandle_t uart_queue;
@@ -62,101 +63,68 @@ static void txfifo_write(uint8_t data) {
     uart_write_bytes(UART_NUM, &data, 1);
 }
 
-static char *resolve_path(const char *path, VFS **vfs, bool remove_vfs_prefix) {
-    bool use_cwd = true;
-    if (path[0] == '/' || path[0] == '\\')
-        use_cwd = false;
-    else if (strncasecmp(path, ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
-        use_cwd = false;
+static void splitPath(const std::string &path, std::vector<std::string> &result) {
+    const char *delimiters = "/\\";
+    size_t      start;
+    size_t      end = 0;
+    while ((start = path.find_first_not_of(delimiters, end)) != std::string::npos) {
+        end = path.find_first_of(delimiters, start);
+        result.push_back(path.substr(start, end - start));
+    }
+}
+
+static std::string resolve_path(std::string path, VFS **vfs) {
+    *vfs = &SDCardVFS::instance();
+
+    bool useCwd = true;
+    if (!path.empty() && (path[0] == '/' || path[0] == '\\')) {
+        useCwd = false;
+    } else if (strncasecmp(path.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+        useCwd = false;
+        *vfs   = &EspVFS::instance();
+        path   = path.substr(strlen(ESP_PREFIX));
     }
 
-    // DBGF("resolve_path: '%s'\n", path);
-
-    size_t tmppath_size = strlen(state->current_path) + 1 + strlen(path) + 1;
-    char  *tmppath      = (char *)malloc(tmppath_size);
-    assert(tmppath != nullptr);
-    tmppath[0] = 0;
-    if (use_cwd) {
-        strcat(tmppath, state->current_path);
-        strcat(tmppath, "/");
+    // Split the path into parts
+    std::vector<std::string> parts;
+    if (useCwd) {
+        if (current_path.starts_with(ESP_PREFIX)) {
+            splitPath(current_path.substr(strlen(ESP_PREFIX)), parts);
+            *vfs = &EspVFS::instance();
+        } else {
+            splitPath(current_path, parts);
+        }
     }
-    strcat(tmppath, path);
+    splitPath(path, parts);
 
-    char *components[MAX_COMPONENTS];
-    int   num_components = 0;
-    char *result         = (char *)malloc(strlen(tmppath) + 1);
-    assert(result != nullptr);
-
-    const char *ps = tmppath;
-    char       *pd = result;
-
-    while (*ps != 0) {
-        // Skip leading slashes
-        if (ps[0] == '/' || ps[0] == '\\') {
-            ps++;
+    // Resolve path
+    int idx = 0;
+    while (idx < parts.size()) {
+        if (parts[idx] == ".") {
+            parts.erase(parts.begin() + idx);
             continue;
         }
-
-        // Handle './'
-        if (ps[0] == '.') {
-            if (ps[1] == '/' || ps[1] == '\\') {
-                ps += 2;
-                continue;
-            }
-            if (ps[1] == 0) {
-                ps++;
-                break;
-            }
+        if (parts[idx] == "..") {
+            auto iterLast = parts.begin() + idx + 1;
+            if (idx > 0)
+                idx--;
+            auto iterFirst = parts.begin() + idx;
+            parts.erase(iterFirst, iterLast);
+            continue;
         }
-
-        // Handle '../'
-        if (ps[0] == '.' && ps[1] == '.') {
-            bool undo_component = false;
-            if (ps[2] == '/' || ps[2] == '\\') {
-                ps += 3;
-                undo_component = true;
-            } else if (ps[2] == 0) {
-                ps += 2;
-                undo_component = true;
-            }
-            if (undo_component) {
-                if (num_components > 0) {
-                    pd = components[--num_components];
-                } else {
-                    pd = result;
-                }
-                continue;
-            }
-        }
-
-        // Keep track of start of path components in result string to be able to undo
-        if (num_components < MAX_COMPONENTS) {
-            components[num_components++] = pd;
-        }
-
-        // Add leading slash
-        if (pd != result)
-            *(pd++) = '/';
-
-        // Copy path component from source to result string
-        while (ps[0] != '/' && ps[0] != '\\' && ps[0] != 0) {
-            *(pd++) = *(ps++);
-        }
+        idx++;
     }
 
-    // Zero terminate result
-    *pd = 0;
-    // printf("result: '%s'  num_components: %d\n", result, num_components);
-
-    free(tmppath);
-
-    *vfs = &SDCardVFS::instance();
-    if (strncasecmp(result, ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
-        if (remove_vfs_prefix) {
-            strcpy(result, result + 4);
-        }
-        *vfs = &EspVFS::instance();
+    // Compose resolved path
+    std::string result;
+    for (auto &part : parts) {
+        if (!result.empty())
+            result += '/';
+        result += part;
     }
+
+    printf("Resolved path: %s\n", result.c_str());
+
     return result;
 }
 
@@ -175,9 +143,7 @@ static void close_all_descriptors(void) {
 
 static void esp_reset(void) {
     close_all_descriptors();
-
-    free(state->current_path);
-    state->current_path = strdup("");
+    current_path.clear();
 }
 
 static void esp_open(uint8_t flags, const char *path_arg) {
@@ -198,17 +164,14 @@ static void esp_open(uint8_t flags, const char *path_arg) {
     }
 
     // Compose full path
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, true);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
     int vfs_fd = vfs->open(flags, path);
-    free(path);
-
     if (vfs_fd < 0) {
         txfifo_write(vfs_fd);
     } else {
@@ -318,17 +281,14 @@ static void esp_opendir(const char *path_arg) {
     }
 
     // Compose full path
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, true);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
     auto deCtx = vfs->direnum(path);
-    free(path);
-
     if (!deCtx) {
         txfifo_write(ERR_NOT_FOUND);
     } else {
@@ -393,95 +353,78 @@ static void esp_readdir(uint8_t dd) {
 static void esp_delete(const char *path_arg) {
     DBGF("DELETE %s\n", path_arg);
 
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, true);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
     txfifo_write(vfs->delete_(path));
-    free(path);
 }
 
 static void esp_rename(const char *old_arg, const char *new_arg) {
     DBGF("RENAME %s -> %s\n", old_arg, new_arg);
 
-    VFS  *vfs1     = nullptr;
-    VFS  *vfs2     = nullptr;
-    char *old_path = resolve_path(old_arg, &vfs1, true);
-    char *new_path = resolve_path(new_arg, &vfs2, true);
+    VFS *vfs1     = nullptr;
+    VFS *vfs2     = nullptr;
+    auto old_path = resolve_path(old_arg, &vfs1);
+    auto new_path = resolve_path(new_arg, &vfs2);
     if (!vfs1 || vfs1 != vfs2) {
-        free(old_path);
-        free(new_path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
     txfifo_write(vfs1->rename(old_path, new_path));
-
-    free(old_path);
-    free(new_path);
 }
 
 static void esp_mkdir(const char *path_arg) {
     DBGF("MKDIR %s\n", path_arg);
 
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, true);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
-
     txfifo_write(vfs->mkdir(path_arg));
-    free(path);
 }
 
 static void esp_chdir(const char *path_arg) {
     DBGF("CHDIR %s\n", path_arg);
 
     // Compose full path
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, false);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
-    const char *vfs_path = path;
-    if (vfs == &EspVFS::instance()) {
-        vfs_path += strlen(ESP_PREFIX);
-    }
-
     struct stat st;
-    int         result = vfs->stat(vfs_path, &st);
+    int         result = vfs->stat(path, &st);
     txfifo_write(result);
 
     if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
-        free(state->current_path);
-        state->current_path = path;
-    } else {
-        free(path);
+        if (vfs == &EspVFS::instance()) {
+            current_path = std::string(ESP_PREFIX) + path;
+        } else {
+            current_path = path;
+        }
     }
 }
 
 static void esp_stat(const char *path_arg) {
     DBGF("STAT %s\n", path_arg);
 
-    VFS  *vfs  = nullptr;
-    char *path = resolve_path(path_arg, &vfs, true);
+    VFS *vfs  = nullptr;
+    auto path = resolve_path(path_arg, &vfs);
     if (!vfs) {
-        free(path);
         txfifo_write(ERR_PARAM);
         return;
     }
 
     struct stat st;
     int         result = vfs->stat(path_arg, &st);
-    free(path);
 
     txfifo_write(result);
     if (result < 0)
@@ -508,13 +451,13 @@ static void esp_getcwd(void) {
     DBGF("GETCWD\n");
 
     txfifo_write(0);
-    int len = (int)strlen(state->current_path);
+    int len = current_path.size();
 
     if (len == 0) {
         txfifo_write('/');
     } else {
         for (int i = 0; i < len; i++) {
-            txfifo_write(state->current_path[i]);
+            txfifo_write(current_path[i]);
         }
     }
     txfifo_write(0);
@@ -527,9 +470,6 @@ static void esp_closeall(void) {
 }
 
 static void esp32_write_data(uint8_t data) {
-    if (state->current_path == nullptr) {
-        state->current_path = strdup("");
-    }
     if (state->rxbuf_idx == 0 && data == 0) {
         // Ignore zero-bytes after break
         return;
