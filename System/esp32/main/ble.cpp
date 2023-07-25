@@ -1,6 +1,6 @@
 #include "ble.h"
 #include "NimBLEDevice.h"
-#include "hid.h"
+#include "HID.h"
 
 static const char *TAG = "ble";
 

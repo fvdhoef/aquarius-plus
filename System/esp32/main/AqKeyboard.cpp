@@ -4,7 +4,7 @@
 #include <esp_system.h>
 #include "usbhost.h"
 
-static const char   *TAG = "keyboard";
+static const char *TAG = "keyboard";
 
 enum {
     NUM_LOCK    = (1 << 0),
@@ -87,28 +87,28 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     if (scancode == SDL_SCANCODE_RGUI)
         modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
-    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
-    bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
-    bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
-    bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
+    bool ctrlPressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    bool altPressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
+    bool shiftPressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
+    bool guiPressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
 
     // Handle caps lock
-    if ((ledStatus & CAPS_LOCK) && !ctrl_pressed && !alt_pressed && !gui_pressed && scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z) {
-        shift_pressed = !shift_pressed;
+    if ((ledStatus & CAPS_LOCK) && !ctrlPressed && !altPressed && !guiPressed && scancode >= SDL_SCANCODE_A && scancode <= SDL_SCANCODE_Z) {
+        shiftPressed = !shiftPressed;
     }
 
     // Handle keypad
-    if (!ctrl_pressed && !alt_pressed && !shift_pressed && !gui_pressed) {
+    if (!ctrlPressed && !altPressed && !shiftPressed && !guiPressed) {
         switch (scancode) {
             case SDL_SCANCODE_KP_DIVIDE: scancode = SDL_SCANCODE_SLASH; break;
             case SDL_SCANCODE_KP_MULTIPLY:
-                scancode      = SDL_SCANCODE_8;
-                shift_pressed = true;
+                scancode     = SDL_SCANCODE_8;
+                shiftPressed = true;
                 break;
             case SDL_SCANCODE_KP_MINUS: scancode = SDL_SCANCODE_MINUS; break;
             case SDL_SCANCODE_KP_PLUS:
-                scancode      = SDL_SCANCODE_EQUALS;
-                shift_pressed = true;
+                scancode     = SDL_SCANCODE_EQUALS;
+                shiftPressed = true;
                 break;
             case SDL_SCANCODE_KP_ENTER: scancode = SDL_SCANCODE_RETURN; break;
         }
@@ -132,28 +132,14 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     }
 
     // Keep track of pressed keys
-    static uint8_t pressed_keys[8] = {0};
+    static uint8_t pressedKeys[8] = {0};
     if (scancode < 64) {
         if (keydown) {
-            pressed_keys[scancode / 8] |= 1 << (scancode & 7);
+            pressedKeys[scancode / 8] |= 1 << (scancode & 7);
         } else {
-            pressed_keys[scancode / 8] &= ~(1 << (scancode & 7));
+            pressedKeys[scancode / 8] &= ~(1 << (scancode & 7));
         }
     }
-
-    // if (keydown && scancode == SDL_SCANCODE_F1) {
-    //     FPGA::instance().aqpAqcuireBus();
-    //     FPGA::instance().aqpWriteMem(0x3000 + 40, FPGA::instance().aqpReadMem(0x3000 + 40) + 1);
-    //     FPGA::instance().aqpReleaseBus();
-    // }
-
-    // if (keydown && scancode == SDL_SCANCODE_F4) {
-    //     FPGA::instance().aqpAqcuireBus();
-    //     for (int i = IO_BANK0; i <= IO_BANK3; i++) {
-    //         ESP_LOGI(TAG, "IO %02X: %02X", i, FPGA::instance().aqpReadIO(i));
-    //     }
-    //     FPGA::instance().aqpReleaseBus();
-    // }
 
     enum {
         UP    = (1 << 0),
@@ -174,19 +160,19 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     }
 
     // Set keyboard state based on currently pressed keys
-    if (ctrl_pressed)
+    if (ctrlPressed)
         keyDown(KEY_CTRL);
-    if (shift_pressed)
+    if (shiftPressed)
         keyDown(KEY_SHIFT);
 
     for (int i = 0; i < 64; i++) {
-        if (pressed_keys[i / 8] & (1 << (i & 7))) {
+        if (pressedKeys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
-                    if (ctrl_pressed && shift_pressed) {
+                    if (ctrlPressed && shiftPressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                         esp_restart();
-                    } else if (ctrl_pressed) {
+                    } else if (ctrlPressed) {
                         // CTRL-ESCAPE -> reset
                         FPGA::instance().aqpReset();
                     } else {
@@ -197,108 +183,108 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
                     break;
 
                 case SDL_SCANCODE_RETURN:
-                    keyDown(KEY_RETURN, shift_pressed);
+                    keyDown(KEY_RETURN, shiftPressed);
                     break;
 
-                case SDL_SCANCODE_1: keyDown(KEY_1, shift_pressed); break;
+                case SDL_SCANCODE_1: keyDown(KEY_1, shiftPressed); break;
                 case SDL_SCANCODE_2:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_2, false);
                     else
                         keyDown(KEY_SEMICOLON, true);
                     break;
-                case SDL_SCANCODE_3: keyDown(KEY_3, shift_pressed); break;
-                case SDL_SCANCODE_4: keyDown(KEY_4, shift_pressed); break;
-                case SDL_SCANCODE_5: keyDown(KEY_5, shift_pressed); break;
+                case SDL_SCANCODE_3: keyDown(KEY_3, shiftPressed); break;
+                case SDL_SCANCODE_4: keyDown(KEY_4, shiftPressed); break;
+                case SDL_SCANCODE_5: keyDown(KEY_5, shiftPressed); break;
                 case SDL_SCANCODE_6:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_6, false);
                     else
                         keyDown(KEY_SLASH, true);
                     break;
                 case SDL_SCANCODE_7:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_7, false);
                     else
                         keyDown(KEY_6, true);
                     break;
                 case SDL_SCANCODE_8:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_8, false);
                     else
                         keyDown(KEY_COLON, true);
                     break;
                 case SDL_SCANCODE_9:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_9, false);
                     else
                         keyDown(KEY_8, true);
                     break;
                 case SDL_SCANCODE_0:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_0, false);
                     else
                         keyDown(KEY_9, true);
                     break;
-                case SDL_SCANCODE_MINUS: keyDown(KEY_MINUS, shift_pressed); break;
-                case SDL_SCANCODE_EQUALS: keyDown(KEY_EQUALS, shift_pressed); break;
+                case SDL_SCANCODE_MINUS: keyDown(KEY_MINUS, shiftPressed); break;
+                case SDL_SCANCODE_EQUALS: keyDown(KEY_EQUALS, shiftPressed); break;
                 case SDL_SCANCODE_BACKSPACE: keyDown(KEY_BACKSPACE, false); break;
 
-                case SDL_SCANCODE_Q: keyDown(KEY_Q, shift_pressed); break;
-                case SDL_SCANCODE_W: keyDown(KEY_W, shift_pressed); break;
-                case SDL_SCANCODE_E: keyDown(KEY_E, shift_pressed); break;
-                case SDL_SCANCODE_R: keyDown(KEY_R, shift_pressed); break;
-                case SDL_SCANCODE_T: keyDown(KEY_T, shift_pressed); break;
-                case SDL_SCANCODE_Y: keyDown(KEY_Y, shift_pressed); break;
-                case SDL_SCANCODE_U: keyDown(KEY_U, shift_pressed); break;
-                case SDL_SCANCODE_I: keyDown(KEY_I, shift_pressed); break;
-                case SDL_SCANCODE_O: keyDown(KEY_O, shift_pressed); break;
-                case SDL_SCANCODE_P: keyDown(KEY_P, shift_pressed); break;
+                case SDL_SCANCODE_Q: keyDown(KEY_Q, shiftPressed); break;
+                case SDL_SCANCODE_W: keyDown(KEY_W, shiftPressed); break;
+                case SDL_SCANCODE_E: keyDown(KEY_E, shiftPressed); break;
+                case SDL_SCANCODE_R: keyDown(KEY_R, shiftPressed); break;
+                case SDL_SCANCODE_T: keyDown(KEY_T, shiftPressed); break;
+                case SDL_SCANCODE_Y: keyDown(KEY_Y, shiftPressed); break;
+                case SDL_SCANCODE_U: keyDown(KEY_U, shiftPressed); break;
+                case SDL_SCANCODE_I: keyDown(KEY_I, shiftPressed); break;
+                case SDL_SCANCODE_O: keyDown(KEY_O, shiftPressed); break;
+                case SDL_SCANCODE_P: keyDown(KEY_P, shiftPressed); break;
 
-                case SDL_SCANCODE_A: keyDown(KEY_A, shift_pressed); break;
-                case SDL_SCANCODE_S: keyDown(KEY_S, shift_pressed); break;
-                case SDL_SCANCODE_D: keyDown(KEY_D, shift_pressed); break;
-                case SDL_SCANCODE_F: keyDown(KEY_F, shift_pressed); break;
-                case SDL_SCANCODE_G: keyDown(KEY_G, shift_pressed); break;
-                case SDL_SCANCODE_H: keyDown(KEY_H, shift_pressed); break;
-                case SDL_SCANCODE_J: keyDown(KEY_J, shift_pressed); break;
-                case SDL_SCANCODE_K: keyDown(KEY_K, shift_pressed); break;
-                case SDL_SCANCODE_L: keyDown(KEY_L, shift_pressed); break;
+                case SDL_SCANCODE_A: keyDown(KEY_A, shiftPressed); break;
+                case SDL_SCANCODE_S: keyDown(KEY_S, shiftPressed); break;
+                case SDL_SCANCODE_D: keyDown(KEY_D, shiftPressed); break;
+                case SDL_SCANCODE_F: keyDown(KEY_F, shiftPressed); break;
+                case SDL_SCANCODE_G: keyDown(KEY_G, shiftPressed); break;
+                case SDL_SCANCODE_H: keyDown(KEY_H, shiftPressed); break;
+                case SDL_SCANCODE_J: keyDown(KEY_J, shiftPressed); break;
+                case SDL_SCANCODE_K: keyDown(KEY_K, shiftPressed); break;
+                case SDL_SCANCODE_L: keyDown(KEY_L, shiftPressed); break;
                 case SDL_SCANCODE_SEMICOLON:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_SEMICOLON, false);
                     else
                         keyDown(KEY_COLON, false);
                     break;
                 case SDL_SCANCODE_APOSTROPHE:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_7, true);
                     else
                         keyDown(KEY_2, true);
                     break;
                 case SDL_SCANCODE_BACKSLASH:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_BACKSPACE, true);
                     break;
 
-                case SDL_SCANCODE_Z: keyDown(KEY_Z, shift_pressed); break;
-                case SDL_SCANCODE_X: keyDown(KEY_X, shift_pressed); break;
-                case SDL_SCANCODE_C: keyDown(KEY_C, shift_pressed); break;
-                case SDL_SCANCODE_V: keyDown(KEY_V, shift_pressed); break;
-                case SDL_SCANCODE_B: keyDown(KEY_B, shift_pressed); break;
-                case SDL_SCANCODE_N: keyDown(KEY_N, shift_pressed); break;
-                case SDL_SCANCODE_M: keyDown(KEY_M, shift_pressed); break;
-                case SDL_SCANCODE_COMMA: keyDown(KEY_COMMA, shift_pressed); break;
-                case SDL_SCANCODE_PERIOD: keyDown(KEY_PERIOD, shift_pressed); break;
+                case SDL_SCANCODE_Z: keyDown(KEY_Z, shiftPressed); break;
+                case SDL_SCANCODE_X: keyDown(KEY_X, shiftPressed); break;
+                case SDL_SCANCODE_C: keyDown(KEY_C, shiftPressed); break;
+                case SDL_SCANCODE_V: keyDown(KEY_V, shiftPressed); break;
+                case SDL_SCANCODE_B: keyDown(KEY_B, shiftPressed); break;
+                case SDL_SCANCODE_N: keyDown(KEY_N, shiftPressed); break;
+                case SDL_SCANCODE_M: keyDown(KEY_M, shiftPressed); break;
+                case SDL_SCANCODE_COMMA: keyDown(KEY_COMMA, shiftPressed); break;
+                case SDL_SCANCODE_PERIOD: keyDown(KEY_PERIOD, shiftPressed); break;
                 case SDL_SCANCODE_SLASH:
-                    if (!shift_pressed)
+                    if (!shiftPressed)
                         keyDown(KEY_SLASH, false);
                     else
                         keyDown(KEY_0, true);
                     break;
 
                 case SDL_SCANCODE_SPACE:
-                    keyDown(KEY_SPACE, shift_pressed);
+                    keyDown(KEY_SPACE, shiftPressed);
                     break;
             }
         }
@@ -324,23 +310,23 @@ void AqKeyboard::handController(unsigned scancode, bool keydown) {
         K6    = (1 << 9),
     };
 
-    static int handctrl_pressed = 0;
+    static int handCtrlPressed = 0;
 
     switch (scancode) {
-        case SDL_SCANCODE_UP: handctrl_pressed = (keydown) ? (handctrl_pressed | UP) : (handctrl_pressed & ~UP); break;
-        case SDL_SCANCODE_DOWN: handctrl_pressed = (keydown) ? (handctrl_pressed | DOWN) : (handctrl_pressed & ~DOWN); break;
-        case SDL_SCANCODE_LEFT: handctrl_pressed = (keydown) ? (handctrl_pressed | LEFT) : (handctrl_pressed & ~LEFT); break;
-        case SDL_SCANCODE_RIGHT: handctrl_pressed = (keydown) ? (handctrl_pressed | RIGHT) : (handctrl_pressed & ~RIGHT); break;
-        case SDL_SCANCODE_F1: handctrl_pressed = (keydown) ? (handctrl_pressed | K1) : (handctrl_pressed & ~K1); break;
-        case SDL_SCANCODE_F2: handctrl_pressed = (keydown) ? (handctrl_pressed | K2) : (handctrl_pressed & ~K2); break;
-        case SDL_SCANCODE_F3: handctrl_pressed = (keydown) ? (handctrl_pressed | K3) : (handctrl_pressed & ~K3); break;
-        case SDL_SCANCODE_F4: handctrl_pressed = (keydown) ? (handctrl_pressed | K4) : (handctrl_pressed & ~K4); break;
-        case SDL_SCANCODE_F5: handctrl_pressed = (keydown) ? (handctrl_pressed | K5) : (handctrl_pressed & ~K5); break;
-        case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
+        case SDL_SCANCODE_UP: handCtrlPressed = (keydown) ? (handCtrlPressed | UP) : (handCtrlPressed & ~UP); break;
+        case SDL_SCANCODE_DOWN: handCtrlPressed = (keydown) ? (handCtrlPressed | DOWN) : (handCtrlPressed & ~DOWN); break;
+        case SDL_SCANCODE_LEFT: handCtrlPressed = (keydown) ? (handCtrlPressed | LEFT) : (handCtrlPressed & ~LEFT); break;
+        case SDL_SCANCODE_RIGHT: handCtrlPressed = (keydown) ? (handCtrlPressed | RIGHT) : (handCtrlPressed & ~RIGHT); break;
+        case SDL_SCANCODE_F1: handCtrlPressed = (keydown) ? (handCtrlPressed | K1) : (handCtrlPressed & ~K1); break;
+        case SDL_SCANCODE_F2: handCtrlPressed = (keydown) ? (handCtrlPressed | K2) : (handCtrlPressed & ~K2); break;
+        case SDL_SCANCODE_F3: handCtrlPressed = (keydown) ? (handCtrlPressed | K3) : (handCtrlPressed & ~K3); break;
+        case SDL_SCANCODE_F4: handCtrlPressed = (keydown) ? (handCtrlPressed | K4) : (handCtrlPressed & ~K4); break;
+        case SDL_SCANCODE_F5: handCtrlPressed = (keydown) ? (handCtrlPressed | K5) : (handCtrlPressed & ~K5); break;
+        case SDL_SCANCODE_F6: handCtrlPressed = (keydown) ? (handCtrlPressed | K6) : (handCtrlPressed & ~K6); break;
     }
 
     handCtrl1 = 0xFF;
-    switch (handctrl_pressed & 0xF) {
+    switch (handCtrlPressed & 0xF) {
         case LEFT: handCtrl1 &= ~(1 << 3); break;
         case UP | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
         case UP: handCtrl1 &= ~(1 << 2); break;
@@ -351,17 +337,17 @@ void AqKeyboard::handController(unsigned scancode, bool keydown) {
         case DOWN | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
         default: break;
     }
-    if (handctrl_pressed & K1)
+    if (handCtrlPressed & K1)
         handCtrl1 &= ~(1 << 6);
-    if (handctrl_pressed & K2)
+    if (handCtrlPressed & K2)
         handCtrl1 &= ~((1 << 7) | (1 << 2));
-    if (handctrl_pressed & K3)
+    if (handCtrlPressed & K3)
         handCtrl1 &= ~((1 << 7) | (1 << 5));
-    if (handctrl_pressed & K4)
+    if (handCtrlPressed & K4)
         handCtrl1 &= ~(1 << 5);
-    if (handctrl_pressed & K5)
+    if (handCtrlPressed & K5)
         handCtrl1 &= ~((1 << 7) | (1 << 1));
-    if (handctrl_pressed & K6)
+    if (handCtrlPressed & K6)
         handCtrl1 &= ~((1 << 7) | (1 << 0));
 }
 

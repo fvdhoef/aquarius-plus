@@ -31,7 +31,7 @@ enum {
 #define ESP_PREFIX "esp:"
 
 #if 0
-#    define DBGF(...) printf(__VA_ARGS__)
+#    define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
 #else
 #    define DBGF(...)
 #endif
@@ -196,9 +196,6 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
             result += '/';
         result += part;
     }
-
-    printf("Resolved path: %s\n", result.c_str());
-
     return result;
 }
 
@@ -339,7 +336,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                         newPath = (const char *)&rxBuf[rxBufIdx];
                     } else {
                         cmdRename(oldPath, newPath);
-                        newPath = nullptr;
+                        newPath  = nullptr;
                         rxBufIdx = 0;
                     }
                 }
@@ -380,7 +377,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 break;
             }
             default: {
-                printf("Invalid command: 0x%02X\n", cmd);
+                ESP_LOGE(TAG, "Invalid command: 0x%02X\n", cmd);
                 break;
             }
         }
@@ -605,8 +602,8 @@ void AqUartProtocol::cmdDelete(const char *pathArg) {
 void AqUartProtocol::cmdRename(const char *old_arg, const char *new_arg) {
     DBGF("RENAME %s -> %s\n", old_arg, new_arg);
 
-    VFS *vfs1     = nullptr;
-    VFS *vfs2     = nullptr;
+    VFS *vfs1    = nullptr;
+    VFS *vfs2    = nullptr;
     auto oldPath = resolvePath(old_arg, &vfs1);
     auto newPath = resolvePath(new_arg, &vfs2);
     if (!vfs1 || vfs1 != vfs2) {

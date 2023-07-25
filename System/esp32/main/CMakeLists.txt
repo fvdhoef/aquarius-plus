@@ -14,40 +14,38 @@ idf_component_register(
 
         "FileServer.cpp"
         "led.cpp"
-        "hid.cpp"
-        "connectivity/ca_store.cpp"
-        "connectivity/wifi.cpp"
-        "connectivity/ble.cpp"
+        "HID.cpp"
+        "wifi.cpp"
+        "ble.cpp"
 
-        "connectivity/nimble-cpp/NimBLE2904.cpp"
-        "connectivity/nimble-cpp/NimBLEAddress.cpp"
-        "connectivity/nimble-cpp/NimBLEAdvertisedDevice.cpp"
-        "connectivity/nimble-cpp/NimBLEAdvertising.cpp"
-        "connectivity/nimble-cpp/NimBLEBeacon.cpp"
-        "connectivity/nimble-cpp/NimBLECharacteristic.cpp"
-        "connectivity/nimble-cpp/NimBLEClient.cpp"
-        "connectivity/nimble-cpp/NimBLEDescriptor.cpp"
-        "connectivity/nimble-cpp/NimBLEDevice.cpp"
-        "connectivity/nimble-cpp/NimBLEEddystoneTLM.cpp"
-        "connectivity/nimble-cpp/NimBLEEddystoneURL.cpp"
-        "connectivity/nimble-cpp/NimBLEExtAdvertising.cpp"
-        "connectivity/nimble-cpp/NimBLEHIDDevice.cpp"
-        "connectivity/nimble-cpp/NimBLERemoteCharacteristic.cpp"
-        "connectivity/nimble-cpp/NimBLERemoteDescriptor.cpp"
-        "connectivity/nimble-cpp/NimBLERemoteService.cpp"
-        "connectivity/nimble-cpp/NimBLEScan.cpp"
-        "connectivity/nimble-cpp/NimBLESecurity.cpp"
-        "connectivity/nimble-cpp/NimBLEServer.cpp"
-        "connectivity/nimble-cpp/NimBLEService.cpp"
-        "connectivity/nimble-cpp/NimBLEUUID.cpp"
-        "connectivity/nimble-cpp/NimBLEUtils.cpp"
+        "NimBLE_Cpp/NimBLE2904.cpp"
+        "NimBLE_Cpp/NimBLEAddress.cpp"
+        "NimBLE_Cpp/NimBLEAdvertisedDevice.cpp"
+        "NimBLE_Cpp/NimBLEAdvertising.cpp"
+        "NimBLE_Cpp/NimBLEBeacon.cpp"
+        "NimBLE_Cpp/NimBLECharacteristic.cpp"
+        "NimBLE_Cpp/NimBLEClient.cpp"
+        "NimBLE_Cpp/NimBLEDescriptor.cpp"
+        "NimBLE_Cpp/NimBLEDevice.cpp"
+        "NimBLE_Cpp/NimBLEEddystoneTLM.cpp"
+        "NimBLE_Cpp/NimBLEEddystoneURL.cpp"
+        "NimBLE_Cpp/NimBLEExtAdvertising.cpp"
+        "NimBLE_Cpp/NimBLEHIDDevice.cpp"
+        "NimBLE_Cpp/NimBLERemoteCharacteristic.cpp"
+        "NimBLE_Cpp/NimBLERemoteDescriptor.cpp"
+        "NimBLE_Cpp/NimBLERemoteService.cpp"
+        "NimBLE_Cpp/NimBLEScan.cpp"
+        "NimBLE_Cpp/NimBLESecurity.cpp"
+        "NimBLE_Cpp/NimBLEServer.cpp"
+        "NimBLE_Cpp/NimBLEService.cpp"
+        "NimBLE_Cpp/NimBLEUUID.cpp"
+        "NimBLE_Cpp/NimBLEUtils.cpp"
 
 
     INCLUDE_DIRS
         "."
         "VFS"
-        "connectivity"
-        "connectivity/nimble-cpp"
+        "NimBLE_Cpp"
 
     REQUIRES
         "driver"
@@ -65,14 +63,13 @@ idf_component_register(
         "usb"
         "fatfs"
         "bt"
-        # "esp-nimble-cpp"
 
     EMBED_FILES
         "../../fpga/top.bit"
         "../../rom_src/settings/build/settings.caq"
 
     EMBED_TXTFILES
-        "connectivity/letsencrypt_root_certificate.pem"
+        "Assets/letsencrypt_root_certificate.pem"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

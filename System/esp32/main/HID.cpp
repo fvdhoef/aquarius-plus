@@ -1,4 +1,4 @@
-#include "hid.h"
+#include "HID.h"
 #include "FPGA.h"
 #include <math.h>
 

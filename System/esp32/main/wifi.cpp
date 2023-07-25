@@ -4,11 +4,20 @@
 #include <esp_event.h>
 #include <nvs_flash.h>
 #include <esp_sntp.h>
+#include <esp_tls.h>
 
 static const char *TAG = "wifi";
 
 static volatile bool connected  = false;
 static const char   *status_str = "Disconnected";
+
+void ca_store_init(void) {
+    extern const uint8_t certificate_start[] asm("_binary_letsencrypt_root_certificate_pem_start");
+    extern const uint8_t certificate_end[] asm("_binary_letsencrypt_root_certificate_pem_end");
+
+    ESP_ERROR_CHECK(esp_tls_init_global_ca_store());
+    ESP_ERROR_CHECK(esp_tls_set_global_ca_store(certificate_start, certificate_end - certificate_start));
+}
 
 static void do_connect(void) {
     ESP_LOGI(TAG, "Connecting.");
@@ -52,6 +61,8 @@ static void event_handler(void *arg, esp_event_base_t event_base, int32_t event_
 }
 
 void wifi_init(void) {
+    ca_store_init();
+
     // Initialize TCP/IP
     ESP_ERROR_CHECK(esp_netif_init());
 

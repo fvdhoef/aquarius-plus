@@ -3,7 +3,6 @@
 #include "SDCardVFS.h"
 #include "FPGA.h"
 #include "AqUartProtocol.h"
-#include "ca_store.h"
 #include "wifi.h"
 #include "ble.h"
 #include "FileServer.h"
@@ -39,9 +38,6 @@ static void init(void) {
 
     // Initialize the event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    // Initial global CA store
-    ca_store_init();
 
     // Wi-Fi init
     wifi_init();
