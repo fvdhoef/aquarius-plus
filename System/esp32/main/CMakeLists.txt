@@ -5,7 +5,7 @@ idf_component_register(
         "usbhost.cpp"
         "aq_keyb.cpp"
         "aq_keyb_press_key.cpp"
-        "uart_protocol.cpp"
+        "AqUartProtocol.cpp"
 
         "VFS/VFS.cpp"
         "VFS/SDCardVFS.cpp"

@@ -432,25 +432,25 @@ Writing a 1 to _Transmit break_ will transmit a BREAK condition to indicate the 
 
 ## Commands
 
-| Value | Function | Description                              | Category                    |
-| ----: | -------- | ---------------------------------------- | --------------------------- |
-|   $01 | RESET    | Reset ESP                                | General                     |
-|   $10 | OPEN     | Open / create file                       | File                        |
-|   $11 | CLOSE    | Close open file                          | File                        |
-|   $12 | READ     | Read from file                           | File                        |
-|   $13 | WRITE    | Write to file                            | File                        |
-|   $14 | SEEK     | Move read/write pointer                  | File                        |
-|   $15 | TELL     | Get current read/write                   | File                        |
-|   $16 | OPENDIR  | Open directory                           | Directory                   |
-|   $17 | CLOSEDIR | Close open directory                     | Directory                   |
-|   $18 | READDIR  | Read from directory                      | Directory                   |
-|   $19 | DELETE   | Remove file or directory                 | File / Directory management |
-|   $1A | RENAME   | Rename / move file or directory          | File / Directory management |
-|   $1B | MKDIR    | Create directory                         | File / Directory management |
-|   $1C | CHDIR    | Change directory                         | File / Directory management |
-|   $1D | STAT     | Get file status                          | File / Directory management |
-|   $1E | GETCWD   | Get current working directory            | File / Directory management |
-|   $1F | CLOSEALL | Close any open file/directory descriptor | File / Directory            |
+| Value | Function | Description                                | Category                    |
+| ----: | -------- | ------------------------------------------ | --------------------------- |
+|   $01 | RESET    | Indicate to ESP that system has been reset | General                     |
+|   $10 | OPEN     | Open / create file                         | File                        |
+|   $11 | CLOSE    | Close open file                            | File                        |
+|   $12 | READ     | Read from file                             | File                        |
+|   $13 | WRITE    | Write to file                              | File                        |
+|   $14 | SEEK     | Move read/write pointer                    | File                        |
+|   $15 | TELL     | Get current read/write                     | File                        |
+|   $16 | OPENDIR  | Open directory                             | Directory                   |
+|   $17 | CLOSEDIR | Close open directory                       | Directory                   |
+|   $18 | READDIR  | Read from directory                        | Directory                   |
+|   $19 | DELETE   | Remove file or directory                   | File / Directory management |
+|   $1A | RENAME   | Rename / move file or directory            | File / Directory management |
+|   $1B | MKDIR    | Create directory                           | File / Directory management |
+|   $1C | CHDIR    | Change directory                           | File / Directory management |
+|   $1D | STAT     | Get file status                            | File / Directory management |
+|   $1E | GETCWD   | Get current working directory              | File / Directory management |
+|   $1F | CLOSEALL | Close any open file/directory descriptor   | File / Directory            |
 
 TODO: WiFi management commands
 

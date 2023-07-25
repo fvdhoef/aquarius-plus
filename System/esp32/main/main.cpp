@@ -2,7 +2,7 @@
 #include "usbhost.h"
 #include "SDCardVFS.h"
 #include "FPGA.h"
-#include "uart_protocol.h"
+#include "AqUartProtocol.h"
 #include "ca_store.h"
 #include "wifi.h"
 #include "ble.h"
@@ -52,7 +52,7 @@ static void init(void) {
     keyboard_init();
     SDCardVFS::instance().init();
     usbhost_init();
-    uart_protocol_init();
+    AqUartProtocol::instance().init();
     FileServer::instance().init();
 
     {
