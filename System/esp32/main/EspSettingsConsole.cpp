@@ -3,7 +3,7 @@
 #include <esp_app_format.h>
 #include <esp_wifi.h>
 #include "led.h"
-#include "wifi.h"
+#include "WiFi.h"
 #include "SDCardVFS.h"
 
 #define MAX_SCAN_AP (20)
@@ -154,14 +154,15 @@ void EspSettingsConsole::showHelp() {
 }
 
 void EspSettingsConsole::wifiStatus() {
-    bool connected = wifi_is_connected();
-    cprintf("WiFi status: %s\n", wifi_get_status_str());
+    WiFi &wifi       = WiFi::instance();
+    auto  wifiStatus = wifi.getStatus();
+    cprintf("WiFi status: %s\n", wifi.getStatusStr().c_str());
 
     uint8_t mac[6];
     esp_read_mac(mac, ESP_MAC_WIFI_STA);
     cprintf("MAC     :%02x:%02x:%02x:%02x:%02x:%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
 
-    if (connected) {
+    if (wifiStatus == EWiFiStatus::connected) {
         wifi_ap_record_t war;
         if (esp_wifi_sta_get_ap_info(&war) == ESP_OK) {
             cprintf("SSID    :%s\n", war.ssid);

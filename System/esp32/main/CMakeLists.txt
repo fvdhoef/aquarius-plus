@@ -15,8 +15,8 @@ idf_component_register(
         "FileServer.cpp"
         "led.cpp"
         "HID.cpp"
-        "wifi.cpp"
-        "ble.cpp"
+        "WiFi.cpp"
+        "BLE.cpp"
 
         "NimBLE_Cpp/NimBLE2904.cpp"
         "NimBLE_Cpp/NimBLEAddress.cpp"

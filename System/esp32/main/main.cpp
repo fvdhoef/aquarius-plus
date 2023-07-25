@@ -3,8 +3,8 @@
 #include "SDCardVFS.h"
 #include "FPGA.h"
 #include "AqUartProtocol.h"
-#include "wifi.h"
-#include "ble.h"
+#include "WiFi.h"
+#include "BLE.h"
 #include "FileServer.h"
 #include "AqKeyboard.h"
 
@@ -40,7 +40,7 @@ static void init(void) {
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // Wi-Fi init
-    wifi_init();
+    WiFi::instance().init();
 
     // Bluetooth init
     ble_init();
