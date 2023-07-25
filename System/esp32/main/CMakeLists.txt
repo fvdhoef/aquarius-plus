@@ -3,8 +3,7 @@ idf_component_register(
         "main.cpp"
         "FPGA.cpp"
         "usbhost.cpp"
-        "aq_keyb.cpp"
-        "aq_keyb_press_key.cpp"
+        "AqKeyboard.cpp"
         "AqUartProtocol.cpp"
 
         "VFS/VFS.cpp"

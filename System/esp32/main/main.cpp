@@ -7,7 +7,7 @@
 #include "wifi.h"
 #include "ble.h"
 #include "FileServer.h"
-#include "aq_keyb.h"
+#include "AqKeyboard.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -49,7 +49,7 @@ static void init(void) {
     // Bluetooth init
     ble_init();
 
-    keyboard_init();
+    AqKeyboard::instance().init();
     SDCardVFS::instance().init();
     usbhost_init();
     AqUartProtocol::instance().init();

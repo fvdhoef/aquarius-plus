@@ -5,7 +5,7 @@
 #include <freertos/semphr.h>
 #include <usb/usb_host.h>
 #include <esp_intr_alloc.h>
-#include "aq_keyb.h"
+#include "AqKeyboard.h"
 
 static const char *TAG = "usbhost";
 
@@ -269,42 +269,44 @@ static void process_keyboard_data(uint8_t *buf) {
 
     static uint8_t prev_status[8];
 
+    auto &kb = AqKeyboard::instance();
+
     // Check for modifier key changes
     uint8_t mod_released = prev_status[0] & ~buf[0];
     if (mod_released & (1 << 0))
-        keyboard_scancode(0xE0, false); // Left CTRL
+        kb.handleScancode(0xE0, false); // Left CTRL
     if (mod_released & (1 << 1))
-        keyboard_scancode(0xE1, false); // Left SHIFT
+        kb.handleScancode(0xE1, false); // Left SHIFT
     if (mod_released & (1 << 2))
-        keyboard_scancode(0xE2, false); // Left ALT
+        kb.handleScancode(0xE2, false); // Left ALT
     if (mod_released & (1 << 3))
-        keyboard_scancode(0xE3, false); // Left GUI
+        kb.handleScancode(0xE3, false); // Left GUI
     if (mod_released & (1 << 4))
-        keyboard_scancode(0xE4, false); // Right CTRL
+        kb.handleScancode(0xE4, false); // Right CTRL
     if (mod_released & (1 << 5))
-        keyboard_scancode(0xE5, false); // Right SHIFT
+        kb.handleScancode(0xE5, false); // Right SHIFT
     if (mod_released & (1 << 6))
-        keyboard_scancode(0xE6, false); // Right ALT
+        kb.handleScancode(0xE6, false); // Right ALT
     if (mod_released & (1 << 7))
-        keyboard_scancode(0xE7, false); // Right GUI
+        kb.handleScancode(0xE7, false); // Right GUI
 
     uint8_t mod_pressed = ~prev_status[0] & buf[0];
     if (mod_pressed & (1 << 0))
-        keyboard_scancode(0xE0, true); // Left CTRL
+        kb.handleScancode(0xE0, true); // Left CTRL
     if (mod_pressed & (1 << 1))
-        keyboard_scancode(0xE1, true); // Left SHIFT
+        kb.handleScancode(0xE1, true); // Left SHIFT
     if (mod_pressed & (1 << 2))
-        keyboard_scancode(0xE2, true); // Left ALT
+        kb.handleScancode(0xE2, true); // Left ALT
     if (mod_pressed & (1 << 3))
-        keyboard_scancode(0xE3, true); // Left GUI
+        kb.handleScancode(0xE3, true); // Left GUI
     if (mod_pressed & (1 << 4))
-        keyboard_scancode(0xE4, true); // Right CTRL
+        kb.handleScancode(0xE4, true); // Right CTRL
     if (mod_pressed & (1 << 5))
-        keyboard_scancode(0xE5, true); // Right SHIFT
+        kb.handleScancode(0xE5, true); // Right SHIFT
     if (mod_pressed & (1 << 6))
-        keyboard_scancode(0xE6, true); // Right ALT
+        kb.handleScancode(0xE6, true); // Right ALT
     if (mod_pressed & (1 << 7))
-        keyboard_scancode(0xE7, true); // Right GUI
+        kb.handleScancode(0xE7, true); // Right GUI
 
     uint8_t prev, cur;
 
@@ -326,7 +328,7 @@ static void process_keyboard_data(uint8_t *buf) {
         }
 
         if (key_released)
-            keyboard_scancode(prev, false);
+            kb.handleScancode(prev, false);
     }
 
     // Check for key presses
@@ -347,14 +349,14 @@ static void process_keyboard_data(uint8_t *buf) {
         }
 
         if (key_pressed)
-            keyboard_scancode(cur, true);
+            kb.handleScancode(cur, true);
     }
 
     for (int i = 0; i < 8; i++) {
         prev_status[i] = buf[i];
     }
 
-    keyboard_update_matrix();
+    kb.updateMatrix();
 }
 
 static bool find_keyboard_info(const uint8_t *desc, usb_keyboard_info_t *ki) {

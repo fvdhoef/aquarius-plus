@@ -6,7 +6,7 @@
 #include "SDCardVFS.h"
 #include <errno.h>
 #include <mdns.h>
-#include "aq_keyb.h"
+#include "AqKeyboard.h"
 
 // #include <esp_vfs.h>
 
@@ -495,8 +495,9 @@ esp_err_t FileServer::postKeyboard(httpd_req_t *req) {
         }
 
         // Write buffer to keyboard
+        auto &kb = AqKeyboard::instance();
         for (unsigned i = 0; i < received; i++) {
-            keyboard_press_key(tmp[i]);
+            kb.pressKey(tmp[i]);
         }
 
         // Keep track of remaining size of the file left to be uploaded
