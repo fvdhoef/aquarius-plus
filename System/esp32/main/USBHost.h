@@ -13,8 +13,8 @@ public:
     void keyboardSetLeds(uint8_t leds);
 
 private:
-    static void _taskUSBHostLib(void *arg);
-    void        taskUSBHostLib();
+    static void _taskUSBEvents(void *arg);
+    void        taskUSBEvents();
     static void _taskClassDriver(void *arg);
     void        taskClassDriver();
 
@@ -28,14 +28,13 @@ private:
 
     static void _clientEventCb(const usb_host_client_event_msg_t *eventMsg, void *arg);
     void        clientEventCb(const usb_host_client_event_msg_t *eventMsg);
-    void        process_keyboard_data(uint8_t *buf);
-    bool        find_keyboard_info(const uint8_t *desc, usb_keyboard_info_t *ki);
-    void        keyboard_set_boot_protocol();
+    bool        findKeyboardInfo(const uint8_t *desc, usb_keyboard_info_t *ki);
+    void        keyboardSetBootProtocol();
 
-    static void _notif_xfer_cb(usb_transfer_t *transfer);
-    void        notif_xfer_cb(usb_transfer_t *transfer);
-    static void _notif_ctrl_xfer_cb(usb_transfer_t *transfer);
-    void        notif_ctrl_xfer_cb(usb_transfer_t *transfer);
+    static void _transferCb(usb_transfer_t *transfer);
+    void        transferCb(usb_transfer_t *transfer);
+    static void _ctrlTransferCb(usb_transfer_t *transfer);
+    void        ctrlTransferCb(usb_transfer_t *transfer);
 
     struct class_driver_t {
         uint32_t                 actions;
