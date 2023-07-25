@@ -82,7 +82,7 @@ $(BUILD_DIR):
 
 run: all
 ifeq ($(detected_OS),Darwin)
-	$(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -u ../testdata/usb
+	$(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -u ../../EndUser/sdcard
 else
 	$(OUT) -u ../testdata/usb
 endif
