@@ -1,5 +1,5 @@
-#include "common.h"
-#include "usbhost.h"
+#include "Common.h"
+#include "USBHost.h"
 #include "SDCardVFS.h"
 #include "FPGA.h"
 #include "AqUartProtocol.h"
@@ -7,6 +7,7 @@
 #include "BLE.h"
 #include "FileServer.h"
 #include "AqKeyboard.h"
+#include "PowerLED.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -16,15 +17,8 @@
 static const char *TAG = "main";
 
 static void init(void) {
-    // Enable power LED
-    {
-        gpio_config_t io_conf = {
-            .pin_bit_mask = (1ULL << IOPIN_LED),
-            .mode         = GPIO_MODE_OUTPUT,
-        };
-        gpio_config(&io_conf);
-        gpio_set_level((gpio_num_t)IOPIN_LED, 1);
-    }
+    // Init power LED
+    PowerLED::instance().init();
 
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -39,15 +33,12 @@ static void init(void) {
     // Initialize the event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    // Wi-Fi init
     WiFi::instance().init();
-
-    // Bluetooth init
-    ble_init();
+    BLE::instance().init();
 
     AqKeyboard::instance().init();
     SDCardVFS::instance().init();
-    usbhost_init();
+    USBHost::instance().init();
     AqUartProtocol::instance().init();
     FileServer::instance().init();
 

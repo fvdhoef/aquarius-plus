@@ -2,7 +2,7 @@
 #include "AqKeyboardDefs.h"
 #include "FPGA.h"
 #include <esp_system.h>
-#include "usbhost.h"
+#include "USBHost.h"
 
 static const char *TAG = "keyboard";
 
@@ -292,7 +292,7 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
 
     if (ledStatus != ledStatusNext) {
         ledStatus = ledStatusNext;
-        keyboard_set_leds(ledStatus);
+        USBHost::instance().keyboardSetLeds(ledStatus);
     }
 }
 

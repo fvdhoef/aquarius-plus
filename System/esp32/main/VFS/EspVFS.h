@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 #include "VFS.h"
 
 class EspVFS : public VFS {

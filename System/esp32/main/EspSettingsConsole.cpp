@@ -2,7 +2,7 @@
 #include <esp_ota_ops.h>
 #include <esp_app_format.h>
 #include <esp_wifi.h>
-#include "led.h"
+#include "PowerLED.h"
 #include "WiFi.h"
 #include "SDCardVFS.h"
 
@@ -293,6 +293,7 @@ void EspSettingsConsole::showDate() {
 }
 
 void EspSettingsConsole::systemUpdate() {
+    auto                  &powerLED         = PowerLED::instance();
     const int              app_desc_offset  = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
     size_t                 update_size      = 0;
     const esp_partition_t *update_partition = nullptr;
@@ -310,18 +311,18 @@ void EspSettingsConsole::systemUpdate() {
         goto done;
     }
 
-    led_flash_start();
+    powerLED.flashStart();
     if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == nullptr) {
         cprintf("File not found (%s)\n", UPDATEFILE_NAME);
         goto done;
     }
-    led_flash_stop();
+    powerLED.flashStop();
 
-    led_flash_start();
+    powerLED.flashStart();
     fseek(f, 0, SEEK_END);
     update_size = ftell(f);
     fseek(f, 0, SEEK_SET);
-    led_flash_stop();
+    powerLED.flashStop();
     cprintf("Update file size: %u\n", update_size);
 
     esp_app_desc_t running_app_info;
@@ -331,12 +332,12 @@ void EspSettingsConsole::systemUpdate() {
 
     esp_app_desc_t app_info;
 
-    led_flash_start();
+    powerLED.flashStart();
     fseek(f, app_desc_offset, SEEK_SET);
     if (fread(&app_info, sizeof(app_info), 1, f) != 1) {
         goto done;
     }
-    led_flash_stop();
+    powerLED.flashStop();
     if (app_info.magic_word != ESP_APP_DESC_MAGIC_WORD) {
         ESP_LOGE("update", "Incorrect app descriptor magic");
         cprintf("Invalid update file\n");
@@ -372,14 +373,14 @@ void EspSettingsConsole::systemUpdate() {
     }
 
     cprintf("Writing:");
-    led_flash_start();
+    powerLED.flashStart();
     fseek(f, 0, SEEK_SET);
-    led_flash_stop();
+    powerLED.flashStop();
 
     while (1) {
-        led_flash_start();
+        powerLED.flashStart();
         size_t size = fread(tmpbuf, 1, tmpbuf_size, f);
-        led_flash_stop();
+        powerLED.flashStop();
         if (size == 0)
             break;
 
@@ -413,7 +414,7 @@ void EspSettingsConsole::systemUpdate() {
 
 done:
     fclose(f);
-    led_flash_stop();
+    powerLED.flashStop();
 
     if (!success)
         cprintf("Error during update, aborting.\n");

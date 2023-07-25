@@ -2,7 +2,7 @@ idf_component_register(
     SRCS
         "main.cpp"
         "FPGA.cpp"
-        "usbhost.cpp"
+        "USBHost.cpp"
         "AqKeyboard.cpp"
         "AqUartProtocol.cpp"
 
@@ -13,7 +13,7 @@ idf_component_register(
         "EspSettingsConsole.cpp"
 
         "FileServer.cpp"
-        "led.cpp"
+        "PowerLED.cpp"
         "HID.cpp"
         "WiFi.cpp"
         "BLE.cpp"

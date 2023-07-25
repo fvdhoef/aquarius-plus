@@ -36,7 +36,7 @@ struct xbox_hid_data {
 };
 #pragma pack(pop)
 
-void handle_xbox_data(const uint8_t data[16]) {
+void handleXboxData(const uint8_t data[16]) {
     struct xbox_hid_data hd;
     memcpy(&hd, data, sizeof(hd));
     // printf("%d\n", sizeof(hd));
