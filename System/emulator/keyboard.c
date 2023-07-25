@@ -3,6 +3,12 @@
 #include <SDL.h>
 #include "emustate.h"
 
+static uint8_t prev_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t keyb_matrix[8] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+
+static void update_matrix(void);
+static bool wait_all_released = false;
+
 // Aquarius keys
 enum {
     KEY_EQUALS    = 0,  // = +
@@ -111,10 +117,10 @@ static void handcontroller(unsigned scancode, bool keydown) {
 }
 
 static inline void _aqkey_up(int key) {
-    emustate.keyb_matrix[key / 6] |= (1 << (key % 6));
+    keyb_matrix[key / 6] |= (1 << (key % 6));
 }
 static inline void _aqkey_down(int key) {
-    emustate.keyb_matrix[key / 6] &= ~(1 << (key % 6));
+    keyb_matrix[key / 6] &= ~(1 << (key % 6));
 }
 
 static inline void aqkey_down(int key, bool shift) {
@@ -149,7 +155,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     if (scancode == SDL_SCANCODE_RGUI)
         modifiers = (modifiers & ~KMOD_RGUI) | (keydown ? KMOD_RGUI : 0);
 
-    bool ctrl_pressed  = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
+    bool ctrl_pressed = (modifiers & (KMOD_LCTRL | KMOD_RCTRL)) != 0;
     // bool alt_pressed   = (modifiers & (KMOD_LALT | KMOD_RALT)) != 0;
     bool shift_pressed = (modifiers & (KMOD_LSHIFT | KMOD_RSHIFT)) != 0;
     // bool gui_pressed   = (modifiers & (KMOD_LGUI | KMOD_RGUI)) != 0;
@@ -179,7 +185,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
 
     // Clear keyboard state
     for (int i = 0; i < 8; i++) {
-        emustate.keyb_matrix[i] = 0xFF;
+        keyb_matrix[i] = 0xFF;
     }
 
     // Set keyboard state based on current pressed keys
@@ -188,13 +194,19 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     if (shift_pressed)
         _aqkey_down(KEY_SHIFT);
 
+    bool any_pressed = false;
+
     for (int i = 0; i < 64; i++) {
         if (pressed_keys[i / 8] & (1 << (i & 7))) {
+            any_pressed = true;
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
+                    if (wait_all_released)
+                        break;
                     if (ctrl_pressed) {
                         // CTRL-ESCAPE -> reset
                         reset();
+                        wait_all_released = true;
                     } else {
                         // ESCAPE -> CTRL-C
                         _aqkey_down(KEY_CTRL);
@@ -307,6 +319,52 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
                     aqkey_down(KEY_SPACE, shift_pressed);
                     break;
             }
+        }
+    }
+
+    if (!any_pressed)
+        wait_all_released = false;
+
+    update_matrix();
+}
+
+static bool is_key_down(int key) {
+    return (keyb_matrix[key / 6] & (1 << (key % 6))) == 0;
+}
+
+static bool prev_is_key_down(int key) {
+    return (prev_matrix[key / 6] & (1 << (key % 6))) == 0;
+}
+
+static void update_matrix(void) {
+    if (wait_all_released)
+        return;
+
+    if (memcmp(prev_matrix, keyb_matrix, 8) != 0) {
+        bool prev_has_shift = prev_is_key_down(KEY_SHIFT);
+        bool new_has_shift  = is_key_down(KEY_SHIFT);
+
+        bool allow_update = true;
+        if (prev_has_shift != new_has_shift) {
+            bool prev_other_pressed = false;
+            bool new_other_pressed  = false;
+            for (int i = 0; i < 48; i++) {
+                if (i == KEY_SHIFT)
+                    continue;
+                if (prev_is_key_down(i)) {
+                    prev_other_pressed = true;
+                }
+                if (is_key_down(i)) {
+                    new_other_pressed = true;
+                }
+            }
+
+            allow_update = !(new_other_pressed && prev_other_pressed);
+        }
+
+        if (allow_update) {
+            memcpy(emustate.keyb_matrix, keyb_matrix, 8);
+            memcpy(prev_matrix, keyb_matrix, 8);
         }
     }
 }

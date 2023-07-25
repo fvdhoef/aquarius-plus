@@ -35,6 +35,14 @@ void AqKeyboard::keyDown(int key) {
     keybMatrix[key / 6] &= ~(1 << (key % 6));
 }
 
+bool AqKeyboard::isKeyDown(int key) {
+    return (keybMatrix[key / 6] & (1 << (key % 6))) == 0;
+}
+
+bool AqKeyboard::prevIsKeyDown(int key) {
+    return (prevMatrix[key / 6] & (1 << (key % 6))) == 0;
+}
+
 void AqKeyboard::keyDown(int key, bool shift) {
     keyDown(key);
     if (shift) {
@@ -169,11 +177,15 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
+                    if (waitAllReleased)
+                        break;
+
                     if (ctrlPressed && shiftPressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                         esp_restart();
                     } else if (ctrlPressed) {
                         // CTRL-ESCAPE -> reset
+                        waitAllReleased = true;
                         FPGA::instance().aqpReset();
                     } else {
                         // ESCAPE -> CTRL-C
@@ -353,11 +365,36 @@ void AqKeyboard::handController(unsigned scancode, bool keydown) {
 
 void AqKeyboard::updateMatrix() {
     RecursiveMutexLock lock(mutex);
+    if (waitAllReleased)
+        return;
 
-    static uint8_t prev_matrix[8];
-    if (memcmp(prev_matrix, keybMatrix, 8) != 0) {
-        FPGA::instance().aqpUpdateKeybMatrix(keybMatrix);
-        memcpy(prev_matrix, keybMatrix, 8);
+    if (memcmp(prevMatrix, keybMatrix, 8) != 0) {
+        bool prevHasShift = prevIsKeyDown(KEY_SHIFT);
+        bool newHasShift  = isKeyDown(KEY_SHIFT);
+
+        bool allowUpdate = true;
+        if (prevHasShift != newHasShift) {
+            bool prevOtherPressed = false;
+            bool newOtherPressed  = false;
+            for (int i = 0; i < 48; i++) {
+                if (i == KEY_SHIFT)
+                    continue;
+                if (prevIsKeyDown(i)) {
+                    prevOtherPressed = true;
+                }
+                if (isKeyDown(i)) {
+                    newOtherPressed = true;
+                }
+            }
+
+            allowUpdate = !(newOtherPressed && prevOtherPressed);
+        }
+
+        if (allowUpdate) {
+            // ESP_LOG_BUFFER_HEX(TAG, keybMatrix, 8);
+            FPGA::instance().aqpUpdateKeybMatrix(keybMatrix);
+            memcpy(prevMatrix, keybMatrix, 8);
+        }
     }
 
     static uint8_t prev_handctrl1;
