@@ -1,7 +1,7 @@
 #include "common.h"
 #include "usbhost.h"
 #include "SDCardVFS.h"
-#include "fpga.h"
+#include "FPGA.h"
 #include "uart_protocol.h"
 #include "ca_store.h"
 #include "wifi.h"

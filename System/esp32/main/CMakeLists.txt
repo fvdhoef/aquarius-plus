@@ -1,7 +1,7 @@
 idf_component_register(
     SRCS
         "main.cpp"
-        "fpga.cpp"
+        "FPGA.cpp"
         "usbhost.cpp"
         "aq_keyb.cpp"
         "aq_keyb_press_key.cpp"

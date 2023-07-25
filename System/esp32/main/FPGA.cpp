@@ -1,6 +1,6 @@
-#include "fpga.h"
+#include "FPGA.h"
 
-static const char *TAG = "fpga";
+static const char *TAG = "FPGA";
 
 #define SPIBUS SPI3_HOST // SPI2 host is used by SD card interface
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_CS_N

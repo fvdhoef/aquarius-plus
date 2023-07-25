@@ -1,5 +1,5 @@
 #include "hid.h"
-#include "fpga.h"
+#include "FPGA.h"
 #include <math.h>
 
 static const char *TAG = "hid";
