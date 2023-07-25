@@ -6,7 +6,7 @@
 #include "ca_store.h"
 #include "wifi.h"
 #include "ble.h"
-#include "fileserver.h"
+#include "FileServer.h"
 #include "aq_keyb.h"
 
 #include <nvs_flash.h>
@@ -53,7 +53,7 @@ static void init(void) {
     SDCardVFS::instance().init();
     usbhost_init();
     uart_protocol_init();
-    fileserver_init();
+    FileServer::instance().init();
 
     {
         auto &fpga = FPGA::instance();

@@ -13,7 +13,7 @@ idf_component_register(
 
         "EspSettingsConsole.cpp"
 
-        "fileserver.cpp"
+        "FileServer.cpp"
         "led.cpp"
         "hid.cpp"
         "connectivity/ca_store.cpp"

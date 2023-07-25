@@ -651,7 +651,7 @@ static void uart_event_task(void *pvParameters) {
         if (xQueueReceive(uart_queue, (void *)&event, (TickType_t)portMAX_DELAY)) {
             bzero(dtmp, RD_BUF_SIZE);
             switch (event.type) {
-                // Event of UART receving data
+                // Event of UART receiving data
                 /*We'd better handler data event fast, there would be much more data events than
                 other types of events. If we take too much time on data event, the queue might
                 be full.*/
