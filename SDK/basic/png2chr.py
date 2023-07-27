@@ -22,7 +22,7 @@ for k in range(256):
     for j in range(8):
         val = 0
         for i in range(8):
-            if image.getpixel(((k % 16) * 8 + i, (k // 16) * 8 + j))[0] > 0:
+            if image.getpixel(((k % 16) * 8 + i, (k // 16) * 8 + j))[0] < 128:
                 val |= (1<<(7-i))
         bitmapram.append(val)
 
