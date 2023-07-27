@@ -21,7 +21,7 @@
 #endif
 
 #if _WIN32
-#    include "windows/getopt.h"
+#    include "getopt.h"
 #    include <direct.h>
 #    include <io.h>
 #    include <sys/types.h>
