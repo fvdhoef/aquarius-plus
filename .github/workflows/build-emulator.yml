@@ -8,6 +8,7 @@ name: Build emulator
 
 jobs:
   build-macos:
+    name: Build macOS emulator
     runs-on: macos-latest
     steps:
       - name: Checking out repository
@@ -21,6 +22,7 @@ jobs:
           path: System/emulator/build/AquariusPlusEmu_*.zip
 
   build-linux:
+    name: Build Linux emulator
     runs-on: ubuntu-latest
     steps:
       - name: Checking out repository
@@ -32,7 +34,19 @@ jobs:
           sudo apt-get install libsdl2-dev
       - name: Building Linux emulator
         run: make -C System/emulator
-      # - name: Upload Artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     path: System/emulator/build/AquariusPlusEmu_*.zip
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AquariusPlusEmu_Linux_Ubuntu
+          path: System/emulator/build/aquarius_emu
+
+  build-windows:
+    name: Build Windows emulator
+    runs-on: windows-latest
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v3
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+      - name: Build app for release
+        run: msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release|x64
