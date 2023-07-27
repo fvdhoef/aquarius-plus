@@ -539,7 +539,7 @@ int main(int argc, char *argv[]) {
     }
 #elif _WIN32
     if (!usb_path[0]) {
-        snprintf(usb_path, sizeof(usb_path), "%s/Documents/AquariusPlusDisk", base_path/sdcard);
+        snprintf(usb_path, sizeof(usb_path), "%s/sdcard", base_path);
     }
 #endif
 

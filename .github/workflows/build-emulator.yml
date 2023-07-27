@@ -50,3 +50,16 @@ jobs:
         uses: microsoft/setup-msbuild@v1.1
       - name: Build app for release
         run: msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:normal -property:Configuration=Release -property:Platform=x64
+      - name: Creating release directory structure
+        run: |
+          mkdir System\emulator\windows\x64\Release\AquariusPlusEmu
+          copy System\emulator\windows\x64\Release\aquarius-emu.exe System\emulator\windows\x64\Release\AquariusPlusEmu\
+          copy System\emulator\windows\SDL2-2.0.20\lib\x64\SDL2.dll System\emulator\windows\x64\Release\AquariusPlusEmu\
+          copy System\emulator\aquarius.rom System\emulator\windows\x64\Release\AquariusPlusEmu\
+          xcopy /E /I EndUser\sdcard System\emulator\windows\x64\Release\AquariusPlusEmu\sdcard
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: AquariusPlusEmu_Windows_x64
+          path: System/emulator/windows/x64/Release/AquariusPlusEmu
+
