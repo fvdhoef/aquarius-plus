@@ -414,6 +414,7 @@ void think_attackers() {
   }
 }
 
+// Function to transition aliens from formatiom to attacking mode.
 void formation_to_attacker(byte formation_index) {
   byte i;
   // out of bounds? return
@@ -606,12 +607,14 @@ void new_attack_wave() {
   }
 }
 
+// Function for generating a new player ship.
 void new_player_ship() {
-  player_exploding = 0;
-  draw_player();
-  player_x = 112;
+  player_exploding = 0;                                               // Set the player exploding "frame" to 0 (not exploding)
+  draw_player();                                                      // Draw the player
+  player_x = 112;                                                     // Set the player position to the bottom middle of the screen.
 }
 
+// Function for setting/updating the sounds.
 void set_sounds() {
   byte i;                                                             // Create an incrementer i for loops below.
   byte enable = 0;                                                    // Create an enable byte to store bit flags for channel activation.
