@@ -1,7 +1,10 @@
 on:
+  workflow_dispatch:
   push:
     paths:
       - System/emulator/**
+
+name: Build macOS emulator
 
 jobs:
   build-emu:
