@@ -4,10 +4,10 @@ on:
     paths:
       - System/emulator/**
 
-name: Build macOS emulator
+name: Build emulator
 
 jobs:
-  build-emu:
+  build-macos:
     runs-on: macos-latest
     steps:
       - run: echo "Job triggered by ${{ github.event_name }} event, running on a ${{ runner.os }} server."
@@ -20,3 +20,17 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           path: System/emulator/build/AquariusPlusEmu_*.zip
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Job triggered by ${{ github.event_name }} event, running on a ${{ runner.os }} server."
+      - run: echo "Branch ${{ github.ref }}, repository ${{ github.repository }}."
+      - name: Checking out repository code
+        uses: actions/checkout@v3
+      - name: Building emulator
+        run: make -C System/emulator
+      # - name: Upload Artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     path: System/emulator/build/AquariusPlusEmu_*.zip
