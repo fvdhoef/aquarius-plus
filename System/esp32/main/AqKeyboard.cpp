@@ -173,17 +173,21 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     if (shiftPressed)
         keyDown(KEY_SHIFT);
 
+    bool anyPressed = false;
     for (int i = 0; i < 64; i++) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
+            anyPressed = true;
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
-                    if (waitAllReleased)
-                        break;
-
                     if (ctrlPressed && shiftPressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                         esp_restart();
-                    } else if (ctrlPressed) {
+                    }
+
+                    if (waitAllReleased)
+                        break;
+
+                    if (ctrlPressed) {
                         // CTRL-ESCAPE -> reset
                         waitAllReleased = true;
                         FPGA::instance().aqpReset();
@@ -301,6 +305,9 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
             }
         }
     }
+
+    if (!anyPressed)
+        waitAllReleased = false;
 
     if (ledStatus != ledStatusNext) {
         ledStatus = ledStatusNext;
