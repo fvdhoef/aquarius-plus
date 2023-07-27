@@ -19,7 +19,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu_macOS_${{ github.ref_name }}
-          path: System/emulator/build/AquariusPlusEmu.app_*.zip
+          path: System/emulator/build/AquariusPlusEmu_macOS_*.zip
 
   build-linux:
     name: Build Linux emulator

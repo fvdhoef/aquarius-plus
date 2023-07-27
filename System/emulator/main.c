@@ -170,9 +170,9 @@ static uint8_t io_read(size_t param, ushort addr) {
             (emustate.sysctrl_disable_ext ? (1 << 0) : 0) |
             (emustate.sysctrl_ay_disable ? (1 << 1) : 0));
 
-        case 0xFC: printf("Cassette port input (%04x)\n", addr); return 0xFF;
+        case 0xFC: /* printf("Cassette port input (%04x)\n", addr); */ return 0xFF;
         case 0xFD: return (emustate.video_line >= 242) ? 0 : 1;
-        case 0xFE: printf("Clear to send status (%04x)\n", addr); return 0xFF;
+        case 0xFE: /* printf("Clear to send status (%04x)\n", addr); */ return 0xFF;
         case 0xFF: {
             // Keyboard matrix. Selected rows are passed in the upper 8 address lines.
             uint8_t rows = addr >> 8;
@@ -271,7 +271,7 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
 
         case 0xFC: emustate.sound_output = (data & 1) != 0; break;
         case 0xFD: emustate.cpm_remap = (data & 1) != 0; break;
-        case 0xFE: printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); break;
+        case 0xFE: /* printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); */ break;
         case 0xFF:
             // printf("Scramble value: 0x%02x\n", data);
             // emustate.extbus_scramble = data;
@@ -603,7 +603,7 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
-    SDL_Window   *window = SDL_CreateWindow("Aquarius emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
