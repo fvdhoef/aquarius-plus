@@ -49,4 +49,4 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
       - name: Build app for release
-        run: msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release|x64
+        run: msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:diag -property:Configuration=Release
