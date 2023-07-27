@@ -10,7 +10,7 @@ jobs:
   build-emu:
     runs-on: macos-latest
     steps:
-      - run: echo "Job triggered by ${{ github.event_name }} event, running on a ${{ runner.os }} server.
+      - run: echo "Job triggered by ${{ github.event_name }} event, running on a ${{ runner.os }} server."
       - run: echo "Branch ${{ github.ref }}, repository ${{ github.repository }}."
       - name: Checking out repository code
         uses: actions/checkout@v3
