@@ -537,6 +537,10 @@ int main(int argc, char *argv[]) {
         snprintf(usb_path, sizeof(usb_path), "%s/Documents/AquariusPlusDisk", homedir);
         mkdir(usb_path, 0755);
     }
+#elif _WIN32
+    if (!usb_path[0]) {
+        snprintf(usb_path, sizeof(usb_path), "%s/Documents/AquariusPlusDisk", base_path/sdcard);
+    }
 #endif
 
     if (*usb_path) {
