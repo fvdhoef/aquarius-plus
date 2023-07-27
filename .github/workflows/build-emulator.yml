@@ -4,7 +4,8 @@ on:
     paths:
       - System/emulator/**
 
-name: Build emulator
+name: Build Aquarius+ emulator
+run-name: Aquarius+ emulator ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
 
 jobs:
   build-macos:
