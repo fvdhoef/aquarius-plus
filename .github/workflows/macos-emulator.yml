@@ -1,0 +1,10 @@
+on:
+  push:
+    paths:
+      - System/emulator/**
+
+jobs:
+  build-emu:
+    runs-on: macos-latest
+    steps:
+      - run: make -C System/emulator
