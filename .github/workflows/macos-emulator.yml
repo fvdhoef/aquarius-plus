@@ -19,5 +19,4 @@ jobs:
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: macOS emulator zip
           path: System/emulator/build/AquariusPlusEmu_*.zip
