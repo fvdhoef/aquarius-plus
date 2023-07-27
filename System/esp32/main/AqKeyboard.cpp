@@ -35,14 +35,6 @@ void AqKeyboard::keyDown(int key) {
     keybMatrix[key / 6] &= ~(1 << (key % 6));
 }
 
-bool AqKeyboard::isKeyDown(int key) {
-    return (keybMatrix[key / 6] & (1 << (key % 6))) == 0;
-}
-
-bool AqKeyboard::prevIsKeyDown(int key) {
-    return (prevMatrix[key / 6] & (1 << (key % 6))) == 0;
-}
-
 void AqKeyboard::keyDown(int key, bool shift) {
     keyDown(key);
     if (shift) {
@@ -56,12 +48,6 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     RecursiveMutexLock lock(mutex);
 
     uint8_t ledStatusNext = ledStatus;
-
-    // if (keydown) {
-    //     ESP_LOGI(TAG, "Key pressed:  %02X", scancode);
-    // } else {
-    //     ESP_LOGI(TAG, "Key released: %02X", scancode);
-    // }
 
     // Hand controller emulation
     handController(scancode, keydown);
@@ -77,7 +63,6 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     }
 
     // Keep track of pressed modifier keys
-    static uint16_t modifiers = 0;
     if (scancode == SDL_SCANCODE_LSHIFT)
         modifiers = (modifiers & ~KMOD_LSHIFT) | (keydown ? KMOD_LSHIFT : 0);
     if (scancode == SDL_SCANCODE_RSHIFT)
@@ -140,7 +125,6 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     }
 
     // Keep track of pressed keys
-    static uint8_t pressedKeys[8] = {0};
     if (scancode < 64) {
         if (keydown) {
             pressedKeys[scancode / 8] |= 1 << (scancode & 7);
@@ -149,18 +133,22 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
         }
     }
 
-    enum {
-        UP    = (1 << 0),
-        DOWN  = (1 << 1),
-        LEFT  = (1 << 2),
-        RIGHT = (1 << 3),
-        K1    = (1 << 4),
-        K2    = (1 << 5),
-        K3    = (1 << 6),
-        K4    = (1 << 7),
-        K5    = (1 << 8),
-        K6    = (1 << 9),
-    };
+    // Check if any (non-modifier) keys are currently pressed
+    bool anyPressed = false;
+    for (unsigned i = 0; i < sizeof(pressedKeys); i++) {
+        if (pressedKeys[i]) {
+            anyPressed = true;
+            break;
+        }
+    }
+    if (!anyPressed)
+        waitAllReleased = false;
+
+    // Don't allow shift state being changed while another key is being pressed
+    if (prevShiftPressed != shiftPressed && anyPressed) {
+        waitAllReleased = true;
+    }
+    prevShiftPressed = shiftPressed;
 
     // Clear keyboard state
     for (int i = 0; i < 8; i++) {
@@ -173,10 +161,8 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
     if (shiftPressed)
         keyDown(KEY_SHIFT);
 
-    bool anyPressed = false;
     for (int i = 0; i < 64; i++) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
-            anyPressed = true;
             switch (i) {
                 case SDL_SCANCODE_ESCAPE:
                     if (ctrlPressed && shiftPressed) {
@@ -306,9 +292,6 @@ void AqKeyboard::handleScancode(unsigned scancode, bool keydown) {
         }
     }
 
-    if (!anyPressed)
-        waitAllReleased = false;
-
     if (ledStatus != ledStatusNext) {
         ledStatus = ledStatusNext;
         USBHost::instance().keyboardSetLeds(ledStatus);
@@ -329,23 +312,21 @@ void AqKeyboard::handController(unsigned scancode, bool keydown) {
         K6    = (1 << 9),
     };
 
-    static int handCtrlPressed = 0;
-
     switch (scancode) {
-        case SDL_SCANCODE_UP: handCtrlPressed = (keydown) ? (handCtrlPressed | UP) : (handCtrlPressed & ~UP); break;
-        case SDL_SCANCODE_DOWN: handCtrlPressed = (keydown) ? (handCtrlPressed | DOWN) : (handCtrlPressed & ~DOWN); break;
-        case SDL_SCANCODE_LEFT: handCtrlPressed = (keydown) ? (handCtrlPressed | LEFT) : (handCtrlPressed & ~LEFT); break;
-        case SDL_SCANCODE_RIGHT: handCtrlPressed = (keydown) ? (handCtrlPressed | RIGHT) : (handCtrlPressed & ~RIGHT); break;
-        case SDL_SCANCODE_F1: handCtrlPressed = (keydown) ? (handCtrlPressed | K1) : (handCtrlPressed & ~K1); break;
-        case SDL_SCANCODE_F2: handCtrlPressed = (keydown) ? (handCtrlPressed | K2) : (handCtrlPressed & ~K2); break;
-        case SDL_SCANCODE_F3: handCtrlPressed = (keydown) ? (handCtrlPressed | K3) : (handCtrlPressed & ~K3); break;
-        case SDL_SCANCODE_F4: handCtrlPressed = (keydown) ? (handCtrlPressed | K4) : (handCtrlPressed & ~K4); break;
-        case SDL_SCANCODE_F5: handCtrlPressed = (keydown) ? (handCtrlPressed | K5) : (handCtrlPressed & ~K5); break;
-        case SDL_SCANCODE_F6: handCtrlPressed = (keydown) ? (handCtrlPressed | K6) : (handCtrlPressed & ~K6); break;
+        case SDL_SCANCODE_UP: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | UP) : (handCtrl1Pressed & ~UP); break;
+        case SDL_SCANCODE_DOWN: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | DOWN) : (handCtrl1Pressed & ~DOWN); break;
+        case SDL_SCANCODE_LEFT: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | LEFT) : (handCtrl1Pressed & ~LEFT); break;
+        case SDL_SCANCODE_RIGHT: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | RIGHT) : (handCtrl1Pressed & ~RIGHT); break;
+        case SDL_SCANCODE_F1: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K1) : (handCtrl1Pressed & ~K1); break;
+        case SDL_SCANCODE_F2: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K2) : (handCtrl1Pressed & ~K2); break;
+        case SDL_SCANCODE_F3: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K3) : (handCtrl1Pressed & ~K3); break;
+        case SDL_SCANCODE_F4: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K4) : (handCtrl1Pressed & ~K4); break;
+        case SDL_SCANCODE_F5: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K5) : (handCtrl1Pressed & ~K5); break;
+        case SDL_SCANCODE_F6: handCtrl1Pressed = (keydown) ? (handCtrl1Pressed | K6) : (handCtrl1Pressed & ~K6); break;
     }
 
     handCtrl1 = 0xFF;
-    switch (handCtrlPressed & 0xF) {
+    switch (handCtrl1Pressed & 0xF) {
         case LEFT: handCtrl1 &= ~(1 << 3); break;
         case UP | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
         case UP: handCtrl1 &= ~(1 << 2); break;
@@ -356,60 +337,33 @@ void AqKeyboard::handController(unsigned scancode, bool keydown) {
         case DOWN | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
         default: break;
     }
-    if (handCtrlPressed & K1)
+    if (handCtrl1Pressed & K1)
         handCtrl1 &= ~(1 << 6);
-    if (handCtrlPressed & K2)
+    if (handCtrl1Pressed & K2)
         handCtrl1 &= ~((1 << 7) | (1 << 2));
-    if (handCtrlPressed & K3)
+    if (handCtrl1Pressed & K3)
         handCtrl1 &= ~((1 << 7) | (1 << 5));
-    if (handCtrlPressed & K4)
+    if (handCtrl1Pressed & K4)
         handCtrl1 &= ~(1 << 5);
-    if (handCtrlPressed & K5)
+    if (handCtrl1Pressed & K5)
         handCtrl1 &= ~((1 << 7) | (1 << 1));
-    if (handCtrlPressed & K6)
+    if (handCtrl1Pressed & K6)
         handCtrl1 &= ~((1 << 7) | (1 << 0));
 }
 
 void AqKeyboard::updateMatrix() {
     RecursiveMutexLock lock(mutex);
-    if (waitAllReleased)
-        return;
-
-    if (memcmp(prevMatrix, keybMatrix, 8) != 0) {
-        bool prevHasShift = prevIsKeyDown(KEY_SHIFT);
-        bool newHasShift  = isKeyDown(KEY_SHIFT);
-
-        bool allowUpdate = true;
-        if (prevHasShift != newHasShift) {
-            bool prevOtherPressed = false;
-            bool newOtherPressed  = false;
-            for (int i = 0; i < 48; i++) {
-                if (i == KEY_SHIFT)
-                    continue;
-                if (prevIsKeyDown(i)) {
-                    prevOtherPressed = true;
-                }
-                if (isKeyDown(i)) {
-                    newOtherPressed = true;
-                }
-            }
-
-            allowUpdate = !(newOtherPressed && prevOtherPressed);
-        }
-
-        if (allowUpdate) {
-            // ESP_LOG_BUFFER_HEX(TAG, keybMatrix, 8);
+    if (!waitAllReleased) {
+        if (memcmp(prevMatrix, keybMatrix, 8) != 0) {
             FPGA::instance().aqpUpdateKeybMatrix(keybMatrix);
             memcpy(prevMatrix, keybMatrix, 8);
         }
     }
 
-    static uint8_t prev_handctrl1;
-    static uint8_t prev_handctrl2;
-    if (prev_handctrl1 != handCtrl1 || prev_handctrl2 != handCtrl2) {
+    if (prevHandCtrl1 != handCtrl1 || prevHandCtrl2 != handCtrl2) {
         FPGA::instance().aqpUpdateHandCtrl(handCtrl1, handCtrl2);
-        prev_handctrl1 = handCtrl1;
-        prev_handctrl2 = handCtrl2;
+        prevHandCtrl1 = handCtrl1;
+        prevHandCtrl2 = handCtrl2;
     }
 }
 
