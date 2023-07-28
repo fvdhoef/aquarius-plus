@@ -45,7 +45,7 @@ direnum_ctx_t direnum_open(const char *path) {
     snprintf(path2, sizeof(path2), "%s/*.*", path);
 
     ctx->handle = _findfirst(path2, &ctx->fileinfo);
-    if (ctx->handle == 0) {
+    if (ctx->handle < 0) {
         free(ctx);
         return NULL;
     }
