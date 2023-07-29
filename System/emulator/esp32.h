@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 
 void    esp32_init(const char *basepath);
 void    esp32_write_ctrl(uint8_t data);

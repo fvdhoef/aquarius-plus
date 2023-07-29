@@ -33,7 +33,7 @@
     <ClCompile Include="..\fat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\emustate.cpp">
+    <ClCompile Include="..\EmuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\keyboard.cpp">
@@ -50,7 +50,7 @@
     <ClInclude Include="..\libz80\z80.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\common.h">
+    <ClInclude Include="..\Common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\Audio.h">
@@ -68,7 +68,7 @@
     <ClInclude Include="..\fat.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\emustate.h">
+    <ClInclude Include="..\EmuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\keyboard.h">

@@ -70,7 +70,7 @@
     <ClCompile Include="..\Audio.cpp" />
     <ClCompile Include="..\AY8910.cpp" />
     <ClCompile Include="..\direnum.cpp" />
-    <ClCompile Include="..\emustate.cpp" />
+    <ClCompile Include="..\EmuState.cpp" />
     <ClCompile Include="..\esp32.cpp" />
     <ClCompile Include="..\keyboard.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
@@ -80,9 +80,9 @@
   <ItemGroup>
     <ClInclude Include="..\Audio.h" />
     <ClInclude Include="..\AY8910.h" />
-    <ClInclude Include="..\common.h" />
+    <ClInclude Include="..\Common.h" />
     <ClInclude Include="..\direnum.h" />
-    <ClInclude Include="..\emustate.h" />
+    <ClInclude Include="..\EmuState.h" />
     <ClInclude Include="..\esp32.h" />
     <ClInclude Include="..\keyboard.h" />
     <ClInclude Include="..\libz80\z80.h" />

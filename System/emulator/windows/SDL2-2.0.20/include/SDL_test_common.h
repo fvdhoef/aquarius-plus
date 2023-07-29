@@ -27,7 +27,7 @@
  *  This code is a part of the SDL2_test library, not the main SDL library.
  */
 
-/* Ported from original test\common.h file. */
+/* Ported from original test\Common.h file. */
 
 #ifndef SDL_test_common_h_
 #define SDL_test_common_h_

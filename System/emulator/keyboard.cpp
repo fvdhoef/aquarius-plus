@@ -1,9 +1,9 @@
 #include "keyboard.h"
-#include "common.h"
+#include "Common.h"
 #include <SDL.h>
-#include "emustate.h"
+#include "EmuState.h"
 
-static uint8_t keyb_matrix[8]    = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+static uint8_t keybMatrix[8]    = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
 static uint8_t pressed_keys[8]   = {0};
 static bool    wait_all_released = false;
 
@@ -88,37 +88,37 @@ static void handcontroller(unsigned scancode, bool keydown) {
         case SDL_SCANCODE_F6: handctrl_pressed = (keydown) ? (handctrl_pressed | K6) : (handctrl_pressed & ~K6); break;
     }
 
-    emustate.handctrl1 = 0xFF;
+    emuState.handCtrl1 = 0xFF;
     switch (handctrl_pressed & 0xF) {
-        case LEFT: emustate.handctrl1 &= ~(1 << 3); break;
-        case UP | LEFT: emustate.handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
-        case UP: emustate.handctrl1 &= ~(1 << 2); break;
-        case UP | RIGHT: emustate.handctrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
-        case RIGHT: emustate.handctrl1 &= ~(1 << 1); break;
-        case DOWN | RIGHT: emustate.handctrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
-        case DOWN: emustate.handctrl1 &= ~(1 << 0); break;
-        case DOWN | LEFT: emustate.handctrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+        case LEFT: emuState.handCtrl1 &= ~(1 << 3); break;
+        case UP | LEFT: emuState.handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+        case UP: emuState.handCtrl1 &= ~(1 << 2); break;
+        case UP | RIGHT: emuState.handCtrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+        case RIGHT: emuState.handCtrl1 &= ~(1 << 1); break;
+        case DOWN | RIGHT: emuState.handCtrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+        case DOWN: emuState.handCtrl1 &= ~(1 << 0); break;
+        case DOWN | LEFT: emuState.handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
         default: break;
     }
     if (handctrl_pressed & K1)
-        emustate.handctrl1 &= ~(1 << 6);
+        emuState.handCtrl1 &= ~(1 << 6);
     if (handctrl_pressed & K2)
-        emustate.handctrl1 &= ~((1 << 7) | (1 << 2));
+        emuState.handCtrl1 &= ~((1 << 7) | (1 << 2));
     if (handctrl_pressed & K3)
-        emustate.handctrl1 &= ~((1 << 7) | (1 << 5));
+        emuState.handCtrl1 &= ~((1 << 7) | (1 << 5));
     if (handctrl_pressed & K4)
-        emustate.handctrl1 &= ~(1 << 5);
+        emuState.handCtrl1 &= ~(1 << 5);
     if (handctrl_pressed & K5)
-        emustate.handctrl1 &= ~((1 << 7) | (1 << 1));
+        emuState.handCtrl1 &= ~((1 << 7) | (1 << 1));
     if (handctrl_pressed & K6)
-        emustate.handctrl1 &= ~((1 << 7) | (1 << 0));
+        emuState.handCtrl1 &= ~((1 << 7) | (1 << 0));
 }
 
 static inline void _aqkey_up(int key) {
-    keyb_matrix[key / 6] |= (1 << (key % 6));
+    keybMatrix[key / 6] |= (1 << (key % 6));
 }
 static inline void _aqkey_down(int key) {
-    keyb_matrix[key / 6] &= ~(1 << (key % 6));
+    keybMatrix[key / 6] &= ~(1 << (key % 6));
 }
 
 static inline void aqkey_down(int key, bool shift) {
@@ -187,7 +187,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
 
     // Clear keyboard state
     for (int i = 0; i < 8; i++) {
-        keyb_matrix[i] = 0xFF;
+        keybMatrix[i] = 0xFF;
     }
 
     // Set keyboard state based on current pressed keys
@@ -322,7 +322,7 @@ void keyboard_scancode(unsigned scancode, bool keydown) {
     }
 
     if (!wait_all_released)
-        memcpy(emustate.keyb_matrix, keyb_matrix, 8);
+        memcpy(emuState.keybMatrix, keybMatrix, 8);
 }
 
 static uint8_t scancodes[127] = {

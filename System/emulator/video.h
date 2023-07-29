@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 #include "SDL.h"
 
 const uint16_t *video_get_fb(void);

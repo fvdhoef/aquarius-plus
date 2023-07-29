@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 #include <SDL.h>
 
 #define SAMPLES_PER_BUFFER (735)
