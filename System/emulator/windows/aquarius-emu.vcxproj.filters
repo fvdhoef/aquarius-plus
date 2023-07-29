@@ -27,9 +27,6 @@
     <ClCompile Include="..\ay8910.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ch376.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\direnum.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -63,9 +60,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\ay8910.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\ch376.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\direnum.h">

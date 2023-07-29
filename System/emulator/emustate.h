@@ -14,10 +14,8 @@ struct emulation_state {
     int         line_hcycles;     // Half-cycles for this line
     int         sample_hcycles;   // Half-cycles for this sample
     uint8_t     keyb_matrix[8];   // Keyboard matrix (8 x 6bits)
-    bool        expander_enabled; // Mini-expander enabled?
     uint8_t     handctrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t     handctrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
-    bool        ramexp_enabled;   // RAM expansion enabled?
     const char *type_in_str;
     int         type_in_release;
     int         type_in_delay;

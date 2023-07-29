@@ -7,7 +7,6 @@
 #include "video.h"
 #include "keyboard.h"
 #include "audio.h"
-#include "ch376.h"
 #include "esp32.h"
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
@@ -108,14 +107,6 @@ static void mem_write(size_t param, uint16_t addr, uint8_t data) {
 static uint8_t io_read(size_t param, ushort addr) {
     (void)param;
 
-    // Bruce Abbott's Micro-Expander CH376
-    if ((addr & 0xC0) == 0x40) {
-        if ((addr & 1) == 0)
-            return ch376_read_data();
-        else
-            return ch376_read_status();
-    }
-
     if (!emustate.sysctrl_disable_ext) {
         switch (addr & 0xFF) {
             case 0xE0: return emustate.video_ctrl;
@@ -195,15 +186,6 @@ static uint8_t io_read(size_t param, ushort addr) {
 
 static void io_write(size_t param, uint16_t addr, uint8_t data) {
     (void)param;
-
-    // Bruce Abbott's Micro-Expander CH376
-    if ((addr & 0xC0) == 0x40) {
-        if ((addr & 1) == 0)
-            ch376_write_data(data);
-        else
-            ch376_write_cmd(data);
-        return;
-    }
 
     if (!emustate.sysctrl_disable_ext) {
         switch (addr & 0xFF) {
@@ -507,8 +489,6 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
-            case 'X': emustate.expander_enabled = false; break;
-            case 'R': emustate.ramexp_enabled = false; break;
             case 'u': snprintf(usb_path, sizeof(usb_path), "%s", optarg); break;
             case 't': emustate.type_in_str = optarg; break;
             default: params_ok = false; break;
@@ -523,9 +503,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
-        fprintf(stderr, "-u <path>   CH376 USB base path\n");
-        fprintf(stderr, "-X          Disable mini expander emulation.\n");
-        fprintf(stderr, "-R          Disable RAM expansion.\n");
+        fprintf(stderr, "-u <path>   SD card base path\n");
         fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
@@ -544,7 +522,6 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (*usb_path) {
-        ch376_init(usb_path);
         esp32_init(usb_path);
     }
 

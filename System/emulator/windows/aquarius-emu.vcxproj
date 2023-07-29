@@ -69,11 +69,9 @@
   <ItemGroup>
     <ClCompile Include="..\audio.c" />
     <ClCompile Include="..\ay8910.c" />
-    <ClCompile Include="..\ch376.c" />
     <ClCompile Include="..\direnum.c" />
     <ClCompile Include="..\emustate.c" />
     <ClCompile Include="..\esp32.c" />
-    <ClCompile Include="..\fat.c" />
     <ClCompile Include="..\keyboard.c" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.c" />
@@ -82,12 +80,10 @@
   <ItemGroup>
     <ClInclude Include="..\audio.h" />
     <ClInclude Include="..\ay8910.h" />
-    <ClInclude Include="..\ch376.h" />
     <ClInclude Include="..\common.h" />
     <ClInclude Include="..\direnum.h" />
     <ClInclude Include="..\emustate.h" />
     <ClInclude Include="..\esp32.h" />
-    <ClInclude Include="..\fat.h" />
     <ClInclude Include="..\keyboard.h" />
     <ClInclude Include="..\libz80\z80.h" />
     <ClInclude Include="..\video.h" />
