@@ -6,12 +6,8 @@ extern const uint8_t settings_caq_end[] asm("_binary_settings_caq_end");
 static const char   *fn_settings = "settings.caq";
 static const char   *fn_com      = "com";
 
-static void console_task(void *pvParameters);
-
 EspVFS::EspVFS() {
-    dir_idx     = 0;
-    file_offset = 0;
-    file_idx    = 0;
+    fileOffset = 0;
 }
 
 EspVFS &EspVFS::instance() {
@@ -38,25 +34,22 @@ int EspVFS::open(uint8_t flags, const std::string &_path) {
         return 1;
     }
     if (strcasecmp(path.c_str(), fn_settings) == 0) {
-        file_idx = 0;
-    } else {
-        file_idx = -1;
+        fileOffset = 0;
+        return 0;
     }
-
-    file_offset = 0;
-    return file_idx < 0 ? ERR_NOT_FOUND : 0;
+    return -1;
 }
 
 int EspVFS::read(int fd, size_t size, void *buf) {
     if (fd == 0) {
         int filesize  = settings_caq_end - settings_caq_start;
-        int remaining = filesize - file_offset;
+        int remaining = filesize - fileOffset;
 
         if (size > remaining) {
             size = remaining;
         }
-        memcpy(buf, settings_caq_start + file_offset, size);
-        file_offset += size;
+        memcpy(buf, settings_caq_start + fileOffset, size);
+        fileOffset += size;
         return size;
 
     } else if (fd == 1) {

@@ -1,12 +1,17 @@
 #include "AqUartProtocol.h"
-#include <driver/uart.h>
 #include "SDCardVFS.h"
 #include "EspVFS.h"
 #include <algorithm>
-#include <esp_ota_ops.h>
-#include <esp_app_format.h>
+
+#ifndef EMULATOR
+#    include <driver/uart.h>
+#    include <esp_ota_ops.h>
+#    include <esp_app_format.h>
 
 static const char *TAG = "AqUartProtocol";
+
+#    define UART_NUM (UART_NUM_1)
+#endif
 
 enum {
     ESPCMD_RESET    = 0x01, // Indicate to ESP that system has been reset
@@ -30,7 +35,6 @@ enum {
 };
 
 #define BUF_SIZE (1024)
-#define UART_NUM (UART_NUM_1)
 #define ESP_PREFIX "esp:"
 
 #if 0

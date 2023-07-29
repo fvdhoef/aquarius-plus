@@ -42,7 +42,10 @@
     <ClCompile Include="..\Video.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\esp32.cpp">
+    <ClCompile Include="..\VFS\VFS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\AqUartProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -80,7 +83,16 @@
     <ClInclude Include="..\Video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\esp32.h">
+    <ClInclude Include="..\VFS\VFS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\VFS\EspVFS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\VFS\SDCardVFS.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\AqUartProtocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

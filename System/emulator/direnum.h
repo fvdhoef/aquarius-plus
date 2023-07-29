@@ -6,10 +6,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <time.h>
-
-enum {
-    DE_DIR = (1 << 0),
-};
+#include "VFS.h"
 
 struct direnum_ent {
     char     filename[1024];

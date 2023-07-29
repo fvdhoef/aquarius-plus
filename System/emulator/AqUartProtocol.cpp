@@ -1,4 +1,4 @@
-#include "esp32.h"
+#include "AqUartProtocol.h"
 #include "direnum.h"
 
 #if 0
@@ -27,32 +27,6 @@ enum {
     ESPCMD_GETCWD   = 0x1E, // Get current working directory
     ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
 };
-
-enum {
-    ERR_NOT_FOUND     = -1, // File / directory not found
-    ERR_TOO_MANY_OPEN = -2, // Too many open files / directories
-    ERR_PARAM         = -3, // Invalid parameter
-    ERR_EOF           = -4, // End of file / directory
-    ERR_EXISTS        = -5, // File already exists
-    ERR_OTHER         = -6, // Other error
-    ERR_NO_DISK       = -7, // No disk
-    ERR_NOT_EMPTY     = -8, // Not empty
-};
-
-enum {
-    FO_RDONLY  = 0x00, // Open for reading only
-    FO_WRONLY  = 0x01, // Open for writing only
-    FO_RDWR    = 0x02, // Open for reading and writing
-    FO_ACCMODE = 0x03, // Mask for above modes
-
-    FO_APPEND = 0x04,  // Append mode
-    FO_CREATE = 0x08,  // Create if non-existant
-    FO_TRUNC  = 0x10,  // Truncate to zero length
-    FO_EXCL   = 0x20,  // Error if already exists
-};
-
-#define MAX_FDS (10)
-#define MAX_DDS (10)
 
 struct state {
     char         *basepath;

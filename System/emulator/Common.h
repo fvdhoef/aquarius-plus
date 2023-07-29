@@ -4,20 +4,29 @@
 #    define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#include <stdio.h>
+#include <stddef.h>
 #include <stdint.h>
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdarg.h>
+
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
+
 #include <assert.h>
 #include <fcntl.h>
 #include <errno.h>
 
+#include <string>
+#include <vector>
+#include <memory>
+#include <functional>
+
 #ifdef __APPLE__
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <pwd.h>
-#include <uuid/uuid.h>
+#    include <sys/stat.h>
+#    include <sys/types.h>
+#    include <pwd.h>
+#    include <uuid/uuid.h>
 #endif
 
 #if _WIN32
@@ -29,7 +38,7 @@
 #    define strdup _strdup
 #    define unlink _unlink
 #    define rmdir _rmdir
-#	 define open _open
+#    define open _open
 #    define close _close
 #    define read _read
 #    define write _write

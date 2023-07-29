@@ -5,7 +5,7 @@
 #include "VFS.h"
 
 #ifndef EMULATOR
-#    define MOUNT_POINT "/sdcard"
+#define MOUNT_POINT "/sdcard"
 #endif
 
 class SDCardVFS : public VFS {

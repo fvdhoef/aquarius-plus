@@ -9,6 +9,17 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <assert.h>
+#include <fcntl.h>
+#include <errno.h>
+
+#include <string>
+#include <vector>
+#include <memory>
+#include <functional>
+
+#include <sys/stat.h>
+
 #include <esp_log.h>
 #include <esp_task_wdt.h>
 #include <esp_event.h>
@@ -21,11 +32,6 @@
 #include <freertos/semphr.h>
 
 #include <driver/gpio.h>
-
-#include <string>
-#include <vector>
-#include <memory>
-#include <functional>
 
 #include "iopins.h"
 

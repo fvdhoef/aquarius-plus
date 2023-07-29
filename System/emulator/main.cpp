@@ -7,7 +7,7 @@
 #include "Video.h"
 #include "AqKeyboard.h"
 #include "Audio.h"
-#include "esp32.h"
+#include "AqUartProtocol.h"
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
     (void)param;

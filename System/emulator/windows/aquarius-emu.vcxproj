@@ -71,11 +71,12 @@
     <ClCompile Include="..\AY8910.cpp" />
     <ClCompile Include="..\direnum.cpp" />
     <ClCompile Include="..\EmuState.cpp" />
-    <ClCompile Include="..\esp32.cpp" />
+    <ClCompile Include="..\AqUartProtocol.cpp" />
     <ClCompile Include="..\AqKeyboard.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\Video.cpp" />
+    <ClCompile Include="..\VFS\VFS.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Audio.h" />
@@ -83,11 +84,14 @@
     <ClInclude Include="..\Common.h" />
     <ClInclude Include="..\direnum.h" />
     <ClInclude Include="..\EmuState.h" />
-    <ClInclude Include="..\esp32.h" />
+    <ClInclude Include="..\AqUartProtocol.h" />
     <ClInclude Include="..\AqKeyboard.h" />
     <ClInclude Include="..\AqKeyboardDefs.h" />
     <ClInclude Include="..\libz80\z80.h" />
     <ClInclude Include="..\Video.h" />
+    <ClCompile Include="..\VFS\VFS.h" />
+    <ClCompile Include="..\VFS\SDCardVFS.h" />
+    <ClCompile Include="..\VFS\EspVFS.h" />
     <ClInclude Include="getopt.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
