@@ -64,8 +64,9 @@ DEPS        := $(OBJS:.o=.d)
 
 all: $(OUT)
 
-$(OUT): $(BUILD_DIR) $(OBJS)
+$(OUT): $(OBJS)
 	@echo Linking $@
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LFLAGS) -o $@
 	@ln -sf ../aquarius.rom build/aquarius.rom
 
@@ -91,20 +92,19 @@ endif
 
 $(C_OBJS): $(BUILD_DIR)/%.o: %.c
 	@echo Compiling $<
+	@mkdir -p $(dir $@)
 	@$(CC) $(CFLAGS) -std=c11 -o $@ -c $<
 
 $(CXX_OBJS): $(BUILD_DIR)/%.o: %.cpp
 	@echo Compiling $<
+	@mkdir -p $(dir $@)
 	@$(CXX) $(CXXFLAGS) -std=c++17  -o $@ -c $<
-
-$(BUILD_DIR):
-	@mkdir -p $(dir $(C_OBJS))
 
 run: all
 ifeq ($(detected_OS),Darwin)
 	$(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -u ../../EndUser/sdcard
 else
-	$(OUT) -u ../testdata/usb
+	$(OUT) -u ../../EndUser/sdcard
 endif
 
 clean:

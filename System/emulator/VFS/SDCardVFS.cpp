@@ -157,7 +157,7 @@ int SDCardVFS::seek(int fd, size_t offset) {
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
-    int result = ::fseek(f, offset, SEEK_SET);
+    int result = (int)::fseek(f, (long)offset, SEEK_SET);
     return (result < 0) ? ERR_OTHER : 0;
 }
 
@@ -166,7 +166,7 @@ int SDCardVFS::tell(int fd) {
         return ERR_PARAM;
     FILE *f = state.fds[fd];
 
-    int result = ::ftell(f);
+    int result = (int)::ftell(f);
     return (result < 0) ? ERR_OTHER : result;
 }
 
@@ -228,10 +228,10 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         first = false;
 
         // Return file entry
-        snprintf(dee->filename, sizeof(dee->filename), "%s", fileinfo.name);
-        dee->size = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
-        dee->attr = (fileinfo.attrib & _A_SUBDIR) ? DE_DIR : 0;
-        time_t t  = fileinfo.time_write;
+        dee.filename = fileinfo.name;
+        dee.size     = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
+        dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_DIR : 0;
+        time_t t     = fileinfo.time_write;
 
         struct tm *tm = localtime(&t);
         dee.ftime     = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
@@ -287,7 +287,11 @@ int SDCardVFS::rename(const std::string &pathOld, const std::string &pathNew) {
 int SDCardVFS::mkdir(const std::string &path) {
     auto fullPath = getFullPath(path);
 
+#if _WIN32
+    int result = ::mkdir(fullPath.c_str());
+#else
     int result = ::mkdir(fullPath.c_str(), 0775);
+#endif
     return (result < 0) ? ERR_OTHER : 0;
 }
 

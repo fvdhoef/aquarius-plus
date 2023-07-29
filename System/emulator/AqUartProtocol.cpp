@@ -2,6 +2,7 @@
 #include "SDCardVFS.h"
 #include "EspVFS.h"
 #include <algorithm>
+#include <time.h>
 
 #ifndef EMULATOR
 #    include <driver/uart.h>
@@ -771,6 +772,8 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
 
 #ifdef __APPLE__
     time_t t = st.st_mtimespec.tv_sec;
+#elif _WIN32
+    time_t t = st.st_mtime;
 #else
     time_t t = st.st_mtim.tv_sec;
 #endif
@@ -794,7 +797,7 @@ void AqUartProtocol::cmdGetCwd() {
     DBGF("GETCWD\n");
 
     txFifoWrite(0);
-    int len = currentPath.size();
+    int len = (int)currentPath.size();
 
     if (len == 0) {
         txFifoWrite('/');

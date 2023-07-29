@@ -27,12 +27,6 @@
     <ClCompile Include="..\AY8910.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\direnum.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\fat.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\EmuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -42,10 +36,16 @@
     <ClCompile Include="..\Video.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\VFS\VFS.cpp">
+    <ClCompile Include="..\AqUartProtocol.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\AqUartProtocol.cpp">
+    <ClCompile Include="..\VFS\EspVFS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\VFS\SDCardVFS.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\VFS\VFS.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -65,12 +65,6 @@
     <ClInclude Include="..\AY8910.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\direnum.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="..\fat.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="..\EmuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -83,7 +77,7 @@
     <ClInclude Include="..\Video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\VFS\VFS.h">
+    <ClInclude Include="..\AqUartProtocol.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\VFS\EspVFS.h">
@@ -92,7 +86,7 @@
     <ClInclude Include="..\VFS\SDCardVFS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\AqUartProtocol.h">
+    <ClInclude Include="..\VFS\VFS.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
