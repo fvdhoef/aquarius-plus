@@ -3,11 +3,14 @@
 #include "SDCardVFS.h"
 #include "EspVFS.h"
 #include <algorithm>
+#include <esp_ota_ops.h>
+#include <esp_app_format.h>
 
 static const char *TAG = "AqUartProtocol";
 
 enum {
     ESPCMD_RESET    = 0x01, // Indicate to ESP that system has been reset
+    ESPCMD_VERSION  = 0x02, // Get version string
     ESPCMD_OPEN     = 0x10, // Open / create file
     ESPCMD_CLOSE    = 0x11, // Close open file
     ESPCMD_READ     = 0x12, // Read from file
@@ -233,7 +236,11 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 cmdReset();
                 break;
             }
-
+            case ESPCMD_VERSION: {
+                cmdVersion();
+                rxBufIdx = 0;
+                break;
+            }
             case ESPCMD_OPEN: {
                 if (data == 0 && rxBufIdx >= 3) {
                     uint8_t     flags   = rxBuf[1];
@@ -387,6 +394,20 @@ void AqUartProtocol::receivedByte(uint8_t data) {
 void AqUartProtocol::cmdReset() {
     closeAllDescriptors();
     currentPath.clear();
+}
+
+void AqUartProtocol::cmdVersion() {
+    DBGF("VERSION");
+
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_app_desc_t         running_app_info;
+    if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
+        const char *p = running_app_info.version;
+        while (*p) {
+            txFifoWrite(*(p++));
+        }
+    }
+    txFifoWrite(0);
 }
 
 void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {

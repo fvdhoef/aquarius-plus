@@ -26,6 +26,7 @@ private:
     void        receivedByte(uint8_t data);
 
     void cmdReset();
+    void cmdVersion();
     void cmdOpen(uint8_t flags, const char *pathArg);
     void cmdClose(uint8_t fd);
     void cmdRead(uint8_t fd, uint16_t size);

@@ -435,6 +435,7 @@ Writing a 1 to _Transmit break_ will transmit a BREAK condition to indicate the 
 | Value | Function | Description                                | Category                    |
 | ----: | -------- | ------------------------------------------ | --------------------------- |
 |   $01 | RESET    | Indicate to ESP that system has been reset | General                     |
+|   $02 | VERSION  | Get version string                         | General                     |
 |   $10 | OPEN     | Open / create file                         | File                        |
 |   $11 | CLOSE    | Close open file                            | File                        |
 |   $12 | READ     | Read from file                             | File                        |
@@ -472,6 +473,20 @@ TODO: WiFi management commands
 | Offset | Value |
 | ------ | ----- |
 | 0      | $01   |
+
+### VERSION
+
+#### Request
+
+| Offset | Value |
+| ------ | ----- |
+| 0      | $02   |
+
+#### Response
+
+| Offset | Value                          |
+| ------ | ------------------------------ |
+| 0-n    | Zero-terminated version string |
 
 ### OPEN
 

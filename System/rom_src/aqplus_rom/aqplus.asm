@@ -141,14 +141,25 @@ _coldboot:
 
     ; Show our copyright message
     call    PRNTIT              ; Print copyright string in ROM
-    ld      hl, .str_basic      ; "USB BASIC"
+    ld      hl, .str_basic      ; Print ROM version
     call    STROUT
+    ld      a, ESPCMD_VERSION
+    call    esp_cmd
+.print_version:
+    call    esp_get_byte
+    or      a
+    jr      z, .print_done
+    call    TTYCHR
+    jr      .print_version
+.print_done:
+    call    CRDO
+    call    CRDO
 
     jp      INITFF              ; Continue in ROM
 
 .str_basic:
     db $0D, $0A
-    db "Aquarius+ System ROM V1.0", $0D, $0A, $0D, $0A, 0
+    db "Aquarius+ System ", 0
 
 ;-----------------------------------------------------------------------------
 ; Cartridge start entry point - A hold scramble value

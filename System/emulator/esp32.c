@@ -9,6 +9,7 @@
 
 enum {
     ESPCMD_RESET    = 0x01, // Reset ESP
+    ESPCMD_VERSION  = 0x02, // Get version string
     ESPCMD_OPEN     = 0x10, // Open / create file
     ESPCMD_CLOSE    = 0x11, // Close open file
     ESPCMD_READ     = 0x12, // Read from file
@@ -44,10 +45,10 @@ enum {
     FO_RDWR    = 0x02, // Open for reading and writing
     FO_ACCMODE = 0x03, // Mask for above modes
 
-    FO_APPEND = 0x04, // Append mode
-    FO_CREATE = 0x08, // Create if non-existant
-    FO_TRUNC  = 0x10, // Truncate to zero length
-    FO_EXCL   = 0x20, // Error if already exists
+    FO_APPEND = 0x04,  // Append mode
+    FO_CREATE = 0x08,  // Create if non-existant
+    FO_TRUNC  = 0x10,  // Truncate to zero length
+    FO_EXCL   = 0x20,  // Error if already exists
 };
 
 #define MAX_FDS (10)
@@ -837,6 +838,16 @@ void esp32_write_data(uint8_t data) {
             }
             case ESPCMD_CLOSEALL: {
                 esp_closeall();
+                state.rxbuf_idx = 0;
+                break;
+            }
+            case ESPCMD_VERSION: {
+                const char *version = "Emulator";
+                const char *p       = version;
+                while (*p) {
+                    txfifo_write(*(p++));
+                }
+                txfifo_write(0);
                 state.rxbuf_idx = 0;
                 break;
             }

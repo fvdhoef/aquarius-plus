@@ -233,6 +233,7 @@ endm
 ; ESP32 commands
 ;-----------------------------------------------------------------------------
 ESPCMD_RESET:      equ $01     ; Reset ESP
+ESPCMD_VERSION:    equ $02     ; Get version string
 ESPCMD_OPEN:       equ $10     ; Open / create file
 ESPCMD_CLOSE:      equ $11     ; Close open file
 ESPCMD_READ:       equ $12     ; Read from file
