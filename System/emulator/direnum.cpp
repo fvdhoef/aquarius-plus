@@ -27,7 +27,7 @@ struct direnum_ctx {
 #endif
 
 direnum_ctx_t direnum_open(const char *path) {
-    struct direnum_ctx *ctx = calloc(1, sizeof(*ctx));
+    struct direnum_ctx *ctx = (struct direnum_ctx *)calloc(1, sizeof(*ctx));
     if (ctx == NULL) {
         perror("direnum_open");
         exit(1);
@@ -72,7 +72,7 @@ bool direnum_read(direnum_ctx_t _ctx, struct direnum_ent *dee) {
 
         // Read additional file stats
         size_t fullpath_len = strlen(ctx->path) + strlen(de->d_name) + 2;
-        char  *fullpath     = malloc(fullpath_len);
+        char  *fullpath     = (char *)malloc(fullpath_len);
         snprintf(fullpath, fullpath_len, "%s/%s", ctx->path, de->d_name);
 
         struct stat st;

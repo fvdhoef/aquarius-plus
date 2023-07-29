@@ -39,13 +39,13 @@ void audio_init(void) {
     }
 
     // Allocate audio buffers
-    buffers = malloc(NUM_BUFS * sizeof(*buffers));
+    buffers = (uint16_t **)malloc(NUM_BUFS * sizeof(*buffers));
     if (buffers == NULL) {
         fprintf(stderr, "Error allocating audio buffers\n");
         exit(1);
     }
     for (int i = 0; i < NUM_BUFS; i++) {
-        buffers[i] = malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+        buffers[i] = (uint16_t *)malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
         if (buffers[i] == NULL) {
             fprintf(stderr, "Error allocating audio buffers\n");
             exit(1);

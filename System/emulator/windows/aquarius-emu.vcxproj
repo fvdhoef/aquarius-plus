@@ -67,15 +67,15 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\audio.c" />
-    <ClCompile Include="..\ay8910.c" />
-    <ClCompile Include="..\direnum.c" />
-    <ClCompile Include="..\emustate.c" />
-    <ClCompile Include="..\esp32.c" />
-    <ClCompile Include="..\keyboard.c" />
+    <ClCompile Include="..\audio.cpp" />
+    <ClCompile Include="..\ay8910.cpp" />
+    <ClCompile Include="..\direnum.cpp" />
+    <ClCompile Include="..\emustate.cpp" />
+    <ClCompile Include="..\esp32.cpp" />
+    <ClCompile Include="..\keyboard.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
-    <ClCompile Include="..\main.c" />
-    <ClCompile Include="..\video.c" />
+    <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\audio.h" />

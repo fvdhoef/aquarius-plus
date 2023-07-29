@@ -1,17 +1,19 @@
 #include "emustate.h"
 #include <stdlib.h>
 
-struct emulation_state emustate = {
-    .keyb_matrix      = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF},
-    .handctrl1        = 0xFF,
-    .handctrl2        = 0xFF,
-    .video_palette    = {
-           0x111, 0xF11, 0x1F1, 0xFF1, 0x22E, 0xF1F, 0x3CC, 0xFFF,
-           0xCCC, 0x3BB, 0xC2C, 0x419, 0xFF7, 0x2D4, 0xB22, 0x333},
-    .video_ctrl = 1,
-};
+emulation_state emustate;
+
+static const uint16_t defaultPalette[] = {
+    0x111, 0xF11, 0x1F1, 0xFF1, 0x22E, 0xF1F, 0x3CC, 0xFFF,
+    0xCCC, 0x3BB, 0xC2C, 0x419, 0xFF7, 0x2D4, 0xB22, 0x333};
 
 void emustate_init(void) {
+    memset(emustate.keyb_matrix, 0xFF, sizeof(emustate.keyb_matrix));
+    emustate.handctrl1 = 0xFF;
+    emustate.handctrl2 = 0xFF;
+    memcpy(emustate.video_palette, defaultPalette, sizeof(defaultPalette));
+    emustate.video_ctrl = 1;
+
     for (unsigned i = 0; i < sizeof(emustate.screenram); i++) {
         emustate.screenram[i] = rand();
     }

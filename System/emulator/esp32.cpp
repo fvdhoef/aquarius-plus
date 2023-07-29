@@ -100,7 +100,7 @@ static char *resolve_path(const char *path) {
     // DBGF("resolve_path: '%s'\n", path);
 
     size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
-    char  *tmppath      = malloc(tmppath_size);
+    char  *tmppath      = (char *)malloc(tmppath_size);
     assert(tmppath != NULL);
     tmppath[0] = 0;
     if (path[0] != '/' && path[0] != '\\') {
@@ -111,7 +111,7 @@ static char *resolve_path(const char *path) {
 
     char *components[MAX_COMPONENTS];
     int   num_components = 0;
-    char *result         = malloc(strlen(tmppath) + 1);
+    char *result         = (char *)malloc(strlen(tmppath) + 1);
     assert(result != NULL);
 
     const char *ps = tmppath;
@@ -186,7 +186,7 @@ void esp32_init(const char *basepath) {
            basepath[basepath_len - 1] == '\\') {
         basepath_len--;
     }
-    state.basepath = malloc(basepath_len + 1);
+    state.basepath = (char *)malloc(basepath_len + 1);
     assert(state.basepath != NULL);
     strncpy(state.basepath, basepath, basepath_len);
     state.basepath[basepath_len] = 0;
@@ -260,7 +260,7 @@ static void esp_open(uint8_t flags, const char *path_arg) {
 
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
@@ -403,7 +403,7 @@ static void esp_opendir(const char *path_arg) {
 
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
@@ -493,7 +493,7 @@ static void esp_readdir(uint8_t dd) {
 static void esp_delete(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
@@ -523,14 +523,14 @@ static void esp_delete(const char *path_arg) {
 static void esp_rename(const char *old_arg, const char *new_arg) {
     // Compose full path
     char *old_path      = resolve_path(old_arg);
-    char *old_full_path = malloc(strlen(state.basepath) + strlen(old_path) + 1);
+    char *old_full_path = (char *)malloc(strlen(state.basepath) + strlen(old_path) + 1);
     assert(old_full_path != NULL);
     strcpy(old_full_path, state.basepath);
     strcat(old_full_path, old_path);
     free(old_path);
 
     char *new_path      = resolve_path(new_arg);
-    char *new_full_path = malloc(strlen(state.basepath) + strlen(new_path) + 1);
+    char *new_full_path = (char *)malloc(strlen(state.basepath) + strlen(new_path) + 1);
     assert(new_full_path != NULL);
     strcpy(new_full_path, state.basepath);
     strcat(new_full_path, new_path);
@@ -553,7 +553,7 @@ static void esp_rename(const char *old_arg, const char *new_arg) {
 static void esp_mkdir(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
@@ -578,7 +578,7 @@ static void esp_mkdir(const char *path_arg) {
 static void esp_chdir(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);
@@ -605,7 +605,7 @@ static void esp_chdir(const char *path_arg) {
 static void esp_stat(const char *path_arg) {
     // Compose full path
     char *path      = resolve_path(path_arg);
-    char *full_path = malloc(strlen(state.basepath) + strlen(path) + 1);
+    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
     assert(full_path != NULL);
     strcpy(full_path, state.basepath);
     strcat(full_path, path);

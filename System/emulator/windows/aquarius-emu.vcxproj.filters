@@ -15,34 +15,34 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\audio.c">
+    <ClCompile Include="..\audio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\main.c">
+    <ClCompile Include="..\main.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\libz80\z80.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ay8910.c">
+    <ClCompile Include="..\ay8910.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\direnum.c">
+    <ClCompile Include="..\direnum.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\fat.c">
+    <ClCompile Include="..\fat.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\emustate.c">
+    <ClCompile Include="..\emustate.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\keyboard.c">
+    <ClCompile Include="..\keyboard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\video.c">
+    <ClCompile Include="..\video.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\esp32.c">
+    <ClCompile Include="..\esp32.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
