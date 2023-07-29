@@ -136,16 +136,18 @@ There are many more commands and parameters that can be used to work with files 
 
 ## Using an Xbox Series S/X controller with the Aquarius+
 
-Your Aquarius+ has builtin Bluetooth support, which enables it to connect to a Xbox controller. The Xbox controller can be only be used wirelessly and will act as if connected to Aquarius Control Pad Port 1.
+Your Aquarius+ has built-in Bluetooth support, which enables it to connect to a Xbox controller. The Xbox controller can only be used wirelessly and will act as if connected to Aquarius Control Pad Port 1.
+
+The left analog stick (and D-pad) will function as the disc on the original controller. The A/B/X/Y/LB/RB buttons will function as the 6 buttons on the original controller.
 
 The first time you want to use the controller, you have to pair it:
 
 - Turn on the Aquarius+.
 - Turn on the Xbox controller by pressing the round Xbox button.
-- Press the little pair button on the back of the controller until the Xbox button start flashing rapidly.
-- Within a few seconds the Xbox button will stop flashing indicating the controller is paired.
+- Press the little pair button on the back of the controller until the Xbox button starts flashing rapidly.
+- Within a few seconds the Xbox button will stop flashing indicating the controller is paired and is ready to be used.
 
-To turn off the Xbox controller press and hold the Xbox button for about 6 seconds.
+To turn off the Xbox controller, press and hold the Xbox button for about 6 seconds.
 
 Next time you want to use the controller you don't have to pair it again and it will automatically connect to your Aquarius+ when turned on.
 
@@ -153,10 +155,10 @@ You will need to use the pairing function again if you've used your Xbox control
 
 ## Setting up Wi-Fi
 
-Your Aquarius+ has builtin Wi-Fi support. Currently this allows for several useful features (more to come with future firmware updates):
+Your Aquarius+ has built-in Wi-Fi support. Currently this allows for several useful features (more to come with future firmware updates):
 
 - Time synchronization. Files saved to the SD card will get a correct date/time. Note there is no time zone support yet, so the files will use the UTC time.
-- Accessing the SD card from a remote computer via de WebDav protocol. Your Aquarius+ registers itself to your router with as 'aqplus' and can be accessed via this name.
+- Accessing the SD card from a remote computer via de WebDav protocol. Your Aquarius+ registers itself to your router as 'aqplus' and can be accessed via this name (not all routers support this feature).
 - Remotely typing commands. This is used by the development environment in combination with the WebDav support to upload and start your program remotely.
 
 To enter the settings menu, on the BASIC prompt type:
