@@ -4,8 +4,8 @@
 
 #include "EmuState.h"
 
-#include "video.h"
-#include "keyboard.h"
+#include "Video.h"
+#include "AqKeyboard.h"
 #include "Audio.h"
 #include "esp32.h"
 
@@ -292,7 +292,7 @@ static void render_screen(SDL_Renderer *renderer) {
     int   pitch;
     SDL_LockTexture(texture, NULL, &pixels, &pitch);
 
-    const uint16_t *fb = video_get_fb();
+    const uint16_t *fb = Video::instance().getFb();
 
     for (int j = 0; j < VIDEO_HEIGHT; j++) {
         for (int i = 0; i < VIDEO_WIDTH; i++) {
@@ -353,7 +353,7 @@ static void keyboard_type_in(void) {
         emuState.typeInRelease--;
         if (emuState.typeInRelease > 0)
             return;
-        keyboard_char(emuState.typeInChar, false);
+        AqKeyboard::instance().pressKey(emuState.typeInChar, false);
         emuState.typeInDelay = 1;
         return;
     }
@@ -379,7 +379,7 @@ static void keyboard_type_in(void) {
         return;
     }
     emuState.typeInChar = ch;
-    keyboard_char(ch, true);
+    AqKeyboard::instance().pressKey(emuState.typeInChar, true);
     emuState.typeInRelease = ch == '\n' ? 10 : 1;
 }
 
@@ -414,7 +414,7 @@ static void emulate(SDL_Renderer *renderer) {
             if (emuState.lineHalfCycles >= HCYCLES_PER_LINE) {
                 emuState.lineHalfCycles -= HCYCLES_PER_LINE;
 
-                video_draw_line();
+                Video::instance().drawLine();
 
                 emuState.videoLine++;
                 if (emuState.videoLine == 200) {
@@ -595,6 +595,7 @@ int main(int argc, char *argv[]) {
     Audio::instance().init();
     reset();
     Audio::instance().start();
+    AqKeyboard::instance().init();
 
     emuState.typeInRelease = 10;
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
@@ -602,7 +603,8 @@ int main(int argc, char *argv[]) {
             case SDL_KEYDOWN:
             case SDL_KEYUP: {
                 if (!event.key.repeat && event.key.keysym.scancode <= 255) {
-                    keyboard_scancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                    AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                    AqKeyboard::instance().updateMatrix();
                 }
                 break;
             }

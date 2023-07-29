@@ -19,6 +19,8 @@ C_SRCS      += libz80/z80.c
 FLAGS       += -O3 -g
 OUT          = $(BUILD_DIR)/aquarius_emu
 
+FLAGS       += -DEMULATOR
+
 ifeq ($(detected_OS),Darwin)
 FLAGS       += -Fmacos/AquariusPlusEmu.app/Contents/Frameworks -Imacos/AquariusPlusEmu.app/Contents/Frameworks/SDL2.framework/Headers
 LFLAGS      += -Fmacos/AquariusPlusEmu.app/Contents/Frameworks -framework SDL2

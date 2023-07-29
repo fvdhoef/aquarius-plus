@@ -72,10 +72,10 @@
     <ClCompile Include="..\direnum.cpp" />
     <ClCompile Include="..\EmuState.cpp" />
     <ClCompile Include="..\esp32.cpp" />
-    <ClCompile Include="..\keyboard.cpp" />
+    <ClCompile Include="..\AqKeyboard.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\video.cpp" />
+    <ClCompile Include="..\Video.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Audio.h" />
@@ -84,9 +84,10 @@
     <ClInclude Include="..\direnum.h" />
     <ClInclude Include="..\EmuState.h" />
     <ClInclude Include="..\esp32.h" />
-    <ClInclude Include="..\keyboard.h" />
+    <ClInclude Include="..\AqKeyboard.h" />
+    <ClInclude Include="..\AqKeyboardDefs.h" />
     <ClInclude Include="..\libz80\z80.h" />
-    <ClInclude Include="..\video.h" />
+    <ClInclude Include="..\Video.h" />
     <ClInclude Include="getopt.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

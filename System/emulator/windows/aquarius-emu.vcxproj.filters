@@ -36,10 +36,10 @@
     <ClCompile Include="..\EmuState.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\keyboard.cpp">
+    <ClCompile Include="..\AqKeyboard.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\video.cpp">
+    <ClCompile Include="..\Video.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\esp32.cpp">
@@ -71,10 +71,13 @@
     <ClInclude Include="..\EmuState.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\keyboard.h">
+    <ClInclude Include="..\AqKeyboard.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\video.h">
+    <ClInclude Include="..\AqKeyboardDefs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Video.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\esp32.h">
