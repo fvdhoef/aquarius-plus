@@ -73,6 +73,15 @@ ifeq ($(detected_OS),Darwin)
 	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu_macOS_$(VERSION_STR).zip AquariusPlusEmu.app
 endif
 
+ifeq ($(detected_OS),Linux)
+	@echo Building distribution
+	@rm -rf $(BUILD_DIR)/AquariusPlusEmu
+	@mkdir -p $(BUILD_DIR)/AquariusPlusEmu
+	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu/
+	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu/
+	@cp -r ../../EndUser/sdcard $(BUILD_DIR)/AquariusPlusEmu/
+endif
+
 $(C_OBJS): $(BUILD_DIR)/%.o: %.c
 	@echo Compiling $<
 	@$(CC) $(CFLAGS) -o $@ -c $<

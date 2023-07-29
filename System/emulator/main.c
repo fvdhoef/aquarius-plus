@@ -476,8 +476,8 @@ int main(int argc, char *argv[]) {
     char cartrom_path[1024];
     cartrom_path[0] = 0;
 
-    char usb_path[1024];
-    usb_path[0] = 0;
+    char sdcard_path[1024];
+    sdcard_path[0] = 0;
 
     int  opt;
     bool params_ok = true;
@@ -489,7 +489,7 @@ int main(int argc, char *argv[]) {
         switch (opt) {
             case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
             case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
-            case 'u': snprintf(usb_path, sizeof(usb_path), "%s", optarg); break;
+            case 'u': snprintf(sdcard_path, sizeof(sdcard_path), "%s", optarg); break;
             case 't': emustate.type_in_str = optarg; break;
             default: params_ok = false; break;
         }
@@ -497,33 +497,34 @@ int main(int argc, char *argv[]) {
     if (optind != argc) {
         params_ok = false;
     }
+    if (!params_ok) {
+        sdcard_path[0] = 0;
+    }
+
+#ifdef __APPLE__
+    if (!sdcard_path[0]) {
+        const char *homedir = getpwuid(getuid())->pw_dir;
+        snprintf(sdcard_path, sizeof(sdcard_path), "%s/Documents/AquariusPlusDisk", homedir);
+        mkdir(sdcard_path, 0755);
+    }
+#else
+    if (!sdcard_path[0]) {
+        snprintf(sdcard_path, sizeof(sdcard_path), "%s/sdcard", base_path);
+    }
+#endif
 
     if (!params_ok) {
         fprintf(stderr, "Usage: %s <options>\n\n", argv[0]);
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
-        fprintf(stderr, "-u <path>   SD card base path\n");
+        fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", sdcard_path);
         fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
     }
 
-#ifdef __APPLE__
-    if (!usb_path[0]) {
-        const char *homedir = getpwuid(getuid())->pw_dir;
-        snprintf(usb_path, sizeof(usb_path), "%s/Documents/AquariusPlusDisk", homedir);
-        mkdir(usb_path, 0755);
-    }
-#elif _WIN32
-    if (!usb_path[0]) {
-        snprintf(usb_path, sizeof(usb_path), "%s/sdcard", base_path);
-    }
-#endif
-
-    if (*usb_path) {
-        esp32_init(usb_path);
-    }
+    esp32_init(sdcard_path);
 
     emustate_init();
 

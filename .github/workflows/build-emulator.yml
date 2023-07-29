@@ -39,7 +39,7 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu_Linux_Ubuntu_${{ github.ref_name }}
-          path: System/emulator/build/aquarius_emu
+          path: System/emulator/build/AquariusPlusEmu
 
   build-windows:
     name: Build Windows emulator
