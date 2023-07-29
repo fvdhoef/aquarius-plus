@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\audio.cpp">
+    <ClCompile Include="..\Audio.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\main.cpp">
@@ -24,7 +24,7 @@
     <ClCompile Include="..\libz80\z80.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\ay8910.cpp">
+    <ClCompile Include="..\AY8910.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\direnum.cpp">
@@ -53,13 +53,13 @@
     <ClInclude Include="..\common.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\audio.h">
+    <ClInclude Include="..\Audio.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="getopt.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\ay8910.h">
+    <ClInclude Include="..\AY8910.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\direnum.h">

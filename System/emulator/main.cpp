@@ -6,7 +6,7 @@
 
 #include "video.h"
 #include "keyboard.h"
-#include "audio.h"
+#include "Audio.h"
 #include "esp32.h"
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
@@ -145,7 +145,7 @@ static uint8_t io_read(size_t param, ushort addr) {
                 switch (emustate.ay_addr) {
                     case 14: return emustate.handctrl1;
                     case 15: return emustate.handctrl2;
-                    default: return ay8910_read_reg(&emustate.ay_state, emustate.ay_addr);
+                    default: return emustate.ay1.readReg(emustate.ay_addr);
                 }
             }
             break;
@@ -155,7 +155,7 @@ static uint8_t io_read(size_t param, ushort addr) {
             if (emustate.sysctrl_ay_disable || emustate.sysctrl_disable_ext)
                 return 0xFF;
             else
-                return ay8910_read_reg(&emustate.ay2_state, emustate.ay2_addr);
+                return emustate.ay2.readReg(emustate.ay_addr);
 
         case 0xFB: return (
             (emustate.sysctrl_disable_ext ? (1 << 0) : 0) |
@@ -228,7 +228,7 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
     switch (addr & 0xFF) {
         case 0xF6:
             if (!emustate.sysctrl_ay_disable && emustate.ay_addr < 14)
-                ay8910_write_reg(&emustate.ay_state, emustate.ay_addr, data);
+                emustate.ay1.writeReg(emustate.ay_addr, data);
             return;
 
         case 0xF7:
@@ -238,7 +238,7 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
 
         case 0xF8:
             if (!(emustate.sysctrl_ay_disable || emustate.sysctrl_disable_ext) && emustate.ay2_addr < 14)
-                ay8910_write_reg(&emustate.ay2_state, emustate.ay2_addr, data);
+                emustate.ay2.writeReg(emustate.ay2_addr, data);
             return;
 
         case 0xF9:
@@ -272,8 +272,8 @@ void reset(void) {
     // emustate.extbus_scramble = 0;
     emustate.cpm_remap = false;
 
-    ay8910_reset(&emustate.ay_state);
-    ay8910_reset(&emustate.ay2_state);
+    emustate.ay1.reset();
+    emustate.ay2.reset();
 }
 
 // 3579545 Hz -> 59659 cycles / frame
@@ -393,7 +393,7 @@ static void emulate(SDL_Renderer *renderer) {
     // second.
 
     // Get a buffer from audio subsystem.
-    uint16_t *abuf = audio_get_buffer();
+    auto abuf = Audio::instance().getBuffer();
     if (abuf == NULL) {
         // No buffer available, don't emulate for now.
         return;
@@ -447,11 +447,11 @@ static void emulate(SDL_Renderer *renderer) {
 
         for (int i = 0; i < 5; i++) {
             uint16_t abc[3];
-            ay8910_render(&emustate.ay_state, abc);
+            emustate.ay1.render(abc);
             left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
             right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
 
-            ay8910_render(&emustate.ay2_state, abc);
+            emustate.ay2.render(abc);
             left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
             right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
         }
@@ -464,7 +464,7 @@ static void emulate(SDL_Renderer *renderer) {
     }
 
     // Return buffer to audio subsystem.
-    audio_put_buffer(abuf);
+    Audio::instance().putBuffer(abuf);
 }
 
 int main(int argc, char *argv[]) {
@@ -596,9 +596,9 @@ int main(int argc, char *argv[]) {
     }
 
     SDL_Event event;
-    audio_init();
+    Audio::instance().init();
     reset();
-    audio_start();
+    Audio::instance().start();
 
     emustate.type_in_release = 10;
     while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
