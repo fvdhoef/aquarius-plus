@@ -8,6 +8,7 @@
 #include "AqKeyboard.h"
 #include "Audio.h"
 #include "AqUartProtocol.h"
+#include "SDCardVFS.h"
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
     (void)param;
@@ -131,8 +132,8 @@ static uint8_t io_read(size_t param, ushort addr) {
             case 0xF1: return emuState.bankRegs[1];
             case 0xF2: return emuState.bankRegs[2];
             case 0xF3: return emuState.bankRegs[3];
-            case 0xF4: return esp32_read_ctrl();
-            case 0xF5: return esp32_read_data();
+            case 0xF4: return AqUartProtocol::instance().readCtrl();
+            case 0xF5: return AqUartProtocol::instance().readData();
         }
     }
 
@@ -220,8 +221,8 @@ static void io_write(size_t param, uint16_t addr, uint8_t data) {
             case 0xF1: emuState.bankRegs[1] = data; return;
             case 0xF2: emuState.bankRegs[2] = data; return;
             case 0xF3: emuState.bankRegs[3] = data; return;
-            case 0xF4: esp32_write_ctrl(data); return;
-            case 0xF5: esp32_write_data(data); return;
+            case 0xF4: AqUartProtocol::instance().writeCtrl(data); return;
+            case 0xF5: AqUartProtocol::instance().writeData(data); return;
         }
     }
 
@@ -520,7 +521,8 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    esp32_init(sdcard_path);
+    AqUartProtocol::instance().init();
+    SDCardVFS::instance().init(sdcard_path);
 
     emustate_init();
 

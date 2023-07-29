@@ -44,6 +44,7 @@
 #    define write _write
 #    define lseek _lseek
 #    define mkdir _mkdir
+#    define strncasecmp _strnicmp
 #else
 #    include <unistd.h>
 #    include <sys/stat.h>

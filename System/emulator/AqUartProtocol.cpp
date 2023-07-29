@@ -1,14 +1,21 @@
 #include "AqUartProtocol.h"
-#include "direnum.h"
+#include "SDCardVFS.h"
+#include "EspVFS.h"
+#include <algorithm>
 
-#if 0
-#    define DBGF(...) printf(__VA_ARGS__)
-#else
-#    define DBGF(...)
+#ifndef EMULATOR
+#    include <driver/uart.h>
+#    include <esp_ota_ops.h>
+#    include <esp_app_format.h>
+
+static const char *TAG = "AqUartProtocol";
+
+#    define UART_NUM (UART_NUM_1)
+#    define BUF_SIZE (1024)
 #endif
 
 enum {
-    ESPCMD_RESET    = 0x01, // Reset ESP
+    ESPCMD_RESET    = 0x01, // Indicate to ESP that system has been reset
     ESPCMD_VERSION  = 0x02, // Get version string
     ESPCMD_OPEN     = 0x10, // Open / create file
     ESPCMD_CLOSE    = 0x11, // Close open file
@@ -28,813 +35,81 @@ enum {
     ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
 };
 
-struct state {
-    char         *basepath;
-    char         *current_path;
-    uint8_t       rxbuf[0x10000];
-    unsigned      rxbuf_idx;
-    uint8_t       txfifo[0x10000 + 16];
-    unsigned      txfifo_wridx;
-    unsigned      txfifo_rdidx;
-    unsigned      txfifo_cnt;
-    direnum_ctx_t dds[MAX_DDS];
-    FILE         *fds[MAX_FDS];
-    const char   *new_path;
-};
-
-static struct state state;
-
-#define MAX_COMPONENTS (20)
-
-static void txfifo_write(uint8_t data) {
-    if (state.txfifo_cnt >= sizeof(state.txfifo)) {
-        return;
-    }
-
-    state.txfifo[state.txfifo_wridx++] = data;
-    state.txfifo_cnt++;
-    if (state.txfifo_wridx >= sizeof(state.txfifo)) {
-        state.txfifo_wridx = 0;
-    }
-}
-
-static int txfifo_read(void) {
-    int result = -1;
-    if (state.txfifo_cnt > 0) {
-        result = state.txfifo[state.txfifo_rdidx++];
-        state.txfifo_cnt--;
-        if (state.txfifo_rdidx >= sizeof(state.txfifo)) {
-            state.txfifo_rdidx = 0;
-        }
-    }
-    return result;
-}
-
-static char *resolve_path(const char *path) {
-    // DBGF("resolve_path: '%s'\n", path);
-
-    size_t tmppath_size = strlen(state.current_path) + 1 + strlen(path) + 1;
-    char  *tmppath      = (char *)malloc(tmppath_size);
-    assert(tmppath != NULL);
-    tmppath[0] = 0;
-    if (path[0] != '/' && path[0] != '\\') {
-        strcat(tmppath, state.current_path);
-        strcat(tmppath, "/");
-    }
-    strcat(tmppath, path);
-
-    char *components[MAX_COMPONENTS];
-    int   num_components = 0;
-    char *result         = (char *)malloc(strlen(tmppath) + 1);
-    assert(result != NULL);
-
-    const char *ps = tmppath;
-    char       *pd = result;
-
-    while (*ps != 0) {
-        // Skip leading slashes
-        if (ps[0] == '/' || ps[0] == '\\') {
-            ps++;
-            continue;
-        }
-
-        // Handle './'
-        if (ps[0] == '.') {
-            if (ps[1] == '/' || ps[1] == '\\') {
-                ps += 2;
-                continue;
-            }
-            if (ps[1] == 0) {
-                ps++;
-                break;
-            }
-        }
-
-        // Handle '../'
-        if (ps[0] == '.' && ps[1] == '.') {
-            bool undo_component = false;
-            if (ps[2] == '/' || ps[2] == '\\') {
-                ps += 3;
-                undo_component = true;
-            } else if (ps[2] == 0) {
-                ps += 2;
-                undo_component = true;
-            }
-            if (undo_component) {
-                if (num_components > 0) {
-                    pd = components[--num_components];
-                } else {
-                    pd = result;
-                }
-                continue;
-            }
-        }
-
-        // Keep track of start of path components in result string to be able to undo
-        if (num_components < MAX_COMPONENTS) {
-            components[num_components++] = pd;
-        }
-
-        // Add leading slash
-        *(pd++) = '/';
-
-        // Copy path component from source to result string
-        while (ps[0] != '/' && ps[0] != '\\' && ps[0] != 0) {
-            *(pd++) = *(ps++);
-        }
-    }
-
-    // Zero terminate result
-    *pd = 0;
-    // printf("result: '%s'  num_components: %d\n", result, num_components);
-
-    free(tmppath);
-
-    return result;
-}
-
-void esp32_init(const char *basepath) {
-    // Copy basepath (without trailing slash if present)
-    size_t basepath_len = strlen(basepath);
-    while (basepath[basepath_len - 1] == '/' ||
-           basepath[basepath_len - 1] == '\\') {
-        basepath_len--;
-    }
-    state.basepath = (char *)malloc(basepath_len + 1);
-    assert(state.basepath != NULL);
-    strncpy(state.basepath, basepath, basepath_len);
-    state.basepath[basepath_len] = 0;
-
-    DBGF("basepath: '%s'\n", state.basepath);
-
-    state.current_path = strdup("");
-}
-
-static void esp_open(uint8_t flags, const char *path_arg) {
-    // Translate flags
-    int  mi = 0;
-    char mode[5];
-
-    // if (flags & FO_CREATE)
-    //     oflag |= O_CREAT;
-
-    switch (flags & FO_ACCMODE) {
-        case FO_RDONLY:
-            mode[mi++] = 'r';
-            break;
-        case FO_WRONLY:
-            if (flags & FO_APPEND) {
-                mode[mi++] = 'a';
-            } else {
-                mode[mi++] = 'w';
-            }
-            if (flags & FO_EXCL) {
-                mode[mi++] = 'x';
-            }
-
-            break;
-        case FO_RDWR:
-            if (flags & FO_APPEND) {
-                mode[mi++] = 'a';
-                mode[mi++] = '+';
-            } else if (flags & FO_TRUNC) {
-                mode[mi++] = 'w';
-                mode[mi++] = '+';
-            } else {
-                mode[mi++] = 'r';
-                mode[mi++] = '+';
-            }
-            if (flags & FO_EXCL) {
-                mode[mi++] = 'x';
-            }
-            break;
-
-        default: {
-            // Error
-            txfifo_write(ERR_PARAM);
-            return;
-        }
-    }
-    mode[mi++] = 'b';
-    mode[mi]   = 0;
-
-    // Find free file descriptor
-    int fd = -1;
-    for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] == NULL) {
-            fd = i;
-            break;
-        }
-    }
-    if (fd == -1) {
-        // Error
-        txfifo_write(ERR_TOO_MANY_OPEN);
-        return;
-    }
-
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-    free(path);
-
-    DBGF("OPEN: flags: 0x%02X (%s) '%s'\n", flags, mode, full_path);
-
-    FILE *f      = fopen(full_path, mode);
-    int   err_no = errno;
-    free(full_path);
-
-    if (f == NULL) {
-        uint8_t err = ERR_NOT_FOUND;
-        switch (err_no) {
-            case EACCES: err = ERR_NOT_FOUND; break;
-            case EEXIST: err = ERR_EXISTS; break;
-            default: err = ERR_NOT_FOUND; break;
-        }
-        // Error
-        txfifo_write(err);
-        return;
-    }
-    state.fds[fd] = f;
-
-    txfifo_write(fd);
-
-    DBGF("OPEN fd: %d\n", fd);
-}
-
-static void esp_close(uint8_t fd) {
-    DBGF("CLOSE fd: %d\n", fd);
-
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    FILE *f = state.fds[fd];
-
-    fclose(f);
-    state.fds[fd] = NULL;
-    txfifo_write(0);
-}
-
-static void esp_read(uint8_t fd, uint16_t size) {
-    DBGF("READ fd: %d  size: %u\n", fd, size);
-
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    FILE *f = state.fds[fd];
-
-    static uint8_t tmpbuf[0x10000];
-    int            result = (int)fread(tmpbuf, 1, size, f);
-    if (result < 0) {
-        txfifo_write(ERR_OTHER);
-        return;
-    }
-
-    txfifo_write(0);
-    txfifo_write((result >> 0) & 0xFF);
-    txfifo_write((result >> 8) & 0xFF);
-    for (int i = 0; i < result; i++) {
-        txfifo_write(tmpbuf[i]);
-    }
-}
-
-static void esp_write(uint8_t fd, uint16_t size, const void *data) {
-    DBGF("WRITE fd: %d  size: %u\n", fd, size);
-
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    FILE *f = state.fds[fd];
-
-    int result = (int)fwrite(data, 1, size, f);
-    if (result < 0) {
-        txfifo_write(ERR_OTHER);
-        return;
-    }
-
-    txfifo_write(0);
-    txfifo_write((result >> 0) & 0xFF);
-    txfifo_write((result >> 8) & 0xFF);
-}
-
-static void esp_seek(uint8_t fd, uint32_t offset) {
-    DBGF("SEEK fd: %d  offset: %u\n", fd, offset);
-
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    FILE *f = state.fds[fd];
-
-    int result = fseek(f, offset, SEEK_SET);
-    if (result < 0) {
-        txfifo_write(ERR_OTHER);
-        return;
-    }
-    txfifo_write(0);
-}
-
-static void esp_tell(uint8_t fd) {
-    DBGF("TELL fd: %d\n", fd);
-
-    if (fd >= MAX_FDS || state.fds[fd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    FILE *f = state.fds[fd];
-
-    int result = ftell(f);
-    if (result < 0) {
-        txfifo_write(ERR_OTHER);
-        return;
-    }
-    txfifo_write(0);
-    txfifo_write((result >> 0) & 0xFF);
-    txfifo_write((result >> 8) & 0xFF);
-    txfifo_write((result >> 16) & 0xFF);
-    txfifo_write((result >> 24) & 0xFF);
-}
-
-static void esp_opendir(const char *path_arg) {
-    // Find free directory descriptor
-    int dd = -1;
-    for (int i = 0; i < MAX_DDS; i++) {
-        if (state.dds[i] == NULL) {
-            dd = i;
-            break;
-        }
-    }
-    if (dd == -1) {
-        // Error
-        txfifo_write(ERR_TOO_MANY_OPEN);
-        return;
-    }
-
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-    free(path);
-
-    DBGF("OPENDIR: '%s'\n", full_path);
-
-    direnum_ctx_t ctx = direnum_open(full_path);
-    free(full_path);
-
-    if (ctx == NULL) {
-        // Error
-        txfifo_write(ERR_NOT_FOUND);
-        return;
-    }
-
-    // Return directory descriptor
-    state.dds[dd] = ctx;
-    txfifo_write(dd);
-
-    DBGF("OPENDIR dd: %d\n", dd);
-}
-
-static void esp_closedir(uint8_t dd) {
-    DBGF("CLOSEDIR dd: %d\n", dd);
-
-    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    direnum_ctx_t ctx = state.dds[dd];
-
-    direnum_close(ctx);
-    state.dds[dd] = NULL;
-
-    txfifo_write(0);
-}
-
-static void esp_readdir(uint8_t dd) {
-    // DBGF("READDIR dd: %d\n", dd);
-
-    if (dd >= MAX_DDS || state.dds[dd] == NULL) {
-        txfifo_write(ERR_PARAM);
-        return;
-    }
-    direnum_ctx_t ctx = state.dds[dd];
-
-    struct direnum_ent de;
-    if (!direnum_read(ctx, &de)) {
-        txfifo_write(ERR_EOF);
-        return;
-    }
-
-    struct tm *tm       = localtime(&de.t);
-    uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
-    uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
-
-    txfifo_write(0);
-    txfifo_write((fat_date >> 0) & 0xFF);
-    txfifo_write((fat_date >> 8) & 0xFF);
-    txfifo_write((fat_time >> 0) & 0xFF);
-    txfifo_write((fat_time >> 8) & 0xFF);
-    txfifo_write(de.attr);
-    txfifo_write((de.size >> 0) & 0xFF);
-    txfifo_write((de.size >> 8) & 0xFF);
-    txfifo_write((de.size >> 16) & 0xFF);
-    txfifo_write((de.size >> 24) & 0xFF);
-
-    // DBGF(
-    //     "%02u-%02u-%02u %02u:%02u ",
-    //     tm->tm_year % 100, tm->tm_mon + 1, tm->tm_mday,
-    //     tm->tm_hour, tm->tm_min);
-    // if (de.attr & DE_DIR) {
-    //     DBGF("<DIR>");
-    // } else {
-    //     DBGF("%5u", de.size);
-    // }
-    // DBGF(" %s\n", de.filename);
-
-    const char *p = de.filename;
-    while (*p) {
-        txfifo_write(*(p++));
-    }
-    txfifo_write(0);
-}
-
-static void esp_delete(const char *path_arg) {
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-    free(path);
-
-    DBGF("DELETE %s\n", full_path);
-
-    int result = unlink(full_path);
-    if (result < 0) {
-        result = rmdir(full_path);
-    }
-
-    free(full_path);
-
-    if (result < 0) {
-        // Error
-        if (errno == ENOTEMPTY) {
-            txfifo_write(ERR_NOT_EMPTY);
-        } else {
-            txfifo_write(ERR_NOT_FOUND);
-        }
-        return;
-    }
-    txfifo_write(0);
-}
-
-static void esp_rename(const char *old_arg, const char *new_arg) {
-    // Compose full path
-    char *old_path      = resolve_path(old_arg);
-    char *old_full_path = (char *)malloc(strlen(state.basepath) + strlen(old_path) + 1);
-    assert(old_full_path != NULL);
-    strcpy(old_full_path, state.basepath);
-    strcat(old_full_path, old_path);
-    free(old_path);
-
-    char *new_path      = resolve_path(new_arg);
-    char *new_full_path = (char *)malloc(strlen(state.basepath) + strlen(new_path) + 1);
-    assert(new_full_path != NULL);
-    strcpy(new_full_path, state.basepath);
-    strcat(new_full_path, new_path);
-    free(new_path);
-
-    DBGF("RENAME %s -> %s\n", old_full_path, new_full_path);
-
-    int result = rename(old_full_path, new_full_path);
-    free(old_full_path);
-    free(new_full_path);
-
-    if (result < 0) {
-        // Error
-        txfifo_write(ERR_NOT_FOUND);
-        return;
-    }
-    txfifo_write(0);
-}
-
-static void esp_mkdir(const char *path_arg) {
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-    free(path);
-
-    DBGF("MKDIR %s\n", full_path);
-
-#if _WIN32
-    int result = mkdir(full_path);
+#define ESP_PREFIX "esp:"
+
+#if 0
+#    ifdef EMULATOR
+#        define DBGF(...) printf(__VA_ARGS__)
+#    else
+#        define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
+#    endif
 #else
-    int result = mkdir(full_path, 0775);
-#endif
-    free(full_path);
-    if (result < 0) {
-        // Error
-        txfifo_write(ERR_OTHER);
-        return;
-    }
-    txfifo_write(0);
-}
-
-static void esp_chdir(const char *path_arg) {
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-
-    DBGF("CHDIR %s\n", full_path);
-
-    struct stat st;
-    int         result = stat(full_path, &st);
-    free(full_path);
-
-    if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
-        free(state.current_path);
-        state.current_path = path;
-        txfifo_write(0);
-
-    } else {
-        free(path);
-
-        // Error
-        txfifo_write(ERR_NOT_FOUND);
-    }
-}
-
-static void esp_stat(const char *path_arg) {
-    // Compose full path
-    char *path      = resolve_path(path_arg);
-    char *full_path = (char *)malloc(strlen(state.basepath) + strlen(path) + 1);
-    assert(full_path != NULL);
-    strcpy(full_path, state.basepath);
-    strcat(full_path, path);
-    free(path);
-
-    DBGF("STAT %s\n", full_path);
-
-    struct stat st;
-    int         result = stat(full_path, &st);
-    free(full_path);
-
-    if (result < 0) {
-        // Error
-        txfifo_write(ERR_NOT_FOUND);
-        return;
-    }
-
-    time_t t;
-#ifdef __APPLE__
-    t = st.st_mtimespec.tv_sec;
-#elif _WIN32
-    t          = st.st_mtime;
-#else
-    t = st.st_mtim.tv_sec;
+#    define DBGF(...)
 #endif
 
-    struct tm *tm       = localtime(&t);
-    uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
-    uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
-
-    txfifo_write(0);
-    txfifo_write((fat_date >> 0) & 0xFF);
-    txfifo_write((fat_date >> 8) & 0xFF);
-    txfifo_write((fat_time >> 0) & 0xFF);
-    txfifo_write((fat_time >> 8) & 0xFF);
-    txfifo_write((st.st_mode & S_IFDIR) != 0 ? DE_DIR : 0);
-    txfifo_write((st.st_size >> 0) & 0xFF);
-    txfifo_write((st.st_size >> 8) & 0xFF);
-    txfifo_write((st.st_size >> 16) & 0xFF);
-    txfifo_write((st.st_size >> 24) & 0xFF);
-}
-
-static void esp_getcwd(void) {
-    DBGF("GETCWD\n");
-
-    txfifo_write(0);
-    int len = (int)strlen(state.current_path);
-
-    if (len == 0) {
-        txfifo_write('/');
-    } else {
-        for (int i = 0; i < len; i++) {
-            txfifo_write(state.current_path[i]);
-        }
-    }
-    txfifo_write(0);
-}
-
-static void close_all_descriptors(void) {
-    // Close any open descriptors
-    for (int i = 0; i < MAX_DDS; i++) {
-        if (state.dds[i] != NULL) {
-            direnum_close(state.dds[i]);
-            state.dds[i] = NULL;
-        }
-    }
+AqUartProtocol::AqUartProtocol() {
+    rxBufIdx = 0;
     for (int i = 0; i < MAX_FDS; i++) {
-        if (state.fds[i] != NULL) {
-            fclose(state.fds[i]);
-            state.fds[i] = NULL;
-        }
+        fdVfs[i] = nullptr;
+        fds[i]   = 0;
+    }
+    for (int i = 0; i < MAX_DDS; i++) {
+        deCtxs[i] = nullptr;
+        deIdx[i]  = 0;
     }
 }
 
-static void esp_closeall(void) {
-    DBGF("CLOSEALL\n");
-    close_all_descriptors();
-    txfifo_write(0);
+AqUartProtocol &AqUartProtocol::instance() {
+    static AqUartProtocol *obj = nullptr;
+    if (obj == nullptr)
+        obj = new AqUartProtocol();
+    return *obj;
 }
 
-void esp32_write_data(uint8_t data) {
-    // DBGF("esp32_write_data: %02X\n", data);
-    if (state.basepath == NULL) {
-        txfifo_write(ERR_NO_DISK);
-        return;
-    }
+void AqUartProtocol::init() {
+#ifndef EMULATOR
+    // Initialize UART to FPGA
+    uart_config_t uart_config = {
+        .baud_rate           = 1789773,
+        .data_bits           = UART_DATA_8_BITS,
+        .parity              = UART_PARITY_DISABLE,
+        .stop_bits           = UART_STOP_BITS_1,
+        .flow_ctrl           = UART_HW_FLOWCTRL_CTS_RTS,
+        .rx_flow_ctrl_thresh = 122,
+        .source_clk          = UART_SCLK_DEFAULT,
+    };
+    ESP_ERROR_CHECK(uart_param_config(UART_NUM, &uart_config));
+    ESP_ERROR_CHECK(uart_set_pin(UART_NUM, IOPIN_ESP_RX, IOPIN_ESP_TX, IOPIN_ESP_CTS, IOPIN_ESP_RTS));
 
-    state.rxbuf[state.rxbuf_idx] = data;
-    if (state.rxbuf_idx < sizeof(state.rxbuf) - 1) {
-        state.rxbuf_idx++;
-    }
+    // Setup UART buffered IO with event queue
+    ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uartQueue, 0));
+    uart_pattern_queue_reset(UART_NUM, 20);
 
-    if (state.rxbuf_idx > 0) {
-        uint8_t cmd = state.rxbuf[0];
+    uint32_t baudrate;
+    ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
+    ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
+#endif
 
-        switch (cmd) {
-            case ESPCMD_RESET: {
-                // Close any open descriptors
-                DBGF("RESET\n");
-                close_all_descriptors();
-                free(state.current_path);
-                state.current_path = strdup("");
-                break;
-            }
+    EspVFS::instance().init();
 
-            case ESPCMD_OPEN: {
-                if (data == 0 && state.rxbuf_idx >= 3) {
-                    esp_open(state.rxbuf[1], (const char *)&state.rxbuf[2]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_CLOSE: {
-                if (state.rxbuf_idx == 2) {
-                    esp_close(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_READ: {
-                if (state.rxbuf_idx == 4) {
-                    esp_read(state.rxbuf[1], state.rxbuf[2] | (state.rxbuf[3] << 8));
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_WRITE: {
-                if (state.rxbuf_idx >= 4) {
-                    unsigned len = state.rxbuf[2] | (state.rxbuf[3] << 8);
-                    if (state.rxbuf_idx == 4 + len) {
-                        esp_write(state.rxbuf[1], len, (const char *)&state.rxbuf[4]);
-                        state.rxbuf_idx = 0;
-                    }
-                }
-                break;
-            }
-            case ESPCMD_SEEK: {
-                if (state.rxbuf_idx == 6) {
-                    esp_seek(
-                        state.rxbuf[1],
-                        ((state.rxbuf[2] << 0) |
-                         (state.rxbuf[3] << 8) |
-                         (state.rxbuf[4] << 16) |
-                         (state.rxbuf[5] << 24)));
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_TELL: {
-                if (state.rxbuf_idx == 2) {
-                    esp_tell(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
+#ifndef EMULATOR
+    xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
+#endif
+}
 
-            case ESPCMD_OPENDIR: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_opendir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
+#ifdef EMULATOR
+void AqUartProtocol::writeData(uint8_t data) {
+    receivedByte(data);
+}
 
-            case ESPCMD_CLOSEDIR: {
-                if (state.rxbuf_idx == 2) {
-                    esp_closedir(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-
-            case ESPCMD_READDIR: {
-                if (state.rxbuf_idx == 2) {
-                    esp_readdir(state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-
-            case ESPCMD_DELETE: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_delete((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_RENAME: {
-                if (data == 0) {
-                    if (state.new_path == NULL) {
-                        state.new_path = (const char *)&state.rxbuf[state.rxbuf_idx];
-                    } else {
-                        esp_rename((const char *)&state.rxbuf[1], state.new_path);
-                        state.new_path  = NULL;
-                        state.rxbuf_idx = 0;
-                    }
-                }
-                break;
-            }
-            case ESPCMD_MKDIR: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_mkdir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_CHDIR: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_chdir((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_STAT: {
-                // Wait for zero-termination of path
-                if (data == 0) {
-                    esp_stat((const char *)&state.rxbuf[1]);
-                    state.rxbuf_idx = 0;
-                }
-                break;
-            }
-            case ESPCMD_GETCWD: {
-                esp_getcwd();
-                state.rxbuf_idx = 0;
-                break;
-            }
-            case ESPCMD_CLOSEALL: {
-                esp_closeall();
-                state.rxbuf_idx = 0;
-                break;
-            }
-            case ESPCMD_VERSION: {
-                const char *version = "Emulator";
-                const char *p       = version;
-                while (*p) {
-                    txfifo_write(*(p++));
-                }
-                txfifo_write(0);
-                state.rxbuf_idx = 0;
-                break;
-            }
-            default: {
-                printf("Invalid command: 0x%02X\n", cmd);
-                break;
-            }
-        }
+void AqUartProtocol::writeCtrl(uint8_t data) {
+    if (data & 0x80) {
+        rxBufIdx = 0;
     }
 }
 
-uint8_t esp32_read_data(void) {
-    int data = txfifo_read();
+uint8_t AqUartProtocol::readData() {
+    int data = txFifoRead();
     if (data < 0) {
         printf("esp32_read_data - Empty!\n");
         return 0;
@@ -842,24 +117,697 @@ uint8_t esp32_read_data(void) {
     return data;
 }
 
-void esp32_write_ctrl(uint8_t data) {
-    // DBGF("esp32_write_ctrl: %02X\n", data);
-
-    if (data & 0x80) {
-        state.rxbuf_idx = 0;
-        state.new_path  = NULL;
-    }
-    // if (data & 0x01) {
-    //     state.txfifo_cnt   = 0;
-    //     state.txfifo_rdidx = 0;
-    //     state.txfifo_wridx = 0;
-    // }
-}
-
-uint8_t esp32_read_ctrl(void) {
+uint8_t AqUartProtocol::readCtrl() {
     uint8_t result = 0;
-    if (state.txfifo_cnt > 0) {
+    if (txBufCnt > 0) {
         result |= 1;
     }
     return result;
+}
+#endif
+
+#ifndef EMULATOR
+void AqUartProtocol::_uartEventTask(void *param) {
+    static_cast<AqUartProtocol *>(param)->uartEventTask();
+}
+
+void AqUartProtocol::uartEventTask() {
+    uart_event_t                  event;
+    std::array<uint8_t, BUF_SIZE> buf;
+
+    while (1) {
+        // Waiting for UART event.
+        if (xQueueReceive(uartQueue, (void *)&event, (TickType_t)portMAX_DELAY)) {
+            buf.fill(0);
+            switch (event.type) {
+                // UART data available
+                case UART_DATA:
+                    uart_read_bytes(UART_NUM, buf.data(), event.size, portMAX_DELAY);
+                    for (unsigned i = 0; i < event.size; i++) {
+                        receivedByte(buf[i]);
+                    }
+                    break;
+
+                // HW FIFO overflow detected
+                case UART_FIFO_OVF:
+                    ESP_LOGW(TAG, "HW FIFO overflow");
+                    uart_flush_input(UART_NUM);
+                    xQueueReset(uartQueue);
+                    break;
+
+                // UART ring buffer full
+                case UART_BUFFER_FULL:
+                    ESP_LOGW(TAG, "ring buffer full");
+                    uart_flush_input(UART_NUM);
+                    xQueueReset(uartQueue);
+                    break;
+
+                // UART RX break detected
+                case UART_BREAK:
+                    rxBufIdx = 0;
+                    break;
+
+                case UART_PARITY_ERR: ESP_LOGW(TAG, "UART parity error"); break;
+                case UART_FRAME_ERR: ESP_LOGW(TAG, "UART frame error"); break;
+                default: ESP_LOGW(TAG, "UART event type: %d", event.type); break;
+            }
+        }
+    }
+}
+#endif
+
+#ifdef EMULATOR
+int AqUartProtocol::txFifoRead() {
+    int result = -1;
+    if (txBufCnt > 0) {
+        result = txBuf[txBufRdIdx++];
+        txBufCnt--;
+        if (txBufRdIdx >= sizeof(txBuf)) {
+            txBufRdIdx = 0;
+        }
+    }
+    return result;
+}
+#endif
+
+void AqUartProtocol::txFifoWrite(uint8_t data) {
+#ifndef EMULATOR
+    uart_write_bytes(UART_NUM, &data, 1);
+#else
+    if (txBufCnt >= sizeof(txBuf)) {
+        return;
+    }
+
+    txBuf[txBufWrIdx++] = data;
+    txBufCnt++;
+    if (txBufWrIdx >= sizeof(txBuf)) {
+        txBufWrIdx = 0;
+    }
+#endif
+}
+
+void AqUartProtocol::txFifoWrite(const void *buf, size_t length) {
+#ifndef EMULATOR
+    uart_write_bytes(UART_NUM, buf, length);
+#else
+    auto p = (const uint8_t *)buf;
+    while (length--) {
+        txFifoWrite(*(p++));
+    }
+#endif
+}
+
+void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string> &result) {
+    const char *delimiters = "/\\";
+    size_t      start;
+    size_t      end = 0;
+    while ((start = path.find_first_not_of(delimiters, end)) != std::string::npos) {
+        end = path.find_first_of(delimiters, start);
+        result.push_back(path.substr(start, end - start));
+    }
+}
+
+std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
+    *vfs = &SDCardVFS::instance();
+
+    bool useCwd = true;
+    if (!path.empty() && (path[0] == '/' || path[0] == '\\')) {
+        useCwd = false;
+    } else if (strncasecmp(path.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+        useCwd = false;
+        *vfs   = &EspVFS::instance();
+        path   = path.substr(strlen(ESP_PREFIX));
+    }
+
+    // Split the path into parts
+    std::vector<std::string> parts;
+    if (useCwd) {
+        if (strncasecmp(currentPath.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+            splitPath(currentPath.substr(strlen(ESP_PREFIX)), parts);
+            *vfs = &EspVFS::instance();
+        } else {
+            splitPath(currentPath, parts);
+        }
+    }
+    splitPath(path, parts);
+
+    // Resolve path
+    int idx = 0;
+    while (idx < (int)parts.size()) {
+        if (parts[idx] == ".") {
+            parts.erase(parts.begin() + idx);
+            continue;
+        }
+        if (parts[idx] == "..") {
+            auto iterLast = parts.begin() + idx + 1;
+            if (idx > 0)
+                idx--;
+            auto iterFirst = parts.begin() + idx;
+            parts.erase(iterFirst, iterLast);
+            continue;
+        }
+        idx++;
+    }
+
+    // Compose resolved path
+    std::string result;
+    for (auto &part : parts) {
+        if (!result.empty())
+            result += '/';
+        result += part;
+    }
+    return result;
+}
+
+void AqUartProtocol::closeAllDescriptors() {
+    // Close any open descriptors
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (fdVfs[i] != nullptr) {
+            fdVfs[i]->close(fds[i]);
+            fdVfs[i] = nullptr;
+        }
+    }
+    for (int i = 0; i < MAX_DDS; i++) {
+        deCtxs[i] = nullptr;
+    }
+}
+
+void AqUartProtocol::receivedByte(uint8_t data) {
+    if (rxBufIdx == 0 && data == 0) {
+        // Ignore zero-bytes after break
+        return;
+    }
+
+    rxBuf[rxBufIdx] = data;
+    if (rxBufIdx < sizeof(rxBuf) - 1) {
+        rxBufIdx++;
+    }
+
+    if (rxBufIdx > 0) {
+        uint8_t cmd = rxBuf[0];
+
+        switch (cmd) {
+            case ESPCMD_RESET: {
+                // Close any open descriptors
+                DBGF("RESET\n");
+                cmdReset();
+                break;
+            }
+            case ESPCMD_VERSION: {
+                cmdVersion();
+                rxBufIdx = 0;
+                break;
+            }
+            case ESPCMD_OPEN: {
+                if (data == 0 && rxBufIdx >= 3) {
+                    uint8_t     flags   = rxBuf[1];
+                    const char *pathArg = (const char *)&rxBuf[2];
+                    cmdOpen(flags, pathArg);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_CLOSE: {
+                if (rxBufIdx == 2) {
+                    uint8_t fd = rxBuf[1];
+                    cmdClose(fd);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_READ: {
+                if (rxBufIdx == 4) {
+                    uint8_t  fd   = rxBuf[1];
+                    uint16_t size = rxBuf[2] | (rxBuf[3] << 8);
+                    cmdRead(fd, size);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_WRITE: {
+                if (rxBufIdx >= 4) {
+                    uint8_t     fd   = rxBuf[1];
+                    unsigned    size = rxBuf[2] | (rxBuf[3] << 8);
+                    const void *buf  = &rxBuf[4];
+                    if (rxBufIdx == 4 + size) {
+                        cmdWrite(fd, size, buf);
+                        rxBufIdx = 0;
+                    }
+                }
+                break;
+            }
+            case ESPCMD_SEEK: {
+                if (rxBufIdx == 6) {
+                    uint8_t  fd     = rxBuf[1];
+                    uint32_t offset = (rxBuf[2] << 0) | (rxBuf[3] << 8) | (rxBuf[4] << 16) | (rxBuf[5] << 24);
+                    cmdSeek(fd, offset);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_TELL: {
+                if (rxBufIdx == 2) {
+                    uint8_t fd = rxBuf[1];
+                    cmdTell(fd);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+
+            case ESPCMD_OPENDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    const char *pathArg = (const char *)&rxBuf[1];
+                    cmdOpenDir(pathArg);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_CLOSEDIR: {
+                if (rxBufIdx == 2) {
+                    uint8_t dd = rxBuf[1];
+                    cmdCloseDir(dd);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_READDIR: {
+                if (rxBufIdx == 2) {
+                    uint8_t dd = rxBuf[1];
+                    cmdReadDir(dd);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_DELETE: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    const char *pathArg = (const char *)&rxBuf[1];
+                    cmdDelete(pathArg);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_RENAME: {
+                if (rxBufIdx == 1) {
+                    newPath = nullptr;
+                }
+
+                if (data == 0) {
+                    const char *oldPath = (const char *)&rxBuf[1];
+                    if (newPath == nullptr) {
+                        newPath = (const char *)&rxBuf[rxBufIdx];
+                    } else {
+                        cmdRename(oldPath, newPath);
+                        newPath  = nullptr;
+                        rxBufIdx = 0;
+                    }
+                }
+                break;
+            }
+            case ESPCMD_MKDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    cmdMkDir((const char *)&rxBuf[1]);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_CHDIR: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    cmdChDir((const char *)&rxBuf[1]);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_STAT: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    cmdStat((const char *)&rxBuf[1]);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_GETCWD: {
+                cmdGetCwd();
+                rxBufIdx = 0;
+                break;
+            }
+            case ESPCMD_CLOSEALL: {
+                cmdCloseAll();
+                rxBufIdx = 0;
+                break;
+            }
+            default: {
+                DBGF("Invalid command: 0x%02X\n", cmd);
+                break;
+            }
+        }
+    }
+}
+
+void AqUartProtocol::cmdReset() {
+    closeAllDescriptors();
+    currentPath.clear();
+}
+
+void AqUartProtocol::cmdVersion() {
+    DBGF("VERSION");
+
+#ifdef EMULATOR
+    const char *p = "Emulator";
+#else
+    const char            *p       = "Unknown";
+    const esp_partition_t *running = esp_ota_get_running_partition();
+    esp_app_desc_t         running_app_info;
+    if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
+        p = running_app_info.version;
+    }
+#endif
+    while (*p) {
+        txFifoWrite(*(p++));
+    }
+    txFifoWrite(0);
+}
+
+void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
+    DBGF("OPEN: flags: 0x%02X '%s'\n", flags, pathArg);
+
+    // Find free file descriptor
+    int fd = -1;
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (fdVfs[i] == nullptr) {
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1) {
+        // Error
+        txFifoWrite(ERR_TOO_MANY_OPEN);
+        return;
+    }
+
+    // Compose full path
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    int vfs_fd = vfs->open(flags, path);
+    if (vfs_fd < 0) {
+        txFifoWrite(vfs_fd);
+    } else {
+        fdVfs[fd] = vfs;
+        fds[fd]   = vfs_fd;
+        txFifoWrite(fd);
+    }
+}
+
+void AqUartProtocol::cmdClose(uint8_t fd) {
+    DBGF("CLOSE fd: %d\n", fd);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    txFifoWrite(fdVfs[fd]->close(fds[fd]));
+    fdVfs[fd] = nullptr;
+}
+
+void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
+    DBGF("READ fd: %d  size: %u\n", fd, size);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    int result = fdVfs[fd]->read(fds[fd], size, rxBuf);
+    if (result < 0) {
+        txFifoWrite(result);
+    } else {
+        txFifoWrite(0);
+        txFifoWrite((result >> 0) & 0xFF);
+        txFifoWrite((result >> 8) & 0xFF);
+        txFifoWrite(rxBuf, result);
+    }
+}
+
+void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
+    DBGF("WRITE fd: %d  size: %u\n", fd, size);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    int result = fdVfs[fd]->write(fds[fd], size, data);
+    if (result < 0) {
+        txFifoWrite(result);
+    } else {
+        txFifoWrite(0);
+        txFifoWrite((result >> 0) & 0xFF);
+        txFifoWrite((result >> 8) & 0xFF);
+    }
+}
+
+void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
+    DBGF("SEEK fd: %d  offset: %u\n", fd, (unsigned)offset);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    txFifoWrite(fdVfs[fd]->seek(fds[fd], offset));
+}
+
+void AqUartProtocol::cmdTell(uint8_t fd) {
+    DBGF("TELL fd: %d\n", fd);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    int result = fdVfs[fd]->tell(fds[fd]);
+    if (result < 0) {
+        txFifoWrite(result);
+    } else {
+        txFifoWrite(0);
+        txFifoWrite((result >> 0) & 0xFF);
+        txFifoWrite((result >> 8) & 0xFF);
+        txFifoWrite((result >> 16) & 0xFF);
+        txFifoWrite((result >> 24) & 0xFF);
+    }
+}
+
+void AqUartProtocol::cmdOpenDir(const char *pathArg) {
+    DBGF("OPENDIR: '%s'\n", pathArg);
+
+    // Find free directory descriptor
+    int dd = -1;
+    for (int i = 0; i < MAX_DDS; i++) {
+        if (deCtxs[i] == nullptr) {
+            dd = i;
+            break;
+        }
+    }
+    if (dd == -1) {
+        // Error
+        txFifoWrite(ERR_TOO_MANY_OPEN);
+        return;
+    }
+
+    // Compose full path
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    auto deCtx = vfs->direnum(path);
+    if (!deCtx) {
+        txFifoWrite(ERR_NOT_FOUND);
+    } else {
+        std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
+            // Sort directories at the top
+            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
+                return (a.attr & DE_DIR) != 0;
+            }
+            return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
+        });
+
+        deCtxs[dd] = deCtx;
+        deIdx[dd]  = 0;
+        txFifoWrite(dd);
+    }
+}
+
+void AqUartProtocol::cmdCloseDir(uint8_t dd) {
+    DBGF("CLOSEDIR dd: %d\n", dd);
+
+    if (dd >= MAX_DDS || deCtxs[dd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+    deCtxs[dd] = nullptr;
+    txFifoWrite(0);
+}
+
+void AqUartProtocol::cmdReadDir(uint8_t dd) {
+    DBGF("READDIR dd: %d\n", dd);
+
+    if (dd >= MAX_DDS || deCtxs[dd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    auto ctx = deCtxs[dd];
+    if (deIdx[dd] >= (int)((*ctx).size())) {
+        txFifoWrite(ERR_EOF);
+        return;
+    }
+
+    auto &de = (*ctx)[deIdx[dd]++];
+    txFifoWrite(0);
+    txFifoWrite((de.fdate >> 0) & 0xFF);
+    txFifoWrite((de.fdate >> 8) & 0xFF);
+    txFifoWrite((de.ftime >> 0) & 0xFF);
+    txFifoWrite((de.ftime >> 8) & 0xFF);
+    txFifoWrite(de.attr);
+    txFifoWrite((de.size >> 0) & 0xFF);
+    txFifoWrite((de.size >> 8) & 0xFF);
+    txFifoWrite((de.size >> 16) & 0xFF);
+    txFifoWrite((de.size >> 24) & 0xFF);
+    txFifoWrite(de.filename.c_str(), de.filename.size());
+    txFifoWrite(0);
+}
+
+void AqUartProtocol::cmdDelete(const char *pathArg) {
+    DBGF("DELETE %s\n", pathArg);
+
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+    txFifoWrite(vfs->delete_(path));
+}
+
+void AqUartProtocol::cmdRename(const char *oldArg, const char *newArg) {
+    DBGF("RENAME %s -> %s\n", oldArg, newArg);
+
+    VFS *vfs1     = nullptr;
+    VFS *vfs2     = nullptr;
+    auto _oldPath = resolvePath(oldArg, &vfs1);
+    auto _newPath = resolvePath(newArg, &vfs2);
+    if (!vfs1 || vfs1 != vfs2) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    txFifoWrite(vfs1->rename(_oldPath, _newPath));
+}
+
+void AqUartProtocol::cmdMkDir(const char *pathArg) {
+    DBGF("MKDIR %s\n", pathArg);
+
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+    txFifoWrite(vfs->mkdir(pathArg));
+}
+
+void AqUartProtocol::cmdChDir(const char *pathArg) {
+    DBGF("CHDIR %s\n", pathArg);
+
+    // Compose full path
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    struct stat st;
+    int         result = vfs->stat(path, &st);
+    txFifoWrite(result);
+
+    if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
+        if (vfs == &EspVFS::instance()) {
+            currentPath = std::string(ESP_PREFIX) + path;
+        } else {
+            currentPath = path;
+        }
+    }
+}
+
+void AqUartProtocol::cmdStat(const char *pathArg) {
+    DBGF("STAT %s\n", pathArg);
+
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    struct stat st;
+    int         result = vfs->stat(pathArg, &st);
+
+    txFifoWrite(result);
+    if (result < 0)
+        return;
+
+#ifdef __APPLE__
+    time_t t = st.st_mtimespec.tv_sec;
+#else
+    time_t t = st.st_mtim.tv_sec;
+#endif
+
+    struct tm *tm       = localtime(&t);
+    uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
+    uint16_t   fat_date = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
+
+    txFifoWrite((fat_date >> 0) & 0xFF);
+    txFifoWrite((fat_date >> 8) & 0xFF);
+    txFifoWrite((fat_time >> 0) & 0xFF);
+    txFifoWrite((fat_time >> 8) & 0xFF);
+    txFifoWrite((st.st_mode & S_IFDIR) != 0 ? DE_DIR : 0);
+    txFifoWrite((st.st_size >> 0) & 0xFF);
+    txFifoWrite((st.st_size >> 8) & 0xFF);
+    txFifoWrite((st.st_size >> 16) & 0xFF);
+    txFifoWrite((st.st_size >> 24) & 0xFF);
+}
+
+void AqUartProtocol::cmdGetCwd() {
+    DBGF("GETCWD\n");
+
+    txFifoWrite(0);
+    int len = currentPath.size();
+
+    if (len == 0) {
+        txFifoWrite('/');
+    } else {
+        for (int i = 0; i < len; i++) {
+            txFifoWrite(currentPath[i]);
+        }
+    }
+    txFifoWrite(0);
+}
+
+void AqUartProtocol::cmdCloseAll() {
+    DBGF("CLOSEALL\n");
+    closeAllDescriptors();
+    txFifoWrite(0);
 }

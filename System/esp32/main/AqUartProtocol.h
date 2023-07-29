@@ -52,4 +52,5 @@ private:
     uint8_t       fds[MAX_FDS];
     DirEnumCtx    deCtxs[MAX_DDS];
     int           deIdx[MAX_DDS];
+    const char   *newPath;
 };

@@ -15,7 +15,7 @@ EspVFS &EspVFS::instance() {
     return vfs;
 }
 
-void EspVFS::init(void) {
+void EspVFS::init() {
     EspSettingsConsole::instance().init();
 }
 
@@ -37,7 +37,7 @@ int EspVFS::open(uint8_t flags, const std::string &_path) {
         fileOffset = 0;
         return 0;
     }
-    return -1;
+    return ERR_OTHER;
 }
 
 int EspVFS::read(int fd, size_t size, void *buf) {

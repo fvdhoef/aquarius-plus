@@ -11,6 +11,7 @@
 static const char *TAG = "AqUartProtocol";
 
 #    define UART_NUM (UART_NUM_1)
+#    define BUF_SIZE (1024)
 #endif
 
 enum {
@@ -34,11 +35,14 @@ enum {
     ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
 };
 
-#define BUF_SIZE (1024)
 #define ESP_PREFIX "esp:"
 
 #if 0
-#    define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
+#    ifdef EMULATOR
+#        define DBGF(...) printf(__VA_ARGS__)
+#    else
+#        define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
+#    endif
 #else
 #    define DBGF(...)
 #endif
@@ -63,6 +67,7 @@ AqUartProtocol &AqUartProtocol::instance() {
 }
 
 void AqUartProtocol::init() {
+#ifndef EMULATOR
     // Initialize UART to FPGA
     uart_config_t uart_config = {
         .baud_rate           = 1789773,
@@ -83,11 +88,16 @@ void AqUartProtocol::init() {
     uint32_t baudrate;
     ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
     ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
+#endif
 
     EspVFS::instance().init();
+
+#ifndef EMULATOR
     xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
+#endif
 }
 
+#ifndef EMULATOR
 void AqUartProtocol::_uartEventTask(void *param) {
     static_cast<AqUartProtocol *>(param)->uartEventTask();
 }
@@ -135,13 +145,47 @@ void AqUartProtocol::uartEventTask() {
         }
     }
 }
+#endif
+
+#ifdef EMULATOR
+int AqUartProtocol::txFifoRead() {
+    int result = -1;
+    if (txBufCnt > 0) {
+        result = txBuf[txBufRdIdx++];
+        txBufCnt--;
+        if (txBufRdIdx >= sizeof(txBuf)) {
+            txBufRdIdx = 0;
+        }
+    }
+    return result;
+}
+#endif
 
 void AqUartProtocol::txFifoWrite(uint8_t data) {
+#ifndef EMULATOR
     uart_write_bytes(UART_NUM, &data, 1);
+#else
+    if (txBufCnt >= sizeof(txBuf)) {
+        return;
+    }
+
+    txBuf[txBufWrIdx++] = data;
+    txBufCnt++;
+    if (txBufWrIdx >= sizeof(txBuf)) {
+        txBufWrIdx = 0;
+    }
+#endif
 }
 
 void AqUartProtocol::txFifoWrite(const void *buf, size_t length) {
+#ifndef EMULATOR
     uart_write_bytes(UART_NUM, buf, length);
+#else
+    auto p = (const uint8_t *)buf;
+    while (length--) {
+        txFifoWrite(*(p++));
+    }
+#endif
 }
 
 void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string> &result) {
@@ -169,7 +213,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
     // Split the path into parts
     std::vector<std::string> parts;
     if (useCwd) {
-        if (currentPath.starts_with(ESP_PREFIX)) {
+        if (strncasecmp(currentPath.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
             splitPath(currentPath.substr(strlen(ESP_PREFIX)), parts);
             *vfs = &EspVFS::instance();
         } else {
@@ -180,7 +224,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
 
     // Resolve path
     int idx = 0;
-    while (idx < parts.size()) {
+    while (idx < (int)parts.size()) {
         if (parts[idx] == ".") {
             parts.erase(parts.begin() + idx);
             continue;
@@ -236,7 +280,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
         switch (cmd) {
             case ESPCMD_RESET: {
                 // Close any open descriptors
-                ESP_LOGI(TAG, "RESET");
+                DBGF("RESET\n");
                 cmdReset();
                 break;
             }
@@ -275,9 +319,9 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 if (rxBufIdx >= 4) {
                     uint8_t     fd   = rxBuf[1];
                     unsigned    size = rxBuf[2] | (rxBuf[3] << 8);
-                    const void *data = &rxBuf[4];
+                    const void *buf  = &rxBuf[4];
                     if (rxBufIdx == 4 + size) {
-                        cmdWrite(fd, size, data);
+                        cmdWrite(fd, size, buf);
                         rxBufIdx = 0;
                     }
                 }
@@ -336,7 +380,6 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 break;
             }
             case ESPCMD_RENAME: {
-                static const char *newPath;
                 if (rxBufIdx == 1) {
                     newPath = nullptr;
                 }
@@ -388,7 +431,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 break;
             }
             default: {
-                ESP_LOGE(TAG, "Invalid command: 0x%02X\n", cmd);
+                DBGF("Invalid command: 0x%02X\n", cmd);
                 break;
             }
         }
@@ -403,13 +446,18 @@ void AqUartProtocol::cmdReset() {
 void AqUartProtocol::cmdVersion() {
     DBGF("VERSION");
 
+#ifdef EMULATOR
+    const char *p = "Emulator";
+#else
+    const char            *p       = "Unknown";
     const esp_partition_t *running = esp_ota_get_running_partition();
     esp_app_desc_t         running_app_info;
     if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-        const char *p = running_app_info.version;
-        while (*p) {
-            txFifoWrite(*(p++));
-        }
+        p = running_app_info.version;
+    }
+#endif
+    while (*p) {
+        txFifoWrite(*(p++));
     }
     txFifoWrite(0);
 }
@@ -499,7 +547,7 @@ void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
 }
 
 void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
-    DBGF("SEEK fd: %d  offset: %lu\n", fd, offset);
+    DBGF("SEEK fd: %d  offset: %u\n", fd, (unsigned)offset);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
         txFifoWrite(ERR_PARAM);
@@ -592,7 +640,7 @@ void AqUartProtocol::cmdReadDir(uint8_t dd) {
     }
 
     auto ctx = deCtxs[dd];
-    if (deIdx[dd] >= (*ctx).size()) {
+    if (deIdx[dd] >= (int)((*ctx).size())) {
         txFifoWrite(ERR_EOF);
         return;
     }
@@ -624,19 +672,19 @@ void AqUartProtocol::cmdDelete(const char *pathArg) {
     txFifoWrite(vfs->delete_(path));
 }
 
-void AqUartProtocol::cmdRename(const char *old_arg, const char *new_arg) {
-    DBGF("RENAME %s -> %s\n", old_arg, new_arg);
+void AqUartProtocol::cmdRename(const char *oldArg, const char *newArg) {
+    DBGF("RENAME %s -> %s\n", oldArg, newArg);
 
-    VFS *vfs1    = nullptr;
-    VFS *vfs2    = nullptr;
-    auto oldPath = resolvePath(old_arg, &vfs1);
-    auto newPath = resolvePath(new_arg, &vfs2);
+    VFS *vfs1     = nullptr;
+    VFS *vfs2     = nullptr;
+    auto _oldPath = resolvePath(oldArg, &vfs1);
+    auto _newPath = resolvePath(newArg, &vfs2);
     if (!vfs1 || vfs1 != vfs2) {
         txFifoWrite(ERR_PARAM);
         return;
     }
 
-    txFifoWrite(vfs1->rename(oldPath, newPath));
+    txFifoWrite(vfs1->rename(_oldPath, _newPath));
 }
 
 void AqUartProtocol::cmdMkDir(const char *pathArg) {

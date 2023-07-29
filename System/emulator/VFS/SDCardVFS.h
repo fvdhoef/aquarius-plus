@@ -5,7 +5,7 @@
 #include "VFS.h"
 
 #ifndef EMULATOR
-#define MOUNT_POINT "/sdcard"
+#    define MOUNT_POINT "/sdcard"
 #endif
 
 class SDCardVFS : public VFS {
@@ -13,7 +13,12 @@ class SDCardVFS : public VFS {
 
 public:
     static SDCardVFS &instance();
-    void              init();
+
+#ifdef EMULATOR
+    void init(const std::string &basePath);
+#else
+    void init();
+#endif
 
     // File operations
     int open(uint8_t flags, const std::string &path) override;
@@ -33,4 +38,9 @@ public:
     int stat(const std::string &path, struct stat *st) override;
 
 private:
+    std::string getFullPath(const std::string &path);
+
+#ifdef EMULATOR
+    std::string basePath;
+#endif
 };

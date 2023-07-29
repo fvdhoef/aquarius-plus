@@ -16,7 +16,7 @@
 
 static const char *TAG = "main";
 
-static void init(void) {
+static void init() {
     // Init power LED
     PowerLED::instance().init();
 

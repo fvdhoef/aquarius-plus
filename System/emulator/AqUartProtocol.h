@@ -15,13 +15,20 @@ public:
     void init();
 
 #ifdef EMULATOR
-
+    void    writeCtrl(uint8_t data);
+    void    writeData(uint8_t data);
+    uint8_t readCtrl();
+    uint8_t readData();
 #endif
 
 private:
 #ifndef EMULATOR
     static void _uartEventTask(void *);
     void        uartEventTask();
+#endif
+
+#ifdef EMULATOR
+    int txFifoRead();
 #endif
 
     void        txFifoWrite(uint8_t data);
@@ -60,10 +67,12 @@ private:
     uint8_t     fds[MAX_FDS];
     DirEnumCtx  deCtxs[MAX_DDS];
     int         deIdx[MAX_DDS];
-};
+    const char *newPath;
 
-void    esp32_init(const char *basepath);
-void    esp32_write_ctrl(uint8_t data);
-void    esp32_write_data(uint8_t data);
-uint8_t esp32_read_ctrl(void);
-uint8_t esp32_read_data(void);
+#ifdef EMULATOR
+    uint8_t  txBuf[0x10000 + 16];
+    unsigned txBufWrIdx;
+    unsigned txBufRdIdx;
+    unsigned txBufCnt;
+#endif
+};

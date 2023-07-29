@@ -31,6 +31,9 @@ enum {
 };
 
 struct DirEnumEntry {
+    DirEnumEntry()
+        : size(0), attr(0), fdate(0), ftime(0) {
+    }
     DirEnumEntry(const std::string &filename, uint32_t size, uint8_t attr, uint16_t fdate, uint16_t ftime)
         : filename(filename), size(size), attr(attr), fdate(fdate), ftime(ftime) {
     }
