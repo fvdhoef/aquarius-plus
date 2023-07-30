@@ -1,7 +1,10 @@
 #!/bin/bash
 set -e
 
-idf.py build
+if [ "$1" != "nobuild" ]
+then
+  idf.py build
+fi
 
 NAME=firmware-`git describe`
 

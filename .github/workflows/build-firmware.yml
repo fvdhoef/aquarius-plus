@@ -19,7 +19,7 @@ jobs:
           path: "System/esp32"
       - name: Build release
         run: |
-          cd System/esp32; ./do_release.sh
+          cd System/esp32; ./do_release.sh nobuild
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
