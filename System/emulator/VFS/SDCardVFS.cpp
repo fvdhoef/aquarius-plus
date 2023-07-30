@@ -28,19 +28,6 @@ SDCardVFS &SDCardVFS::instance() {
 
 void SDCardVFS::init(const std::string &_basePath) {
     basePath = _basePath;
-
-    // // Copy basepath (without trailing slash if present)
-    // size_t basepath_len = strlen(basepath);
-    // while (basepath[basepath_len - 1] == '/' ||
-    //        basepath[basepath_len - 1] == '\\') {
-    //     basepath_len--;
-    // }
-    // state.basepath = (char *)malloc(basepath_len + 1);
-    // assert(state.basepath != nullptr);
-    // strncpy(state.basepath, basepath, basepath_len);
-    // state.basepath[basepath_len] = 0;
-
-    printf("basepath: '%s'\n", basePath.c_str());
 }
 
 std::string SDCardVFS::getFullPath(const std::string &path) {
@@ -48,6 +35,7 @@ std::string SDCardVFS::getFullPath(const std::string &path) {
     std::string result = basePath;
     result += "/";
     result += path;
+    stripTrailingSlashes(result);
     return result;
 }
 
@@ -174,7 +162,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
     auto fullPath = getFullPath(path);
 
 #ifndef _WIN32
-    DIR *dir = opendir(fullPath.c_str());
+    DIR *dir = ::opendir(fullPath.c_str());
     if (dir == nullptr) {
         return nullptr;
     }
@@ -194,14 +182,15 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         DirEnumEntry dee;
 #ifndef _WIN32
         // Read directory entry
-        struct dirent *de = readdir(dir);
+        struct dirent *de = ::readdir(dir);
         if (de == NULL) {
             break;
         }
 
         // Read additional file stats
+        std::string filePath = fullPath + "/" + de->d_name;
         struct stat st;
-        if (stat((fullPath + "/" + de->d_name).c_str(), &st) < 0) {
+        if (::stat(filePath.c_str(), &st) < 0) {
             continue;
         }
 
@@ -216,10 +205,6 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         time_t t = st.st_mtim.tv_sec;
 #    endif
 
-        struct tm *tm = localtime(&t);
-        dee.ftime     = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
-        dee.fdate     = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
-
 #else
         if (!first) {
             if (_findnext(handle, &fileinfo) != 0)
@@ -227,20 +212,21 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         }
         first = false;
 
+        // Skip hidden and system files
+        if (fileinfo.attrib & (_A_HIDDEN | _A_SYSTEM))
+            continue;
+
         // Return file entry
         dee.filename = fileinfo.name;
         dee.size     = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
         dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_DIR : 0;
         time_t t     = fileinfo.time_write;
+#endif
 
-        struct tm *tm = localtime(&t);
+        struct tm *tm = ::localtime(&t);
         dee.ftime     = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
         dee.fdate     = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
 
-        // Skip hidden and system files
-        if (fileinfo.attrib & (_A_HIDDEN | _A_SYSTEM))
-            continue;
-#endif
         // Skip files starting with a dot
         if (dee.filename.size() == 0 || dee.filename[0] == '.')
             continue;
@@ -249,9 +235,9 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
     }
 
 #ifndef _WIN32
-    closedir(dir);
+    ::closedir(dir);
 #else
-    _findclose(handle);
+    ::_findclose(handle);
 #endif
 
     return result;

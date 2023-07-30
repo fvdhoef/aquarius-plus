@@ -465,64 +465,65 @@ static void emulate(SDL_Renderer *renderer) {
 }
 
 int main(int argc, char *argv[]) {
-    char *base_path = SDL_GetBasePath();
+    std::string basePath = SDL_GetBasePath();
+    stripTrailingSlashes(basePath);
 
-    char rom_path[1024];
-    snprintf(rom_path, sizeof(rom_path), "%s%s", base_path, "aquarius.rom");
-
-    char cartrom_path[1024];
-    cartrom_path[0] = 0;
-
-    char sdcard_path[1024];
-    sdcard_path[0] = 0;
+    std::string romPath = basePath + "/aquarius.rom";
+    std::string cartRomPath;
+    std::string sdCardPath;
 
     int  opt;
-    bool params_ok = true;
-    while ((opt = getopt(argc, argv, "r:c:XRu:t:")) != -1) {
+    bool paramsOk = true;
+    bool showHelp = false;
+    while ((opt = getopt(argc, argv, "hr:c:u:t:")) != -1) {
         if (opt == '?' || opt == ':') {
-            params_ok = false;
+            paramsOk = false;
             break;
         }
         switch (opt) {
-            case 'r': snprintf(rom_path, sizeof(rom_path), "%s", optarg); break;
-            case 'c': snprintf(cartrom_path, sizeof(cartrom_path), "%s", optarg); break;
-            case 'u': snprintf(sdcard_path, sizeof(sdcard_path), "%s", optarg); break;
+            case 'h': showHelp = true; break;
+            case 'r': romPath = optarg; break;
+            case 'c': cartRomPath = optarg; break;
+            case 'u': sdCardPath = optarg; break;
             case 't': emuState.typeInStr = optarg; break;
-            default: params_ok = false; break;
+            default: paramsOk = false; break;
         }
     }
-    if (optind != argc) {
-        params_ok = false;
+    stripTrailingSlashes(sdCardPath);
+
+    if (optind != argc || showHelp) {
+        paramsOk = false;
     }
-    if (!params_ok) {
-        sdcard_path[0] = 0;
+    if (!paramsOk) {
+        sdCardPath.clear();
     }
 
 #ifdef __APPLE__
-    if (!sdcard_path[0]) {
-        const char *homedir = getpwuid(getuid())->pw_dir;
-        snprintf(sdcard_path, sizeof(sdcard_path), "%s/Documents/AquariusPlusDisk", homedir);
-        mkdir(sdcard_path, 0755);
+    if (sdCardPath.empty()) {
+        std::string homeDir = getpwuid(getuid())->pw_dir;
+        sdCardPath          = homeDir + "/Documents/AquariusPlusDisk";
+        mkdir(sdCardPath.c_str(), 0755);
     }
 #else
-    if (!sdcard_path[0]) {
-        snprintf(sdcard_path, sizeof(sdcard_path), "%s/sdcard", base_path);
+    if (sdCardPath.empty()) {
+        sdCardPath = basePath + "/sdcard";
     }
 #endif
 
-    if (!params_ok) {
+    if (!paramsOk) {
         fprintf(stderr, "Usage: %s <options>\n\n", argv[0]);
         fprintf(stderr, "Options:\n");
-        fprintf(stderr, "-r <path>   Set system ROM image path (default: %saquarius.rom)\n", base_path);
+        fprintf(stderr, "-h          This help screen\n");
+        fprintf(stderr, "-r <path>   Set system ROM image path (default: %s/aquarius.rom)\n", basePath.c_str());
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
-        fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", sdcard_path);
+        fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", sdCardPath.c_str());
         fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
     }
 
     AqUartProtocol::instance().init();
-    SDCardVFS::instance().init(sdcard_path);
+    SDCardVFS::instance().init(sdCardPath.c_str());
 
     emustate_init();
 
@@ -533,9 +534,9 @@ int main(int argc, char *argv[]) {
 
     // Load system ROM
     {
-        FILE *f = fopen(rom_path, "rb");
+        FILE *f = fopen(romPath.c_str(), "rb");
         if (f == NULL) {
-            perror(rom_path);
+            perror(romPath.c_str());
             exit(1);
         }
         if (fread(emuState.flashRom, 1, sizeof(emuState.flashRom), f) < 8192) {
@@ -546,10 +547,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Load cartridge ROM
-    if (cartrom_path[0] != 0) {
-        FILE *f = fopen(cartrom_path, "rb");
+    if (!cartRomPath.empty()) {
+        FILE *f = fopen(cartRomPath.c_str(), "rb");
         if (f == NULL) {
-            perror(cartrom_path);
+            perror(cartRomPath.c_str());
             exit(1);
         }
 
