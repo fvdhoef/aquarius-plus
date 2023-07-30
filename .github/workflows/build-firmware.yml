@@ -33,7 +33,7 @@ jobs:
           name: Firmware_${{ github.ref_name }}
           path: System/esp32/firmware-*.zip
       - name: Release
-        used: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v1
         with:
           prerelease: true
           files:
