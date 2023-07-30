@@ -1,8 +1,10 @@
 on:
   workflow_dispatch:
   push:
-    paths:
-      - System/emulator/**
+    tags:
+      - "V*.*"
+    # paths:
+    #   - System/emulator/**
 
 name: Build Aquarius+ emulator
 run-name: Aquarius+ emulator ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
@@ -21,6 +23,12 @@ jobs:
         with:
           name: AquariusPlusEmu_macOS_${{ github.ref_name }}
           path: System/emulator/build/AquariusPlusEmu_macOS_*.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          prerelease: true
+          files: System/emulator/build/AquariusPlusEmu_macOS_*.zip
 
   build-linux:
     name: Build Linux emulator
@@ -39,7 +47,13 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu_Linux_Ubuntu_${{ github.ref_name }}
-          path: System/emulator/build/AquariusPlusEmu
+          path: System/emulator/build/AquariusPlusEmu_Linux_*.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          prerelease: true
+          files: System/emulator/build/AquariusPlusEmu_Linux_*.zip
 
   build-windows:
     name: Build Windows emulator
@@ -58,8 +72,16 @@ jobs:
           copy System\emulator\windows\SDL2-2.0.20\lib\x64\SDL2.dll System\emulator\windows\x64\Release\AquariusPlusEmu\
           copy System\emulator\aquarius.rom System\emulator\windows\x64\Release\AquariusPlusEmu\
           xcopy /E /I EndUser\sdcard System\emulator\windows\x64\Release\AquariusPlusEmu\sdcard
+          cd System\emulator\windows\x64\Release
+          Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu_Windows_x64_${{ github.ref_name }}.zip
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu_Windows_x64_${{ github.ref_name }}
-          path: System/emulator/windows/x64/Release/AquariusPlusEmu
+          path: System/emulator/windows/x64/Release/AquariusPlusEmu_Windows_x64_*.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          prerelease: true
+          files: System/emulator/windows/x64/Release/AquariusPlusEmu_Windows_x64_*.zip

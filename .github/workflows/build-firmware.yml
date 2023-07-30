@@ -1,5 +1,8 @@
 on:
   workflow_dispatch:
+  push:
+    tags:
+      - "V*.*"
 
 name: Build Aquarius+ firmware
 run-name: Aquarius+ firmware ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
@@ -34,6 +37,7 @@ jobs:
           path: System/esp32/firmware-*.zip
       - name: Release
         uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
           files:
