@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 #include "NimBLEDevice.h"
 
 class BLE : public NimBLEClientCallbacks, NimBLEAdvertisedDeviceCallbacks {

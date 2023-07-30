@@ -1,6 +1,6 @@
 #pragma once
 
-#include "common.h"
+#include "Common.h"
 
 #define WIFI_MIN_RSSI (-100)
 #define WIFI_MAX_RSSI (-55)

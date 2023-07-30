@@ -17,3 +17,11 @@ jobs:
           esp_idf_version: v5.1
           target: esp32s3
           path: "System/esp32"
+      - name: Build release
+        run: |
+          cd System/esp32; ./do_release.sh
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: Firmware_${{ github.ref_name }}
+          path: System/esp32/firmware-*.zip
