@@ -98,6 +98,15 @@ NET "hc2[6]"            LOC = P93;
 NET "hc2[7]"            LOC = P88;
 NET "hc2[8]"            LOC = P85;
 
+NET "ebus_d[0]" PULLUP;
+NET "ebus_d[1]" PULLUP;
+NET "ebus_d[2]" PULLUP;
+NET "ebus_d[3]" PULLUP;
+NET "ebus_d[4]" PULLUP;
+NET "ebus_d[5]" PULLUP;
+NET "ebus_d[6]" PULLUP;
+NET "ebus_d[7]" PULLUP;
+
 NET "hc1[0]" PULLUP;
 NET "hc1[1]" PULLUP;
 NET "hc1[2]" PULLUP;
