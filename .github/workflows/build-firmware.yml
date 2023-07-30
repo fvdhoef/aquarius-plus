@@ -2,7 +2,7 @@ on:
   workflow_dispatch:
 
 name: Build Aquarius+ firmware
-run-name: Build Aquarius+ firmware ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
+run-name: Aquarius+ firmware ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
 
 jobs:
   build:
@@ -32,3 +32,9 @@ jobs:
         with:
           name: Firmware_${{ github.ref_name }}
           path: System/esp32/firmware-*.zip
+      - name: Release
+        used: softprops/action-gh-release@v1
+        with:
+          prerelease: true
+          files:
+            System/esp32/firmware-*.zip
