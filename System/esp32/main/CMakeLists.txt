@@ -58,6 +58,7 @@ idf_component_register(
         "esp_wifi"
         "esp_http_client"
         "esp_http_server"
+        "esp_https_ota"
         "json"
         "app_update"
         "usb"
@@ -69,7 +70,7 @@ idf_component_register(
         "../../rom_src/settings/build/settings.caq"
 
     EMBED_TXTFILES
-        "Assets/letsencrypt_root_certificate.pem"
+        "Assets/root_certificates"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

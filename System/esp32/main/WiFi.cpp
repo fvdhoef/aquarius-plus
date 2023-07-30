@@ -22,10 +22,10 @@ void WiFi::init() {
     RecursiveMutexLock lock(mutex);
 
     // Initialize CA store
-    extern const uint8_t certificate_start[] asm("_binary_letsencrypt_root_certificate_pem_start");
-    extern const uint8_t certificate_end[] asm("_binary_letsencrypt_root_certificate_pem_end");
+    extern const uint8_t certificatesStart[] asm("_binary_root_certificates_start");
+    extern const uint8_t certificatesEnd[] asm("_binary_root_certificates_end");
     ESP_ERROR_CHECK(esp_tls_init_global_ca_store());
-    ESP_ERROR_CHECK(esp_tls_set_global_ca_store(certificate_start, certificate_end - certificate_start));
+    ESP_ERROR_CHECK(esp_tls_set_global_ca_store(certificatesStart, certificatesEnd - certificatesStart));
 
     // Initialize TCP/IP
     ESP_ERROR_CHECK(esp_netif_init());

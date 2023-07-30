@@ -42,4 +42,6 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
-          files: System/esp32/AquariusPlus-Firmware-*.zip
+          files: |
+            System/esp32/AquariusPlus-Firmware-*.zip
+            System/esp32/build/aquarius-plus.bin

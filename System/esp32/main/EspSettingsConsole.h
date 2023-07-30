@@ -29,4 +29,5 @@ private:
     void wifiSet();
     void showDate();
     void systemUpdate();
+    void systemUpdateGitHub();
 };
