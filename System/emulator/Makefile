@@ -10,7 +10,7 @@ else
     detected_OS := $(patsubst MINGW%,MSYS,$(detected_OS))
 endif
 
-VERSION_STR  := $(shell date -u "+%Y-%m-%d")_$(shell git describe --always)
+VERSION_STR  := $(shell git describe --always)
 
 INC_DIRS    += . VFS libz80
 SRC_DIRS    += . VFS
@@ -78,7 +78,7 @@ ifeq ($(detected_OS),Darwin)
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu
 	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Resources/
 	@sed -i '' 's/#VERSION#/$(VERSION_STR)/' $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Info.plist
-	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu_macOS_$(VERSION_STR).zip AquariusPlusEmu.app
+	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu-macOS-$(VERSION_STR).zip AquariusPlusEmu.app
 endif
 
 ifeq ($(detected_OS),Linux)
@@ -88,7 +88,7 @@ ifeq ($(detected_OS),Linux)
 	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu/
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu/
 	@cp -r ../../EndUser/sdcard $(BUILD_DIR)/AquariusPlusEmu/
-	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu_Linux_$(VERSION_STR).zip AquariusPlusEmu
+	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu-Linux-$(VERSION_STR).zip AquariusPlusEmu
 endif
 
 $(C_OBJS): $(BUILD_DIR)/%.o: %.c

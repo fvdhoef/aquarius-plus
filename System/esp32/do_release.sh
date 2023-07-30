@@ -6,7 +6,7 @@ then
   idf.py build
 fi
 
-NAME=firmware-`git describe`
+NAME=AquariusPlus-Firmware-`git describe`
 
 # Remove temp directory and zip if existant
 rm -rf $NAME $NAME.zip
