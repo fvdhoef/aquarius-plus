@@ -1,25 +1,18 @@
-![Aquarius+ Logo](EndUser/images/aquarius_plus_logo_BLUE.png)
+![Aquarius+ Logo](../EndUser/images/aquarius_plus_logo_BLUE.png)
 
-**Next-generation Z80-based retro computer system**
+**Maker's Guide to Manufacturing an Aquarius+**
 
 ## Abstract:
 
-What would the Aquarius have evolved into if Mattel hadn't abandoned the system back in 1984? The Aquarius+ is the next-generation of Z80-based 8-bit hardware for the Aquarius platform. The intent is to deliver a cost-effective, backwards-compatible retro computer system that both developers and nostalgists will love and use, all in the spirit of the original, orphaned Aquarius platform.
+This folder contains all the items necessary for a Maker to manufacture and assemble an Aquarius+ computer. For simplicity, this guide is currently geared towards using [JLCPCB](https://jlcpcb.com). Other vendors can absolutely be used, but this is the easiest path we have found.
 
-![Aquarius Case](System/case/case%20v25%20crop.png)
+## Overview of the Manufacturing Process:
 
-## Features:
+1. Upload the BOM to order and pay for the components for your JLCPCB parts inventory.
+2. Order the PCB, upload the BOM and CPL1 files, verify placement, pay for the order.
+3. Receive, clean, and install PCBs into cases, load firmware.
 
-- Backward compatibility with existing Aquarius hardware and software
-- Modern, flexible video solution that supports bitmapped graphics, sprites, and tiles, delivered through clean VGA output
-- Dual AY sound chips (virtual) for six sound voices
-- 512kb of paged RAM in four 16k banks
-- Reworked SYSROM and programmable CHARROM
-- Integrated SD card and commands (remove dependency on cassette loading)
-- WiFi connectivity
-- Bluetooth connectivity for modern game controllers
-
-## Folder structure
+## Folder Contents
 
 | Directory           | Description                                                                                                                                                                     |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
