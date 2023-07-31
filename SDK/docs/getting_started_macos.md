@@ -1,4 +1,4 @@
-# Getting started on Macos
+# Getting started on MacOS
 
 This guide will explain how to get a development environment set up on your Mac for Aquarius+ development.
 These instructions assume you're running MacOS Ventura, but probably work on old versions.
