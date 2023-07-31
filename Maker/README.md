@@ -8,14 +8,14 @@ This folder contains all the items necessary for a Maker to manufacture and asse
 
 ## Overview of the Manufacturing Process:
 
-1. Upload the BOM to order and pay for the components for your JLCPCB parts inventory.
-2. Order the PCB, upload the BOM and CPL1 files, verify placement, pay for the order.
-3. Receive, clean, and install PCBs into cases, load firmware.
+1. Order the parts.
+2. Order the PCB.
+3. Assemble the Aquarius+.
 
 ## Folder Contents
 
-| Directory           | Description                                                                                                                                                                     |
-| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [EndUser](EndUser/) | These files are meant for the normal end-user, that just wants to play and work with the system. You can find some nice sample programs, games and music to run on system here. |
-| [SDK](SDK/)         | If you want to develop your own software for the Aquarius+, look here.                                                                                                          |
-| [System](System/)   | This contains all other files related to the system, including: Schematics/PCB, FPGA, ESP32, Emulator                                                                           |
+| Directory              | Description                                                                                           |
+| ---------------------- | ----------------------------------------------------------------------------------------------------- |
+| aqplus_revX_XXXXXX.zip | Gerber file, contains files that describe the various layers and manufacturing details of the PCB.    |
+| aqplus_revX_BOM.xlsx   | Bill of Materials file, formatted to JLCPCB specifications, including their part numbers.             |
+| aqplus_revX_CPL1.xlsx  | Component Placement Listing file, giving the coordinates, rotation, and part identifiers for the PCB. |
