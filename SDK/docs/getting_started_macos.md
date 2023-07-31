@@ -39,10 +39,10 @@ Now set the following environment variables:
 
 | Name            | Description                                                                                                                                                                                               |
 | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `AQPLUS_SDK``      | Path to the Aquarius+ SDK folder, for example `/Users/jkonrath/Documents/GitHub/aquarius-plus/SDK`                                                                                                                                            |
+| `AQPLUS_SDK`      | Path to the Aquarius+ SDK folder, for example `/Users/jkonrath/Documents/GitHub/aquarius-plus/SDK`                                                                                                                                            |
 | `AQPLUS_HOST`     | (defaults to `aqplus`)<br>Hostname (or IP address) of your real Aquarius+. Used for easily remotely running code from your PC on your Aquarius+.                                                               |
 | `AQPLUS_EMU`      | (defaults to `open -a AquariusPlusEmu --args`)<br>Full path to the Aquarius+ emulator executable. (The default doesn't work for me; I had to set this to `"open -a /Users/jkonrath/Documents/GitHub/aquarius-plus/System/emulator/build/AquariusPlusEmu.app --args"`)                                                                                |
-| `AQPLUS_EMU_DISK` | (defaults to `$(HOME)/Documents/AquariusPlusDisk/`)<br>Full path to a directory that the emulator uses as disk. The Makefile will install your application here when you run it via the Makefile. |
+| `AQPLUS_EMU_DISK` | (defaults to `$(HOME)/Documents/AquariusPlusDisk/`)<br>Full path to a directory that the emulator uses as disk. The Makefile will install your application here when you run it from the Makefile. |
 
 In bash, you can set these environment variables like this:
 ```sh
@@ -72,16 +72,16 @@ There are many more useful extensions, but the ones mentioned above will suffice
 ## Step 5: Try out your setup
 
 - Start Visual Studio Code.
-- Open an example project folder from the SDK folder using the **File > Open Folder...** menu item, for example **SDK\examples\hello_world**
+- Open an example project folder from the SDK folder using the **File > Open Folder...** menu item, for example **SDK/examples/hello_world**
 - You can click the **main.c** file to see the source code for this example.
 - Press CTRL+SHIFT+B to run a build task. A list will open where you can select several different options. Choose **Run project in emulator** from this menu. If everything is set up correctly, this will build your project. Copy the files into the emulator's sdcard directory, start the emulator and run your program.
 
-Each of the example projects in the SDK contain a **.vscode** directory. This directory contains 2 important files:
+Each of the example projects in the SDK contain a `.vscode` directory. This directory contains two important files:
 
 | Name                  | Description                                                                                                                    |
 | --------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| tasks.json            | This file contains the tasks that are available in the CTRL+SHIFT+B menu.                                                      |
-| c_cpp_properties.json | This file contains settings used by Visual Studio Code for its Intellisense feature, providing code completion and navigation. |
+| `tasks.json`           | This file contains the tasks that are available in the CTRL+SHIFT+B menu.                                                      |
+| `c_cpp_properties.json` | This file contains settings used by Visual Studio Code for its Intellisense feature, providing code completion and navigation. |
 
 When you copy an example project folder to create your own program make sure to include these files to get a working setup.
 
