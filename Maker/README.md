@@ -9,7 +9,7 @@ This folder contains all the items necessary for a Maker to manufacture and asse
 ## Overview of the Manufacturing Process:
 
 1. Order the parts.
-2. Order the PCB.
+2. Order the assembled PCBs.
 3. Assemble the Aquarius+.
 
 ## Folder Contents
