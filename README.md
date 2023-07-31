@@ -24,5 +24,6 @@ What would the Aquarius have evolved into if Mattel hadn't abandoned the system 
 | Directory           | Description                                                                                                                                                                     |
 | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [EndUser](EndUser/) | These files are meant for the normal end-user, that just wants to play and work with the system. You can find some nice sample programs, games and music to run on system here. |
+| [Maker](Maker/)     | Files required for makers to manufacture and assemble an Aquarius+ system.                                                                                                      |
 | [SDK](SDK/)         | If you want to develop your own software for the Aquarius+, look here.                                                                                                          |
 | [System](System/)   | This contains all other files related to the system, including: Schematics/PCB, FPGA, ESP32, Emulator                                                                           |
