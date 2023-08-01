@@ -10,6 +10,11 @@
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 
+#if _WIN32
+#include <Windows.h>
+#include <shlobj.h>
+#endif
+
 static uint8_t mem_read(size_t param, uint16_t addr) {
     (void)param;
 
@@ -503,6 +508,17 @@ int main(int argc, char *argv[]) {
         std::string homeDir = getpwuid(getuid())->pw_dir;
         sdCardPath          = homeDir + "/Documents/AquariusPlusDisk";
         mkdir(sdCardPath.c_str(), 0755);
+    }
+#elif _WIN32
+    if (sdCardPath.empty()) {
+        PWSTR path = NULL;
+        char  path2[MAX_PATH];
+        SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
+        WideCharToMultiByte(CP_UTF8, 0, path, -1, path2, sizeof(path2), NULL, NULL);
+        CoTaskMemFree(path);
+
+        sdCardPath = std::string(path2) + "/AquariusPlusDisk";
+        mkdir(sdCardPath.c_str());
     }
 #else
     if (sdCardPath.empty()) {

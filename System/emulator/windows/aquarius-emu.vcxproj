@@ -26,6 +26,7 @@
     <ClCompile Include="..\EmuState.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
+    <ClCompile Include="..\Version.cpp" />
     <ClCompile Include="..\VFS\EspVFS.cpp" />
     <ClCompile Include="..\VFS\SDCardVFS.cpp" />
     <ClCompile Include="..\VFS\VFS.cpp" />

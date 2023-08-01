@@ -477,7 +477,8 @@ void AqUartProtocol::cmdVersion() {
     DBGF("VERSION");
 
 #ifdef EMULATOR
-    const char *p = "Emulator";
+    extern const char *versionStr;
+    const char *p = versionStr;
 #else
     const char            *p       = "Unknown";
     const esp_partition_t *running = esp_ota_get_running_partition();
