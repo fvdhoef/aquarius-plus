@@ -1,0 +1,3 @@
+(fp_lib_table
+  (lib (name "aquarius-plus")(type "KiCad")(uri "${KIPRJMOD}/aquarius-plus.pretty")(options "")(descr ""))
+)
