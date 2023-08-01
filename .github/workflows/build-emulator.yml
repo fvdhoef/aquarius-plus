@@ -21,7 +21,9 @@ jobs:
       - name: Get all Git tags
         run: git fetch --tags -f
       - name: Building macOS emulator
-        run: make -C System/emulator
+        run: |
+          echo "const char *versionStr = \"`git describe`\";"; > System/emulator/Version.cpp
+          make -C System/emulator
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -50,7 +52,9 @@ jobs:
           sudo apt-get update -y -qq
           sudo apt-get install libsdl2-dev
       - name: Building Linux emulator
-        run: make -C System/emulator
+        run: |
+          echo "const char *versionStr = \"`git describe`\";"; > System/emulator/Version.cpp
+          make -C System/emulator
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
@@ -76,7 +80,10 @@ jobs:
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
       - name: Build app for release
-        run: msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:normal -property:Configuration=Release -property:Platform=x64
+        run: |
+          $VERSION=git desribe
+          echo "const char *versionStr = ""$VERSION"";" > System\emulator\Version.cpp
+          msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:normal -property:Configuration=Release -property:Platform=x64
       - name: Creating release directory structure
         run: |
           mkdir System\emulator\windows\x64\Release\AquariusPlusEmu
