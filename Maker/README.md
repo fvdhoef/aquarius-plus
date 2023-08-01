@@ -14,8 +14,9 @@ This folder contains all the items necessary for a Maker to manufacture and asse
 
 ## Folder Contents
 
-| Directory              | Description                                                                                           |
-| ---------------------- | ----------------------------------------------------------------------------------------------------- |
-| aqplus_revX_XXXXXX.zip | Gerber file, contains files that describe the various layers and manufacturing details of the PCB.    |
-| aqplus_revX_BOM.xlsx   | Bill of Materials file, formatted to JLCPCB specifications, including their part numbers.             |
-| aqplus_revX_CPL1.xlsx  | Component Placement Listing file, giving the coordinates, rotation, and part identifiers for the PCB. |
+| Directory                   | Description                                                                                           |
+| --------------------------- | ----------------------------------------------------------------------------------------------------- |
+| aqp_prod_label_template.pdf | Template for creating a label for the bottom of the Aquarius+.                                        |
+| aqplus_revX_XXXXXX.zip      | Gerber file, contains files that describe the various layers and manufacturing details of the PCB.    |
+| aqplus_revX_BOM.xlsx        | Bill of Materials file, formatted to JLCPCB specifications, including their part numbers.             |
+| aqplus_revX_CPL1.xlsx       | Component Placement Listing file, giving the coordinates, rotation, and part identifiers for the PCB. |
