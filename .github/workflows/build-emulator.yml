@@ -79,31 +79,29 @@ jobs:
         run: git fetch --tags -f
       # - name: Add msbuild to PATH
       #   uses: microsoft/setup-msbuild@v1.1
-      - name: Setup VS Dev Environment
-        uses: seanmiddleditch/gha-setup-vsdevenv@v4
+      # - name: Setup VS Dev Environment
+      #   uses: seanmiddleditch/gha-setup-vsdevenv@v4
       - name: Build app for release
         run: |
           $VERSION=git describe
           echo "const char *versionStr = ""$VERSION"";" > System\emulator\Version.cpp
-          devenv.com System\emulator\windows\Installer\Installer.vdproj /Rebuild Release
+          $VSPATH=& "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere" -property installationPath
+          $DEVENV_COM="$VSPATH\Common7\IDE\devenv.com"
+          & $DEVENV_COM System\emulator\windows\Installer\Installer.vdproj /Build Release
+          Rename-Item System\emulator\windows\Installer\Release\AquariusPlusEmu_Installer.msi System\emulator\windows\Installer\Release\AquariusPlusEmu-Windows-$VERSION.msi
+
         # msbuild System\emulator\windows\aquarius-emu.vcxproj -t:rebuild -verbosity:normal -property:Configuration=Release -property:Platform=x64
-      # - name: Creating release directory structure
-      #   run: |
-      #     mkdir System\emulator\windows\x64\Release\AquariusPlusEmu
-      #     copy System\emulator\windows\x64\Release\aquarius-emu.exe System\emulator\windows\x64\Release\AquariusPlusEmu\
-      #     copy System\emulator\windows\SDL2-2.0.20\lib\x64\SDL2.dll System\emulator\windows\x64\Release\AquariusPlusEmu\
-      #     copy System\emulator\aquarius.rom System\emulator\windows\x64\Release\AquariusPlusEmu\
-      #     xcopy /E /I EndUser\sdcard System\emulator\windows\x64\Release\AquariusPlusEmu\sdcard
-      #     cd System\emulator\windows\x64\Release
-      #     Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-${{ github.ref_name }}.zip
+        # devenv.com System\emulator\windows\Installer\Installer.vdproj /Build Release
+        # Rename-Item System/emulator/windows/Installer/Release/AquariusPlusEmu_Installer.msi System/emulator/windows/Installer/Release/AquariusPlusEmu-Windows-$VERSION.msi
+
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
-          path: System/emulator/windows/Installer/Release/AquariusPlusEmu_Installer.msi
+          path: System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
-          files: System/emulator/windows/x64/Release/AquariusPlusEmu-Windows-x64-*.zip
+          files: System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
