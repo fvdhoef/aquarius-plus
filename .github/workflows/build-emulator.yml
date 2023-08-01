@@ -77,8 +77,10 @@ jobs:
           fetch-depth: 0
       - name: Get all Git tags
         run: git fetch --tags -f
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
+      # - name: Add msbuild to PATH
+      #   uses: microsoft/setup-msbuild@v1.1
+      - name: Setup VS Dev Environment
+        uses: seanmiddleditch/gha-setup-vsdevenv@v4
       - name: Build app for release
         run: |
           $VERSION=git describe
