@@ -9,8 +9,12 @@ This folder contains all the items necessary for a Maker to manufacture and asse
 ## Overview of the Manufacturing Process:
 
 1. Order the parts.
-2. Order the assembled PCBs.
-3. Assemble the Aquarius+.
+    - On the [JLCPCB](https://jlcpcb.com) main site, log in and go to Parts Manager, then Order Parts, then JLCPCB Parts.
+    - From the JLCPCB Assembly Parts page, select BOM Tool.
+    - Upload the aqplus_revX_BOM.xlsx file to the site. From the pop-up, select the number of PCBs you want to manufacture. This multiplies the quantities for you for each item.
+    - (more to come)
+3. Order the assembled PCBs.
+4. Assemble the Aquarius+.
 
 ## Folder Contents
 
