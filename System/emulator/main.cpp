@@ -1,7 +1,7 @@
 #include "Common.h"
 #include <SDL.h>
 #ifndef _WIN32
-#undef main
+#    undef main
 #endif
 
 #include "EmuState.h"
@@ -13,8 +13,8 @@
 #include "SDCardVFS.h"
 
 #if _WIN32
-#include <Windows.h>
-#include <shlobj.h>
+#    include <Windows.h>
+#    include <shlobj.h>
 #endif
 
 static uint8_t mem_read(size_t param, uint16_t addr) {
@@ -513,13 +513,13 @@ int main(int argc, char *argv[]) {
     }
 #elif _WIN32
     if (sdCardPath.empty()) {
-        //PWSTR path = NULL;
-        //char  path2[MAX_PATH];
-        //SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
-        //WideCharToMultiByte(CP_UTF8, 0, path, -1, path2, sizeof(path2), NULL, NULL);
-        //CoTaskMemFree(path);
+        // PWSTR path = NULL;
+        // char  path2[MAX_PATH];
+        // SHGetKnownFolderPath(FOLDERID_Documents, 0, NULL, &path);
+        // WideCharToMultiByte(CP_UTF8, 0, path, -1, path2, sizeof(path2), NULL, NULL);
+        // CoTaskMemFree(path);
 
-        //sdCardPath = std::string(path2) + "/AquariusPlusDisk";
+        // sdCardPath = std::string(path2) + "/AquariusPlusDisk";
         sdCardPath = basePath + "/sdcard";
     }
     mkdir(sdCardPath.c_str());
