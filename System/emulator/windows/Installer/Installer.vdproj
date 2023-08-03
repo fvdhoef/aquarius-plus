@@ -626,15 +626,15 @@
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_543E42458B344B1386CCEBDE298F58A9"
             {
             "Name" = "8:Aquarius+ emulator"
-            "Arguments" = "8:"
+            "Arguments" = "8:-u [PersonalFolder]\\AquariusPlusDisk"
             "Description" = "8:"
             "ShowCmd" = "3:1"
-            "IconIndex" = "3:0"
+            "IconIndex" = "3:105"
             "Transitive" = "11:FALSE"
             "Target" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
             "Folder" = "8:_571ED69D89D44A60A3C831F84CE2DE8D"
             "WorkingFolder" = "8:"
-            "Icon" = "8:"
+            "Icon" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
             "Feature" = "8:"
             }
         }

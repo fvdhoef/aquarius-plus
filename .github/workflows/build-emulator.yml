@@ -85,11 +85,22 @@ jobs:
           $DEVENV_COM="$VSPATH\Common7\IDE\devenv.com"
           & $DEVENV_COM System\emulator\windows\Installer\Installer.vdproj /Build Release
           Rename-Item System\emulator\windows\Installer\Release\AquariusPlusEmu_Installer.msi AquariusPlusEmu-Windows-$VERSION.msi
+      - name: Creating release directory structure
+        run: |
+          mkdir System\emulator\windows\x64\Release\AquariusPlusEmu
+          copy System\emulator\windows\x64\Release\aquarius-emu.exe System\emulator\windows\x64\Release\AquariusPlusEmu\
+          copy System\emulator\windows\SDL2-2.0.20\lib\x64\SDL2.dll System\emulator\windows\x64\Release\AquariusPlusEmu\
+          copy System\emulator\aquarius.rom System\emulator\windows\x64\Release\AquariusPlusEmu\
+          xcopy /E /I EndUser\sdcard System\emulator\windows\x64\Release\AquariusPlusEmu\sdcard
+          cd System\emulator\windows\x64\Release
+          Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-portable-$VERSION.zip
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
-          path: System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
+          path: |
+            System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
+            System/emulator/windows/x64/Release/AquariusPlusEmu-Windows-x64-portable-$VERSION.zip
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
