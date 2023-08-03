@@ -431,12 +431,13 @@ The keyboard buffer can be accessed via the **KEYBUF** register at IO port $FA/2
 The keyboard buffer can be operated in 2 different modes: **scancode mode** or **ASCII mode**.
 The mode is configured via the **KEYMODE** command via the ESP32 interface. The keyboard buffer mode flags are as follows:
 
-| Bit | Description                   |
-| --- | ----------------------------- |
-| 0   | Enable keyboard buffer        |
-| 1   | 0:Scancode mode, 1:ASCII mode |
-| 2   | Auto-repeat                   |
-| 3-7 | Unused                        |
+| Bit | Description                                                                          |
+| --- | ------------------------------------------------------------------------------------ |
+| 0   | Enable keyboard buffer                                                               |
+| 1   | 0:Scancode mode, 1:ASCII mode                                                        |
+| 2   | Auto-repeat                                                                          |
+| 3   | 0:Send modifier keys combined as left-modifier keys, 1:Send modifier keys separately |
+| 4-7 | Unused                                                                               |
 
 When bit 0 is disabled, no new keys will be added to the keyboard buffer. Any keys still in the keyboard buffer will remain and have to be manually cleared by reading the **KEYBUF** register repeatedly until 0 is returned.
 When the auto-repeat bit is set, the pressed key is repeated after an initial delay (250ms) at 30 characters per second.
@@ -450,21 +451,21 @@ Bit 6-0 contains the scancode.
 
 The following scancode are defined:
 
-|     | x0  | x1  | x2  |  x3   |  x4  |  x5   |  x6   |  x7   |   x8    |   x9   |  xA  |  xB  |  xC   | xD  |  xE  | xF  |
-| :-: | :-: | :-: | :-: | :---: | :--: | :---: | :---: | :---: | :-----: | :----: | :--: | :--: | :---: | :-: | :--: | :-: |
-| 0x  |     |     |     |       |  A   |   B   |   C   |   D   |    E    |   F    |  G   |  H   |   I   |  J  |  K   |  L  |
-| 1x  |  M  |  N  |  O  |   P   |  Q   |   R   |   S   |   T   |    U    |   V    |  W   |  X   |   Y   |  Z  |  1   |  2  |
-| 2x  |  3  |  4  |  5  |   6   |  7   |   8   |   9   |   0   |  Enter  |  Esc   | Bksp | Tab  | Space |  -  |  =   | \[  |
-| 3x  | \]  | \\  |     |   ;   |  '   |   `   |   ,   |   .   |    /    | CapsLk |  F1  |  F2  |  F3   | F4  |  F5  | F6  |
-| 4x  | F7  | F8  | F9  |  F10  | F11  |  F12  | PrScr | ScrLk |  Pause  | Insert | Home | PgUp |  Del  | End | PgDn |  →  |
-| 5x  |  ←  |  ↓  |  ↑  | NumLk | Kp/  | Kp\*  |  Kp-  |  Kp+  | KpEnter |  Kp1   | Kp2  | Kp3  |  Kp4  | Kp5 | Kp6  | Kp7 |
-| 6x  | Kp8 | Kp9 | Kp0 |  Kp.  | Ctrl | Shift |  Alt  |  Gui  |         |        |      |      |       |     |      |     |
-| 7x  |     |     |     |       |      |       |       |       |         |        |      |      |       |     |      |     |
+|     |  x0   |   x1   |  x2  |  x3   |  x4   |   x5   |  x6   |  x7   |   x8    |   x9   |  xA  |  xB  |  xC   | xD  |  xE  | xF  |
+| :-: | :---: | :----: | :--: | :---: | :---: | :----: | :---: | :---: | :-----: | :----: | :--: | :--: | :---: | :-: | :--: | :-: |
+| 0x  |       |        |      |       |   A   |   B    |   C   |   D   |    E    |   F    |  G   |  H   |   I   |  J  |  K   |  L  |
+| 1x  |   M   |   N    |  O   |   P   |   Q   |   R    |   S   |   T   |    U    |   V    |  W   |  X   |   Y   |  Z  |  1   |  2  |
+| 2x  |   3   |   4    |  5   |   6   |   7   |   8    |   9   |   0   |  Enter  |  Esc   | Bksp | Tab  | Space |  -  |  =   | \[  |
+| 3x  |  \]   |   \\   |      |   ;   |   '   |   `    |   ,   |   .   |    /    | CapsLk |  F1  |  F2  |  F3   | F4  |  F5  | F6  |
+| 4x  |  F7   |   F8   |  F9  |  F10  |  F11  |  F12   | PrScr | ScrLk |  Pause  | Insert | Home | PgUp |  Del  | End | PgDn |  →  |
+| 5x  |   ←   |   ↓    |  ↑   | NumLk |  Kp/  |  Kp\*  |  Kp-  |  Kp+  | KpEnter |  Kp1   | Kp2  | Kp3  |  Kp4  | Kp5 | Kp6  | Kp7 |
+| 6x  |  Kp8  |  Kp9   | Kp0  |  Kp.  |       |  App   |       |       |   F13   |  F14   | F15  |      |       |     |      |     |
+| 7x  | LCtrl | LShift | LAlt | LGui  | RCtrl | RShift | RAlt  | RGui  |         |        |      |      |       |     |      |     |
 
-Scancodes 0x04-0x63 (4-99) are identical to the USB HID scancodes.
+Scancodes 0x04-0x6F (4-111) are identical to the USB HID scancodes.
 Scancodes for the modifier keys are remapped to fit in the 7-bit scancode space. Left / Right modifier keys are combined and don't have separate scancodes.
 
-When auto-repeat is on only the pressed state (bit 7=1) is repeated. Modifier keys don't have auto-repeat.
+When auto-repeat is on, only the pressed state (bit 7=1) is repeated. Modifier keys don't have auto-repeat.
 
 ## ASCII mode
 
@@ -472,40 +473,41 @@ A value of 0 indicates that the key buffer is empty.
 
 The following control codes are generated (ASCII 1-31):
 
-| ASCII | Ctrl-equivalent | Key       |
-| ----- | --------------- | --------- |
-| 1     | CTRL-A          |           |
-| 2     | CTRL-B          |           |
-| 3     | CTRL-C          | Escape    |
-| 4     | CTRL-D          |           |
-| 5     | CTRL-E          |           |
-| 6     | CTRL-F          |           |
-| 7     | CTRL-G          |           |
-| 8     | CTRL-H          | Backspace |
-| 9     | CTRL-I          | Tab       |
-| 10    | CTRL-J          |           |
-| 11    | CTRL-K          |           |
-| 12    | CTRL-L          |           |
-| 13    | CTRL-M          | Enter     |
-| 14    | CTRL-N          |           |
-| 15    | CTRL-O          |           |
-| 16    | CTRL-P          |           |
-| 17    | CTRL-Q          |           |
-| 18    | CTRL-R          |           |
-| 19    | CTRL-S          |           |
-| 20    | CTRL-T          |           |
-| 21    | CTRL-U          |           |
-| 22    | CTRL-V          |           |
-| 23    | CTRL-W          |           |
-| 24    | CTRL-X          |           |
-| 25    | CTRL-Y          |           |
-| 26    | CTRL-Z          |           |
-| 27    | CTRL-\[         |           |
-| 28    | CTRL-\\         |           |
-| 29    | CTRL-\]         |           |
-| 30    | CTRL-^          |           |
-| 31    | CTRL-\_         |           |
-| 127   |                 | Delete    |
+| ASCII | Ctrl-equivalent | Key                           |
+| ----- | --------------- | ----------------------------- |
+| 1     | CTRL-A          |                               |
+| 2     | CTRL-B          |                               |
+| 3     | CTRL-C          | Escape                        |
+| 4     | CTRL-D          |                               |
+| 5     | CTRL-E          |                               |
+| 6     | CTRL-F          |                               |
+| 7     | CTRL-G          |                               |
+| 8     | CTRL-H          | Backspace                     |
+| 9     | CTRL-I          | Tab                           |
+| 10    | CTRL-J          |                               |
+| 11    | CTRL-K          |                               |
+| 12    | CTRL-L          |                               |
+| 13    | CTRL-M          | Enter                         |
+| 14    | CTRL-N          |                               |
+| 15    | CTRL-O          |                               |
+| 16    | CTRL-P          |                               |
+| 17    | CTRL-Q          |                               |
+| 18    | CTRL-R          |                               |
+| 19    | CTRL-S          |                               |
+| 20    | CTRL-T          |                               |
+| 21    | CTRL-U          |                               |
+| 22    | CTRL-V          |                               |
+| 23    | CTRL-W          |                               |
+| 24    | CTRL-X          |                               |
+| 25    | CTRL-Y          |                               |
+| 26    | CTRL-Z          |                               |
+| 27    | CTRL-\[         |                               |
+| 28    | CTRL-\\         |                               |
+| 29    | CTRL-\]         |                               |
+| 30    | CTRL-^          |                               |
+| 31    | CTRL-\_         |                               |
+| 127   |                 | Delete                        |
+| 128   |                 | Remap of character 0 (CTRL-@) |
 
 # ESP32 interface (ESPCTRL/ESPDATA)
 
