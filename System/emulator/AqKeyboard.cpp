@@ -409,6 +409,7 @@ void AqKeyboard::pressKey(unsigned char ch, bool keyDown) {
     if (val & FLAG_CTRL)
         handleScancode(SCANCODE_LCTRL, keyDown);
     handleScancode(val & 0x3F, keyDown);
+    AqKeyboard::instance().updateMatrix();
 }
 #else
 void AqKeyboard::pressKey(unsigned ch) {
