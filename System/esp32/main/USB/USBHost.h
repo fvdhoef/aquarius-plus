@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include <usb/usb_host.h>
+#include <USBDevice.h>
 
 class USBHost {
     USBHost();
@@ -17,6 +18,8 @@ private:
     void        taskUSBEvents();
     static void _taskClassDriver(void *arg);
     void        taskClassDriver();
+    static void _taskClient(void *arg);
+    void        taskClient();
 
     struct usb_keyboard_info_t {
         uint8_t  bInterfaceNumber;
@@ -36,14 +39,17 @@ private:
     static void _ctrlTransferCb(usb_transfer_t *transfer);
     void        ctrlTransferCb(usb_transfer_t *transfer);
 
-    struct class_driver_t {
-        uint32_t                 actions;
-        usb_host_client_handle_t client_hdl;
-        uint8_t                  dev_addr;
-        usb_device_handle_t      dev_hdl;
-        usb_device_info_t        dev_info;
-        const usb_config_desc_t *cfg_desc;
-    };
+    // struct class_driver_t {
+    //     uint32_t                 actions;
+    //     usb_host_client_handle_t client_hdl;
+    //     uint8_t                  dev_addr;
+    //     usb_device_handle_t      dev_hdl;
+    //     usb_device_info_t        dev_info;
+    //     const usb_config_desc_t *cfg_desc;
+    // };
 
-    class_driver_t driver_obj = {0};
+    // class_driver_t driver_obj = {0};
+
+    usb_host_client_handle_t clientHdl;
+    TaskHandle_t             clientTask;
 };

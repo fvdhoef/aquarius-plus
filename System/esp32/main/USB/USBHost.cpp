@@ -56,49 +56,64 @@ void USBHost::_clientEventCb(const usb_host_client_event_msg_t *eventMsg, void *
 }
 
 void USBHost::clientEventCb(const usb_host_client_event_msg_t *eventMsg) {
-    switch (eventMsg->event) {
-        case USB_HOST_CLIENT_EVENT_NEW_DEV:
-            if (driver_obj.dev_addr == 0) {
-                driver_obj.dev_addr = eventMsg->new_dev.address;
-                // Open the device next
-                driver_obj.actions |= ACTION_OPEN_DEV;
-            }
-            break;
+    if (eventMsg->event == USB_HOST_CLIENT_EVENT_NEW_DEV) {
+        xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 1, eSetBits);
+    } else if (eventMsg->event == USB_HOST_CLIENT_EVENT_DEV_GONE) {
+        // xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 2, eSetBits);
 
-        case USB_HOST_CLIENT_EVENT_DEV_GONE:
-            if (driver_obj.dev_hdl != nullptr) {
-                // Cancel any other actions and close the device next
-                driver_obj.actions = ACTION_CLOSE_DEV;
-            }
-            break;
-
-        default:
-            // Should never occur
-            abort();
+        // xEventGroupSetBits(usb_flags, DEVICE_DISCONNECTED);
     }
+
+    // switch (eventMsg->event) {
+    //     case USB_HOST_CLIENT_EVENT_NEW_DEV:
+    //         if (driver_obj.dev_addr == 0) {
+    //             driver_obj.dev_addr = eventMsg->new_dev.address;
+    //             // Open the device next
+    //             driver_obj.actions |= ACTION_OPEN_DEV;
+    //         }
+    //         break;
+
+    //     case USB_HOST_CLIENT_EVENT_DEV_GONE:
+    //         if (driver_obj.dev_hdl != nullptr) {
+    //             // Cancel any other actions and close the device next
+    //             driver_obj.actions = ACTION_CLOSE_DEV;
+    //         }
+    //         break;
+
+    //     default:
+    //         // Should never occur
+    //         abort();
+    // }
 }
 
 void USBHost::_taskClassDriver(void *arg) {
     static_cast<USBHost *>(arg)->taskClassDriver();
 }
 
-void USBHost::taskClassDriver() {
-    ESP_LOGI(TAG, "Registering Client");
-    usb_host_client_config_t clientCfg = {
-        .is_synchronous    = false,
-        .max_num_event_msg = CLIENT_NUM_EVENT_MSG,
-        .async             = {.client_event_callback = _clientEventCb, .callback_arg = this},
-    };
-    ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &driver_obj.client_hdl));
+void USBHost::_taskClient(void *arg) {
+    static_cast<USBHost *>(arg)->taskClient();
+}
 
-    int bInterfaceNumber = -1;
+void USBHost::taskClient() {
+    // int bInterfaceNumber = -1;
 
     while (1) {
-        if (driver_obj.actions == 0) {
-            usb_host_client_handle_events(driver_obj.client_hdl, portMAX_DELAY);
-        } else {
-            if (driver_obj.actions & ACTION_OPEN_DEV) {
-                assert(driver_obj.dev_addr != 0);
+        uint32_t notifiedValue;
+        xTaskNotifyWait(0, ULONG_MAX, &notifiedValue, portMAX_DELAY);
+
+        if (notifiedValue & 1) {
+            // New device
+            unsigned devAddr = (notifiedValue >> 4) & 0x7F;
+
+            auto devPtr = USBDevice::init(clientHdl, devAddr);
+        }
+    }
+
+#if 0
+        if (driver_obj.actions & ACTION_OPEN_DEV) {
+            assert(driver_obj.dev_addr != 0);
+
+
                 ESP_LOGI(TAG, "Opening device at address %d", driver_obj.dev_addr);
                 ESP_ERROR_CHECK(usb_host_device_open(driver_obj.client_hdl, driver_obj.dev_addr, &driver_obj.dev_hdl));
                 assert(driver_obj.dev_hdl != nullptr);
@@ -135,23 +150,37 @@ void USBHost::taskClassDriver() {
                         ESP_LOGI(TAG, "usb_host_transfer_submit: %s", esp_err_to_name(err));
                     }
                 }
+        // Nothing to do until the device disconnects
+        driver_obj.actions &= ~ACTION_OPEN_DEV;
+    }
 
-                // Nothing to do until the device disconnects
-                driver_obj.actions &= ~ACTION_OPEN_DEV;
-            }
+    if (driver_obj.actions & ACTION_CLOSE_DEV) {
+        if (bInterfaceNumber >= 0)
+            usb_host_interface_release(driver_obj.client_hdl, driver_obj.dev_hdl, bInterfaceNumber);
+        bInterfaceNumber = -1;
 
-            if (driver_obj.actions & ACTION_CLOSE_DEV) {
-                if (bInterfaceNumber >= 0)
-                    usb_host_interface_release(driver_obj.client_hdl, driver_obj.dev_hdl, bInterfaceNumber);
-                bInterfaceNumber = -1;
+        usb_host_device_close(driver_obj.client_hdl, driver_obj.dev_hdl);
+        driver_obj.dev_addr = 0;
+        driver_obj.dev_hdl  = nullptr;
+        driver_obj.cfg_desc = nullptr;
+        driver_obj.actions &= ~ACTION_CLOSE_DEV;
+    }
+#endif
+}
 
-                usb_host_device_close(driver_obj.client_hdl, driver_obj.dev_hdl);
-                driver_obj.dev_addr = 0;
-                driver_obj.dev_hdl  = nullptr;
-                driver_obj.cfg_desc = nullptr;
-                driver_obj.actions &= ~ACTION_CLOSE_DEV;
-            }
-        }
+void USBHost::taskClassDriver() {
+    ESP_LOGI(TAG, "Registering Client");
+    usb_host_client_config_t clientCfg = {
+        .is_synchronous    = false,
+        .max_num_event_msg = CLIENT_NUM_EVENT_MSG,
+        .async             = {.client_event_callback = _clientEventCb, .callback_arg = this},
+    };
+    ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
+
+    xTaskCreatePinnedToCore(_taskClient, "client", 4096, this, CLASS_TASK_PRIORITY, &clientTask, 0);
+
+    while (1) {
+        usb_host_client_handle_events(clientHdl, portMAX_DELAY);
     }
 }
 
@@ -186,6 +215,7 @@ void USBHost::ctrlTransferCb(usb_transfer_t *transfer) {
 }
 
 void USBHost::keyboardSetLeds(uint8_t leds) {
+#if 0
     usb_transfer_t *transfer;
 
     ESP_ERROR_CHECK(usb_host_transfer_alloc(sizeof(usb_setup_packet_t) + 1, 0, &transfer));
@@ -211,9 +241,11 @@ void USBHost::keyboardSetLeds(uint8_t leds) {
         ESP_LOGI(TAG, "usb_host_transfer_submit_control: %s", esp_err_to_name(err));
         usb_host_transfer_free(transfer);
     }
+#endif
 }
 
 void USBHost::keyboardSetBootProtocol() {
+#if 0
     usb_transfer_t *transfer;
 
     ESP_ERROR_CHECK(usb_host_transfer_alloc(sizeof(usb_setup_packet_t), 0, &transfer));
@@ -236,6 +268,7 @@ void USBHost::keyboardSetBootProtocol() {
         ESP_LOGI(TAG, "usb_host_transfer_submit_control: %s", esp_err_to_name(err));
         usb_host_transfer_free(transfer);
     }
+#endif
 }
 
 bool USBHost::findKeyboardInfo(const uint8_t *desc, usb_keyboard_info_t *ki) {
