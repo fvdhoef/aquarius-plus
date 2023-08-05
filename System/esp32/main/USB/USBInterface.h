@@ -12,12 +12,10 @@ public:
     USBInterface *nextInterface = nullptr;
 
 protected:
-    // virtual void interruptData(EHCIQueueElementTransferDescriptor *qtd) = 0;
-    // static void  interruptCallbackHelper(void *arg, EHCIQueueElementTransferDescriptor *qtd);
-
-    // EHCIQueueHead *CreateInterruptEndpoint(unsigned epNum, unsigned maxPacketSize, unsigned interval);
+    virtual void processInterruptData(const uint8_t *buf, size_t length) = 0;
 
     USBDevice *device            = nullptr;
     uint8_t    bInterfaceNumber  = 0;
     uint8_t    bAlternateSetting = 0;
+    bool       ifClaimed         = false;
 };

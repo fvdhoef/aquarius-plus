@@ -29,6 +29,8 @@ USBHost &USBHost::instance() {
 }
 
 void USBHost::init() {
+    devicesMutex = xSemaphoreCreateRecursiveMutex();
+
     // Install USB host library
     ESP_LOGI(TAG, "Installing USB Host Library");
     usb_host_config_t hostCfg = {.intr_flags = ESP_INTR_FLAG_LEVEL1};
@@ -59,31 +61,9 @@ void USBHost::clientEventCb(const usb_host_client_event_msg_t *eventMsg) {
     if (eventMsg->event == USB_HOST_CLIENT_EVENT_NEW_DEV) {
         xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 1, eSetBits);
     } else if (eventMsg->event == USB_HOST_CLIENT_EVENT_DEV_GONE) {
-        // xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 2, eSetBits);
-
-        // xEventGroupSetBits(usb_flags, DEVICE_DISCONNECTED);
+        RecursiveMutexLock lock(devicesMutex);
+        devices.erase(eventMsg->dev_gone.dev_hdl);
     }
-
-    // switch (eventMsg->event) {
-    //     case USB_HOST_CLIENT_EVENT_NEW_DEV:
-    //         if (driver_obj.dev_addr == 0) {
-    //             driver_obj.dev_addr = eventMsg->new_dev.address;
-    //             // Open the device next
-    //             driver_obj.actions |= ACTION_OPEN_DEV;
-    //         }
-    //         break;
-
-    //     case USB_HOST_CLIENT_EVENT_DEV_GONE:
-    //         if (driver_obj.dev_hdl != nullptr) {
-    //             // Cancel any other actions and close the device next
-    //             driver_obj.actions = ACTION_CLOSE_DEV;
-    //         }
-    //         break;
-
-    //     default:
-    //         // Should never occur
-    //         abort();
-    // }
 }
 
 void USBHost::_taskClassDriver(void *arg) {
@@ -106,66 +86,12 @@ void USBHost::taskClient() {
             unsigned devAddr = (notifiedValue >> 4) & 0x7F;
 
             auto devPtr = USBDevice::init(clientHdl, devAddr);
+            if (devPtr) {
+                RecursiveMutexLock lock(devicesMutex);
+                devices.insert(std::pair(devPtr->getHandle(), devPtr));
+            }
         }
     }
-
-#if 0
-        if (driver_obj.actions & ACTION_OPEN_DEV) {
-            assert(driver_obj.dev_addr != 0);
-
-
-                ESP_LOGI(TAG, "Opening device at address %d", driver_obj.dev_addr);
-                ESP_ERROR_CHECK(usb_host_device_open(driver_obj.client_hdl, driver_obj.dev_addr, &driver_obj.dev_hdl));
-                assert(driver_obj.dev_hdl != nullptr);
-
-                const usb_device_desc_t *dev_desc;
-                ESP_ERROR_CHECK(usb_host_device_info(driver_obj.dev_hdl, &driver_obj.dev_info));
-                ESP_ERROR_CHECK(usb_host_get_device_descriptor(driver_obj.dev_hdl, &dev_desc));
-                ESP_ERROR_CHECK(usb_host_get_active_config_descriptor(driver_obj.dev_hdl, &driver_obj.cfg_desc));
-
-                usb_keyboard_info_t ki;
-                if (findKeyboardInfo((const uint8_t *)driver_obj.cfg_desc, &ki)) {
-                    ESP_LOGI(TAG, "USB Keyboard found!");
-
-                    // Claim interface
-                    bInterfaceNumber = ki.bInterfaceNumber;
-                    ESP_ERROR_CHECK(usb_host_interface_claim(driver_obj.client_hdl, driver_obj.dev_hdl, ki.bInterfaceNumber, ki.bAlternateSetting));
-                    assert(driver_obj.dev_hdl != nullptr);
-
-                    keyboardSetBootProtocol();
-                    USBHost::keyboardSetLeds(0);
-
-                    ESP_LOGI(TAG, "Starting transfer");
-                    usb_transfer_t *transfer;
-                    ESP_ERROR_CHECK(usb_host_transfer_alloc(8, 0, &transfer));
-                    transfer->device_handle    = driver_obj.dev_hdl;
-                    transfer->bEndpointAddress = ki.bEndpointAddress;
-                    transfer->num_bytes        = 8;
-                    transfer->callback         = _transferCb;
-                    transfer->context          = this;
-                    transfer->timeout_ms       = 1000;
-
-                    esp_err_t err = usb_host_transfer_submit(transfer);
-                    if (err != ESP_OK) {
-                        ESP_LOGI(TAG, "usb_host_transfer_submit: %s", esp_err_to_name(err));
-                    }
-                }
-        // Nothing to do until the device disconnects
-        driver_obj.actions &= ~ACTION_OPEN_DEV;
-    }
-
-    if (driver_obj.actions & ACTION_CLOSE_DEV) {
-        if (bInterfaceNumber >= 0)
-            usb_host_interface_release(driver_obj.client_hdl, driver_obj.dev_hdl, bInterfaceNumber);
-        bInterfaceNumber = -1;
-
-        usb_host_device_close(driver_obj.client_hdl, driver_obj.dev_hdl);
-        driver_obj.dev_addr = 0;
-        driver_obj.dev_hdl  = nullptr;
-        driver_obj.cfg_desc = nullptr;
-        driver_obj.actions &= ~ACTION_CLOSE_DEV;
-    }
-#endif
 }
 
 void USBHost::taskClassDriver() {
@@ -242,78 +168,4 @@ void USBHost::keyboardSetLeds(uint8_t leds) {
         usb_host_transfer_free(transfer);
     }
 #endif
-}
-
-void USBHost::keyboardSetBootProtocol() {
-#if 0
-    usb_transfer_t *transfer;
-
-    ESP_ERROR_CHECK(usb_host_transfer_alloc(sizeof(usb_setup_packet_t), 0, &transfer));
-    transfer->device_handle    = driver_obj.dev_hdl;
-    transfer->bEndpointAddress = 0;
-    transfer->callback         = _ctrlTransferCb;
-    transfer->context          = this;
-    transfer->timeout_ms       = 1000;
-    transfer->num_bytes        = sizeof(usb_setup_packet_t);
-
-    usb_setup_packet_t *req = (usb_setup_packet_t *)(transfer->data_buffer);
-    req->bmRequestType      = USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE;
-    req->bRequest           = USB_REQUEST_SET_PROTOCOL;
-    req->wValue             = 0;
-    req->wIndex             = 0;
-    req->wLength            = 0;
-
-    esp_err_t err = usb_host_transfer_submit_control(driver_obj.client_hdl, transfer);
-    if (err != ESP_OK) {
-        ESP_LOGI(TAG, "usb_host_transfer_submit_control: %s", esp_err_to_name(err));
-        usb_host_transfer_free(transfer);
-    }
-#endif
-}
-
-bool USBHost::findKeyboardInfo(const uint8_t *desc, usb_keyboard_info_t *ki) {
-    if (!(desc[0] == 9 && desc[1] == 0x02)) {
-        return false;
-    }
-
-    const uint8_t *p           = desc;
-    uint16_t       totalLength = (desc[3] << 8) | desc[2];
-
-    uint8_t bInterfaceNumber   = 0;
-    uint8_t bAlternateSetting  = 0;
-    uint8_t bInterfaceClass    = 0;
-    uint8_t bInterfaceSubClass = 0;
-    uint8_t bInterfaceProtocol = 0;
-    bool    is_keyboard        = false;
-
-    while ((p - desc) < totalLength) {
-        uint8_t length = p[0];
-        uint8_t type   = p[1];
-
-        if (type == 0x04) { // Interface
-            bInterfaceNumber   = p[2];
-            bAlternateSetting  = p[3];
-            bInterfaceClass    = p[5];
-            bInterfaceSubClass = p[6];
-            bInterfaceProtocol = p[7];
-            is_keyboard        = bInterfaceClass == 3 && bInterfaceSubClass == 1 && bInterfaceProtocol == 1;
-
-        } else if (type == 0x05) { // Endpoint
-            uint8_t  bEndpointAddress = p[2];
-            uint8_t  bmAttributes     = p[3];
-            uint16_t wMaxPacketSize   = (p[5] << 8) | p[4];
-            uint8_t  bInterval        = p[6];
-
-            if (is_keyboard && (bEndpointAddress & 0xF0) == 0x80 && (bmAttributes & 3) == 3) {
-                ki->bInterfaceNumber  = bInterfaceNumber;
-                ki->bAlternateSetting = bAlternateSetting;
-                ki->bEndpointAddress  = bEndpointAddress;
-                ki->wMaxPacketSize    = wMaxPacketSize;
-                ki->bInterval         = bInterval;
-                return true;
-            }
-        }
-        p += length;
-    }
-    return false;
 }

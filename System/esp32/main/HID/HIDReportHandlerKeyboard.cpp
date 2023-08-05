@@ -1,16 +1,7 @@
 #include "HIDReportHandlerKeyboard.h"
+#include "AqKeyboard.h"
 
-static void reverseInsertionSort(uint8_t *buf, size_t numElements) {
-    for (size_t i = 1; i < numElements; i++) {
-        uint8_t tmp = buf[i];
-
-        size_t j;
-        for (j = i; j >= 1 && tmp > buf[j - 1]; j--) {
-            buf[j] = buf[j - 1];
-        }
-        buf[j] = tmp;
-    }
-}
+static const char *TAG = "HIDReportHandlerKeyboard";
 
 HIDReportHandlerKeyboard::HIDReportHandlerKeyboard()
     : HIDReportHandler(TKeyboard) {
@@ -49,13 +40,11 @@ void HIDReportHandlerKeyboard::addInputField(const HIDReportDescriptor::HIDField
 void HIDReportHandlerKeyboard::inputReport(const uint8_t *buf, size_t length) {
     //	printf("HIDReportHandlerKeyboard::inputReport\n");
     //	HexDump(buf, length);
+    auto &aqkb = AqKeyboard::instance();
 
     if (keyArrayIdx < 0) {
         return;
     }
-
-    uint8_t pressed[maxKeyData + 8], released[maxKeyData + 8];
-    int     numPressed = 0, numReleased = 0;
 
     uint8_t modifiers = 0;
     if (buttons[LCtrl] >= 0) {
@@ -83,85 +72,75 @@ void HIDReportHandlerKeyboard::inputReport(const uint8_t *buf, size_t length) {
         modifiers |= readBits(buf, length, buttons[RGui], 1, false) << 7;
     }
 
-    uint8_t pressedModifiers  = modifiers & ~prevModifiers;
     uint8_t releasedModifiers = ~modifiers & prevModifiers;
+    uint8_t pressedModifiers  = modifiers & ~prevModifiers;
     prevModifiers             = modifiers;
-
-    for (int i = 0; i < 8; i++) {
-        if (pressedModifiers & (1 << i)) {
-            pressed[numPressed++] = 0xE0 + i;
-        }
-        if (releasedModifiers & (1 << i)) {
-            released[numReleased++] = 0xE0 + i;
-        }
-    }
 
     uint8_t keyData[maxKeyData];
     for (int i = 0; i < keyArrayItems; i++) {
         keyData[i] = readBits(buf, length, keyArrayIdx + i * keyArrayItemSize, keyArrayItemSize, false);
     }
 
-    reverseInsertionSort(keyData, keyArrayItems);
+    // Don't process during rollover
+    if (keyData[0] == 1) {
+        return;
+    }
 
-    // Roll over?
-    if (keyData[0] != 1) {
-        // Determine pressed / released / unchanged keys
-        {
-            int j = 0;
-            int k = 0;
+    // Process modifier key changes
+    for (int i = 0; i < 8; i++) {
+        if (releasedModifiers & (1 << i))
+            aqkb.handleScancode(0xE0 + i, false);
+        if (pressedModifiers & (1 << i))
+            aqkb.handleScancode(0xE0 + i, true);
+    }
 
-            while (j < keyArrayItems && k < keyArrayItems) {
-                uint8_t key     = keyData[k];
-                uint8_t prevKey = prevKeyData[j];
-                if (key == 0 || prevKey == 0) {
-                    break;
-                }
+    uint8_t prev, cur;
 
-                if (key < prevKey) {
-                    released[numReleased++] = prevKey;
-                    j++;
-                } else if (key > prevKey) {
-                    pressed[numPressed++] = key;
-                    k++;
-                } else { // key == prevKey
-                    k++;
-                    j++;
-                }
-            }
+    // Check for key releases
+    for (int j = 0; j < keyArrayItems; j++) {
+        if ((prev = prevKeyData[j]) == 0)
+            break;
 
-            while (j < keyArrayItems) {
-                uint8_t prevKey = prevKeyData[j++];
-                if (prevKey == 0) {
-                    break;
-                }
-                released[numReleased++] = prevKey;
-            }
-            while (k < keyArrayItems) {
-                uint8_t key = keyData[k++];
-                if (key == 0) {
-                    break;
-                }
-                pressed[numPressed++] = key;
-            }
-        }
-
-        // Copy current key data to prev key data
+        // Check if this key is in current report
+        bool keyReleased = true;
         for (int i = 0; i < keyArrayItems; i++) {
-            prevKeyData[i] = keyData[i];
+            if ((cur = buf[i]) == 0)
+                break;
+
+            if (prev == cur) {
+                keyReleased = false;
+                break;
+            }
         }
+
+        if (keyReleased)
+            aqkb.handleScancode(prev, false);
     }
 
-    if (numPressed || numReleased) {
-        if (numPressed) {
-            for (int i = 0; i < numPressed; i++) {
-                printf("P%02X ", pressed[i]);
+    // Check for key presses
+    for (int j = 2; j < 8; j++) {
+        if ((cur = buf[j]) == 0)
+            break;
+
+        // Check if this key is in previous report
+        bool keyPressed = true;
+        for (int i = 2; i < 8; i++) {
+            if ((prev = prevKeyData[i]) == 0)
+                break;
+
+            if (prev == cur) {
+                keyPressed = false;
+                break;
             }
         }
-        if (numReleased) {
-            for (int i = 0; i < numReleased; i++) {
-                printf("R%02X ", released[i]);
-            }
-        }
-        printf("\n");
+
+        if (keyPressed)
+            aqkb.handleScancode(cur, true);
     }
+
+    // Copy current key data to prev key data
+    for (int i = 0; i < keyArrayItems; i++) {
+        prevKeyData[i] = keyData[i];
+    }
+    aqkb.updateMatrix();
 }

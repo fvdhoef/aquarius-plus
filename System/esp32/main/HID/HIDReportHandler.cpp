@@ -1,8 +1,8 @@
 #include "HIDReportHandler.h"
 #include "USBInterfaceHID.h"
 
-HIDReportHandler::HIDReportHandler(Type type)
-    : next(nullptr), type(type) {
+HIDReportHandler::HIDReportHandler(Type _type)
+    : type(_type) {
 }
 
 HIDReportHandler::~HIDReportHandler() {

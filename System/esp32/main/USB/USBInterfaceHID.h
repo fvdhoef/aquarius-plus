@@ -24,11 +24,10 @@ public:
     };
 
 protected:
-    // virtual void InterruptData(EHCIQueueElementTransferDescriptor *qtd);
-    // uint8_t          *interruptBuf;
+    SemaphoreHandle_t mutex = nullptr;
 
     static void _inTransferCb(usb_transfer_t *transfer);
-    void        inTransferCb(usb_transfer_t *transfer);
+    void        processInterruptData(const uint8_t *buf, size_t length) override;
 
     HIDReportHandler *reportHandlers = nullptr;
 };

@@ -7,11 +7,14 @@ USBDevice::USBDevice() {
 }
 
 USBDevice::~USBDevice() {
+    ESP_LOGI(TAG, "Removing device");
+
     while (interfaces) {
         USBInterface *interface = interfaces;
         interfaces              = interfaces->nextInterface;
         delete interface;
     }
+    usb_host_device_close(clientHdl, devHdl);
 }
 
 USBDevicePtr USBDevice::init(usb_host_client_handle_t clientHdl, uint8_t devAddr) {

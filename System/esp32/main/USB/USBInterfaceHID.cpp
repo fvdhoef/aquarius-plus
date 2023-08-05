@@ -12,12 +12,21 @@ USBInterfaceHID::USBInterfaceHID(USBDevice *device)
 }
 
 USBInterfaceHID::~USBInterfaceHID() {
-    if (reportHandlers) {
-        delete reportHandlers;
+    {
+        RecursiveMutexLock lock(mutex);
+        if (reportHandlers) {
+            delete reportHandlers;
+        }
+        if (ifClaimed)
+            device->releaseInterface(bInterfaceNumber);
     }
+    vSemaphoreDelete(mutex);
 }
 
 bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
+    mutex = xSemaphoreCreateRecursiveMutex();
+    RecursiveMutexLock lock(mutex);
+
     const uint8_t *p   = (const uint8_t *)ifDesc;
     size_t         len = ifDescLen;
 
@@ -120,13 +129,15 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
 
     // At least one data handler for this interface?
     if (reportHandlers) {
-        // Claim inteface
+        // Claim interface
         if (!device->claimInterface(bInterfaceNumber, bAlternateSetting))
             return false;
 
+        ifClaimed = true;
+
         size_t transferSize = (maxPacketSize + 3) & ~3;
 
-        ESP_LOGI(TAG, "Starting transfer on EP 0x%02X size: %u\n", endpointAddr, transferSize);
+        ESP_LOGI(TAG, "Starting transfer on EP 0x%02X size: %u", endpointAddr, transferSize);
         device->transferIn(endpointAddr, transferSize, _inTransferCb, this);
     }
 
@@ -134,26 +145,27 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
 }
 
 void USBInterfaceHID::_inTransferCb(usb_transfer_t *transfer) {
-    static_cast<USBInterfaceHID *>(transfer->context)->inTransferCb(transfer);
-}
-
-void USBInterfaceHID::inTransferCb(usb_transfer_t *transfer) {
-    if (transfer->status == USB_TRANSFER_STATUS_COMPLETED) {
-        ESP_LOG_BUFFER_HEXDUMP(TAG, transfer->data_buffer, transfer->actual_num_bytes, ESP_LOG_INFO);
-
-        // HIDReportHandler *reportHandler = reportHandlers;
-        // while (reportHandler) {
-        //     reportHandler->inputReport(transfer->data_buffer, transfer->actual_num_bytes);
-        //     reportHandler = reportHandler->next;
-        // }
-
-    } else if (transfer->status == USB_TRANSFER_STATUS_NO_DEVICE) {
+    if (transfer->status == USB_TRANSFER_STATUS_NO_DEVICE) {
         // Device is removed, free transfer
         ESP_LOGI(TAG, "inTransferCb - no device");
         usb_host_transfer_free(transfer);
         return;
+    } else if (transfer->status == USB_TRANSFER_STATUS_COMPLETED) {
+        static_cast<USBInterfaceHID *>(transfer->context)->processInterruptData(transfer->data_buffer, transfer->actual_num_bytes);
     }
 
     // Retransmit transfer to get next data
     usb_host_transfer_submit(transfer);
+}
+
+void USBInterfaceHID::processInterruptData(const uint8_t *buf, size_t length) {
+    RecursiveMutexLock lock(mutex);
+
+    // ESP_LOG_BUFFER_HEXDUMP(TAG, transfer->data_buffer, transfer->actual_num_bytes, ESP_LOG_INFO);
+
+    HIDReportHandler *reportHandler = reportHandlers;
+    while (reportHandler) {
+        reportHandler->inputReport(buf, length);
+        reportHandler = reportHandler->next;
+    }
 }

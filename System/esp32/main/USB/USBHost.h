@@ -31,25 +31,15 @@ private:
 
     static void _clientEventCb(const usb_host_client_event_msg_t *eventMsg, void *arg);
     void        clientEventCb(const usb_host_client_event_msg_t *eventMsg);
-    bool        findKeyboardInfo(const uint8_t *desc, usb_keyboard_info_t *ki);
-    void        keyboardSetBootProtocol();
 
     static void _transferCb(usb_transfer_t *transfer);
     void        transferCb(usb_transfer_t *transfer);
     static void _ctrlTransferCb(usb_transfer_t *transfer);
     void        ctrlTransferCb(usb_transfer_t *transfer);
 
-    // struct class_driver_t {
-    //     uint32_t                 actions;
-    //     usb_host_client_handle_t client_hdl;
-    //     uint8_t                  dev_addr;
-    //     usb_device_handle_t      dev_hdl;
-    //     usb_device_info_t        dev_info;
-    //     const usb_config_desc_t *cfg_desc;
-    // };
-
-    // class_driver_t driver_obj = {0};
-
     usb_host_client_handle_t clientHdl;
     TaskHandle_t             clientTask;
+
+    SemaphoreHandle_t                           devicesMutex = nullptr;
+    std::map<usb_device_handle_t, USBDevicePtr> devices;
 };

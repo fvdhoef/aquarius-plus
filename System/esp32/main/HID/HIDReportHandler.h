@@ -19,8 +19,8 @@ public:
     virtual void addInputField(const HIDReportDescriptor::HIDField &field);
     virtual void inputReport(const uint8_t *buf, size_t length) = 0;
 
-    HIDReportHandler *next;
-    Type              type;
+    HIDReportHandler *next = nullptr;
+    Type              type = TUndefined;
 
 protected:
     void enumerateCollection(const HIDReportDescriptor::HIDCollection *collection);
