@@ -152,7 +152,7 @@ static void controlTransferCb(usb_transfer_t *transfer) {
 bool USBDevice::controlTransfer(
     uint8_t bmRequestType, uint8_t bRequest,
     uint16_t wValue, uint16_t wIndex,
-    void *buf, uint16_t wLength) {
+    void *buf, uint16_t wLength, bool waitResult) {
 
     // ESP_LOGI(TAG, "controlTransfer(0x%02X, 0x%02X, 0x%04X, 0x%04X, %p, %u)", bmRequestType, bRequest, wValue, wIndex, buf, wLength);
     // if ((bmRequestType & 0x80) == 0) {
@@ -167,7 +167,7 @@ bool USBDevice::controlTransfer(
     transfer->device_handle    = devHdl;
     transfer->bEndpointAddress = 0;
     transfer->callback         = controlTransferCb;
-    transfer->context          = xTaskGetCurrentTaskHandle();
+    transfer->context          = waitResult ? xTaskGetCurrentTaskHandle() : nullptr;
     transfer->timeout_ms       = 1000;
     transfer->num_bytes        = sizeof(usb_setup_packet_t) + wLength;
 
@@ -190,6 +190,9 @@ bool USBDevice::controlTransfer(
         usb_host_transfer_free(transfer);
         return false;
     }
+
+    if (!waitResult)
+        return true;
 
     uint32_t notifiedValue;
     xTaskNotifyWait(0, ULONG_MAX, &notifiedValue, portMAX_DELAY);
@@ -231,4 +234,26 @@ bool USBDevice::transferIn(uint8_t epAddr, size_t length, usb_transfer_cb_t tran
         return false;
     }
     return true;
+}
+
+void USBDevice::setLeds(uint8_t leds) {
+    bool isKeyboard = false;
+
+    auto interface = interfaces;
+    while (interface) {
+        auto hidIf = dynamic_cast<USBInterfaceHID *>(interface);
+        if (hidIf && hidIf->isKeyboard()) {
+            isKeyboard = true;
+            break;
+        }
+        interface = interface->nextInterface;
+    }
+
+    if (isKeyboard) {
+        controlTransfer(
+            USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE,
+            USB_HID_REQUEST_SET_REPORT,
+            (2 << 8) | 0,
+            0, &leds, 1, false);
+    }
 }

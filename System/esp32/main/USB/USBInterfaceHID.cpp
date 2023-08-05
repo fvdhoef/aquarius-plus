@@ -101,6 +101,7 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
 
                     case 0x10006:
                         ESP_LOGI(TAG, "Keyboard detected");
+                        _isKeyboard   = true;
                         reportHandler = new HIDReportHandlerKeyboard();
                         break;
 
@@ -138,24 +139,14 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
         size_t transferSize = (maxPacketSize + 3) & ~3;
 
         ESP_LOGI(TAG, "Starting transfer on EP 0x%02X size: %u", endpointAddr, transferSize);
-        device->transferIn(endpointAddr, transferSize, _inTransferCb, this);
+        device->transferIn(endpointAddr, transferSize, _interruptInTransferCb, this);
+
+        if (_isKeyboard) {
+            device->setLeds(0);
+        }
     }
 
     return true;
-}
-
-void USBInterfaceHID::_inTransferCb(usb_transfer_t *transfer) {
-    if (transfer->status == USB_TRANSFER_STATUS_NO_DEVICE) {
-        // Device is removed, free transfer
-        ESP_LOGI(TAG, "inTransferCb - no device");
-        usb_host_transfer_free(transfer);
-        return;
-    } else if (transfer->status == USB_TRANSFER_STATUS_COMPLETED) {
-        static_cast<USBInterfaceHID *>(transfer->context)->processInterruptData(transfer->data_buffer, transfer->actual_num_bytes);
-    }
-
-    // Retransmit transfer to get next data
-    usb_host_transfer_submit(transfer);
 }
 
 void USBInterfaceHID::processInterruptData(const uint8_t *buf, size_t length) {

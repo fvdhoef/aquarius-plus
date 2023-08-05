@@ -23,13 +23,15 @@ public:
     bool controlTransfer(
         uint8_t bmRequestType, uint8_t bRequest,
         uint16_t wValue, uint16_t wIndex,
-        void *buf, uint16_t wLength);
+        void *buf, uint16_t wLength, bool waitResult = true);
 
     bool transferIn(uint8_t epAddr, size_t length, usb_transfer_cb_t transferCb, void *cbContext);
 
     usb_device_handle_t getHandle() {
         return devHdl;
     }
+
+    void setLeds(uint8_t leds);
 
 private:
     bool _init(usb_host_client_handle_t _clientHdl, uint8_t devAddr);

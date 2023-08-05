@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include <usb/usb_host.h>
 
 class USBDevice;
 
@@ -12,6 +13,7 @@ public:
     USBInterface *nextInterface = nullptr;
 
 protected:
+    static void  _interruptInTransferCb(usb_transfer_t *transfer);
     virtual void processInterruptData(const uint8_t *buf, size_t length) = 0;
 
     USBDevice *device            = nullptr;

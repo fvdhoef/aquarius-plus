@@ -4,7 +4,6 @@
 #include "USBInterface.h"
 #include "HIDReportDescriptor.h"
 #include "HIDReportHandler.h"
-#include <usb/usb_host.h>
 
 class USBInterfaceHID : public USBInterface {
 public:
@@ -23,11 +22,14 @@ public:
         CTUsageModifier = 0x06  // UM
     };
 
+    bool isKeyboard() {
+        return _isKeyboard;
+    }
+
 protected:
-    SemaphoreHandle_t mutex = nullptr;
-
-    static void _inTransferCb(usb_transfer_t *transfer);
-    void        processInterruptData(const uint8_t *buf, size_t length) override;
-
+    SemaphoreHandle_t mutex          = nullptr;
+    bool              _isKeyboard    = false;
     HIDReportHandler *reportHandlers = nullptr;
+
+    void processInterruptData(const uint8_t *buf, size_t length) override;
 };

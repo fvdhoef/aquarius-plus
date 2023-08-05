@@ -9,17 +9,6 @@
 
 static const char *TAG = "USBHost";
 
-#define DAEMON_TASK_PRIORITY 2
-#define CLASS_TASK_PRIORITY 3
-#define CLIENT_NUM_EVENT_MSG 5
-#define USB_REQUEST_SET_REPORT 0x09
-#define USB_REQUEST_SET_PROTOCOL 0x0B
-
-enum {
-    ACTION_OPEN_DEV  = (1 << 0),
-    ACTION_CLOSE_DEV = (1 << 1),
-};
-
 USBHost::USBHost() {
 }
 
@@ -36,10 +25,10 @@ void USBHost::init() {
     usb_host_config_t hostCfg = {.intr_flags = ESP_INTR_FLAG_LEVEL1};
     ESP_ERROR_CHECK(usb_host_install(&hostCfg));
 
-    xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, DAEMON_TASK_PRIORITY, nullptr, 0);
+    xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, 2, nullptr, 0);
 
     // Create class driver task
-    xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, CLASS_TASK_PRIORITY, nullptr, 0);
+    xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, 3, nullptr, 0);
     vTaskDelay(10); // Short delay to let client task spin up
 }
 
@@ -98,74 +87,22 @@ void USBHost::taskClassDriver() {
     ESP_LOGI(TAG, "Registering Client");
     usb_host_client_config_t clientCfg = {
         .is_synchronous    = false,
-        .max_num_event_msg = CLIENT_NUM_EVENT_MSG,
+        .max_num_event_msg = 5,
         .async             = {.client_event_callback = _clientEventCb, .callback_arg = this},
     };
     ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
 
-    xTaskCreatePinnedToCore(_taskClient, "client", 4096, this, CLASS_TASK_PRIORITY, &clientTask, 0);
+    xTaskCreatePinnedToCore(_taskClient, "client", 4096, this, 3, &clientTask, 0);
 
     while (1) {
         usb_host_client_handle_events(clientHdl, portMAX_DELAY);
     }
 }
 
-void USBHost::_transferCb(usb_transfer_t *transfer) {
-    static_cast<USBHost *>(transfer->context)->transferCb(transfer);
-}
-
-void USBHost::transferCb(usb_transfer_t *transfer) {
-    if (transfer->status == USB_TRANSFER_STATUS_COMPLETED) {
-        if (transfer->data_buffer_size == 8) {
-            handleKeyboardData(transfer->data_buffer);
-        }
-
-    } else if (transfer->status == USB_TRANSFER_STATUS_NO_DEVICE) {
-        // Device is removed, free transfer
-        ESP_LOGI(TAG, "transferCb - no device");
-        usb_host_transfer_free(transfer);
-        return;
-    }
-
-    // Retransmit transfer to get next data
-    usb_host_transfer_submit(transfer);
-}
-
-void USBHost::_ctrlTransferCb(usb_transfer_t *transfer) {
-    static_cast<USBHost *>(transfer->context)->ctrlTransferCb(transfer);
-}
-
-void USBHost::ctrlTransferCb(usb_transfer_t *transfer) {
-    ESP_LOGI(TAG, "ctrlTransferCb - status: %u", transfer->status);
-    usb_host_transfer_free(transfer);
-}
-
 void USBHost::keyboardSetLeds(uint8_t leds) {
-#if 0
-    usb_transfer_t *transfer;
-
-    ESP_ERROR_CHECK(usb_host_transfer_alloc(sizeof(usb_setup_packet_t) + 1, 0, &transfer));
-    transfer->device_handle    = driver_obj.dev_hdl;
-    transfer->bEndpointAddress = 0;
-    transfer->callback         = _ctrlTransferCb;
-    transfer->context          = this;
-    transfer->timeout_ms       = 1000;
-    transfer->num_bytes        = sizeof(usb_setup_packet_t) + 1;
-
-    usb_setup_packet_t *req = (usb_setup_packet_t *)(transfer->data_buffer);
-    req->bmRequestType      = USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE;
-    req->bRequest           = USB_REQUEST_SET_REPORT;
-    req->wValue             = (2 << 8) | 0;
-    req->wIndex             = 0;
-    req->wLength            = 1;
-
-    uint8_t *start_of_data = (uint8_t *)req + sizeof(usb_setup_packet_t);
-    start_of_data[0]       = leds;
-
-    esp_err_t err = usb_host_transfer_submit_control(driver_obj.client_hdl, transfer);
-    if (err != ESP_OK) {
-        ESP_LOGI(TAG, "usb_host_transfer_submit_control: %s", esp_err_to_name(err));
-        usb_host_transfer_free(transfer);
+    RecursiveMutexLock lock(devicesMutex);
+    for (auto it = devices.begin(); it != devices.end(); ++it) {
+        auto device = it->second;
+        device->setLeds(leds);
     }
-#endif
 }
