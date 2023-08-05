@@ -431,13 +431,13 @@ The keyboard buffer can be accessed via the **KEYBUF** register at IO port $FA/2
 The keyboard buffer can be operated in 2 different modes: **scancode mode** or **ASCII mode**.
 The mode is configured via the **KEYMODE** command via the ESP32 interface. The keyboard buffer mode flags are as follows:
 
-| Bit | Description                                                                          |
-| --- | ------------------------------------------------------------------------------------ |
-| 0   | Enable keyboard buffer                                                               |
-| 1   | 0:Scancode mode, 1:ASCII mode                                                        |
-| 2   | Auto-repeat                                                                          |
-| 3   | 0:Send modifier keys combined as left-modifier keys, 1:Send modifier keys separately |
-| 4-7 | Unused                                                                               |
+| Bit | Description                                                                                            |
+| --- | ------------------------------------------------------------------------------------------------------ |
+| 0   | Enable keyboard buffer                                                                                 |
+| 1   | 0:Scancode mode, 1:ASCII mode                                                                          |
+| 2   | Auto-repeat                                                                                            |
+| 3   | Scancode mode:<br>0:Send modifier keys combined as left-modifier keys, 1:Send modifier keys separately |
+| 4-7 | Unused                                                                                                 |
 
 When bit 0 is disabled, no new keys will be added to the keyboard buffer. Any keys still in the keyboard buffer will remain and have to be manually cleared by reading the **KEYBUF** register repeatedly until 0 is returned.
 When the auto-repeat bit is set, the pressed key is repeated after an initial delay (250ms) at 30 characters per second.
@@ -451,16 +451,16 @@ Bit 6-0 contains the scancode.
 
 The following scancode are defined:
 
-|     |  x0   |   x1   |  x2  |  x3   |  x4   |   x5   |  x6   |  x7   |   x8    |   x9   |  xA  |  xB  |  xC   | xD  |  xE  | xF  |
-| :-: | :---: | :----: | :--: | :---: | :---: | :----: | :---: | :---: | :-----: | :----: | :--: | :--: | :---: | :-: | :--: | :-: |
-| 0x  |       |        |      |       |   A   |   B    |   C   |   D   |    E    |   F    |  G   |  H   |   I   |  J  |  K   |  L  |
-| 1x  |   M   |   N    |  O   |   P   |   Q   |   R    |   S   |   T   |    U    |   V    |  W   |  X   |   Y   |  Z  |  1   |  2  |
-| 2x  |   3   |   4    |  5   |   6   |   7   |   8    |   9   |   0   |  Enter  |  Esc   | Bksp | Tab  | Space |  -  |  =   | \[  |
-| 3x  |  \]   |   \\   |      |   ;   |   '   |   `    |   ,   |   .   |    /    | CapsLk |  F1  |  F2  |  F3   | F4  |  F5  | F6  |
-| 4x  |  F7   |   F8   |  F9  |  F10  |  F11  |  F12   | PrScr | ScrLk |  Pause  | Insert | Home | PgUp |  Del  | End | PgDn |  →  |
-| 5x  |   ←   |   ↓    |  ↑   | NumLk |  Kp/  |  Kp\*  |  Kp-  |  Kp+  | KpEnter |  Kp1   | Kp2  | Kp3  |  Kp4  | Kp5 | Kp6  | Kp7 |
-| 6x  |  Kp8  |  Kp9   | Kp0  |  Kp.  |       |  App   |       |       |   F13   |  F14   | F15  |      |       |     |      |     |
-| 7x  | LCtrl | LShift | LAlt | LGui  | RCtrl | RShift | RAlt  | RGui  |         |        |      |      |       |     |      |     |
+|     |  x0   |   x1   |    x2     |  x3   |     x4      |   x5   |  x6   |  x7   |   x8    |   x9   |  xA  |  xB  |  xC   | xD  |  xE  | xF  |
+| :-: | :---: | :----: | :-------: | :---: | :---------: | :----: | :---: | :---: | :-----: | :----: | :--: | :--: | :---: | :-: | :--: | :-: |
+| 0x  |       |        |           |       |      A      |   B    |   C   |   D   |    E    |   F    |  G   |  H   |   I   |  J  |  K   |  L  |
+| 1x  |   M   |   N    |     O     |   P   |      Q      |   R    |   S   |   T   |    U    |   V    |  W   |  X   |   Y   |  Z  |  1   |  2  |
+| 2x  |   3   |   4    |     5     |   6   |      7      |   8    |   9   |   0   |  Enter  |  Esc   | Bksp | Tab  | Space |  -  |  =   | \[  |
+| 3x  |  \]   |   \\   | NonUS # ~ |   ;   |      '      |   `    |   ,   |   .   |    /    | CapsLk |  F1  |  F2  |  F3   | F4  |  F5  | F6  |
+| 4x  |  F7   |   F8   |    F9     |  F10  |     F11     |  F12   | PrScr | ScrLk |  Pause  | Insert | Home | PgUp |  Del  | End | PgDn |  →  |
+| 5x  |   ←   |   ↓    |     ↑     | NumLk |     Kp/     |  Kp\*  |  Kp-  |  Kp+  | KpEnter |  Kp1   | Kp2  | Kp3  |  Kp4  | Kp5 | Kp6  | Kp7 |
+| 6x  |  Kp8  |  Kp9   |    Kp0    |  Kp.  | NonUS \\ \| |  App   |       |  Kp=  |   F13   |  F14   | F15  | F16  |  F17  | F18 | F19  | F20 |
+| 7x  | LCtrl | LShift |   LAlt    | LGui  |    RCtrl    | RShift | RAlt  | RGui  |         |        |      |      |       |     |      |     |
 
 Scancodes 0x04-0x6F (4-111) are identical to the USB HID scancodes.
 Scancodes for the modifier keys are remapped to fit in the 7-bit scancode space. Left / Right modifier keys are combined and don't have separate scancodes.
