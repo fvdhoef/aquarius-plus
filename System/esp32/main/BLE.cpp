@@ -123,6 +123,10 @@ void BLE::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *p
 
     HIDReportHandler *reportHandler = reportHandlers;
     while (reportHandler) {
+        // FIXME: How do report Ids work in Bluetooth?
+        if (reportHandler->hasReportId)
+            reportHandler->hasReportId = false;
+
         reportHandler->inputReport(pData, length);
         reportHandler = reportHandler->next;
     }

@@ -29,21 +29,33 @@ HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
 }
 
 void HIDReportHandlerGamepad::addInputField(const HIDReportDescriptor::HIDField &field) {
+    if (field.reportID > 0)
+        hasReportId = true;
+
     if (field.arraySize == 1) {
         switch (field.usagePage) {
             case 1: {
                 switch (field.usageMin) {
                     case 0x30:
+                        reportId   = field.reportID;
                         leftX_Idx  = field.bitIdx;
                         leftX_Size = field.bitSize;
+                        leftX_min  = field.logicalMin;
+                        leftX_max  = field.logicalMax;
                         break;
                     case 0x31:
+                        reportId   = field.reportID;
                         leftY_Idx  = field.bitIdx;
                         leftY_Size = field.bitSize;
+                        leftY_min  = field.logicalMin;
+                        leftY_max  = field.logicalMax;
                         break;
                     case 0x39:
+                        reportId = field.reportID;
                         hat_Idx  = field.bitIdx;
                         hat_Size = field.bitSize;
+                        hat_min  = field.logicalMin;
+                        hat_max  = field.logicalMax;
                         break;
                     default: break;
                 }
@@ -53,12 +65,30 @@ void HIDReportHandlerGamepad::addInputField(const HIDReportDescriptor::HIDField 
             case 9: {
                 if (field.bitSize == 1) {
                     switch (field.usageMin) {
-                        case 1: btnA_Idx = field.bitIdx; break;
-                        case 2: btnB_Idx = field.bitIdx; break;
-                        case 4: btnX_Idx = field.bitIdx; break;
-                        case 5: btnY_Idx = field.bitIdx; break;
-                        case 7: btnLB_Idx = field.bitIdx; break;
-                        case 8: btnRB_Idx = field.bitIdx; break;
+                        case 1:
+                            reportId = field.reportID;
+                            btnA_Idx = field.bitIdx;
+                            break;
+                        case 2:
+                            reportId = field.reportID;
+                            btnB_Idx = field.bitIdx;
+                            break;
+                        case 4:
+                            reportId = field.reportID;
+                            btnX_Idx = field.bitIdx;
+                            break;
+                        case 5:
+                            reportId = field.reportID;
+                            btnY_Idx = field.bitIdx;
+                            break;
+                        case 7:
+                            reportId  = field.reportID;
+                            btnLB_Idx = field.bitIdx;
+                            break;
+                        case 8:
+                            reportId  = field.reportID;
+                            btnRB_Idx = field.bitIdx;
+                            break;
                     }
                 }
                 break;
@@ -69,6 +99,13 @@ void HIDReportHandlerGamepad::addInputField(const HIDReportDescriptor::HIDField 
 }
 
 void HIDReportHandlerGamepad::inputReport(const uint8_t *buf, size_t length) {
+    if (hasReportId) {
+        if (length < 1 || buf[0] != reportId)
+            return;
+        buf++;
+        length--;
+    }
+
     uint8_t handctrl = 0xFF;
 
     if (btnA_Idx >= 0 && readBits(buf, length, btnA_Idx, 1, 0))
@@ -87,15 +124,15 @@ void HIDReportHandlerGamepad::inputReport(const uint8_t *buf, size_t length) {
     unsigned p = 0;
     if (hat_Idx >= 0) {
         int hat = readBits(buf, length, hat_Idx, hat_Size, false);
-        switch (hat) {
-            case 1: p = 13; break; // UP
-            case 2: p = 15; break; // UP+RIGHT
-            case 3: p = 1; break;  // RIGHT
-            case 4: p = 3; break;  // DOWN+RIGHT
-            case 5: p = 5; break;  // DOWN
-            case 6: p = 7; break;  // DOWN+LEFT
-            case 7: p = 9; break;  // LEFT
-            case 8: p = 11; break; // UP+LEFT
+        switch (hat - hat_min) {
+            case 0: p = 13; break; // UP
+            case 1: p = 15; break; // UP+RIGHT
+            case 2: p = 1; break;  // RIGHT
+            case 3: p = 3; break;  // DOWN+RIGHT
+            case 4: p = 5; break;  // DOWN
+            case 5: p = 7; break;  // DOWN+LEFT
+            case 6: p = 9; break;  // LEFT
+            case 7: p = 11; break; // UP+LEFT
             default: break;
         }
     }
@@ -106,11 +143,11 @@ void HIDReportHandlerGamepad::inputReport(const uint8_t *buf, size_t length) {
 
         if (leftX_Idx >= 0) {
             int lx = readBits(buf, length, leftX_Idx, leftX_Size, false);
-            x      = (lx - 0x8000) / 32768.0f;
+            x      = ((lx - leftX_min) / (0.5f * (leftX_max - leftX_min))) - 1.0f;
         }
         if (leftY_Idx >= 0) {
-            int lx = readBits(buf, length, leftY_Idx, leftY_Size, false);
-            y      = (lx - 0x8000) / 32768.0f;
+            int ly = readBits(buf, length, leftY_Idx, leftY_Size, false);
+            y      = ((ly - leftY_min) / (0.5f * (leftY_max - leftY_min))) - 1.0f;
         }
 
         float len   = sqrtf(x * x + y * y);

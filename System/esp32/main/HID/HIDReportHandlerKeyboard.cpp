@@ -9,15 +9,9 @@ HIDReportHandlerKeyboard::HIDReportHandlerKeyboard()
     for (int i = 0; i < maxButtons; i++) {
         buttons[i] = -1;
     }
-
-    keyArrayIdx      = -1;
-    keyArrayItemSize = -1;
-    keyArrayItems    = -1;
-
     for (unsigned i = 0; i < maxKeyData; i++) {
         prevKeyData[i] = 0;
     }
-    prevModifiers = 0;
 }
 
 HIDReportHandlerKeyboard::~HIDReportHandlerKeyboard() {
@@ -33,6 +27,17 @@ void HIDReportHandlerKeyboard::addInputField(const HIDReportDescriptor::HIDField
             keyArrayIdx      = field.bitIdx;
             keyArrayItemSize = field.bitSize;
             keyArrayItems    = field.arraySize;
+        }
+    }
+}
+
+void HIDReportHandlerKeyboard::addOutputField(const HIDReportDescriptor::HIDField &field) {
+    if (field.bitSize == 1 && field.arraySize == 1 && field.usagePage == 8) {
+        switch (field.usageMin) {
+            case 1: ledNumLockIdx = field.bitIdx; break;
+            case 2: ledCapsLockIdx = field.bitIdx; break;
+            case 3: ledScrollLockIdx = field.bitIdx; break;
+            default: break;
         }
     }
 }
@@ -143,4 +148,15 @@ void HIDReportHandlerKeyboard::inputReport(const uint8_t *buf, size_t length) {
         prevKeyData[i] = keyData[i];
     }
     aqkb.updateMatrix();
+}
+
+uint8_t HIDReportHandlerKeyboard::outputReport(uint8_t leds) const {
+    uint8_t result = 0;
+    if (ledNumLockIdx >= 0 && (leds & NUM_LOCK) != 0)
+        result |= (1 << ledNumLockIdx);
+    if (ledCapsLockIdx >= 0 && (leds & CAPS_LOCK) != 0)
+        result |= (1 << ledCapsLockIdx);
+    if (ledScrollLockIdx >= 0 && (leds & SCROLL_LOCK) != 0)
+        result |= (1 << ledScrollLockIdx);
+    return result;
 }

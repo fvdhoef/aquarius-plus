@@ -1,5 +1,6 @@
 #include "USBDevice.h"
 #include "USBInterfaceHID.h"
+#include "HIDReportHandlerKeyboard.h"
 
 static const char *TAG = "USBDevice";
 
@@ -237,14 +238,23 @@ bool USBDevice::transferIn(uint8_t epAddr, size_t length, usb_transfer_cb_t tran
 }
 
 void USBDevice::setLeds(uint8_t leds) {
-    bool isKeyboard = false;
+    bool    isKeyboard = false;
+    uint8_t reportData = 0;
 
     auto interface = interfaces;
     while (interface) {
         auto hidIf = dynamic_cast<USBInterfaceHID *>(interface);
-        if (hidIf && hidIf->isKeyboard()) {
-            isKeyboard = true;
-            break;
+        if (hidIf) {
+            auto reportHandler = hidIf->getReportHandlers();
+            while (reportHandler) {
+                auto kbRH = dynamic_cast<const HIDReportHandlerKeyboard *>(reportHandler);
+                if (kbRH) {
+                    isKeyboard = true;
+                    reportData = kbRH->outputReport(leds);
+                    break;
+                }
+                reportHandler = reportHandler->next;
+            }
         }
         interface = interface->nextInterface;
     }
@@ -254,6 +264,6 @@ void USBDevice::setLeds(uint8_t leds) {
             USB_BM_REQUEST_TYPE_DIR_OUT | USB_BM_REQUEST_TYPE_TYPE_CLASS | USB_BM_REQUEST_TYPE_RECIP_INTERFACE,
             USB_HID_REQUEST_SET_REPORT,
             (2 << 8) | 0,
-            0, &leds, 1, false);
+            0, &reportData, 1, false);
     }
 }

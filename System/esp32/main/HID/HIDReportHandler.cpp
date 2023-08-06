@@ -32,7 +32,7 @@ void HIDReportHandler::enumerateCollection(const HIDReportDescriptor::HIDCollect
 
             switch (field->type) {
                 case HIDReportDescriptor::HIDItem::TInputField: addInputField(*field); break;
-                case HIDReportDescriptor::HIDItem::TOutputField: break;
+                case HIDReportDescriptor::HIDItem::TOutputField: addOutputField(*field); break;
                 case HIDReportDescriptor::HIDItem::TFeatureField: break;
                 default: break;
             }
@@ -42,7 +42,7 @@ void HIDReportHandler::enumerateCollection(const HIDReportDescriptor::HIDCollect
 }
 
 void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field) {
-    printf("Unhandled field:");
+    printf("Unhandled input field:");
     printf(
         " (reportId: %d) bit %d:%d - usage: %X:%X..%X (valid range: %d..%d) attributes: %X\n",
         field.reportID,
@@ -50,6 +50,19 @@ void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field)
         field.usagePage, field.usageMin, field.usageMax,
         (int)field.logicalMin, (int)field.logicalMax,
         (unsigned)field.attributes);
+}
+
+void HIDReportHandler::addOutputField(const HIDReportDescriptor::HIDField &field) {
+#if 0
+    printf("Unhandled output field:");
+    printf(
+        " (reportId: %d) bit %d:%d - usage: %X:%X..%X (valid range: %d..%d) attributes: %X\n",
+        field.reportID,
+        field.bitIdx, field.bitSize,
+        field.usagePage, field.usageMin, field.usageMax,
+        (int)field.logicalMin, (int)field.logicalMax,
+        (unsigned)field.attributes);
+#endif
 }
 
 int32_t HIDReportHandler::readBits(const void *buf, size_t bufLen, uint32_t bitOffset, uint32_t bitLength, bool signExtend) {

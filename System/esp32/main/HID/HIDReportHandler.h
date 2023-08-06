@@ -20,10 +20,13 @@ public:
     virtual bool init(const HIDReportDescriptor::HIDCollection *collection);
 
     virtual void addInputField(const HIDReportDescriptor::HIDField &field);
+    virtual void addOutputField(const HIDReportDescriptor::HIDField &field);
+
     virtual void inputReport(const uint8_t *buf, size_t length) = 0;
 
-    HIDReportHandler *next = nullptr;
-    Type              type = TUndefined;
+    HIDReportHandler *next        = nullptr;
+    Type              type        = TUndefined;
+    bool              hasReportId = false;
 
 protected:
     void enumerateCollection(const HIDReportDescriptor::HIDCollection *collection);

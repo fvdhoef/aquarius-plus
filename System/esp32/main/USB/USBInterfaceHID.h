@@ -25,6 +25,9 @@ public:
     bool isKeyboard() {
         return _isKeyboard;
     }
+    const HIDReportHandler *getReportHandlers() const {
+        return reportHandlers;
+    }
 
 protected:
     SemaphoreHandle_t mutex          = nullptr;

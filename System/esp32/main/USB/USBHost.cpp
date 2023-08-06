@@ -92,7 +92,7 @@ void USBHost::taskClassDriver() {
     };
     ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
 
-    xTaskCreatePinnedToCore(_taskClient, "client", 4096, this, 3, &clientTask, 0);
+    xTaskCreatePinnedToCore(_taskClient, "client", 8192, this, 3, &clientTask, 0);
 
     while (1) {
         usb_host_client_handle_events(clientHdl, portMAX_DELAY);

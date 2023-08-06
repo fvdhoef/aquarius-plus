@@ -14,12 +14,6 @@
 static const char *TAG = "keyboard";
 #endif
 
-enum {
-    NUM_LOCK    = (1 << 0),
-    CAPS_LOCK   = (1 << 1),
-    SCROLL_LOCK = (1 << 2),
-};
-
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
 
@@ -56,7 +50,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
-    uint8_t ledStatusNext = ledStatus;
+    uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
 
     // Hand controller emulation
     handController(scanCode, keyDown);

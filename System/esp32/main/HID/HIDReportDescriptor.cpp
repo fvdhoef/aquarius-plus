@@ -385,22 +385,25 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                                             curUsage &= 0xFFFF;
                                         }
 
-                                        auto newField = new HIDField(
-                                            type,
-                                            global.getReportID(),
-                                            bitOffset + i * global.reportSize, global.reportSize, 1,
-                                            usagePage, curUsage, curUsage,
-                                            global.logicalMin, global.logicalMax,
-                                            global.physicalMin, global.physicalMax,
-                                            global.unitExponent, global.unit,
-                                            attributes);
+                                        // Ignore vendor specific usage pages
+                                        if (usagePage < 0xFF00) {
+                                            auto newField = new HIDField(
+                                                type,
+                                                global.getReportID(),
+                                                bitOffset + i * global.reportSize, global.reportSize, 1,
+                                                usagePage, curUsage, curUsage,
+                                                global.logicalMin, global.logicalMax,
+                                                global.physicalMin, global.physicalMax,
+                                                global.unitExponent, global.unit,
+                                                attributes);
 
-                                        if (currentCollection) {
-                                            currentCollection->addSubItem(newField);
-                                        } else if (reportDesc->items) {
-                                            reportDesc->items->addItem(newField);
-                                        } else {
-                                            reportDesc->items = newField;
+                                            if (currentCollection) {
+                                                currentCollection->addSubItem(newField);
+                                            } else if (reportDesc->items) {
+                                                reportDesc->items->addItem(newField);
+                                            } else {
+                                                reportDesc->items = newField;
+                                            }
                                         }
 
                                         numUsages--;
@@ -425,22 +428,25 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                                         usageMax &= 0xFFFF;
                                     }
 
-                                    HIDField *newField = new HIDField(
-                                        type,
-                                        global.getReportID(),
-                                        bitOffset, global.reportSize, global.reportCount,
-                                        usagePage, usageMin, usageMax,
-                                        global.logicalMin, global.logicalMax,
-                                        global.physicalMin, global.physicalMax,
-                                        global.unitExponent, global.unit,
-                                        attributes);
+                                    // Ignore vendor specific usage pages
+                                    if (usagePage < 0xFF00) {
+                                        HIDField *newField = new HIDField(
+                                            type,
+                                            global.getReportID(),
+                                            bitOffset, global.reportSize, global.reportCount,
+                                            usagePage, usageMin, usageMax,
+                                            global.logicalMin, global.logicalMax,
+                                            global.physicalMin, global.physicalMax,
+                                            global.unitExponent, global.unit,
+                                            attributes);
 
-                                    if (currentCollection) {
-                                        currentCollection->addSubItem(newField);
-                                    } else if (reportDesc->items) {
-                                        reportDesc->items->addItem(newField);
-                                    } else {
-                                        reportDesc->items = newField;
+                                        if (currentCollection) {
+                                            currentCollection->addSubItem(newField);
+                                        } else if (reportDesc->items) {
+                                            reportDesc->items->addItem(newField);
+                                        } else {
+                                            reportDesc->items = newField;
+                                        }
                                     }
                                 }
                             }
