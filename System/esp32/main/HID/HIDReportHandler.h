@@ -9,7 +9,10 @@ public:
         TUndefined,
         TKeyboard,
         TMouse,
+        TGamepad,
     };
+
+    static HIDReportHandler *getReportHandlersForDescriptor(const void *reportDescBuf, size_t reportDescLen);
 
     HIDReportHandler(Type type);
     virtual ~HIDReportHandler();

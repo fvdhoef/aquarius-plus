@@ -4,6 +4,7 @@
 #include "HIDReportDescriptor.h"
 #include "HIDReportHandlerKeyboard.h"
 #include "HIDReportHandlerMouse.h"
+#include "HIDReportHandlerGamepad.h"
 
 static const char *TAG = "USBInterfaceHID";
 
@@ -62,71 +63,18 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
 
     ESP_LOGI(TAG, "- Interrupt endpoint %u maxPacketSize: %u interval: %u", endpointAddr, maxPacketSize, interval);
 
-    HIDReportDescriptor *reportDescriptor = NULL;
-
-    uint8_t *reportDescriptorBuf = new uint8_t[reportDescLen];
-    if (reportDescriptorBuf == nullptr)
+    uint8_t *reportDescBuf = new uint8_t[reportDescLen];
+    if (reportDescBuf == nullptr)
         return false;
 
     bool result = device->controlTransfer(
         USB_ENDPOINT_IN | USB_RECIPIENT_INTERFACE, USB_REQUEST_GET_DESCRIPTOR,
-        (0x22 << 8) | 0, bInterfaceNumber, reportDescriptorBuf, reportDescLen);
+        (0x22 << 8) | 0, bInterfaceNumber, reportDescBuf, reportDescLen);
 
     ESP_LOGI(TAG, "result: %d", result);
 
-    if (result) {
-        reportDescriptor = HIDReportDescriptor::parseReportDescriptor(reportDescriptorBuf, reportDescLen);
-    }
-    delete[] reportDescriptorBuf;
-    if (!result) {
-        return false;
-    }
-
-    if (reportDescriptor) {
-        // reportDescriptor->dumpItems();
-
-        HIDReportDescriptor::HIDItem *item = reportDescriptor->items;
-        while (item) {
-            if (item->type == HIDReportDescriptor::HIDItem::TCollection) {
-                HIDReportDescriptor::HIDCollection *collection = static_cast<HIDReportDescriptor::HIDCollection *>(item);
-
-                HIDReportHandler *reportHandler = NULL;
-
-                uint32_t usage = ((uint32_t)collection->usagePage << 16) | collection->usage;
-                switch (usage) {
-                    case 0x10002:
-                        ESP_LOGI(TAG, "Mouse detected");
-                        reportHandler = new HIDReportHandlerMouse();
-                        break;
-
-                    case 0x10006:
-                        ESP_LOGI(TAG, "Keyboard detected");
-                        _isKeyboard   = true;
-                        reportHandler = new HIDReportHandlerKeyboard();
-                        break;
-
-                    default:
-                        break;
-                }
-
-                if (reportHandler) {
-                    if (!reportHandler->init(collection)) {
-                        ESP_LOGE(TAG, "Could not init report handler.");
-                        delete reportHandler;
-                        reportHandler = NULL;
-                    }
-                }
-
-                if (reportHandler) {
-                    reportHandler->next = reportHandlers;
-                    reportHandlers      = reportHandler;
-                }
-            }
-            item = item->next;
-        }
-
-        delete reportDescriptor;
-    }
+    reportHandlers = HIDReportHandler::getReportHandlersForDescriptor(reportDescBuf, reportDescLen);
+    delete[] reportDescBuf;
 
     // At least one data handler for this interface?
     if (reportHandlers) {
@@ -141,9 +89,9 @@ bool USBInterfaceHID::init(const void *ifDesc, size_t ifDescLen) {
         ESP_LOGI(TAG, "Starting transfer on EP 0x%02X size: %u", endpointAddr, transferSize);
         device->transferIn(endpointAddr, transferSize, _interruptInTransferCb, this);
 
-        if (_isKeyboard) {
-            device->setLeds(0);
-        }
+        // if (_isKeyboard) {
+        //     device->setLeds(0);
+        // }
     }
 
     return true;

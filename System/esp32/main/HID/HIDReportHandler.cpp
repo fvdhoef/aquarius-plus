@@ -1,5 +1,10 @@
 #include "HIDReportHandler.h"
 #include "USBInterfaceHID.h"
+#include "HIDReportHandlerKeyboard.h"
+#include "HIDReportHandlerMouse.h"
+#include "HIDReportHandlerGamepad.h"
+
+static const char *TAG = "HIDReportHandler";
 
 HIDReportHandler::HIDReportHandler(Type _type)
     : type(_type) {
@@ -26,10 +31,7 @@ void HIDReportHandler::enumerateCollection(const HIDReportDescriptor::HIDCollect
             const HIDReportDescriptor::HIDField *field = static_cast<const HIDReportDescriptor::HIDField *>(item);
 
             switch (field->type) {
-                case HIDReportDescriptor::HIDItem::TInputField: {
-                    addInputField(*field);
-                    break;
-                }
+                case HIDReportDescriptor::HIDItem::TInputField: addInputField(*field); break;
                 case HIDReportDescriptor::HIDItem::TOutputField: break;
                 case HIDReportDescriptor::HIDItem::TFeatureField: break;
                 default: break;
@@ -46,7 +48,7 @@ void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field)
         field.reportID,
         field.bitIdx, field.bitSize,
         field.usagePage, field.usageMin, field.usageMax,
-        (int)field.minVal, (int)field.maxVal,
+        (int)field.logicalMin, (int)field.logicalMax,
         (unsigned)field.attributes);
 }
 
@@ -97,3 +99,60 @@ int32_t HIDReportHandler::readBits(const void *buf, size_t bufLen, uint32_t bitO
     }
     return result;
 };
+
+HIDReportHandler *HIDReportHandler::getReportHandlersForDescriptor(const void *reportDescBuf, size_t reportDescLen) {
+    auto reportDescriptor = HIDReportDescriptor::parseReportDescriptor(reportDescBuf, reportDescLen);
+
+    HIDReportHandler *reportHandlers = nullptr;
+
+    if (reportDescriptor) {
+        // reportDescriptor->dumpItems();
+
+        HIDReportDescriptor::HIDItem *item = reportDescriptor->items;
+        while (item) {
+            if (item->type == HIDReportDescriptor::HIDItem::TCollection) {
+                HIDReportDescriptor::HIDCollection *collection = static_cast<HIDReportDescriptor::HIDCollection *>(item);
+
+                HIDReportHandler *reportHandler = NULL;
+
+                uint32_t usage = ((uint32_t)collection->usagePage << 16) | collection->usage;
+                switch (usage) {
+                    case 0x10002:
+                        ESP_LOGI(TAG, "Mouse detected");
+                        reportHandler = new HIDReportHandlerMouse();
+                        break;
+
+                    case 0x10005:
+                        ESP_LOGI(TAG, "Gamepad detected");
+                        reportHandler = new HIDReportHandlerGamepad();
+                        break;
+
+                    case 0x10006:
+                        ESP_LOGI(TAG, "Keyboard detected");
+                        reportHandler = new HIDReportHandlerKeyboard();
+                        break;
+
+                    default:
+                        break;
+                }
+
+                if (reportHandler) {
+                    if (!reportHandler->init(collection)) {
+                        ESP_LOGE(TAG, "Could not init report handler.");
+                        delete reportHandler;
+                        reportHandler = NULL;
+                    }
+                }
+
+                if (reportHandler) {
+                    reportHandler->next = reportHandlers;
+                    reportHandlers      = reportHandler;
+                }
+            }
+            item = item->next;
+        }
+
+        delete reportDescriptor;
+    }
+    return reportHandlers;
+}

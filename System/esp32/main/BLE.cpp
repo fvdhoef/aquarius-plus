@@ -1,6 +1,7 @@
 #include "BLE.h"
 #include "NimBLEDevice.h"
 #include "HID.h"
+#include "HIDReportDescriptor.h"
 
 static const char *TAG = "BLE";
 
@@ -62,6 +63,11 @@ void BLE::onConnect(NimBLEClient *client) {
 void BLE::onDisconnect(NimBLEClient *client) {
     ESP_LOGI(TAG, "%s Disconnected", client->getPeerAddress().toString().c_str());
     connected = false;
+
+    if (reportHandlers) {
+        delete reportHandlers;
+        reportHandlers = nullptr;
+    }
 };
 
 // Called when the peripheral requests a change to the connection parameters.
@@ -111,8 +117,14 @@ void BLE::_notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *
 
 // Notification / Indication receiving handler callback
 void BLE::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-    if (length == 16) {
-        handleXboxData(pData);
+    // if (length == 16) {
+    //     handleXboxData(pData);
+    // }
+
+    HIDReportHandler *reportHandler = reportHandlers;
+    while (reportHandler) {
+        reportHandler->inputReport(pData, length);
+        reportHandler = reportHandler->next;
     }
 }
 
@@ -176,6 +188,12 @@ bool BLE::connectToServer(NimBLEAdvertisedDevice *advDevice) {
         client->disconnect();
         return false;
     }
+    auto reportMapChr = hidSvc->getCharacteristic("2A4B");
+    if (reportMapChr) {
+        auto str       = reportMapChr->readValue();
+        reportHandlers = HIDReportHandler::getReportHandlersForDescriptor(str.data(), str.size());
+    }
+
     for (auto chr : *hidSvc->getCharacteristics(true)) {
         if (chr->canRead()) {
             auto str = chr->readValue();

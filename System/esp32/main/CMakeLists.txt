@@ -18,6 +18,7 @@ idf_component_register(
         "HID/HIDReportHandler.cpp"
         "HID/HIDReportHandlerKeyboard.cpp"
         "HID/HIDReportHandlerMouse.cpp"
+        "HID/HIDReportHandlerGamepad.cpp"
 
         "EspSettingsConsole.cpp"
 

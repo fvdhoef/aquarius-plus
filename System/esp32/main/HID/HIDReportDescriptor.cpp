@@ -1,156 +1,277 @@
 #include "HIDReportDescriptor.h"
 
-HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *descriptor, size_t descriptorLength) {
-    HIDReportDescriptor *reportDesc        = new HIDReportDescriptor();
-    HIDCollection       *currentCollection = NULL;
+//   7  6  5  4  3  2  1  0
+// +-----------+-----+-----+
+// |   bTag    |bType|bSize|
+// +-----------+-----+-----+
 
-    struct GlobalItems {
-        GlobalItems()
-            : itemUsed(0), usagePage(0), logicalMinimum(0), logicalMaximum(0),
-              physicalMinimum(0), physicalMaximum(0), unitExponent(0), unit(0),
-              reportSize(0), reportID(0), reportCount(0), next(NULL) {
+// bType values
+enum {
+    EType_MainItem   = 0,
+    EType_GlobalItem = 1,
+    EType_LocalItem  = 2,
+};
+
+// Main Item bTag values
+enum {
+    ETagM_Input         = 8,
+    ETagM_Output        = 9,
+    ETagM_Feature       = 11,
+    ETagM_Collection    = 10,
+    ETagM_EndCollection = 12,
+};
+
+// Global Item bTag values
+enum {
+    ETagG_UsagePage       = 0,
+    ETagG_LogicalMinimum  = 1,
+    ETagG_LogicalMaximum  = 2,
+    ETagG_PhysicalMinimum = 3,
+    ETagG_PhysicalMaximum = 4,
+    ETagG_UnitExponent    = 5,
+    ETagG_Unit            = 6,
+    ETagG_ReportSize      = 7,
+    ETagG_ReportID        = 8,
+    ETagG_ReportCount     = 9,
+    ETagG_Push            = 10,
+    ETagG_Pop             = 11,
+};
+
+// Local Item bTag values
+enum {
+    ETagL_Usage             = 0,
+    ETagL_UsageMinimum      = 1,
+    ETagL_UsageMaximum      = 2,
+    ETagL_DesignatorIndex   = 3,
+    ETagL_DesignatorMinimum = 4,
+    ETagL_DesignatorMaximum = 5,
+    ETagL_StringIndex       = 7,
+    ETagL_StringMinimum     = 8,
+    ETagL_StringMaximum     = 9,
+    ETagL_Delimiter         = 10,
+};
+
+struct GlobalItems {
+    GlobalItems() {
+    }
+
+    ~GlobalItems() {
+        if (next) {
+            delete next;
+        }
+    }
+
+    uint32_t     itemUsed     = 0; // Bitmap indicating which tags are valid
+    uint32_t     usagePage    = 0; // bTag 0
+    uint32_t     logicalMin   = 0; // bTag 1
+    uint32_t     logicalMax   = 0; // bTag 2
+    uint32_t     physicalMin  = 0; // bTag 3
+    uint32_t     physicalMax  = 0; // bTag 4
+    int32_t      unitExponent = 0; // bTag 5
+    uint32_t     unit         = 0; // bTag 6
+    uint32_t     reportSize   = 0; // bTag 7
+    uint8_t      reportID     = 0; // bTag 8
+    uint32_t     reportCount  = 0; // bTag 9
+    GlobalItems *next         = nullptr;
+
+    uint8_t getReportID() {
+        if (itemUsed & (1 << ETagG_ReportID)) {
+            return reportID;
+        }
+        return 0;
+    }
+
+    void push() {
+        GlobalItems *newStackItem  = new GlobalItems();
+        newStackItem->itemUsed     = itemUsed;
+        newStackItem->usagePage    = usagePage;
+        newStackItem->logicalMin   = logicalMin;
+        newStackItem->logicalMax   = logicalMax;
+        newStackItem->physicalMin  = physicalMin;
+        newStackItem->physicalMax  = physicalMax;
+        newStackItem->unitExponent = unitExponent;
+        newStackItem->unit         = unit;
+        newStackItem->reportSize   = reportSize;
+        newStackItem->reportID     = reportID;
+        newStackItem->reportCount  = reportCount;
+        newStackItem->next         = next;
+        next                       = newStackItem;
+    }
+
+    void pop() {
+        if (!next) {
+            return;
         }
 
-        ~GlobalItems() {
+        GlobalItems *stackItem = next;
+        next                   = next->next;
+
+        itemUsed     = stackItem->itemUsed;
+        usagePage    = stackItem->usagePage;
+        logicalMin   = stackItem->logicalMin;
+        logicalMax   = stackItem->logicalMax;
+        physicalMin  = stackItem->physicalMin;
+        physicalMax  = stackItem->physicalMax;
+        unitExponent = stackItem->unitExponent;
+        unit         = stackItem->unit;
+        reportSize   = stackItem->reportSize;
+        reportID     = stackItem->reportID;
+        reportCount  = stackItem->reportCount;
+
+        delete stackItem;
+    }
+};
+
+struct LocalItems {
+    LocalItems() {
+    }
+
+    ~LocalItems() {
+        if (usages) {
+            delete usages;
+        }
+    }
+
+    struct Usage {
+        Usage(uint32_t _usageMin, uint32_t _usageMax)
+            : usageMin(_usageMin), usageMax(_usageMax) {
+        }
+        ~Usage() {
             if (next) {
                 delete next;
             }
         }
 
-        uint32_t itemUsed;
-
-        uint32_t usagePage;
-        uint32_t logicalMinimum;
-        uint32_t logicalMaximum;
-        uint32_t physicalMinimum;
-        uint32_t physicalMaximum;
-        uint32_t unitExponent;
-        uint32_t unit;
-        uint32_t reportSize;
-        uint8_t  reportID;
-        uint32_t reportCount;
-
-        uint8_t getReportID() {
-            if (itemUsed & (1 << 8)) {
-                return reportID;
-            }
-            return 0;
-        }
-
-        GlobalItems *next;
-
-        void Push() {
-            GlobalItems *newStackItem     = new GlobalItems();
-            newStackItem->itemUsed        = itemUsed;
-            newStackItem->usagePage       = usagePage;
-            newStackItem->logicalMinimum  = logicalMinimum;
-            newStackItem->logicalMaximum  = logicalMaximum;
-            newStackItem->physicalMinimum = physicalMinimum;
-            newStackItem->physicalMaximum = physicalMaximum;
-            newStackItem->unitExponent    = unitExponent;
-            newStackItem->unit            = unit;
-            newStackItem->reportSize      = reportSize;
-            newStackItem->reportID        = reportID;
-            newStackItem->reportCount     = reportCount;
-            newStackItem->next            = next;
-            next                          = newStackItem;
-        }
-
-        void Pop() {
-            if (!next) {
-                return;
-            }
-
-            GlobalItems *stackItem = next;
-            next                   = next->next;
-
-            itemUsed        = stackItem->itemUsed;
-            usagePage       = stackItem->usagePage;
-            logicalMinimum  = stackItem->logicalMinimum;
-            logicalMaximum  = stackItem->logicalMaximum;
-            physicalMinimum = stackItem->physicalMinimum;
-            physicalMaximum = stackItem->physicalMaximum;
-            unitExponent    = stackItem->unitExponent;
-            unit            = stackItem->unit;
-            reportSize      = stackItem->reportSize;
-            reportID        = stackItem->reportID;
-            reportCount     = stackItem->reportCount;
-
-            delete stackItem;
-        }
+        uint32_t usageMin;
+        uint32_t usageMax;
+        Usage   *next = nullptr;
     };
 
-    struct LocalItems {
-        LocalItems()
-            : itemUsed(0), usageMinimum(0), usageMaximum(0),
-              designatorIndex(0), designatorMinimum(0), designatorMaximum(0),
-              stringIndex(0), stringMinimum(0), stringMaximum(0), delimiter(0),
-              usages(NULL) {
+    Usage   *usages            = nullptr;
+    uint32_t itemUsed          = 0; // Bitmap indicating which tags are valid
+    uint32_t usageMinimum      = 0; // bTag 1
+    uint32_t usageMaximum      = 0; // bTag 2
+    uint32_t designatorIndex   = 0; // bTag 3
+    uint32_t designatorMinimum = 0; // bTag 4
+    uint32_t designatorMaximum = 0; // bTag 5
+    uint32_t stringIndex       = 0; // bTag 7
+    uint32_t stringMinimum     = 0; // bTag 8
+    uint32_t stringMaximum     = 0; // bTag 9
+    uint32_t delimiter         = 0; // bTag 10
+
+    void clear() {
+        itemUsed = 0;
+        if (usages) {
+            delete usages;
+            usages = nullptr;
         }
+    }
 
-        ~LocalItems() {
-            if (usages) {
-                delete usages;
+    void addUsage(uint32_t minUsage, uint32_t maxUsage) {
+        Usage *newUsage = new Usage(minUsage, maxUsage);
+        if (!usages) {
+            usages = newUsage;
+        } else {
+            Usage *list = usages;
+            while (list->next) {
+                list = list->next;
             }
+            list->next = newUsage;
         }
+        itemUsed &= ~((1 << usageMinimum) | (1 << usageMaximum));
+    }
+};
 
-        uint32_t itemUsed;
-        uint32_t usageMinimum;
-        uint32_t usageMaximum;
-        uint32_t designatorIndex;
-        uint32_t designatorMinimum;
-        uint32_t designatorMaximum;
-        uint32_t stringIndex;
-        uint32_t stringMinimum;
-        uint32_t stringMaximum;
-        uint32_t delimiter;
-
-        struct Usage {
-            Usage(uint32_t usageMin, uint32_t usageMax)
-                : usageMin(usageMin), usageMax(usageMax), next(NULL) {
-            }
-            ~Usage() {
-                if (next) {
-                    delete next;
-                }
-            }
-
-            uint32_t usageMin;
-            uint32_t usageMax;
-            Usage   *next;
-        };
-
-        Usage *usages;
-
-        void Clear() {
-            itemUsed = 0;
-            if (usages) {
-                delete usages;
-                usages = NULL;
+struct ReportInfo {
+    struct ReportID {
+        ReportID(uint8_t _id)
+            : id(_id) {
+        }
+        ~ReportID() {
+            if (next) {
+                delete next;
             }
         }
 
-        void AddUsage(uint32_t minUsage, uint32_t maxUsage) {
-            Usage *newUsage = new Usage(minUsage, maxUsage);
-            if (!usages) {
-                usages = newUsage;
-            } else {
-                Usage *list = usages;
-                while (list->next) {
-                    list = list->next;
-                }
-                list->next = newUsage;
-            }
-
-            itemUsed &= ~((1 << 1) | (1 << 2));
-        }
+        uint8_t   id;
+        uint32_t  size = 0;
+        ReportID *next = nullptr;
     };
 
-    GlobalItems global;
-    LocalItems  local;
+    ReportInfo() {
+    }
+    ~ReportInfo() {
+        if (reportIDs) {
+            delete reportIDs;
+        }
+    }
 
+    ReportID *reportIDs   = nullptr;
+    bool      noReportIDs = false;
+
+    bool getReportID(uint8_t id, ReportID *&reportID) {
+        if (id == 0) {
+            noReportIDs = true;
+
+            if (!reportIDs) {
+                reportIDs = new ReportID(0);
+            }
+            reportID = reportIDs;
+            return true;
+        }
+        if (noReportIDs)
+            return false;
+
+        // Check if already used
+        reportID               = reportIDs;
+        ReportID *lastReportID = nullptr;
+        while (reportID) {
+            if (reportID->id == id)
+                return true;
+
+            lastReportID = reportID;
+            reportID     = reportID->next;
+        }
+
+        reportID = new ReportID(id);
+        if (lastReportID) {
+            lastReportID->next = reportID;
+        } else {
+            reportIDs = reportID;
+        }
+        return true;
+    }
+
+    bool addBits(uint8_t id, uint32_t numBits) {
+        ReportID *reportID;
+        if (!getReportID(id, reportID)) {
+            return false;
+        }
+        reportID->size += numBits;
+        return true;
+    }
+
+    bool getBitOffset(uint8_t id, uint32_t &bitOffset) {
+        ReportID *reportID;
+        if (!getReportID(id, reportID)) {
+            return false;
+        }
+        bitOffset = reportID->size;
+        return true;
+    }
+};
+
+HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *descriptor, size_t descriptorLength) {
+    auto           reportDesc        = new HIDReportDescriptor();
+    HIDCollection *currentCollection = nullptr;
+    GlobalItems    global;
+    LocalItems     local;
     size_t         len  = 0;
     const uint8_t *data = (const uint8_t *)descriptor;
+
+    ReportInfo inputReportInfo;
+    ReportInfo outputReportInfo;
+    ReportInfo featureReportInfo;
 
     while (len < descriptorLength) {
         if (data[0] == 0xFE) {
@@ -160,11 +281,17 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
             len += 3 + size;
         } else {
             // Read short item
-            int      bSize = (data[0] >> 0) & 0x3;
-            int      bType = (data[0] >> 2) & 0x3;
-            int      bTag  = (data[0] >> 4) & 0xF;
-            uint32_t value;
+            unsigned bSize = (data[0] >> 0) & 0x3;
+            unsigned bType = (data[0] >> 2) & 0x3;
+            unsigned bTag  = (data[0] >> 4) & 0xF;
 
+            // Determine length
+            size_t itemLength = 1 + ((bSize == 3) ? 4 : bSize);
+            if (len + itemLength > descriptorLength)
+                break;
+
+            // Read value
+            uint32_t value;
             switch (bSize) {
                 default:
                 case 0: value = 0; break;
@@ -173,27 +300,17 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                 case 3: value = (data[4] << 24) | (data[3] << 16) | (data[2] << 8) | data[1]; break;
             }
 
-            {
-                // Determine item length
-                size_t itemLength = 1;
-                if (bSize == 3) {
-                    itemLength += 4;
-                } else {
-                    itemLength += bSize;
-                }
-                data += itemLength;
-                len += itemLength;
-            }
+            // Increment data pointer
+            data += itemLength;
+            len += itemLength;
 
             switch (bType) {
                 // Main item
-                case 0: {
-                    if (bTag == 10) { // Collection
-                        uint16_t usagePage = 0, usage = 0;
-
-                        if (global.itemUsed & (1 << 0)) {
-                            usagePage = global.usagePage;
-                        }
+                case EType_MainItem: {
+                    // Collection
+                    if (bTag == ETagM_Collection) {
+                        uint16_t usagePage = (global.itemUsed & (1 << ETagG_UsagePage)) ? global.usagePage : 0;
+                        uint16_t usage     = 0;
 
                         if (local.usages) {
                             if ((local.usages->usageMin & 0xFFFF0000) != 0) {
@@ -202,7 +319,8 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                             usage = local.usages->usageMin & 0xFFFF;
                         }
 
-                        HIDCollection *newCollection = new HIDCollection((HIDCollection::CollectionType)value, usagePage, usage);
+                        // Create new collection
+                        auto newCollection = new HIDCollection((HIDCollection::CollectionType)value, usagePage, usage);
                         if (currentCollection) {
                             currentCollection->addSubItem(newCollection);
                         } else if (reportDesc->items) {
@@ -210,26 +328,30 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                         } else {
                             reportDesc->items = newCollection;
                         }
-
                         currentCollection = newCollection;
+                    }
 
-                    } else if (bTag == 12) { // End collection
+                    // End collection
+                    else if (bTag == ETagM_EndCollection) {
                         if (currentCollection) {
                             currentCollection = static_cast<HIDCollection *>(currentCollection->parent);
                         }
-                    } else if (bTag == 8 || bTag == 9 || bTag == 11) { // Input/output/feature
+                    }
+
+                    // Input/output/feature
+                    else if (bTag == ETagM_Input || bTag == ETagM_Output || bTag == ETagM_Feature) {
                         uint32_t      attributes = value;
                         HIDItem::Type type;
 
-                        HIDReportDescriptor::ReportInfo *reportInfo = NULL;
-                        if (bTag == 8) {
-                            reportInfo = &reportDesc->inputReportInfo;
+                        ReportInfo *reportInfo = nullptr;
+                        if (bTag == ETagM_Input) {
+                            reportInfo = &inputReportInfo;
                             type       = HIDItem::TInputField;
-                        } else if (bTag == 9) {
-                            reportInfo = &reportDesc->outputReportInfo;
+                        } else if (bTag == ETagM_Output) {
+                            reportInfo = &outputReportInfo;
                             type       = HIDItem::TOutputField;
-                        } else { // (bTag == 11)
-                            reportInfo = &reportDesc->featureReportInfo;
+                        } else { // (bTag == ETagM_Feature)
+                            reportInfo = &featureReportInfo;
                             type       = HIDItem::TFeatureField;
                         }
 
@@ -243,13 +365,13 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                             }
 
                             LocalItems::Usage *usages = local.usages;
-
                             if (usages) {
+                                // Variable
                                 if (attributes & (1 << 1)) {
                                     uint32_t numUsages = 0;
                                     uint32_t curUsage  = 0;
 
-                                    for (unsigned int i = 0; i < global.reportCount; i++) {
+                                    for (unsigned i = 0; i < global.reportCount; i++) {
                                         if (numUsages == 0) {
                                             numUsages = (usages->usageMax - usages->usageMin) + 1;
                                             curUsage  = usages->usageMin;
@@ -263,12 +385,14 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                                             curUsage &= 0xFFFF;
                                         }
 
-                                        HIDField *newField = new HIDField(
+                                        auto newField = new HIDField(
                                             type,
                                             global.getReportID(),
                                             bitOffset + i * global.reportSize, global.reportSize, 1,
                                             usagePage, curUsage, curUsage,
-                                            global.logicalMinimum, global.logicalMaximum,
+                                            global.logicalMin, global.logicalMax,
+                                            global.physicalMin, global.physicalMax,
+                                            global.unitExponent, global.unit,
                                             attributes);
 
                                         if (currentCollection) {
@@ -287,7 +411,10 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                                         }
                                     }
 
-                                } else {
+                                }
+
+                                // Array
+                                else {
                                     uint16_t usagePage = global.usagePage;
                                     uint32_t usageMin  = usages->usageMin;
                                     uint32_t usageMax  = usages->usageMax;
@@ -303,7 +430,9 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                                         global.getReportID(),
                                         bitOffset, global.reportSize, global.reportCount,
                                         usagePage, usageMin, usageMax,
-                                        global.logicalMinimum, global.logicalMaximum,
+                                        global.logicalMin, global.logicalMax,
+                                        global.physicalMin, global.physicalMax,
+                                        global.unitExponent, global.unit,
                                         attributes);
 
                                     if (currentCollection) {
@@ -321,14 +450,17 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                     }
 
                     // Clear local items
-                    local.Clear();
+                    local.clear();
                     break;
                 }
 
                 // Global item
                 case 1: {
-                    // Sign extend if logical or physical min/max
-                    if (bTag == 1 || bTag == 2 || bTag == 3 || bTag == 4) {
+                    // Sign extend if logical, physical min/max or unit exponent
+                    if (bTag == ETagG_LogicalMinimum || bTag == ETagG_LogicalMaximum ||
+                        bTag == ETagG_PhysicalMinimum || bTag == ETagG_PhysicalMaximum ||
+                        bTag == ETagG_UnitExponent) {
+
                         switch (bSize) {
                             case 0: value = 0; break;
                             case 1: value = (int8_t)value; break;
@@ -338,60 +470,57 @@ HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *desc
                     }
 
                     switch (bTag) {
-                        case 0: global.usagePage = value; break;
-                        case 1: global.logicalMinimum = value; break;
-                        case 2: global.logicalMaximum = value; break;
-                        case 3: global.physicalMinimum = value; break;
-                        case 4: global.physicalMaximum = value; break;
-                        case 5: global.unitExponent = value; break;
-                        case 6: global.unit = value; break;
-                        case 7: global.reportSize = value; break;
-                        case 8: global.reportID = value; break;
-                        case 9: global.reportCount = value; break;
-                        case 10: global.Push(); break;
-                        case 11: global.Pop(); break;
+                        case ETagG_UsagePage: global.usagePage = value; break;
+                        case ETagG_LogicalMinimum: global.logicalMin = value; break;
+                        case ETagG_LogicalMaximum: global.logicalMax = value; break;
+                        case ETagG_PhysicalMinimum: global.physicalMin = value; break;
+                        case ETagG_PhysicalMaximum: global.physicalMax = value; break;
+                        case ETagG_UnitExponent: global.unitExponent = value; break;
+                        case ETagG_Unit: global.unit = value; break;
+                        case ETagG_ReportSize: global.reportSize = value; break;
+                        case ETagG_ReportID: global.reportID = value; break;
+                        case ETagG_ReportCount: global.reportCount = value; break;
+                        case ETagG_Push: global.push(); break;
+                        case ETagG_Pop: global.pop(); break;
                         default: break;
                     }
-                    if (bTag <= 9) {
+                    if (bTag <= ETagG_ReportCount)
                         global.itemUsed |= (1 << bTag);
-                    }
                     break;
                 }
 
                 // Local item
                 case 2: {
                     switch (bTag) {
-                        case 0: local.AddUsage(value, value); break;
-                        case 1:
+                        case ETagL_Usage: local.addUsage(value, value); break;
+                        case ETagL_UsageMinimum:
                             local.usageMinimum = value;
                             if (local.itemUsed & (1 << 2)) {
-                                local.AddUsage(local.usageMinimum, local.usageMaximum);
+                                local.addUsage(local.usageMinimum, local.usageMaximum);
                             }
                             break;
-                        case 2:
+                        case ETagL_UsageMaximum:
                             local.usageMaximum = value;
                             if (local.itemUsed & (1 << 1)) {
-                                local.AddUsage(local.usageMinimum, local.usageMaximum);
+                                local.addUsage(local.usageMinimum, local.usageMaximum);
                             }
                             break;
-                        case 3: local.designatorIndex = value; break;
-                        case 4: local.designatorMinimum = value; break;
-                        case 5: local.designatorMaximum = value; break;
-                        case 7: local.stringIndex = value; break;
-                        case 8: local.stringMinimum = value; break;
-                        case 9: local.stringMaximum = value; break;
-                        case 10: break; // delimiter
+                        case ETagL_DesignatorIndex: local.designatorIndex = value; break;
+                        case ETagL_DesignatorMinimum: local.designatorMinimum = value; break;
+                        case ETagL_DesignatorMaximum: local.designatorMaximum = value; break;
+                        case ETagL_StringIndex: local.stringIndex = value; break;
+                        case ETagL_StringMinimum: local.stringMinimum = value; break;
+                        case ETagL_StringMaximum: local.stringMaximum = value; break;
+                        case ETagL_Delimiter: break;
                         default: break;
                     }
-                    if (bTag <= 10 && bTag != 6) {
+                    if (bTag <= ETagL_Delimiter && bTag != 6) {
                         local.itemUsed |= (1 << bTag);
                     }
                     break;
                 }
 
-                default: {
-                    break;
-                }
+                default: break;
             }
         }
     }
@@ -408,10 +537,6 @@ void HIDReportDescriptor::dumpItems(const HIDItem *item, int depth) {
     }
 
     while (item) {
-        for (int i = 0; i < depth; i++) {
-            printf(". ");
-        }
-
         if (item->type == HIDItem::TCollection) {
             const HIDCollection *coll = static_cast<const HIDCollection *>(item);
 
@@ -427,29 +552,45 @@ void HIDReportDescriptor::dumpItems(const HIDItem *item, int depth) {
                 default: typeStr = "Unknown"; break;
             }
 
-            printf("Collection %s - usage: %04X:%04X\n", typeStr, coll->usagePage, coll->usage);
+            printf("%*s Collection %s - usage: %04X:%04X\n", depth * 2, "-", typeStr, coll->usagePage, coll->usage);
 
             dumpItems(coll->subItems, depth + 1);
 
         } else {
             const HIDField *field = static_cast<const HIDField *>(item);
 
+            const char *typeStr;
             switch (field->type) {
-                case HIDItem::TInputField: printf("Input"); break;
-                case HIDItem::TOutputField: printf("Output"); break;
-                case HIDItem::TFeatureField: printf("Feature"); break;
-                default: printf("Unknown"); break;
+                case HIDItem::TInputField: typeStr = "Input"; break;
+                case HIDItem::TOutputField: typeStr = "Output"; break;
+                case HIDItem::TFeatureField: typeStr = "Feature"; break;
+                default: typeStr = "Unknown"; break;
             }
 
-            printf(
-                " (reportId: %d) bit %d:%d (%ux) - usage: %X:%X..%X (valid range: %d..%d) attributes: %X\n",
-                field->reportID,
-                field->bitIdx, field->bitSize,
-                (unsigned)field->arraySize,
-                field->usagePage,
-                field->usageMin, field->usageMax,
-                (int)field->minVal, (int)field->maxVal,
-                (unsigned)field->attributes);
+            if (field->arraySize == 1) {
+                printf(
+                    "%*s %s (reportId: %d) bit %d:%d - usage: %X:%X (log. range: %d..%d  phys. range: %d..%d  unit: 0x%02X  unitExponent: %d) attributes: %X\n",
+                    depth * 2, "-", typeStr,
+                    field->reportID,
+                    field->bitIdx, field->bitSize,
+                    field->usagePage, field->usageMin,
+                    (int)field->logicalMin, (int)field->logicalMax,
+                    (int)field->physicalMin, (int)field->physicalMax,
+                    (unsigned)field->unit, (int)field->unitExponent,
+                    (unsigned)field->attributes);
+
+            } else {
+                printf(
+                    "%*s %s (reportId: %d) bit %d:%d (%ux) - usage: %X:%X..%X (log. range: %d..%d  phys. range: %d..%d  unit: 0x%02X  unitExponent: %d) attributes: %X\n",
+                    depth * 2, "-", typeStr,
+                    field->reportID,
+                    field->bitIdx, field->bitSize, (unsigned)field->arraySize,
+                    field->usagePage, field->usageMin, field->usageMax,
+                    (int)field->logicalMin, (int)field->logicalMax,
+                    (int)field->physicalMin, (int)field->physicalMax,
+                    (unsigned)field->unit, (int)field->unitExponent,
+                    (unsigned)field->attributes);
+            }
         }
 
         item = item->next;
