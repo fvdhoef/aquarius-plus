@@ -16,6 +16,7 @@ struct EmuState {
     uint8_t    keybMatrix[8];    // Keyboard matrix (8 x 6bits)
     uint8_t    handCtrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handCtrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
+    bool       cartridgeInserted;
 
     // Virtual typing from command-line argument
     const char *typeInStr;
@@ -53,7 +54,7 @@ struct EmuState {
     uint8_t colorRam[1024];       // $3400-37FF: Color RAM for text mode
     uint8_t flashRom[256 * 1024]; // Flash memory
     uint8_t mainRam[512 * 1024];  // Main RAM
-    uint8_t gameRom[16 * 1024];   // Cartridge ROM
+    uint8_t cartRom[16 * 1024];   // Cartridge ROM
     uint8_t videoRam[16 * 1024];  // Video RAM
     uint8_t charRam[2048];        // Character RAM
 };

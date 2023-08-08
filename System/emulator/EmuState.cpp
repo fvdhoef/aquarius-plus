@@ -12,7 +12,6 @@ void emustate_init(void) {
     emuState.handCtrl1 = 0xFF;
     emuState.handCtrl2 = 0xFF;
     memcpy(emuState.videoPalette, defaultPalette, sizeof(defaultPalette));
-    emuState.videoCtrl = 1;
 
     for (unsigned i = 0; i < sizeof(emuState.screenRam); i++) {
         emuState.screenRam[i] = rand();
@@ -25,9 +24,6 @@ void emustate_init(void) {
     }
     for (unsigned i = 0; i < sizeof(emuState.mainRam); i++) {
         emuState.mainRam[i] = rand();
-    }
-    for (unsigned i = 0; i < sizeof(emuState.gameRom); i++) {
-        emuState.gameRom[i] = 0xFF;
     }
     for (unsigned i = 0; i < sizeof(emuState.videoRam); i++) {
         emuState.videoRam[i] = rand();

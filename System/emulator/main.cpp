@@ -53,7 +53,7 @@ static uint8_t mem_read(size_t param, uint16_t addr) {
     if (page < 16) {
         return emuState.flashRom[page * 0x4000 + addr];
     } else if (page == 19) {
-        return emuState.gameRom[addr];
+        return emuState.cartridgeInserted ? emuState.cartRom[addr] : 0xFF;
     } else if (page == 20) {
         return emuState.videoRam[addr];
     } else if (page == 21) {
@@ -329,10 +329,14 @@ static void render_screen(SDL_Renderer *renderer) {
     SDL_UnlockTexture(texture);
 }
 
-static void render_texture(SDL_Renderer *renderer) {
-    // Determine target size
-    int w, h;
-    SDL_GetRendererOutputSize(renderer, &w, &h);
+static void renderTexture(SDL_Renderer *renderer) {
+    float rsx, rsy;
+    SDL_RenderGetScale(renderer, &rsx, &rsy);
+    auto  drawData = ImGui::GetDrawData();
+    float scaleX   = (rsx == 1.0f) ? drawData->FramebufferScale.x : 1.0f;
+    float scaleY   = (rsy == 1.0f) ? drawData->FramebufferScale.y : 1.0f;
+    int   w        = (int)(drawData->DisplaySize.x * scaleX);
+    int   h        = (int)(drawData->DisplaySize.y * scaleY);
 
     // Retain aspect ratio
     int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
@@ -506,18 +510,20 @@ bool loadCartridgeROM(const char *path) {
     ifs.seekg(0, ifs.beg);
 
     if (fileSize == 8192) {
-        ifs.read((char *)(emuState.gameRom + 8192), fileSize);
+        ifs.read((char *)(emuState.cartRom + 8192), fileSize);
         // Mirror ROM to $C000
-        memcpy(emuState.gameRom, emuState.gameRom + 8192, 8192);
+        memcpy(emuState.cartRom, emuState.cartRom + 8192, 8192);
 
     } else if (fileSize == 16384) {
-        ifs.read((char *)emuState.gameRom, fileSize);
+        ifs.read((char *)emuState.cartRom, fileSize);
 
     } else {
         fprintf(stderr, "Invalid cartridge ROM file: %u, should be either exactly 8 or 16KB.\n", (unsigned)fileSize);
         return false;
     }
     ifs.close();
+
+    emuState.cartridgeInserted = true;
 
     return true;
 }
@@ -618,39 +624,13 @@ int main(int argc, char *argv[]) {
 
     // Load cartridge ROM
     if (!cartRomPath.empty()) {
-        FILE *f = fopen(cartRomPath.c_str(), "rb");
-        if (f == NULL) {
-            perror(cartRomPath.c_str());
-            exit(1);
+        if (!loadCartridgeROM(cartRomPath.c_str())) {
+            fprintf(stderr, "Error loading cartridge ROM\n");
         }
-
-        fseek(f, 0, SEEK_END);
-        int filesize = ftell(f);
-        fseek(f, 0, SEEK_SET);
-
-        if (filesize == 8192) {
-            if (fread(emuState.gameRom + 8192, filesize, 1, f) <= 0) {
-                fprintf(stderr, "Error during reading of cartridge ROM image.\n");
-                exit(1);
-            }
-            // Mirror ROM to $C000
-            memcpy(emuState.gameRom, emuState.gameRom + 8192, 8192);
-
-        } else if (filesize == 16384) {
-            if (fread(emuState.gameRom, filesize, 1, f) <= 0) {
-                fprintf(stderr, "Error during reading of cartridge ROM image.\n");
-                exit(1);
-            }
-
-        } else {
-            fprintf(stderr, "Invalid cartridge ROM file: %u, should be either exactly 8 or 16KB.\n", filesize);
-        }
-
-        fclose(f);
     }
 
     unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
-    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
+    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -667,7 +647,9 @@ int main(int argc, char *argv[]) {
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO &io    = ImGui::GetIO();
+    io.IniFilename = nullptr;
+
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
@@ -722,8 +704,8 @@ int main(int argc, char *argv[]) {
                         }
                     }
                 }
-                if (ImGui::MenuItem("Eject cartridge", "")) {
-                    memset(emuState.gameRom, 0xFF, sizeof(emuState.gameRom));
+                if (ImGui::MenuItem("Eject cartridge", "", false, emuState.cartridgeInserted)) {
+                    emuState.cartridgeInserted = false;
                     reset();
                 }
                 ImGui::Separator();
@@ -756,9 +738,11 @@ int main(int argc, char *argv[]) {
 
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
-        // SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
-        render_texture(renderer);
+
+        renderTexture(renderer);
+
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
     }
