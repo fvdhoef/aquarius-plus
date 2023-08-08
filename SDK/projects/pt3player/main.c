@@ -24,9 +24,9 @@ static uint8_t     col;                      // This is an unsigned 8-bit intege
 static int         fileidx[36];              // This array of integers stores up to 36 song names in the current drive path, referenced by keys 0-9 and A-Z
 
 // This function draws characters to the screen
-static void draw_str(const char *str) { // Take the stream of char values indicated by the pointer value passed in...
-    while (*str) {                      // ...if it's not zero...
-        *(tp++) = *(str++);             // ...write it to the current CHARRAM position, then increment both the position and the next char pointers
+static void draw_str(const char *str) {      // Take the stream of char values indicated by the pointer value passed in...
+    while (*str) {                           // ...if it's not zero...
+        *(tp++) = *(str++);                  // ...write it to the current CHARRAM position, then increment both the position and the next char pointers
     }
 }
 
@@ -83,24 +83,24 @@ static void draw_window(const char *path) { // Take the pathname as a series of 
         *(cp++) = border;                  // Set this CHAR to the border color (CYAN on BLACK).
     }
 
-    *(tp++) = 0xCF;                    // Set the CHAR at the current text position to the LOWER LEFT corner character (207)
-    *(cp++) = border;                  // Set this CHAR to the border color (CYAN on BLACK).
+    *(tp++) = 0xCF;                        // Set the CHAR at the current text position to the LOWER LEFT corner character (207)
+    *(cp++) = border;                      // Set this CHAR to the border color (CYAN on BLACK).
 
-    for (uint8_t i = 0; i < 38; i++) { // Run a loop to draw the horizontal line across the bottom of the screen.
-        *(tp++) = 0xAC;                // Set the CHAR at the current text position to the HORIZONTAL line character (172)
-        *(cp++) = border;              // Set this CHAR to the border color (CYAN on BLACK).
+    for (uint8_t i = 0; i < 38; i++) {     // Run a loop to draw the horizontal line across the bottom of the screen.
+        *(tp++) = 0xAC;                    // Set the CHAR at the current text position to the HORIZONTAL line character (172)
+        *(cp++) = border;                  // Set this CHAR to the border color (CYAN on BLACK).
     }
 
-    *(tp++) = 0xDF;   // Set the CHAR at the current text position to the LOWER RIGHT corner character (223)
-    *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
+    *(tp++) = 0xDF;                        // Set the CHAR at the current text position to the LOWER RIGHT corner character (223)
+    *(cp++) = border;                      // Set this CHAR to the border color (CYAN on BLACK).
 }
 
 // This method reads the list of PT3 files in the current path and creates a list of those files (up to 36 max) on screen.
 static void scandir(void) {
-    getcwd(filename, sizeof(filename)); //
-    draw_window(filename);              // Redraw a blank window with the current path at the top
+    getcwd(filename, sizeof(filename));    //
+    draw_window(filename);                 // Redraw a blank window with the current path at the top
 
-    for (int i = 0; i < 36; i++) {      // Initialize the fileidx array values to -1
+    for (int i = 0; i < 36; i++) {         // Initialize the fileidx array values to -1
         fileidx[i] = -1;
     }
 
