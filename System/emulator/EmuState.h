@@ -17,6 +17,7 @@ struct EmuState {
     uint8_t    handCtrl1;        // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handCtrl2;        // Mini-expander - Hand controller 2 state (connected to port 1 of AY-3-8910)
     bool       cartridgeInserted;
+    size_t     flashRomSize;
 
     // Virtual typing from command-line argument
     const char *typeInStr;

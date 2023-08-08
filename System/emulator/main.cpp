@@ -17,6 +17,8 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include "tinyfiledialogs.h"
 
+#include "imgui_memory_editor.h"
+
 #if _WIN32
 #    include <Windows.h>
 #    include <shlobj.h>
@@ -337,6 +339,8 @@ static void renderTexture(SDL_Renderer *renderer) {
     float scaleY   = (rsy == 1.0f) ? drawData->FramebufferScale.y : 1.0f;
     int   w        = (int)(drawData->DisplaySize.x * scaleX);
     int   h        = (int)(drawData->DisplaySize.y * scaleY);
+    if (w <= 0 || h <= 0)
+        return;
 
     // Retain aspect ratio
     int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
@@ -615,11 +619,13 @@ int main(int argc, char *argv[]) {
             perror(romPath.c_str());
             exit(1);
         }
-        if (fread(emuState.flashRom, 1, sizeof(emuState.flashRom), f) < 8192) {
+        if ((emuState.flashRomSize = fread(emuState.flashRom, 1, sizeof(emuState.flashRom), f)) < 8192) {
             fprintf(stderr, "Error during reading of system ROM image.\n");
             exit(1);
         }
         fclose(f);
+
+        emuState.flashRomSize = (emuState.flashRomSize + 0x1FFF) & ~0x1FFF;
     }
 
     // Load cartridge ROM
@@ -661,8 +667,10 @@ int main(int argc, char *argv[]) {
 
     emuState.typeInRelease = 10;
 
-    bool show_demo_window = false;
-    bool show_app_about   = false;
+    bool         showDemoWindow = false;
+    bool         showAppAbout   = false;
+    MemoryEditor memEdit;
+    memEdit.Open = false;
 
     bool done = false;
     while (!done) {
@@ -672,6 +680,10 @@ int main(int argc, char *argv[]) {
             switch (event.type) {
                 case SDL_KEYDOWN:
                 case SDL_KEYUP: {
+                    // Don't pass keypresses to emulator when ImGUI has keyboard focus
+                    if (io.WantCaptureKeyboard)
+                        break;
+
                     if (!event.key.repeat && event.key.keysym.scancode <= 255) {
                         AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
                         AqKeyboard::instance().updateMatrix();
@@ -718,23 +730,95 @@ int main(int argc, char *argv[]) {
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Debug")) {
+                if (ImGui::MenuItem("Memory editor", "")) {
+                    memEdit.Open = true;
+                }
+                ImGui::EndMenu();
+            }
 
             if (ImGui::BeginMenu("Help")) {
                 if (ImGui::MenuItem("About", ""))
-                    show_app_about = true;
+                    showAppAbout = true;
                 ImGui::Separator();
                 if (ImGui::MenuItem("ImGui library demo window", ""))
-                    show_demo_window = true;
+                    showDemoWindow = true;
 
                 ImGui::EndMenu();
             }
             ImGui::EndMainMenuBar();
         }
 
-        if (show_app_about)
-            show_about_window(&show_app_about);
-        if (show_demo_window)
-            ImGui::ShowDemoWindow(&show_demo_window);
+        if (showAppAbout)
+            show_about_window(&showAppAbout);
+        if (showDemoWindow)
+            ImGui::ShowDemoWindow(&showDemoWindow);
+        if (memEdit.Open) {
+            void      *pMem            = emuState.colorRam;
+            size_t     memSize         = sizeof(emuState.colorRam);
+            size_t     baseDisplayAddr = 0;
+            static int itemCurrent     = 0;
+            switch (itemCurrent) {
+                case 0:
+                    pMem    = emuState.screenRam;
+                    memSize = sizeof(emuState.screenRam);
+                    break;
+                case 1:
+                    pMem    = emuState.colorRam;
+                    memSize = sizeof(emuState.colorRam);
+                    break;
+                case 2:
+                    pMem    = emuState.flashRom;
+                    memSize = emuState.flashRomSize;
+                    break;
+                case 3:
+                    pMem    = emuState.mainRam;
+                    memSize = sizeof(emuState.mainRam);
+                    break;
+                case 4:
+                    pMem    = emuState.cartRom;
+                    memSize = sizeof(emuState.cartRom);
+                    break;
+                case 5:
+                    pMem    = emuState.videoRam;
+                    memSize = sizeof(emuState.videoRam);
+                    break;
+                case 6:
+                    pMem    = emuState.charRam;
+                    memSize = sizeof(emuState.charRam);
+                    break;
+            }
+
+            MemoryEditor::Sizes s;
+            memEdit.CalcSizes(s, memSize, baseDisplayAddr);
+            ImGui::SetNextWindowSize(ImVec2(s.WindowWidth, s.WindowWidth * 0.60f), ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
+
+            memEdit.Open = true;
+            if (ImGui::Begin("Memory editor", &memEdit.Open, ImGuiWindowFlags_NoScrollbar)) {
+                if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+                    ImGui::OpenPopup("context");
+
+                ImGui::Combo(
+                    "Memory select", &itemCurrent,
+                    "Screen RAM\0"
+                    "Color RAM\0"
+                    "System ROM\0"
+                    "Main RAM\0"
+                    "Cartridge ROM\0"
+                    "Video RAM\0"
+                    "Character RAM\0");
+
+                ImGui::Separator();
+
+                memEdit.DrawContents(pMem, memSize, baseDisplayAddr);
+                if (memEdit.ContentsWidthChanged) {
+                    memEdit.CalcSizes(s, memSize, baseDisplayAddr);
+                    ImGui::SetWindowSize(ImVec2(s.WindowWidth, ImGui::GetWindowSize().y));
+                }
+            }
+            ImGui::End();
+        }
 
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
