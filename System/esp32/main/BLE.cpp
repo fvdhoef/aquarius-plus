@@ -1,6 +1,5 @@
 #include "BLE.h"
 #include "NimBLEDevice.h"
-#include "HID.h"
 #include "HIDReportDescriptor.h"
 
 static const char *TAG = "BLE";
@@ -117,10 +116,6 @@ void BLE::_notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *
 
 // Notification / Indication receiving handler callback
 void BLE::notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify) {
-    // if (length == 16) {
-    //     handleXboxData(pData);
-    // }
-
     HIDReportHandler *reportHandler = reportHandlers;
     while (reportHandler) {
         // FIXME: How do report Ids work in Bluetooth?

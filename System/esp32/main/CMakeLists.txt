@@ -24,7 +24,6 @@ idf_component_register(
 
         "FileServer.cpp"
         "PowerLED.cpp"
-        "HID.cpp"
         "WiFi.cpp"
         "BLE.cpp"
 
