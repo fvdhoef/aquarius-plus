@@ -7,13 +7,13 @@ public:
     HIDReportHandlerKeyboard();
     virtual ~HIDReportHandlerKeyboard();
 
-    void addInputField(const HIDReportDescriptor::HIDField &field) override;
-    void addOutputField(const HIDReportDescriptor::HIDField &field) override;
-
-    void    inputReport(const uint8_t *buf, size_t length) override;
     uint8_t outputReport(uint8_t leds) const;
 
 protected:
+    void _addInputField(const HIDReportDescriptor::HIDField &field) override;
+    void _addOutputField(const HIDReportDescriptor::HIDField &field) override;
+    void _inputReport(uint8_t reportId, const uint8_t *buf, size_t length) override;
+
     void compareKeyArrays(
         const uint8_t *keys1, const uint8_t *keys2,
         uint8_t *only1, uint8_t *only2, uint8_t *both,

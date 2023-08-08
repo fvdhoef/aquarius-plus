@@ -14,7 +14,7 @@ HIDReportHandlerMouse::HIDReportHandlerMouse()
     wheelSize = -1;
 }
 
-void HIDReportHandlerMouse::addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerMouse::_addInputField(const HIDReportDescriptor::HIDField &field) {
     if (field.usageMin == field.usageMax) {
         switch (field.usagePage) {
             case 1: {
@@ -48,8 +48,13 @@ void HIDReportHandlerMouse::addInputField(const HIDReportDescriptor::HIDField &f
     }
 }
 
-void HIDReportHandlerMouse::inputReport(const uint8_t *buf, size_t length) {
-    //	printf("HIDReportHandlerMouse::inputReport\n");
+void HIDReportHandlerMouse::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
+    // printf("HIDReportHandlerMouse::inputReport:");
+    // for (unsigned i = 0; i < length; i++) {
+    //     printf(" %02X", ((const uint8_t *)buf)[i]);
+    // }
+    // printf("   ");
+
     //	HexDump(buf, length);
 
     if (xIdx >= 0) {

@@ -42,6 +42,30 @@ void HIDReportHandler::enumerateCollection(const HIDReportDescriptor::HIDCollect
 }
 
 void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field) {
+    if (field.reportID > 0)
+        hasReportId = true;
+
+    _addInputField(field);
+}
+
+void HIDReportHandler::addOutputField(const HIDReportDescriptor::HIDField &field) {
+    _addOutputField(field);
+}
+
+void HIDReportHandler::inputReport(const uint8_t *buf, size_t length) {
+    uint8_t reportId = 0;
+    if (hasReportId) {
+        if (length < 1)
+            return;
+
+        reportId = buf[0];
+        buf++;
+        length--;
+    }
+    _inputReport(reportId, buf, length);
+}
+
+void HIDReportHandler::_addInputField(const HIDReportDescriptor::HIDField &field) {
     printf("Unhandled input field:");
     printf(
         " (reportId: %d) bit %d:%d - usage: %X:%X..%X (valid range: %d..%d) attributes: %X\n",
@@ -52,7 +76,7 @@ void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field)
         (unsigned)field.attributes);
 }
 
-void HIDReportHandler::addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandler::_addOutputField(const HIDReportDescriptor::HIDField &field) {
 #if 0
     printf("Unhandled output field:");
     printf(

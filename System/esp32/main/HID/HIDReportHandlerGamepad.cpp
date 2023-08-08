@@ -28,10 +28,7 @@ HIDReportHandlerGamepad::HIDReportHandlerGamepad()
 HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
 }
 
-void HIDReportHandlerGamepad::addInputField(const HIDReportDescriptor::HIDField &field) {
-    if (field.reportID > 0)
-        hasReportId = true;
-
+void HIDReportHandlerGamepad::_addInputField(const HIDReportDescriptor::HIDField &field) {
     if (field.arraySize == 1) {
         switch (field.usagePage) {
             case 1: {
@@ -98,14 +95,7 @@ void HIDReportHandlerGamepad::addInputField(const HIDReportDescriptor::HIDField 
     }
 }
 
-void HIDReportHandlerGamepad::inputReport(const uint8_t *buf, size_t length) {
-    if (hasReportId) {
-        if (length < 1 || buf[0] != reportId)
-            return;
-        buf++;
-        length--;
-    }
-
+void HIDReportHandlerGamepad::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
     uint8_t handctrl = 0xFF;
 
     if (btnA_Idx >= 0 && readBits(buf, length, btnA_Idx, 1, 0))

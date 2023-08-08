@@ -17,7 +17,7 @@ HIDReportHandlerKeyboard::HIDReportHandlerKeyboard()
 HIDReportHandlerKeyboard::~HIDReportHandlerKeyboard() {
 }
 
-void HIDReportHandlerKeyboard::addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerKeyboard::_addInputField(const HIDReportDescriptor::HIDField &field) {
     if (field.attributes & (1 << 1)) {
         if (field.bitSize == 1 && field.usageMin >= 0xE0 && field.usageMin <= 0xE7) {
             buttons[field.usageMin - 0xE0] = field.bitIdx;
@@ -31,7 +31,7 @@ void HIDReportHandlerKeyboard::addInputField(const HIDReportDescriptor::HIDField
     }
 }
 
-void HIDReportHandlerKeyboard::addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerKeyboard::_addOutputField(const HIDReportDescriptor::HIDField &field) {
     if (field.bitSize == 1 && field.arraySize == 1 && field.usagePage == 8) {
         switch (field.usageMin) {
             case 1: ledNumLockIdx = field.bitIdx; break;
@@ -42,7 +42,7 @@ void HIDReportHandlerKeyboard::addOutputField(const HIDReportDescriptor::HIDFiel
     }
 }
 
-void HIDReportHandlerKeyboard::inputReport(const uint8_t *buf, size_t length) {
+void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
     //	printf("HIDReportHandlerKeyboard::inputReport\n");
     //	HexDump(buf, length);
     auto &aqkb = AqKeyboard::instance();

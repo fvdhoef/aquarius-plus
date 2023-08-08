@@ -262,6 +262,12 @@ struct ReportInfo {
 };
 
 HIDReportDescriptor *HIDReportDescriptor::parseReportDescriptor(const void *descriptor, size_t descriptorLength) {
+    // printf("parseReportDescriptor\n");
+    // for (int i = 0; i < descriptorLength; i++) {
+    //     printf(" %02X", ((const uint8_t *)descriptor)[i]);
+    // }
+    // printf("\n-----\n");
+
     auto           reportDesc        = new HIDReportDescriptor();
     HIDCollection *currentCollection = nullptr;
     GlobalItems    global;
