@@ -12,8 +12,8 @@ endif
 
 VERSION_STR  := $(shell git describe --always)
 
-INC_DIRS    += . VFS libz80
-SRC_DIRS    += . VFS
+INC_DIRS    += . imgui VFS libz80
+SRC_DIRS    += . imgui VFS
 C_SRCS      += libz80/z80.c
 
 FLAGS       += -O3 -g

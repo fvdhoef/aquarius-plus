@@ -12,6 +12,10 @@
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 
+#include "imgui.h"
+#include "imgui_impl_sdl2.h"
+#include "imgui_impl_sdlrenderer2.h"
+
 #if _WIN32
 #    include <Windows.h>
 #    include <shlobj.h>
@@ -290,8 +294,9 @@ void reset(void) {
 #define HCYCLES_PER_LINE (455)
 #define HCYCLES_PER_SAMPLE (162)
 
+static SDL_Texture *texture = NULL;
+
 static void render_screen(SDL_Renderer *renderer) {
-    static SDL_Texture *texture = NULL;
     if (texture == NULL) {
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
     }
@@ -321,39 +326,37 @@ static void render_screen(SDL_Renderer *renderer) {
     }
 
     SDL_UnlockTexture(texture);
-    SDL_RenderClear(renderer);
+}
 
+static void render_texture(SDL_Renderer *renderer) {
     // Determine target size
-    {
-        int w, h;
-        SDL_GetRendererOutputSize(renderer, &w, &h);
+    int w, h;
+    SDL_GetRendererOutputSize(renderer, &w, &h);
 
-        // Retain aspect ratio
-        int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
-        int h1 = (w1 * VIDEO_HEIGHT) / VIDEO_WIDTH;
-        int h2 = (h / VIDEO_HEIGHT) * VIDEO_HEIGHT;
-        int w2 = (h2 * VIDEO_WIDTH) / VIDEO_HEIGHT;
+    // Retain aspect ratio
+    int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
+    int h1 = (w1 * VIDEO_HEIGHT) / VIDEO_WIDTH;
+    int h2 = (h / VIDEO_HEIGHT) * VIDEO_HEIGHT;
+    int w2 = (h2 * VIDEO_WIDTH) / VIDEO_HEIGHT;
 
-        int sw, sh;
-        if (w1 == 0 || h1 == 0) {
-            sw = w;
-            sh = h;
-        } else if (w1 <= w && h1 <= h) {
-            sw = w1;
-            sh = h1;
-        } else {
-            sw = w2;
-            sh = h2;
-        }
-
-        SDL_Rect dst;
-        dst.w = (int)sw;
-        dst.h = (int)sh;
-        dst.x = (w - dst.w) / 2;
-        dst.y = (h - dst.h) / 2;
-        SDL_RenderCopy(renderer, texture, NULL, &dst);
+    int sw, sh;
+    if (w1 == 0 || h1 == 0) {
+        sw = w;
+        sh = h;
+    } else if (w1 <= w && h1 <= h) {
+        sw = w1;
+        sh = h1;
+    } else {
+        sw = w2;
+        sh = h2;
     }
-    SDL_RenderPresent(renderer);
+
+    SDL_Rect dst;
+    dst.w = (int)sw;
+    dst.h = (int)sh;
+    dst.x = (w - dst.w) / 2;
+    dst.y = (h - dst.h) / 2;
+    SDL_RenderCopy(renderer, texture, NULL, &dst);
 }
 
 static void keyboard_type_in(void) {
@@ -469,6 +472,25 @@ static void emulate(SDL_Renderer *renderer) {
 
     // Return buffer to audio subsystem.
     Audio::instance().putBuffer(abuf);
+}
+
+static void show_about_window(bool *p_open) {
+    if (!ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::End();
+        return;
+    }
+    ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
+    ImGui::Separator();
+    ImGui::Text("Emulator developed by Frank van den Hoef.\n");
+    ImGui::Text("\nMembers of the Aquarius+ project team:");
+    ImGui::Text("- Frank van den Hoef");
+    ImGui::Text("- Sean P. Harrington");
+    ImGui::Text("- Curtis F. Kaylor");
+    ImGui::Text(
+        "\nThanks go out all the people contributing to this project and"
+        "\nthose who enjoy playing with it, either with this emulator or"
+        "\nthe actual hardware!");
+    ImGui::End();
 }
 
 int main(int argc, char *argv[]) {
@@ -606,32 +628,106 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
         printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
         SDL_Quit();
         return 1;
     }
 
-    SDL_Event event;
+    // Setup Dear ImGui context
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO &io = ImGui::GetIO();
+    ImGui::StyleColorsDark();
+    ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
+    ImGui_ImplSDLRenderer2_Init(renderer);
+
     Audio::instance().init();
     reset();
     Audio::instance().start();
     AqKeyboard::instance().init();
 
     emuState.typeInRelease = 10;
-    while (SDL_WaitEvent(&event) != 0 && event.type != SDL_QUIT) {
-        switch (event.type) {
-            case SDL_KEYDOWN:
-            case SDL_KEYUP: {
-                if (!event.key.repeat && event.key.keysym.scancode <= 255) {
-                    AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
-                    AqKeyboard::instance().updateMatrix();
+
+    bool show_demo_window = false;
+    bool show_app_about   = false;
+
+    bool done = false;
+    while (!done) {
+        SDL_Event event;
+        while (SDL_PollEvent(&event)) {
+            ImGui_ImplSDL2_ProcessEvent(&event);
+            switch (event.type) {
+                case SDL_KEYDOWN:
+                case SDL_KEYUP: {
+                    if (!event.key.repeat && event.key.keysym.scancode <= 255) {
+                        AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                        AqKeyboard::instance().updateMatrix();
+                    }
+                    break;
                 }
-                break;
+                case SDL_USEREVENT: emulate(renderer); break;
+
+                default:
+                    if (event.type == SDL_QUIT)
+                        done = true;
+                    if (event.type == SDL_WINDOWEVENT && event.window.event == SDL_WINDOWEVENT_CLOSE && event.window.windowID == SDL_GetWindowID(window))
+                        done = true;
+                    break;
             }
-            case SDL_USEREVENT: emulate(renderer); break;
         }
+
+        ImGui_ImplSDLRenderer2_NewFrame();
+        ImGui_ImplSDL2_NewFrame();
+        ImGui::NewFrame();
+
+        if (ImGui::BeginMainMenuBar()) {
+            if (ImGui::BeginMenu("File")) {
+                if (ImGui::MenuItem("Quit", "")) {
+                    done = true;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("System")) {
+                if (ImGui::MenuItem("Reset Aquarius+", "")) {
+                    reset();
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Help")) {
+                if (ImGui::MenuItem("About", ""))
+                    show_app_about = true;
+                ImGui::Separator();
+                if (ImGui::MenuItem("ImGui library demo window", ""))
+                    show_demo_window = true;
+
+                ImGui::EndMenu();
+            }
+            ImGui::EndMainMenuBar();
+        }
+
+        if (show_app_about)
+            show_about_window(&show_app_about);
+        if (show_demo_window)
+            ImGui::ShowDemoWindow(&show_demo_window);
+
+        ImGui::Render();
+        SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
+        // SDL_SetRenderDrawColor(renderer, (Uint8)(clear_color.x * 255), (Uint8)(clear_color.y * 255), (Uint8)(clear_color.z * 255), (Uint8)(clear_color.w * 255));
+        SDL_RenderClear(renderer);
+        render_texture(renderer);
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+        SDL_RenderPresent(renderer);
     }
+
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+
     return 0;
 }
