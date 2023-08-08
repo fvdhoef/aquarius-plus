@@ -2,13 +2,23 @@ idf_component_register(
     SRCS
         "main.cpp"
         "FPGA.cpp"
-        "USBHost.cpp"
         "AqKeyboard.cpp"
         "AqUartProtocol.cpp"
+
+        "USB/USBHost.cpp"
+        "USB/USBDevice.cpp"
+        "USB/USBInterface.cpp"
+        "USB/USBInterfaceHID.cpp"
 
         "VFS/VFS.cpp"
         "VFS/SDCardVFS.cpp"
         "VFS/EspVFS.cpp"
+
+        "HID/HIDReportDescriptor.cpp"
+        "HID/HIDReportHandler.cpp"
+        "HID/HIDReportHandlerKeyboard.cpp"
+        "HID/HIDReportHandlerMouse.cpp"
+        "HID/HIDReportHandlerGamepad.cpp"
 
         "EspSettingsConsole.cpp"
 
@@ -45,6 +55,8 @@ idf_component_register(
     INCLUDE_DIRS
         "."
         "VFS"
+        "HID"
+        "USB"
         "NimBLE_Cpp"
 
     REQUIRES

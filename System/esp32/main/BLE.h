@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include "NimBLEDevice.h"
+#include "HIDReportHandler.h"
 
 class BLE : public NimBLEClientCallbacks, NimBLEAdvertisedDeviceCallbacks {
     BLE();
@@ -34,4 +35,6 @@ private:
     NimBLEAdvertisedDevice *advDevice;
     bool                    scanning;
     bool                    connected;
+
+    HIDReportHandler *reportHandlers = nullptr;
 };
