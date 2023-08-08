@@ -501,9 +501,9 @@ bool loadCartridgeROM(const char *path) {
         return false;
     }
 
-    ifs.seekg(0, std::ifstream::seekdir::end);
+    ifs.seekg(0, ifs.end);
     auto fileSize = ifs.tellg();
-    ifs.seekg(0, std::ifstream::seekdir::beg);
+    ifs.seekg(0, ifs.beg);
 
     if (fileSize == 8192) {
         ifs.read((char *)(emuState.gameRom + 8192), fileSize);
