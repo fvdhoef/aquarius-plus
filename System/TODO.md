@@ -12,23 +12,23 @@ Updated 08 AUG 2023
 
 ### ESP32 + Z80
 - [ ] Support for extra keyboard keys
-- [ ] Extending the system ROM with extra functionality:
+- [ ] Extend the system ROM with extra functionality:
   - [ ] Nice splash screen
   - [ ] Easy file navigation (like on the micro expander)
   - [ ] Built-in full-screen editor to edit text files and BASIC programs
 
 ### Soft/Firmware
- - [ ] Dumping of Hardware ROMs with bootkey combo
+ - [ ] Dump Hardware ROMs with bootkey combo
  - [ ] Rework of SYSROM to include subset of MX BASIC 2.0 commands
  - [ ] Emulator enhancements, UI
 
 ## Complete
 
 ### Hardware + FPGA
-- [x] Fixing board issues in PCB rev2
-  - [x] Wire in Spartan 6, remove unecessary power regulators, remove EPROM 
+- [x] Fix board issues in PCB rev2
+  - [x] Wire in Spartan 6, remove unnecessary power regulators, remove EPROM 
   - [x] Rework BOM for manufacturing 
-- [x] Enabling cartridge bus
+- [x] Enable cartridge bus
 - [x] Add second AY-3-8910
 - [x] Implement tile+sprite engine
 
@@ -38,5 +38,5 @@ Updated 08 AUG 2023
 - [x] Support for descrambling ROMs when we remove the scrambling from FPGA
 
 ### Soft/Firmware
- - [x] Loading of legacy ROMs
+ - [x] Load legacy ROMs
  - [X] PT3 Player
