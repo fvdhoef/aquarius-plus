@@ -63,6 +63,7 @@ FormationEnemy formation[MAX_IN_FORMATION];
 AttackingEnemy attackers[MAX_ATTACKERS];
 Missile missiles[8];
 
+static bool     quit;
 static uint8_t formation_offset_x;
 static char formation_direction;
 static uint8_t current_row;
@@ -744,5 +745,5 @@ int main(void) {
     IO_BANK3 = iobank3_old;                         // Restore original iobank3 value
     IO_VCTRL = VCTRL_TEXT_EN;                       // Set the IO_VCTRL (io registers for Video Control) to enable text mode.
 
-    return 0;                                       // If this code were reachable (no funciton to read quit yet), it would exit the game.
+    return 0;                                       // If this code were reachable (no function to read quit yet), it would exit the game.
 }
