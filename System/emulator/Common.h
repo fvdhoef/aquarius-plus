@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 #include <functional>
+#include <fstream>
 
 #ifdef __APPLE__
 #    include <sys/stat.h>

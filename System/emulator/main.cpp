@@ -15,6 +15,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
+#include "tinyfiledialogs.h"
 
 #if _WIN32
 #    include <Windows.h>
@@ -480,17 +481,45 @@ static void show_about_window(bool *p_open) {
         return;
     }
     ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
+    ImGui::Text("Developed by Frank van den Hoef.\n");
     ImGui::Separator();
-    ImGui::Text("Emulator developed by Frank van den Hoef.\n");
-    ImGui::Text("\nMembers of the Aquarius+ project team:");
+    ImGui::Text("Members of the Aquarius+ project team:");
     ImGui::Text("- Frank van den Hoef");
     ImGui::Text("- Sean P. Harrington");
     ImGui::Text("- Curtis F. Kaylor");
+    ImGui::Separator();
     ImGui::Text(
-        "\nThanks go out all the people contributing to this project and"
-        "\nthose who enjoy playing with it, either with this emulator or"
-        "\nthe actual hardware!");
+        "Thanks go out all the people contributing to this project and\n"
+        "those who enjoy playing with it, either with this emulator or\n"
+        "the actual hardware!");
     ImGui::End();
+}
+
+bool loadCartridgeROM(const char *path) {
+    auto ifs = std::ifstream(path, std::ifstream::binary);
+    if (!ifs.good()) {
+        return false;
+    }
+
+    ifs.seekg(0, std::ifstream::seekdir::end);
+    auto fileSize = ifs.tellg();
+    ifs.seekg(0, std::ifstream::seekdir::beg);
+
+    if (fileSize == 8192) {
+        ifs.read((char *)(emuState.gameRom + 8192), fileSize);
+        // Mirror ROM to $C000
+        memcpy(emuState.gameRom, emuState.gameRom + 8192, 8192);
+
+    } else if (fileSize == 16384) {
+        ifs.read((char *)emuState.gameRom, fileSize);
+
+    } else {
+        fprintf(stderr, "Invalid cartridge ROM file: %u, should be either exactly 8 or 16KB.\n", (unsigned)fileSize);
+        return false;
+    }
+    ifs.close();
+
+    return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -621,7 +650,7 @@ int main(int argc, char *argv[]) {
     }
 
     unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
-    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
     if (window == NULL) {
         printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -683,18 +712,31 @@ int main(int argc, char *argv[]) {
         ImGui::NewFrame();
 
         if (ImGui::BeginMainMenuBar()) {
-            if (ImGui::BeginMenu("File")) {
+            if (ImGui::BeginMenu("System")) {
+                if (ImGui::MenuItem("Load cartridge ROM...", "")) {
+                    char const *lFilterPatterns[1] = {"*.rom"};
+                    char       *romFile            = tinyfd_openFileDialog("Open ROM file", "", 1, lFilterPatterns, "ROM files", 0);
+                    if (romFile) {
+                        if (loadCartridgeROM(romFile)) {
+                            reset();
+                        }
+                    }
+                }
+                if (ImGui::MenuItem("Eject cartridge", "")) {
+                    memset(emuState.gameRom, 0xFF, sizeof(emuState.gameRom));
+                    reset();
+                }
+                ImGui::Separator();
+                if (ImGui::MenuItem("Reset Aquarius+", "")) {
+                    reset();
+                }
+                ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "")) {
                     done = true;
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("System")) {
-                if (ImGui::MenuItem("Reset Aquarius+", "")) {
-                    reset();
-                }
-                ImGui::EndMenu();
-            }
+
             if (ImGui::BeginMenu("Help")) {
                 if (ImGui::MenuItem("About", ""))
                     show_app_about = true;
