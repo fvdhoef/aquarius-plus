@@ -17,7 +17,21 @@ The subfolders in this directory contain all the items necessary for a Maker to 
  - STEP - A 3D model file format which is more detialed and transportable than STL
 
 ### Process:
-
+ - **Using a Predefined Online Project**
+   1. Go to the project at PCBWay.
+   2. Add top and bottom pieces, and select your material of choice.
+   3. Order and pay.
+ - **Printing Through a Service Bureau**
+   1. Download the STL or STEP files for the TOP and BOTTOM.
+   2. Upload to your service bureau of choice.
+   3. Select your material of choice.
+   4. Order and pay.
+ - **Printing yourself**
+   1. Download the STL or STEP files for the TOP and BOTTOM. Use the FDM version of the TOP piece to aid in bed-adhesion for FDM printers, otherwise use the standard TOP for SLA.
+   2. Slice it in your printer's slicing tool.
+      - **TOP** does NOT require supports.
+      - **BOTTOM** DOES require supports.
+   3. Print, clean, cure, etc. and install your PCB after programming it with the starter image.
 
 ## PCB Manufacturing:
 This guide assumes that the maker will be having a third-party manufacturer create the plastic shell for the case halves. It does not cover the home/personal 3D printing process.
@@ -31,7 +45,7 @@ This guide assumes that the maker will be having a third-party manufacturer crea
 
 ### Process:
 This guide assumes that the maker will be having a third-party manufacturer create and assemble the PCB. It does not cover user-manufactered PCBs or assembly using a reflow oven or other manual tasks.
-1. Order the parts -
+1. **Order the parts**
     - On the [JLCPCB](https://jlcpcb.com) main site, log in and go to Parts Manager, then Order Parts, then JLCPCB Parts.
     - From the JLCPCB Assembly Parts page, select BOM Tool.
     - Upload the BOM file to the site. From the pop-up, select the number of PCBs you want to manufacture. This multiplies the quantities for you for each item.
@@ -39,7 +53,7 @@ This guide assumes that the maker will be having a third-party manufacturer crea
     - Add to cart, pay for items, and wait.
     - Over the next several days, you will get email notifications as items arrive into your parts inventory. Sometimes, there will be an increase or decrease in the amount you paid, so JLCPCB will either ask you to pay the difference (part is more expensive than estimated) or they will credit your purchase (part was less expensive than estimated). Acknowledge these messages, pay the difference (as needed), and wait.
     - Once all of the parts are in your inventory, proceed to the next step.
-3. Order the assembled PCB -
+3. **Order the assembled PCB**
     - Log into JLCPCB, and start a new order.
     - Upload the Gerber files.
     - Mark the order as SMT Assembly.
@@ -53,7 +67,7 @@ This guide assumes that the maker will be having a third-party manufacturer crea
     - Add to cart, pay for items, and wait.
     - You will get at least two emails. The first will be to confirm your PCB file. This is done in your Order History window. Confirm it. The second email will be to confirm the layout of the components. In your Order History window, the lower Confirm Placement button brings a pop-up which shows the placement of the SMT parts (THT or throughhole is done separately). Everything should be fine, but reply to the email and ask to see a 3D of the cartridge port placement. This will take a day or so, but so long as the port is shown in the far right columns of pins, you can confirm placement.
     - Check the progress of your order daily to make sure there's nothing you need to confirm. Once the product has shipped, you can move onto the next step.
-4. Assemble the Aquarius+ -
+4. **Assemble the Aquarius+**
     - Make sure your shipment package has no obvious damage. If it does, take pictures before you open the box and save them for later. Most of the time, a ding or puncture will not be a problem, as the contents are typically very well wrapped.
     - There are sometimes small beads or blobs of solder that get deposited on the top of the board. With a magnifier, check ALL components to ensure there are no obvious solder blobs or bridges on the components, both SMT and THT. Now, check the BACK side of the board to ensure all THT components have solid, well-tented solder joints. Check the metal shrouds around the USB, controllers (DB9), VGA, power switch, and SD card socket to remove any accidental blobs or splashes. They should pop free with minimal force.
     - To assist in the SMT mounting process, manufacturers add additional "rails" to the PCB for handling. Using a small pair of needle-nose pliers, carefully remove these rails by bending along the V cut that has been cut into the PCB next to these rails. Be cautious not to damage any components that rest on this rail (LED, SD card socket, etc.). You can use a small file to remove any remaining burrs along these new edges. The rails can be thrown away.
