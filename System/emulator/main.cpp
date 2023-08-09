@@ -483,23 +483,21 @@ static void emulate(SDL_Renderer *renderer) {
     Audio::instance().putBuffer(abuf);
 }
 
-static void show_about_window(bool *p_open) {
-    if (!ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
-        ImGui::End();
-        return;
+static void showAboutWindow(bool *p_open) {
+    if (ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
+        ImGui::Text("Developed by Frank van den Hoef.\n");
+        ImGui::Separator();
+        ImGui::Text("Members of the Aquarius+ project team:");
+        ImGui::Text("- Frank van den Hoef");
+        ImGui::Text("- Sean P. Harrington");
+        ImGui::Text("- Curtis F. Kaylor");
+        ImGui::Separator();
+        ImGui::Text(
+            "Thanks go out all the people contributing to this project and\n"
+            "those who enjoy playing with it, either with this emulator or\n"
+            "the actual hardware!");
     }
-    ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
-    ImGui::Text("Developed by Frank van den Hoef.\n");
-    ImGui::Separator();
-    ImGui::Text("Members of the Aquarius+ project team:");
-    ImGui::Text("- Frank van den Hoef");
-    ImGui::Text("- Sean P. Harrington");
-    ImGui::Text("- Curtis F. Kaylor");
-    ImGui::Separator();
-    ImGui::Text(
-        "Thanks go out all the people contributing to this project and\n"
-        "those who enjoy playing with it, either with this emulator or\n"
-        "the actual hardware!");
     ImGui::End();
 }
 
@@ -667,9 +665,10 @@ int main(int argc, char *argv[]) {
 
     emuState.typeInRelease = 10;
 
-    bool showDemoWindow   = false;
-    bool showAppAbout     = false;
-    bool showScreenWindow = false;
+    bool showDemoWindow      = false;
+    bool showAppAbout        = false;
+    bool showScreenWindow    = false;
+    bool showRegistersWindow = false;
 
     MemoryEditor memEdit;
     memEdit.Open = false;
@@ -739,6 +738,9 @@ int main(int argc, char *argv[]) {
                 if (ImGui::MenuItem("Memory editor", "")) {
                     memEdit.Open = true;
                 }
+                if (ImGui::MenuItem("Registers", "")) {
+                    showRegistersWindow = true;
+                }
                 ImGui::EndMenu();
             }
 
@@ -755,7 +757,7 @@ int main(int argc, char *argv[]) {
         }
 
         if (showAppAbout)
-            show_about_window(&showAppAbout);
+            showAboutWindow(&showAppAbout);
         if (showDemoWindow)
             ImGui::ShowDemoWindow(&showDemoWindow);
         if (memEdit.Open) {
@@ -830,21 +832,61 @@ int main(int argc, char *argv[]) {
             bool open = ImGui::Begin("Screen", &showScreenWindow, ImGuiWindowFlags_AlwaysAutoResize);
             // ImGui::PopStyleVar();
 
-            static int e = 1;
-            ImGui::RadioButton("1x", &e, 1);
-            ImGui::SameLine();
-            ImGui::RadioButton("2x", &e, 2);
-            ImGui::SameLine();
-            ImGui::RadioButton("3x", &e, 3);
-            ImGui::SameLine();
-            ImGui::RadioButton("4x", &e, 4);
-
             if (open) {
+                static int e = 1;
+                ImGui::RadioButton("1x", &e, 1);
+                ImGui::SameLine();
+                ImGui::RadioButton("2x", &e, 2);
+                ImGui::SameLine();
+                ImGui::RadioButton("3x", &e, 3);
+                ImGui::SameLine();
+                ImGui::RadioButton("4x", &e, 4);
+
                 if (texture) {
                     ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(VIDEO_WIDTH * e, VIDEO_HEIGHT * e));
                 }
             }
 
+            ImGui::End();
+        }
+
+        if (showRegistersWindow) {
+            bool open = ImGui::Begin("Registers", &showRegistersWindow, ImGuiWindowFlags_AlwaysAutoResize);
+            if (open) {
+                ImGui::Text("PC: %04X", emuState.z80ctx.PC);
+                ImGui::Separator();
+                ImGui::Text(
+                    "S:%u Z:%u H:%u PV:%u N:%u C:%u",
+                    (emuState.z80ctx.R1.br.F & F_S) ? 1 : 0,
+                    (emuState.z80ctx.R1.br.F & F_Z) ? 1 : 0,
+                    (emuState.z80ctx.R1.br.F & F_H) ? 1 : 0,
+                    (emuState.z80ctx.R1.br.F & F_PV) ? 1 : 0,
+                    (emuState.z80ctx.R1.br.F & F_N) ? 1 : 0,
+                    (emuState.z80ctx.R1.br.F & F_C) ? 1 : 0);
+                ImGui::Separator();
+
+                ImGui::BeginGroup();
+                ImGui::Text("A : %02X", emuState.z80ctx.R1.br.A);
+                ImGui::Text("F : %02X", emuState.z80ctx.R1.br.F);
+                ImGui::Text("BC: %04X", emuState.z80ctx.R1.wr.BC);
+                ImGui::Text("DE: %04X", emuState.z80ctx.R1.wr.DE);
+                ImGui::Text("HL: %04X", emuState.z80ctx.R1.wr.HL);
+                ImGui::Text("IX: %04X", emuState.z80ctx.R1.wr.IX);
+                ImGui::Text("IY: %04X", emuState.z80ctx.R1.wr.IY);
+                ImGui::Text("SP: %04X", emuState.z80ctx.R1.wr.SP);
+                ImGui::EndGroup();
+                ImGui::SameLine(0, 30);
+                ImGui::BeginGroup();
+                ImGui::Text("A' : %02X", emuState.z80ctx.R2.br.A);
+                ImGui::Text("F' : %02X", emuState.z80ctx.R2.br.F);
+                ImGui::Text("BC': %04X", emuState.z80ctx.R2.wr.BC);
+                ImGui::Text("DE': %04X", emuState.z80ctx.R2.wr.DE);
+                ImGui::Text("HL': %04X", emuState.z80ctx.R2.wr.HL);
+                ImGui::Text("IX': %04X", emuState.z80ctx.R2.wr.IX);
+                ImGui::Text("IY': %04X", emuState.z80ctx.R2.wr.IY);
+                ImGui::Text("SP': %04X", emuState.z80ctx.R2.wr.SP);
+                ImGui::EndGroup();
+            }
             ImGui::End();
         }
 
