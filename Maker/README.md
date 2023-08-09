@@ -10,6 +10,8 @@ by Sean Harrington, sph@1stage.com,
 The subfolders in this directory contain all the items necessary for a Maker to manufacture and assemble an Aquarius+ computer. For simplicity, the PCB section of this guide is geared towards using [JLCPCB](https://jlcpcb.com). Other vendors can absolutely be used, but this is the easiest path we have found.
 
 ## Case Manufacturing:
+This guide is only an overview and is not meant to be an exhaustive guide for ordering or making your own case.
+
 ### 3D Printing Terms:
  - FDM - Fused Deposition Modeling, a process of 3D printing where molten plastic is squeezed out as lines of plastic, characterized by its low-cost and ease of use. Common plastic materials used are PLA and ABS.
  - SLA - Sterolithography, a process of 3D printing where a photosensitive resin is exposed to UV light in successive cross-sections of a model, building layers of the print. The finished print must be cleaned of excess resin and then fully cured/hardened by a strong source of UV light, such as the sun or a curing chamber.
@@ -33,8 +35,10 @@ The subfolders in this directory contain all the items necessary for a Maker to 
       - **BOTTOM** DOES require supports.
    3. Print, clean, cure, etc. and install your PCB after programming it with the starter image.
 
+
+------
 ## PCB Manufacturing:
-This guide assumes that the maker will be having a third-party manufacturer create the plastic shell for the case halves. It does not cover the home/personal 3D printing process.
+This guide assumes that the case will be handled separately.
 
 ### PCB Terms:
  - BOM - Bill of Materials
