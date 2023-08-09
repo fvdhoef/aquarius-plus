@@ -16,7 +16,7 @@ This guide is only an overview and is not meant to be an exhaustive guide for or
  - FDM - Fused Deposition Modeling, a process of 3D printing where molten plastic is squeezed out as lines of plastic, characterized by its low-cost and ease of use. Common plastic materials used are PLA and ABS.
  - SLA - Sterolithography, a process of 3D printing where a photosensitive resin is exposed to UV light in successive cross-sections of a model, building layers of the print. The finished print must be cleaned of excess resin and then fully cured/hardened by a strong source of UV light, such as the sun or a curing chamber.
  - SLT - Stereo Lithography file, a format for describing the exterior shell of a 3D object
- - STEP - A 3D model file format which is more detialed and transportable than STL
+ - STEP - A 3D model file format which is more detailed and transportable than STL
 
 ### Process:
  - **Using a Predefined Online Project**
