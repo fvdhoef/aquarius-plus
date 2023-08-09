@@ -667,8 +667,10 @@ int main(int argc, char *argv[]) {
 
     emuState.typeInRelease = 10;
 
-    bool         showDemoWindow = false;
-    bool         showAppAbout   = false;
+    bool showDemoWindow   = false;
+    bool showAppAbout     = false;
+    bool showScreenWindow = false;
+
     MemoryEditor memEdit;
     memEdit.Open = false;
 
@@ -731,6 +733,9 @@ int main(int argc, char *argv[]) {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Debug")) {
+                if (ImGui::MenuItem("Screen in window", "")) {
+                    showScreenWindow = true;
+                }
                 if (ImGui::MenuItem("Memory editor", "")) {
                     memEdit.Open = true;
                 }
@@ -820,12 +825,37 @@ int main(int argc, char *argv[]) {
             ImGui::End();
         }
 
+        if (showScreenWindow) {
+            // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+            bool open = ImGui::Begin("Screen", &showScreenWindow, ImGuiWindowFlags_AlwaysAutoResize);
+            // ImGui::PopStyleVar();
+
+            static int e = 1;
+            ImGui::RadioButton("1x", &e, 1);
+            ImGui::SameLine();
+            ImGui::RadioButton("2x", &e, 2);
+            ImGui::SameLine();
+            ImGui::RadioButton("3x", &e, 3);
+            ImGui::SameLine();
+            ImGui::RadioButton("4x", &e, 4);
+
+            if (open) {
+                if (texture) {
+                    ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(VIDEO_WIDTH * e, VIDEO_HEIGHT * e));
+                }
+            }
+
+            ImGui::End();
+        }
+
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        renderTexture(renderer);
+        if (!showScreenWindow) {
+            renderTexture(renderer);
+        }
 
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
