@@ -20,13 +20,8 @@
 UI::UI() {
 }
 
-void UI::start(
-    const std::string &romPath,
-    const std::string &sdCardPath,
-    const std::string &cartRomPath,
-    const std::string &typeInStr) {
+void UI::start(const std::string &romPath, const std::string &sdCardPath, const std::string &cartRomPath, const std::string &typeInStr) {
     emuState.typeInStr = typeInStr;
-
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(sdCardPath.c_str());
 
@@ -36,39 +31,35 @@ void UI::start(
     }
 
     // Load system ROM
-    {
-        FILE *f = fopen(romPath.c_str(), "rb");
-        if (f == NULL) {
-            perror(romPath.c_str());
-            exit(1);
-        }
-        if ((emuState.flashRomSize = fread(emuState.flashRom, 1, sizeof(emuState.flashRom), f)) < 8192) {
-            fprintf(stderr, "Error during reading of system ROM image.\n");
-            exit(1);
-        }
-        fclose(f);
-
-        emuState.flashRomSize = (emuState.flashRomSize + 0x1FFF) & ~0x1FFF;
-    }
+    if (!emuState.loadSystemROM(romPath))
+        exit(1);
 
     // Load cartridge ROM
-    if (!cartRomPath.empty()) {
-        if (!emuState.loadCartridgeROM(cartRomPath.c_str())) {
-            fprintf(stderr, "Error loading cartridge ROM\n");
-        }
+    if (!cartRomPath.empty() && !emuState.loadCartridgeROM(cartRomPath.c_str())) {
+        fprintf(stderr, "Error loading cartridge ROM\n");
     }
 
+    // Create main window
     unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
-    SDL_Window   *window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
-    if (window == NULL) {
-        printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
+    window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    if (window == nullptr) {
+        fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
         exit(1);
     }
 
-    SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
+    // Create renderer
+    renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_PRESENTVSYNC | SDL_RENDERER_ACCELERATED);
     if (renderer == NULL) {
-        printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
+        fprintf(stderr, "SDL_CreateRenderer Error: %s\n", SDL_GetError());
+        SDL_Quit();
+        exit(1);
+    }
+
+    // Create screen texture
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
+    if (texture == NULL) {
+        fprintf(stderr, "SDL_CreateTexture Error: %s\n", SDL_GetError());
         SDL_Quit();
         exit(1);
     }
@@ -78,17 +69,31 @@ void UI::start(
     ImGui::CreateContext();
     ImGuiIO &io    = ImGui::GetIO();
     io.IniFilename = nullptr;
-
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
+    // Initialize emulator
     Audio::instance().init();
     emuState.reset();
     Audio::instance().start();
     AqKeyboard::instance().init();
 
-    emuState.typeInRelease = 10;
+    // Run main loop
+    mainLoop();
+
+    // Deinitialize
+    ImGui_ImplSDLRenderer2_Shutdown();
+    ImGui_ImplSDL2_Shutdown();
+    ImGui::DestroyContext();
+
+    SDL_DestroyRenderer(renderer);
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+}
+
+void UI::mainLoop() {
+    ImGuiIO &io = ImGui::GetIO();
 
     bool showDemoWindow      = false;
     bool showAppAbout        = false;
@@ -116,7 +121,9 @@ void UI::start(
                     }
                     break;
                 }
-                case SDL_USEREVENT: emulate(renderer); break;
+
+                // Called everytime an audio buffer is done playing
+                case SDL_USEREVENT: emulate(); break;
 
                 default:
                     if (event.type == SDL_QUIT)
@@ -200,8 +207,8 @@ void UI::start(
                     memSize = sizeof(emuState.colorRam);
                     break;
                 case 2:
-                    pMem    = emuState.flashRom;
-                    memSize = emuState.flashRomSize;
+                    pMem    = emuState.systemRom;
+                    memSize = emuState.systemRomSize;
                     break;
                 case 3:
                     pMem    = emuState.mainRam;
@@ -321,27 +328,15 @@ void UI::start(
         SDL_RenderClear(renderer);
 
         if (!showScreenWindow) {
-            renderTexture(renderer);
+            renderTexture();
         }
 
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
     }
-
-    ImGui_ImplSDLRenderer2_Shutdown();
-    ImGui_ImplSDL2_Shutdown();
-    ImGui::DestroyContext();
-
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
 }
 
-void UI::renderScreen(SDL_Renderer *renderer) {
-    if (texture == NULL) {
-        texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
-    }
-
+void UI::renderScreen() {
     void *pixels;
     int   pitch;
     SDL_LockTexture(texture, NULL, &pixels, &pitch);
@@ -369,7 +364,7 @@ void UI::renderScreen(SDL_Renderer *renderer) {
     SDL_UnlockTexture(texture);
 }
 
-void UI::renderTexture(SDL_Renderer *renderer) {
+void UI::renderTexture() {
     float rsx, rsy;
     SDL_RenderGetScale(renderer, &rsx, &rsy);
     auto  drawData = ImGui::GetDrawData();
@@ -406,7 +401,7 @@ void UI::renderTexture(SDL_Renderer *renderer) {
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 }
 
-void UI::emulate(SDL_Renderer *renderer) {
+void UI::emulate() {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
     // second.
@@ -425,12 +420,13 @@ void UI::emulate(SDL_Renderer *renderer) {
             Z80Execute(&emuState.z80ctx);
             int delta = emuState.z80ctx.tstates * 2;
 
-            int old_line_hcycles = emuState.lineHalfCycles;
+            int prevLineHalfCycles = emuState.lineHalfCycles;
 
             emuState.lineHalfCycles += delta;
             emuState.sampleHalfCycles += delta;
 
-            if (old_line_hcycles < 320 && emuState.lineHalfCycles >= 320 && emuState.videoLine == emuState.videoIrqLine) {
+            // Handle VIRQLINE register
+            if (prevLineHalfCycles < 320 && emuState.lineHalfCycles >= 320 && emuState.videoLine == emuState.videoIrqLine) {
                 emuState.irqStatus |= (1 << 1);
             }
 
@@ -444,12 +440,13 @@ void UI::emulate(SDL_Renderer *renderer) {
                     emuState.irqStatus |= (1 << 0);
 
                 } else if (emuState.videoLine == 262) {
-                    renderScreen(renderer);
+                    renderScreen();
                     emuState.videoLine = 0;
                     emuState.keyboardTypeIn();
                 }
             }
 
+            // Generate interrupt if needed
             if ((emuState.irqStatus & emuState.irqMask) != 0) {
                 Z80INT(&emuState.z80ctx, 0xFF);
             }

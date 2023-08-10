@@ -24,8 +24,8 @@ EmuState::EmuState() {
     for (unsigned i = 0; i < sizeof(emuState.colorRam); i++) {
         emuState.colorRam[i] = rand();
     }
-    for (unsigned i = 0; i < sizeof(emuState.flashRom); i++) {
-        emuState.flashRom[i] = 0xFF;
+    for (unsigned i = 0; i < sizeof(emuState.systemRom); i++) {
+        emuState.systemRom[i] = 0xFF;
     }
     for (unsigned i = 0; i < sizeof(emuState.mainRam); i++) {
         emuState.mainRam[i] = rand();
@@ -50,7 +50,22 @@ void EmuState::reset() {
     ay2.reset();
 }
 
-bool EmuState::loadCartridgeROM(const char *path) {
+bool EmuState::loadSystemROM(const std::string &path) {
+    auto ifs = std::ifstream(path, std::ifstream::binary);
+    if (!ifs.good()) {
+        return false;
+    }
+
+    ifs.read((char *)systemRom, sizeof(systemRom));
+    if ((emuState.systemRomSize = ifs.gcount()) < 8192) {
+        fprintf(stderr, "Error during reading of system ROM image.\n");
+        return false;
+    }
+    emuState.systemRomSize = (emuState.systemRomSize + 0x1FFF) & ~0x1FFF;
+    return true;
+}
+
+bool EmuState::loadCartridgeROM(const std::string &path) {
     auto ifs = std::ifstream(path, std::ifstream::binary);
     if (!ifs.good()) {
         return false;
@@ -144,7 +159,7 @@ uint8_t EmuState::memRead(size_t param, uint16_t addr) {
     }
 
     if (page < 16) {
-        return emuState.flashRom[page * 0x4000 + addr];
+        return emuState.systemRom[page * 0x4000 + addr];
     } else if (page == 19) {
         return emuState.cartridgeInserted ? emuState.cartRom[addr] : 0xFF;
     } else if (page == 20) {
@@ -193,8 +208,7 @@ void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
     }
 
     if (page < 16) {
-        // Flash memory is read-only for now
-        // TODO: Implement flash emulation
+        // System ROM is readonly
         return;
     } else if (page == 19) {
         // Game ROM is readonly

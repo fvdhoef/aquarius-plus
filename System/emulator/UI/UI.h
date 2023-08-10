@@ -7,18 +7,18 @@ class UI {
 public:
     UI();
 
-    void start(
-        const std::string &romPath,
-        const std::string &sdCardPath,
-        const std::string &cartRomPath,
-        const std::string &typeInStr);
+    void start(const std::string &romPath, const std::string &sdCardPath, const std::string &cartRomPath, const std::string &typeInStr);
 
 private:
-    void renderScreen(SDL_Renderer *renderer);
-    void renderTexture(SDL_Renderer *renderer);
-    void emulate(SDL_Renderer *renderer);
+    void mainLoop();
+
+    void renderScreen();
+    void renderTexture();
+    void emulate();
 
     void showAboutWindow(bool *p_open);
 
-    SDL_Texture *texture = NULL;
+    SDL_Texture  *texture  = nullptr;
+    SDL_Window   *window   = nullptr;
+    SDL_Renderer *renderer = nullptr;
 };
