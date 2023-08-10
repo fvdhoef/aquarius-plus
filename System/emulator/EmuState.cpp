@@ -95,19 +95,20 @@ void EmuState::keyboardTypeIn() {
             return;
     }
 
-    if (typeInStr == NULL)
+    if (typeInStr.size() == 0)
         return;
 
-    char ch = *(typeInStr++);
+    char ch = typeInStr.front();
+    typeInStr.erase(typeInStr.begin());
     if (ch == '\\') {
-        ch = *(typeInStr++);
+        if (typeInStr.size() == 0)
+            return;
+
+        ch = typeInStr.front();
+        typeInStr.erase(typeInStr.begin());
         if (ch == 'n') {
             ch = '\n';
         }
-    }
-    if (ch == 0) {
-        typeInStr = NULL;
-        return;
     }
     typeInChar = ch;
     AqKeyboard::instance().pressKey(typeInChar, true);

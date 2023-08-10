@@ -41,7 +41,7 @@ struct EmuState {
     size_t     flashRomSize;
 
     // Virtual typing from command-line argument
-    const char *typeInStr;
+    std::string typeInStr;
     int         typeInRelease;
     int         typeInDelay;
     char        typeInChar;
