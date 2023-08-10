@@ -63,7 +63,7 @@
     <ClInclude Include="..\VFS\SDCardVFS.h" />
     <ClInclude Include="..\VFS\VFS.h" />
     <ClInclude Include="..\Video.h" />
-    <ClCompile Include="..\UI\UI.h" />
+    <ClInclude Include="..\UI\UI.h" />
     <ClInclude Include="getopt.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>

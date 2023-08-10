@@ -431,7 +431,7 @@ void UI::wndScreen(bool *p_open) {
         ImGui::RadioButton("4x", &e, 4);
 
         if (texture) {
-            ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(VIDEO_WIDTH * e, VIDEO_HEIGHT * e));
+            ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
         }
     }
 
