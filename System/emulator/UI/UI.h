@@ -16,7 +16,10 @@ private:
     void renderTexture();
     void emulate();
 
-    void showAboutWindow(bool *p_open);
+    void wndAbout(bool *p_open);
+    void wndRegs(bool *p_open);
+    void wndScreen(bool *p_open);
+    void wndMemEdit(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;

@@ -95,13 +95,11 @@ void UI::start(const std::string &romPath, const std::string &sdCardPath, const 
 void UI::mainLoop() {
     ImGuiIO &io = ImGui::GetIO();
 
-    bool showDemoWindow      = false;
-    bool showAppAbout        = false;
-    bool showScreenWindow    = false;
-    bool showRegistersWindow = false;
-
-    MemoryEditor memEdit;
-    memEdit.Open = false;
+    bool showScreenWindow = false;
+    bool showMemEdit      = false;
+    bool showRegsWindow   = false;
+    bool showAppAbout     = false;
+    bool showDemoWindow   = false;
 
     bool done = false;
     while (!done) {
@@ -168,10 +166,10 @@ void UI::mainLoop() {
                     showScreenWindow = true;
                 }
                 if (ImGui::MenuItem("Memory editor", "")) {
-                    memEdit.Open = true;
+                    showMemEdit = true;
                 }
                 if (ImGui::MenuItem("Registers", "")) {
-                    showRegistersWindow = true;
+                    showRegsWindow = true;
                 }
                 ImGui::EndMenu();
             }
@@ -188,139 +186,16 @@ void UI::mainLoop() {
             ImGui::EndMainMenuBar();
         }
 
+        if (showScreenWindow)
+            wndScreen(&showScreenWindow);
+        if (showMemEdit)
+            wndMemEdit(&showMemEdit);
+        if (showRegsWindow)
+            wndRegs(&showRegsWindow);
         if (showAppAbout)
-            showAboutWindow(&showAppAbout);
+            wndAbout(&showAppAbout);
         if (showDemoWindow)
             ImGui::ShowDemoWindow(&showDemoWindow);
-        if (memEdit.Open) {
-            void      *pMem            = emuState.colorRam;
-            size_t     memSize         = sizeof(emuState.colorRam);
-            size_t     baseDisplayAddr = 0;
-            static int itemCurrent     = 0;
-            switch (itemCurrent) {
-                case 0:
-                    pMem    = emuState.screenRam;
-                    memSize = sizeof(emuState.screenRam);
-                    break;
-                case 1:
-                    pMem    = emuState.colorRam;
-                    memSize = sizeof(emuState.colorRam);
-                    break;
-                case 2:
-                    pMem    = emuState.systemRom;
-                    memSize = emuState.systemRomSize;
-                    break;
-                case 3:
-                    pMem    = emuState.mainRam;
-                    memSize = sizeof(emuState.mainRam);
-                    break;
-                case 4:
-                    pMem    = emuState.cartRom;
-                    memSize = sizeof(emuState.cartRom);
-                    break;
-                case 5:
-                    pMem    = emuState.videoRam;
-                    memSize = sizeof(emuState.videoRam);
-                    break;
-                case 6:
-                    pMem    = emuState.charRam;
-                    memSize = sizeof(emuState.charRam);
-                    break;
-            }
-
-            MemoryEditor::Sizes s;
-            memEdit.CalcSizes(s, memSize, baseDisplayAddr);
-            ImGui::SetNextWindowSize(ImVec2(s.WindowWidth, s.WindowWidth * 0.60f), ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
-
-            memEdit.Open = true;
-            if (ImGui::Begin("Memory editor", &memEdit.Open, ImGuiWindowFlags_NoScrollbar)) {
-                if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-                    ImGui::OpenPopup("context");
-
-                ImGui::Combo(
-                    "Memory select", &itemCurrent,
-                    "Screen RAM\0"
-                    "Color RAM\0"
-                    "System ROM\0"
-                    "Main RAM\0"
-                    "Cartridge ROM\0"
-                    "Video RAM\0"
-                    "Character RAM\0");
-
-                ImGui::Separator();
-
-                memEdit.DrawContents(pMem, memSize, baseDisplayAddr);
-                if (memEdit.ContentsWidthChanged) {
-                    memEdit.CalcSizes(s, memSize, baseDisplayAddr);
-                    ImGui::SetWindowSize(ImVec2(s.WindowWidth, ImGui::GetWindowSize().y));
-                }
-            }
-            ImGui::End();
-        }
-
-        if (showScreenWindow) {
-            // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-            bool open = ImGui::Begin("Screen", &showScreenWindow, ImGuiWindowFlags_AlwaysAutoResize);
-            // ImGui::PopStyleVar();
-
-            if (open) {
-                static int e = 1;
-                ImGui::RadioButton("1x", &e, 1);
-                ImGui::SameLine();
-                ImGui::RadioButton("2x", &e, 2);
-                ImGui::SameLine();
-                ImGui::RadioButton("3x", &e, 3);
-                ImGui::SameLine();
-                ImGui::RadioButton("4x", &e, 4);
-
-                if (texture) {
-                    ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(VIDEO_WIDTH * e, VIDEO_HEIGHT * e));
-                }
-            }
-
-            ImGui::End();
-        }
-
-        if (showRegistersWindow) {
-            bool open = ImGui::Begin("Registers", &showRegistersWindow, ImGuiWindowFlags_AlwaysAutoResize);
-            if (open) {
-                ImGui::Text("PC: %04X", emuState.z80ctx.PC);
-                ImGui::Separator();
-                ImGui::Text(
-                    "S:%u Z:%u H:%u PV:%u N:%u C:%u",
-                    (emuState.z80ctx.R1.br.F & F_S) ? 1 : 0,
-                    (emuState.z80ctx.R1.br.F & F_Z) ? 1 : 0,
-                    (emuState.z80ctx.R1.br.F & F_H) ? 1 : 0,
-                    (emuState.z80ctx.R1.br.F & F_PV) ? 1 : 0,
-                    (emuState.z80ctx.R1.br.F & F_N) ? 1 : 0,
-                    (emuState.z80ctx.R1.br.F & F_C) ? 1 : 0);
-                ImGui::Separator();
-
-                ImGui::BeginGroup();
-                ImGui::Text("A : %02X", emuState.z80ctx.R1.br.A);
-                ImGui::Text("F : %02X", emuState.z80ctx.R1.br.F);
-                ImGui::Text("BC: %04X", emuState.z80ctx.R1.wr.BC);
-                ImGui::Text("DE: %04X", emuState.z80ctx.R1.wr.DE);
-                ImGui::Text("HL: %04X", emuState.z80ctx.R1.wr.HL);
-                ImGui::Text("IX: %04X", emuState.z80ctx.R1.wr.IX);
-                ImGui::Text("IY: %04X", emuState.z80ctx.R1.wr.IY);
-                ImGui::Text("SP: %04X", emuState.z80ctx.R1.wr.SP);
-                ImGui::EndGroup();
-                ImGui::SameLine(0, 30);
-                ImGui::BeginGroup();
-                ImGui::Text("A' : %02X", emuState.z80ctx.R2.br.A);
-                ImGui::Text("F' : %02X", emuState.z80ctx.R2.br.F);
-                ImGui::Text("BC': %04X", emuState.z80ctx.R2.wr.BC);
-                ImGui::Text("DE': %04X", emuState.z80ctx.R2.wr.DE);
-                ImGui::Text("HL': %04X", emuState.z80ctx.R2.wr.HL);
-                ImGui::Text("IX': %04X", emuState.z80ctx.R2.wr.IX);
-                ImGui::Text("IY': %04X", emuState.z80ctx.R2.wr.IY);
-                ImGui::Text("SP': %04X", emuState.z80ctx.R2.wr.SP);
-                ImGui::EndGroup();
-            }
-            ImGui::End();
-        }
 
         ImGui::Render();
         SDL_RenderSetScale(renderer, io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y);
@@ -482,7 +357,7 @@ void UI::emulate() {
     Audio::instance().putBuffer(abuf);
 }
 
-void UI::showAboutWindow(bool *p_open) {
+void UI::wndAbout(bool *p_open) {
     if (ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
         ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
         ImGui::Text("Developed by Frank van den Hoef.\n");
@@ -496,6 +371,137 @@ void UI::showAboutWindow(bool *p_open) {
             "Thanks go out all the people contributing to this project and\n"
             "those who enjoy playing with it, either with this emulator or\n"
             "the actual hardware!");
+    }
+    ImGui::End();
+}
+
+void UI::wndRegs(bool *p_open) {
+    bool open = ImGui::Begin("Registers", p_open, ImGuiWindowFlags_AlwaysAutoResize);
+    if (open) {
+        ImGui::Text("PC: %04X", emuState.z80ctx.PC);
+        ImGui::Separator();
+        ImGui::Text(
+            "S:%u Z:%u H:%u PV:%u N:%u C:%u",
+            (emuState.z80ctx.R1.br.F & F_S) ? 1 : 0,
+            (emuState.z80ctx.R1.br.F & F_Z) ? 1 : 0,
+            (emuState.z80ctx.R1.br.F & F_H) ? 1 : 0,
+            (emuState.z80ctx.R1.br.F & F_PV) ? 1 : 0,
+            (emuState.z80ctx.R1.br.F & F_N) ? 1 : 0,
+            (emuState.z80ctx.R1.br.F & F_C) ? 1 : 0);
+        ImGui::Separator();
+
+        ImGui::BeginGroup();
+        ImGui::Text("A : %02X", emuState.z80ctx.R1.br.A);
+        ImGui::Text("F : %02X", emuState.z80ctx.R1.br.F);
+        ImGui::Text("BC: %04X", emuState.z80ctx.R1.wr.BC);
+        ImGui::Text("DE: %04X", emuState.z80ctx.R1.wr.DE);
+        ImGui::Text("HL: %04X", emuState.z80ctx.R1.wr.HL);
+        ImGui::Text("IX: %04X", emuState.z80ctx.R1.wr.IX);
+        ImGui::Text("IY: %04X", emuState.z80ctx.R1.wr.IY);
+        ImGui::Text("SP: %04X", emuState.z80ctx.R1.wr.SP);
+        ImGui::EndGroup();
+        ImGui::SameLine(0, 30);
+        ImGui::BeginGroup();
+        ImGui::Text("A' : %02X", emuState.z80ctx.R2.br.A);
+        ImGui::Text("F' : %02X", emuState.z80ctx.R2.br.F);
+        ImGui::Text("BC': %04X", emuState.z80ctx.R2.wr.BC);
+        ImGui::Text("DE': %04X", emuState.z80ctx.R2.wr.DE);
+        ImGui::Text("HL': %04X", emuState.z80ctx.R2.wr.HL);
+        ImGui::Text("IX': %04X", emuState.z80ctx.R2.wr.IX);
+        ImGui::Text("IY': %04X", emuState.z80ctx.R2.wr.IY);
+        ImGui::Text("SP': %04X", emuState.z80ctx.R2.wr.SP);
+        ImGui::EndGroup();
+    }
+    ImGui::End();
+}
+
+void UI::wndScreen(bool *p_open) {
+    // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    bool open = ImGui::Begin("Screen", p_open, ImGuiWindowFlags_AlwaysAutoResize);
+    // ImGui::PopStyleVar();
+
+    if (open) {
+        static int e = 1;
+        ImGui::RadioButton("1x", &e, 1);
+        ImGui::SameLine();
+        ImGui::RadioButton("2x", &e, 2);
+        ImGui::SameLine();
+        ImGui::RadioButton("3x", &e, 3);
+        ImGui::SameLine();
+        ImGui::RadioButton("4x", &e, 4);
+
+        if (texture) {
+            ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2(VIDEO_WIDTH * e, VIDEO_HEIGHT * e));
+        }
+    }
+
+    ImGui::End();
+}
+
+void UI::wndMemEdit(bool *p_open) {
+    static MemoryEditor memEdit;
+
+    void      *pMem            = emuState.colorRam;
+    size_t     memSize         = sizeof(emuState.colorRam);
+    size_t     baseDisplayAddr = 0;
+    static int itemCurrent     = 0;
+    switch (itemCurrent) {
+        case 0:
+            pMem    = emuState.screenRam;
+            memSize = sizeof(emuState.screenRam);
+            break;
+        case 1:
+            pMem    = emuState.colorRam;
+            memSize = sizeof(emuState.colorRam);
+            break;
+        case 2:
+            pMem    = emuState.systemRom;
+            memSize = emuState.systemRomSize;
+            break;
+        case 3:
+            pMem    = emuState.mainRam;
+            memSize = sizeof(emuState.mainRam);
+            break;
+        case 4:
+            pMem    = emuState.cartRom;
+            memSize = sizeof(emuState.cartRom);
+            break;
+        case 5:
+            pMem    = emuState.videoRam;
+            memSize = sizeof(emuState.videoRam);
+            break;
+        case 6:
+            pMem    = emuState.charRam;
+            memSize = sizeof(emuState.charRam);
+            break;
+    }
+
+    MemoryEditor::Sizes s;
+    memEdit.CalcSizes(s, memSize, baseDisplayAddr);
+    ImGui::SetNextWindowSize(ImVec2(s.WindowWidth, s.WindowWidth * 0.60f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
+
+    if (ImGui::Begin("Memory editor", p_open, ImGuiWindowFlags_NoScrollbar)) {
+        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
+            ImGui::OpenPopup("context");
+
+        ImGui::Combo(
+            "Memory select", &itemCurrent,
+            "Screen RAM\0"
+            "Color RAM\0"
+            "System ROM\0"
+            "Main RAM\0"
+            "Cartridge ROM\0"
+            "Video RAM\0"
+            "Character RAM\0");
+
+        ImGui::Separator();
+
+        memEdit.DrawContents(pMem, memSize, baseDisplayAddr);
+        if (memEdit.ContentsWidthChanged) {
+            memEdit.CalcSizes(s, memSize, baseDisplayAddr);
+            ImGui::SetWindowSize(ImVec2(s.WindowWidth, ImGui::GetWindowSize().y));
+        }
     }
     ImGui::End();
 }
