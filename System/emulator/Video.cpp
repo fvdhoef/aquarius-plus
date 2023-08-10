@@ -14,11 +14,6 @@ enum {
 Video::Video() {
 }
 
-Video &Video::instance() {
-    static Video obj;
-    return obj;
-}
-
 void Video::drawLine() {
     int line = emuState.videoLine;
     if (line < 0 || line >= VIDEO_HEIGHT)

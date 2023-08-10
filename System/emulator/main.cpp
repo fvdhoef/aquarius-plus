@@ -24,282 +24,9 @@
 #    include <shlobj.h>
 #endif
 
-static uint8_t mem_read(size_t param, uint16_t addr) {
-    (void)param;
-
-    // Handle CPM remap bit
-    if (emuState.cpmRemap) {
-        if (addr < 0x4000)
-            addr += 0xC000;
-        if (addr >= 0xC000)
-            addr -= 0xC000;
-    }
-
-    // Get and decode banking register
-    uint8_t  bankreg     = emuState.bankRegs[addr >> 14];
-    unsigned page        = bankreg & 0x3F;
-    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
-
-    addr &= 0x3FFF;
-
-    if (overlay_ram && addr >= 0x3000) {
-        if (addr < 0x3400) {
-            return emuState.screenRam[addr & 0x3FF];
-        } else if (addr < 0x3800) {
-            return emuState.colorRam[addr & 0x3FF];
-        } else {
-            return emuState.mainRam[addr];
-        }
-    }
-
-    if (page < 16) {
-        return emuState.flashRom[page * 0x4000 + addr];
-    } else if (page == 19) {
-        return emuState.cartridgeInserted ? emuState.cartRom[addr] : 0xFF;
-    } else if (page == 20) {
-        return emuState.videoRam[addr];
-    } else if (page == 21) {
-        if (addr < 0x800) {
-            return emuState.charRam[addr];
-        }
-    } else if (page >= 32 && page < 64) {
-        return emuState.mainRam[(page - 32) * 0x4000 + addr];
-    }
-    return 0xFF;
-}
-
-static void mem_write(size_t param, uint16_t addr, uint8_t data) {
-    (void)param;
-
-    // Handle CPM remap bit
-    if (emuState.cpmRemap) {
-        if (addr < 0x4000)
-            addr += 0xC000;
-        if (addr >= 0xC000)
-            addr -= 0xC000;
-    }
-
-    // Get and decode banking register
-    uint8_t  bankreg     = emuState.bankRegs[addr >> 14];
-    unsigned page        = bankreg & 0x3F;
-    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
-    bool     readonly    = (bankreg & (1 << 7)) != 0;
-    addr &= 0x3FFF;
-
-    if (overlay_ram && addr >= 0x3000) {
-        if (addr < 0x3400) {
-            emuState.screenRam[addr & 0x3FF] = data;
-        } else if (addr < 0x3800) {
-            emuState.colorRam[addr & 0x3FF] = data;
-        } else {
-            emuState.mainRam[addr] = data;
-        }
-        return;
-    }
-
-    if (readonly) {
-        return;
-    }
-
-    if (page < 16) {
-        // Flash memory is read-only for now
-        // TODO: Implement flash emulation
-        return;
-    } else if (page == 19) {
-        // Game ROM is readonly
-        return;
-    } else if (page == 20) {
-        emuState.videoRam[addr] = data;
-    } else if (page == 21) {
-        if (addr < 0x800) {
-            emuState.charRam[addr] = data;
-        }
-    } else if (page >= 32 && page < 64) {
-        emuState.mainRam[(page - 32) * 0x4000 + addr] = data;
-    }
-}
-
-static uint8_t io_read(size_t param, ushort addr) {
-    (void)param;
-
-    if (!emuState.sysCtrlDisableExt) {
-        switch (addr & 0xFF) {
-            case 0xE0: return emuState.videoCtrl;
-            case 0xE1: return emuState.videoScrX & 0xFF;
-            case 0xE2: return emuState.videoScrX >> 8;
-            case 0xE3: return emuState.videoScrY;
-            case 0xE4: return emuState.videoSprSel;
-            case 0xE5: return emuState.videoSprX[emuState.videoSprSel] & 0xFF;
-            case 0xE6: return emuState.videoSprX[emuState.videoSprSel] >> 8;
-            case 0xE7: return emuState.videoSprY[emuState.videoSprSel];
-            case 0xE8: return emuState.videoSprIdx[emuState.videoSprSel] & 0xFF;
-            case 0xE9: return (
-                (emuState.videoSprAttr[emuState.videoSprSel] & 0xFE) |
-                ((emuState.videoSprIdx[emuState.videoSprSel] >> 8) & 1));
-            case 0xEA: return emuState.videoPalSel;
-            case 0xEB: return (emuState.videoPalette[emuState.videoPalSel >> 1] >> ((emuState.videoPalSel & 1) * 8)) & 0xFF;
-            case 0xEC: return emuState.videoLine < 255 ? emuState.videoLine : 255;
-            case 0xED: return emuState.videoIrqLine;
-            case 0xEE: return emuState.irqMask;
-            case 0xEF: return emuState.irqStatus;
-            case 0xF0: return emuState.bankRegs[0];
-            case 0xF1: return emuState.bankRegs[1];
-            case 0xF2: return emuState.bankRegs[2];
-            case 0xF3: return emuState.bankRegs[3];
-            case 0xF4: return AqUartProtocol::instance().readCtrl();
-            case 0xF5: return AqUartProtocol::instance().readData();
-        }
-    }
-
-    switch (addr & 0xFF) {
-        case 0xF6:
-        case 0xF7:
-            if (emuState.sysCtrlAyDisable)
-                return 0xFF;
-            else {
-                switch (emuState.ay1Addr) {
-                    case 14: return emuState.handCtrl1;
-                    case 15: return emuState.handCtrl2;
-                    default: return emuState.ay1.readReg(emuState.ay1Addr);
-                }
-            }
-            break;
-
-        case 0xF8:
-        case 0xF9:
-            if (emuState.sysCtrlAyDisable || emuState.sysCtrlDisableExt)
-                return 0xFF;
-            else
-                return emuState.ay2.readReg(emuState.ay1Addr);
-
-        case 0xFB: return (
-            (emuState.sysCtrlDisableExt ? (1 << 0) : 0) |
-            (emuState.sysCtrlAyDisable ? (1 << 1) : 0));
-
-        case 0xFC: /* printf("Cassette port input (%04x)\n", addr); */ return 0xFF;
-        case 0xFD: return (emuState.videoLine >= 242) ? 0 : 1;
-        case 0xFE: /* printf("Clear to send status (%04x)\n", addr); */ return 0xFF;
-        case 0xFF: {
-            // Keyboard matrix. Selected rows are passed in the upper 8 address lines.
-            uint8_t rows = addr >> 8;
-
-            // Wire-AND all selected rows.
-            uint8_t result = 0xFF;
-            for (int i = 0; i < 8; i++) {
-                if ((rows & (1 << i)) == 0) {
-                    result &= emuState.keybMatrix[i];
-                }
-            }
-            return result;
-        }
-        default: break;
-    }
-
-    printf("io_read(0x%02x)\n", addr & 0xFF);
-    return 0xFF;
-}
-
-static void io_write(size_t param, uint16_t addr, uint8_t data) {
-    (void)param;
-
-    if (!emuState.sysCtrlDisableExt) {
-        switch (addr & 0xFF) {
-            case 0xE0: emuState.videoCtrl = data; return;
-            case 0xE1: emuState.videoScrX = (emuState.videoScrX & ~0xFF) | data; return;
-            case 0xE2: emuState.videoScrX = (emuState.videoScrX & 0xFF) | ((data & 1) << 8); return;
-            case 0xE3: emuState.videoScrY = data; return;
-            case 0xE4: emuState.videoSprSel = data & 0x3F; return;
-            case 0xE5: emuState.videoSprX[emuState.videoSprSel] = (emuState.videoSprX[emuState.videoSprSel] & ~0xFF) | data; return;
-            case 0xE6: emuState.videoSprX[emuState.videoSprSel] = (emuState.videoSprX[emuState.videoSprSel] & 0xFF) | ((data & 1) << 8); return;
-            case 0xE7: emuState.videoSprY[emuState.videoSprSel] = data; return;
-            case 0xE8: emuState.videoSprIdx[emuState.videoSprSel] = (emuState.videoSprIdx[emuState.videoSprSel] & ~0xFF) | data; return;
-            case 0xE9:
-                emuState.videoSprAttr[emuState.videoSprSel] = data & 0xFE;
-                emuState.videoSprIdx[emuState.videoSprSel]  = (emuState.videoSprIdx[emuState.videoSprSel] & 0xFF) | ((data & 1) << 8);
-                return;
-            case 0xEA: emuState.videoPalSel = data & 0x7F; return;
-            case 0xEB:
-                if ((emuState.videoPalSel & 1) == 0) {
-                    emuState.videoPalette[emuState.videoPalSel >> 1] =
-                        (emuState.videoPalette[emuState.videoPalSel >> 1] & 0xF00) | data;
-                } else {
-                    emuState.videoPalette[emuState.videoPalSel >> 1] =
-                        ((data & 0xF) << 8) | (emuState.videoPalette[emuState.videoPalSel >> 1] & 0xFF);
-                }
-                return;
-            case 0xEC: return;
-            case 0xED: emuState.videoIrqLine = data; return;
-            case 0xEE: emuState.irqMask = data & 3; return;
-            case 0xEF: emuState.irqStatus &= ~data; return;
-            case 0xF0: emuState.bankRegs[0] = data; return;
-            case 0xF1: emuState.bankRegs[1] = data; return;
-            case 0xF2: emuState.bankRegs[2] = data; return;
-            case 0xF3: emuState.bankRegs[3] = data; return;
-            case 0xF4: AqUartProtocol::instance().writeCtrl(data); return;
-            case 0xF5: AqUartProtocol::instance().writeData(data); return;
-        }
-    }
-
-    switch (addr & 0xFF) {
-        case 0xF6:
-            if (!emuState.sysCtrlAyDisable && emuState.ay1Addr < 14)
-                emuState.ay1.writeReg(emuState.ay1Addr, data);
-            return;
-
-        case 0xF7:
-            if (!emuState.sysCtrlAyDisable)
-                emuState.ay1Addr = data;
-            return;
-
-        case 0xF8:
-            if (!(emuState.sysCtrlAyDisable || emuState.sysCtrlDisableExt) && emuState.ay2Addr < 14)
-                emuState.ay2.writeReg(emuState.ay2Addr, data);
-            return;
-
-        case 0xF9:
-            if (!(emuState.sysCtrlAyDisable || emuState.sysCtrlDisableExt))
-                emuState.ay2Addr = data;
-            return;
-
-        case 0xFB:
-            emuState.sysCtrlDisableExt = (data & (1 << 0)) != 0;
-            emuState.sysCtrlAyDisable  = (data & (1 << 1)) != 0;
-            return;
-
-        case 0xFC: emuState.soundOutput = (data & 1) != 0; break;
-        case 0xFD: emuState.cpmRemap = (data & 1) != 0; break;
-        case 0xFE: /* printf("1200 bps serial printer (%04x) = %u\n", addr, data & 1); */ break;
-        case 0xFF: break;
-        default: printf("io_write(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
-    }
-}
-
-void reset(void) {
-    Z80RESET(&emuState.z80ctx);
-    emuState.z80ctx.ioRead   = io_read;
-    emuState.z80ctx.ioWrite  = io_write;
-    emuState.z80ctx.memRead  = mem_read;
-    emuState.z80ctx.memWrite = mem_write;
-
-    emuState.cpmRemap = false;
-
-    emuState.ay1.reset();
-    emuState.ay2.reset();
-}
-
-// 3579545 Hz -> 59659 cycles / frame
-// 7159090 Hz -> 119318 cycles / frame
-
-// 455x262=119210 -> 60.05 Hz
-// 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
-// 366 active pixels
-
-#define HCYCLES_PER_LINE (455)
-#define HCYCLES_PER_SAMPLE (162)
-
 static SDL_Texture *texture = NULL;
 
-static void render_screen(SDL_Renderer *renderer) {
+static void renderScreen(SDL_Renderer *renderer) {
     if (texture == NULL) {
         texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
     }
@@ -308,7 +35,7 @@ static void render_screen(SDL_Renderer *renderer) {
     int   pitch;
     SDL_LockTexture(texture, NULL, &pixels, &pitch);
 
-    const uint16_t *fb = Video::instance().getFb();
+    const uint16_t *fb = emuState.video.getFb();
 
     for (int j = 0; j < VIDEO_HEIGHT; j++) {
         for (int i = 0; i < VIDEO_WIDTH; i++) {
@@ -368,41 +95,6 @@ static void renderTexture(SDL_Renderer *renderer) {
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 }
 
-static void keyboard_type_in(void) {
-    if (emuState.typeInRelease > 0) {
-        emuState.typeInRelease--;
-        if (emuState.typeInRelease > 0)
-            return;
-        AqKeyboard::instance().pressKey(emuState.typeInChar, false);
-        emuState.typeInDelay = 1;
-        return;
-    }
-
-    if (emuState.typeInDelay > 0) {
-        emuState.typeInDelay--;
-        if (emuState.typeInDelay > 0)
-            return;
-    }
-
-    if (emuState.typeInStr == NULL)
-        return;
-
-    char ch = *(emuState.typeInStr++);
-    if (ch == '\\') {
-        ch = *(emuState.typeInStr++);
-        if (ch == 'n') {
-            ch = '\n';
-        }
-    }
-    if (ch == 0) {
-        emuState.typeInStr = NULL;
-        return;
-    }
-    emuState.typeInChar = ch;
-    AqKeyboard::instance().pressKey(emuState.typeInChar, true);
-    emuState.typeInRelease = ch == '\n' ? 10 : 1;
-}
-
 static void emulate(SDL_Renderer *renderer) {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
@@ -434,17 +126,16 @@ static void emulate(SDL_Renderer *renderer) {
             if (emuState.lineHalfCycles >= HCYCLES_PER_LINE) {
                 emuState.lineHalfCycles -= HCYCLES_PER_LINE;
 
-                Video::instance().drawLine();
+                emuState.video.drawLine();
 
                 emuState.videoLine++;
                 if (emuState.videoLine == 200) {
                     emuState.irqStatus |= (1 << 0);
 
                 } else if (emuState.videoLine == 262) {
-                    render_screen(renderer);
+                    renderScreen(renderer);
                     emuState.videoLine = 0;
-
-                    keyboard_type_in();
+                    emuState.keyboardTypeIn();
                 }
             }
 
@@ -455,7 +146,7 @@ static void emulate(SDL_Renderer *renderer) {
 
         emuState.sampleHalfCycles -= HCYCLES_PER_SAMPLE;
 
-        uint16_t beep = emuState.soundOutput ? AUDIO_LEVEL : 0;
+        uint16_t beep = emuState.soundOutput ? 10000 : 0;
 
         // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
         unsigned left  = 0;
@@ -499,35 +190,6 @@ static void showAboutWindow(bool *p_open) {
             "the actual hardware!");
     }
     ImGui::End();
-}
-
-bool loadCartridgeROM(const char *path) {
-    auto ifs = std::ifstream(path, std::ifstream::binary);
-    if (!ifs.good()) {
-        return false;
-    }
-
-    ifs.seekg(0, ifs.end);
-    auto fileSize = ifs.tellg();
-    ifs.seekg(0, ifs.beg);
-
-    if (fileSize == 8192) {
-        ifs.read((char *)(emuState.cartRom + 8192), fileSize);
-        // Mirror ROM to $C000
-        memcpy(emuState.cartRom, emuState.cartRom + 8192, 8192);
-
-    } else if (fileSize == 16384) {
-        ifs.read((char *)emuState.cartRom, fileSize);
-
-    } else {
-        fprintf(stderr, "Invalid cartridge ROM file: %u, should be either exactly 8 or 16KB.\n", (unsigned)fileSize);
-        return false;
-    }
-    ifs.close();
-
-    emuState.cartridgeInserted = true;
-
-    return true;
 }
 
 int main(int argc, char *argv[]) {
@@ -603,8 +265,6 @@ int main(int argc, char *argv[]) {
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(sdCardPath.c_str());
 
-    emustate_init();
-
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         exit(1);
@@ -628,7 +288,7 @@ int main(int argc, char *argv[]) {
 
     // Load cartridge ROM
     if (!cartRomPath.empty()) {
-        if (!loadCartridgeROM(cartRomPath.c_str())) {
+        if (!emuState.loadCartridgeROM(cartRomPath.c_str())) {
             fprintf(stderr, "Error loading cartridge ROM\n");
         }
     }
@@ -659,7 +319,7 @@ int main(int argc, char *argv[]) {
     ImGui_ImplSDLRenderer2_Init(renderer);
 
     Audio::instance().init();
-    reset();
+    emuState.reset();
     Audio::instance().start();
     AqKeyboard::instance().init();
 
@@ -712,18 +372,18 @@ int main(int argc, char *argv[]) {
                     char const *lFilterPatterns[1] = {"*.rom"};
                     char       *romFile            = tinyfd_openFileDialog("Open ROM file", "", 1, lFilterPatterns, "ROM files", 0);
                     if (romFile) {
-                        if (loadCartridgeROM(romFile)) {
-                            reset();
+                        if (emuState.loadCartridgeROM(romFile)) {
+                            emuState.reset();
                         }
                     }
                 }
                 if (ImGui::MenuItem("Eject cartridge", "", false, emuState.cartridgeInserted)) {
                     emuState.cartridgeInserted = false;
-                    reset();
+                    emuState.reset();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Reset Aquarius+", "")) {
-                    reset();
+                    emuState.reset();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "")) {

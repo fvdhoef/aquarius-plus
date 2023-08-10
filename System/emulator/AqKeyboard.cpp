@@ -188,7 +188,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                         // CTRL-ESCAPE -> reset
                         waitAllReleased = true;
 #ifdef EMULATOR
-                        reset();
+                        emuState.reset();
 #else
                         FPGA::instance().aqpReset();
 #endif

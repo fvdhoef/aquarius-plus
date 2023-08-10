@@ -2,15 +2,36 @@
 
 #include "Common.h"
 #include "z80.h"
+#include "Video.h"
 #include "AY8910.h"
 
-#define AUDIO_LEVEL (10000)
+// 3579545 Hz -> 59659 cycles / frame
+// 7159090 Hz -> 119318 cycles / frame
+
+// 455x262=119210 -> 60.05 Hz
+// 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
+// 366 active pixels
+
+#define HCYCLES_PER_LINE (455)
+#define HCYCLES_PER_SAMPLE (162)
 
 #define BANK_READONLY (1 << 7)
 #define BANK_MAP_RAM (1 << 6)
 
 struct EmuState {
+    EmuState();
+    void reset();
+    bool loadCartridgeROM(const char *path);
+    void keyboardTypeIn();
+
+    static uint8_t memRead(size_t param, uint16_t addr);
+    static void    memWrite(size_t param, uint16_t addr, uint8_t data);
+    static uint8_t ioRead(size_t param, ushort addr);
+    static void    ioWrite(size_t param, uint16_t addr, uint8_t data);
+
+    // Emulator state
     Z80Context z80ctx;           // Z80 emulation core state
+    Video      video;            // Video
     int        lineHalfCycles;   // Half-cycles for this line
     int        sampleHalfCycles; // Half-cycles for this sample
     uint8_t    keybMatrix[8];    // Keyboard matrix (8 x 6bits)
@@ -61,5 +82,3 @@ struct EmuState {
 };
 
 extern EmuState emuState;
-
-void emustate_init(void);

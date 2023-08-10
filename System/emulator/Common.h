@@ -53,8 +53,6 @@
 #define VIDEO_WIDTH (352)
 #define VIDEO_HEIGHT (240)
 
-void reset(void);
-
 static inline void stripTrailingSlashes(std::string &path) {
     // Leave a slash at the start of the string intact
     while (path.size() > 2 && (path.back() == '/' || path.back() == '\\'))

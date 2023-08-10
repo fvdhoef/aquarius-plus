@@ -4,11 +4,8 @@
 #include "SDL.h"
 
 class Video {
-    Video();
-
 public:
-    static Video &instance();
-
+    Video();
     const uint16_t *getFb() {
         return screen;
     }
