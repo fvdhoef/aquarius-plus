@@ -23,6 +23,14 @@ public:
     void pressKey(unsigned ch);
 #endif
     void updateMatrix();
+    bool scrollLockOn() {
+        return (ledStatus != 0xFF) && (ledStatus & SCROLL_LOCK);
+    }
+    void setScrollLock(bool value) {
+        if (ledStatus == 0xFF)
+            ledStatus = 0;
+        ledStatus = (ledStatus & ~SCROLL_LOCK) | (value ? SCROLL_LOCK : 0);
+    }
 
 private:
 #ifndef EMULATOR

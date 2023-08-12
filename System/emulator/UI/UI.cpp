@@ -161,6 +161,16 @@ void UI::mainLoop() {
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Keyboard")) {
+                bool scrLk = AqKeyboard::instance().scrollLockOn();
+                if (ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &scrLk)) {
+                    AqKeyboard::instance().setScrollLock(scrLk);
+                }
+                if (ImGui::MenuItem("Paste text from clipboard", "")) {
+                    emuState.typeInStr = io.GetClipboardTextFn(nullptr);
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("Screen in window", "")) {
                     showScreenWindow = true;
