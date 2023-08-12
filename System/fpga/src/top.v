@@ -130,7 +130,7 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
-    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page == 6'd0 && !sel_mem_sysram;      // Page 0
+    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page <= 6'd3 && !sel_mem_sysram;      // Page 0-3
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
@@ -228,7 +228,7 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     rom rom(
         .clk(sysclk),
-        .addr(ebus_a[13:0]),
+        .addr({reg_bank_page[1:0], ebus_a[13:0]}),
         .rddata(rddata_rom));
 
     //////////////////////////////////////////////////////////////////////////
