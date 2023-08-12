@@ -2,8 +2,7 @@
 
 #pragma once
 
-#include <stdio.h>
-#include <stdint.h>
+#include "Common.h"
 #include "imgui.h"
 
 struct MemoryEditor {
