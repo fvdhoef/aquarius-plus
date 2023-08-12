@@ -9,8 +9,8 @@ enum {
     KEY_RETURN    = 3,  // Return
     KEY_SEMICOLON = 4,  // ; @
     KEY_PERIOD    = 5,  // . >
-    KEY_LEFT      = 6,  // Cursor left
-    KEY_RIGHT     = 7,  // Cursor right
+    KEY_INSERT    = 6,  // Insert
+    KEY_DELETE    = 7,  // Delete
     KEY_MINUS     = 8,  // - _
     KEY_SLASH     = 9,  // / ^
     KEY_0         = 10, // 0 ?
@@ -18,15 +18,15 @@ enum {
     KEY_L         = 12, // L
     KEY_COMMA     = 13, // , <
     KEY_UP        = 14, // Cursor up
-    KEY_DOWN      = 15, // Cursor down
+    KEY_RIGHT     = 15, // Cursor right
     KEY_9         = 16, // 9 )
     KEY_O         = 17, // O
     KEY_K         = 18, // K
     KEY_M         = 19, // M
     KEY_N         = 20, // N
     KEY_J         = 21, // J
-    KEY_INSERT    = 22, // Insert
-    KEY_DELETE    = 23, // Delete
+    KEY_LEFT      = 22, // Cursor left
+    KEY_DOWN      = 23, // Cursor down
     KEY_8         = 24, // 8 (
     KEY_I         = 25, // I
     KEY_7         = 26, // 7 '
@@ -49,24 +49,24 @@ enum {
     KEY_R         = 43, // R
     KEY_D         = 44, // D
     KEY_X         = 45, // X
-    KEY_LBRACKET  = 46, // [ {
-    KEY_RBRACKET  = 47, // ] }
+    KEY_PAUSE     = 46, // Pause/break
+    KEY_PRTSCR    = 47, // PrtScr/SysRq
     KEY_3         = 48, // 3 #
     KEY_E         = 49, // E
     KEY_S         = 50, // S
     KEY_Z         = 51, // Z
     KEY_SPACE     = 52, // Space
     KEY_A         = 53, // A
-    KEY_BACKSLASH = 54, // \ |
-    KEY_GRAVE     = 55, // ` ~
+    KEY_MENU      = 54, // Menu key
+    KEY_TAB       = 55, // Tab
     KEY_2         = 56, // 2 "
     KEY_W         = 57, // W
     KEY_1         = 58, // 1 !
     KEY_Q         = 59, // Q
     KEY_SHIFT     = 60, // Shift
     KEY_CTRL      = 61, // Ctrl
-    KEY_ALT       = 62, // Alt
-    KEY_GUI       = 63, // Gui
+    KEY_GUI       = 62, // Gui
+    KEY_ALT       = 63, // Alt
 };
 
 enum ScanCode {

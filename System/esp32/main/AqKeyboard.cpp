@@ -294,10 +294,12 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 case SCANCODE_NONUSBACKSLASH:
                 case SCANCODE_NONUSHASH:
                 case SCANCODE_BACKSLASH:
-                    if (!shiftPressed)
+                    if (!shiftPressed) {
                         _keyDown(KEY_BACKSPACE, true);
-                    else
-                        _keyDown(KEY_BACKSLASH);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_1, false);
+                    }
                     break;
 
                 case SCANCODE_Z: _keyDown(KEY_Z, shiftPressed); break;
@@ -320,20 +322,50 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                     _keyDown(KEY_SPACE, shiftPressed);
                     break;
 
-                case SCANCODE_LEFT: _keyDown(KEY_LEFT); break;
-                case SCANCODE_RIGHT: _keyDown(KEY_RIGHT); break;
-                case SCANCODE_UP: _keyDown(KEY_UP); break;
-                case SCANCODE_DOWN: _keyDown(KEY_DOWN); break;
+                case SCANCODE_LEFTBRACKET:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_8, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_COMMA, false);
+                    }
+                    break;
+
+                case SCANCODE_RIGHTBRACKET:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_9, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_PERIOD, false);
+                    }
+                    break;
+
+                case SCANCODE_GRAVE:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_7, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_2, false);
+                    }
+                    break;
+
                 case SCANCODE_INSERT: _keyDown(KEY_INSERT); break;
                 case SCANCODE_DELETE: _keyDown(KEY_DELETE); break;
+                case SCANCODE_UP: _keyDown(KEY_UP); break;
+                case SCANCODE_RIGHT: _keyDown(KEY_RIGHT); break;
+                case SCANCODE_LEFT: _keyDown(KEY_LEFT); break;
+                case SCANCODE_DOWN: _keyDown(KEY_DOWN); break;
                 case SCANCODE_HOME: _keyDown(KEY_HOME); break;
                 case SCANCODE_END: _keyDown(KEY_END); break;
                 case SCANCODE_PAGEUP: _keyDown(KEY_PGUP); break;
                 case SCANCODE_PAGEDOWN: _keyDown(KEY_PGDN); break;
-                case SCANCODE_LEFTBRACKET: _keyDown(KEY_LBRACKET); break;
-                case SCANCODE_RIGHTBRACKET: _keyDown(KEY_RBRACKET); break;
-                // case SCANCODE_BACKSLASH: _keyDown(KEY_BACKSLASH); break;
-                case SCANCODE_GRAVE: _keyDown(KEY_GRAVE); break;
+                case SCANCODE_PAUSE: _keyDown(KEY_PAUSE); break;
+                case SCANCODE_PRINTSCREEN: _keyDown(KEY_PRTSCR); break;
+                case SCANCODE_MENU: _keyDown(KEY_MENU); break;
+                case SCANCODE_TAB: _keyDown(KEY_TAB); break;
             }
         }
     }
