@@ -8,17 +8,12 @@
 #    include "FPGA.h"
 #    include <esp_system.h>
 #    include "USBHost.h"
+#    include "MemDump.h"
 #endif
 
 #ifndef EMULATOR
 static const char *TAG = "keyboard";
 #endif
-
-enum {
-    NUM_LOCK    = (1 << 0),
-    CAPS_LOCK   = (1 << 1),
-    SCROLL_LOCK = (1 << 2),
-};
 
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
@@ -56,7 +51,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
-    uint8_t ledStatusNext = ledStatus;
+    uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
 
     // Hand controller emulation
     handController(scanCode, keyDown);
@@ -134,7 +129,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 
     // Keep track of pressed keys
-    if (scanCode < 64) {
+    if (scanCode < 128) {
         if (keyDown) {
             pressedKeys[scanCode / 8] |= 1 << (scanCode & 7);
         } else {
@@ -153,6 +148,18 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (!anyPressed)
         waitAllReleased = false;
 
+#ifndef EMULATOR
+    if (!waitAllReleased && keyDown) {
+        if (guiPressed && scanCode == SCANCODE_F12) {
+            MemDump::dumpCartridge();
+            waitAllReleased = true;
+        } else if (scanCode == SCANCODE_PRINTSCREEN) {
+            MemDump::dumpScreen();
+            waitAllReleased = true;
+        }
+    }
+#endif
+
     // Don't allow shift state being changed while another key is being pressed
     if (prevShiftPressed != shiftPressed && anyPressed) {
         waitAllReleased = true;
@@ -170,7 +177,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (shiftPressed)
         _keyDown(KEY_SHIFT);
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 128; i++) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SCANCODE_ESCAPE:

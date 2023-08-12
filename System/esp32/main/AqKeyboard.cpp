@@ -8,6 +8,7 @@
 #    include "FPGA.h"
 #    include <esp_system.h>
 #    include "USBHost.h"
+#    include "MemDump.h"
 #endif
 
 #ifndef EMULATOR
@@ -128,7 +129,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 
     // Keep track of pressed keys
-    if (scanCode < 64) {
+    if (scanCode < 128) {
         if (keyDown) {
             pressedKeys[scanCode / 8] |= 1 << (scanCode & 7);
         } else {
@@ -147,6 +148,18 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (!anyPressed)
         waitAllReleased = false;
 
+#ifndef EMULATOR
+    if (!waitAllReleased && keyDown) {
+        if (guiPressed && scanCode == SCANCODE_F12) {
+            MemDump::dumpCartridge();
+            waitAllReleased = true;
+        } else if (scanCode == SCANCODE_PRINTSCREEN) {
+            MemDump::dumpScreen();
+            waitAllReleased = true;
+        }
+    }
+#endif
+
     // Don't allow shift state being changed while another key is being pressed
     if (prevShiftPressed != shiftPressed && anyPressed) {
         waitAllReleased = true;
@@ -164,7 +177,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (shiftPressed)
         _keyDown(KEY_SHIFT);
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 128; i++) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SCANCODE_ESCAPE:
@@ -182,7 +195,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                         // CTRL-ESCAPE -> reset
                         waitAllReleased = true;
 #ifdef EMULATOR
-                        reset();
+                        emuState.reset();
 #else
                         FPGA::instance().aqpReset();
 #endif
@@ -403,6 +416,7 @@ void AqKeyboard::pressKey(unsigned char ch, bool keyDown) {
     if (val & FLAG_CTRL)
         handleScancode(SCANCODE_LCTRL, keyDown);
     handleScancode(val & 0x3F, keyDown);
+    AqKeyboard::instance().updateMatrix();
 }
 #else
 void AqKeyboard::pressKey(unsigned ch) {

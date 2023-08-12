@@ -109,7 +109,7 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
         // Check if this key is in current report
         bool keyReleased = true;
         for (int i = 0; i < keyArrayItems; i++) {
-            if ((cur = buf[i]) == 0)
+            if ((cur = keyData[i]) == 0)
                 break;
 
             if (prev == cur) {
@@ -123,13 +123,13 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
     }
 
     // Check for key presses
-    for (int j = 2; j < 8; j++) {
-        if ((cur = buf[j]) == 0)
+    for (int j = 0; j < keyArrayItems; j++) {
+        if ((cur = keyData[j]) == 0)
             break;
 
         // Check if this key is in previous report
         bool keyPressed = true;
-        for (int i = 2; i < 8; i++) {
+        for (int i = 0; i < keyArrayItems; i++) {
             if ((prev = prevKeyData[i]) == 0)
                 break;
 

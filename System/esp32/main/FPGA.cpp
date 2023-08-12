@@ -243,13 +243,14 @@ void FPGA::aqpWriteMem(uint16_t addr, uint8_t data) {
 }
 
 uint8_t FPGA::aqpReadMem(uint16_t addr) {
-    uint8_t            result = 0;
     RecursiveMutexLock lock(mutex);
     aqpSel(true);
     aqpTx(CMD_MEM_READ, addr & 0xFF, addr >> 8);
-    aqpRx(&result, 1);
+
+    uint8_t result[2];
+    aqpRx(result, 2);
     aqpSel(false);
-    return result;
+    return result[1];
 }
 
 void FPGA::aqpWriteIO(uint16_t addr, uint8_t data) {
@@ -260,13 +261,14 @@ void FPGA::aqpWriteIO(uint16_t addr, uint8_t data) {
 }
 
 uint8_t FPGA::aqpReadIO(uint16_t addr) {
-    uint8_t            result = 0;
     RecursiveMutexLock lock(mutex);
     aqpSel(true);
     aqpTx(CMD_IO_READ, addr & 0xFF, addr >> 8);
-    aqpRx(&result, 1);
+
+    uint8_t result[2];
+    aqpRx(result, 2);
     aqpSel(false);
-    return result;
+    return result[1];
 }
 
 void FPGA::aqpSaveMemBanks() {

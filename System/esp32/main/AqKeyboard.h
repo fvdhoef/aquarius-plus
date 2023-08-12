@@ -29,7 +29,7 @@ private:
     SemaphoreHandle_t mutex;
 #endif
 
-    uint8_t  pressedKeys[8]   = {0};
+    uint8_t  pressedKeys[16]  = {0};
     uint16_t modifiers        = 0;
     bool     prevShiftPressed = false;
     unsigned handCtrl1Pressed = 0;

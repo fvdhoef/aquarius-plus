@@ -3,6 +3,12 @@
 
 #include "Common.h"
 
+enum {
+    NUM_LOCK    = (1 << 0),
+    CAPS_LOCK   = (1 << 1),
+    SCROLL_LOCK = (1 << 2),
+};
+
 class AqKeyboard {
     AqKeyboard();
 
@@ -23,7 +29,7 @@ private:
     SemaphoreHandle_t mutex;
 #endif
 
-    uint8_t  pressedKeys[8]   = {0};
+    uint8_t  pressedKeys[16]  = {0};
     uint16_t modifiers        = 0;
     bool     prevShiftPressed = false;
     unsigned handCtrl1Pressed = 0;
@@ -33,7 +39,7 @@ private:
     uint8_t  prevHandCtrl2    = 0xFF;
     uint8_t  handCtrl1        = 0xFF;
     uint8_t  handCtrl2        = 0xFF;
-    uint8_t  ledStatus        = 0;
+    uint8_t  ledStatus        = 0xFF;
     bool     waitAllReleased  = false;
 
     void _keyDown(int key);

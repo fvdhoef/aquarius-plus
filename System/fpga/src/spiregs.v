@@ -150,7 +150,7 @@ module spiregs(
                 spibm_iorq_n    <= 1'b1;
                 spibm_wrdata_en <= 1'b0;
 
-                txdata_r <= 8'h00;
+                // txdata_r <= 8'h00;
 
                 if (rxdata_valid) begin
                     case (byte_cnt_r)
