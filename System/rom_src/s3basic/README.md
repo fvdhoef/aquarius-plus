@@ -14,3 +14,12 @@ By Curtis F. Kaylor
 - Removed memory protection. You can POKE and PEEK any address.
 - Changed the block transfer routine BLUTO to do an LDDR instead of using a loop.
 - Modified the RND code to use the permutation table in ROM instead of the copy in RAM, freeing 32 bytes of system variables for extended BASIC to reuse.
+
+### -Daqplus switch
+
+- Patches entry points for aqplus_rom
+
+### -Dnoreskeys
+
+- Disables keyword expansion.
+- Adds typing characters not on the original Aquarius keyboard such as: ```[ ] { } | ` ~```
