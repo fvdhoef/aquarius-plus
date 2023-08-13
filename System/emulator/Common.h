@@ -23,9 +23,10 @@
 #include <functional>
 #include <fstream>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #ifdef __APPLE__
-#    include <sys/stat.h>
-#    include <sys/types.h>
 #    include <pwd.h>
 #    include <uuid/uuid.h>
 #endif
@@ -34,8 +35,6 @@
 #    include "getopt.h"
 #    include <direct.h>
 #    include <io.h>
-#    include <sys/types.h>
-#    include <sys/stat.h>
 #    define strdup _strdup
 #    define unlink _unlink
 #    define rmdir _rmdir
@@ -45,7 +44,7 @@
 #    define strcasecmp _stricmp
 #else
 #    include <unistd.h>
-#    include <sys/stat.h>
+#    include <pwd.h>
 #endif
 
 #define CPU_FREQ (3579545)
