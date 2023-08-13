@@ -1,2 +1,2 @@
 all:
-	zmac --zmac -n -Daqplus -Dnoreskeys --oo cim,lst s3basic.asm
+	zmac --zmac -n -Daqplus --oo cim,lst s3basic.asm

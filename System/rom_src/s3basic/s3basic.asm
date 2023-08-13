@@ -11,11 +11,21 @@
 ;   Add -Dnoreskeys to change all Ctrl-Keys to generate ASCII characters 
 ;   instead of reserved words.
 ;
-;   Add -Daqlus to include Aquarius+ Mods
-
-; To build Aquarius+ ROM
-;  copy /b s3basic.cim+aqplus.rom aquarius.rom
+;   Add -Daddkeyrows to support extended 64 key keyboard.
+;   (Requires new key decode tables in Extended ROM).
 ;
+;   Add -Daqlus to include Aquarius+ Mods
+;   This will also turn on noreskeys and addkeyrows
+;
+ifdef aqplus
+noreskeys   equ   1
+addkeyrows  equ   1
+endif
+
+ifdef fastbltu
+    assert !(1) ;Fast BLTU code is broken. Do not use this switch.
+endif
+
 ;BASIC Constants
 LPTSIZ  equ     132     ;{M80} WIDTH OF PRINTER
 SCREEN  equ     $3000   ;;Screen Character Matrix
@@ -2025,7 +2035,8 @@ USRDO:  call    FRCINT            ;;Convert Argument to Int in DE             0B
         jp      (IX)              ;;Jump to it                                0B86  pop     hl
                                   ;;                                          0B87  ret
                                   
-;;; Code Change: Do the Block Transfer and return same values as original BLTU routine
+ifdef fastbltu
+;; Code Change: Do the Block Transfer and return same values as original BLTU routine
 ;;; Replaces Deprecated Routine: PROMEM - 10 Bytes
 BLTUDO: inc     bc                ;;6    Byte Count                  PROMEM:  0B88 push    hl
         lddr                      ;;16+5 Do the Memory Move                   0B89 ld      hl,$2FFF       
@@ -2038,19 +2049,6 @@ BLTUDO: inc     bc                ;;6    Byte Count                  PROMEM:  0B
         ld      e,l               ;;4	                                        0B90 
         ret                       ;;10	                                      0B91
                            
-                                  ;;End: 33 cycles  	                       
-;[M80] THIS IS THE BLOCK TRANSFER ROUTINE
-;[M80] IT MAKES SPACE BY SHOVING EVERYTHING FORWARD
-;[M80]
-;[M80] [H,L] = DESTINATION OF HIGH ADDRESS
-;[M80] [D,E] = LOW ADDRESS TO BE TRANSFERRED
-;[M80] [B,C] = HIGH ADDRESS TO BE TRANSFERRED
-;[M80]
-;[M80] A CHECK IS MADE TO MAKE SURE A REASONABLE AMOUNT
-;[M80] OF SPACE REMAINS BETWEEN THE TOP OF THE STACK AND
-;[M80] THE HIGHEST LOCATION TRANSFERRED INTO
-;[M80]
-;[M80] ON EXIT [H,L]=[D,E]=LOW [B,C]=LOCATION LOW WAS MOVED INTO
 ;;; Code Change: Replace Loop with LDDR
 ;;; Original Code: 46 + byte count * 54 cycles - 207 millseconds per kilobyte (57780 * 3.579545 / 1000) 
 ;;; Updated Code: 113 + byte count * 21 cycles - 85 millseconds per kilobyte (23877 * 3.579545 / 1000) 
@@ -2068,6 +2066,28 @@ BLTUC:  push    bc                ; +11 [M80] EXCHANGE [B,C] AND [H,L]        Or
         jp      BLTUDO            ;;+10 Do the LDIR                           dec     hl         +6  
                                   ;;                                          jr      BLTLOP     +12  
                                   ;;Setup: 80 cycles 
+else
+PROMEM: push    hl                ;
+        ld      hl,$2FFF          ;
+        rst     COMPAR            ;{M80} IS [D.E] LESS THAN 3000H?
+        pop     hl                ;
+        jp      nc,FCERR          ;{M80} YES, BLOW HIM UP NOW
+        ret                       ;
+
+BLTU:   call    REASON            ;[M80] CHECK DESTINATION TO MAKE SURE STACK WON'T BE OVERRUN
+;Execute Block Transfer
+BLTUC:  push    bc                ;[M80] EXCHANGE [B,C] AND [H,L]
+        ex      (sp),hl           ;
+        pop     bc                ;
+BLTLOP: rst     COMPAR            ;[M80] SEE IF WE ARE DONE
+        ld      a,(hl)            ;[M80] GET THE WORD TO TRANSFER
+        ld      (bc),a            ;[M80] TRANSFER IT
+        ret     z                 ;
+        dec     bc                ;
+        dec     hl                ;[M80] BACKUP FOR NEXT GUY
+        jr      BLTLOP            ;
+endif
+
 ;;Check Stack Size
 GETSTK: push    hl                ;[M80] SAVE [H,L]
         ld      hl,(STREND)       ;
@@ -5200,21 +5220,12 @@ ifdef addkeyrows
 ;;;Must be combined with "noreskeys" and requires a compatible Extended BASIC
 ;;;Extended BASIC must contain replacement key tables and put the address in KEYVCT
 ;;;
+;;; Note: On Windows keyboards without the Context Menu key, try Shift-F10
+;;;
+;;;Aquarius+ Keyboard Defs at
+;;; https://github.com/fvdhoef/aquarius-plus/blob/master/System/esp32/main/AqKeyboardDefs.h
+;;;
 ;;;Extended BASIC Key Matrix
-;;; Column  1   2   3   4   5   6   7   8
-;;; Row 1   =   -   9   8   6   5   3   2
-;;; Row 2  <--  /   O   I   Y   T   E   W
-;;; Row 3   :   0   K   7   G   4   S   1
-;;; Row 4  RTN  P   M   U   V   R   Z   Q
-;;; Row 5   ;   L   N   H   C   D  SPC SHF
-;;; Row 6   .   ,   J   B   F   X   A  CTL
-;;; Row 7  INS CUP CUL HOM PUP P/B MNU meta
-;;; Row 8  DEL CUR CUD END PUD P/S TAB alt
-;;;
-;;;Each Key Table is 64 bytes long and they must be consecutive
-;;;Each line of a Key Table is 8 bytes long instead of 6 bytes.
-;;;
-;;;Sample Key Table
 ;;; Column   1    2     3    4     5     6    7     8
 ;;; Row 1    =    -     9    8     6     5    3     2
 ;;; Row 2   <--   /     O    I     Y     T    E     W
@@ -5222,24 +5233,36 @@ ifdef addkeyrows
 ;;; Row 4   RTN   P     M    U     V     R    Z     Q
 ;;; Row 5    ;    L     N    H     C     D  SPACE SHIFT
 ;;; Row 6    .    ,     J    B     F     X    A    CTL
-;;; Row 7   INS CsrUp CsrLf HOME  PgUp Break Menu  META
-;;; Row 8   DEL CrsRt CsrDn END   PgDn SysRq TAB   ALT
+;;; Row 7   INS CsrUp CsrLf HOME  PgUp Pause Menu  ALT
+;;; Row 8   DEL CrsRt CsrDn END   PgDn PrtSc TAB  META
 ;;;
-;;;Recommended Key Layout for Above Table. Keys in a Column Grouped Together
+;;;
+;;;The Decode routine requires 4 key tables: normal, Shift,
+;;;Control, and Alt. The Meta key produces and ASCC character.
+;;;Each Key Table is 64 bytes long and they must be consecutive
+;;;Each line of a Key Table is 8 bytes long instead of 6 bytes.
+;;;
+;;;Sample Key Table
+;;; '=',$08,':',$0D,';','.',$9D,$7F ; Backspace, Return, INS DEL
+;;; '-','/','0','p','l',',',$8F,$8E ; CsrUp, CsrRt
+;;; '9','o','k','m','n','j',$9E,$9F ; CsrLf, CsrDn
+;;; '8','i','7','u','h','b',$9B,$9A ; Home, End
+;;; '6','y','g','v','c','f',$8A,$8B ; PgUp, PgDn
+;;; '5','t','4','r','d','x',$89,$88 ; Pause, PrtScr
+;;; '3','e','s','z',' ','a',$9C,$8C ; Menu, Tab
+;;; '2','w','1','q', 0 , 0 , 0 , 0  ;
+;;;
+;;;Recommended Physical Key Layout for Above Table. Keys in a Column Grouped Together
 ;;;
 ;;; META 1   2   3   4   5   6   7   8   9  0   -   =  <---    
 ;;; TAB    Q   W   E   R   T   Y   U   I   O   P   :             
 ;;; ALT MNU  A   S   D   F   G   H   J   K   L   ;   RETURN   
 ;;; SHIFT      Z   X   C   V   B   N   M   ,   .   /    INS           
-;;; CTL  SPACE  P/S P/B PUP PUD HOM END CUL CUD CUP CUR DEL 
-;;;
-;;;ALT and META currently generate ASCII characters
-;;;To change them to modifier keys, revert CSHSK to $0F,
-;;;patch KEYASC to check bits 6 and 7, and add two more keytables.
+;;; CTL  SPACE  PRS PSE PUP PUD HOM END CUL CUD CUP CUR DEL
 ;;;
 ROWMSK  equ     $FF               ;;Checking All 8 Rows`
 ROWCNT  equ     8                 
-CSHMSK  equ     $FC               ;;Check Rows 0 through 3 plus 6 and 7
+CSHMSK  equ     $8F               ;;Check Rows 0 through 3 plus 7
 else
 ROWMSK  equ     $3F               ;;Check Rows 0 through 5
 ROWCNT  equ     6                 
@@ -5310,31 +5333,31 @@ ifdef addkeyrows
 ;;; KEYASC replacement 25/25 bytes
 ;;; Meta, Alt, Control, and Shift are bits 7, 6, 5, and 4 of Column 7.        Original Code
 KEYASC: inc     (hl)              ;;Increment KCOUNT                          1F00 inc     (hl)        
-        ld      bc,$7F            ;;Read column 7                             1F01 ld      b,$7F       
+        ld      bc,$7FFF          ;;Read column 7                             1F01 ld      b,$7F
                                   ;;                                          1F02 
                                   ;;                                          1F03 in      a,(c)        
         in      b,(c)             ;;Get row                                   1F04  
                                   ;;                                          1F05 bit     5,a         
         ld      a,192             ;;Meta Table Offset                         1F06 
                                   ;;                                          1F07 ld      ix,CTLTAB-1 
-KEYALP: rl      b                 ;;Rotate Bits Left                          1F08  
-                                  ;;                                          1F09  
-        jp      nc,KEYLUX         ;;If key pressed, go do lookup              1F0A  
-                                  ;;                                          1F0B jr      z,KEYLUP   
-                                  ;;                                          1F0C            
-        sub     a,64              ;;Offset to Previous TABLE                  1F0D bit     4,a
-                                  ;;                                          1F0E ld      ix,SHFTAB-1
-        jp      nz,KEYALP         ;;Loopif not first table                    1F1F                     
-                                  ;;                                          1F10                                                                         ;;                                          1F0E         
-                                  ;;                                          1F11                                                    ;;                                          1F0E         
-KEYLUX: ld      ix,KEYADR-1       ;;Point to Start of Lookup Tables           1F12 jr      z,KEYLUP   
-                                  ;;                                          1F13
-                                  ;;                                          1F14 ld      ix,KEYTAB-1
-                                  ;;                                          1F15 
-        add     ix,de             ;;Add Scan Code (Key Offset)                1F16 
-                                  ;;                                          1F17 
+        rl      b                 ;;Get rid of GUI Bit                        1F08
+                                  ;;                                          1F09
+KEYALP: rl      b                 ;;Rotate Bits Left                          1F0A
+                                  ;;                                          1F0B jr      z,KEYLUP
+        jr      nc,KEYLUX         ;;If key pressed, go do lookup              1F0C
+                                  ;;                                          1F0D bit     4,a
+        sub     a,64              ;;Offset to Previous TABLE                  1F0E
+                                  ;;                                          1F1F ld      ix,SHFTAB-1
+        jr      nz,KEYALP         ;;Loopif not first table                    1F10
+                                  ;;                                          1F11
+KEYLUX: ld      ix,KEYADR-1       ;;Point to Start of Lookup Tables           1F12
+                                  ;;                                          1F13 jr      z,KEYLUP
+                                  ;;                                          1F14
+                                  ;;                                          1F15 ld      ix,KEYTAB-1
+        add     ix,de             ;;Add Scan Code (Key Offset)                1F16
+                                  ;;                                          1F17
         ld      e,a               ;;DE = Table Offet                          1F18
-else                                                                          
+else                              ;;
 KEYASC: inc     (hl)              ;;Increment KCOUNT
         ld      b,$7F             ;;Read column 7
         in      a,(c)             ;;Get row
@@ -5449,4 +5472,8 @@ CHKOP:  cp      PLUSTK            ;;If < Plus Token                           1F
         ccf                       ;;  Return with Carry Set                   1FFD                    
         ret                       ;;                                          1FFE
         byte    $F5
+
+;;Verify ROM is correct length
+        assert !($2000<>$)   ; Incorrect ROM Length!
+
 end                               ;;End of S3 BASIC                             
