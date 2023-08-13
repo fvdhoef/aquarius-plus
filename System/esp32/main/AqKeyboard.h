@@ -23,13 +23,21 @@ public:
     void pressKey(unsigned ch);
 #endif
     void updateMatrix();
+    bool scrollLockOn() {
+        return (ledStatus != 0xFF) && (ledStatus & SCROLL_LOCK);
+    }
+    void setScrollLock(bool value) {
+        if (ledStatus == 0xFF)
+            ledStatus = 0;
+        ledStatus = (ledStatus & ~SCROLL_LOCK) | (value ? SCROLL_LOCK : 0);
+    }
 
 private:
 #ifndef EMULATOR
     SemaphoreHandle_t mutex;
 #endif
 
-    uint8_t  pressedKeys[8]   = {0};
+    uint8_t  pressedKeys[16]  = {0};
     uint16_t modifiers        = 0;
     bool     prevShiftPressed = false;
     unsigned handCtrl1Pressed = 0;

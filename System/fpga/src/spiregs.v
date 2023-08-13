@@ -22,7 +22,8 @@ module spiregs(
     output reg         reset_req,
     output reg  [63:0] keys,
     output reg   [7:0] hctrl1,
-    output reg   [7:0] hctrl2);
+    output reg   [7:0] hctrl2,
+    output reg         rom_p2_wren);
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave
@@ -102,7 +103,8 @@ module spiregs(
         CMD_MEM_WRITE       = 8'h22,
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
-        CMD_IO_READ         = 8'h25;
+        CMD_IO_READ         = 8'h25,
+        CMD_ROM_WRITE       = 8'h30;
 
     // 01h: Reset command
     always @(posedge clk) begin
@@ -142,6 +144,8 @@ module spiregs(
     reg [2:0] bus_state_r = BST_IDLE;
 
     always @(posedge clk) begin
+        rom_p2_wren <= 1'b0;
+
         case (bus_state_r)
             BST_IDLE: begin
                 spibm_rd_n      <= 1'b1;
@@ -150,7 +154,7 @@ module spiregs(
                 spibm_iorq_n    <= 1'b1;
                 spibm_wrdata_en <= 1'b0;
 
-                txdata_r <= 8'h00;
+                // txdata_r <= 8'h00;
 
                 if (rxdata_valid) begin
                     case (byte_cnt_r)
@@ -162,6 +166,7 @@ module spiregs(
                         3'd3: begin
                             spibm_wrdata <= rxdata;
                             if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE) bus_state_r <= BST_CYCLE0;
+                            if (cmd_r == CMD_ROM_WRITE) rom_p2_wren <= 1'b1;
                         end
                     endcase
                 end

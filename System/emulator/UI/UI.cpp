@@ -14,7 +14,7 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
-#include "imgui_memory_editor.h"
+#include "MemoryEditor.h"
 #include "tinyfiledialogs.h"
 
 UI::UI() {
@@ -158,6 +158,16 @@ void UI::mainLoop() {
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "")) {
                     done = true;
+                }
+                ImGui::EndMenu();
+            }
+            if (ImGui::BeginMenu("Keyboard")) {
+                bool scrLk = AqKeyboard::instance().scrollLockOn();
+                if (ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &scrLk)) {
+                    AqKeyboard::instance().setScrollLock(scrLk);
+                }
+                if (ImGui::MenuItem("Paste text from clipboard", "")) {
+                    emuState.typeInStr = io.GetClipboardTextFn(nullptr);
                 }
                 ImGui::EndMenu();
             }
@@ -477,9 +487,9 @@ void UI::wndMemEdit(bool *p_open) {
     }
 
     MemoryEditor::Sizes s;
-    memEdit.CalcSizes(s, memSize, baseDisplayAddr);
-    ImGui::SetNextWindowSize(ImVec2(s.WindowWidth, s.WindowWidth * 0.60f), ImGuiCond_FirstUseEver);
-    ImGui::SetNextWindowSizeConstraints(ImVec2(0.0f, 0.0f), ImVec2(s.WindowWidth, FLT_MAX));
+    memEdit.calcSizes(s, memSize, baseDisplayAddr);
+    ImGui::SetNextWindowSize(ImVec2(s.windowWidth, s.windowWidth * 0.60f), ImGuiCond_FirstUseEver);
+    ImGui::SetNextWindowSizeConstraints(ImVec2(s.windowWidth, 150.0f), ImVec2(s.windowWidth, FLT_MAX));
 
     if (ImGui::Begin("Memory editor", p_open, ImGuiWindowFlags_NoScrollbar)) {
         if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
@@ -497,10 +507,10 @@ void UI::wndMemEdit(bool *p_open) {
 
         ImGui::Separator();
 
-        memEdit.DrawContents(pMem, memSize, baseDisplayAddr);
-        if (memEdit.ContentsWidthChanged) {
-            memEdit.CalcSizes(s, memSize, baseDisplayAddr);
-            ImGui::SetWindowSize(ImVec2(s.WindowWidth, ImGui::GetWindowSize().y));
+        memEdit.drawContents(pMem, memSize, baseDisplayAddr);
+        if (memEdit.contentsWidthChanged) {
+            memEdit.calcSizes(s, memSize, baseDisplayAddr);
+            ImGui::SetWindowSize(ImVec2(s.windowWidth, ImGui::GetWindowSize().y));
         }
     }
     ImGui::End();

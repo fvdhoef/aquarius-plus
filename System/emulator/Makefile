@@ -64,7 +64,7 @@ DEPS        := $(OBJS:.o=.d)
 
 all: $(OUT)
 
-$(OUT): $(OBJS)
+$(OUT): $(OBJS) aquarius.rom
 	@echo Linking $@
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LFLAGS) -o $@

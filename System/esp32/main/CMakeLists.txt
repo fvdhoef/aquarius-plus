@@ -4,6 +4,7 @@ idf_component_register(
         "FPGA.cpp"
         "AqKeyboard.cpp"
         "AqUartProtocol.cpp"
+        "MemDump.cpp"
 
         "USB/USBHost.cpp"
         "USB/USBDevice.cpp"

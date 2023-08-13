@@ -56,9 +56,10 @@ module top(
     output wire        esp_notify
 );
 
-    wire [7:0] spibm_wrdata;
-    wire       spibm_wrdata_en;
-    wire       spibm_en;
+    wire [15:0] spibm_a;
+    wire  [7:0] spibm_wrdata;
+    wire        spibm_wrdata_en;
+    wire        spibm_en;
 
     wire       reset_req;
     wire       vga_vblank;
@@ -130,7 +131,7 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
-    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page == 6'd0 && !sel_mem_sysram;      // Page 0
+    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page <= 6'd3 && !sel_mem_sysram;      // Page 0-3
 
     assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
 
@@ -226,10 +227,16 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // System ROM
     //////////////////////////////////////////////////////////////////////////
+    wire rom_p2_wren;
+
     rom rom(
         .clk(sysclk),
-        .addr(ebus_a[13:0]),
-        .rddata(rddata_rom));
+        .addr({reg_bank_page[1:0], ebus_a[13:0]}),
+        .rddata(rddata_rom),
+        
+        .p2_addr(spibm_a),
+        .p2_wrdata(spibm_wrdata),
+        .p2_wren(rom_p2_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -346,7 +353,6 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
 
-    wire [15:0] spibm_a;
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;
 
@@ -382,7 +388,8 @@ module top(
         .reset_req(reset_req),
         .keys(keys),
         .hctrl1(spi_hctrl1),
-        .hctrl2(spi_hctrl2));
+        .hctrl2(spi_hctrl2),
+        .rom_p2_wren(rom_p2_wren));
 
     assign esp_notify = 1'b0;
 

@@ -8,17 +8,12 @@
 #    include "FPGA.h"
 #    include <esp_system.h>
 #    include "USBHost.h"
+#    include "MemDump.h"
 #endif
 
 #ifndef EMULATOR
 static const char *TAG = "keyboard";
 #endif
-
-enum {
-    NUM_LOCK    = (1 << 0),
-    CAPS_LOCK   = (1 << 1),
-    SCROLL_LOCK = (1 << 2),
-};
 
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
@@ -38,10 +33,10 @@ void AqKeyboard::init() {
 }
 
 void AqKeyboard::_keyUp(int key) {
-    keybMatrix[key / 6] |= (1 << (key % 6));
+    keybMatrix[key / 8] |= (1 << (key % 8));
 }
 void AqKeyboard::_keyDown(int key) {
-    keybMatrix[key / 6] &= ~(1 << (key % 6));
+    keybMatrix[key / 8] &= ~(1 << (key % 8));
 }
 void AqKeyboard::_keyDown(int key, bool shift) {
     _keyDown(key);
@@ -56,7 +51,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
-    uint8_t ledStatusNext = ledStatus;
+    uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
 
     // Hand controller emulation
     handController(scanCode, keyDown);
@@ -134,7 +129,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 
     // Keep track of pressed keys
-    if (scanCode < 64) {
+    if (scanCode < 128) {
         if (keyDown) {
             pressedKeys[scanCode / 8] |= 1 << (scanCode & 7);
         } else {
@@ -153,6 +148,18 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (!anyPressed)
         waitAllReleased = false;
 
+#ifndef EMULATOR
+    if (!waitAllReleased && keyDown) {
+        if (guiPressed && scanCode == SCANCODE_F12) {
+            MemDump::dumpCartridge();
+            waitAllReleased = true;
+        } else if (scanCode == SCANCODE_PRINTSCREEN) {
+            MemDump::dumpScreen();
+            waitAllReleased = true;
+        }
+    }
+#endif
+
     // Don't allow shift state being changed while another key is being pressed
     if (prevShiftPressed != shiftPressed && anyPressed) {
         waitAllReleased = true;
@@ -169,8 +176,12 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
         _keyDown(KEY_CTRL);
     if (shiftPressed)
         _keyDown(KEY_SHIFT);
+    if (altPressed)
+        _keyDown(KEY_ALT);
+    if (guiPressed)
+        _keyDown(KEY_GUI);
 
-    for (int i = 0; i < 64; i++) {
+    for (int i = 0; i < 128; i++) {
         if (pressedKeys[i / 8] & (1 << (i & 7))) {
             switch (i) {
                 case SCANCODE_ESCAPE:
@@ -279,9 +290,16 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                     else
                         _keyDown(KEY_2, true);
                     break;
+
+                case SCANCODE_NONUSBACKSLASH:
+                case SCANCODE_NONUSHASH:
                 case SCANCODE_BACKSLASH:
-                    if (!shiftPressed)
+                    if (!shiftPressed) {
                         _keyDown(KEY_BACKSPACE, true);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_1, false);
+                    }
                     break;
 
                 case SCANCODE_Z: _keyDown(KEY_Z, shiftPressed); break;
@@ -303,6 +321,51 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 case SCANCODE_SPACE:
                     _keyDown(KEY_SPACE, shiftPressed);
                     break;
+
+                case SCANCODE_LEFTBRACKET:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_8, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_COMMA, false);
+                    }
+                    break;
+
+                case SCANCODE_RIGHTBRACKET:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_9, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_PERIOD, false);
+                    }
+                    break;
+
+                case SCANCODE_GRAVE:
+                    if (!shiftPressed) {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_7, false);
+                    } else {
+                        _keyDown(KEY_CTRL);
+                        _keyDown(KEY_2, false);
+                    }
+                    break;
+
+                case SCANCODE_INSERT: _keyDown(KEY_INSERT); break;
+                case SCANCODE_DELETE: _keyDown(KEY_DELETE); break;
+                case SCANCODE_UP: _keyDown(KEY_UP); break;
+                case SCANCODE_RIGHT: _keyDown(KEY_RIGHT); break;
+                case SCANCODE_LEFT: _keyDown(KEY_LEFT); break;
+                case SCANCODE_DOWN: _keyDown(KEY_DOWN); break;
+                case SCANCODE_HOME: _keyDown(KEY_HOME); break;
+                case SCANCODE_END: _keyDown(KEY_END); break;
+                case SCANCODE_PAGEUP: _keyDown(KEY_PGUP); break;
+                case SCANCODE_PAGEDOWN: _keyDown(KEY_PGDN); break;
+                case SCANCODE_PAUSE: _keyDown(KEY_PAUSE); break;
+                case SCANCODE_PRINTSCREEN: _keyDown(KEY_PRTSCR); break;
+                case SCANCODE_MENU: _keyDown(KEY_MENU); break;
+                case SCANCODE_TAB: _keyDown(KEY_TAB); break;
             }
         }
     }
@@ -316,6 +379,12 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 }
 
 void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
+    handCtrl1 = 0xFF;
+    if ((ledStatus & SCROLL_LOCK) == 0) {
+        handCtrl1Pressed = 0;
+        return;
+    }
+
     enum {
         UP    = (1 << 0),
         DOWN  = (1 << 1),
@@ -342,7 +411,6 @@ void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
         case SCANCODE_F6: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K6) : (handCtrl1Pressed & ~K6); break;
     }
 
-    handCtrl1 = 0xFF;
     switch (handCtrl1Pressed & 0xF) {
         case LEFT: handCtrl1 &= ~(1 << 3); break;
         case UP | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
