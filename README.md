@@ -2,6 +2,10 @@
 
 **Next-generation Z80-based retro computer system**
 
+## Documentation
+
+For documentation, please take a look at the [Wiki](https://github.com/fvdhoef/aquarius-plus/wiki).
+
 ## Abstract:
 
 What would the Aquarius have evolved into if Mattel hadn't abandoned the system back in 1984? The Aquarius+ is the next-generation of Z80-based 8-bit hardware for the Aquarius platform. The intent is to deliver a cost-effective, backwards-compatible retro computer system that both developers and nostalgists will love and use, all in the spirit of the original, orphaned Aquarius platform.
