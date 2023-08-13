@@ -65,8 +65,8 @@ enum {
     KEY_Q         = 59, // Q
     KEY_SHIFT     = 60, // Shift
     KEY_CTRL      = 61, // Ctrl
-    KEY_GUI       = 62, // Gui
-    KEY_ALT       = 63, // Alt
+    KEY_ALT       = 62, // Alt
+    KEY_GUI       = 63, // Gui
 };
 
 enum ScanCode {
