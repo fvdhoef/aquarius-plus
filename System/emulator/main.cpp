@@ -42,6 +42,30 @@ int main(int argc, char *argv[]) {
         sdCardPath.clear();
     }
 
+    // Get app data path
+    std::string appDataPath;
+#ifndef _WIN32
+    {
+        std::string homeDir = getpwuid(getuid())->pw_dir;
+        appDataPath         = homeDir + "/.config";
+        mkdir(appDataPath.c_str(), 0755);
+        appDataPath += "/AquariusPlusEmu";
+        mkdir(appDataPath.c_str(), 0755);
+    }
+#else
+    {
+        PWSTR path = NULL;
+        char  path2[MAX_PATH];
+        SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &path);
+        WideCharToMultiByte(CP_UTF8, 0, path, -1, path2, sizeof(path2), NULL, NULL);
+        CoTaskMemFree(path);
+
+        appDataPath = path2;
+        appDataPath += "/AquariusPlusEmu";
+        mkdir(appDataPath.c_str());
+    }
+#endif
+
 #ifdef __APPLE__
     if (sdCardPath.empty()) {
         std::string homeDir = getpwuid(getuid())->pw_dir;
