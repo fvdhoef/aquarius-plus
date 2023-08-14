@@ -635,7 +635,7 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg) {
 
     auto deCtx = vfs->direnum(path);
     if (!deCtx) {
-        txFifoWrite(ERR_NOT_FOUND);
+        txFifoWrite(ERR_NO_DISK);
     } else {
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top

@@ -2,6 +2,7 @@
 #include "SDCardVFS.h"
 #include "EspVFS.h"
 #include <algorithm>
+#include <time.h>
 
 #ifndef EMULATOR
 #    include <driver/uart.h>
@@ -96,6 +97,35 @@ void AqUartProtocol::init() {
     xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
 #endif
 }
+
+#ifdef EMULATOR
+void AqUartProtocol::writeData(uint8_t data) {
+    receivedByte(data);
+}
+
+void AqUartProtocol::writeCtrl(uint8_t data) {
+    if (data & 0x80) {
+        rxBufIdx = 0;
+    }
+}
+
+uint8_t AqUartProtocol::readData() {
+    int data = txFifoRead();
+    if (data < 0) {
+        printf("esp32_read_data - Empty!\n");
+        return 0;
+    }
+    return data;
+}
+
+uint8_t AqUartProtocol::readCtrl() {
+    uint8_t result = 0;
+    if (txBufCnt > 0) {
+        result |= 1;
+    }
+    return result;
+}
+#endif
 
 #ifndef EMULATOR
 void AqUartProtocol::_uartEventTask(void *param) {
@@ -447,7 +477,8 @@ void AqUartProtocol::cmdVersion() {
     DBGF("VERSION");
 
 #ifdef EMULATOR
-    const char *p = "Emulator";
+    extern const char *versionStr;
+    const char *p = versionStr;
 #else
     const char            *p       = "Unknown";
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -604,7 +635,7 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg) {
 
     auto deCtx = vfs->direnum(path);
     if (!deCtx) {
-        txFifoWrite(ERR_NOT_FOUND);
+        txFifoWrite(ERR_NO_DISK);
     } else {
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top
@@ -740,7 +771,13 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
     if (result < 0)
         return;
 
+#ifdef __APPLE__
+    time_t t = st.st_mtimespec.tv_sec;
+#elif _WIN32
+    time_t t = st.st_mtime;
+#else
     time_t t = st.st_mtim.tv_sec;
+#endif
 
     struct tm *tm       = localtime(&t);
     uint16_t   fat_time = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
@@ -761,7 +798,7 @@ void AqUartProtocol::cmdGetCwd() {
     DBGF("GETCWD\n");
 
     txFifoWrite(0);
-    int len = currentPath.size();
+    int len = (int)currentPath.size();
 
     if (len == 0) {
         txFifoWrite('/');

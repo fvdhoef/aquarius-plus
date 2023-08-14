@@ -8,9 +8,7 @@ public:
     UI();
 
     void start(
-        const std::string &appDataPath,
         const std::string &romPath,
-        const std::string &sdCardPath,
         const std::string &cartRomPath,
         const std::string &typeInStr);
 

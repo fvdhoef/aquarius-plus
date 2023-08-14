@@ -27,7 +27,10 @@ SDCardVFS &SDCardVFS::instance() {
 }
 
 void SDCardVFS::init(const std::string &_basePath) {
+    // printf("Settings SD card directory: '%s'\n", _basePath.c_str());
+
     basePath = _basePath;
+    stripTrailingSlashes(basePath);
 }
 
 std::string SDCardVFS::getFullPath(const std::string &path) {
@@ -40,6 +43,9 @@ std::string SDCardVFS::getFullPath(const std::string &path) {
 }
 
 int SDCardVFS::open(uint8_t flags, const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     // Translate flags
     int  mi = 0;
     char mode[5];
@@ -113,6 +119,9 @@ int SDCardVFS::open(uint8_t flags, const std::string &path) {
 }
 
 int SDCardVFS::close(int fd) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -123,6 +132,9 @@ int SDCardVFS::close(int fd) {
 }
 
 int SDCardVFS::read(int fd, size_t size, void *buf) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -132,6 +144,9 @@ int SDCardVFS::read(int fd, size_t size, void *buf) {
 }
 
 int SDCardVFS::write(int fd, size_t size, const void *buf) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -141,6 +156,9 @@ int SDCardVFS::write(int fd, size_t size, const void *buf) {
 }
 
 int SDCardVFS::seek(int fd, size_t offset) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -150,6 +168,9 @@ int SDCardVFS::seek(int fd, size_t offset) {
 }
 
 int SDCardVFS::tell(int fd) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
     FILE *f = state.fds[fd];
@@ -159,6 +180,9 @@ int SDCardVFS::tell(int fd) {
 }
 
 DirEnumCtx SDCardVFS::direnum(const std::string &path) {
+    if (basePath.empty())
+        return nullptr;
+
     auto fullPath = getFullPath(path);
 
 #ifndef _WIN32
@@ -244,6 +268,9 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
 }
 
 int SDCardVFS::delete_(const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     auto fullPath = getFullPath(path);
 
     int result = ::unlink(fullPath.c_str());
@@ -263,6 +290,9 @@ int SDCardVFS::delete_(const std::string &path) {
 }
 
 int SDCardVFS::rename(const std::string &pathOld, const std::string &pathNew) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     auto fullOld = getFullPath(pathOld);
     auto fullNew = getFullPath(pathNew);
 
@@ -271,6 +301,9 @@ int SDCardVFS::rename(const std::string &pathOld, const std::string &pathNew) {
 }
 
 int SDCardVFS::mkdir(const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     auto fullPath = getFullPath(path);
 
 #if _WIN32
@@ -282,6 +315,9 @@ int SDCardVFS::mkdir(const std::string &path) {
 }
 
 int SDCardVFS::stat(const std::string &path, struct stat *st) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
     auto fullPath = getFullPath(path);
     int  result   = ::stat(fullPath.c_str(), st);
     return result < 0 ? ERR_NOT_FOUND : 0;

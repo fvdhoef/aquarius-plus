@@ -23,24 +23,26 @@
     <ClCompile Include="..\AqUartProtocol.cpp" />
     <ClCompile Include="..\Audio.cpp" />
     <ClCompile Include="..\AY8910.cpp" />
+    <ClCompile Include="..\cJSON.cpp" />
+    <ClCompile Include="..\Config.cpp" />
     <ClCompile Include="..\EmuState.cpp" />
-    <ClCompile Include="..\imgui\imgui.cpp" />
     <ClCompile Include="..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\imgui\imgui_impl_sdl2.cpp" />
     <ClCompile Include="..\imgui\imgui_impl_sdlrenderer2.cpp" />
     <ClCompile Include="..\imgui\imgui_tables.cpp" />
     <ClCompile Include="..\imgui\imgui_widgets.cpp" />
+    <ClCompile Include="..\imgui\imgui.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\tinyfiledialogs.cpp" />
     <ClCompile Include="..\UI\MemoryEditor.cpp" />
+    <ClCompile Include="..\UI\UI.cpp" />
     <ClCompile Include="..\Version.cpp" />
     <ClCompile Include="..\VFS\EspVFS.cpp" />
     <ClCompile Include="..\VFS\SDCardVFS.cpp" />
     <ClCompile Include="..\VFS\VFS.cpp" />
     <ClCompile Include="..\Video.cpp" />
-    <ClCompile Include="..\UI\UI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\AqKeyboard.h" />
@@ -48,24 +50,26 @@
     <ClInclude Include="..\AqUartProtocol.h" />
     <ClInclude Include="..\Audio.h" />
     <ClInclude Include="..\AY8910.h" />
+    <ClInclude Include="..\cJSON.h" />
     <ClInclude Include="..\Common.h" />
+    <ClInclude Include="..\Config.h" />
     <ClInclude Include="..\EmuState.h" />
     <ClInclude Include="..\imgui\imconfig.h" />
-    <ClInclude Include="..\imgui\imgui.h" />
     <ClInclude Include="..\imgui\imgui_impl_sdl2.h" />
     <ClInclude Include="..\imgui\imgui_impl_sdlrenderer2.h" />
     <ClInclude Include="..\imgui\imgui_internal.h" />
+    <ClInclude Include="..\imgui\imgui.h" />
     <ClInclude Include="..\imgui\imstb_rectpack.h" />
     <ClInclude Include="..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\libz80\z80.h" />
     <ClInclude Include="..\tinyfiledialogs.h" />
     <ClInclude Include="..\UI\MemoryEditor.h" />
+    <ClInclude Include="..\UI\UI.h" />
     <ClInclude Include="..\VFS\EspVFS.h" />
     <ClInclude Include="..\VFS\SDCardVFS.h" />
     <ClInclude Include="..\VFS\VFS.h" />
     <ClInclude Include="..\Video.h" />
-    <ClInclude Include="..\UI\UI.h" />
     <ClInclude Include="getopt.h" />
     <ClInclude Include="resource.h" />
   </ItemGroup>
