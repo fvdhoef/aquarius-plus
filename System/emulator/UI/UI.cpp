@@ -20,7 +20,13 @@
 UI::UI() {
 }
 
-void UI::start(const std::string &romPath, const std::string &sdCardPath, const std::string &cartRomPath, const std::string &typeInStr) {
+void UI::start(
+    const std::string &appDataPath,
+    const std::string &romPath,
+    const std::string &sdCardPath,
+    const std::string &cartRomPath,
+    const std::string &typeInStr) {
+
     emuState.typeInStr = typeInStr;
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(sdCardPath.c_str());
@@ -64,11 +70,13 @@ void UI::start(const std::string &romPath, const std::string &sdCardPath, const 
         exit(1);
     }
 
+    std::string imguiIniFileName = appDataPath + "/imgui.ini";
+
     // Setup Dear ImGui context
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io    = ImGui::GetIO();
-    io.IniFilename = nullptr;
+    io.IniFilename = imguiIniFileName.c_str();
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);

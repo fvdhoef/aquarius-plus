@@ -103,6 +103,11 @@ int main(int argc, char *argv[]) {
     }
 
     UI ui;
-    ui.start(romPath, sdCardPath, cartRomPath, typeInStr);
+    ui.start(
+        appDataPath,
+        romPath,
+        sdCardPath,
+        cartRomPath,
+        typeInStr);
     return 0;
 }
