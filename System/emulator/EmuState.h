@@ -32,7 +32,7 @@ struct EmuState {
 
     static uint8_t memRead(size_t param, uint16_t addr);
     static void    memWrite(size_t param, uint16_t addr, uint8_t data);
-    static uint8_t ioRead(size_t param, ushort addr);
+    static uint8_t ioRead(size_t param, uint16_t addr);
     static void    ioWrite(size_t param, uint16_t addr, uint8_t data);
 
     unsigned emulate();

@@ -325,7 +325,7 @@ void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
     }
 }
 
-uint8_t EmuState::ioRead(size_t param, ushort addr) {
+uint8_t EmuState::ioRead(size_t param, uint16_t addr) {
     (void)param;
     if (emuState.enableBreakpoints) {
         for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {

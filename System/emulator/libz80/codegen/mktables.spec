@@ -13,7 +13,7 @@
 
 (ADC|SBC|ADD|SUB) A,\((IX|IY)\+d\)
 	ctx->tstates += 5;
-	signed char displacement = read8(ctx, ctx->PC++);
+	int8_t displacement = read8(ctx, ctx->PC++);
 	BR.A = doArithmetic(ctx, read8(ctx, WR.%2 + displacement), F1_%1, F2_%1);
 	
 (ADC|SBC|ADD|SUB) A,n
@@ -37,7 +37,7 @@ ADD (IX|IY),(SP|BC|DE|IX|IY)
 
 (AND|XOR|OR) \((IX|IY)\+d\)
 	ctx->tstates += 5;
-	do%1(ctx, read8(ctx, WR.%2 + (signed char) read8(ctx, ctx->PC++)));
+	do%1(ctx, read8(ctx, WR.%2 + (int8_t) read8(ctx, ctx->PC++)));
 
 (AND|XOR|OR) (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl)
 	do%1(ctx, BR.%2);
@@ -58,7 +58,7 @@ BIT ([0-7]),\(HL\)
 
 BIT ([0-7]),\((IX|IY)\+d\)
 	ctx->tstates += 2;
-	ushort address = WR.%2 + (signed char) read8(ctx, ctx->PC++);
+	uint16_t address = WR.%2 + (int8_t) read8(ctx, ctx->PC++);
 	doBIT_indexed(ctx, %1, address);
 
 (SET|RES) ([0-7]),(A|B|C|D|E|H|L)
@@ -70,7 +70,7 @@ BIT ([0-7]),\((IX|IY)\+d\)
 
 (SET|RES) ([0-7]),\((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	write8(ctx, WR.%3 + off, doSetRes(ctx, SR_%1, %2, read8(ctx, WR.%3 + off)));
 	
 	
@@ -78,7 +78,7 @@ BIT ([0-7]),\((IX|IY)\+d\)
 # Jumps and calls
 #
 CALL (C|M|NZ|NC|P|PE|PO|Z)?,?\(nn\)
-	ushort addr = read16(ctx, ctx->PC);
+	uint16_t addr = read16(ctx, ctx->PC);
 	ctx->PC += 2;
 	if (condition(ctx, C_%1))
 	{
@@ -91,7 +91,7 @@ JP \((HL|IX|IY)\)
 	ctx->PC = WR.%1;
 	
 JP (C|M|NZ|NC|P|PE|PO|Z)?,?\(nn\)
-	ushort addr = read16(ctx, ctx->PC);
+	uint16_t addr = read16(ctx, ctx->PC);
 	ctx->PC += 2;
 	if (condition(ctx, C_%1))
 		ctx->PC = addr;
@@ -124,7 +124,7 @@ RET
 	
 DJNZ \(PC\+e\)
 	ctx->tstates += 1;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	BR.B--;
 	if (BR.B)
 	{
@@ -143,7 +143,7 @@ RST (0|8|10|18|20|28|30|38)H
 # Misc
 #
 CCF
-	VALFLAG(F_C, (1 - (byte)GETFLAG(F_C) != 0));
+	VALFLAG(F_C, (1 - (uint8_t)GETFLAG(F_C) != 0));
 	RESFLAG(F_N);
 	adjustFlags(ctx, BR.A);
 
@@ -162,22 +162,22 @@ DAA
 	
 EX \(SP\),(HL|IX|IY)
 	ctx->tstates += 3;
-	ushort tmp = read16(ctx, WR.SP);
+	uint16_t tmp = read16(ctx, WR.SP);
 	write16(ctx, WR.SP, WR.%1);
 	WR.%1 = tmp;
 
 EX AF,AF'
-	ushort tmp = ctx->R1.wr.AF;
+	uint16_t tmp = ctx->R1.wr.AF;
 	ctx->R1.wr.AF = ctx->R2.wr.AF;
 	ctx->R2.wr.AF = tmp;
 
 EX DE,HL
-	ushort tmp = WR.DE;
+	uint16_t tmp = WR.DE;
 	WR.DE = WR.HL;
 	WR.HL = tmp;
 
 EXX
-	ushort tmp;	
+	uint16_t tmp;	
 	tmp = ctx->R1.wr.BC;
 	ctx->R1.wr.BC = ctx->R2.wr.BC;
 	ctx->R2.wr.BC = tmp;	
@@ -202,8 +202,8 @@ CP \(HL\)
 
 CP \((IX|IY)\+d\)
 	ctx->tstates += 5;
-	signed char displacement = read8(ctx, ctx->PC++);
-	byte val = read8(ctx, WR.%1 + displacement);
+	int8_t displacement = read8(ctx, ctx->PC++);
+	uint8_t val = read8(ctx, WR.%1 + displacement);
 	doArithmetic(ctx, val, 0, 1);	
 	adjustFlags(ctx, val);
 
@@ -212,7 +212,7 @@ CP (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl)
 	adjustFlags(ctx, BR.%1);
 
 CP n
-	byte val = read8(ctx, ctx->PC++);
+	uint8_t val = read8(ctx, ctx->PC++);
 	doArithmetic(ctx, val, 0, 1);	
 	adjustFlags(ctx, val);
 
@@ -227,7 +227,7 @@ CPDR
 CPD
 	ctx->tstates += 5;
 	int carry = GETFLAG(F_C);
-	byte value = doCP_HL(ctx);
+	uint8_t value = doCP_HL(ctx);
 	if(GETFLAG(F_H))
 		value--;
 	WR.HL--;
@@ -251,7 +251,7 @@ CPIR
 CPI
 	ctx->tstates += 5;
 	int carry = GETFLAG(F_C);
-	byte value = doCP_HL(ctx);
+	uint8_t value = doCP_HL(ctx);
 	if(GETFLAG(F_H))
 		value--;
 	WR.HL++;
@@ -266,13 +266,13 @@ CPI
 #
 (INC|DEC) \(HL\)
 	ctx->tstates += 1;
-	byte value = read8(ctx, WR.HL);
+	uint8_t value = read8(ctx, WR.HL);
 	write8(ctx, WR.HL, doIncDec(ctx, value, ID_%1));
 
 (INC|DEC) \((IX|IY)\+d\)
 	ctx->tstates += 6;
-	signed char off = read8(ctx, ctx->PC++);
-	byte value = read8(ctx, WR.%2 + off);
+	int8_t off = read8(ctx, ctx->PC++);
+	uint8_t value = read8(ctx, WR.%2 + off);
 	write8(ctx, WR.%2 + off, doIncDec(ctx, value, ID_%1));
 	
 (INC|DEC) (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl)
@@ -307,7 +307,7 @@ IN (A|B|C|D|E|F|H|L),\(C\)
 	adjustFlags(ctx, BR.%1);
 
 IN A,\(n\)
-	byte port = read8(ctx, ctx->PC++);	
+	uint8_t port = read8(ctx, ctx->PC++);	
 	BR.A = ioRead(ctx, BR.A << 8 | port);
 
 INDR
@@ -320,7 +320,7 @@ INDR
 
 IND
 	ctx->tstates += 1;
-	byte val = ioRead(ctx, WR.BC);
+	uint8_t val = ioRead(ctx, WR.BC);
 	write8(ctx, WR.HL, val);
 	WR.HL--;
 	BR.B = doIncDec(ctx, BR.B, ID_DEC);
@@ -340,7 +340,7 @@ INIR
 
 INI
 	ctx->tstates += 1;
-	byte val = ioRead(ctx, WR.BC);
+	uint8_t val = ioRead(ctx, WR.BC);
 	write8(ctx, WR.HL, val);
 	WR.HL++;
 	BR.B = doIncDec(ctx, BR.B, ID_DEC);
@@ -364,12 +364,12 @@ LD \(HL\),n
 	
 LD \((IX|IY)\+d\),(A|B|C|D|E|H|L)
 	ctx->tstates += 5;
-	write8(ctx, WR.%1 + (signed char) read8(ctx, ctx->PC++), BR.%2);
+	write8(ctx, WR.%1 + (int8_t) read8(ctx, ctx->PC++), BR.%2);
 	
 LD \((IX|IY)\+d\),n
 	ctx->tstates += 2;
-	signed char offset = read8(ctx, ctx->PC++);
-	byte n = read8(ctx, ctx->PC++);
+	int8_t offset = read8(ctx, ctx->PC++);
+	uint8_t n = read8(ctx, ctx->PC++);
 	write8(ctx, WR.%1 + offset, n);
 	
 LD \(nn\),A
@@ -392,7 +392,7 @@ LD (A|B|C|D|E|H|L),\(HL\)
 
 LD (A|B|C|D|E|H|L),\((IX|IY)\+d\)
 	ctx->tstates += 5;
-	BR.%1 = read8(ctx, WR.%2 + (signed char) read8(ctx, ctx->PC++));
+	BR.%1 = read8(ctx, WR.%2 + (int8_t) read8(ctx, ctx->PC++));
 
 LD (A|B|C|D|E|H|L),\(nn\)
 	BR.%1 = read8(ctx, read16(ctx, ctx->PC));
@@ -403,25 +403,25 @@ LD (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl),(A|B|C|D|E|H|L|IXh|IXl|IYh|IYl)
 
 LD (A|B|C|D|E|H|L),(SL|SR)A \((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	BR.%1 = do%2(ctx, read8(ctx, WR.%3 + off), 1);
 	write8(ctx, WR.%3 + off, BR.%1);	
 	
 LD (A|B|C|D|E|H|L),(SL|SR)L \((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	BR.%1 = do%2(ctx, read8(ctx, WR.%3 + off), 0);
 	write8(ctx, WR.%3 + off, BR.%1);	
 	  
 LD (A|B|C|D|E|H|L),(RL|RLC|RR|RRC) \((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	BR.%1 = do%2(ctx, 1, read8(ctx, WR.%3 + off));
 	write8(ctx, WR.%3 + off, BR.%1);
 
 LD (A|B|C|D|E|H|L),(SET|RES) ([0-7]),\((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	BR.%1 = doSetRes(ctx, SR_%2, %3, read8(ctx, WR.%4 + off));
 	write8(ctx, WR.%4 + off, BR.%1);	
 
@@ -442,7 +442,7 @@ LD (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl),n
 	BR.%1 = read8(ctx, ctx->PC++);
 	
 LD (BC|DE|HL|SP|IX|IY),\(nn\)
-	ushort addr = read16(ctx, ctx->PC);
+	uint16_t addr = read16(ctx, ctx->PC);
 	ctx->PC += 2;
 	WR.%1 = read16(ctx, addr);	
 
@@ -461,7 +461,7 @@ LDIR
 
 LDI
 	ctx->tstates += 2;
-	byte val = read8(ctx, WR.HL);
+	uint8_t val = read8(ctx, WR.HL);
 	write8(ctx, WR.DE, val);
 	WR.DE++;
 	WR.HL++;
@@ -481,7 +481,7 @@ LDDR
 
 LDD
 	ctx->tstates += 2;
-	byte val = read8(ctx, WR.HL);
+	uint8_t val = read8(ctx, WR.HL);
 	write8(ctx, WR.DE, val);
 	WR.DE--;
 	WR.HL--;
@@ -503,7 +503,7 @@ NOP
 
 OUTI
 	ctx->tstates += 1;
-	byte value = read8(ctx, WR.HL);
+	uint8_t value = read8(ctx, WR.HL);
 	BR.B = doIncDec(ctx, BR.B, 1);
 	ioWrite(ctx, WR.BC, value);
 	WR.HL++;
@@ -524,7 +524,7 @@ OTIR
 
 OUTD
 	ctx->tstates += 1;
-	byte value = read8(ctx, WR.HL);
+	uint8_t value = read8(ctx, WR.HL);
 	BR.B = doIncDec(ctx, BR.B, 1);
 	ioWrite(ctx, WR.BC, value);
 	WR.HL--;
@@ -573,7 +573,7 @@ PUSH (AF|BC|DE|HL|IX|IY)
 
 (RLC|RRC|RL|RR) \((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	write8(ctx, WR.%2 + off, do%1(ctx, 1, read8(ctx, WR.%2 + off)));
 
 (RL|RR|RLC|RRC)A
@@ -582,8 +582,8 @@ PUSH (AF|BC|DE|HL|IX|IY)
 	
 RLD
 	ctx->tstates += 4;
-	byte Ah = BR.A & 0x0f;
-	byte hl = read8(ctx, WR.HL);
+	uint8_t Ah = BR.A & 0x0f;
+	uint8_t hl = read8(ctx, WR.HL);
 	BR.A = (BR.A & 0xf0) | ((hl & 0xf0) >> 4);
 	hl = (hl << 4) | Ah;
 	write8(ctx, WR.HL, hl);
@@ -594,8 +594,8 @@ RLD
 
 RRD
 	ctx->tstates += 4;
-	byte Ah = BR.A & 0x0f;
-	byte hl = read8(ctx, WR.HL);
+	uint8_t Ah = BR.A & 0x0f;
+	uint8_t hl = read8(ctx, WR.HL);
 	BR.A = (BR.A & 0xf0) | (hl & 0x0f);
 	hl = (hl >> 4) | (Ah << 4);
 	write8(ctx, WR.HL, hl);
@@ -610,7 +610,7 @@ RRD
 
 (SL|SR)(L|A) \((IX|IY)\+d\)
 	ctx->tstates += 2;
-	signed char off = read8(ctx, ctx->PC++);
+	int8_t off = read8(ctx, ctx->PC++);
 	write8(ctx, WR.%3 + off, do%1(ctx, read8(ctx, WR.%3 + off), IA_%2));
 
 (SL|SR)(L|A) (A|B|C|D|E|H|L|IXh|IXl|IYh|IYl)
