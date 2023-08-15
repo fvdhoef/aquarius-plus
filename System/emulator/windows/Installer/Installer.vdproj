@@ -39,6 +39,12 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_338D658A78AE70BD652FC250038A5760"
+        "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_3755A9E1F99915C9D168D8C52760A9FB"
         "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
         "MsmSig" = "8:_UNDEFINED"
@@ -69,8 +75,20 @@
         }
         "Entry"
         {
+        "MsmKey" = "8:_8CD4EE19B9DD7313571F428DBD2EEBC1"
+        "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
         "MsmKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
         "OwnerKey" = "8:_UNDEFINED"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_ACC66F89DF20409E3C0D3E1A92488279"
+        "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
         "MsmSig" = "8:_UNDEFINED"
         }
         "Entry"
@@ -88,6 +106,12 @@
         "Entry"
         {
         "MsmKey" = "8:_CAC496EAEA23AE44170994263006BA8F"
+        "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
+        "MsmSig" = "8:_UNDEFINED"
+        }
+        "Entry"
+        {
+        "MsmKey" = "8:_D4321453F72F4523D6BE23D7F5D537B0"
         "OwnerKey" = "8:_9C95BCF3337F4EDA9B3F2995EFDC89A1"
         "MsmSig" = "8:_UNDEFINED"
         }
@@ -128,6 +152,14 @@
             "PrerequisitesLocation" = "2:1"
             "Url" = "8:"
             "ComponentsUrl" = "8:"
+                "Items"
+                {
+                    "{EDC2488A-8267-493A-A98E-7D9C3B36CDF3}:.NETFramework,Version=v4.7.2"
+                    {
+                    "Name" = "8:Microsoft .NET Framework 4.7.2 (x86 and x64)"
+                    "ProductCode" = "8:.NETFramework,Version=v4.7.2"
+                    }
+                }
             }
         }
         "Release"
@@ -257,6 +289,26 @@
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_338D658A78AE70BD652FC250038A5760"
+            {
+            "SourcePath" = "8:api-ms-win-crt-environment-l1-1-0.dll"
+            "TargetName" = "8:api-ms-win-crt-environment-l1-1-0.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_3755A9E1F99915C9D168D8C52760A9FB"
             {
             "SourcePath" = "8:VCRUNTIME140_1.dll"
@@ -357,6 +409,46 @@
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_8CD4EE19B9DD7313571F428DBD2EEBC1"
+            {
+            "SourcePath" = "8:COMDLG32.dll"
+            "TargetName" = "8:COMDLG32.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_ACC66F89DF20409E3C0D3E1A92488279"
+            {
+            "SourcePath" = "8:api-ms-win-crt-convert-l1-1-0.dll"
+            "TargetName" = "8:api-ms-win-crt-convert-l1-1-0.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B85747DCA55949A8B2399FABD205A136"
             {
             "SourcePath" = "8:..\\..\\aquarius.rom"
@@ -401,6 +493,26 @@
             {
             "SourcePath" = "8:api-ms-win-crt-string-l1-1-0.dll"
             "TargetName" = "8:api-ms-win-crt-string-l1-1-0.dll"
+            "Tag" = "8:"
+            "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
+            "Condition" = "8:"
+            "Transitive" = "11:FALSE"
+            "Vital" = "11:TRUE"
+            "ReadOnly" = "11:FALSE"
+            "Hidden" = "11:FALSE"
+            "System" = "11:FALSE"
+            "Permanent" = "11:FALSE"
+            "SharedLegacy" = "11:FALSE"
+            "PackageAs" = "3:1"
+            "Register" = "3:1"
+            "Exclude" = "11:FALSE"
+            "IsDependency" = "11:TRUE"
+            "IsolateTo" = "8:"
+            }
+            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_D4321453F72F4523D6BE23D7F5D537B0"
+            {
+            "SourcePath" = "8:IMM32.dll"
+            "TargetName" = "8:IMM32.dll"
             "Tag" = "8:"
             "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
             "Condition" = "8:"
@@ -503,7 +615,7 @@
         "Name" = "8:Microsoft Visual Studio"
         "ProductName" = "8:Aquarius+ emulator"
         "ProductCode" = "8:{B2FCBB9C-E5F3-445D-9FB0-9F50262CDE7C}"
-        "PackageCode" = "8:{F4FB46E2-5D9E-43BF-B703-8A9FAE567FC7}"
+        "PackageCode" = "8:{1DFAE5FE-FB24-44DB-9BFD-03D4A1B1F7DA}"
         "UpgradeCode" = "8:{F0AB1B3E-BEA7-4E22-AFF8-7C96A2FC2D20}"
         "AspNetVersion" = "8:2.0.50727.0"
         "RestartWWWService" = "11:FALSE"
@@ -626,7 +738,7 @@
             "{970C0BB2-C7D0-45D7-ABFA-7EC378858BC0}:_543E42458B344B1386CCEBDE298F58A9"
             {
             "Name" = "8:Aquarius+ emulator"
-            "Arguments" = "8:-u [PersonalFolder]\\AquariusPlusDisk"
+            "Arguments" = "8:"
             "Description" = "8:"
             "ShowCmd" = "3:1"
             "IconIndex" = "3:105"
