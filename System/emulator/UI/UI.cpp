@@ -596,6 +596,15 @@ void UI::wndBreakpoints(bool *p_open) {
     ImGui::End();
 }
 
+static ImU8 z80memRead(const ImU8 *data, size_t off) {
+    (void)data;
+    return emuState.memRead(0, off);
+}
+static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
+    (void)data;
+    emuState.memWrite(0, off, d);
+}
+
 void UI::wndMemEdit(bool *p_open) {
     static MemoryEditor memEdit;
 
@@ -603,32 +612,42 @@ void UI::wndMemEdit(bool *p_open) {
     size_t     memSize         = sizeof(emuState.colorRam);
     size_t     baseDisplayAddr = 0;
     static int itemCurrent     = 0;
+
+    memEdit.readFn  = nullptr;
+    memEdit.writeFn = nullptr;
+
     switch (itemCurrent) {
         case 0:
+            pMem            = nullptr;
+            memSize         = 65536;
+            memEdit.readFn  = z80memRead;
+            memEdit.writeFn = z80memWrite;
+            break;
+        case 1:
             pMem    = emuState.screenRam;
             memSize = sizeof(emuState.screenRam);
             break;
-        case 1:
+        case 2:
             pMem    = emuState.colorRam;
             memSize = sizeof(emuState.colorRam);
             break;
-        case 2:
+        case 3:
             pMem    = emuState.systemRom;
             memSize = emuState.systemRomSize;
             break;
-        case 3:
+        case 4:
             pMem    = emuState.mainRam;
             memSize = sizeof(emuState.mainRam);
             break;
-        case 4:
+        case 5:
             pMem    = emuState.cartRom;
             memSize = sizeof(emuState.cartRom);
             break;
-        case 5:
+        case 6:
             pMem    = emuState.videoRam;
             memSize = sizeof(emuState.videoRam);
             break;
-        case 6:
+        case 7:
             pMem    = emuState.charRam;
             memSize = sizeof(emuState.charRam);
             break;
@@ -645,6 +664,7 @@ void UI::wndMemEdit(bool *p_open) {
 
         ImGui::Combo(
             "Memory select", &itemCurrent,
+            "Z80 memory\0"
             "Screen RAM\0"
             "Color RAM\0"
             "System ROM\0"
