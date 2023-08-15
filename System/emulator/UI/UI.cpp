@@ -348,23 +348,28 @@ void UI::emulate() {
     }
 
     // Only play audio in running mode, otherwise keep zero
-    if (emuMode != Em_Running) {
+    if (emuState.emuMode != EmuState::Em_Running) {
         for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
             abuf[aidx * 2 + 0] = 0;
             abuf[aidx * 2 + 1] = 0;
         }
     }
 
-    if (emuMode == Em_Running) {
+    if (emuState.emuMode == EmuState::Em_Running) {
         // Render each audio sample
         for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
             while (true) {
                 auto flags = emuState.emulate();
+                if (emuState.emuMode != EmuState::Em_Running)
+                    break;
+
                 if (flags & ERF_RENDER_SCREEN)
                     renderScreen();
                 if (flags & ERF_NEW_AUDIO_SAMPLE)
                     break;
             }
+            if (emuState.emuMode != EmuState::Em_Running)
+                break;
 
             float al = emuState.audioLeft / 65535.0;
             float ar = emuState.audioRight / 65535.0;
@@ -380,10 +385,11 @@ void UI::emulate() {
             abuf[aidx * 2 + 0] = (int16_t)(l * 32767.0f);
             abuf[aidx * 2 + 1] = (int16_t)(r * 32767.0f);
         }
+    }
 
-    } else {
-        if (emuMode == Em_Step) {
-            emuMode = Em_Halted;
+    if (emuState.emuMode != EmuState::Em_Running) {
+        if (emuState.emuMode == EmuState::Em_Step) {
+            emuState.emuMode = EmuState::Em_Halted;
             emuState.emulate();
         }
         renderScreen();
@@ -476,17 +482,24 @@ void UI::wndScreen(bool *p_open) {
             config.scrScale = e;
 
             ImGui::SameLine(0, 50);
+
+            ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Halted ? (ImVec4)ImColor(255, 0, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
             if (ImGui::Button("Halt")) {
-                emuMode = Em_Halted;
+                emuState.emuMode = EmuState::Em_Halted;
             }
+            ImGui::PopStyleColor();
+
             ImGui::SameLine();
             if (ImGui::Button("Step")) {
-                emuMode = Em_Step;
+                emuState.emuMode = EmuState::Em_Step;
             }
             ImGui::SameLine();
+
+            ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Running ? (ImVec4)ImColor(0, 192, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
             if (ImGui::Button("Go")) {
-                emuMode = Em_Running;
+                emuState.emuMode = EmuState::Em_Running;
             }
+            ImGui::PopStyleColor();
 
             if (texture) {
                 ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
@@ -498,22 +511,63 @@ void UI::wndScreen(bool *p_open) {
 }
 
 void UI::wndBreakpoints(bool *p_open) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
     if (ImGui::Begin("Breakpoints", p_open, 0)) {
-        static uint16_t value;
-        static bool     isIO;
-        static bool     onR;
-        static bool     onW;
-        static bool     onX;
-        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
-        ImGui::InputScalar("##", ImGuiDataType_U16, &value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
-        ImGui::SameLine();
-        ImGui::Checkbox("R", &onR);
-        ImGui::SameLine();
-        ImGui::Checkbox("W", &onW);
-        ImGui::SameLine();
-        ImGui::Checkbox("X", &onX);
-        ImGui::SameLine();
-        ImGui::Checkbox("IO", &isIO);
+        ImGui::Checkbox("Enable breakpoints", &emuState.enableBreakpoints);
+        ImGui::SameLine(ImGui::GetWindowWidth() - 35);
+        if (ImGui::Button("+")) {
+            emuState.breakpoints.emplace_back();
+        }
+
+        int eraseIdx = -1;
+        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
+            auto &bp = emuState.breakpoints[i];
+            ImGui::PushID(i);
+
+            ImGui::Separator();
+
+            if (emuState.lastBp == i) {
+                ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor(255, 110, 0, 144));
+                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(255, 110, 0, 200));
+            }
+
+            ImGui::Checkbox("En", &bp.enabled);
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
+            ImGui::InputScalar("##", ImGuiDataType_U16, &bp.value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
+            ImGui::SameLine();
+            ImGui::Checkbox("R", &bp.onR);
+            ImGui::SameLine();
+            ImGui::Checkbox("W", &bp.onW);
+            ImGui::SameLine();
+
+            if (bp.type != 0)
+                ImGui::BeginDisabled();
+            ImGui::Checkbox("X", &bp.onX);
+            if (bp.type != 0)
+                ImGui::EndDisabled();
+
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 10);
+            ImGui::Combo(
+                "##Type", &bp.type,
+                "Mem\0"
+                "IO 8\0"
+                "IO 16\0");
+            ImGui::SameLine();
+            if (ImGui::Button("X##Delete")) {
+                eraseIdx = i;
+            }
+
+            if (emuState.lastBp == i) {
+                ImGui::PopStyleColor(2);
+            }
+
+            ImGui::PopID();
+        }
+        if (eraseIdx >= 0) {
+            emuState.breakpoints.erase(emuState.breakpoints.begin() + eraseIdx);
+        }
     }
     ImGui::End();
 }

@@ -39,6 +39,29 @@ struct EmuState {
     unsigned audioLeft  = 0;
     unsigned audioRight = 0;
 
+    // Breakpoints
+    bool enableBreakpoints = false;
+
+    struct Breakpoint {
+        uint16_t value   = 0;
+        bool     enabled = false;
+        int      type    = 0;
+        bool     onR     = true;
+        bool     onW     = true;
+        bool     onX     = true;
+    };
+
+    std::vector<Breakpoint> breakpoints;
+    bool                    atBreakpoint = false;
+    int                     lastBp       = -1;
+
+    enum EmuMode {
+        Em_Halted,
+        Em_Step,
+        Em_Running,
+    };
+    EmuMode emuMode = Em_Running;
+
     // Emulator state
     Z80Context z80ctx;                   // Z80 emulation core state
     Video      video;                    // Video

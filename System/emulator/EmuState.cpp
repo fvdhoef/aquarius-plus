@@ -51,6 +51,20 @@ void EmuState::reset() {
 }
 
 unsigned EmuState::emulate() {
+    if (!atBreakpoint && enableBreakpoints) {
+        for (int i = 0; i < (int)breakpoints.size(); i++) {
+            auto &bp = breakpoints[i];
+            if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value) {
+                emuMode      = EmuState::Em_Halted;
+                lastBp       = i;
+                atBreakpoint = true;
+                return 0;
+            }
+        }
+    }
+    atBreakpoint = false;
+    lastBp       = -1;
+
     unsigned resultFlags = 0;
 
     z80ctx.tstates = 0;

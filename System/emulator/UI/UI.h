@@ -35,11 +35,4 @@ private:
 
     bool allowTyping = false;
     bool first       = true;
-
-    enum EmuMode {
-        Em_Halted,
-        Em_Step,
-        Em_Running,
-    };
-    EmuMode emuMode = Em_Running;
 };
