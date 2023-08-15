@@ -57,8 +57,8 @@ int main(int argc, char *argv[]) {
             case 'c': cartRomPath = optarg; break;
             case 'u': {
 #if _WIN32
-                auto path = char pathbuf[1024];
-                _fullpath(pathbuf, optarg, sizeof(pathbuf));
+                char pathbuf[1024];
+                auto path = _fullpath(pathbuf, optarg, sizeof(pathbuf));
                 if (path) {
                     config.sdCardPath = path;
                 }

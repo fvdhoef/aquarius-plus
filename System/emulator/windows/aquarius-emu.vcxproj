@@ -23,7 +23,7 @@
     <ClCompile Include="..\AqUartProtocol.cpp" />
     <ClCompile Include="..\Audio.cpp" />
     <ClCompile Include="..\AY8910.cpp" />
-    <ClCompile Include="..\cJSON.cpp" />
+    <ClCompile Include="..\cJSON.c" />
     <ClCompile Include="..\Config.cpp" />
     <ClCompile Include="..\EmuState.cpp" />
     <ClCompile Include="..\imgui\imgui_demo.cpp" />
