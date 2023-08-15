@@ -212,6 +212,15 @@ void EmuState::keyboardTypeIn() {
 
 uint8_t EmuState::memRead(size_t param, uint16_t addr) {
     (void)param;
+    if (emuState.enableBreakpoints) {
+        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
+            auto &bp = emuState.breakpoints[i];
+            if (bp.enabled && bp.type == 0 && bp.onR && addr == bp.value) {
+                emuState.emuMode = EmuState::Em_Halted;
+                emuState.lastBp  = i;
+            }
+        }
+    }
 
     // Handle CPM remap bit
     if (emuState.cpmRemap) {
@@ -256,6 +265,15 @@ uint8_t EmuState::memRead(size_t param, uint16_t addr) {
 
 void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
     (void)param;
+    if (emuState.enableBreakpoints) {
+        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
+            auto &bp = emuState.breakpoints[i];
+            if (bp.enabled && bp.type == 0 && bp.onW && addr == bp.value) {
+                emuState.emuMode = EmuState::Em_Halted;
+                emuState.lastBp  = i;
+            }
+        }
+    }
 
     // Handle CPM remap bit
     if (emuState.cpmRemap) {
@@ -306,6 +324,15 @@ void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
 
 uint8_t EmuState::ioRead(size_t param, ushort addr) {
     (void)param;
+    if (emuState.enableBreakpoints) {
+        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
+            auto &bp = emuState.breakpoints[i];
+            if (bp.enabled && bp.type != 0 && bp.onR && ((bp.type == 1 && (addr & 0xFF) == (bp.value & 0xFF)) || (bp.type == 2 && addr == bp.value))) {
+                emuState.emuMode = EmuState::Em_Halted;
+                emuState.lastBp  = i;
+            }
+        }
+    }
 
     if (!emuState.sysCtrlDisableExt) {
         switch (addr & 0xFF) {
@@ -386,6 +413,15 @@ uint8_t EmuState::ioRead(size_t param, ushort addr) {
 
 void EmuState::ioWrite(size_t param, uint16_t addr, uint8_t data) {
     (void)param;
+    if (emuState.enableBreakpoints) {
+        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
+            auto &bp = emuState.breakpoints[i];
+            if (bp.enabled && bp.type != 0 && bp.onW && ((bp.type == 1 && (addr & 0xFF) == (bp.value & 0xFF)) || (bp.type == 2 && addr == bp.value))) {
+                emuState.emuMode = EmuState::Em_Halted;
+                emuState.lastBp  = i;
+            }
+        }
+    }
 
     if (!emuState.sysCtrlDisableExt) {
         switch (addr & 0xFF) {
