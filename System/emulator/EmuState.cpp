@@ -50,6 +50,72 @@ void EmuState::reset() {
     ay2.reset();
 }
 
+unsigned EmuState::emulate() {
+    unsigned resultFlags = 0;
+
+    z80ctx.tstates = 0;
+    Z80Execute(&z80ctx);
+    int delta = z80ctx.tstates * 2;
+
+    int prevLineHalfCycles = lineHalfCycles;
+
+    lineHalfCycles += delta;
+    sampleHalfCycles += delta;
+
+    // Handle VIRQLINE register
+    if (prevLineHalfCycles < 320 && lineHalfCycles >= 320 && videoLine == videoIrqLine) {
+        irqStatus |= (1 << 1);
+    }
+
+    if (lineHalfCycles >= HCYCLES_PER_LINE) {
+        lineHalfCycles -= HCYCLES_PER_LINE;
+
+        video.drawLine();
+
+        videoLine++;
+        if (videoLine == 200) {
+            irqStatus |= (1 << 0);
+
+        } else if (videoLine == 262) {
+            resultFlags |= ERF_RENDER_SCREEN;
+            videoLine = 0;
+            keyboardTypeIn();
+        }
+    }
+
+    // Generate interrupt if needed
+    if ((irqStatus & irqMask) != 0) {
+        Z80INT(&z80ctx, 0xFF);
+    }
+
+    // Render audio?
+    if (sampleHalfCycles >= HCYCLES_PER_SAMPLE) {
+        sampleHalfCycles -= HCYCLES_PER_SAMPLE;
+
+        // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
+        audioLeft  = 0;
+        audioRight = 0;
+
+        for (int i = 0; i < 5; i++) {
+            uint16_t abc[3];
+            ay1.render(abc);
+            audioLeft += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
+            audioRight += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
+
+            ay2.render(abc);
+            audioLeft += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
+            audioRight += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
+        }
+
+        uint16_t beep = soundOutput ? 10000 : 0;
+
+        audioLeft  = audioLeft + beep;
+        audioRight = audioRight + beep;
+        resultFlags |= ERF_NEW_AUDIO_SAMPLE;
+    }
+    return resultFlags;
+}
+
 bool EmuState::loadSystemROM(const std::string &path) {
     auto ifs = std::ifstream(path, std::ifstream::binary);
     if (!ifs.good()) {

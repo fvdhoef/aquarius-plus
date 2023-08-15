@@ -342,69 +342,34 @@ void UI::emulate() {
         return;
     }
 
-    // Render each audio sample
-    for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
-        do {
-            emuState.z80ctx.tstates = 0;
-            Z80Execute(&emuState.z80ctx);
-            int delta = emuState.z80ctx.tstates * 2;
+    // Only play audio in running mode, otherwise keep last level
+    if (emuMode != Em_Running) {
+        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
+            abuf[aidx * 2 + 0] = emuState.audioLeft;
+            abuf[aidx * 2 + 1] = emuState.audioRight;
+        }
+    }
 
-            int prevLineHalfCycles = emuState.lineHalfCycles;
-
-            emuState.lineHalfCycles += delta;
-            emuState.sampleHalfCycles += delta;
-
-            // Handle VIRQLINE register
-            if (prevLineHalfCycles < 320 && emuState.lineHalfCycles >= 320 && emuState.videoLine == emuState.videoIrqLine) {
-                emuState.irqStatus |= (1 << 1);
-            }
-
-            if (emuState.lineHalfCycles >= HCYCLES_PER_LINE) {
-                emuState.lineHalfCycles -= HCYCLES_PER_LINE;
-
-                emuState.video.drawLine();
-
-                emuState.videoLine++;
-                if (emuState.videoLine == 200) {
-                    emuState.irqStatus |= (1 << 0);
-
-                } else if (emuState.videoLine == 262) {
+    if (emuMode == Em_Running) {
+        // Render each audio sample
+        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
+            while (true) {
+                auto flags = emuState.emulate();
+                if (flags & ERF_RENDER_SCREEN)
                     renderScreen();
-                    emuState.videoLine = 0;
-                    emuState.keyboardTypeIn();
-                }
+                if (flags & ERF_NEW_AUDIO_SAMPLE)
+                    break;
             }
-
-            // Generate interrupt if needed
-            if ((emuState.irqStatus & emuState.irqMask) != 0) {
-                Z80INT(&emuState.z80ctx, 0xFF);
-            }
-        } while (emuState.sampleHalfCycles < HCYCLES_PER_SAMPLE);
-
-        emuState.sampleHalfCycles -= HCYCLES_PER_SAMPLE;
-
-        uint16_t beep = emuState.soundOutput ? 10000 : 0;
-
-        // Take average of 5 AY8910 samples to match sampling rate (16*5*44100 = 3.528MHz)
-        unsigned left  = 0;
-        unsigned right = 0;
-
-        for (int i = 0; i < 5; i++) {
-            uint16_t abc[3];
-            emuState.ay1.render(abc);
-            left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
-            right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
-
-            emuState.ay2.render(abc);
-            left += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
-            right += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
+            abuf[aidx * 2 + 0] = emuState.audioLeft;
+            abuf[aidx * 2 + 1] = emuState.audioRight;
         }
 
-        left  = left + beep;
-        right = right + beep;
-
-        abuf[aidx * 2 + 0] = left;
-        abuf[aidx * 2 + 1] = right;
+    } else {
+        if (emuMode == Em_Step) {
+            emuMode = Em_Halted;
+            emuState.emulate();
+        }
+        renderScreen();
     }
 
     // Return buffer to audio subsystem.
@@ -491,6 +456,19 @@ void UI::wndScreen(bool *p_open) {
         ImGui::SameLine();
         ImGui::RadioButton("4x", &e, 4);
         config.scrScale = e;
+
+        ImGui::SameLine(0, 50);
+        if (ImGui::Button("Halt")) {
+            emuMode = Em_Halted;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Step")) {
+            emuMode = Em_Step;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button("Go")) {
+            emuMode = Em_Running;
+        }
 
         if (texture) {
             ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));

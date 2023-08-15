@@ -18,6 +18,11 @@
 #define BANK_READONLY (1 << 7)
 #define BANK_MAP_RAM (1 << 6)
 
+enum EmulateResultFlags {
+    ERF_RENDER_SCREEN    = (1 << 0),
+    ERF_NEW_AUDIO_SAMPLE = (1 << 1),
+};
+
 struct EmuState {
     EmuState();
     void reset();
@@ -30,6 +35,10 @@ struct EmuState {
     static uint8_t ioRead(size_t param, ushort addr);
     static void    ioWrite(size_t param, uint16_t addr, uint8_t data);
 
+    unsigned emulate();
+    unsigned audioLeft  = 0;
+    unsigned audioRight = 0;
+
     // Emulator state
     Z80Context z80ctx;                   // Z80 emulation core state
     Video      video;                    // Video
@@ -39,7 +48,7 @@ struct EmuState {
     uint8_t    handCtrl1         = 0xFF; // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handCtrl2         = 0xFF; // Mini-expander - Hand controller 2 state (connected to port 2 of AY-3-8910)
     bool       cartridgeInserted = false;
-    size_t     systemRomSize      = 0;
+    size_t     systemRomSize     = 0;
 
     // Virtual typing from command-line argument
     std::string typeInStr;
@@ -73,13 +82,13 @@ struct EmuState {
     bool     cpmRemap          = false; // $FD<1>: Remap memory for CP/M
 
     // Memory space
-    uint8_t screenRam[1024];      // $3000-33FF: Screen RAM for text mode
-    uint8_t colorRam[1024];       // $3400-37FF: Color RAM for text mode
+    uint8_t screenRam[1024];       // $3000-33FF: Screen RAM for text mode
+    uint8_t colorRam[1024];        // $3400-37FF: Color RAM for text mode
     uint8_t systemRom[256 * 1024]; // Flash memory
-    uint8_t mainRam[512 * 1024];  // Main RAM
-    uint8_t cartRom[16 * 1024];   // Cartridge ROM
-    uint8_t videoRam[16 * 1024];  // Video RAM
-    uint8_t charRam[2048];        // Character RAM
+    uint8_t mainRam[512 * 1024];   // Main RAM
+    uint8_t cartRom[16 * 1024];    // Cartridge ROM
+    uint8_t videoRam[16 * 1024];   // Video RAM
+    uint8_t charRam[2048];         // Character RAM
 };
 
 extern EmuState emuState;
