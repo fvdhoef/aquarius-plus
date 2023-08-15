@@ -343,10 +343,10 @@ void generateCode (void)
 void mkFormat(char* src, char* dst)
 {
 	strcpy(dst, src);
-	substStr(dst, "d", "0%02Xh");
+	substStr(dst, "d", "$%02X");
 	substStr(dst, "e", "%d");
-	substStr(dst, "nn", "0%04Xh");
-	substStr(dst, "n", "0%02Xh");	
+	substStr(dst, "nn", "$%04X");
+	substStr(dst, "n", "$%02X");	
 }
 
 

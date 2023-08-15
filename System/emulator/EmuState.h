@@ -52,8 +52,8 @@ struct EmuState {
     };
 
     std::vector<Breakpoint> breakpoints;
-    bool                    atBreakpoint = false;
-    int                     lastBp       = -1;
+    int                     lastBpAddress = -1;
+    int                     lastBp        = -1;
 
     enum EmuMode {
         Em_Halted,

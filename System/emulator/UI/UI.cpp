@@ -219,6 +219,22 @@ void UI::mainLoop() {
                 ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
                 ImGui::MenuItem("Registers", "", &config.showRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
+                if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
+                    memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
+                    memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
+                    memset(emuState.mainRam, 0, sizeof(emuState.mainRam));
+                    memset(emuState.videoRam, 0, sizeof(emuState.videoRam));
+                    memset(emuState.charRam, 0, sizeof(emuState.charRam));
+                    emuState.reset();
+                }
+                if (ImGui::MenuItem("Clear memory (0xA5) & reset Aquarius+", "")) {
+                    memset(emuState.screenRam, 0xA5, sizeof(emuState.screenRam));
+                    memset(emuState.colorRam, 0xA5, sizeof(emuState.colorRam));
+                    memset(emuState.mainRam, 0xA5, sizeof(emuState.mainRam));
+                    memset(emuState.videoRam, 0xA5, sizeof(emuState.videoRam));
+                    memset(emuState.charRam, 0xA5, sizeof(emuState.charRam));
+                    emuState.reset();
+                }
                 ImGui::EndMenu();
             }
 
@@ -420,7 +436,15 @@ void UI::wndAbout(bool *p_open) {
 void UI::wndRegs(bool *p_open) {
     bool open = ImGui::Begin("Registers", p_open, ImGuiWindowFlags_AlwaysAutoResize);
     if (open) {
+        ImGui::Separator();
         ImGui::Text("PC: %04X", emuState.z80ctx.PC);
+        ImGui::Separator();
+        {
+            char tmp1[64];
+            char tmp2[64];
+            Z80Debug(&emuState.z80ctx, tmp1, tmp2);
+            ImGui::Text("%-8s %s", tmp1, tmp2);
+        }
         ImGui::Separator();
         ImGui::Text(
             "S:%u Z:%u H:%u PV:%u N:%u C:%u",
