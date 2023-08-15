@@ -478,7 +478,7 @@ void AqUartProtocol::cmdVersion() {
 
 #ifdef EMULATOR
     extern const char *versionStr;
-    const char *p = versionStr;
+    const char        *p = versionStr;
 #else
     const char            *p       = "Unknown";
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -727,7 +727,7 @@ void AqUartProtocol::cmdMkDir(const char *pathArg) {
         txFifoWrite(ERR_PARAM);
         return;
     }
-    txFifoWrite(vfs->mkdir(pathArg));
+    txFifoWrite(vfs->mkdir(path));
 }
 
 void AqUartProtocol::cmdChDir(const char *pathArg) {
@@ -765,7 +765,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
     }
 
     struct stat st;
-    int         result = vfs->stat(pathArg, &st);
+    int         result = vfs->stat(path, &st);
 
     txFifoWrite(result);
     if (result < 0)
