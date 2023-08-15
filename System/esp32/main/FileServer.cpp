@@ -90,8 +90,6 @@ static std::string urlEncode(const std::string &s) {
         if ((ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') || (ch >= '0' && ch <= '9') ||
             (ch == '_' || ch == '-' || ch == '.' || ch == '/')) {
             result.push_back(ch);
-        } else if (ch == ' ') {
-            result.push_back('+');
         } else {
             result.push_back('%');
             result.push_back(hexlut[ch >> 4]);
@@ -265,13 +263,29 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
 
     // Get path
     auto uriPath = getPathFromUri(req->uri);
-    auto path    = MOUNT_POINT + uriPath;
+    if (uriPath.empty() || uriPath.back() != '/')
+        uriPath += '/';
+
+    auto path = MOUNT_POINT + uriPath;
 
     struct stat st;
     if ((result = stat(path.c_str(), &st)) < 0)
         return resp404(req);
 
     if (S_ISDIR(st.st_mode)) {
+        auto deCtx = SDCardVFS::instance().direnum(uriPath);
+        if (!deCtx)
+            return serverError(req);
+        deCtx->push_back(DirEnumEntry("..", 0, DE_DIR, 0, 0));
+
+        std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
+            // Sort directories at the top
+            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
+                return (a.attr & DE_DIR) != 0;
+            }
+            return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
+        });
+
         httpd_resp_set_type(req, "text/html; charset=utf-8");
 
         httpd_resp_sendstr_chunk(req, "<!DOCTYPE html><html><body>");
@@ -281,31 +295,16 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
             "<thead><tr><th>Name</th><th align=\"right\">Size (Bytes)</th></tr></thead>"
             "<tbody>");
 
-        DIR *dir = opendir(path.c_str());
-        if (dir != nullptr) {
-            // printf("Host: %s\n", host);
-            while (1) {
-                struct dirent *de = readdir(dir);
-                if (de == nullptr)
-                    break;
+        for (auto &de : *deCtx) {
+            snprintf(tmp.get(), tmpSize, "<tr><td><a href=\"%s\">%s</href></td>", urlEncode(uriPath + de.filename).c_str(), de.filename.c_str());
+            httpd_resp_sendstr_chunk(req, tmp.get());
 
-                snprintf(tmp.get(), tmpSize, "%s/%s", path.c_str(), de->d_name);
-                int result = stat(tmp.get(), &st);
-                if (result < 0) {
-                    continue;
-                }
-
-                snprintf(tmp.get(), tmpSize, "<tr><td><a href=\"%s%s\">%s</href></td>", req->uri, urlEncode(de->d_name).c_str(), de->d_name);
-                httpd_resp_sendstr_chunk(req, tmp.get());
-
-                if (S_ISDIR(st.st_mode)) {
-                    snprintf(tmp.get(), tmpSize, "<td align=\"right\">Directory</td></tr>");
-                } else {
-                    snprintf(tmp.get(), tmpSize, "<td align=\"right\">%lu</td></tr>", st.st_size);
-                }
-                httpd_resp_sendstr_chunk(req, tmp.get());
+            if (de.attr & DE_DIR) {
+                snprintf(tmp.get(), tmpSize, "<td align=\"right\">Directory</td></tr>");
+            } else {
+                snprintf(tmp.get(), tmpSize, "<td align=\"right\">%lu</td></tr>", de.size);
             }
-            closedir(dir);
+            httpd_resp_sendstr_chunk(req, tmp.get());
         }
 
         httpd_resp_sendstr_chunk(req, "</tbody></table>");
