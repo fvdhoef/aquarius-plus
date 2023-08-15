@@ -37,4 +37,6 @@ private:
     uint8_t       noiseCnt;      // Noise period counter
     uint32_t      rng;           // RNG LFSR state
     uint8_t       value[3];      // Current channel value (either 0 or 1)
+
+    friend class UI;
 };

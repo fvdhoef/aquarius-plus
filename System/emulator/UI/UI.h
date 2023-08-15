@@ -25,6 +25,7 @@ private:
     void wndScreen(bool *p_open);
     void wndMemEdit(bool *p_open);
     void wndBreakpoints(bool *p_open);
+    void wndIoRegs(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;

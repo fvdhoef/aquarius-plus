@@ -217,7 +217,8 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Debug")) {
                 ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
                 ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
-                ImGui::MenuItem("Registers", "", &config.showRegsWindow);
+                ImGui::MenuItem("CPU Registers", "", &config.showRegsWindow);
+                ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
                     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
@@ -259,6 +260,8 @@ void UI::mainLoop() {
             wndMemEdit(&config.showMemEdit);
         if (config.showRegsWindow)
             wndRegs(&config.showRegsWindow);
+        if (config.showIoRegsWindow)
+            wndIoRegs(&config.showIoRegsWindow);
         if (config.showBreakpoints)
             wndBreakpoints(&config.showBreakpoints);
         if (showAppAbout)
@@ -679,6 +682,68 @@ void UI::wndMemEdit(bool *p_open) {
         if (memEdit.contentsWidthChanged) {
             memEdit.calcSizes(s, memSize, baseDisplayAddr);
             ImGui::SetWindowSize(ImVec2(s.windowWidth, ImGui::GetWindowSize().y));
+        }
+    }
+    ImGui::End();
+}
+
+void UI::wndIoRegs(bool *p_open) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
+
+    bool open = ImGui::Begin("IO Registers", p_open, 0);
+    if (open) {
+        if (ImGui::CollapsingHeader("Video")) {
+            ImGui::Text("$E0     VCTRL   : $%02X", emuState.videoCtrl);
+            ImGui::Text("$E1/$E2 VSCRX   : %u", emuState.videoScrX);
+            ImGui::Text("$E3     VSCRY   : %u", emuState.videoScrY);
+            ImGui::Text("$E4     VSPRSEL : %u", emuState.videoSprSel);
+            ImGui::Text("$EA     VPALSEL : %u", emuState.videoPalSel);
+            ImGui::Text("$EC     VLINE   : %u", emuState.videoLine);
+            ImGui::Text("$ED     VIRQLINE: %u", emuState.videoIrqLine);
+        }
+        if (ImGui::CollapsingHeader("Interrupt")) {
+            ImGui::Text("$EE IRQMASK: $%02X %s%s", emuState.irqMask, emuState.irqMask & 2 ? "[LINE]" : "", emuState.irqMask & 1 ? "[VBLANK]" : "");
+            ImGui::Text("$EF IRQSTAT: $%02X %s%s", emuState.irqStatus, emuState.irqStatus & 2 ? "[LINE]" : "", emuState.irqStatus & 1 ? "[VBLANK]" : "");
+        }
+        if (ImGui::CollapsingHeader("Banking")) {
+            ImGui::Text("$F0 BANK0: $%02X - page:%u%s%s", emuState.bankRegs[0], emuState.bankRegs[0] & 0x3F, emuState.bankRegs[0] & 0x80 ? " RO" : "", emuState.bankRegs[0] & 0x40 ? " OVL" : "");
+            ImGui::Text("$F1 BANK1: $%02X - page:%u%s%s", emuState.bankRegs[1], emuState.bankRegs[1] & 0x3F, emuState.bankRegs[1] & 0x80 ? " RO" : "", emuState.bankRegs[1] & 0x40 ? " OVL" : "");
+            ImGui::Text("$F2 BANK2: $%02X - page:%u%s%s", emuState.bankRegs[2], emuState.bankRegs[2] & 0x3F, emuState.bankRegs[2] & 0x80 ? " RO" : "", emuState.bankRegs[2] & 0x40 ? " OVL" : "");
+            ImGui::Text("$F3 BANK3: $%02X - page:%u%s%s", emuState.bankRegs[3], emuState.bankRegs[3] & 0x3F, emuState.bankRegs[3] & 0x80 ? " RO" : "", emuState.bankRegs[3] & 0x40 ? " OVL" : "");
+        }
+        if (ImGui::CollapsingHeader("Audio AY1")) {
+            ImGui::Text(" 0 AFINE   : $%02X", emuState.ay1.regs[0]);
+            ImGui::Text(" 1 ACOARSE : $%02X", emuState.ay1.regs[1]);
+            ImGui::Text(" 2 BFINE   : $%02X", emuState.ay1.regs[2]);
+            ImGui::Text(" 3 BCOARSE : $%02X", emuState.ay1.regs[3]);
+            ImGui::Text(" 4 CFINE   : $%02X", emuState.ay1.regs[4]);
+            ImGui::Text(" 5 CCOARSE : $%02X", emuState.ay1.regs[5]);
+            ImGui::Text(" 6 NOISEPER: $%02X", emuState.ay1.regs[6]);
+            ImGui::Text(" 7 ENABLE  : $%02X", emuState.ay1.regs[7]);
+            ImGui::Text(" 8 AVOL    : $%02X", emuState.ay1.regs[8]);
+            ImGui::Text(" 9 BVOL    : $%02X", emuState.ay1.regs[9]);
+            ImGui::Text("10 CVOL    : $%02X", emuState.ay1.regs[10]);
+            ImGui::Text("11 EAFINE  : $%02X", emuState.ay1.regs[11]);
+            ImGui::Text("12 EACOARSE: $%02X", emuState.ay1.regs[12]);
+            ImGui::Text("13 EASHAPE : $%02X", emuState.ay1.regs[13]);
+            ImGui::Text("14 PORTA   : $%02X", emuState.handCtrl1);
+            ImGui::Text("15 PORTB   : $%02X", emuState.handCtrl2);
+        }
+        if (ImGui::CollapsingHeader("Audio AY2")) {
+            ImGui::Text(" 0 AFINE   : $%02X", emuState.ay2.regs[0]);
+            ImGui::Text(" 1 ACOARSE : $%02X", emuState.ay2.regs[1]);
+            ImGui::Text(" 2 BFINE   : $%02X", emuState.ay2.regs[2]);
+            ImGui::Text(" 3 BCOARSE : $%02X", emuState.ay2.regs[3]);
+            ImGui::Text(" 4 CFINE   : $%02X", emuState.ay2.regs[4]);
+            ImGui::Text(" 5 CCOARSE : $%02X", emuState.ay2.regs[5]);
+            ImGui::Text(" 6 NOISEPER: $%02X", emuState.ay2.regs[6]);
+            ImGui::Text(" 7 ENABLE  : $%02X", emuState.ay2.regs[7]);
+            ImGui::Text(" 8 AVOL    : $%02X", emuState.ay2.regs[8]);
+            ImGui::Text(" 9 BVOL    : $%02X", emuState.ay2.regs[9]);
+            ImGui::Text("10 CVOL    : $%02X", emuState.ay2.regs[10]);
+            ImGui::Text("11 EAFINE  : $%02X", emuState.ay2.regs[11]);
+            ImGui::Text("12 EACOARSE: $%02X", emuState.ay2.regs[12]);
+            ImGui::Text("13 EASHAPE : $%02X", emuState.ay2.regs[13]);
         }
     }
     ImGui::End();
