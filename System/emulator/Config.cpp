@@ -62,7 +62,7 @@ void Config::load() {
 
         showScreenWindow = getBoolValue(root, "showScreenWindow", false);
         showMemEdit      = getBoolValue(root, "showMemEdit", false);
-        showRegsWindow   = getBoolValue(root, "showRegsWindow", false);
+        showCpuState     = getBoolValue(root, "showCpuState", false);
         showIoRegsWindow = getBoolValue(root, "showIoRegsWindow", false);
         showBreakpoints  = getBoolValue(root, "showBreakpoints", false);
 
@@ -90,7 +90,7 @@ void Config::save() {
 
     cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
     cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);
-    cJSON_AddBoolToObject(root, "showRegsWindow", showRegsWindow);
+    cJSON_AddBoolToObject(root, "showCpuState", showCpuState);
     cJSON_AddBoolToObject(root, "showIoRegsWindow", showIoRegsWindow);
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
 

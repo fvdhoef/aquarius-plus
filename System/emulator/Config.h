@@ -28,7 +28,7 @@ public:
 
     bool showScreenWindow = false;
     bool showMemEdit      = false;
-    bool showRegsWindow   = false;
+    bool showCpuState     = false;
     bool showIoRegsWindow = false;
     bool showBreakpoints  = false;
 };

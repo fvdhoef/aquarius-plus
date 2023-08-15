@@ -217,7 +217,7 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Debug")) {
                 ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
                 ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
-                ImGui::MenuItem("CPU Registers", "", &config.showRegsWindow);
+                ImGui::MenuItem("CPU State", "", &config.showCpuState);
                 ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
@@ -258,8 +258,8 @@ void UI::mainLoop() {
         }
         if (config.showMemEdit)
             wndMemEdit(&config.showMemEdit);
-        if (config.showRegsWindow)
-            wndRegs(&config.showRegsWindow);
+        if (config.showCpuState)
+            wndCpuState(&config.showCpuState);
         if (config.showIoRegsWindow)
             wndIoRegs(&config.showIoRegsWindow);
         if (config.showBreakpoints)
@@ -436,9 +436,27 @@ void UI::wndAbout(bool *p_open) {
     ImGui::End();
 }
 
-void UI::wndRegs(bool *p_open) {
-    bool open = ImGui::Begin("Registers", p_open, ImGuiWindowFlags_AlwaysAutoResize);
+void UI::wndCpuState(bool *p_open) {
+    bool open = ImGui::Begin("CPU state", p_open, ImGuiWindowFlags_AlwaysAutoResize);
     if (open) {
+        ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Halted ? (ImVec4)ImColor(192, 0, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+        if (ImGui::Button("Halt")) {
+            emuState.emuMode = EmuState::Em_Halted;
+        }
+        ImGui::PopStyleColor();
+
+        ImGui::SameLine();
+        if (ImGui::Button("Step")) {
+            emuState.emuMode = EmuState::Em_Step;
+        }
+        ImGui::SameLine();
+
+        ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Running ? (ImVec4)ImColor(0, 128, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+        if (ImGui::Button("Go")) {
+            emuState.emuMode = EmuState::Em_Running;
+        }
+        ImGui::PopStyleColor();
+
         ImGui::Separator();
         ImGui::Text("PC: %04X", emuState.z80ctx.PC);
         ImGui::Separator();
@@ -507,26 +525,6 @@ void UI::wndScreen(bool *p_open) {
             ImGui::SameLine();
             ImGui::RadioButton("4x", &e, 4);
             config.scrScale = e;
-
-            ImGui::SameLine(0, 50);
-
-            ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Halted ? (ImVec4)ImColor(255, 0, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
-            if (ImGui::Button("Halt")) {
-                emuState.emuMode = EmuState::Em_Halted;
-            }
-            ImGui::PopStyleColor();
-
-            ImGui::SameLine();
-            if (ImGui::Button("Step")) {
-                emuState.emuMode = EmuState::Em_Step;
-            }
-            ImGui::SameLine();
-
-            ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Running ? (ImVec4)ImColor(0, 192, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
-            if (ImGui::Button("Go")) {
-                emuState.emuMode = EmuState::Em_Running;
-            }
-            ImGui::PopStyleColor();
 
             if (texture) {
                 ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));

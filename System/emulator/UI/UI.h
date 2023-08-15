@@ -21,7 +21,7 @@ private:
     void emulate();
 
     void wndAbout(bool *p_open);
-    void wndRegs(bool *p_open);
+    void wndCpuState(bool *p_open);
     void wndScreen(bool *p_open);
     void wndMemEdit(bool *p_open);
     void wndBreakpoints(bool *p_open);
