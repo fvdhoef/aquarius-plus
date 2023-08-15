@@ -2,6 +2,8 @@
 
 This section contains the information that end users would be most interested in.
 
+For documentation please refer to the User Guide in the [Wiki](https://github.com/fvdhoef/aquarius-plus/wiki/User%20Guide).
+
 ## File Structure
 
 | Name                             | Description                                                                                                                                                                                          |

@@ -7,7 +7,10 @@ class UI {
 public:
     UI();
 
-    void start(const std::string &romPath, const std::string &sdCardPath, const std::string &cartRomPath, const std::string &typeInStr);
+    void start(
+        const std::string &romPath,
+        const std::string &cartRomPath,
+        const std::string &typeInStr);
 
 private:
     void mainLoop();

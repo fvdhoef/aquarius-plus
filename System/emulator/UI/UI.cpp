@@ -16,14 +16,21 @@
 #include "imgui_impl_sdlrenderer2.h"
 #include "MemoryEditor.h"
 #include "tinyfiledialogs.h"
+#include "Config.h"
 
 UI::UI() {
 }
 
-void UI::start(const std::string &romPath, const std::string &sdCardPath, const std::string &cartRomPath, const std::string &typeInStr) {
+void UI::start(
+    const std::string &romPath,
+    const std::string &cartRomPath,
+    const std::string &typeInStr) {
+
+    auto &config = Config::instance();
+
     emuState.typeInStr = typeInStr;
     AqUartProtocol::instance().init();
-    SDCardVFS::instance().init(sdCardPath.c_str());
+    SDCardVFS::instance().init(config.sdCardPath);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -68,10 +75,12 @@ void UI::start(const std::string &romPath, const std::string &sdCardPath, const 
     IMGUI_CHECKVERSION();
     ImGui::CreateContext();
     ImGuiIO &io    = ImGui::GetIO();
-    io.IniFilename = nullptr;
+    io.IniFilename = nullptr; // imguiIniFileName.c_str();
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
+
+    ImGui::LoadIniSettingsFromMemory(config.imguiConf.c_str());
 
     // Initialize emulator
     Audio::instance().init();
@@ -93,7 +102,8 @@ void UI::start(const std::string &romPath, const std::string &sdCardPath, const 
 }
 
 void UI::mainLoop() {
-    ImGuiIO &io = ImGui::GetIO();
+    ImGuiIO &io     = ImGui::GetIO();
+    auto    &config = Config::instance();
 
     bool showScreenWindow = false;
     bool showMemEdit      = false;
@@ -132,12 +142,34 @@ void UI::mainLoop() {
             }
         }
 
+        if (io.WantSaveIniSettings) {
+            config.imguiConf       = ImGui::SaveIniSettingsToMemory();
+            io.WantSaveIniSettings = false;
+        }
+
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("System")) {
+                if (ImGui::MenuItem("Select SD card directory...", "")) {
+                    auto path = tinyfd_selectFolderDialog("Select SD card directory", nullptr);
+                    if (path) {
+                        config.sdCardPath = path;
+                        stripTrailingSlashes(config.sdCardPath);
+                        SDCardVFS::instance().init(config.sdCardPath);
+                    }
+                }
+                std::string ejectLabel = "Eject SD card";
+                if (!config.sdCardPath.empty()) {
+                    ejectLabel += " (" + config.sdCardPath + ")";
+                }
+                if (ImGui::MenuItem(ejectLabel.c_str(), "", false, !config.sdCardPath.empty())) {
+                    config.sdCardPath.clear();
+                    SDCardVFS::instance().init("");
+                }
+                ImGui::Separator();
                 if (ImGui::MenuItem("Load cartridge ROM...", "")) {
                     char const *lFilterPatterns[1] = {"*.rom"};
                     char       *romFile            = tinyfd_openFileDialog("Open ROM file", "", 1, lFilterPatterns, "ROM files", 0);

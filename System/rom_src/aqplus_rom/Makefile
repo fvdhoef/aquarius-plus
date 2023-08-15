@@ -1,4 +1,4 @@
-all: s2
+all: s3
 
 s2:
 	zmac --zmac -n aqplus.asm --oo cim,lst
