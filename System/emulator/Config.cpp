@@ -50,16 +50,21 @@ void Config::load() {
 
     std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     if (auto root = cJSON_ParseWithLength(str.c_str(), str.size())) {
-        imguiConf        = getStringValue(root, "imguiConfig", "");
-        sdCardPath       = getStringValue(root, "sdCardPath", "");
+        imguiConf  = getStringValue(root, "imguiConfig", "");
+        sdCardPath = getStringValue(root, "sdCardPath", "");
+
+        wndPosX     = getIntValue(root, "wndPosX", VIDEO_WIDTH * 2);
+        wndPosY     = getIntValue(root, "wndPosY", VIDEO_HEIGHT * 2);
+        wndWidth    = getIntValue(root, "wndWidth", VIDEO_WIDTH * 2);
+        wndHeight   = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
+        scrScale    = getIntValue(root, "scrScale", 1);
+        enableSound = getBoolValue(root, "enableSound", true);
+
         showScreenWindow = getBoolValue(root, "showScreenWindow", false);
         showMemEdit      = getBoolValue(root, "showMemEdit", false);
         showRegsWindow   = getBoolValue(root, "showRegsWindow", false);
-        wndPosX          = getIntValue(root, "wndPosX", VIDEO_WIDTH * 2);
-        wndPosY          = getIntValue(root, "wndPosY", VIDEO_HEIGHT * 2);
-        wndWidth         = getIntValue(root, "wndWidth", VIDEO_WIDTH * 2);
-        wndHeight        = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
-        scrScale         = getIntValue(root, "scrScale", 1);
+        showBreakpoints  = getBoolValue(root, "showBreakpoints", false);
+
         cJSON_free(root);
     }
 
@@ -74,14 +79,18 @@ void Config::save() {
     auto root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "imguiConfig", cJSON_CreateString(imguiConf.c_str()));
     cJSON_AddStringToObject(root, "sdCardPath", sdCardPath.c_str());
-    cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
-    cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);
-    cJSON_AddBoolToObject(root, "showRegsWindow", showRegsWindow);
+
     cJSON_AddNumberToObject(root, "wndPosX", wndPosX);
     cJSON_AddNumberToObject(root, "wndPosY", wndPosY);
     cJSON_AddNumberToObject(root, "wndWidth", wndWidth);
     cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
     cJSON_AddNumberToObject(root, "scrScale", scrScale);
+    cJSON_AddBoolToObject(root, "enableSound", enableSound);
+
+    cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
+    cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);
+    cJSON_AddBoolToObject(root, "showRegsWindow", showRegsWindow);
+    cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
 
     std::ofstream ofs(configPath);
     if (!ofs.good())

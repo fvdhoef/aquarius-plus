@@ -19,13 +19,15 @@ public:
     std::string imguiConf;
     std::string sdCardPath;
 
-    int wndPosX   = SDL_WINDOWPOS_CENTERED;
-    int wndPosY   = SDL_WINDOWPOS_CENTERED;
-    int wndWidth  = VIDEO_WIDTH * 2;
-    int wndHeight = VIDEO_HEIGHT * 2;
-    int scrScale  = 1;
+    int  wndPosX     = SDL_WINDOWPOS_CENTERED;
+    int  wndPosY     = SDL_WINDOWPOS_CENTERED;
+    int  wndWidth    = VIDEO_WIDTH * 2;
+    int  wndHeight   = VIDEO_HEIGHT * 2;
+    int  scrScale    = 1;
+    bool enableSound = true;
 
     bool showScreenWindow = false;
     bool showMemEdit      = false;
     bool showRegsWindow   = false;
+    bool showBreakpoints  = false;
 };

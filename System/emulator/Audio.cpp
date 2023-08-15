@@ -16,13 +16,13 @@ void Audio::init() {
     }
 
     // Allocate audio buffers
-    buffers = (uint16_t **)malloc(NUM_BUFS * sizeof(*buffers));
+    buffers = (int16_t **)malloc(NUM_BUFS * sizeof(*buffers));
     if (buffers == NULL) {
         fprintf(stderr, "Error allocating audio buffers\n");
         exit(1);
     }
     for (int i = 0; i < NUM_BUFS; i++) {
-        buffers[i] = (uint16_t *)malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+        buffers[i] = (int16_t *)malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
         if (buffers[i] == NULL) {
             fprintf(stderr, "Error allocating audio buffers\n");
             exit(1);
@@ -35,7 +35,7 @@ void Audio::init() {
     // Setup SDL audio
     memset(&desired, 0, sizeof(desired));
     desired.freq     = SAMPLERATE;
-    desired.format   = AUDIO_U16SYS;
+    desired.format   = AUDIO_S16SYS;
     desired.samples  = SAMPLES_PER_BUFFER;
     desired.channels = 2;
     desired.callback = _audioCallback;
@@ -98,7 +98,7 @@ void Audio::close() {
     }
 }
 
-uint16_t *Audio::getBuffer(void) {
+int16_t *Audio::getBuffer(void) {
     if (bufCnt == NUM_BUFS) {
         return NULL;
     }
@@ -109,7 +109,7 @@ uint16_t *Audio::getBuffer(void) {
     return buffers[wrIdx];
 }
 
-void Audio::putBuffer(uint16_t *buf) {
+void Audio::putBuffer(int16_t *buf) {
     assert(bufCnt < NUM_BUFS);
 
     // printf("audio_put_buffer %d %d\n", wrIdx, bufCnt);

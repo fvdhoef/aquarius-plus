@@ -2,6 +2,7 @@
 
 #include "Common.h"
 #include <SDL.h>
+#include "Audio.h"
 
 class UI {
 public:
@@ -23,10 +24,14 @@ private:
     void wndRegs(bool *p_open);
     void wndScreen(bool *p_open);
     void wndMemEdit(bool *p_open);
+    void wndBreakpoints(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;
     SDL_Renderer *renderer = nullptr;
+
+    DCBlock dcBlockLeft;
+    DCBlock dcBlockRight;
 
     bool allowTyping = false;
     bool first       = true;

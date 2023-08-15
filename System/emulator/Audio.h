@@ -12,19 +12,34 @@ class Audio {
 public:
     static Audio &instance();
 
-    void      init();
-    void      start();
-    void      close();
-    uint16_t *getBuffer();
-    void      putBuffer(uint16_t *buf);
+    void     init();
+    void     start();
+    void     close();
+    int16_t *getBuffer();
+    void     putBuffer(int16_t *buf);
 
 private:
     static void _audioCallback(void *userData, uint8_t *stream, int len);
     void        audioCallback(uint8_t *stream, int len);
 
     SDL_AudioDeviceID audioDev = 0;
-    uint16_t        **buffers  = nullptr;
+    int16_t         **buffers  = nullptr;
     int               rdIdx    = 0;
     int               wrIdx    = 0;
     volatile int      bufCnt   = 0;
+};
+
+class DCBlock {
+public:
+    // https://ccrma.stanford.edu/~jos/fp/DC_Blocker_Software_Implementations.html
+    // https://ccrma.stanford.edu/~jos/filters/DC_Blocker.html
+    float filter(float x) {
+        const float r = 0.995;
+        float       y = x - xm1 + r * ym1;
+        xm1           = x;
+        ym1           = y;
+        return y;
+    }
+    float xm1 = 0;
+    float ym1 = 0;
 };

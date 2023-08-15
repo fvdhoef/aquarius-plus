@@ -7,7 +7,6 @@
 
 #include "Video.h"
 #include "AqKeyboard.h"
-#include "Audio.h"
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 
@@ -194,6 +193,8 @@ void UI::mainLoop() {
                     emuState.reset();
                 }
                 ImGui::Separator();
+                ImGui::MenuItem("Enable sound", "", &config.enableSound);
+                ImGui::Separator();
                 if (ImGui::MenuItem("Reset Aquarius+", "")) {
                     emuState.reset();
                 }
@@ -217,6 +218,7 @@ void UI::mainLoop() {
                 ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
                 ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
                 ImGui::MenuItem("Registers", "", &config.showRegsWindow);
+                ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 ImGui::EndMenu();
             }
 
@@ -241,6 +243,8 @@ void UI::mainLoop() {
             wndMemEdit(&config.showMemEdit);
         if (config.showRegsWindow)
             wndRegs(&config.showRegsWindow);
+        if (config.showBreakpoints)
+            wndBreakpoints(&config.showBreakpoints);
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -334,6 +338,7 @@ void UI::emulate() {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
     // second.
+    auto &config = Config::instance();
 
     // Get a buffer from audio subsystem.
     auto abuf = Audio::instance().getBuffer();
@@ -342,11 +347,11 @@ void UI::emulate() {
         return;
     }
 
-    // Only play audio in running mode, otherwise keep last level
+    // Only play audio in running mode, otherwise keep zero
     if (emuMode != Em_Running) {
         for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
-            abuf[aidx * 2 + 0] = emuState.audioLeft;
-            abuf[aidx * 2 + 1] = emuState.audioRight;
+            abuf[aidx * 2 + 0] = 0;
+            abuf[aidx * 2 + 1] = 0;
         }
     }
 
@@ -360,8 +365,20 @@ void UI::emulate() {
                 if (flags & ERF_NEW_AUDIO_SAMPLE)
                     break;
             }
-            abuf[aidx * 2 + 0] = emuState.audioLeft;
-            abuf[aidx * 2 + 1] = emuState.audioRight;
+
+            float al = emuState.audioLeft / 65535.0;
+            float ar = emuState.audioRight / 65535.0;
+            float l  = dcBlockLeft.filter(al);
+            float r  = dcBlockRight.filter(ar);
+            l        = std::min(std::max(l, -1.0f), 1.0f);
+            r        = std::min(std::max(r, -1.0f), 1.0f);
+
+            if (!config.enableSound) {
+                l = 0;
+                r = 0;
+            }
+            abuf[aidx * 2 + 0] = (int16_t)(l * 32767.0f);
+            abuf[aidx * 2 + 1] = (int16_t)(r * 32767.0f);
         }
 
     } else {
@@ -439,43 +456,65 @@ void UI::wndScreen(bool *p_open) {
     bool open = ImGui::Begin("Screen", p_open, ImGuiWindowFlags_AlwaysAutoResize);
     // ImGui::PopStyleVar();
 
-    auto &config = Config::instance();
-
     if (open) {
-        static int e = 0;
-        if (e <= 0) {
-            e = config.scrScale;
-            e = std::min(std::max(config.scrScale, 1), 4);
-        }
+        auto &config = Config::instance();
 
-        ImGui::RadioButton("1x", &e, 1);
-        ImGui::SameLine();
-        ImGui::RadioButton("2x", &e, 2);
-        ImGui::SameLine();
-        ImGui::RadioButton("3x", &e, 3);
-        ImGui::SameLine();
-        ImGui::RadioButton("4x", &e, 4);
-        config.scrScale = e;
+        if (open) {
+            static int e = 0;
+            if (e <= 0) {
+                e = config.scrScale;
+                e = std::min(std::max(config.scrScale, 1), 4);
+            }
 
-        ImGui::SameLine(0, 50);
-        if (ImGui::Button("Halt")) {
-            emuMode = Em_Halted;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Step")) {
-            emuMode = Em_Step;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button("Go")) {
-            emuMode = Em_Running;
-        }
+            ImGui::RadioButton("1x", &e, 1);
+            ImGui::SameLine();
+            ImGui::RadioButton("2x", &e, 2);
+            ImGui::SameLine();
+            ImGui::RadioButton("3x", &e, 3);
+            ImGui::SameLine();
+            ImGui::RadioButton("4x", &e, 4);
+            config.scrScale = e;
 
-        if (texture) {
-            ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
+            ImGui::SameLine(0, 50);
+            if (ImGui::Button("Halt")) {
+                emuMode = Em_Halted;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Step")) {
+                emuMode = Em_Step;
+            }
+            ImGui::SameLine();
+            if (ImGui::Button("Go")) {
+                emuMode = Em_Running;
+            }
+
+            if (texture) {
+                ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
+            }
+            allowTyping = ImGui::IsWindowFocused();
         }
-        allowTyping = ImGui::IsWindowFocused();
     }
+    ImGui::End();
+}
 
+void UI::wndBreakpoints(bool *p_open) {
+    if (ImGui::Begin("Breakpoints", p_open, 0)) {
+        static uint16_t value;
+        static bool     isIO;
+        static bool     onR;
+        static bool     onW;
+        static bool     onX;
+        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
+        ImGui::InputScalar("##", ImGuiDataType_U16, &value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
+        ImGui::SameLine();
+        ImGui::Checkbox("R", &onR);
+        ImGui::SameLine();
+        ImGui::Checkbox("W", &onW);
+        ImGui::SameLine();
+        ImGui::Checkbox("X", &onX);
+        ImGui::SameLine();
+        ImGui::Checkbox("IO", &isIO);
+    }
     ImGui::End();
 }
 
