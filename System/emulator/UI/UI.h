@@ -27,4 +27,7 @@ private:
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;
     SDL_Renderer *renderer = nullptr;
+
+    bool allowTyping = false;
+    bool first       = true;
 };

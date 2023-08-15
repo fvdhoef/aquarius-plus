@@ -119,9 +119,11 @@ void UI::mainLoop() {
                     if (io.WantCaptureKeyboard)
                         break;
 
-                    if (!event.key.repeat && event.key.keysym.scancode <= 255) {
-                        AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
-                        AqKeyboard::instance().updateMatrix();
+                    if (allowTyping) {
+                        if (!event.key.repeat && event.key.keysym.scancode <= 255) {
+                            AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                            AqKeyboard::instance().updateMatrix();
+                        }
                     }
                     break;
                 }
@@ -212,15 +214,9 @@ void UI::mainLoop() {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Debug")) {
-                if (ImGui::MenuItem("Screen in window", "")) {
-                    config.showScreenWindow = true;
-                }
-                if (ImGui::MenuItem("Memory editor", "")) {
-                    config.showMemEdit = true;
-                }
-                if (ImGui::MenuItem("Registers", "")) {
-                    config.showRegsWindow = true;
-                }
+                ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
+                ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
+                ImGui::MenuItem("Registers", "", &config.showRegsWindow);
                 ImGui::EndMenu();
             }
 
@@ -236,8 +232,11 @@ void UI::mainLoop() {
             ImGui::EndMainMenuBar();
         }
 
-        if (config.showScreenWindow)
+        if (config.showScreenWindow) {
             wndScreen(&config.showScreenWindow);
+        } else {
+            allowTyping = true;
+        }
         if (config.showMemEdit)
             wndMemEdit(&config.showMemEdit);
         if (config.showRegsWindow)
@@ -258,6 +257,11 @@ void UI::mainLoop() {
 
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
         SDL_RenderPresent(renderer);
+
+        if (first)
+            ImGui::SetWindowFocus("Screen");
+
+        first = false;
     }
 }
 
@@ -491,6 +495,7 @@ void UI::wndScreen(bool *p_open) {
         if (texture) {
             ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
         }
+        allowTyping = ImGui::IsWindowFocused();
     }
 
     ImGui::End();
