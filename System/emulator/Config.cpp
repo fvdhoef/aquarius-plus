@@ -16,6 +16,33 @@ void Config::init(const std::string &_appDataPath) {
     save();
 }
 
+static std::string getStringValue(cJSON *parent, const std::string &key, const std::string &defaultValue) {
+    if (auto obj = cJSON_GetObjectItem(parent, key.c_str())) {
+        auto value = cJSON_GetStringValue(obj);
+        if (value)
+            return value;
+    }
+    return defaultValue;
+}
+
+static bool getBoolValue(cJSON *parent, const std::string &key, bool defaultValue) {
+    if (auto obj = cJSON_GetObjectItem(parent, key.c_str())) {
+        if (cJSON_IsBool(obj)) {
+            return cJSON_IsTrue(obj);
+        }
+    }
+    return defaultValue;
+}
+
+static int getIntValue(cJSON *parent, const std::string &key, int defaultValue) {
+    if (auto obj = cJSON_GetObjectItem(parent, key.c_str())) {
+        if (cJSON_IsNumber(obj)) {
+            return (int)cJSON_GetNumberValue(obj);
+        }
+    }
+    return defaultValue;
+}
+
 void Config::load() {
     std::ifstream ifs(configPath);
     if (!ifs.good())
@@ -23,26 +50,38 @@ void Config::load() {
 
     std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     if (auto root = cJSON_ParseWithLength(str.c_str(), str.size())) {
-        if (auto obj = cJSON_GetObjectItem(root, "imguiConfig")) {
-            auto value = cJSON_GetStringValue(obj);
-            if (value)
-                imguiConf = value;
-        }
-        if (auto obj = cJSON_GetObjectItem(root, "sdCardPath")) {
-            auto value = cJSON_GetStringValue(obj);
-            if (value) {
-                sdCardPath = value;
-                printf("%s\n", sdCardPath.c_str());
-            }
-        }
+        imguiConf        = getStringValue(root, "imguiConfig", "");
+        sdCardPath       = getStringValue(root, "sdCardPath", "");
+        showScreenWindow = getBoolValue(root, "showScreenWindow", false);
+        showMemEdit      = getBoolValue(root, "showMemEdit", false);
+        showRegsWindow   = getBoolValue(root, "showRegsWindow", false);
+        wndPosX          = getIntValue(root, "wndPosX", VIDEO_WIDTH * 2);
+        wndPosY          = getIntValue(root, "wndPosY", VIDEO_HEIGHT * 2);
+        wndWidth         = getIntValue(root, "wndWidth", VIDEO_WIDTH * 2);
+        wndHeight        = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
+        scrScale         = getIntValue(root, "scrScale", 1);
         cJSON_free(root);
     }
+
+    // Sanitize some variables
+    wndPosX   = std::max(wndPosX, 0);
+    wndPosY   = std::max(wndPosY, 0);
+    wndWidth  = std::max(wndWidth, VIDEO_WIDTH);
+    wndHeight = std::max(wndHeight, VIDEO_HEIGHT);
 }
 
 void Config::save() {
     auto root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "imguiConfig", cJSON_CreateString(imguiConf.c_str()));
-    cJSON_AddItemToObject(root, "sdCardPath", cJSON_CreateString(sdCardPath.c_str()));
+    cJSON_AddStringToObject(root, "sdCardPath", sdCardPath.c_str());
+    cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
+    cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);
+    cJSON_AddBoolToObject(root, "showRegsWindow", showRegsWindow);
+    cJSON_AddNumberToObject(root, "wndPosX", wndPosX);
+    cJSON_AddNumberToObject(root, "wndPosY", wndPosY);
+    cJSON_AddNumberToObject(root, "wndWidth", wndWidth);
+    cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
+    cJSON_AddNumberToObject(root, "scrScale", scrScale);
 
     std::ofstream ofs(configPath);
     if (!ofs.good())

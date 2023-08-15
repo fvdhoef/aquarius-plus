@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Common.h"
+#include <SDL.h>
 
 class Config {
     Config();
@@ -17,4 +18,14 @@ public:
     std::string configPath;
     std::string imguiConf;
     std::string sdCardPath;
+
+    int wndPosX   = SDL_WINDOWPOS_CENTERED;
+    int wndPosY   = SDL_WINDOWPOS_CENTERED;
+    int wndWidth  = VIDEO_WIDTH * 2;
+    int wndHeight = VIDEO_HEIGHT * 2;
+    int scrScale  = 1;
+
+    bool showScreenWindow = false;
+    bool showMemEdit      = false;
+    bool showRegsWindow   = false;
 };

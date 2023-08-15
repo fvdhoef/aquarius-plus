@@ -47,8 +47,7 @@ void UI::start(
     }
 
     // Create main window
-    unsigned long wnd_width = VIDEO_WIDTH * 2, wnd_height = VIDEO_HEIGHT * 2;
-    window = SDL_CreateWindow("Aquarius+ emulator", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, wnd_width, wnd_height, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Aquarius+ emulator", config.wndPosX, config.wndPosY, config.wndWidth, config.wndHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == nullptr) {
         fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -105,11 +104,8 @@ void UI::mainLoop() {
     ImGuiIO &io     = ImGui::GetIO();
     auto    &config = Config::instance();
 
-    bool showScreenWindow = false;
-    bool showMemEdit      = false;
-    bool showRegsWindow   = false;
-    bool showAppAbout     = false;
-    bool showDemoWindow   = false;
+    bool showAppAbout   = false;
+    bool showDemoWindow = false;
 
     bool done = false;
     while (!done) {
@@ -126,6 +122,18 @@ void UI::mainLoop() {
                     if (!event.key.repeat && event.key.keysym.scancode <= 255) {
                         AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
                         AqKeyboard::instance().updateMatrix();
+                    }
+                    break;
+                }
+
+                case SDL_WINDOWEVENT: {
+                    if (event.window.event == SDL_WINDOWEVENT_MOVED) {
+                        config.wndPosX = event.window.data1;
+                        config.wndPosY = event.window.data2;
+
+                    } else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
+                        config.wndWidth  = event.window.data1;
+                        config.wndHeight = event.window.data2;
                     }
                     break;
                 }
@@ -205,13 +213,13 @@ void UI::mainLoop() {
             }
             if (ImGui::BeginMenu("Debug")) {
                 if (ImGui::MenuItem("Screen in window", "")) {
-                    showScreenWindow = true;
+                    config.showScreenWindow = true;
                 }
                 if (ImGui::MenuItem("Memory editor", "")) {
-                    showMemEdit = true;
+                    config.showMemEdit = true;
                 }
                 if (ImGui::MenuItem("Registers", "")) {
-                    showRegsWindow = true;
+                    config.showRegsWindow = true;
                 }
                 ImGui::EndMenu();
             }
@@ -228,12 +236,12 @@ void UI::mainLoop() {
             ImGui::EndMainMenuBar();
         }
 
-        if (showScreenWindow)
-            wndScreen(&showScreenWindow);
-        if (showMemEdit)
-            wndMemEdit(&showMemEdit);
-        if (showRegsWindow)
-            wndRegs(&showRegsWindow);
+        if (config.showScreenWindow)
+            wndScreen(&config.showScreenWindow);
+        if (config.showMemEdit)
+            wndMemEdit(&config.showMemEdit);
+        if (config.showRegsWindow)
+            wndRegs(&config.showRegsWindow);
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -244,7 +252,7 @@ void UI::mainLoop() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
-        if (!showScreenWindow) {
+        if (!config.showScreenWindow) {
             renderTexture();
         }
 
@@ -462,8 +470,15 @@ void UI::wndScreen(bool *p_open) {
     bool open = ImGui::Begin("Screen", p_open, ImGuiWindowFlags_AlwaysAutoResize);
     // ImGui::PopStyleVar();
 
+    auto &config = Config::instance();
+
     if (open) {
-        static int e = 1;
+        static int e = 0;
+        if (e <= 0) {
+            e = config.scrScale;
+            e = std::min(std::max(config.scrScale, 1), 4);
+        }
+
         ImGui::RadioButton("1x", &e, 1);
         ImGui::SameLine();
         ImGui::RadioButton("2x", &e, 2);
@@ -471,6 +486,7 @@ void UI::wndScreen(bool *p_open) {
         ImGui::RadioButton("3x", &e, 3);
         ImGui::SameLine();
         ImGui::RadioButton("4x", &e, 4);
+        config.scrScale = e;
 
         if (texture) {
             ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
