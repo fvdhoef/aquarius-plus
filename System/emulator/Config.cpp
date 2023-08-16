@@ -60,6 +60,8 @@ void Config::load() {
         scrScale    = getIntValue(root, "scrScale", 1);
         enableSound = getBoolValue(root, "enableSound", true);
 
+        handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
+
         showScreenWindow = getBoolValue(root, "showScreenWindow", false);
         showMemEdit      = getBoolValue(root, "showMemEdit", false);
         showCpuState     = getBoolValue(root, "showCpuState", false);
@@ -87,6 +89,8 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
     cJSON_AddNumberToObject(root, "scrScale", scrScale);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
+
+    cJSON_AddBoolToObject(root, "handCtrlEmulation", handCtrlEmulation);
 
     cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
     cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);

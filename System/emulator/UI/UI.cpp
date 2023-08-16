@@ -156,6 +156,8 @@ void UI::mainLoop() {
             io.WantSaveIniSettings = false;
         }
 
+        AqKeyboard::instance().setScrollLock(config.handCtrlEmulation);
+
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -205,10 +207,7 @@ void UI::mainLoop() {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Keyboard")) {
-                bool scrLk = AqKeyboard::instance().scrollLockOn();
-                if (ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &scrLk)) {
-                    AqKeyboard::instance().setScrollLock(scrLk);
-                }
+                ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config.handCtrlEmulation);
                 if (ImGui::MenuItem("Paste text from clipboard", "")) {
                     emuState.typeInStr = io.GetClipboardTextFn(nullptr);
                 }

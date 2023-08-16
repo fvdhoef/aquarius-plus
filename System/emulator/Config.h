@@ -26,6 +26,8 @@ public:
     int  scrScale    = 1;
     bool enableSound = true;
 
+    bool handCtrlEmulation = false;
+
     bool showScreenWindow = false;
     bool showMemEdit      = false;
     bool showCpuState     = false;
