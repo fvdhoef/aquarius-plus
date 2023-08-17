@@ -389,8 +389,8 @@ void UI::emulate() {
             if (emuState.emuMode != EmuState::Em_Running)
                 break;
 
-            float al = emuState.audioLeft / 65535.0;
-            float ar = emuState.audioRight / 65535.0;
+            float al = emuState.audioLeft / 65535.0f;
+            float ar = emuState.audioRight / 65535.0f;
             float l  = dcBlockLeft.filter(al);
             float r  = dcBlockRight.filter(ar);
             l        = std::min(std::max(l, -1.0f), 1.0f);
