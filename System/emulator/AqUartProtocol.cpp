@@ -16,24 +16,25 @@ static const char *TAG = "AqUartProtocol";
 #endif
 
 enum {
-    ESPCMD_RESET    = 0x01, // Indicate to ESP that system has been reset
-    ESPCMD_VERSION  = 0x02, // Get version string
-    ESPCMD_OPEN     = 0x10, // Open / create file
-    ESPCMD_CLOSE    = 0x11, // Close open file
-    ESPCMD_READ     = 0x12, // Read from file
-    ESPCMD_WRITE    = 0x13, // Write to file
-    ESPCMD_SEEK     = 0x14, // Move read/write pointer
-    ESPCMD_TELL     = 0x15, // Get current read/write
-    ESPCMD_OPENDIR  = 0x16, // Open directory
-    ESPCMD_CLOSEDIR = 0x17, // Close open directory
-    ESPCMD_READDIR  = 0x18, // Read from directory
-    ESPCMD_DELETE   = 0x19, // Remove file or directory
-    ESPCMD_RENAME   = 0x1A, // Rename / move file or directory
-    ESPCMD_MKDIR    = 0x1B, // Create directory
-    ESPCMD_CHDIR    = 0x1C, // Change directory
-    ESPCMD_STAT     = 0x1D, // Get file status
-    ESPCMD_GETCWD   = 0x1E, // Get current working directory
-    ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
+    ESPCMD_RESET       = 0x01, // Indicate to ESP that system has been reset
+    ESPCMD_VERSION     = 0x02, // Get version string
+    ESPCMD_GETDATETIME = 0x03, // Get current date/time
+    ESPCMD_OPEN        = 0x10, // Open / create file
+    ESPCMD_CLOSE       = 0x11, // Close open file
+    ESPCMD_READ        = 0x12, // Read from file
+    ESPCMD_WRITE       = 0x13, // Write to file
+    ESPCMD_SEEK        = 0x14, // Move read/write pointer
+    ESPCMD_TELL        = 0x15, // Get current read/write
+    ESPCMD_OPENDIR     = 0x16, // Open directory
+    ESPCMD_CLOSEDIR    = 0x17, // Close open directory
+    ESPCMD_READDIR     = 0x18, // Read from directory
+    ESPCMD_DELETE      = 0x19, // Remove file or directory
+    ESPCMD_RENAME      = 0x1A, // Rename / move file or directory
+    ESPCMD_MKDIR       = 0x1B, // Create directory
+    ESPCMD_CHDIR       = 0x1C, // Change directory
+    ESPCMD_STAT        = 0x1D, // Get file status
+    ESPCMD_GETCWD      = 0x1E, // Get current working directory
+    ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
 };
 
 #define ESP_PREFIX "esp:"
@@ -319,6 +320,14 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 rxBufIdx = 0;
                 break;
             }
+            case ESPCMD_GETDATETIME: {
+                if (rxBufIdx == 2) {
+                    uint8_t type = rxBuf[1];
+                    cmdGetDateTime(type);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
             case ESPCMD_OPEN: {
                 if (data == 0 && rxBufIdx >= 3) {
                     uint8_t     flags   = rxBuf[1];
@@ -478,7 +487,7 @@ void AqUartProtocol::cmdVersion() {
 
 #ifdef EMULATOR
     extern const char *versionStr;
-    const char *p = versionStr;
+    const char        *p = versionStr;
 #else
     const char            *p       = "Unknown";
     const esp_partition_t *running = esp_ota_get_running_partition();
@@ -491,6 +500,31 @@ void AqUartProtocol::cmdVersion() {
         txFifoWrite(*(p++));
     }
     txFifoWrite(0);
+}
+
+void AqUartProtocol::cmdGetDateTime(uint8_t type) {
+    DBGF("GETDATETIME");
+    if (type != 0) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    time_t    now;
+    struct tm timeinfo;
+    time(&now);
+    localtime_r(&now, &timeinfo);
+
+    char strftime_buf[64];
+    strftime(strftime_buf, sizeof(strftime_buf), "%Y%m%d%H%M%S", &timeinfo);
+
+    txFifoWrite(0);
+
+    const char *p = strftime_buf;
+    while (*p) {
+        txFifoWrite(*(p++));
+    }
+    txFifoWrite(0);
+    return;
 }
 
 void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
@@ -727,7 +761,7 @@ void AqUartProtocol::cmdMkDir(const char *pathArg) {
         txFifoWrite(ERR_PARAM);
         return;
     }
-    txFifoWrite(vfs->mkdir(pathArg));
+    txFifoWrite(vfs->mkdir(path));
 }
 
 void AqUartProtocol::cmdChDir(const char *pathArg) {
@@ -765,7 +799,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
     }
 
     struct stat st;
-    int         result = vfs->stat(pathArg, &st);
+    int         result = vfs->stat(path, &st);
 
     txFifoWrite(result);
     if (result < 0)

@@ -14,9 +14,22 @@ public:
 
     void init();
 
+#ifdef EMULATOR
+    void    writeCtrl(uint8_t data);
+    void    writeData(uint8_t data);
+    uint8_t readCtrl();
+    uint8_t readData();
+#endif
+
 private:
+#ifndef EMULATOR
     static void _uartEventTask(void *);
     void        uartEventTask();
+#endif
+
+#ifdef EMULATOR
+    int txFifoRead();
+#endif
 
     void        txFifoWrite(uint8_t data);
     void        txFifoWrite(const void *buf, size_t length);
@@ -27,6 +40,7 @@ private:
 
     void cmdReset();
     void cmdVersion();
+    void cmdGetDateTime(uint8_t type);
     void cmdOpen(uint8_t flags, const char *pathArg);
     void cmdClose(uint8_t fd);
     void cmdRead(uint8_t fd, uint16_t size);
@@ -44,13 +58,22 @@ private:
     void cmdGetCwd();
     void cmdCloseAll();
 
+#ifndef EMULATOR
     QueueHandle_t uartQueue;
-    std::string   currentPath;
-    uint8_t       rxBuf[16 + 0x10000];
-    unsigned      rxBufIdx;
-    VFS          *fdVfs[MAX_FDS];
-    uint8_t       fds[MAX_FDS];
-    DirEnumCtx    deCtxs[MAX_DDS];
-    int           deIdx[MAX_DDS];
-    const char   *newPath;
+#endif
+    std::string currentPath;
+    uint8_t     rxBuf[16 + 0x10000];
+    unsigned    rxBufIdx;
+    VFS        *fdVfs[MAX_FDS];
+    uint8_t     fds[MAX_FDS];
+    DirEnumCtx  deCtxs[MAX_DDS];
+    int         deIdx[MAX_DDS];
+    const char *newPath;
+
+#ifdef EMULATOR
+    uint8_t  txBuf[0x10000 + 16];
+    unsigned txBufWrIdx;
+    unsigned txBufRdIdx;
+    unsigned txBufCnt;
+#endif
 };
