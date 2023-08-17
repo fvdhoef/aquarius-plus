@@ -834,15 +834,18 @@ void AqUartProtocol::cmdChDir(const char *pathArg) {
 
     struct stat st;
     int         result = vfs->stat(path, &st);
-    txFifoWrite(result);
-
-    if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
-        if (vfs == &EspVFS::instance()) {
-            currentPath = std::string(ESP_PREFIX) + path;
+    if (result == 0) {
+        if (st.st_mode & S_IFDIR) {
+            if (vfs == &EspVFS::instance()) {
+                currentPath = std::string(ESP_PREFIX) + path;
+            } else {
+                currentPath = path;
+            }
         } else {
-            currentPath = path;
+            result = ERR_PARAM;
         }
     }
+    txFifoWrite(result);
 }
 
 void AqUartProtocol::cmdStat(const char *pathArg) {

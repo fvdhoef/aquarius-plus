@@ -300,36 +300,37 @@ void EspSettingsConsole::showDate() {
 }
 
 void EspSettingsConsole::systemUpdate() {
-    auto                  &powerLED         = PowerLED::instance();
     const int              app_desc_offset  = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
     size_t                 update_size      = 0;
     const esp_partition_t *update_partition = nullptr;
     esp_err_t              err;
 
     esp_ota_handle_t ota_handle  = 0;
-    FILE            *f           = nullptr;
+    int              fd          = -1;
     const size_t     tmpbuf_size = 65536;
     void            *tmpbuf      = malloc(tmpbuf_size);
     bool             success     = false;
     char             str[4];
+    auto            &vfs = SDCardVFS::instance();
 
     if (tmpbuf == nullptr) {
         cprintf("Out of memory\n");
         goto done;
     }
 
-    powerLED.flashStart();
-    if ((f = fopen(MOUNT_POINT "/" UPDATEFILE_NAME, "rb")) == nullptr) {
+    struct stat st;
+    if (vfs.stat(UPDATEFILE_NAME, &st) < 0) {
         cprintf("File not found (%s)\n", UPDATEFILE_NAME);
         goto done;
     }
-    powerLED.flashStop();
 
-    powerLED.flashStart();
-    fseek(f, 0, SEEK_END);
-    update_size = ftell(f);
-    fseek(f, 0, SEEK_SET);
-    powerLED.flashStop();
+    fd = vfs.open(FO_RDONLY, UPDATEFILE_NAME);
+    if (fd < 0) {
+        cprintf("File not found (%s)\n", UPDATEFILE_NAME);
+        goto done;
+    }
+
+    update_size = st.st_size;
     cprintf("Update file size: %u\n", update_size);
 
     esp_app_desc_t running_app_info;
@@ -339,12 +340,11 @@ void EspSettingsConsole::systemUpdate() {
 
     esp_app_desc_t app_info;
 
-    powerLED.flashStart();
-    fseek(f, app_desc_offset, SEEK_SET);
-    if (fread(&app_info, sizeof(app_info), 1, f) != 1) {
+    if (vfs.seek(fd, app_desc_offset) < 0)
         goto done;
-    }
-    powerLED.flashStop();
+    if (vfs.read(fd, sizeof(app_info), &app_info) != sizeof(app_info))
+        goto done;
+
     if (app_info.magic_word != ESP_APP_DESC_MAGIC_WORD) {
         ESP_LOGE("update", "Incorrect app descriptor magic");
         cprintf("Invalid update file\n");
@@ -380,15 +380,11 @@ void EspSettingsConsole::systemUpdate() {
     }
 
     cprintf("Writing:");
-    powerLED.flashStart();
-    fseek(f, 0, SEEK_SET);
-    powerLED.flashStop();
+    vfs.seek(fd, 0);
 
     while (1) {
-        powerLED.flashStart();
-        size_t size = fread(tmpbuf, 1, tmpbuf_size, f);
-        powerLED.flashStop();
-        if (size == 0)
+        int size = vfs.read(fd, tmpbuf_size, tmpbuf);
+        if (size <= 0)
             break;
 
         cprintf(".");
@@ -420,8 +416,8 @@ void EspSettingsConsole::systemUpdate() {
     esp_restart();
 
 done:
-    fclose(f);
-    powerLED.flashStop();
+    if (fd >= 0)
+        vfs.close(fd);
 
     if (!success)
         cprintf("Error during update, aborting.\n");

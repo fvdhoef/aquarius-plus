@@ -1,11 +1,10 @@
 #include "SDCardVFS.h"
 #include <sys/unistd.h>
 #include <sys/stat.h>
-#include <esp_vfs_fat.h>
-#include <sdmmc_cmd.h>
-#include <dirent.h>
 #include <errno.h>
 #include "PowerLED.h"
+#include "ff.h"
+#include "diskio.h"
 
 static const char *TAG = "SDCardVFS";
 
@@ -18,7 +17,7 @@ static const char *TAG = "SDCardVFS";
 #define MAX_FDS (10)
 
 struct state {
-    FILE *fds[MAX_FDS];
+    FIL *fds[MAX_FDS];
 };
 
 static struct state state;
@@ -32,104 +31,91 @@ SDCardVFS &SDCardVFS::instance() {
 }
 
 void SDCardVFS::init() {
-    ESP_LOGI(TAG, "Initializing SD card");
+    fatfs = calloc(1, sizeof(FATFS));
+    assert(fatfs != nullptr);
 
-    esp_err_t        ret;
-    sdmmc_host_t     host    = SDSPI_HOST_DEFAULT();
+    host                     = SDSPI_HOST_DEFAULT();
     spi_bus_config_t bus_cfg = {
-        .mosi_io_num     = (gpio_num_t)IOPIN_SD_MOSI,
-        .miso_io_num     = (gpio_num_t)IOPIN_SD_MISO,
-        .sclk_io_num     = (gpio_num_t)IOPIN_SD_SCK,
-        .quadwp_io_num   = -1,
-        .quadhd_io_num   = -1,
-        .max_transfer_sz = 4000,
+        .mosi_io_num   = (gpio_num_t)IOPIN_SD_MOSI,
+        .miso_io_num   = (gpio_num_t)IOPIN_SD_MISO,
+        .sclk_io_num   = (gpio_num_t)IOPIN_SD_SCK,
+        .quadwp_io_num = -1,
+        .quadhd_io_num = -1,
+        // .max_transfer_sz = 4000,
     };
-    ret = spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to initialize bus.");
-        return;
-    }
-
-    const char *mount_point = MOUNT_POINT;
+    ESP_ERROR_CHECK(spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN));
 
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
     slot_config.gpio_cs               = (gpio_num_t)IOPIN_SD_SSEL_N;
     slot_config.gpio_cd               = (gpio_num_t)IOPIN_SD_CD_N;
     slot_config.gpio_wp               = (gpio_num_t)IOPIN_SD_WP_N;
     slot_config.host_id               = (spi_host_device_t)host.slot;
+    ESP_ERROR_CHECK(sdspi_host_init_device(&slot_config, &devHandle));
 
-    ESP_LOGI(TAG, "Mounting filesystem");
-
-    sdmmc_card_t                    *card;
-    esp_vfs_fat_sdmmc_mount_config_t mount_config = {
-        .max_files = 5,
-    };
-    ret = esp_vfs_fat_sdspi_mount(mount_point, &host, &slot_config, &mount_config, &card);
-    if (ret != ESP_OK) {
-        ESP_LOGE(TAG, "Failed to mount card: %s", esp_err_to_name(ret));
-        return;
-    }
-
-    ESP_LOGI(TAG, "Filesystem mounted");
-
-    // Card has been initialized, print its properties
-    sdmmc_card_print_info(stdout, card);
+    f_mount((FATFS *)fatfs, "", 0);
 }
 
-std::string SDCardVFS::getFullPath(const std::string &path) {
-    // Compose full path
-    std::string result = MOUNT_POINT;
-    result += "/";
-    result += path;
-    return result;
+static uint8_t mapFatFsResult(FRESULT res) {
+    switch (res) {
+        case FR_OK: return 0;
+        case FR_DISK_ERR: return ERR_NO_DISK;
+        case FR_INT_ERR: return ERR_OTHER;
+        case FR_NOT_READY: return ERR_NO_DISK;
+        case FR_NO_FILE: return ERR_NOT_FOUND;
+        case FR_NO_PATH: return ERR_NOT_FOUND;
+        case FR_INVALID_NAME: return ERR_NOT_FOUND;
+        case FR_DENIED: return ERR_OTHER;
+        case FR_EXIST: return ERR_EXISTS;
+        case FR_INVALID_OBJECT: return ERR_OTHER;
+        case FR_WRITE_PROTECTED: return ERR_OTHER;
+        case FR_INVALID_DRIVE: return ERR_NO_DISK;
+        case FR_NOT_ENABLED: return ERR_NO_DISK;
+        case FR_NO_FILESYSTEM: return ERR_NO_DISK;
+        case FR_MKFS_ABORTED: return ERR_OTHER;
+        case FR_TIMEOUT: return ERR_OTHER;
+        case FR_LOCKED: return ERR_OTHER;
+        case FR_NOT_ENOUGH_CORE: return ERR_OTHER;
+        case FR_TOO_MANY_OPEN_FILES: return ERR_OTHER;
+        case FR_INVALID_PARAMETER: return ERR_PARAM;
+    }
+    return ERR_OTHER;
 }
 
 int SDCardVFS::open(uint8_t flags, const std::string &path) {
     // Translate flags
-    int  mi = 0;
-    char mode[5];
-
-    // if (flags & FO_CREATE)
-    //     oflag |= O_CREAT;
-
+    uint8_t mode = 0;
     switch (flags & FO_ACCMODE) {
         case FO_RDONLY:
-            mode[mi++] = 'r';
+            mode |= FA_READ;
             break;
         case FO_WRONLY:
+            mode |= FA_WRITE;
             if (flags & FO_APPEND) {
-                mode[mi++] = 'a';
-            } else {
-                mode[mi++] = 'w';
+                mode |= FA_OPEN_APPEND;
+            } else if (flags & FO_CREATE) {
+                if (flags & FO_EXCL) {
+                    mode |= FA_CREATE_NEW;
+                } else {
+                    mode |= FA_CREATE_ALWAYS;
+                }
             }
-            if (flags & FO_EXCL) {
-                mode[mi++] = 'x';
-            }
-
             break;
         case FO_RDWR:
+            mode |= FA_READ | FA_WRITE;
             if (flags & FO_APPEND) {
-                mode[mi++] = 'a';
-                mode[mi++] = '+';
-            } else if (flags & FO_TRUNC) {
-                mode[mi++] = 'w';
-                mode[mi++] = '+';
-            } else {
-                mode[mi++] = 'r';
-                mode[mi++] = '+';
-            }
-            if (flags & FO_EXCL) {
-                mode[mi++] = 'x';
+                mode |= FA_OPEN_APPEND;
+            } else if (flags & FO_CREATE) {
+                if (flags & FO_EXCL) {
+                    mode |= FA_CREATE_NEW;
+                } else {
+                    mode |= FA_CREATE_ALWAYS;
+                }
             }
             break;
-
-        default: {
+        default:
             // Error
             return ERR_PARAM;
-        }
     }
-    mode[mi++] = 'b';
-    mode[mi]   = 0;
 
     // Find free file descriptor
     int fd = -1;
@@ -142,79 +128,66 @@ int SDCardVFS::open(uint8_t flags, const std::string &path) {
     if (fd == -1)
         return ERR_TOO_MANY_OPEN;
 
-    auto fullPath = getFullPath(path);
-    PowerLED::instance().flashStart();
-    FILE *f = ::fopen(fullPath.c_str(), mode);
-    PowerLED::instance().flashStop();
-    if (f == nullptr) {
-        uint8_t err = ERR_NOT_FOUND;
-        switch (errno) {
-            case EACCES: err = ERR_NOT_FOUND; break;
-            case EEXIST: err = ERR_EXISTS; break;
-            default: err = ERR_NOT_FOUND; break;
-        }
-        return err;
+    state.fds[fd] = (FIL *)calloc(1, sizeof(FIL));
+    assert(state.fds[fd]);
+
+    auto res = f_open(state.fds[fd], path.c_str(), mode);
+    if (res != FR_OK) {
+        free(state.fds[fd]);
+        state.fds[fd] = nullptr;
+        return mapFatFsResult(res);
     }
-    state.fds[fd] = f;
     return fd;
 }
 
 int SDCardVFS::close(int fd) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
-    FILE *f = state.fds[fd];
+    auto res = f_close(state.fds[fd]);
 
-    ::fclose(f);
+    free(state.fds[fd]);
     state.fds[fd] = nullptr;
-    return 0;
+    return mapFatFsResult(res);
 }
 
 int SDCardVFS::read(int fd, size_t size, void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
-    FILE *f = state.fds[fd];
 
-    PowerLED::instance().flashStart();
-    int result = (int)::fread(buf, 1, size, f);
-    PowerLED::instance().flashStop();
-    return (result < 0) ? ERR_OTHER : result;
+    UINT br;
+    auto res = f_read(state.fds[fd], buf, size, &br);
+    if (res != FR_OK)
+        return mapFatFsResult(res);
+    return br;
 }
 
 int SDCardVFS::write(int fd, size_t size, const void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
-    FILE *f = state.fds[fd];
 
-    PowerLED::instance().flashStart();
-    int result = (int)::fwrite(buf, 1, size, f);
-    PowerLED::instance().flashStop();
-    return (result < 0) ? ERR_OTHER : result;
+    UINT bw;
+    auto res = f_write(state.fds[fd], buf, size, &bw);
+    if (res != FR_OK)
+        return mapFatFsResult(res);
+    return bw;
 }
 
 int SDCardVFS::seek(int fd, size_t offset) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
-    FILE *f = state.fds[fd];
 
-    PowerLED::instance().flashStart();
-    int result = ::fseek(f, offset, SEEK_SET);
-    PowerLED::instance().flashStop();
-    return (result < 0) ? ERR_OTHER : 0;
+    auto res = f_lseek(state.fds[fd], offset);
+    return mapFatFsResult(res);
 }
 
 int SDCardVFS::tell(int fd) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
-    FILE *f = state.fds[fd];
-
-    PowerLED::instance().flashStart();
-    int result = ::ftell(f);
-    PowerLED::instance().flashStop();
-    return (result < 0) ? ERR_OTHER : result;
+    return f_tell(state.fds[fd]);
 }
 
 DirEnumCtx SDCardVFS::direnum(const std::string &path) {
-    FF_DIR dir;
+    DIR dir;
     if (f_opendir(&dir, path.c_str()) != F_OK) {
         return nullptr;
     }
@@ -243,52 +216,199 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
 }
 
 int SDCardVFS::delete_(const std::string &path) {
-    auto fullPath = getFullPath(path);
+    FRESULT res;
 
-    PowerLED::instance().flashStart();
-    int result = ::unlink(fullPath.c_str());
-    if (result < 0) {
-        result = ::rmdir(fullPath.c_str());
+    if ((res = f_unlink(path.c_str())) != FR_OK) {
+        res = f_rmdir(path.c_str());
     }
-    PowerLED::instance().flashStop();
-
-    if (result < 0) {
-        // Error
-        if (errno == ENOTEMPTY) {
-            return ERR_NOT_EMPTY;
-        } else {
-            return ERR_NOT_FOUND;
-        }
-    }
-    return 0;
+    return mapFatFsResult(res);
 }
 
 int SDCardVFS::rename(const std::string &pathOld, const std::string &pathNew) {
-    auto fullOld = getFullPath(pathOld);
-    auto fullNew = getFullPath(pathNew);
+    if (pathOld == pathNew)
+        return 0;
 
-    PowerLED::instance().flashStart();
-    int result = ::rename(fullOld.c_str(), fullNew.c_str());
-    PowerLED::instance().flashStop();
-
-    return (result < 0) ? ERR_NOT_FOUND : 0;
+    auto res = f_rename(pathOld.c_str(), pathNew.c_str());
+    return mapFatFsResult(res);
 }
 
 int SDCardVFS::mkdir(const std::string &path) {
-    auto fullPath = getFullPath(path);
-
-    PowerLED::instance().flashStart();
-    int result = ::mkdir(fullPath.c_str(), 0775);
-    PowerLED::instance().flashStop();
-
-    return (result < 0) ? ERR_OTHER : 0;
+    auto res = f_mkdir(path.c_str());
+    return mapFatFsResult(res);
 }
 
+typedef union {
+    struct {
+        uint16_t mday : 5; /* Day of month, 1 - 31 */
+        uint16_t mon : 4;  /* Month, 1 - 12 */
+        uint16_t year : 7; /* Year, counting from 1980. E.g. 37 for 2017 */
+    };
+    uint16_t as_int;
+} fat_date_t;
+
+typedef union {
+    struct {
+        uint16_t sec : 5;  /* Seconds divided by 2. E.g. 21 for 42 seconds */
+        uint16_t min : 6;  /* Minutes, 0 - 59 */
+        uint16_t hour : 5; /* Hour, 0 - 23 */
+    };
+    uint16_t as_int;
+} fat_time_t;
+
 int SDCardVFS::stat(const std::string &path, struct stat *st) {
-    auto fullPath = getFullPath(path);
+    if (path.empty() || path == "/") {
+        // Handle root
+        memset(st, 0, sizeof(*st));
+        st->st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFDIR;
+        return 0;
+    }
+
+    FILINFO info;
+    auto    res = f_stat(path.c_str(), &info);
+    if (res == FR_OK) {
+        memset(st, 0, sizeof(*st));
+        st->st_size = info.fsize;
+        st->st_mode = S_IRWXU | S_IRWXG | S_IRWXO | ((info.fattrib & AM_DIR) != 0 ? S_IFDIR : S_IFREG);
+
+        fat_date_t fdate = {.as_int = info.fdate};
+        fat_time_t ftime = {.as_int = info.ftime};
+
+        struct tm tm;
+        memset(&tm, 0, sizeof(tm));
+        tm.tm_mday  = fdate.mday,
+        tm.tm_mon   = fdate.mon - 1,
+        tm.tm_year  = fdate.year + 80,
+        tm.tm_sec   = ftime.sec * 2,
+        tm.tm_min   = ftime.min,
+        tm.tm_hour  = ftime.hour,
+        tm.tm_isdst = -1;
+
+        st->st_mtime = mktime(&tm);
+        st->st_atime = 0;
+        st->st_ctime = 0;
+    }
+    return mapFatFsResult(res);
+}
+
+uint8_t SDCardVFS::diskStatus(uint8_t pdrv) {
+    (void)pdrv;
+    bool hasDisk         = !gpio_get_level((gpio_num_t)IOPIN_SD_CD_N);
+    bool hasWriteProtect = !gpio_get_level((gpio_num_t)IOPIN_SD_WP_N);
+
+    uint8_t status = 0;
+    if (hasDisk) {
+        if (card == nullptr || sdmmc_get_status(card) != ESP_OK)
+            status |= STA_NOINIT;
+
+        if (hasWriteProtect)
+            status |= STA_PROTECT;
+    } else {
+        status |= STA_NOINIT | STA_NODISK;
+    }
+    return status;
+}
+
+uint8_t SDCardVFS::diskInitialize(uint8_t pdrv) {
+    uint8_t status = diskStatus(pdrv);
+    if (status & STA_NODISK)
+        return status;
+
+    if (status & STA_NOINIT) {
+        ESP_LOGI(TAG, "Initializing SD card...");
+        if (card == nullptr) {
+            card = new sdmmc_card_t();
+            assert(card != nullptr);
+        }
+        memset(card, 0, sizeof(*card));
+
+        auto err = sdmmc_card_init(&host, card);
+        if (err == ESP_OK) {
+            sdmmc_card_print_info(stdout, card);
+            status &= ~STA_NOINIT;
+        } else {
+            ESP_LOGE(TAG, "Error initializing SD card: %d", err);
+            delete card;
+            card = nullptr;
+        }
+    }
+    return status;
+}
+
+int SDCardVFS::diskRead(uint8_t pdrv, uint8_t *buf, size_t sector, size_t count) {
+    (void)pdrv;
+    if (!card)
+        return RES_PARERR;
+
     PowerLED::instance().flashStart();
-    int result = ::stat(fullPath.c_str(), st);
+    esp_err_t err = sdmmc_read_sectors(card, buf, sector, count);
     PowerLED::instance().flashStop();
 
-    return result < 0 ? ERR_NOT_FOUND : 0;
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "sdmmc_read_blocks failed (%d)", err);
+        return RES_ERROR;
+    }
+    return RES_OK;
+}
+
+int SDCardVFS::diskWrite(uint8_t pdrv, const uint8_t *buf, size_t sector, size_t count) {
+    (void)pdrv;
+    if (!card)
+        return RES_PARERR;
+
+    PowerLED::instance().flashStart();
+    esp_err_t err = sdmmc_write_sectors(card, buf, sector, count);
+    PowerLED::instance().flashStop();
+
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "sdmmc_write_blocks failed (%d)", err);
+        return RES_ERROR;
+    }
+    return RES_OK;
+}
+
+int SDCardVFS::diskIoctl(uint8_t pdrv, uint8_t cmd, void *buf) {
+    (void)pdrv;
+
+    if (!card)
+        return RES_PARERR;
+    switch (cmd) {
+        case CTRL_SYNC: return RES_OK;
+        case GET_SECTOR_COUNT: *((DWORD *)buf) = card->csd.capacity; return RES_OK;
+        case GET_SECTOR_SIZE: *((WORD *)buf) = card->csd.sector_size; return RES_OK;
+        case GET_BLOCK_SIZE: return RES_ERROR;
+#if FF_USE_TRIM
+        case CTRL_TRIM:
+            return ff_sdmmc_trim(pdrv, *((DWORD *)buf),                        // start_sector
+                                 (*((DWORD *)buf + 1) - *((DWORD *)buf) + 1)); // sector_count
+#endif                                                                         // FF_USE_TRIM
+    }
+    return RES_ERROR;
+}
+
+DSTATUS disk_status(BYTE pdrv) {
+    return (DSTATUS)SDCardVFS::instance().diskStatus(pdrv);
+}
+
+DSTATUS disk_initialize(BYTE pdrv) {
+    return (DSTATUS)SDCardVFS::instance().diskInitialize(pdrv);
+}
+
+DRESULT disk_read(BYTE pdrv, BYTE *buf, LBA_t sector, UINT count) {
+    return (DRESULT)SDCardVFS::instance().diskRead(pdrv, buf, sector, count);
+}
+
+DRESULT disk_write(BYTE pdrv, const BYTE *buf, LBA_t sector, UINT count) {
+    return (DRESULT)SDCardVFS::instance().diskWrite(pdrv, buf, sector, count);
+}
+
+DRESULT disk_ioctl(BYTE pdrv, BYTE cmd, void *buf) {
+    return (DRESULT)SDCardVFS::instance().diskIoctl(pdrv, cmd, buf);
+}
+
+DWORD get_fattime(void) {
+    time_t    t = time(NULL);
+    struct tm tmr;
+    localtime_r(&t, &tmr);
+    int year = tmr.tm_year < 80 ? 0 : tmr.tm_year - 80;
+    return ((DWORD)(year) << 25) | ((DWORD)(tmr.tm_mon + 1) << 21) | ((DWORD)tmr.tm_mday << 16) | (WORD)(tmr.tm_hour << 11) | (WORD)(tmr.tm_min << 5) | (WORD)(tmr.tm_sec >> 1);
 }

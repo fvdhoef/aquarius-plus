@@ -2,14 +2,30 @@
 #include <esp_http_server.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #include "SDCardVFS.h"
 #include <errno.h>
 #include <mdns.h>
 #include "AqKeyboard.h"
 #include "FPGA.h"
+#include "SDCardVFS.h"
 
-// #include <esp_vfs.h>
+typedef union {
+    struct {
+        uint16_t mday : 5; /* Day of month, 1 - 31 */
+        uint16_t mon : 4;  /* Month, 1 - 12 */
+        uint16_t year : 7; /* Year, counting from 1980. E.g. 37 for 2017 */
+    };
+    uint16_t as_int;
+} fat_date_t;
+
+typedef union {
+    struct {
+        uint16_t sec : 5;  /* Seconds divided by 2. E.g. 21 for 42 seconds */
+        uint16_t min : 6;  /* Minutes, 0 - 59 */
+        uint16_t hour : 5; /* Hour, 0 - 23 */
+    };
+    uint16_t as_int;
+} fat_time_t;
 
 static const char *TAG = "FileServer";
 
@@ -196,15 +212,16 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
 
     // Get path
     auto uriPath = getPathFromUri(req->uri);
-    auto path    = MOUNT_POINT + uriPath;
 
     // ESP_LOGI(TAG, "PROPFIND: %s", path);
 
     httpd_resp_set_hdr(req, "DAV", "1");
 
+    auto &vfs = SDCardVFS::instance();
+
     // Check file
     struct stat st;
-    if (stat(path.c_str(), &st) < 0)
+    if (vfs.stat(uriPath, &st) != 0)
         return resp404(req);
 
     httpd_resp_set_type(req, "text/xml; encoding=\"utf-8\"");
@@ -216,23 +233,44 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
     propfind_st(req, tmp.get(), &st);
 
     if (S_ISDIR(st.st_mode) && depth[0] != '0') {
-        DIR *dir = opendir(path.c_str());
-        if (dir != nullptr) {
-            // printf("Host: %s\n", host);
-            while (1) {
-                struct dirent *de = readdir(dir);
-                if (de == nullptr)
-                    break;
+        auto deCtx = vfs.direnum(uriPath);
+        if (!deCtx)
+            return serverError(req);
+        deCtx->push_back(DirEnumEntry("..", 0, DE_DIR, 0, 0));
 
-                snprintf(tmp.get(), tmpSize, "%s/%s", path.c_str(), de->d_name);
-                if (stat(tmp.get(), &st) < 0) {
-                    continue;
-                }
-
-                snprintf(tmp.get(), tmpSize, "<href>http://%s%s%s</href>", host, uriPath.c_str(), urlEncode(de->d_name).c_str());
-                propfind_st(req, tmp.get(), &st);
+        std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
+            // Sort directories at the top
+            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
+                return (a.attr & DE_DIR) != 0;
             }
-            closedir(dir);
+            return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
+        });
+
+        for (auto &de : *deCtx) {
+            snprintf(tmp.get(), tmpSize, "<href>http://%s%s%s</href>", host, uriPath.c_str(), urlEncode(de.filename).c_str());
+
+            memset(&st, 0, sizeof(st));
+            st.st_size = de.size;
+            st.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | ((de.attr & DE_DIR) != 0 ? S_IFDIR : S_IFREG);
+
+            fat_date_t fdate = {.as_int = de.fdate};
+            fat_time_t ftime = {.as_int = de.ftime};
+
+            struct tm tm;
+            memset(&tm, 0, sizeof(tm));
+            tm.tm_mday  = fdate.mday,
+            tm.tm_mon   = fdate.mon - 1,
+            tm.tm_year  = fdate.year + 80,
+            tm.tm_sec   = ftime.sec * 2,
+            tm.tm_min   = ftime.min,
+            tm.tm_hour  = ftime.hour,
+            tm.tm_isdst = -1;
+
+            st.st_mtime = mktime(&tm);
+            st.st_atime = 0;
+            st.st_ctime = 0;
+
+            propfind_st(req, tmp.get(), &st);
         }
     }
     httpd_resp_sendstr_chunk(req, "</multistatus>");
@@ -241,22 +279,18 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
 }
 
 esp_err_t FileServer::handleDelete(httpd_req_t *req) {
-    // Get path
-    auto path = MOUNT_POINT + getPathFromUri(req->uri);
+    auto &vfs = SDCardVFS::instance();
 
-    // Unlink file
-    if (unlink(path.c_str()) != 0) {
-        if (errno == ENOENT)
-            return resp404(req);
-        else
-            return serverError(req);
+    int result = vfs.delete_(getPathFromUri(req->uri));
+    if (result == ERR_NOT_FOUND) {
+        return resp404(req);
+    } else if (result != 0) {
+        return serverError(req);
     }
     return resp204(req);
 }
 
 esp_err_t FileServer::handleGet(httpd_req_t *req) {
-    int result = 0;
-
     // Allocate buffers
     const size_t tmpSize = 16384;
     auto         tmp     = std::make_unique<char[]>(tmpSize);
@@ -266,14 +300,14 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
     if (uriPath.empty() || uriPath.back() != '/')
         uriPath += '/';
 
-    auto path = MOUNT_POINT + uriPath;
+    auto &vfs = SDCardVFS::instance();
 
     struct stat st;
-    if ((result = stat(path.c_str(), &st)) < 0)
+    if (vfs.stat(uriPath, &st) != 0)
         return resp404(req);
 
     if (S_ISDIR(st.st_mode)) {
-        auto deCtx = SDCardVFS::instance().direnum(uriPath);
+        auto deCtx = vfs.direnum(uriPath);
         if (!deCtx)
             return serverError(req);
         deCtx->push_back(DirEnumEntry("..", 0, DE_DIR, 0, 0));
@@ -312,19 +346,22 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
         httpd_resp_sendstr_chunk(req, nullptr);
 
     } else {
-        FILE *f = fopen(path.c_str(), "rb");
-        if (!f) {
+        int fd = vfs.open(FO_RDONLY, uriPath);
+        if (fd < 0) {
             return resp404(req);
         } else {
             httpd_resp_set_type(req, "application/octet-stream");
             while (1) {
-                size_t size = fread(tmp.get(), 1, tmpSize, f);
+                int size = vfs.read(fd, tmpSize, tmp.get());
+                if (size < 0)
+                    break;
+
                 httpd_resp_send_chunk(req, tmp.get(), size);
                 if (size == 0) {
                     break;
                 }
             }
-            fclose(f);
+            vfs.close(fd);
         }
     }
     return ESP_OK;
@@ -335,14 +372,15 @@ esp_err_t FileServer::handlePut(httpd_req_t *req) {
     const size_t tmpSize = 16384;
     auto         tmp     = std::make_unique<char[]>(tmpSize);
 
-    // Get path
-    auto path = MOUNT_POINT + getPathFromUri(req->uri);
-
     // printf("PUT %s\n", path);
 
+    auto &vfs = SDCardVFS::instance();
+
+    auto path = getPathFromUri(req->uri);
+
     // Open target file
-    FILE *f = nullptr;
-    if ((f = fopen(path.c_str(), "wb")) == nullptr) {
+    int fd = vfs.open(FO_WRONLY | FO_CREATE, path);
+    if (fd < 0) {
         return serverError(req);
     }
 
@@ -358,23 +396,23 @@ esp_err_t FileServer::handlePut(httpd_req_t *req) {
             }
 
             // In case of unrecoverable error, close and delete the unfinished file
-            fclose(f);
-            unlink(path.c_str());
+            vfs.close(fd);
+            vfs.delete_(path);
             return serverError(req);
         }
 
         // Write buffer content to file on storage
-        if (received && (received != fwrite(tmp.get(), 1, received, f))) {
+        if (received && (received != vfs.write(fd, received, tmp.get()))) {
             // Couldn't write everything to file! Storage may be full?
-            fclose(f);
-            unlink(path.c_str());
+            vfs.close(fd);
+            vfs.delete_(path);
             return serverError(req);
         }
 
         // Keep track of remaining size of the file left to be uploaded
         remaining -= received;
     }
-    fclose(f);
+    vfs.close(fd);
 
     return resp204(req);
 }
@@ -385,7 +423,7 @@ esp_err_t FileServer::handleMove(httpd_req_t *req) {
     auto         tmp     = std::make_unique<char[]>(tmpSize);
 
     // Get path
-    auto path = MOUNT_POINT + getPathFromUri(req->uri);
+    auto path = getPathFromUri(req->uri);
 
     // Get destination path from request header
     if (httpd_req_get_hdr_value_str(req, "Destination", tmp.get(), tmpSize) != ESP_OK)
@@ -400,26 +438,23 @@ esp_err_t FileServer::handleMove(httpd_req_t *req) {
         return resp404(req);
     p += strlen(host);
 
-    auto path2 = MOUNT_POINT + urlDecode(p);
+    auto path2 = urlDecode(p);
     // printf("MOVE %s to %s\n", path, path2);
 
     // Do rename
-    if (rename(path.c_str(), path2.c_str()) != 0) {
+    auto &vfs = SDCardVFS::instance();
+    if (vfs.rename(path, path2) < 0) {
         return resp404(req);
     }
-
     return resp204(req);
 }
 
 esp_err_t FileServer::handleMkCol(httpd_req_t *req) {
-    // Get path
-    auto path = MOUNT_POINT + getPathFromUri(req->uri);
-
     // Unlink file
-    if (mkdir(path.c_str(), 0775) != 0) {
+    auto &vfs = SDCardVFS::instance();
+    if (vfs.mkdir(getPathFromUri(req->uri)) < 0) {
         return serverError(req);
     }
-
     return resp204(req);
 }
 
@@ -429,7 +464,7 @@ esp_err_t FileServer::handleCopy(httpd_req_t *req) {
     auto         tmp     = std::make_unique<char[]>(tmpSize);
 
     // Get path
-    auto path = MOUNT_POINT + getPathFromUri(req->uri);
+    auto path = getPathFromUri(req->uri);
 
     // Get destination path from request header
     if (httpd_req_get_hdr_value_str(req, "Destination", tmp.get(), tmpSize) != ESP_OK)
@@ -444,35 +479,36 @@ esp_err_t FileServer::handleCopy(httpd_req_t *req) {
         return resp404(req);
     p += strlen(host);
 
-    auto path2 = MOUNT_POINT + urlDecode(p);
+    auto path2 = urlDecode(p);
+
+    if (path == path2)
+        return resp204(req);
 
     // printf("COPY %s to %s\n", path, path2);
-    FILE *f = nullptr;
-    if ((f = fopen(path.c_str(), "rb")) == nullptr) {
+    auto &vfs = SDCardVFS::instance();
+    int   fd  = vfs.open(FO_RDONLY, path);
+    if (fd < 0)
         return resp404(req);
-    }
-
-    FILE *f2 = nullptr;
-    if ((f2 = fopen(path2.c_str(), "wb")) == nullptr) {
-        fclose(f);
+    int fd2 = vfs.open(FO_CREATE | FO_WRONLY, path2);
+    if (fd2 < 0) {
+        vfs.close(fd);
         return resp404(req);
     }
 
     while (1) {
-        size_t size = fread(tmp.get(), 1, tmpSize, f);
-        if (size == 0)
+        int size = vfs.read(fd, tmpSize, tmp.get());
+        if (size <= 0)
             break;
 
-        if (fwrite(tmp.get(), 1, size, f2) != size) {
-            fclose(f);
-            fclose(f2);
-            f2 = nullptr;
-            unlink(path2.c_str());
+        if (vfs.write(fd2, size, tmp.get()) != size) {
+            vfs.close(fd);
+            vfs.close(fd2);
+            vfs.delete_(path2);
             return serverError(req);
         }
     }
-    fclose(f);
-    fclose(f2);
+    vfs.close(fd);
+    vfs.close(fd2);
 
     return resp204(req);
 }

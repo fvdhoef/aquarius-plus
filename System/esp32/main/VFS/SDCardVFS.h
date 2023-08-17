@@ -5,7 +5,9 @@
 #include "VFS.h"
 
 #ifndef EMULATOR
-#    define MOUNT_POINT "/sdcard"
+#    include <sdmmc_cmd.h>
+#    include <driver/sdmmc_types.h>
+#    include <driver/sdspi_host.h>
 #endif
 
 class SDCardVFS : public VFS {
@@ -38,7 +40,26 @@ public:
     int stat(const std::string &path, struct stat *st) override;
 
 private:
+#ifdef EMULATOR
     std::string getFullPath(const std::string &path);
+#endif
+
+#ifndef EMULATOR
+    sdspi_dev_handle_t devHandle = -1;
+    sdmmc_card_t      *card      = nullptr;
+    sdmmc_host_t       host;
+    void              *fatfs;
+
+    // Used internally
+public:
+    uint8_t diskStatus(uint8_t pdrv);
+    uint8_t diskInitialize(uint8_t pdrv);
+    int     diskRead(uint8_t pdrv, uint8_t *buf, size_t sector, size_t count);
+    int     diskWrite(uint8_t pdrv, const uint8_t *buf, size_t sector, size_t count);
+    int     diskIoctl(uint8_t pdrv, uint8_t cmd, void *buf);
+
+private:
+#endif
 
 #ifdef EMULATOR
     std::string basePath;

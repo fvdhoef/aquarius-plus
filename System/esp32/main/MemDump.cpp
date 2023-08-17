@@ -46,9 +46,6 @@ void MemDump::dumpCartridge() {
     size_t      size     = 16384;
     const char *filename = "dumpfile.rom";
 
-    char path[128];
-    snprintf(path, sizeof(path), "%s/%s", MOUNT_POINT, filename);
-
     printf("Dumping cartridge ROM to %s\n", filename);
 
     uint8_t *buf = (uint8_t *)malloc(size);
@@ -72,9 +69,12 @@ void MemDump::dumpCartridge() {
     }
 
     // Save cartridge contents to file
-    FILE *f = fopen(path, "wb");
-    fwrite(buf, 1, size, f);
-    fclose(f);
+    auto &vfs = SDCardVFS::instance();
+    int   fd;
+    if ((fd = vfs.open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
+        vfs.write(fd, size, buf);
+        vfs.close(fd);
+    }
 
     restoreMsgRam();
     fpga.aqpRestoreMemBanks();
@@ -89,8 +89,6 @@ void MemDump::dumpScreen() {
 
     char filename[32];
     snprintf(filename, sizeof(filename), "screenshot%02u.scr", screenshotIdx++);
-    char path[128];
-    snprintf(path, sizeof(path), "%s/%s", MOUNT_POINT, filename);
 
     printf("Dumping screen to %s\n", filename);
 
@@ -118,9 +116,12 @@ void MemDump::dumpScreen() {
     }
 
     // Save cartridge contents to file
-    FILE *f = fopen(path, "wb");
-    fwrite(buf, 1, size, f);
-    fclose(f);
+    auto &vfs = SDCardVFS::instance();
+    int   fd;
+    if ((fd = vfs.open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
+        vfs.write(fd, size, buf);
+        vfs.close(fd);
+    }
 
     // Restore screen RAM
     restoreMsgRam();

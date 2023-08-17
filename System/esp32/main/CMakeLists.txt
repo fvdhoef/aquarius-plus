@@ -15,6 +15,10 @@ idf_component_register(
         "VFS/SDCardVFS.cpp"
         "VFS/EspVFS.cpp"
 
+        "VFS/fatfs/ff.c"
+        "VFS/fatfs/ffsystem.c"
+        "VFS/fatfs/ffunicode.c"
+
         "HID/HIDReportDescriptor.cpp"
         "HID/HIDReportHandler.cpp"
         "HID/HIDReportHandlerKeyboard.cpp"
@@ -55,6 +59,7 @@ idf_component_register(
     INCLUDE_DIRS
         "."
         "VFS"
+        "VFS/fatfs"
         "HID"
         "USB"
         "NimBLE_Cpp"
@@ -74,7 +79,8 @@ idf_component_register(
         "json"
         "app_update"
         "usb"
-        "fatfs"
+        "sdmmc"
+        # "fatfs"
         "bt"
 
     EMBED_FILES

@@ -521,11 +521,7 @@ void AqUartProtocol::cmdGetDateTime(uint8_t type) {
     time_t    now;
     struct tm timeinfo;
     time(&now);
-#if _WIN32
-    timeinfo = *localtime(&now);
-#else
     localtime_r(&now, &timeinfo);
-#endif
 
     char strftime_buf[64];
     strftime(strftime_buf, sizeof(strftime_buf), "%Y%m%d%H%M%S", &timeinfo);
@@ -838,15 +834,18 @@ void AqUartProtocol::cmdChDir(const char *pathArg) {
 
     struct stat st;
     int         result = vfs->stat(path, &st);
-    txFifoWrite(result);
-
-    if (result == 0 && (st.st_mode & S_IFDIR) != 0) {
-        if (vfs == &EspVFS::instance()) {
-            currentPath = std::string(ESP_PREFIX) + path;
+    if (result == 0) {
+        if (st.st_mode & S_IFDIR) {
+            if (vfs == &EspVFS::instance()) {
+                currentPath = std::string(ESP_PREFIX) + path;
+            } else {
+                currentPath = path;
+            }
         } else {
-            currentPath = path;
+            result = ERR_PARAM;
         }
     }
+    txFifoWrite(result);
 }
 
 void AqUartProtocol::cmdStat(const char *pathArg) {
