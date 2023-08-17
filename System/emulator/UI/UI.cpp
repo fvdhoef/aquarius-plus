@@ -598,11 +598,11 @@ void UI::wndBreakpoints(bool *p_open) {
 
 static ImU8 z80memRead(const ImU8 *data, size_t off) {
     (void)data;
-    return emuState.memRead(0, off);
+    return emuState.memRead(0, (uint16_t)off);
 }
 static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
     (void)data;
-    emuState.memWrite(0, off, d);
+    emuState.memWrite(0, (uint16_t)off, d);
 }
 
 void UI::wndMemEdit(bool *p_open) {
