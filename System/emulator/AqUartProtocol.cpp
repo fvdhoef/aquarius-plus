@@ -229,7 +229,7 @@ void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string>
     }
 }
 
-std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
+std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
     *vfs = &SDCardVFS::instance();
 
     bool useCwd = true;
@@ -269,6 +269,15 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs) {
             continue;
         }
         idx++;
+    }
+
+    if (!parts.empty() && wildCard != nullptr) {
+        const auto &lastPart = parts.back();
+        if (lastPart.find_first_of("?*") != lastPart.npos) {
+            // Contains wildcard, return it separately
+            *wildCard = lastPart;
+            parts.pop_back();
+        }
     }
 
     // Compose resolved path
@@ -642,6 +651,45 @@ void AqUartProtocol::cmdTell(uint8_t fd) {
     }
 }
 
+static bool wildcardMatch(const std::string &text, const std::string &pattern) {
+    // Initialize the pointers to the current positions in the text and pattern strings.
+    int textPos    = 0;
+    int patternPos = 0;
+
+    // Loop while we have not reached the end of either string.
+    while (textPos < (int)text.size() && patternPos < (int)pattern.size()) {
+        if (pattern[patternPos] == '*') {
+            // Skip asterisk (and any following asterisks)
+            while (patternPos < (int)pattern.size() && pattern[patternPos] == '*') {
+                patternPos++;
+            }
+            // If end of the pattern then we have a match
+            if (patternPos == (int)pattern.size()) {
+                return true;
+            }
+            // Skip characters in text until we find one that matches the current pattern character
+            while (tolower(text[textPos]) != tolower(pattern[patternPos])) {
+                textPos++;
+
+                // Reached end of text, but not end of pattern, no match
+                if (textPos == (int)text.size())
+                    return false;
+            }
+            continue;
+        }
+
+        // Check character match
+        if (pattern[patternPos] != '?' && (tolower(text[textPos]) != tolower(pattern[patternPos])))
+            return false;
+
+        textPos++;
+        patternPos++;
+    }
+
+    // If we reached the end of both strings, then the match is successful.
+    return (textPos == (int)text.size() && patternPos == (int)pattern.size());
+}
+
 void AqUartProtocol::cmdOpenDir(const char *pathArg) {
     DBGF("OPENDIR: '%s'\n", pathArg);
 
@@ -660,8 +708,9 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg) {
     }
 
     // Compose full path
-    VFS *vfs  = nullptr;
-    auto path = resolvePath(pathArg, &vfs);
+    VFS        *vfs = nullptr;
+    std::string wildCard;
+    auto        path = resolvePath(pathArg, &vfs, &wildCard);
     if (!vfs) {
         txFifoWrite(ERR_PARAM);
         return;
@@ -669,8 +718,16 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg) {
 
     auto deCtx = vfs->direnum(path);
     if (!deCtx) {
-        txFifoWrite(ERR_NO_DISK);
+        txFifoWrite(ERR_NOT_FOUND);
     } else {
+        if (!wildCard.empty()) {
+            deCtx->erase(
+                std::remove_if(deCtx->begin(), deCtx->end(), [&](DirEnumEntry &de) {
+                    return !wildcardMatch(de.filename, wildCard);
+                }),
+                deCtx->end());
+        }
+
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top
             if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {

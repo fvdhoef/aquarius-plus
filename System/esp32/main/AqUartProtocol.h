@@ -34,7 +34,7 @@ private:
     void        txFifoWrite(uint8_t data);
     void        txFifoWrite(const void *buf, size_t length);
     void        splitPath(const std::string &path, std::vector<std::string> &result);
-    std::string resolvePath(std::string path, VFS **vfs);
+    std::string resolvePath(std::string path, VFS **vfs, std::string *wildCard = nullptr);
     void        closeAllDescriptors();
     void        receivedByte(uint8_t data);
 
