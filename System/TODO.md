@@ -13,8 +13,8 @@ Updated 17 AUG 2023
   - [ ] Develop PCB
 
 ### ESP32 + Z80
-- [ ] Support for extra keyboard keys
-- [ ] Hot-swappable SD cards
+- [x] Support for extra keyboard keys
+- [x] Hot-swappable SD cards
 - [ ] Extend the system ROM with extra functionality:
   - [ ] Nice splash screen
   - [ ] Easy file navigation (like on the micro expander)
