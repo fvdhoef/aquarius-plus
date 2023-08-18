@@ -521,7 +521,11 @@ void AqUartProtocol::cmdGetDateTime(uint8_t type) {
     time_t    now;
     struct tm timeinfo;
     time(&now);
+#if _WIN32
+    timeinfo = *localtime(&now);
+#else
     localtime_r(&now, &timeinfo);
+#endif
 
     char strftime_buf[64];
     strftime(strftime_buf, sizeof(strftime_buf), "%Y%m%d%H%M%S", &timeinfo);
