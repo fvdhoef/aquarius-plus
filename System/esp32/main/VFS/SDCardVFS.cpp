@@ -55,7 +55,7 @@ void SDCardVFS::init() {
     f_mount((FATFS *)fatfs, "", 0);
 }
 
-static uint8_t mapFatFsResult(FRESULT res) {
+static int mapFatFsResult(FRESULT res) {
     switch (res) {
         case FR_OK: return 0;
         case FR_DISK_ERR: return ERR_NO_DISK;
