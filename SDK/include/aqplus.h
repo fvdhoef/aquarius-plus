@@ -1,3 +1,6 @@
+#ifndef _AQPLUS_H
+#define _AQPLUS_H
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -11,3 +14,5 @@
 #include <pt3play.h>
 
 void *getheap(void);
+
+#endif
