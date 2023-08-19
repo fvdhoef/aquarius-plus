@@ -48,6 +48,8 @@ void AqKeyboard::_keyDown(int key, bool shift) {
 }
 
 void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
+    // printf("Scancode: %u %s\n", scanCode, keyDown ? "Down" : "Up");
+
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
@@ -364,21 +366,57 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 case SCANCODE_PAGEDOWN: _keyDown(KEY_PGDN); break;
                 case SCANCODE_PAUSE: _keyDown(KEY_PAUSE); break;
                 case SCANCODE_PRINTSCREEN: _keyDown(KEY_PRTSCR); break;
-                case SCANCODE_MENU: _keyDown(KEY_MENU); break;
+                case SCANCODE_APPLICATION: _keyDown(KEY_MENU); break;
                 case SCANCODE_TAB: _keyDown(KEY_TAB); break;
 
-                case SCANCODE_F1: _keyDown(KEY_ALT); _keyDown(KEY_1); break;
-                case SCANCODE_F2: _keyDown(KEY_ALT); _keyDown(KEY_2); break;
-                case SCANCODE_F3: _keyDown(KEY_ALT); _keyDown(KEY_3); break;
-                case SCANCODE_F4: _keyDown(KEY_ALT); _keyDown(KEY_4); break;
-                case SCANCODE_F5: _keyDown(KEY_ALT); _keyDown(KEY_5); break;
-                case SCANCODE_F6: _keyDown(KEY_ALT); _keyDown(KEY_6); break;
-                case SCANCODE_F7: _keyDown(KEY_ALT); _keyDown(KEY_7); break;
-                case SCANCODE_F8: _keyDown(KEY_ALT); _keyDown(KEY_8); break;
-                case SCANCODE_F9: _keyDown(KEY_ALT); _keyDown(KEY_9); break;
-                case SCANCODE_F10: _keyDown(KEY_ALT); _keyDown(KEY_0); break;
-                case SCANCODE_F11: _keyDown(KEY_ALT); _keyDown(KEY_MINUS); break;
-                case SCANCODE_F12: _keyDown(KEY_ALT); _keyDown(KEY_EQUALS); break;
+                case SCANCODE_F1:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_1);
+                    break;
+                case SCANCODE_F2:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_2);
+                    break;
+                case SCANCODE_F3:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_3);
+                    break;
+                case SCANCODE_F4:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_4);
+                    break;
+                case SCANCODE_F5:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_5);
+                    break;
+                case SCANCODE_F6:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_6);
+                    break;
+                case SCANCODE_F7:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_7);
+                    break;
+                case SCANCODE_F8:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_8);
+                    break;
+                case SCANCODE_F9:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_9);
+                    break;
+                case SCANCODE_F10:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_0);
+                    break;
+                case SCANCODE_F11:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_MINUS);
+                    break;
+                case SCANCODE_F12:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_EQUALS);
+                    break;
             }
         }
     }
