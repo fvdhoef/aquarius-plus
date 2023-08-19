@@ -33,7 +33,11 @@ private:
 #endif
     void consoleTask();
 
+#if _WIN32
+    void cprintf(const char *fmt, ...);
+#else
     void cprintf(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
     void cputc(char ch);
     char cgetc();
     void creadline(char *buf, size_t max_len, bool is_password);

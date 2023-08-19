@@ -26,6 +26,7 @@
     <ClCompile Include="..\cJSON.c" />
     <ClCompile Include="..\Config.cpp" />
     <ClCompile Include="..\EmuState.cpp" />
+    <ClCompile Include="..\EspSettingsConsole.cpp" />
     <ClCompile Include="..\imgui\imgui_demo.cpp" />
     <ClCompile Include="..\imgui\imgui_draw.cpp" />
     <ClCompile Include="..\imgui\imgui_impl_sdl2.cpp" />
@@ -54,6 +55,7 @@
     <ClInclude Include="..\Common.h" />
     <ClInclude Include="..\Config.h" />
     <ClInclude Include="..\EmuState.h" />
+    <ClInclude Include="..\EspSettingsConsole.h" />
     <ClInclude Include="..\imgui\imconfig.h" />
     <ClInclude Include="..\imgui\imgui_impl_sdl2.h" />
     <ClInclude Include="..\imgui\imgui_impl_sdlrenderer2.h" />
@@ -63,6 +65,8 @@
     <ClInclude Include="..\imgui\imstb_textedit.h" />
     <ClInclude Include="..\imgui\imstb_truetype.h" />
     <ClInclude Include="..\libz80\z80.h" />
+    <ClInclude Include="..\Queue.h" />
+    <ClInclude Include="..\settings_caq.h" />
     <ClInclude Include="..\tinyfiledialogs.h" />
     <ClInclude Include="..\UI\MemoryEditor.h" />
     <ClInclude Include="..\UI\UI.h" />

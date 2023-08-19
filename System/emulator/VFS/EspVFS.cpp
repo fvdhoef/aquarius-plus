@@ -52,15 +52,15 @@ int EspVFS::open(uint8_t flags, const std::string &_path) {
 
 int EspVFS::read(int fd, size_t size, void *buf) {
     if (fd == 0) {
-        int filesize  = settings_caq_end - settings_caq_start;
+        int filesize  = (int)(settings_caq_end - settings_caq_start);
         int remaining = filesize - fileOffset;
 
         if ((int)size > remaining) {
             size = remaining;
         }
         memcpy(buf, settings_caq_start + fileOffset, size);
-        fileOffset += size;
-        return size;
+        fileOffset += (int)size;
+        return (int)size;
 
     } else if (fd == 1) {
         return EspSettingsConsole::instance().recv(buf, size);
@@ -85,7 +85,7 @@ int EspVFS::close(int fd) {
 DirEnumCtx EspVFS::direnum(const std::string &path) {
     (void)path;
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
-    result->emplace_back(fn_settings, settings_caq_end - settings_caq_start, 0, 0, 0);
+    result->emplace_back(fn_settings, (int)(settings_caq_end - settings_caq_start), 0, 0, 0);
     return result;
 }
 
