@@ -41,10 +41,13 @@ private:
     void cputc(char ch);
     char cgetc();
     void creadline(char *buf, size_t max_len, bool is_password);
+    bool creadUint(unsigned *value);
     void showHelp();
     void wifiStatus();
     void wifiSet();
     void showDate();
+    void timeZoneShow();
+    void timeZoneSet();
     void systemUpdate();
     void systemUpdateGitHub();
 };

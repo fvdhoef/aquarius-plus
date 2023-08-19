@@ -51,6 +51,8 @@ static void init() {
 
         fpga.loadBitstream(fpga_image_start, fpga_image_end - fpga_image_start);
     }
+
+    // setenv("TZ", "<-03>3", 1);
 }
 
 extern "C" void app_main(void);
