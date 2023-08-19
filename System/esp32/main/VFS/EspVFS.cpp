@@ -1,10 +1,18 @@
+// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "EspVFS.h"
 #include "EspSettingsConsole.h"
 
+#ifdef EMULATOR
+#    include "settings_caq.h"
+const uint8_t *settings_caq_end = settings_caq_start + sizeof(settings_caq_start);
+
+#else
 extern const uint8_t settings_caq_start[] asm("_binary_settings_caq_start");
 extern const uint8_t settings_caq_end[] asm("_binary_settings_caq_end");
-static const char   *fn_settings = "settings.caq";
-static const char   *fn_com      = "com";
+#endif
+
+static const char *fn_settings = "settings.caq";
+static const char *fn_com      = "com";
 
 EspVFS::EspVFS() {
     fileOffset = 0;
@@ -20,6 +28,8 @@ void EspVFS::init() {
 }
 
 int EspVFS::open(uint8_t flags, const std::string &_path) {
+    (void)flags;
+
     // Skip leading slashes
     auto idx = _path.find_first_not_of('/');
     if (idx == std::string::npos) {
@@ -45,7 +55,7 @@ int EspVFS::read(int fd, size_t size, void *buf) {
         int filesize  = settings_caq_end - settings_caq_start;
         int remaining = filesize - fileOffset;
 
-        if (size > remaining) {
+        if ((int)size > remaining) {
             size = remaining;
         }
         memcpy(buf, settings_caq_start + fileOffset, size);
@@ -53,7 +63,7 @@ int EspVFS::read(int fd, size_t size, void *buf) {
         return size;
 
     } else if (fd == 1) {
-        return EspSettingsConsole::instance().recv(buf, size, 0);
+        return EspSettingsConsole::instance().recv(buf, size);
     } else {
         return ERR_OTHER;
     }
@@ -61,17 +71,19 @@ int EspVFS::read(int fd, size_t size, void *buf) {
 
 int EspVFS::write(int fd, size_t size, const void *buf) {
     if (fd == 1) {
-        return EspSettingsConsole::instance().send(buf, size, 0);
+        return EspSettingsConsole::instance().send(buf, size);
     } else {
         return ERR_OTHER;
     }
 }
 
 int EspVFS::close(int fd) {
+    (void)fd;
     return 0;
 }
 
 DirEnumCtx EspVFS::direnum(const std::string &path) {
+    (void)path;
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
     result->emplace_back(fn_settings, settings_caq_end - settings_caq_start, 0, 0, 0);
     return result;

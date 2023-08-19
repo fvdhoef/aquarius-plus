@@ -1,4 +1,18 @@
+// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "EspVFS.h"
+#include "EspSettingsConsole.h"
+
+#ifdef EMULATOR
+#    include "settings_caq.h"
+const uint8_t *settings_caq_end = settings_caq_start + sizeof(settings_caq_start);
+
+#else
+extern const uint8_t settings_caq_start[] asm("_binary_settings_caq_start");
+extern const uint8_t settings_caq_end[] asm("_binary_settings_caq_end");
+#endif
+
+static const char *fn_settings = "settings.caq";
+static const char *fn_com      = "com";
 
 EspVFS::EspVFS() {
     fileOffset = 0;
@@ -10,42 +24,76 @@ EspVFS &EspVFS::instance() {
 }
 
 void EspVFS::init() {
+    EspSettingsConsole::instance().init();
 }
 
-int EspVFS::open(uint8_t flags, const std::string &path) {
+int EspVFS::open(uint8_t flags, const std::string &_path) {
     (void)flags;
-    (void)path;
-    return ERR_OTHER;
-}
 
-int EspVFS::close(int fd) {
-    (void)fd;
+    // Skip leading slashes
+    auto idx = _path.find_first_not_of('/');
+    if (idx == std::string::npos) {
+        idx = _path.size();
+    }
+    auto path = _path.substr(idx);
+
+    // printf("esp_open(%u, \"%s\")\n", flags, path);
+
+    if (strcasecmp(path.c_str(), fn_com) == 0) {
+        EspSettingsConsole::instance().newSession();
+        return 1;
+    }
+    if (strcasecmp(path.c_str(), fn_settings) == 0) {
+        fileOffset = 0;
+        return 0;
+    }
     return ERR_OTHER;
 }
 
 int EspVFS::read(int fd, size_t size, void *buf) {
-    (void)fd;
-    (void)size;
-    (void)buf;
-    return ERR_OTHER;
+    if (fd == 0) {
+        int filesize  = settings_caq_end - settings_caq_start;
+        int remaining = filesize - fileOffset;
+
+        if ((int)size > remaining) {
+            size = remaining;
+        }
+        memcpy(buf, settings_caq_start + fileOffset, size);
+        fileOffset += size;
+        return size;
+
+    } else if (fd == 1) {
+        return EspSettingsConsole::instance().recv(buf, size);
+    } else {
+        return ERR_OTHER;
+    }
 }
 
 int EspVFS::write(int fd, size_t size, const void *buf) {
-    (void)fd;
-    (void)size;
-    (void)buf;
-    return ERR_OTHER;
+    if (fd == 1) {
+        return EspSettingsConsole::instance().send(buf, size);
+    } else {
+        return ERR_OTHER;
+    }
 }
 
-// Directory operations
+int EspVFS::close(int fd) {
+    (void)fd;
+    return 0;
+}
+
 DirEnumCtx EspVFS::direnum(const std::string &path) {
     (void)path;
-    return nullptr;
+    auto result = std::make_shared<std::vector<DirEnumEntry>>();
+    result->emplace_back(fn_settings, settings_caq_end - settings_caq_start, 0, 0, 0);
+    return result;
 }
 
-// Filesystem operations
 int EspVFS::stat(const std::string &path, struct stat *st) {
-    (void)path;
-    (void)st;
+    if (strcasecmp(path.c_str(), "") == 0) {
+        memset(st, 0, sizeof(*st));
+        st->st_mode = S_IFDIR;
+        return 0;
+    }
     return ERR_OTHER;
 }

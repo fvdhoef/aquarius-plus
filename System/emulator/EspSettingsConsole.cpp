@@ -347,10 +347,9 @@ void EspSettingsConsole::wifiSet() {
 }
 
 void EspSettingsConsole::showDate() {
-    time_t    now;
-    struct tm timeinfo;
+    time_t now;
     time(&now);
-    localtime_r(&now, &timeinfo);
+    struct tm timeinfo = *localtime(&now);
 
     char strftime_buf[64];
     strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S (%Z)", &timeinfo);
