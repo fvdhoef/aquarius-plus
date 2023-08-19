@@ -8,6 +8,7 @@
 #    include "SDCardVFS.h"
 #    include <esp_ota_ops.h>
 #    include <esp_https_ota.h>
+#    include <nvs_flash.h>
 
 static const char *TAG = "settings";
 
@@ -677,7 +678,7 @@ void EspSettingsConsole::timeZoneSet() {
             cprintf("1:GMT       Greenwich Mean\n");
             cprintf("2:GMT/BST   UK\n");
             cprintf("3:GMT/IST   Ireland\n");
-            cprintf("4:WET/WEST  Portugal");
+            cprintf("4:WET/WEST  Portugal\n");
             cprintf("5:CET/CEST  Most of Western Europe\n");
             cprintf("6:EET       Eastern Europe\n");
             cprintf("7:EET/EEST  Eastern Europe\n");
@@ -781,8 +782,65 @@ void EspSettingsConsole::timeZoneSet() {
         return;
     }
 
-    cprintf("You selected: %s\n", tz);
+#if EMULATOR
+    cur_tz = tz;
+#endif
+
+#ifndef _WIN32
+    setenv("TZ", tz, 1);
+#endif
+
+#ifndef EMULATOR
+    // Save timezone to flash
+    {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+            if (nvs_set_str(h, "tz", tz) == ESP_OK) {
+                nvs_commit(h);
+            }
+            nvs_close(h);
+        }
+    }
+#endif
+
+    cprintf("Setting time zone done.\n");
 }
 
 void EspSettingsConsole::timeZoneShow() {
+#ifndef EMULATOR
+    const char *cur_tz;
+#endif
+
+#ifndef _WIN32
+    cur_tz = getenv("TZ");
+    if (!cur_tz)
+        cur_tz = "";
+#endif
+
+    const char *p = cur_tz;
+    if (p[0] == 0) {
+        cprintf("No timezone set.\n");
+        return;
+    }
+
+    std::string tzName;
+    std::string tzDstName;
+
+    // Extract timezone
+    while (isalpha(*p))
+        tzName.push_back(*(p++));
+
+    // Skip GMT offset
+    while (isdigit(*p) || *p == ':' || *p == '-')
+        p++;
+
+    // Extract DST timezone if available
+    while (isalpha(*p))
+        tzDstName.push_back(*(p++));
+
+    if (!tzDstName.empty()) {
+        cprintf("Timezone:%s/%s\n", tzName.c_str(), tzDstName.c_str());
+    } else {
+        cprintf("Timezone:%s\n", tzName.c_str());
+    }
 }

@@ -25,6 +25,7 @@ private:
 #else
     Queue<uint8_t> tx_buffer;
     Queue<uint8_t> rx_buffer;
+    const char    *cur_tz = "";
 #endif
     volatile bool new_session = true;
 
@@ -33,14 +34,21 @@ private:
 #endif
     void consoleTask();
 
+#if _WIN32
+    void cprintf(const char *fmt, ...);
+#else
     void cprintf(const char *fmt, ...) __attribute__((format(printf, 2, 3)));
+#endif
     void cputc(char ch);
     char cgetc();
     void creadline(char *buf, size_t max_len, bool is_password);
+    bool creadUint(unsigned *value);
     void showHelp();
     void wifiStatus();
     void wifiSet();
     void showDate();
+    void timeZoneShow();
+    void timeZoneSet();
     void systemUpdate();
     void systemUpdateGitHub();
 };

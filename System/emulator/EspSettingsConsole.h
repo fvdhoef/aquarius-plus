@@ -25,6 +25,7 @@ private:
 #else
     Queue<uint8_t> tx_buffer;
     Queue<uint8_t> rx_buffer;
+    const char    *cur_tz = "";
 #endif
     volatile bool new_session = true;
 

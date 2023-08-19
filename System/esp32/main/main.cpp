@@ -30,6 +30,19 @@ static void init() {
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
+    // Initialize timezone
+    {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
+            char   tz[128];
+            size_t len = sizeof(tz);
+            if (nvs_get_str(h, "tz", tz, &len) == ESP_OK) {
+                setenv("TZ", tz, 1);
+            }
+            nvs_close(h);
+        }
+    }
+
     // Initialize the event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
@@ -51,8 +64,6 @@ static void init() {
 
         fpga.loadBitstream(fpga_image_start, fpga_image_end - fpga_image_start);
     }
-
-    // setenv("TZ", "<-03>3", 1);
 }
 
 extern "C" void app_main(void);

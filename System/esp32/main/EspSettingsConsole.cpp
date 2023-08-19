@@ -8,6 +8,7 @@
 #    include "SDCardVFS.h"
 #    include <esp_ota_ops.h>
 #    include <esp_https_ota.h>
+#    include <nvs_flash.h>
 
 static const char *TAG = "settings";
 
@@ -118,6 +119,10 @@ void EspSettingsConsole::consoleTask() {
             wifiStatus();
         else if (strcasecmp(line, "date") == 0)
             showDate();
+        else if (strcasecmp(line, "tz") == 0)
+            timeZoneShow();
+        else if (strcasecmp(line, "tz set") == 0)
+            timeZoneSet();
         else if (strcasecmp(line, "update") == 0)
             systemUpdate();
         else if (strcasecmp(line, "updategh") == 0)
@@ -205,6 +210,8 @@ void EspSettingsConsole::showHelp() {
     cprintf("wifi    |show WiFi status\n");
     cprintf("wifi set|set WiFi network\n");
     cprintf("date    |show current time/date\n");
+    cprintf("tz      |show current time zone\n");
+    cprintf("tz set  |set time zone\n");
     cprintf("update  |system update from SD card\n");
     cprintf("updategh|system update from GitHub\n");
     cprintf("ctrl-c  |exit to BASIC\n");
@@ -347,10 +354,9 @@ void EspSettingsConsole::wifiSet() {
 }
 
 void EspSettingsConsole::showDate() {
-    time_t    now;
-    struct tm timeinfo;
+    time_t now;
     time(&now);
-    localtime_r(&now, &timeinfo);
+    struct tm timeinfo = *localtime(&now);
 
     char strftime_buf[64];
     strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S (%Z)", &timeinfo);
@@ -596,4 +602,245 @@ ota_end:
 #else
     cprintf("Not available on emulator\n");
 #endif
+}
+
+bool EspSettingsConsole::creadUint(unsigned *value) {
+    char str[4];
+    creadline(str, sizeof(str), false);
+    if (new_session)
+        return false;
+    char *endp;
+    *value = strtoul(str, &endp, 10);
+    if (*str == '\0' || *endp != '\0')
+        return false;
+    return true;
+}
+
+void EspSettingsConsole::timeZoneSet() {
+    // cprintf(" 0:Enter custom timezone string\n");
+    cprintf(" 1:North/South America\n");
+    cprintf(" 2:Europe\n");
+    cprintf(" 3:Africa\n");
+    cprintf(" 4:Asia\n");
+    cprintf(" 5:Australia/New Zealand\n");
+    cprintf("Make a selection:");
+
+    unsigned value;
+    if (!creadUint(&value) || value > 5) {
+        if (new_session)
+            return;
+        cprintf("Invalid entry, aborting.\n");
+        return;
+    }
+
+    const char *tz = nullptr;
+
+    switch (value) {
+        case 1: {
+            cprintf(" 1:SST        Samoa\n");
+            cprintf(" 2:HST        Hawaii\n");
+            cprintf(" 3:HST/HDT    Hawaii\n");
+            cprintf(" 4:AKST/AKDT  Alaska\n");
+            cprintf(" 5:PST/PDT    Pacific\n");
+            cprintf(" 6:MST        Mountain\n");
+            cprintf(" 7:MST/MDT    Mountain\n");
+            cprintf(" 8:CST        Central\n");
+            cprintf(" 9:CST/CDT    Central\n");
+            cprintf("10:EST        Eastern\n");
+            cprintf("11:EST/EDT    Eastern\n");
+            cprintf("12:AST        Atlantic\n");
+            cprintf("13:AST/ADT    Atlantic\n");
+            cprintf("14:NST/NDT    Newfoundland\n");
+            cprintf("Make a selection:");
+
+            if (creadUint(&value)) {
+                switch (value) {
+                    case 1: tz = "SST11"; break;
+                    case 2: tz = "HST10"; break;
+                    case 3: tz = "HST10HDT,M3.2.0,M11.1.0"; break;
+                    case 4: tz = "AKST9AKDT,M3.2.0,M11.1.0"; break;
+                    case 5: tz = "PST8PDT,M3.2.0,M11.1.0"; break;
+                    case 6: tz = "MST7"; break;
+                    case 7: tz = "MST7MDT,M3.2.0,M11.1.0"; break;
+                    case 8: tz = "CST6"; break;
+                    case 9: tz = "CST6CDT,M3.2.0,M11.1.0"; break;
+                    case 10: tz = "EST5"; break;
+                    case 11: tz = "EST5EDT,M3.2.0,M11.1.0"; break;
+                    case 12: tz = "AST4"; break;
+                    case 13: tz = "AST4ADT,M3.2.0,M11.1.0"; break;
+                    case 14: tz = "NST3:30NDT,M3.2.0,M11.1.0"; break;
+                }
+            }
+            break;
+        }
+
+        case 2: {
+            cprintf("1:GMT       Greenwich Mean\n");
+            cprintf("2:GMT/BST   UK\n");
+            cprintf("3:GMT/IST   Ireland\n");
+            cprintf("4:WET/WEST  Portugal\n");
+            cprintf("5:CET/CEST  Most of Western Europe\n");
+            cprintf("6:EET       Eastern Europe\n");
+            cprintf("7:EET/EEST  Eastern Europe\n");
+            cprintf("8:MSK       Western Russia\n");
+            cprintf("Make a selection:");
+
+            if (creadUint(&value)) {
+                switch (value) {
+                    case 1: tz = "GMT0"; break;
+                    case 2: tz = "GMT0BST,M3.5.0/1,M10.5.0"; break;
+                    case 3: tz = "GMT0IST,M3.5.0/1,M10.5.0"; break;
+                    case 4: tz = "WET0WEST,M3.5.0/1,M10.5.0"; break;
+                    case 5: tz = "CET-1CEST,M3.5.0,M10.5.0/3"; break;
+                    case 6: tz = "EET-2"; break;
+                    case 7: tz = "EET-2EEST,M3.5.0/3,M10.5.0/4"; break;
+                    case 8: tz = "MSK-3"; break;
+                }
+            }
+            break;
+        }
+
+        case 3: {
+            cprintf("1:GMT   Greenwich Mean\n");
+            cprintf("2:WAT   West Africa\n");
+            cprintf("3:SAST  South Africa\n");
+            cprintf("4:CAST  Central Africa\n");
+            cprintf("5:EAT   East Africa\n");
+            cprintf("Make a selection:");
+
+            if (creadUint(&value)) {
+                switch (value) {
+                    case 1: tz = "GMT0"; break;
+                    case 2: tz = "WAT-1"; break;
+                    case 3: tz = "SAST-2"; break;
+                    case 4: tz = "CAT-2"; break;
+                    case 5: tz = "EAT-3"; break;
+                }
+            }
+            break;
+        }
+
+        case 4: {
+            cprintf(" 1:PKT  Pakistan\n");
+            cprintf(" 2:IST  India\n");
+            cprintf(" 3:WIB  Western Indonesia\n");
+            cprintf(" 4:WITA Central Indonesia\n");
+            cprintf(" 5:WIT  Eastern Indonesia\n");
+            cprintf(" 6:CST  China\n");
+            cprintf(" 7:HKT  Hong Kong\n");
+            cprintf(" 8:PST  Philippines\n");
+            cprintf(" 9:JST  Japan\n");
+            cprintf("10:KST  Korea\n");
+            cprintf("Make a selection:");
+
+            if (creadUint(&value)) {
+                switch (value) {
+                    case 1: tz = "PKT-5"; break;
+                    case 2: tz = "IST-5:30"; break;
+                    case 3: tz = "WIB-7"; break;
+                    case 4: tz = "WITA-8"; break;
+                    case 5: tz = "WIT-9"; break;
+                    case 6: tz = "CST-8"; break;
+                    case 7: tz = "HKT-8"; break;
+                    case 8: tz = "PST-8"; break;
+                    case 9: tz = "JST-9"; break;
+                    case 10: tz = "KST-9"; break;
+                }
+            }
+            break;
+        }
+
+        case 5: {
+            cprintf(" 1:AWST         Western Australia\n");
+            cprintf(" 2:ACST         Central Australia\n");
+            cprintf(" 3:ACST/ACDT    Central Australia\n");
+            cprintf(" 4:AEST         Eastern Australia\n");
+            cprintf(" 5:AEST/AEDT    Eastern Australia\n");
+            cprintf(" 6:NZST/NZDT    New Zealand\n");
+            cprintf(" 7:CHAST/CHADT  Chatham Island\n");
+            cprintf("Make a selection:");
+
+            if (creadUint(&value)) {
+                switch (value) {
+                    case 1: tz = "AWST-8"; break;
+                    case 2: tz = "ACST-9:30"; break;
+                    case 3: tz = "ACST-9:30ACDT,M10.1.0,M4.1.0/3"; break;
+                    case 4: tz = "AEST-10"; break;
+                    case 5: tz = "AEST-10AEDT,M10.1.0,M4.1.0/3"; break;
+                    case 6: tz = "NZST-12NZDT,M9.5.0,M4.1.0/3"; break;
+                    case 7: tz = "CHAST-12:45CHADT,M9.5.0/2:45,M4.1.0/3:45"; break;
+                }
+            }
+            break;
+        }
+    }
+
+    if (new_session)
+        return;
+    if (tz == nullptr) {
+        cprintf("Invalid entry, aborting.\n");
+        return;
+    }
+
+#if EMULATOR
+    cur_tz = tz;
+#endif
+
+#ifndef _WIN32
+    setenv("TZ", tz, 1);
+#endif
+
+#ifndef EMULATOR
+    // Save timezone to flash
+    {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+            if (nvs_set_str(h, "tz", tz) == ESP_OK) {
+                nvs_commit(h);
+            }
+            nvs_close(h);
+        }
+    }
+#endif
+
+    cprintf("Setting time zone done.\n");
+}
+
+void EspSettingsConsole::timeZoneShow() {
+#ifndef EMULATOR
+    const char *cur_tz;
+#endif
+
+#ifndef _WIN32
+    cur_tz = getenv("TZ");
+    if (!cur_tz)
+        cur_tz = "";
+#endif
+
+    const char *p = cur_tz;
+    if (p[0] == 0) {
+        cprintf("No timezone set.\n");
+        return;
+    }
+
+    std::string tzName;
+    std::string tzDstName;
+
+    // Extract timezone
+    while (isalpha(*p))
+        tzName.push_back(*(p++));
+
+    // Skip GMT offset
+    while (isdigit(*p) || *p == ':' || *p == '-')
+        p++;
+
+    // Extract DST timezone if available
+    while (isalpha(*p))
+        tzDstName.push_back(*(p++));
+
+    if (!tzDstName.empty()) {
+        cprintf("Timezone:%s/%s\n", tzName.c_str(), tzDstName.c_str());
+    } else {
+        cprintf("Timezone:%s\n", tzName.c_str());
+    }
 }
