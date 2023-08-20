@@ -607,77 +607,57 @@ static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
 
 void UI::wndMemEdit(bool *p_open) {
     static MemoryEditor memEdit;
+    static int          itemCurrent = 0;
 
-    void      *pMem            = emuState.colorRam;
-    size_t     memSize         = sizeof(emuState.colorRam);
-    size_t     baseDisplayAddr = 0;
-    static int itemCurrent     = 0;
+    struct MemoryArea {
+        MemoryArea(const std::string &_name, void *_data, size_t _size)
+            : name(_name), data(_data), size(_size) {
+        }
+        std::string name;
+        void       *data;
+        size_t      size;
+    };
+    static std::vector<MemoryArea> memAreas;
 
-    memEdit.readFn  = nullptr;
-    memEdit.writeFn = nullptr;
+    if (memAreas.empty()) {
+        memAreas.emplace_back("Z80 memory", nullptr, 0x10000);
+        memAreas.emplace_back("Screen RAM", emuState.screenRam, sizeof(emuState.screenRam));
+        memAreas.emplace_back("Color RAM", emuState.colorRam, sizeof(emuState.colorRam));
+        memAreas.emplace_back("Page  0: System ROM $0000-$3FFF", emuState.systemRom + 0, 16384);
+        memAreas.emplace_back("Page  1: System ROM $4000-$7FFF", emuState.systemRom + 16384, 16384);
+        memAreas.emplace_back("Page  2: System ROM $8000-$9FFF", emuState.systemRom + 32768, 8192);
+        memAreas.emplace_back("Page 19: Cartridge ROM", emuState.cartRom, sizeof(emuState.cartRom));
+        memAreas.emplace_back("Page 20: Video RAM", emuState.videoRam, sizeof(emuState.videoRam));
+        memAreas.emplace_back("Page 21: Character RAM", emuState.charRam, sizeof(emuState.charRam));
 
-    switch (itemCurrent) {
-        case 0:
-            pMem            = nullptr;
-            memSize         = 65536;
-            memEdit.readFn  = z80memRead;
-            memEdit.writeFn = z80memWrite;
-            break;
-        case 1:
-            pMem    = emuState.screenRam;
-            memSize = sizeof(emuState.screenRam);
-            break;
-        case 2:
-            pMem    = emuState.colorRam;
-            memSize = sizeof(emuState.colorRam);
-            break;
-        case 3:
-            pMem    = emuState.systemRom;
-            memSize = emuState.systemRomSize;
-            break;
-        case 4:
-            pMem    = emuState.mainRam;
-            memSize = sizeof(emuState.mainRam);
-            break;
-        case 5:
-            pMem    = emuState.cartRom;
-            memSize = sizeof(emuState.cartRom);
-            break;
-        case 6:
-            pMem    = emuState.videoRam;
-            memSize = sizeof(emuState.videoRam);
-            break;
-        case 7:
-            pMem    = emuState.charRam;
-            memSize = sizeof(emuState.charRam);
-            break;
+        for (int i = 32; i < 64; i++) {
+            char tmp[256];
+            snprintf(tmp, sizeof(tmp), "Page %d: Main RAM $%05X-$%05X", i, (i - 32) * 16384, ((i + 1) - 32) * 16384 - 1);
+            memAreas.emplace_back(tmp, emuState.mainRam + (i - 32) * 16384, 16384);
+        }
     }
 
     MemoryEditor::Sizes s;
-    memEdit.calcSizes(s, memSize, baseDisplayAddr);
+    memEdit.calcSizes(s, memAreas[itemCurrent].size, 0);
     ImGui::SetNextWindowSize(ImVec2(s.windowWidth, s.windowWidth * 0.60f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(s.windowWidth, 150.0f), ImVec2(s.windowWidth, FLT_MAX));
 
     if (ImGui::Begin("Memory editor", p_open, ImGuiWindowFlags_NoScrollbar)) {
-        if (ImGui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ImGui::IsMouseReleased(ImGuiMouseButton_Right))
-            ImGui::OpenPopup("context");
-
-        ImGui::Combo(
-            "Memory select", &itemCurrent,
-            "Z80 memory\0"
-            "Screen RAM\0"
-            "Color RAM\0"
-            "System ROM\0"
-            "Main RAM\0"
-            "Cartridge ROM\0"
-            "Video RAM\0"
-            "Character RAM\0");
-
+        if (ImGui::BeginCombo("Memory select", memAreas[itemCurrent].name.c_str(), ImGuiComboFlags_HeightLargest)) {
+            for (int i = 0; i < (int)memAreas.size(); i++) {
+                if (ImGui::Selectable(memAreas[i].name.c_str(), itemCurrent == i)) {
+                    itemCurrent = i;
+                }
+            }
+            ImGui::EndCombo();
+        }
         ImGui::Separator();
 
-        memEdit.drawContents(pMem, memSize, baseDisplayAddr);
+        memEdit.readFn  = (itemCurrent == 0) ? z80memRead : nullptr;
+        memEdit.writeFn = (itemCurrent == 0) ? z80memWrite : nullptr;
+        memEdit.drawContents(memAreas[itemCurrent].data, memAreas[itemCurrent].size, 0);
         if (memEdit.contentsWidthChanged) {
-            memEdit.calcSizes(s, memSize, baseDisplayAddr);
+            memEdit.calcSizes(s, memAreas[itemCurrent].size, 0);
             ImGui::SetWindowSize(ImVec2(s.windowWidth, ImGui::GetWindowSize().y));
         }
     }

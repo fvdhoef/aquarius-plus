@@ -18,24 +18,14 @@ EmuState::EmuState() {
     memcpy(emuState.videoPalette + 32, defaultPalette, sizeof(defaultPalette));
     memcpy(emuState.videoPalette + 48, defaultPalette, sizeof(defaultPalette));
 
-    for (unsigned i = 0; i < sizeof(emuState.screenRam); i++) {
-        emuState.screenRam[i] = rand();
-    }
-    for (unsigned i = 0; i < sizeof(emuState.colorRam); i++) {
-        emuState.colorRam[i] = rand();
-    }
-    for (unsigned i = 0; i < sizeof(emuState.systemRom); i++) {
-        emuState.systemRom[i] = 0xFF;
-    }
+    memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
+    memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
+    memset(emuState.systemRom, 0xFF, sizeof(emuState.systemRom));
     for (unsigned i = 0; i < sizeof(emuState.mainRam); i++) {
         emuState.mainRam[i] = rand();
     }
-    for (unsigned i = 0; i < sizeof(emuState.videoRam); i++) {
-        emuState.videoRam[i] = rand();
-    }
-    for (unsigned i = 0; i < sizeof(emuState.charRam); i++) {
-        emuState.charRam[i] = rand();
-    }
+    memset(emuState.videoRam, 0, sizeof(emuState.videoRam));
+    memset(emuState.charRam, 0, sizeof(emuState.charRam));
 
     z80ctx.ioRead   = ioRead;
     z80ctx.ioWrite  = ioWrite;
