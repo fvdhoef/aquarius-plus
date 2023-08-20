@@ -457,46 +457,62 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::PopStyleColor();
 
         ImGui::Separator();
-        ImGui::Text("PC: %04X", emuState.z80ctx.PC);
-        ImGui::Separator();
         {
             char tmp1[64];
             char tmp2[64];
+            emuState.z80ctx.tstates = 0;
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
-            ImGui::Text("%-8s %s", tmp1, tmp2);
+            ImGui::Text("         %-12s %s", tmp1, tmp2);
         }
         ImGui::Separator();
-        ImGui::Text(
-            "S:%u Z:%u H:%u PV:%u N:%u C:%u",
-            (emuState.z80ctx.R1.br.F & F_S) ? 1 : 0,
-            (emuState.z80ctx.R1.br.F & F_Z) ? 1 : 0,
-            (emuState.z80ctx.R1.br.F & F_H) ? 1 : 0,
-            (emuState.z80ctx.R1.br.F & F_PV) ? 1 : 0,
-            (emuState.z80ctx.R1.br.F & F_N) ? 1 : 0,
-            (emuState.z80ctx.R1.br.F & F_C) ? 1 : 0);
-        ImGui::Separator();
 
-        ImGui::BeginGroup();
-        ImGui::Text("A : %02X", emuState.z80ctx.R1.br.A);
-        ImGui::Text("F : %02X", emuState.z80ctx.R1.br.F);
-        ImGui::Text("BC: %04X", emuState.z80ctx.R1.wr.BC);
-        ImGui::Text("DE: %04X", emuState.z80ctx.R1.wr.DE);
-        ImGui::Text("HL: %04X", emuState.z80ctx.R1.wr.HL);
-        ImGui::Text("IX: %04X", emuState.z80ctx.R1.wr.IX);
-        ImGui::Text("IY: %04X", emuState.z80ctx.R1.wr.IY);
-        ImGui::Text("SP: %04X", emuState.z80ctx.R1.wr.SP);
-        ImGui::EndGroup();
-        ImGui::SameLine(0, 30);
-        ImGui::BeginGroup();
-        ImGui::Text("A' : %02X", emuState.z80ctx.R2.br.A);
-        ImGui::Text("F' : %02X", emuState.z80ctx.R2.br.F);
-        ImGui::Text("BC': %04X", emuState.z80ctx.R2.wr.BC);
-        ImGui::Text("DE': %04X", emuState.z80ctx.R2.wr.DE);
-        ImGui::Text("HL': %04X", emuState.z80ctx.R2.wr.HL);
-        ImGui::Text("IX': %04X", emuState.z80ctx.R2.wr.IX);
-        ImGui::Text("IY': %04X", emuState.z80ctx.R2.wr.IY);
-        ImGui::Text("SP': %04X", emuState.z80ctx.R2.wr.SP);
-        ImGui::EndGroup();
+        auto drawAddrVal = [](const std::string &name, uint16_t val) {
+            uint8_t data[8];
+            for (int i = 0; i < 8; i++)
+                data[i] = emuState.memRead(0, val + i);
+
+            auto str = fmtstr("%-3s %04X ", name.c_str(), val);
+            for (int i = 0; i < 8; i++)
+                str += fmtstr(" %02X", data[i]);
+            str += "  ";
+            for (int i = 0; i < 8; i++)
+                str += ((data[i] >= 32 && data[i] <= 0x7E) ? (char)data[i] : '.');
+
+            ImGui::Text(str.c_str(), val);
+        };
+
+        auto drawAF = [](const std::string &name, uint16_t val) {
+            auto str = fmtstr(
+                "%-3s %04X      %c %c %c %c %c %c %c %c",
+                name.c_str(), val,
+                (val & 0x80) ? 'S' : '-',
+                (val & 0x40) ? 'Z' : '-',
+                (val & 0x20) ? 'X' : '-',
+                (val & 0x10) ? 'H' : '-',
+                (val & 0x08) ? 'X' : '-',
+                (val & 0x04) ? 'P' : '-',
+                (val & 0x02) ? 'N' : '-',
+                (val & 0x01) ? 'C' : '-');
+            ImGui::Text(str.c_str(), val);
+        };
+
+        drawAddrVal("PC", emuState.z80ctx.PC);
+        ImGui::Text("SP  %04X", emuState.z80ctx.R1.wr.SP);
+        drawAF("AF", emuState.z80ctx.R1.wr.AF);
+        drawAddrVal("BC", emuState.z80ctx.R1.wr.BC);
+        drawAddrVal("DE", emuState.z80ctx.R1.wr.DE);
+        drawAddrVal("HL", emuState.z80ctx.R1.wr.HL);
+        drawAddrVal("IX", emuState.z80ctx.R1.wr.IX);
+        drawAddrVal("IY", emuState.z80ctx.R1.wr.IY);
+        drawAF("AF'", emuState.z80ctx.R2.wr.AF);
+        drawAddrVal("BC'", emuState.z80ctx.R2.wr.BC);
+        drawAddrVal("DE'", emuState.z80ctx.R2.wr.DE);
+        drawAddrVal("HL'", emuState.z80ctx.R2.wr.HL);
+        ImGui::Text(
+            "IR  %04X  IM %u  Interrupts %3s",
+            (emuState.z80ctx.I << 8) | emuState.z80ctx.R,
+            emuState.z80ctx.IM,
+            emuState.z80ctx.IFF1 ? "On" : "Off");
     }
     ImGui::End();
 }

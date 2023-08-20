@@ -722,7 +722,7 @@ void Z80Debug(Z80Context *ctx, char *dump, char *decode) {
 
     if (dump) {
         for (offset = 0; offset < size; offset++) {
-            sprintf(tmp, "%02X", read8(ctx, ctx->PC + offset));
+            sprintf(tmp, " %02X", read8(ctx, ctx->PC + offset));
             strcat(dump, tmp);
         }
     }

@@ -57,3 +57,22 @@ static inline void stripTrailingSlashes(std::string &path) {
     while (path.size() > 2 && (path.back() == '/' || path.back() == '\\'))
         path.pop_back();
 }
+
+static inline std::string fmtstr(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 2)));
+
+static inline std::string fmtstr(const char *fmt, ...) {
+    va_list vl;
+    va_start(vl, fmt);
+    int length = vsnprintf(nullptr, 0, fmt, vl);
+    va_end(vl);
+
+    std::string result;
+    result.reserve(length + 1);
+    result.resize(length);
+
+    va_start(vl, fmt);
+    vsnprintf(&result[0], length + 1, fmt, vl);
+    va_end(vl);
+
+    return result;
+}
