@@ -198,7 +198,7 @@ void EmuState::keyboardTypeIn() {
     }
     typeInChar = ch;
     AqKeyboard::instance().pressKey(typeInChar, true);
-    typeInRelease = ch == '\n' ? 10 : 1;
+    typeInRelease = (ch == '\n') ? 10 : 1;
 }
 
 uint8_t EmuState::memRead(size_t param, uint16_t addr) {
@@ -223,13 +223,13 @@ uint8_t EmuState::memRead(size_t param, uint16_t addr) {
     }
 
     // Get and decode banking register
-    uint8_t  bankreg     = emuState.bankRegs[addr >> 14];
-    unsigned page        = bankreg & 0x3F;
-    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
+    uint8_t  bankReg    = emuState.bankRegs[addr >> 14];
+    unsigned page       = bankReg & 0x3F;
+    bool     overlayRam = (bankReg & (1 << 6)) != 0;
 
     addr &= 0x3FFF;
 
-    if (overlay_ram && addr >= 0x3000) {
+    if (overlayRam && addr >= 0x3000) {
         if (addr < 0x3400) {
             return emuState.screenRam[addr & 0x3FF];
         } else if (addr < 0x3800) {
@@ -277,13 +277,13 @@ void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
     }
 
     // Get and decode banking register
-    uint8_t  bankreg     = emuState.bankRegs[addr >> 14];
-    unsigned page        = bankreg & 0x3F;
-    bool     overlay_ram = (bankreg & (1 << 6)) != 0;
-    bool     readonly    = (bankreg & (1 << 7)) != 0;
+    uint8_t  bankReg    = emuState.bankRegs[addr >> 14];
+    unsigned page       = bankReg & 0x3F;
+    bool     overlayRam = (bankReg & (1 << 6)) != 0;
+    bool     readonly   = (bankReg & (1 << 7)) != 0;
     addr &= 0x3FFF;
 
-    if (overlay_ram && addr >= 0x3000) {
+    if (overlayRam && addr >= 0x3000) {
         if (addr < 0x3400) {
             emuState.screenRam[addr & 0x3FF] = data;
         } else if (addr < 0x3800) {
