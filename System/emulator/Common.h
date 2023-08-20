@@ -58,7 +58,9 @@ static inline void stripTrailingSlashes(std::string &path) {
         path.pop_back();
 }
 
+#ifndef _WIN32
 static inline std::string fmtstr(const char *fmt, ...) __attribute__((__format__(__printf__, 1, 2)));
+#endif
 
 static inline std::string fmtstr(const char *fmt, ...) {
     va_list vl;
