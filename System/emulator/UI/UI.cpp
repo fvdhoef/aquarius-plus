@@ -495,7 +495,7 @@ void UI::wndCpuState(bool *p_open) {
         };
 
         drawAddrVal("PC", emuState.z80ctx.PC);
-        ImGui::Text("SP  %04X", emuState.z80ctx.R1.wr.SP);
+        drawAddrVal("SP", emuState.z80ctx.R1.wr.SP);
         drawAF("AF", emuState.z80ctx.R1.wr.AF);
         drawAddrVal("BC", emuState.z80ctx.R1.wr.BC);
         drawAddrVal("DE", emuState.z80ctx.R1.wr.DE);
