@@ -758,6 +758,13 @@ void UI::wndAssemblyListing(bool *p_open) {
         ImGui::Separator();
 
         if (ImGui::BeginTable("Table", 5, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            static float itemsHeight  = -1;
+            static int   lastPC       = -1;
+            bool         updateScroll = (emuState.emuMode == EmuState::Em_Halted && lastPC != emuState.z80ctx.PC);
+            if (updateScroll) {
+                lastPC = emuState.z80ctx.PC;
+            }
+
             ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_WidthFixed);
             ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
@@ -770,12 +777,17 @@ void UI::wndAssemblyListing(bool *p_open) {
             clipper.Begin(asmListing.lines.size());
 
             while (clipper.Step()) {
+                if (clipper.ItemsHeight > 0) {
+                    itemsHeight = clipper.ItemsHeight;
+                }
+
                 for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
                     auto &line = asmListing.lines[row_n];
 
                     ImGui::TableNextRow();
-                    if (emuState.z80ctx.PC == line.addr) {
+                    if (emuState.emuMode == EmuState::Em_Halted && emuState.z80ctx.PC == line.addr) {
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGui::GetStyle().Colors[ImGuiCol_TextSelectedBg]));
+                        updateScroll = false;
                     }
 
                     ImGui::TableNextColumn();
@@ -824,6 +836,18 @@ void UI::wndAssemblyListing(bool *p_open) {
                     }
                 }
             }
+
+            if (updateScroll) {
+                for (unsigned i = 0; i < asmListing.lines.size(); i++) {
+                    const auto &line = asmListing.lines[i];
+
+                    if (line.addr >= 0 && line.addr == emuState.z80ctx.PC) {
+                        ImGui::SetScrollY(std::max(0.0f, itemsHeight * (i - 5)));
+                        break;
+                    }
+                }
+            }
+
             ImGui::EndTable();
         }
     }
