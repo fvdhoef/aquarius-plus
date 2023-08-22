@@ -3,6 +3,7 @@
 #include "Common.h"
 #include <SDL.h>
 #include "Audio.h"
+#include "AssemblyListing.h"
 
 class UI {
 public:
@@ -26,6 +27,7 @@ private:
     void wndMemEdit(bool *p_open);
     void wndBreakpoints(bool *p_open);
     void wndIoRegs(bool *p_open);
+    void wndAssemblyListing(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;
@@ -36,4 +38,6 @@ private:
 
     bool allowTyping = false;
     bool first       = true;
+
+    AssemblyListing asmListing;
 };

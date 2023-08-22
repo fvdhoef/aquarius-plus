@@ -28,9 +28,10 @@ public:
 
     bool handCtrlEmulation = false;
 
-    bool showScreenWindow = false;
-    bool showMemEdit      = false;
-    bool showCpuState     = false;
-    bool showIoRegsWindow = false;
-    bool showBreakpoints  = false;
+    bool showScreenWindow    = false;
+    bool showMemEdit         = false;
+    bool showCpuState        = false;
+    bool showIoRegsWindow    = false;
+    bool showBreakpoints     = false;
+    bool showAssemblyListing = false;
 };

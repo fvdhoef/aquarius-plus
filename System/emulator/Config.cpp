@@ -62,11 +62,12 @@ void Config::load() {
 
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
 
-        showScreenWindow = getBoolValue(root, "showScreenWindow", false);
-        showMemEdit      = getBoolValue(root, "showMemEdit", false);
-        showCpuState     = getBoolValue(root, "showCpuState", false);
-        showIoRegsWindow = getBoolValue(root, "showIoRegsWindow", false);
-        showBreakpoints  = getBoolValue(root, "showBreakpoints", false);
+        showScreenWindow    = getBoolValue(root, "showScreenWindow", false);
+        showMemEdit         = getBoolValue(root, "showMemEdit", false);
+        showCpuState        = getBoolValue(root, "showCpuState", false);
+        showIoRegsWindow    = getBoolValue(root, "showIoRegsWindow", false);
+        showBreakpoints     = getBoolValue(root, "showBreakpoints", false);
+        showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
 
         cJSON_free(root);
     }
@@ -97,6 +98,7 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showCpuState", showCpuState);
     cJSON_AddBoolToObject(root, "showIoRegsWindow", showIoRegsWindow);
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
+    cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
 
     std::ofstream ofs(configPath);
     if (!ofs.good())

@@ -219,6 +219,8 @@ void UI::mainLoop() {
                 ImGui::MenuItem("CPU State", "", &config.showCpuState);
                 ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
+                ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
+
                 if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
                     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
                     memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
@@ -263,6 +265,8 @@ void UI::mainLoop() {
             wndIoRegs(&config.showIoRegsWindow);
         if (config.showBreakpoints)
             wndBreakpoints(&config.showBreakpoints);
+        if (config.showAssemblyListing)
+            wndAssemblyListing(&config.showAssemblyListing);
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -735,6 +739,88 @@ void UI::wndIoRegs(bool *p_open) {
             ImGui::Text("11 EAFINE  : $%02X", emuState.ay2.regs[11]);
             ImGui::Text("12 EACOARSE: $%02X", emuState.ay2.regs[12]);
             ImGui::Text("13 EASHAPE : $%02X", emuState.ay2.regs[13]);
+        }
+    }
+    ImGui::End();
+}
+
+void UI::wndAssemblyListing(bool *p_open) {
+    bool open = ImGui::Begin("Assembly listing", p_open, 0);
+    if (open) {
+        if (ImGui::Button("Load zmac listing")) {
+            char const *lFilterPatterns[1] = {"*.lst"};
+            char       *lstFile            = tinyfd_openFileDialog("Open zmac listing file", "", 1, lFilterPatterns, "Zmac listing files", 0);
+            asmListing.load(lstFile);
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted(asmListing.getPath().c_str());
+        ImGui::Separator();
+
+        if (ImGui::BeginTable("Table", 5, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Addr", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("LineNr", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Text");
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
+
+            ImGuiListClipper clipper;
+            clipper.Begin(asmListing.lines.size());
+
+            while (clipper.Step()) {
+                for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                    auto &line = asmListing.lines[row_n];
+
+                    ImGui::TableNextRow();
+                    if (emuState.z80ctx.PC == line.addr) {
+
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGui::GetStyle().Colors[ImGuiCol_TextSelectedBg]));
+                    }
+
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(line.file.c_str());
+                    ImGui::TableNextColumn();
+                    if (line.addr >= 0) {
+                        static int selectedAddr = line.addr;
+
+                        char addr[10];
+                        snprintf(addr, sizeof(addr), "%04X##%d", line.addr, row_n);
+                        ImGui::Selectable(addr);
+                        if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
+                            ImGui::Text("Addr %04X", line.addr);
+                            ImGui::Separator();
+                            if (ImGui::Button("Add breakpoint")) {
+                                EmuState::Breakpoint bp;
+                                bp.enabled = true;
+                                bp.value   = line.addr;
+                                bp.onX     = true;
+                                emuState.breakpoints.push_back(bp);
+                            }
+                            ImGui::EndPopup();
+                        }
+                    }
+
+                    // ImGui::Text("%04X", line.addr);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(line.bytes.c_str());
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%6d", line.linenr);
+                    ImGui::TableNextColumn();
+
+                    {
+                        auto commentStart = line.s.find(";");
+                        if (commentStart != line.s.npos) {
+                            ImGui::TextUnformatted(line.s.substr(0, commentStart).c_str());
+                            ImGui::SameLine(0, 0);
+                            ImGui::TextColored(ImVec4(0.3f, 0.75f, 0.4f, 1.0f), "%s", line.s.substr(commentStart).c_str());
+                        } else {
+                            ImGui::TextUnformatted(line.s.c_str());
+                        }
+                    }
+                }
+            }
+            ImGui::EndTable();
         }
     }
     ImGui::End();
