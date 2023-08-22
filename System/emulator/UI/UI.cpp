@@ -746,12 +746,16 @@ void UI::wndIoRegs(bool *p_open) {
 }
 
 void UI::wndAssemblyListing(bool *p_open) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(300, 200), ImVec2(FLT_MAX, FLT_MAX));
+
     bool open = ImGui::Begin("Assembly listing", p_open, 0);
     if (open) {
         if (ImGui::Button("Load zmac listing")) {
             char const *lFilterPatterns[1] = {"*.lst"};
             char       *lstFile            = tinyfd_openFileDialog("Open zmac listing file", "", 1, lFilterPatterns, "Zmac listing files", 0);
-            asmListing.load(lstFile);
+            if (lstFile) {
+                asmListing.load(lstFile);
+            }
         }
         ImGui::SameLine();
         ImGui::TextUnformatted(asmListing.getPath().c_str());
@@ -774,7 +778,7 @@ void UI::wndAssemblyListing(bool *p_open) {
             ImGui::TableHeadersRow();
 
             ImGuiListClipper clipper;
-            clipper.Begin(asmListing.lines.size());
+            clipper.Begin((int)asmListing.lines.size());
 
             while (clipper.Step()) {
                 if (clipper.ItemsHeight > 0) {

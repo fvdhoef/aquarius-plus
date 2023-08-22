@@ -37,6 +37,7 @@
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
     <ClCompile Include="..\tinyfiledialogs.cpp" />
+    <ClCompile Include="..\UI\AssemblyListing.cpp" />
     <ClCompile Include="..\UI\MemoryEditor.cpp" />
     <ClCompile Include="..\UI\UI.cpp" />
     <ClCompile Include="..\Version.cpp" />
@@ -68,6 +69,7 @@
     <ClInclude Include="..\Queue.h" />
     <ClInclude Include="..\settings_caq.h" />
     <ClInclude Include="..\tinyfiledialogs.h" />
+    <ClInclude Include="..\UI\AssemblyListing.h" />
     <ClInclude Include="..\UI\MemoryEditor.h" />
     <ClInclude Include="..\UI\UI.h" />
     <ClInclude Include="..\VFS\EspVFS.h" />
