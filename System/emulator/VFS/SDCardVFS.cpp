@@ -106,7 +106,7 @@ int SDCardVFS::open(uint8_t flags, const std::string &path) {
     auto  fullPath = getFullPath(path);
     FILE *f        = ::fopen(fullPath.c_str(), mode);
     if (f == nullptr) {
-        uint8_t err = ERR_NOT_FOUND;
+        int err = ERR_NOT_FOUND;
         switch (errno) {
             case EACCES: err = ERR_NOT_FOUND; break;
             case EEXIST: err = ERR_EXISTS; break;
