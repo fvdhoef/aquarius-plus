@@ -22,7 +22,7 @@ static inline void trim(std::string &s) {
 }
 
 AssemblyListing::AssemblyListing() {
-    load("/Users/frank/Work/CurtisAquariusPlus/plusBasic/zout/aqplusbas.lst");
+    // load("/Users/frank/Work/CurtisAquariusPlus/plusBasic/zout/aqplusbas.lst");
 }
 
 void AssemblyListing::load(const std::string &_path) {
@@ -39,15 +39,6 @@ void AssemblyListing::load(const std::string &_path) {
 
         std::string curFile;
         std::string mainFileName;
-        // {
-        //     size_t pos = path.find_last_of("/\\");
-        //     pos        = (pos != path.npos) ? (pos + 1) : 0;
-        //     curFile    = path.substr(pos);
-
-        //     if (curFile.substr(curFile.size() - 4) == ".lst") {
-        //         curFile = curFile.substr(0, curFile.size() - 4) + ".asm";
-        //     }
-        // }
 
         int  lineNr             = 1;
         bool prevLineHasInclude = false;
