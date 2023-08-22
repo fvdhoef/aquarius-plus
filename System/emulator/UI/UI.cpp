@@ -410,6 +410,7 @@ void UI::emulate() {
     }
 
     if (emuState.emuMode != EmuState::Em_Running) {
+        emuState.tmpBreakpoint = -1;
         if (emuState.emuMode == EmuState::Em_Step) {
             emuState.emuMode = EmuState::Em_Halted;
             emuState.emulate();
@@ -774,7 +775,6 @@ void UI::wndAssemblyListing(bool *p_open) {
 
                     ImGui::TableNextRow();
                     if (emuState.z80ctx.PC == line.addr) {
-
                         ImGui::TableSetBgColor(ImGuiTableBgTarget_RowBg0, ImGui::GetColorU32(ImGui::GetStyle().Colors[ImGuiCol_TextSelectedBg]));
                     }
 
@@ -782,20 +782,24 @@ void UI::wndAssemblyListing(bool *p_open) {
                     ImGui::TextUnformatted(line.file.c_str());
                     ImGui::TableNextColumn();
                     if (line.addr >= 0) {
-                        static int selectedAddr = line.addr;
-
                         char addr[10];
                         snprintf(addr, sizeof(addr), "%04X##%d", line.addr, row_n);
                         ImGui::Selectable(addr);
                         if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
-                            ImGui::Text("Addr %04X", line.addr);
+                            ImGui::Text("Address $%04X", line.addr);
                             ImGui::Separator();
-                            if (ImGui::Button("Add breakpoint")) {
+                            if (ImGui::MenuItem("Run to here")) {
+                                emuState.tmpBreakpoint = line.addr;
+                                emuState.emuMode       = EmuState::Em_Running;
+                                ImGui::CloseCurrentPopup();
+                            }
+                            if (ImGui::MenuItem("Add breakpoint")) {
                                 EmuState::Breakpoint bp;
                                 bp.enabled = true;
                                 bp.value   = line.addr;
                                 bp.onX     = true;
                                 emuState.breakpoints.push_back(bp);
+                                ImGui::CloseCurrentPopup();
                             }
                             ImGui::EndPopup();
                         }

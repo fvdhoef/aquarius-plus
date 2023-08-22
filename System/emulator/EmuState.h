@@ -52,6 +52,7 @@ struct EmuState {
     };
 
     std::vector<Breakpoint> breakpoints;
+    int                     tmpBreakpoint = -1;
     int                     lastBpAddress = -1;
     int                     lastBp        = -1;
 
