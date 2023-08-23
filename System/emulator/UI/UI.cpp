@@ -432,6 +432,7 @@ void UI::wndAbout(bool *p_open) {
         ImGui::Text("- Sean P. Harrington");
         ImGui::Text("- Curtis F. Kaylor");
         ImGui::Separator();
+        ImGui::Text("Thanks to James W. Pyle III for creating the emulator icons.");
         ImGui::Text(
             "Thanks go out all the people contributing to this project and\n"
             "those who enjoy playing with it, either with this emulator or\n"
