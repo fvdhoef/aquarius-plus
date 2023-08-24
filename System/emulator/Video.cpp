@@ -2,13 +2,14 @@
 #include "EmuState.h"
 
 enum {
-    VCTRL_TEXT_ENABLE    = (1 << 0),
-    VCTRL_MODE_OFF       = (0 << 1),
-    VCTRL_MODE_TILEMAP   = (1 << 1),
-    VCTRL_MODE_BITMAP    = (2 << 1),
-    VCTRL_MODE_MASK      = (3 << 1),
-    VCTRL_SPRITES_ENABLE = (1 << 3),
-    VCTRL_TEXT_PRIORITY  = (1 << 4),
+    VCTRL_TEXT_ENABLE      = (1 << 0),
+    VCTRL_MODE_OFF         = (0 << 1),
+    VCTRL_MODE_TILEMAP     = (1 << 1),
+    VCTRL_MODE_BITMAP      = (2 << 1),
+    VCTRL_MODE_BITMAP_4BPP = (3 << 1),
+    VCTRL_MODE_MASK        = (3 << 1),
+    VCTRL_SPRITES_ENABLE   = (1 << 3),
+    VCTRL_TEXT_PRIORITY    = (1 << 4),
 };
 
 Video::Video() {
@@ -50,7 +51,7 @@ void Video::drawLine() {
         int bmline = line - 16;
         switch (emuState.videoCtrl & VCTRL_MODE_MASK) {
             case VCTRL_MODE_BITMAP: {
-                // Bitmap mode
+                // Bitmap mode 1bpp
                 for (int i = 0; i < 320; i++) {
                     int     row    = bmline / 8;
                     int     column = i / 8;
@@ -59,6 +60,19 @@ void Video::drawLine() {
                     uint8_t color  = (bm & (1 << (7 - (i & 7)))) ? (col >> 4) : (col & 0xF);
 
                     lineGfx[i] = (1 << 4) | color;
+                }
+                break;
+            }
+
+            case VCTRL_MODE_BITMAP_4BPP: {
+                // Bitmap mode 4bpp
+                for (int i = 0; i < 80; i++) {
+                    uint8_t col = emuState.videoRam[bmline * 80 + i];
+
+                    lineGfx[i * 4 + 0] = (1 << 4) | (col >> 4);
+                    lineGfx[i * 4 + 1] = (1 << 4) | (col >> 4);
+                    lineGfx[i * 4 + 2] = (1 << 4) | (col & 0xF);
+                    lineGfx[i * 4 + 3] = (1 << 4) | (col & 0xF);
                 }
                 break;
             }
@@ -215,7 +229,7 @@ void Video::drawLine() {
         }
         if (active) {
             uint8_t bmColIdx    = lineGfx[idx];
-            bool    renderPixel = (bmColIdx & 0xF) != 0;
+            bool    renderPixel = ((bmColIdx & 0xF) != 0) || (!textEnable && (emuState.videoCtrl & VCTRL_MODE_MASK) != 0);
 
             if (textPriority && (colIdx & 0xF) != 0) {
                 renderPixel = false;
