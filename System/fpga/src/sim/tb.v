@@ -280,29 +280,29 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
-        iowr(16'hE0, 8'd03);
+        iowr(16'hE0, 8'd06);
 
-        iowr(16'hED, 8'd02);
-        iowr(16'hEF, 8'd03);
+        // iowr(16'hED, 8'd02);
+        // iowr(16'hEF, 8'd03);
 
 
-        iowr(16'hF0, 8'd20);
+        // iowr(16'hF0, 8'd20);
 
-        memwr(16'h0F00, 8'h00);
-        memwr(16'h0F01, 8'h01);
+        // memwr(16'h0F00, 8'h00);
+        // memwr(16'h0F01, 8'h01);
 
-        memwr(16'h0F02, 8'h01);
-        memwr(16'h0F03, 8'h31);
+        // memwr(16'h0F02, 8'h01);
+        // memwr(16'h0F03, 8'h31);
 
-        memwr(16'h0F04, 8'h02);
-        memwr(16'h0F05, 8'h01);
+        // memwr(16'h0F04, 8'h02);
+        // memwr(16'h0F05, 8'h01);
 
-        memwr(16'h0F06, 8'h03);
-        memwr(16'h0F07, 8'h01);
+        // memwr(16'h0F06, 8'h03);
+        // memwr(16'h0F07, 8'h01);
 
-        for (integer i=0; i<256; i++) begin
-            memwr(16'h2000 + i, i);
-        end
+        // for (integer i=0; i<256; i++) begin
+        //     memwr(16'h2000 + i, i);
+        // end
 
         // memwr(16'h2000, 8'h00);
         // memwr(16'h2001, 8'h01);

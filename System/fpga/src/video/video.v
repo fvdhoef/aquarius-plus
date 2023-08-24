@@ -360,7 +360,7 @@ module video(
     wire       active = !vborder && !hborder_rr;
 
     always @* begin
-        render_pixel = (linebuf_data[3:0] != 4'd0);
+        render_pixel = (linebuf_data[3:0] != 4'd0) || (!vctrl_text_enable_r && vctrl_gfx_mode_r != 2'b00);
 
         pixel_colidx = 6'b0;
         if (vctrl_text_enable_r)

@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Tue Nov  8 12:25:55 2022
+[*] Thu Aug 24 10:47:49 2023
 [*]
-[dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Tue Nov  8 12:24:41 2022"
-[dumpfile_size] 123667538
-[savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb_video.gtkw"
-[timestart] 0
-[size] 2501 1387
-[pos] 59 0
-*-30.880144 566177000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[dumpfile] "/Users/frank/Work/aquarius-plus/System/fpga/src/sim/tb.vcd"
+[dumpfile_mtime] "Thu Aug 24 10:43:38 2023"
+[dumpfile_size] 7974467
+[savefile] "/Users/frank/Work/aquarius-plus/System/fpga/src/sim/tb_video.gtkw"
+[timestart] 32140000
+[size] 1570 1387
+[pos] -1 -1
+*-24.236288 67020000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] tb.
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.esp_uart.
@@ -18,7 +18,7 @@
 [sst_width] 193
 [signals_width] 232
 [sst_expanded] 1
-[sst_vpaned_height] 672
+[sst_vpaned_height] 651
 @28
 tb.top_inst.sysclk
 tb.reset_n
@@ -92,7 +92,7 @@ tb.top_inst.video.text_colidx[3:0]
 -
 @28
 tb.top_inst.video.vctrl_text_enable_r
-@201
+@200
 -
 @22
 tb.top_inst.video.pixel_colidx[5:0]
@@ -102,5 +102,23 @@ tb.top_inst.video.pixel_colidx[5:0]
 tb.top_inst.video.pal_r[3:0]
 tb.top_inst.video.pal_g[3:0]
 tb.top_inst.video.pal_b[3:0]
+@200
+-
+@28
+tb.top_inst.video.gfx.gfx_mode[1:0]
+@22
+tb.top_inst.video.gfx.vline[7:0]
+tb.top_inst.video.gfx.state_r[3:0]
+tb.top_inst.video.gfx.vaddr[12:0]
+@28
+tb.top_inst.video.gfx.render_start
+@24
+tb.top_inst.video.gfx.col_cnt_r[5:0]
+@22
+tb.top_inst.video.gfx.line_idx[7:0]
+@24
+tb.top_inst.video.gfx.wridx[8:0]
+@29
+tb.top_inst.video.gfx.wren
 [pattern_trace] 1
 [pattern_trace] 0

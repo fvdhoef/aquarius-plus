@@ -63,19 +63,23 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
 
     localparam
-        ST_DONE = 4'd0,
-        ST_MAP1 = 4'd1,
-        ST_MAP2 = 4'd2,
-        ST_BM1  = 4'd3,
-        ST_BM2  = 4'd4,
-        ST_BM3  = 4'd5,
-        ST_SPR  = 4'd6,
-        ST_PAT1 = 4'd7,
-        ST_PAT2 = 4'd8;
+        ST_DONE    = 4'd0,
+        ST_MAP1    = 4'd1,
+        ST_MAP2    = 4'd2,
+        ST_BM1     = 4'd3,
+        ST_BM2     = 4'd4,
+        ST_BM3     = 4'd5,
+        ST_SPR     = 4'd6,
+        ST_PAT1    = 4'd7,
+        ST_PAT2    = 4'd8,
+        ST_BM4BPP  = 4'd9,
+        ST_BM4BPP2 = 4'd10;
 
     localparam
-        MODE_TILE = 2'b01,
-        MODE_BM   = 2'b10;
+        MODE_DISABLED = 2'b00,
+        MODE_TILE     = 2'b01,
+        MODE_BM1BPP   = 2'b10,
+        MODE_BM4BPP   = 2'b11;
 
     reg   [5:0] col_r,       col_next;
     reg   [5:0] col_cnt_r,   col_cnt_next;
@@ -189,8 +193,13 @@ module gfx(
             render_is_sprite_next = 1'b0;
             col_cnt_next          = 6'd0;
             spr_sel_next          = 7'd0;
-            state_next            = (gfx_mode == MODE_BM) ? ST_BM1 : ST_MAP1;
-            blankout_next         = (gfx_mode != MODE_TILE && gfx_mode != MODE_BM);
+
+            case (gfx_mode)
+                MODE_BM1BPP: state_next = ST_BM1;
+                MODE_BM4BPP: state_next = ST_BM4BPP;
+                default:     state_next = ST_MAP1;
+            endcase
+            blankout_next         = (gfx_mode == MODE_DISABLED);
             render_idx_next       = (gfx_mode == MODE_TILE) ? (9'd0 - {6'd0, scrx[2:0]}) : 9'd0;
             col_next              = scrx[8:3];
 
@@ -283,6 +292,30 @@ module gfx(
                     end
                 end
 
+                ST_BM4BPP: begin
+                    if (col_cnt_r == 6'd40) begin
+                        state_next       = sprites_enable ? ST_SPR : ST_DONE;
+                    end else begin
+                        vaddr_next       = (line_idx * 'd40) + col_cnt_r;
+                        state_next       = ST_BM4BPP2;
+                    end
+
+                    col_cnt_next         = col_cnt_r + 6'd1;
+                    render_hflip_next    = 1'b0;
+                    render_palette_next  = 2'b01;
+                    render_priority_next = 1'b0;
+                end
+
+                ST_BM4BPP2: begin
+                    if (!render_busy || render_last_pixel) begin
+                        render_data_next = {
+                            vdata2[ 7: 4], vdata2[ 7: 4], vdata2[ 3: 0], vdata2[ 3: 0],
+                            vdata2[15:12], vdata2[15:12], vdata2[11: 8], vdata2[11: 8]
+                        };
+                        render_start = 1'b1;
+                        state_next   = ST_BM4BPP;
+                    end
+                end
             endcase
 
             if (render_start) render_idx_next = render_idx_r + 9'd8;
