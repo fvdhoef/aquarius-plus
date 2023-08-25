@@ -186,6 +186,7 @@ void EspSettingsConsole::creadline(char *buf, size_t max_len, bool is_password) 
                 cputc(' ');
                 cputc('\b');
                 p--;
+                *p = '\0';
             }
             continue;
         }
