@@ -1,5 +1,6 @@
 #include "Config.h"
 #include "cJSON.h"
+#include "EmuState.h"
 
 Config::Config() {
 }
@@ -69,6 +70,26 @@ void Config::load() {
         showBreakpoints     = getBoolValue(root, "showBreakpoints", false);
         showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
 
+        emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
+
+        auto breakpoints = cJSON_GetObjectItem(root, "breakpoints");
+        if (cJSON_IsArray(breakpoints)) {
+            cJSON *breakpoint;
+            cJSON_ArrayForEach(breakpoint, breakpoints) {
+                if (!cJSON_IsObject(breakpoint))
+                    continue;
+
+                EmuState::Breakpoint bp;
+                bp.value   = getIntValue(breakpoint, "addr", 0);
+                bp.enabled = getBoolValue(breakpoint, "enabled", false);
+                bp.type    = getIntValue(breakpoint, "type", 0);
+                bp.onR     = getBoolValue(breakpoint, "onR", false);
+                bp.onW     = getBoolValue(breakpoint, "onW", false);
+                bp.onX     = getBoolValue(breakpoint, "onX", false);
+                emuState.breakpoints.push_back(bp);
+            }
+        }
+
         cJSON_free(root);
     }
 
@@ -99,6 +120,22 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showIoRegsWindow", showIoRegsWindow);
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
     cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
+
+    cJSON_AddBoolToObject(root, "enableBreakpoints", emuState.enableBreakpoints);
+
+    auto breakpoints = cJSON_AddArrayToObject(root, "breakpoints");
+    for (auto &bp : emuState.breakpoints) {
+        auto breakpoint = cJSON_CreateObject();
+
+        cJSON_AddNumberToObject(breakpoint, "addr", bp.value);
+        cJSON_AddBoolToObject(breakpoint, "enabled", bp.enabled);
+        cJSON_AddNumberToObject(breakpoint, "type", bp.type);
+        cJSON_AddBoolToObject(breakpoint, "onR", bp.onR);
+        cJSON_AddBoolToObject(breakpoint, "onW", bp.onW);
+        cJSON_AddBoolToObject(breakpoint, "onX", bp.onX);
+
+        cJSON_AddItemToArray(breakpoints, breakpoint);
+    }
 
     std::ofstream ofs(configPath);
     if (!ofs.good())
