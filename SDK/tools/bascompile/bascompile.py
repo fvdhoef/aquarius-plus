@@ -121,7 +121,7 @@ class Variable:
         self.name = name
 
     def __repr__(self):
-        return f"<Variable:{self.name}>"
+        return f"<Var:{self.name}>"
 
 
 class StringLiteral:
@@ -501,6 +501,96 @@ def parseExpression(parts):
     return parseOrExpression(parts)
 
 
+def parseStatement(parts):
+    if len(parts) > 0 and isinstance(parts[0], Variable):
+        parts = [Statements.LET] + parts
+
+    if len(parts) < 1 or not isinstance(parts[0], Statements):
+        basicError("Expected statement")
+
+    stmt = parts[0]
+
+    if stmt == Statements.LET:
+        if len(parts) < 4 or not isinstance(parts[1], Variable) or parts[2] != "=":
+            basicError("Syntax error in variable assignment")
+
+        name = parts[1]
+        expr, parts = parseExpression(parts[3:])
+        result = (Statements.LET, name, expr)
+
+    elif stmt == Statements.END:
+        result = Statements.END
+        parts = parts[1:]
+
+    elif stmt == Statements.GOTO:
+        if len(parts) < 2 or not isinstance(parts[1], float):
+            basicError("Syntax error in GOTO")
+        result = (Statements.GOTO, parts[1])
+        parts = parts[2:]
+
+    elif stmt == Statements.PRINT:
+        parts = parts[1:]
+
+        exprs = []
+        while len(parts) > 0:
+            expr, parts = parseExpression(parts)
+            exprs.append(expr)
+        result = (Statements.PRINT, exprs)
+
+    elif stmt == Statements.FOR:
+        if len(parts) < 6 or not isinstance(parts[1], Variable) or parts[2] != "=":
+            basicError("Syntax error")
+
+        varName = parts[1]
+        fromVal, parts = parseExpression(parts[3:])
+
+        if len(parts) < 2 or parts[0] != Tokens.TO:
+            basicError("Syntax error")
+
+        toVal, parts = parseExpression(parts[1:])
+        stepVal = 1.0
+
+        if len(parts) > 1 and parts[0] == Tokens.STEP:
+            stepVal, parts = parseExpression(parts[1:])
+
+        result = (Statements.FOR, varName, fromVal, toVal, stepVal)
+
+    elif stmt == Statements.IF:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) < 2 or parts[0] != Tokens.THEN:
+            basicError("Syntax error")
+
+        if isinstance(parts[1], float):
+            st = (Statements.GOTO, parts[1])
+            parts = parts[1:]
+        else:
+            print(parts)
+            st, parts = parseStatement(parts[1:])
+
+        result = (Statements.IF, expr, st)
+
+    elif stmt == Statements.POKE:
+        addr, parts = parseExpression(parts[1:])
+        if len(parts) < 2 or parts[0] != ",":
+            basicError("Syntax error")
+        value, parts = parseExpression(parts[1:])
+
+        result = (Statements.POKE, addr, value)
+
+    elif stmt == Statements.NEXT:
+        if len(parts) > 1 and isinstance(parts[1], Variable):
+            result = (Statements.NEXT, parts[1])
+            parts = parts[2:]
+        else:
+            result = (Statements.NEXT, None)
+            parts = parts[1:]
+
+    else:
+        basicError(f"Syntax error: {parts}")
+
+    return (result, parts)
+
+
 programLines = tokenize(args.input.readlines())
 
 for pl in programLines:
@@ -508,86 +598,5 @@ for pl in programLines:
     print(f"- Line {basicLineNr}")
 
     for subLine in pl["subLines"]:
-        if isinstance(subLine[0], Variable):
-            subLine = [Statements.LET] + subLine
-
-        stmt = subLine[0]
-        if not isinstance(stmt, Statements):
-            basicError("Expected statement")
-
-        if stmt == Statements.LET:
-            if (
-                len(subLine) < 4
-                or not isinstance(subLine[1], Variable)
-                or subLine[2] != "="
-            ):
-                basicError("Syntax error in variable assignment")
-
-            name = subLine[1].name
-            expr, subLine = parseExpression(subLine[3:])
-            if len(subLine) > 0:
-                basicError("Unexpected characters")
-
-            print(f"  - Let {name} = {expr}")
-
-        elif stmt == Statements.END:
-            print(f"  - Stop program execution")
-            subLine = subLine[1:]
-            if len(subLine) > 0:
-                basicError("Unexpected characters")
-
-        elif stmt == Statements.GOTO:
-            if len(subLine) != 2 or not isinstance(subLine[1], float):
-                basicError("Syntax error in GOTO")
-
-            print(f"  - Goto line {subLine[1]}")
-            subLine = None
-
-        elif stmt == Statements.PRINT:
-            print(f"  - Print:")
-            subLine = subLine[1:]
-
-            while len(subLine) > 0:
-                expr, subLine = parseExpression(subLine)
-                print(f"    - {expr}")
-
-        elif stmt == Statements.FOR:
-            if (
-                len(subLine) < 6
-                or not isinstance(subLine[1], Variable)
-                or subLine[2] != "="
-            ):
-                basicError("Syntax error")
-
-            varName = subLine[1]
-            fromVal, subLine = parseExpression(subLine[3:])
-
-            if len(subLine) < 2 or subLine[0] != Tokens.TO:
-                basicError("Syntax error")
-
-            toVal, subLine = parseExpression(subLine[1:])
-            stepVal = 1.0
-
-            if len(subLine) > 1 and subLine[0] == Tokens.STEP:
-                stepVal, subLine = parseExpression(subLine[1:])
-
-            print(f"  - For {varName} = {fromVal} To {toVal} Step {stepVal}")
-
-            if len(subLine) > 0:
-                basicError("Unexpected characters")
-
-        elif stmt == Statements.IF:
-            expr, subLine = parseExpression(subLine[1:])
-
-            print(f"  - If {expr} Then")
-
-            # subLine = subLine[1:]
-
-            # while len(subLine) > 0:
-            #     expr, subLine = parseExpression(subLine)
-            #     print(f"    - {expr}")
-
-        if subLine:
-            basicError(f"Syntax error: {subLine}")
-
-        # print(type(subLine[0]))
+        result, parts = parseStatement(subLine)
+        print(f"  - {result}")
