@@ -116,17 +116,6 @@ Tokens = Enum(
 )
 
 
-class Operation(Enum):
-    NEGATE = auto()
-    MULT = auto()
-    DIV = auto()
-    ADD = auto()
-    SUB = auto()
-
-    def __repr__(self):
-        return f"<{self.name}>"
-
-
 class Variable:
     def __init__(self, name):
         self.name = name
@@ -253,7 +242,42 @@ def tokenize(lines):
     return programLines
 
 
+class Operation(Enum):
+    NEGATE = auto()
+    MULT = auto()
+    DIV = auto()
+    ADD = auto()
+    SUB = auto()
+    POW = auto()
+    EQ = auto()
+    NE = auto()
+    LT = auto()
+    LE = auto()
+    GT = auto()
+    GE = auto()
+    NOT = auto()
+    AND = auto()
+    OR = auto()
+
+    CHRs = auto()
+
+    def __repr__(self):
+        return f"<{self.name}>"
+
+
 basicLineNr = 0
+
+# | Operation   | Precedence |
+# | ----------- | ---------- |
+# | POWER       | 127        | x
+# | MULT        | 124        | x
+# | DIVIDE      | 124        | x
+# | ADD         | 121        | x
+# | SUB         | 121        | x
+# | RELATIONALS | 100        |
+# | NOT         | 90         |
+# | AND         | 80         |
+# | OR          | 70         |
 
 
 def basicError(message):
@@ -272,13 +296,34 @@ def parsePrimaryExpression(parts):
     elif isinstance(parts[0], StringLiteral):
         expr = parts[0]
     elif parts[0] == "(":
-        expr, parts = getExpression(parts[1:])
+        expr, parts = parseExpression(parts[1:])
         if len(parts) == 0 or parts[0] != ")":
             basicError("Expected ')'")
+    elif parts[0] == Tokens["CHR$("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.CHRs, expr)
     else:
         basicError("Expected constant")
 
     return (expr, parts[1:])
+
+
+def parsePowerExpression(parts):
+    result, parts = parsePrimaryExpression(parts)
+
+    while len(parts) > 0:
+        if parts[0] == "^":
+            rhs, parts = parsePowerExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = pow(result, rhs)
+            else:
+                result = (Operation.POW, result, rhs)
+        else:
+            break
+
+    return (result, parts)
 
 
 def parseUnaryExpression(parts):
@@ -290,20 +335,19 @@ def parseUnaryExpression(parts):
         if isinstance(expr, float):
             result = -expr
         else:
-            result = ((Operation.NEGATE, expr), parts)
+            result = (Operation.NEGATE, expr)
 
     elif parts[0] == "+":
         result, parts = parseUnaryExpression(parts[1:])
 
     else:
-        result, parts = parsePrimaryExpression(parts)
+        result, parts = parsePowerExpression(parts)
 
     return (result, parts)
 
 
 def parseMultiplicativeExpression(parts):
     result, parts = parseUnaryExpression(parts)
-    print("!!!!?", result)
 
     while len(parts) > 0:
         if parts[0] == "*":
@@ -311,8 +355,6 @@ def parseMultiplicativeExpression(parts):
             if isinstance(result, float) and isinstance(rhs, float):
                 result *= rhs
             else:
-                print("!!!!!", result)
-
                 result = (Operation.MULT, result, rhs)
 
         elif parts[0] == "/":
@@ -352,37 +394,200 @@ def parseAdditiveExpression(parts):
     return (result, parts)
 
 
-def getExpression(parts):
-    return parseAdditiveExpression(parts)
+def parseRelationalExpression(parts):
+    result, parts = parseAdditiveExpression(parts)
+
+    while len(parts) > 0:
+        if parts[0] == "=":
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result == rhs else 0
+            else:
+                result = (Operation.EQ, result, rhs)
+
+        elif parts[0] == Tokens["<>"]:
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result != rhs else 0
+            else:
+                result = (Operation.NE, result, rhs)
+
+        elif parts[0] == "<":
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result < rhs else 0
+            else:
+                result = (Operation.LT, result, rhs)
+
+        elif parts[0] == ">":
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result > rhs else 0
+            else:
+                result = (Operation.GT, result, rhs)
+
+        elif parts[0] == Tokens["<="]:
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result <= rhs else 0
+            else:
+                result = (Operation.LE, result, rhs)
+
+        elif parts[0] == Tokens[">="]:
+            rhs, parts = parseRelationalExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = -1 if result >= rhs else 0
+            else:
+                result = (Operation.GE, result, rhs)
+
+        else:
+            break
+
+    return (result, parts)
+
+
+def parseNotExpression(parts):
+    if len(parts) == 0:
+        basicError("Unexpected end of line")
+
+    if parts[0] == Tokens.NOT:
+        expr, parts = parseNotExpression(parts[1:])
+        if isinstance(expr, float):
+            result = float(-int(expr) - 1)
+        else:
+            result = (Operation.NOT, expr)
+
+    else:
+        result, parts = parseRelationalExpression(parts)
+
+    return (result, parts)
+
+
+def parseAndExpression(parts):
+    result, parts = parseNotExpression(parts)
+
+    while len(parts) > 0:
+        if parts[0] == Tokens.AND:
+            rhs, parts = parseAndExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = float(int(result) & int(rhs))
+            else:
+                result = (Operation.AND, result, rhs)
+
+        else:
+            break
+
+    return (result, parts)
+
+
+def parseOrExpression(parts):
+    result, parts = parseAndExpression(parts)
+
+    while len(parts) > 0:
+        if parts[0] == Tokens.OR:
+            rhs, parts = parseOrExpression(parts[1:])
+            if isinstance(result, float) and isinstance(rhs, float):
+                result = float(int(result) | int(rhs))
+            else:
+                result = (Operation.OR, result, rhs)
+
+        else:
+            break
+
+    return (result, parts)
+
+
+def parseExpression(parts):
+    return parseOrExpression(parts)
 
 
 programLines = tokenize(args.input.readlines())
 
 for pl in programLines:
     basicLineNr = pl["lineNr"]
-    print(basicLineNr)
+    print(f"- Line {basicLineNr}")
 
     for subLine in pl["subLines"]:
         if isinstance(subLine[0], Variable):
             subLine = [Statements.LET] + subLine
 
-        if subLine[0] == Statements.LET:
+        stmt = subLine[0]
+        if not isinstance(stmt, Statements):
+            basicError("Expected statement")
+
+        if stmt == Statements.LET:
             if (
                 len(subLine) < 4
                 or not isinstance(subLine[1], Variable)
                 or subLine[2] != "="
             ):
-                error(pl["lineNr"], "Syntax error in variable assignment")
+                basicError("Syntax error in variable assignment")
 
             name = subLine[1].name
-
-            expr, subLine = getExpression(subLine[3:])
+            expr, subLine = parseExpression(subLine[3:])
             if len(subLine) > 0:
                 basicError("Unexpected characters")
 
-            print(f"--> Let {name} = {expr}")
+            print(f"  - Let {name} = {expr}")
+
+        elif stmt == Statements.END:
+            print(f"  - Stop program execution")
+            subLine = subLine[1:]
+            if len(subLine) > 0:
+                basicError("Unexpected characters")
+
+        elif stmt == Statements.GOTO:
+            if len(subLine) != 2 or not isinstance(subLine[1], float):
+                basicError("Syntax error in GOTO")
+
+            print(f"  - Goto line {subLine[1]}")
+            subLine = None
+
+        elif stmt == Statements.PRINT:
+            print(f"  - Print:")
+            subLine = subLine[1:]
+
+            while len(subLine) > 0:
+                expr, subLine = parseExpression(subLine)
+                print(f"    - {expr}")
+
+        elif stmt == Statements.FOR:
+            if (
+                len(subLine) < 6
+                or not isinstance(subLine[1], Variable)
+                or subLine[2] != "="
+            ):
+                basicError("Syntax error")
+
+            varName = subLine[1]
+            fromVal, subLine = parseExpression(subLine[3:])
+
+            if len(subLine) < 2 or subLine[0] != Tokens.TO:
+                basicError("Syntax error")
+
+            toVal, subLine = parseExpression(subLine[1:])
+            stepVal = 1.0
+
+            if len(subLine) > 1 and subLine[0] == Tokens.STEP:
+                stepVal, subLine = parseExpression(subLine[1:])
+
+            print(f"  - For {varName} = {fromVal} To {toVal} Step {stepVal}")
+
+            if len(subLine) > 0:
+                basicError("Unexpected characters")
+
+        elif stmt == Statements.IF:
+            expr, subLine = parseExpression(subLine[1:])
+
+            print(f"  - If {expr} Then")
+
+            # subLine = subLine[1:]
+
+            # while len(subLine) > 0:
+            #     expr, subLine = parseExpression(subLine)
+            #     print(f"    - {expr}")
 
         if subLine:
-            print("-", subLine)
+            basicError(f"Syntax error: {subLine}")
 
         # print(type(subLine[0]))
