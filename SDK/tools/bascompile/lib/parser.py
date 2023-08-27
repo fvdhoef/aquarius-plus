@@ -37,6 +37,62 @@ def parsePrimaryExpression(parts):
         expr, parts = parseExpression(parts[1:])
         if len(parts) == 0 or parts[0] != ")":
             basicError("Expected ')'")
+    elif parts[0] == Tokens["SIN("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.SIN, expr)
+    elif parts[0] == Tokens["COS("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.COS, expr)
+    elif parts[0] == Tokens["TAN("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.TAN, expr)
+    elif parts[0] == Tokens["ATN("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.ATN, expr)
+    elif parts[0] == Tokens["LOG("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.LOG, expr)
+    elif parts[0] == Tokens["EXP("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.EXP, expr)
+    elif parts[0] == Tokens["RND("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.RND, expr)
+    elif parts[0] == Tokens["SQR("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.SQR, expr)
+    elif parts[0] == Tokens["ABS("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.ABS, expr)
+    elif parts[0] == Tokens["SGN("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.SGN, expr)
+    elif parts[0] == Tokens["INT("]:
+        expr, parts = parseExpression(parts[1:])
+        if len(parts) == 0 or parts[0] != ")":
+            basicError("Expected ')'")
+        expr = (Operation.INT, expr)
+
     elif parts[0] == Tokens["CHR$("]:
         expr, parts = parseExpression(parts[1:])
         if len(parts) == 0 or parts[0] != ")":

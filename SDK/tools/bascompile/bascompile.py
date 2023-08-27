@@ -6,6 +6,7 @@ import struct
 from lib.defs import Statements, Tokens, Operation, Variable, StringLiteral
 from lib.tokenizer import tokenize
 from lib.parser import parse
+from enum import Enum
 
 parser = argparse.ArgumentParser(description="Convert BASIC text file to executable")
 parser.add_argument("input", help="Input file")
@@ -121,7 +122,7 @@ FMULTT:  equ $13C9      ; FAC = ARG_from_stack * FAC
 FMULT:   equ $13CB      ; FAC = ARG * FAC
 FDIVT:   equ $142D      ; FAC = ARG_from_stack / FAC
 FDIV:    equ $142F      ; FAC = ARG / FAC
-SGN:     equ $14F5      ; 
+SGN:     equ $14F5      ; FAC = ARG < 0 ? -1 : ARG > 0 ? 1 : 0
 FLOAT:   equ $14F6      ;
 FLOATR:  equ $14FB      ;
 ABS:     equ $1509      ; FAC = abs(FAC)
@@ -174,13 +175,123 @@ main:
 # Info from https://community.embarcadero.com/index.php/article/technical-articles/162-programming/14799-converting-between-microsoft-binary-and-ieee-forma
 def float_to_mbf32(value):
     ieee_val = struct.unpack("I", struct.pack("f", value))[0]
+    if ieee_val == 0:
+        return 0
+
     mbf_exp = (((ieee_val >> 23) & 0xFF) + 2) & 0xFF
     sign = ieee_val >> 31
     mbf_val = (mbf_exp << 24) | (sign << 23) | (ieee_val & 0x7FFFFF)
     return mbf_val
 
 
-# exit()
+def assign_float_to_arg(val):
+    mbf_val = float_to_mbf32(val)
+    print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
+    print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
+
+
+def assign_float_to_fac(val):
+    assign_float_to_arg(val)
+    print(f"    call MOVFR", file=f)
+
+
+def save_arg(varName):
+    print(f"    ld   (v{varName}+2), bc", file=f)
+    print(f"    ld   (v{varName}), de", file=f)
+
+
+def save_fac(varName):
+    print(f"    ld   hl, v{varName}", file=f)
+    print(f"    call MOVMF", file=f)
+
+
+def load_fac(varName):
+    print(f"    ld   hl, v{varName}", file=f)
+    print(f"    call MOVFM", file=f)
+
+
+def load_arg(varName):
+    print(f"    ld   hl, v{varName}", file=f)
+    print(f"    call MOVRM", file=f)
+
+
+def print_fac():
+    # This destructs the value of FAC
+    print(f"    call FOUT", file=f)
+    print(f"    ld   hl, FBUFFR+1", file=f)
+    print(f"    call STROUT", file=f)
+
+
+def push_fac():
+    print(f"    call PUSHF", file=f)
+
+
+def pop_arg():
+    print(f"    pop bc", file=f)
+    print(f"    pop de", file=f)
+
+
+def emit_unary_op(expr, func):
+    emit_expr(expr[1])
+    print(f"    call {func}", file=f)
+
+
+def emit_binary_op(expr, func):
+    emit_expr(expr[1])
+    push_fac()
+    emit_expr(expr[2])
+    pop_arg()
+    print(f"    call {func}", file=f)
+
+
+def emit_expr(expr):
+    if isinstance(expr, float):
+        assign_float_to_fac(expr)
+
+    elif isinstance(expr, Variable):
+        load_fac(expr.name)
+
+    elif isinstance(expr, tuple):
+        if expr[0] == Operation.NEGATE:
+            emit_unary_op(expr, "NEG")
+        elif expr[0] == Operation.MULT:
+            emit_binary_op(expr, "FMULT")
+        elif expr[0] == Operation.DIV:
+            emit_binary_op(expr, "FDIV")
+        elif expr[0] == Operation.ADD:
+            emit_binary_op(expr, "FADD")
+        elif expr[0] == Operation.SUB:
+            emit_binary_op(expr, "FSUB")
+        elif expr[0] == Operation.POW:
+            emit_binary_op(expr, "FPWR")
+        elif expr[0] == Operation.SIN:
+            emit_unary_op(expr, "SIN")
+        elif expr[0] == Operation.COS:
+            emit_unary_op(expr, "COS")
+        elif expr[0] == Operation.TAN:
+            emit_unary_op(expr, "TAN")
+        elif expr[0] == Operation.ATN:
+            emit_unary_op(expr, "ATN")
+        elif expr[0] == Operation.LOG:
+            emit_unary_op(expr, "LOG")
+        elif expr[0] == Operation.EXP:
+            emit_unary_op(expr, "EXP")
+        elif expr[0] == Operation.RND:
+            emit_unary_op(expr, "RND")
+        elif expr[0] == Operation.SQR:
+            emit_unary_op(expr, "SQR")
+        elif expr[0] == Operation.ABS:
+            emit_unary_op(expr, "ABS")
+        elif expr[0] == Operation.SGN:
+            emit_unary_op(expr, "SGN")
+        elif expr[0] == Operation.INT:
+            emit_unary_op(expr, "INT")
+        else:
+            print(f"Unhandled expression {expr}")
+            exit(1)
+    else:
+        print(f"Unhandled expression {expr}")
+        exit(1)
 
 
 for line in lines:
@@ -191,11 +302,8 @@ for line in lines:
         if stmt[0] == Statements.LET:
             varName = stmt[1].name
             expr = stmt[2]
-            mbf_val = float_to_mbf32(expr)
-            print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
-            print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
-            print(f"    ld   (v{varName}+2), bc", file=f)
-            print(f"    ld   (v{varName}), de", file=f)
+            emit_expr(expr)
+            save_fac(varName)
 
         elif stmt[0] == Statements.GOTO:
             print(f"    jp   l{stmt[1]:.0f}", file=f)
@@ -203,22 +311,8 @@ for line in lines:
             print(f"    jp   end", file=f)
         elif stmt[0] == Statements.PRINT:
             for expr in stmt[1]:
-                if isinstance(expr, float):
-                    mbf_val = float_to_mbf32(expr)
-                    print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
-                    print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
-                    print(f"    call MOVFR", file=f)
-                    print(f"    call FOUT", file=f)
-                    print(f"    ld   hl, FBUFFR+1", file=f)
-                    print(f"    call STROUT", file=f)
-                elif isinstance(expr, Variable):
-                    print(f"    ld   hl, v{expr.name}", file=f)
-                    print(f"    call MOVFM", file=f)
-                    print(f"    call FOUT", file=f)
-                    print(f"    ld   hl, FBUFFR+1", file=f)
-                    print(f"    call STROUT", file=f)
-                else:
-                    print(f"Unhandled statement {stmt}")
+                emit_expr(expr)
+                print_fac()
 
             print(f"    call CRDO", file=f)
 

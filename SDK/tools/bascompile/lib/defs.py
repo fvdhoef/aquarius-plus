@@ -67,21 +67,21 @@ Tokens = Enum(
         "STEP",
         "AND",
         "OR",
-        "SGN(",
-        "INT(",
-        "ABS(",
         "USR(",
         "FRE(",
         "LPOS(",
         "POS(",
-        "SQR(",
-        "RND(",
-        "LOG(",
-        "EXP(",
-        "COS(",
-        "SIN(",
-        "TAN(",
-        "ATN(",
+        "INT(",  # FP-lib: done
+        "SGN(",  # FP-lib: done
+        "ABS(",  # FP-lib: done
+        "SQR(",  # FP-lib: done
+        "RND(",  # FP-lib: done
+        "LOG(",  # FP-lib: done
+        "EXP(",  # FP-lib: done
+        "COS(",  # FP-lib: done
+        "SIN(",  # FP-lib: done
+        "TAN(",  # FP-lib: done
+        "ATN(",  # FP-lib: done
         "PEEK(",
         "LEN(",
         "STR$(",
@@ -115,6 +115,18 @@ class Operation(Enum):
     NOT = auto()
     AND = auto()
     OR = auto()
+
+    SIN = auto()
+    COS = auto()
+    TAN = auto()
+    ATN = auto()
+    LOG = auto()
+    EXP = auto()
+    RND = auto()
+    SQR = auto()
+    ABS = auto()
+    SGN = auto()
+    INT = auto()
 
     CHRs = auto()
 
