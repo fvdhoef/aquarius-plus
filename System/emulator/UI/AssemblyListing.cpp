@@ -27,10 +27,11 @@ AssemblyListing::AssemblyListing() {
 
 void AssemblyListing::load(const std::string &_path) {
     try {
+        lines.clear();
+
         path = _path;
         std::ifstream ifs(path);
         if (!ifs.good()) {
-            lines.clear();
             path.clear();
             return;
         }
