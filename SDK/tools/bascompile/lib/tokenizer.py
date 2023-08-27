@@ -105,7 +105,20 @@ def tokenize(inputFile):
             # Variable name?
             m = re.match("[A-Za-z]+[A-Za-z0-9]*\$?", line)
             if m and m.group():
-                subLine.append(Variable(m.group().upper()))
+                # BASIC only looks at the first two letters of the identifier
+                # Also names are case-insensitive
+
+                name = m.group().upper()
+                is_str = name.endswith("$")
+                if is_str:
+                    name = name[:-1]
+
+                name = name[:2]
+
+                if is_str:
+                    name += "$"
+
+                subLine.append(Variable(name))
                 line = line[m.end() :]
                 continue
 

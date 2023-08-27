@@ -1,6 +1,6 @@
 #!/bin/sh
 set -e
 
-./bascompile.py mandelbrot.txt mandelbrot.asm
-zmac --zmac -n mandelbrot.asm --oo cim,lst
-cp zout/mandelbrot.cim ../../../EndUser/sdcard/mandelbrot.caq
+./bascompile.py test.txt test.asm
+zmac --zmac -n test.asm --oo cim,lst
+cp zout/test.cim ../../../EndUser/sdcard/test.caq
