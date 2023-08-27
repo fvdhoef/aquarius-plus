@@ -12,7 +12,7 @@ parser.add_argument("input", help="Input file")
 parser.add_argument("output", help="Output file")
 args = parser.parse_args()
 
-lines = parse(args.input)
+lines, variableNames = parse(args.input)
 
 
 f = open(args.output, "wt")
@@ -188,29 +188,54 @@ for line in lines:
 
     for stmt in line[1]:
         print(f"    ; {stmt}", file=f)
+        if stmt[0] == Statements.LET:
+            varName = stmt[1].name
+            expr = stmt[2]
+            mbf_val = float_to_mbf32(expr)
+            print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
+            print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
+            print(f"    ld   (v{varName}+2), bc", file=f)
+            print(f"    ld   (v{varName}), de", file=f)
 
-        if stmt[0] == Statements.GOTO:
-            print(f"    ; jp l{stmt[1]:.0f}", file=f)
+        elif stmt[0] == Statements.GOTO:
+            print(f"    jp   l{stmt[1]:.0f}", file=f)
         elif stmt[0] == Statements.END:
             print(f"    jp   end", file=f)
-
         elif stmt[0] == Statements.PRINT:
             for expr in stmt[1]:
-                mbf_val = float_to_mbf32(expr)
-                print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
-                print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
-                print(f"    call MOVFR", file=f)
-                print(f"    call FOUT", file=f)
-                print(f"    ld   hl, FBUFFR+1", file=f)
-                print(f"    call STROUT", file=f)
+                if isinstance(expr, float):
+                    mbf_val = float_to_mbf32(expr)
+                    print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
+                    print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
+                    print(f"    call MOVFR", file=f)
+                    print(f"    call FOUT", file=f)
+                    print(f"    ld   hl, FBUFFR+1", file=f)
+                    print(f"    call STROUT", file=f)
+                elif isinstance(expr, Variable):
+                    print(f"    ld   hl, v{expr.name}", file=f)
+                    print(f"    call MOVFM", file=f)
+                    print(f"    call FOUT", file=f)
+                    print(f"    ld   hl, FBUFFR+1", file=f)
+                    print(f"    call STROUT", file=f)
+                else:
+                    print(f"Unhandled statement {stmt}")
+
             print(f"    call CRDO", file=f)
 
         else:
             print(f"Unhandled statement {stmt}")
 
-print(f"end:", file=f)
-print(f"    pop hl", file=f)
-print(f"    ret", file=f)
+print(
+    """
+end:
+    pop hl
+    ret
+""",
+    file=f,
+)
+
+for name in variableNames:
+    print(f"v{name}: defd 0", file=f)
 
 
 print(

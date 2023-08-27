@@ -330,7 +330,7 @@ def parseStatement(parts):
 
 
 def parse(inputFile):
-    programLines = tokenize(inputFile)
+    (programLines, variables) = tokenize(inputFile)
 
     result = []
 
@@ -351,4 +351,4 @@ def parse(inputFile):
 
         result.append((basicLineNr, stmts))
 
-    return result
+    return (result, variables)

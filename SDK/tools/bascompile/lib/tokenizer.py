@@ -14,6 +14,7 @@ def tokenize(inputFile):
 
     lastLineNr = -1
     programLines = []
+    variables = set()
 
     # Tokenize lines
     for idx, line in enumerate(lines):
@@ -119,6 +120,7 @@ def tokenize(inputFile):
                     name += "$"
 
                 subLine.append(Variable(name))
+                variables.add(name)
                 line = line[m.end() :]
                 continue
 
@@ -131,4 +133,4 @@ def tokenize(inputFile):
 
         programLines.append((lineNr, subLines))
 
-    return programLines
+    return (programLines, variables)
