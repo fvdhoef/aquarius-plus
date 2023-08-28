@@ -21,79 +21,6 @@ f = open(args.output, "wt")
 # String descriptor: four bytes: Length, ignored, Text Address
 
 
-# [M80] MATHPK FOR BASIC MCS 8080  GATES/ALLEN/DAVIDOFF
-#
-# [M80] EXTERNAL LOCATIONS USED BY THE MATH-PACKAGE
-#
-# [M80] THE FLOATING ACCUMULATOR
-# (M80) FACLO:   [LOW ORDER OF MANTISSA (LO)]
-# (M80) FACMO:   [MIDDLE ORDER OF MANTISSA (MO)]
-# (M80) FACHO:   [HIGH ORDER OF MANTISSA (HO)]
-# (M80) FAC:     [EXPONENT]
-# (M80)          [TEMPORARY COMPLEMENT OF SIGN IN MSB]
-# (M80] ARGLO:           [LOCATION OF SECOND ARGUMENT]
-# (M80] ARG:
-# (M80] FBUFFR:  BUFFER FOR FOUT
-# [M80]
-# [M80] THE FLOATING POINT FORMAT IS AS FOLLOWS:
-# [M80]
-# [M80] THE SIGN IS THE FIRST BIT OF THE MANTISSA
-# [M80] THE MANTISSA IS 24 BITS LONG
-# [M80] THE BINARY POINT IS TO THE LEFT OF THE MSB
-# [M80] NUMBER = MANTISSA * 2 ^ EXPONENT
-# [M80] THE MANTISSA IS POSITIVE, WITH A ONE ASSUMED TO BE WHERE THE SIGN BIT IS
-# [M80] THE SIGN OF THE EXPONENT IS THE FIRST BIT OF THE EXPONENT
-# [M80] THE EXPONENT IS STORED IN EXCESS 200 I.E. WITH A BIAS OF 200
-# [M80] SO, THE EXPONENT IS A SIGNED 8-BIT NUMBER WITH 200 ADDED TO IT
-# [M80] AN EXPONENT OF ZERO MEANS THE NUMBER IS ZERO, THE OTHER BYTES ARE IGNORED
-# [M80] TO KEEP THE SAME NUMBER IN THE FAC WHILE SHIFTING:
-# [M80]  TO SHIFT RIGHT, EXP:=EXP+1
-# [M80]  TO SHIFT LEFT,  EXP:=EXP-1
-# [M80]
-# [M80] SO, IN MEMORY THE NUMBER LOOKS LIKE THIS:
-# [M80]  [BITS 17-24 OF THE MANTISSA]
-# [M80]  [BITS 9-16 OF THE MANTISSA]
-# [M80]  [THE SIGN IN BIT 7, BITS 2-8 OF THE MANTISSA ARE IN BITS 6-0]
-# [M80]  [THE EXPONENT AS A SIGNED NUMBER + 200]
-# [M80] (REMEMBER THAT BIT 1 OF THE MANTISSA IS ALWAYS A ONE)
-# [M80]
-# [M80] ARITHMETIC ROUTINE CALLING CONVENTIONS:
-# [M80]
-# [M80] FOR ONE ARGUMENT FUNCTIONS:
-# [M80]  THE ARGUMENT IS IN THE FAC, THE RESULT IS LEFT IN THE FAC
-# [M80] FOR TWO ARGUMENT OPERATIONS:
-# [M80]  THE FIRST ARGUMENT IS IN B,C,D,E I.E. THE "REGISTERS"
-# [M80]  THE SECOND ARGUMENT IS IN THE FAC
-# [M80]  THE RESULT IS LEFT IN THE FAC
-# [M80]
-# [M80] THE "S" ENTRY POINTS TO THE TWO ARGUMENT OPERATIONS HAVE (HL) POINTING TO
-# [M80] THE FIRST ARGUMENT INSTEAD OF THE FIRST ARGUMENT BEING IN THE REGISTERS.
-# [M80] MOVRM IS CALLED TO GET THE ARGUMENT IN THE REGISTERS.
-# [M80] THE "T" ENTRY POINTS ASSUME THE FIRST ARGUMENT IS ON THE STACK.
-# [M80] POPR IS USED TO GET THE ARGUMENT IN THE REGISTERS.
-# [M80] NOTE: THE "T" ENTRY POINTS SHOULD ALWAYS BE JUMPED TO AND NEVER CALLED
-# [M80] BECAUSE THE RETURN ADDRESS ON THE STACK WILL BE CONFUSED WITH THE NUMBER.
-# [M80]
-# [M80] ON THE STACK, THE TWO LO'S ARE PUSHED ON FIRST AND THEN THE HO AND SIGN.
-# [M80] THIS IS DONE SO IF A NUMBER IS STORED IN MEMORY, IT CAN BE PUSHED ON THE
-# [M80] STACK WITH TWO PUSHM'S.  THE LOWER BYTE OF EACH PART IS IN THE LOWER
-# [M80] MEMORY ADDRESS SO WHEN THE NUMBER IS POPPED INTO THE REGISTERS, THE HIGHER
-# [M80] ORDER BYTE WILL BE IN THE HIGHER ORDER REGISTER OF THE REGISTER PAIR, I.E.
-# [M80] THE HIGHER ORDER BYTE WILL BE POPPED INTO B, D OR H.
-
-
-# [M80] FACLO   equ     $38E4   ;[M80] LOW ORDER OF MANTISSA
-# {M80} FACMO   equ     $38E5   ;[M80] MIDDLE ORDER OF MANTISSA
-# [M80] FACHO   equ     $38E6   ;[M80] HIGH ORDER OF MANTISSA
-# [M80] FAC     equ     $38E7   ;[M80] EXPONENT
-# [M80] FBUFFR  equ     $38E8   ;[M80] BUFFER FOR FOUT  (14 bytes)
-# [M65] RESHO   equ     $38F6   ;[M65] RESULT OF MULTIPLIER AND DIVIDER
-# [M65] RESMO   equ     $38F7   ;;RESMO and RESLO are loaded into and stored from HL
-# {M65} RESLO   equ     $38F8   ;
-
-# FOUT $1680       convert number in FAC to string in FBUFFR
-
-
 print(
     """
 ; RST
@@ -138,7 +65,7 @@ QINT:    equ $1586      ;
 INT:     equ $15B1      ; FAC = int(FAC)
 FIN:     equ $15E5      ;
 FADDT:   equ $165C      ; FAC = ARG_from_stack + FAC 
-FOUT:    equ $1680      ;
+FOUT:    equ $1680      ; Convert number in FAC to string in FBUFFR+1
 SQR:     equ $1775      ; FAC = sqrt(FAC)  (FAC = FAC ^ 0.5)
 FPWRT:   equ $177E      ; FAC = ARG_from_stack ^ FAC
 FPWR:    equ $1780      ; FAC = ARG ^ FAC
@@ -149,17 +76,17 @@ SIN:     equ $18DD      ; FAC = sin(FAC)
 TAN:     equ $1970      ; FAC = tan(FAC)
 ATN:     equ $1985      ; FAC = atan(FAC) - not implemented 8K BASIC
 
-
+FRCINT:  equ $0682      ; de = (int)FAC
 GIVINT:  equ $0B21      ; FAC = float(MSB:a LSB:c)
 FLOATB:  equ $0B22      ; FAC = float(MSB:a LSB:b)
 FLOATD:  equ $0B23      ; FAC = float(MSB:a LSB:d)
-
-FRCINT:  equ $0682      ; de = (int)FAC
-
 STROUT:  equ $0E9D
 CRDO:    equ $19EA
 
-
+FACLO:   equ $38E4      ; FAC low order of mantissa
+FACMO:   equ $38E5      ; FAC middle order of mantissa
+FACHO:   equ $38E6      ; FAC high order of mantissa
+FAC:     equ $38E7      ; FAC exponent
 FBUFFR:  equ $38E8
 
     org $38E1
@@ -251,6 +178,14 @@ def emit_binary_op(expr, func):
     print(f"    call {func}", file=f)
 
 
+def emit_compare(expr):
+    emit_expr(expr[1])
+    print(f"    push de", file=f)
+    emit_expr(expr[2])
+    print(f"    pop  hl", file=f)
+    print(f"    rst  COMPAR", file=f)
+
+
 def emit_expr(expr):
     if isinstance(expr, float):
         assign_float_to_fac(expr)
@@ -332,16 +267,49 @@ def emit_expr(expr):
             print(f"    or   d", file=f)
             print(f"    call GIVINT", file=f)
 
-        elif expr[0] == Operation.LT:
-            emit_expr(expr[1])
-            print(f"    push de", file=f)
-            emit_expr(expr[2])
-            print(f"    pop  hl", file=f)
-            # print(f"    rst  COMPAR", file=f)
-            # print(f"    ld   a, -1", file=f)
-            # print(f"    jp   C, .l", file=f)
+        elif expr[0] == Operation.EQ:
+            emit_compare(expr)
+            print(f"    ld   a, -1", file=f)
+            print(f"    jp   Z, .l", file=f)
             print(f"    xor  a", file=f)
-            print(f".l: call FLOATB", file=f)
+            print(f".l: call FLOAT", file=f)
+
+        elif expr[0] == Operation.NE:
+            emit_compare(expr)
+            print(f"    ld   a, 0", file=f)
+            print(f"    jp   Z, .l", file=f)
+            print(f"    ld   a, -1", file=f)
+            print(f".l: call FLOAT", file=f)
+
+        elif expr[0] == Operation.LT:
+            emit_compare(expr)
+            print(f"    ld   a, -1", file=f)
+            print(f"    jp   C, .l", file=f)
+            print(f"    xor  a", file=f)
+            print(f".l: call FLOAT", file=f)
+
+        elif expr[0] == Operation.LE:
+            emit_compare(expr)
+            print(f"    ld   a, -1", file=f)
+            print(f"    jp   C, .l", file=f)
+            print(f"    jp   Z, .l", file=f)
+            print(f"    xor  a", file=f)
+            print(f".l: call FLOAT", file=f)
+
+        elif expr[0] == Operation.GE:
+            emit_compare(expr)
+            print(f"    ld   a, 0", file=f)
+            print(f"    jp   C, .l", file=f)
+            print(f"    ld   a, -1", file=f)
+            print(f".l: call FLOAT", file=f)
+
+        elif expr[0] == Operation.GT:
+            emit_compare(expr)
+            print(f"    ld   a, 0", file=f)
+            print(f"    jp   C, .l", file=f)
+            print(f"    jp   Z, .l", file=f)
+            print(f"    ld   a, -1", file=f)
+            print(f".l: call FLOAT", file=f)
 
         else:
             print(f"Unhandled expression {expr}")

@@ -55,9 +55,9 @@ Statements.__repr__ = StatementsRepr
 Tokens = Enum(
     "Tokens",
     [
-        "<>",
-        "<=",
-        ">=",
+        "<>",  # Done
+        "<=",  # Done
+        ">=",  # Done
         "TAB(",
         "TO",
         "SPC(",
@@ -106,12 +106,12 @@ class Operation(Enum):
     ADD = auto()  # Done
     SUB = auto()  # Done
     POW = auto()  # Done
-    EQ = auto()
-    NE = auto()
-    LT = auto()
-    LE = auto()
-    GT = auto()
-    GE = auto()
+    EQ = auto()  # Done
+    NE = auto()  # Done
+    LT = auto()  # Done
+    LE = auto()  # Done
+    GT = auto()  # Done
+    GE = auto()  # Done
     NOT = auto()  # Done
     AND = auto()  # Done
     OR = auto()  # Done
