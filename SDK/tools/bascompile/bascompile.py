@@ -180,10 +180,10 @@ def emit_binary_op(expr, func):
 
 def emit_compare(expr):
     emit_expr(expr[1])
-    print(f"    push de", file=f)
+    push_fac()
     emit_expr(expr[2])
-    print(f"    pop  hl", file=f)
-    print(f"    rst  COMPAR", file=f)
+    pop_arg()
+    print(f"    call FCOMP", file=f)
 
 
 def emit_expr(expr):
@@ -269,13 +269,15 @@ def emit_expr(expr):
 
         elif expr[0] == Operation.EQ:
             emit_compare(expr)
+            print(f"    cp   0", file=f)
+            print(f"    ld   a, 0", file=f)
+            print(f"    jp   NZ, .l", file=f)
             print(f"    ld   a, -1", file=f)
-            print(f"    jp   Z, .l", file=f)
-            print(f"    xor  a", file=f)
             print(f".l: call FLOAT", file=f)
 
         elif expr[0] == Operation.NE:
             emit_compare(expr)
+            print(f"    cp   0", file=f)
             print(f"    ld   a, 0", file=f)
             print(f"    jp   Z, .l", file=f)
             print(f"    ld   a, -1", file=f)
@@ -283,31 +285,33 @@ def emit_expr(expr):
 
         elif expr[0] == Operation.LT:
             emit_compare(expr)
+            print(f"    cp   1", file=f)
+            print(f"    ld   a, 0", file=f)
+            print(f"    jp   NZ, .l", file=f)
             print(f"    ld   a, -1", file=f)
-            print(f"    jp   C, .l", file=f)
-            print(f"    xor  a", file=f)
             print(f".l: call FLOAT", file=f)
 
         elif expr[0] == Operation.LE:
             emit_compare(expr)
-            print(f"    ld   a, -1", file=f)
-            print(f"    jp   C, .l", file=f)
+            print(f"    cp   -1", file=f)
+            print(f"    ld   a, 0", file=f)
             print(f"    jp   Z, .l", file=f)
-            print(f"    xor  a", file=f)
+            print(f"    ld   a, -1", file=f)
             print(f".l: call FLOAT", file=f)
 
         elif expr[0] == Operation.GE:
             emit_compare(expr)
+            print(f"    cp   1", file=f)
             print(f"    ld   a, 0", file=f)
-            print(f"    jp   C, .l", file=f)
+            print(f"    jp   Z, .l", file=f)
             print(f"    ld   a, -1", file=f)
             print(f".l: call FLOAT", file=f)
 
         elif expr[0] == Operation.GT:
             emit_compare(expr)
+            print(f"    cp   -1", file=f)
             print(f"    ld   a, 0", file=f)
-            print(f"    jp   C, .l", file=f)
-            print(f"    jp   Z, .l", file=f)
+            print(f"    jp   NZ, .l", file=f)
             print(f"    ld   a, -1", file=f)
             print(f".l: call FLOAT", file=f)
 
@@ -340,9 +344,14 @@ for line in lines:
                 print_fac()
 
             print(f"    call CRDO", file=f)
+        # elif stmt[0] == Statements.IF:
+        #     emit_expr(stmt[1])
+        #     print(stmt)
+        #     exit(1)
 
         else:
             print(f"Unhandled statement {stmt}")
+            exit(1)
 
 print(
     """
