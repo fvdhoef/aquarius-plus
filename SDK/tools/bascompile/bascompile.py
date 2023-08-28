@@ -323,35 +323,52 @@ def emit_expr(expr):
         exit(1)
 
 
+def emit_statement(stmt):
+    put_nxt_line_lbl = False
+    print(f"    ; {stmt}", file=f)
+    if stmt[0] == Statements.LET:
+        varName = stmt[1].name
+        expr = stmt[2]
+        emit_expr(expr)
+        save_fac(varName)
+
+    elif stmt[0] == Statements.GOTO:
+        print(f"    jp   l{stmt[1]:.0f}", file=f)
+
+    elif stmt[0] == Statements.END:
+        print(f"    jp   end", file=f)
+
+    elif stmt[0] == Statements.PRINT:
+        for expr in stmt[1]:
+            emit_expr(expr)
+            print_fac()
+        print(f"    call CRDO", file=f)
+
+    elif stmt[0] == Statements.IF:
+        emit_expr(stmt[1])
+        print(f"    ld   a,(FAC)", file=f)
+        print(f"    or   a", file=f)
+        print(f"    jp   z, .nxtln", file=f)
+        emit_statement(stmt[2])
+        put_nxt_line_lbl = True
+
+    else:
+        print(f"Unhandled statement {stmt}")
+        exit(1)
+
+    return put_nxt_line_lbl
+
+
 for line in lines:
     print(f"l{line[0]}:", file=f)
 
+    put_nxt_line_lbl = False
     for stmt in line[1]:
-        print(f"    ; {stmt}", file=f)
-        if stmt[0] == Statements.LET:
-            varName = stmt[1].name
-            expr = stmt[2]
-            emit_expr(expr)
-            save_fac(varName)
+        if emit_statement(stmt):
+            put_nxt_line_lbl = True
 
-        elif stmt[0] == Statements.GOTO:
-            print(f"    jp   l{stmt[1]:.0f}", file=f)
-        elif stmt[0] == Statements.END:
-            print(f"    jp   end", file=f)
-        elif stmt[0] == Statements.PRINT:
-            for expr in stmt[1]:
-                emit_expr(expr)
-                print_fac()
-
-            print(f"    call CRDO", file=f)
-        # elif stmt[0] == Statements.IF:
-        #     emit_expr(stmt[1])
-        #     print(stmt)
-        #     exit(1)
-
-        else:
-            print(f"Unhandled statement {stmt}")
-            exit(1)
+    if put_nxt_line_lbl:
+        print(f".nxtln:", file=f)
 
 print(
     """
