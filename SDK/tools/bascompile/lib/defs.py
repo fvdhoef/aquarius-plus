@@ -63,7 +63,6 @@ Tokens = Enum(
         "SPC(",
         "INKEY$",
         "THEN",
-        "NOT",
         "STEP",
         "AND",
         "OR",
@@ -71,6 +70,7 @@ Tokens = Enum(
         "FRE(",
         "LPOS(",
         "POS(",
+        "NOT",  # Done
         "INT(",  # FP-lib: done
         "SGN(",  # FP-lib: done
         "ABS(",  # FP-lib: done
@@ -100,33 +100,33 @@ Tokens = Enum(
 
 
 class Operation(Enum):
-    NEGATE = auto()
-    MULT = auto()
-    DIV = auto()
-    ADD = auto()
-    SUB = auto()
-    POW = auto()
+    NEGATE = auto()  # Done
+    MULT = auto()  # Done
+    DIV = auto()  # Done
+    ADD = auto()  # Done
+    SUB = auto()  # Done
+    POW = auto()  # Done
     EQ = auto()
     NE = auto()
     LT = auto()
     LE = auto()
     GT = auto()
     GE = auto()
-    NOT = auto()
-    AND = auto()
-    OR = auto()
+    NOT = auto()  # Done
+    AND = auto()  # Done
+    OR = auto()  # Done
 
-    SIN = auto()
-    COS = auto()
-    TAN = auto()
-    ATN = auto()
-    LOG = auto()
-    EXP = auto()
-    RND = auto()
-    SQR = auto()
-    ABS = auto()
-    SGN = auto()
-    INT = auto()
+    SIN = auto()  # Done
+    COS = auto()  # Done
+    TAN = auto()  # Done
+    ATN = auto()  # Done
+    LOG = auto()  # Done
+    EXP = auto()  # Done
+    RND = auto()  # Done
+    SQR = auto()  # Done
+    ABS = auto()  # Done
+    SGN = auto()  # Done
+    INT = auto()  # Done
 
     CHRs = auto()
 

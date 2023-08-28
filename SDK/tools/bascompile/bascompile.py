@@ -123,7 +123,7 @@ FMULT:   equ $13CB      ; FAC = ARG * FAC
 FDIVT:   equ $142D      ; FAC = ARG_from_stack / FAC
 FDIV:    equ $142F      ; FAC = ARG / FAC
 SGN:     equ $14F5      ; FAC = ARG < 0 ? -1 : ARG > 0 ? 1 : 0
-FLOAT:   equ $14F6      ;
+FLOAT:   equ $14F6      ; FAC = float(A)
 FLOATR:  equ $14FB      ;
 ABS:     equ $1509      ; FAC = abs(FAC)
 NEG:     equ $150B      ; FAC = -FAC
@@ -135,7 +135,7 @@ MOVRM:   equ $1531      ; ARG = (hl)
 MOVMF:   equ $153A      ; (hl) = FAC
 FCOMP:   equ $155B      ; A=1 when ARG<FAC, A=0 when ARG==FAC, A=-1 when ARG>FAC
 QINT:    equ $1586      ;
-INT:     equ $15B1      ;
+INT:     equ $15B1      ; FAC = int(FAC)
 FIN:     equ $15E5      ;
 FADDT:   equ $165C      ; FAC = ARG_from_stack + FAC 
 FOUT:    equ $1680      ;
@@ -150,8 +150,15 @@ TAN:     equ $1970      ; FAC = tan(FAC)
 ATN:     equ $1985      ; FAC = atan(FAC) - not implemented 8K BASIC
 
 
+GIVINT:  equ $0B21      ; FAC = float(MSB:a LSB:c)
+FLOATB:  equ $0B22      ; FAC = float(MSB:a LSB:b)
+FLOATD:  equ $0B23      ; FAC = float(MSB:a LSB:d)
+
+FRCINT:  equ $0682      ; de = (int)FAC
+
 STROUT:  equ $0E9D
 CRDO:    equ $19EA
+
 
 FBUFFR:  equ $38E8
 
@@ -286,6 +293,56 @@ def emit_expr(expr):
             emit_unary_op(expr, "SGN")
         elif expr[0] == Operation.INT:
             emit_unary_op(expr, "INT")
+        elif expr[0] == Operation.NOT:
+            emit_expr(expr[1])
+            print(f"    call FRCINT", file=f)
+            # Should we check Z flag here for out of range?
+            print(f"    ld   a, $FF", file=f)
+            print(f"    xor  e", file=f)
+            print(f"    ld   b, a", file=f)
+            print(f"    ld   a, $FF", file=f)
+            print(f"    xor  d", file=f)
+            print(f"    call FLOATB", file=f)
+
+        elif expr[0] == Operation.AND:
+            emit_expr(expr[1])
+            print(f"    call FRCINT", file=f)
+            print(f"    push de", file=f)
+            emit_expr(expr[2])
+            print(f"    call FRCINT", file=f)
+            print(f"    pop  bc", file=f)
+            print(f"    ld   a,c", file=f)
+            print(f"    and  e", file=f)
+            print(f"    ld   c,a", file=f)
+            print(f"    ld   a,b", file=f)
+            print(f"    and  d", file=f)
+            print(f"    call GIVINT", file=f)
+
+        elif expr[0] == Operation.OR:
+            emit_expr(expr[1])
+            print(f"    call FRCINT", file=f)
+            print(f"    push de", file=f)
+            emit_expr(expr[2])
+            print(f"    call FRCINT", file=f)
+            print(f"    pop  bc", file=f)
+            print(f"    ld   a,c", file=f)
+            print(f"    or   e", file=f)
+            print(f"    ld   c,a", file=f)
+            print(f"    ld   a,b", file=f)
+            print(f"    or   d", file=f)
+            print(f"    call GIVINT", file=f)
+
+        elif expr[0] == Operation.LT:
+            emit_expr(expr[1])
+            print(f"    push de", file=f)
+            emit_expr(expr[2])
+            print(f"    pop  hl", file=f)
+            # print(f"    rst  COMPAR", file=f)
+            # print(f"    ld   a, -1", file=f)
+            # print(f"    jp   C, .l", file=f)
+            print(f"    xor  a", file=f)
+            print(f".l: call FLOATB", file=f)
+
         else:
             print(f"Unhandled expression {expr}")
             exit(1)

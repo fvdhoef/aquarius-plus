@@ -195,42 +195,42 @@ def parseRelationalExpression(parts):
         if parts[0] == "=":
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result == rhs else 0
+                result = -1.0 if result == rhs else 0.0
             else:
                 result = (Operation.EQ, result, rhs)
 
         elif parts[0] == Tokens["<>"]:
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result != rhs else 0
+                result = -1.0 if result != rhs else 0.0
             else:
                 result = (Operation.NE, result, rhs)
 
         elif parts[0] == "<":
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result < rhs else 0
+                result = -1.0 if result < rhs else 0.0
             else:
                 result = (Operation.LT, result, rhs)
 
         elif parts[0] == ">":
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result > rhs else 0
+                result = -1.0 if result > rhs else 0.0
             else:
                 result = (Operation.GT, result, rhs)
 
         elif parts[0] == Tokens["<="]:
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result <= rhs else 0
+                result = -1.0 if result <= rhs else 0.0
             else:
                 result = (Operation.LE, result, rhs)
 
         elif parts[0] == Tokens[">="]:
             rhs, parts = parseRelationalExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
-                result = -1 if result >= rhs else 0
+                result = -1.0 if result >= rhs else 0.0
             else:
                 result = (Operation.GE, result, rhs)
 
