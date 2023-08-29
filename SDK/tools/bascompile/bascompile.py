@@ -422,8 +422,6 @@ def emit_statement(stmt):
 
             emit_lbl(lbl)
 
-        pass
-
     elif stmt[0] == Statements.POKE:
         emit_expr(stmt[1])
         emit(f"call FRCINT")
