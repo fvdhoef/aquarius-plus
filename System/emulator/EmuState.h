@@ -4,6 +4,7 @@
 #include "z80.h"
 #include "Video.h"
 #include "AY8910.h"
+#include <deque>
 
 // 3579545 Hz -> 59659 cycles / frame
 // 7159090 Hz -> 119318 cycles / frame
@@ -73,6 +74,18 @@ struct EmuState {
     uint8_t    handCtrl2         = 0xFF; // Mini-expander - Hand controller 2 state (connected to port 2 of AY-3-8910)
     bool       cartridgeInserted = false;
     size_t     systemRomSize     = 0;
+
+    // CPU tracing
+    struct Z80TraceEntry {
+        Z80Regs  r1;
+        Z80Regs  r2;
+        uint16_t pc;
+        char     bytes[32];
+        char     instrStr[32];
+    };
+    std::deque<Z80TraceEntry> cpuTrace;
+    bool                      traceEnable = false;
+    int                       traceDepth  = 128;
 
     // Virtual typing from command-line argument
     std::string typeInStr;

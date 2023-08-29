@@ -69,6 +69,7 @@ void Config::load() {
         showIoRegsWindow    = getBoolValue(root, "showIoRegsWindow", false);
         showBreakpoints     = getBoolValue(root, "showBreakpoints", false);
         showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
+        showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
 
         emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
 
@@ -120,6 +121,7 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showIoRegsWindow", showIoRegsWindow);
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
     cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
+    cJSON_AddBoolToObject(root, "showCpuTrace", showCpuTrace);
 
     cJSON_AddBoolToObject(root, "enableBreakpoints", emuState.enableBreakpoints);
 

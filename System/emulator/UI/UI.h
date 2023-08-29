@@ -28,6 +28,7 @@ private:
     void wndBreakpoints(bool *p_open);
     void wndIoRegs(bool *p_open);
     void wndAssemblyListing(bool *p_open);
+    void wndCpuTrace(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
     SDL_Window   *window   = nullptr;
