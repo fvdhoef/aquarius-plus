@@ -67,7 +67,8 @@ unsigned EmuState::emulate() {
     int delta = z80ctx.tstates * 2;
 
     if (traceEnable) {
-        auto &entry = cpuTrace.emplace_back();
+        cpuTrace.emplace_back();
+        auto &entry = cpuTrace.back();
         entry.pc    = z80ctx.PC;
         entry.r1    = z80ctx.R1;
         entry.r2    = z80ctx.R2;

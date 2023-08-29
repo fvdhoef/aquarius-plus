@@ -466,7 +466,7 @@ void UI::wndCpuState(bool *p_open) {
             emuState.z80ctx.tstates = 0;
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
 
-            unsigned instLen = strlen(tmp1) / 3;
+            unsigned instLen = (unsigned)strlen(tmp1) / 3;
             bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0) || (strncmp(tmp2, "RST ", 4) == 0);
 
             if (isCall) {
