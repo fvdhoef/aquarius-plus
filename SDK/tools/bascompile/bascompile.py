@@ -14,6 +14,7 @@ parser.add_argument("output", help="Output file")
 args = parser.parse_args()
 
 lines, variableNames = parse(args.input)
+forLoopNames = set()
 
 
 f = open(args.output, "wt")
@@ -21,8 +22,39 @@ f = open(args.output, "wt")
 # String descriptor: four bytes: Length, ignored, Text Address
 
 
-print(
-    """
+# Info from https://community.embarcadero.com/index.php/article/technical-articles/162-programming/14799-converting-between-microsoft-binary-and-ieee-forma
+def float_to_mbf32(value):
+    ieee_val = struct.unpack("I", struct.pack("f", value))[0]
+    if ieee_val == 0:
+        return 0
+
+    mbf_exp = (((ieee_val >> 23) & 0xFF) + 2) & 0xFF
+    sign = ieee_val >> 31
+    mbf_val = (mbf_exp << 24) | (sign << 23) | (ieee_val & 0x7FFFFF)
+    return mbf_val
+
+
+lbl_idx = 1
+
+
+def get_lbl():
+    global lbl_idx
+    tmp_lbl = f"l{lbl_idx}"
+    lbl_idx += 1
+    return tmp_lbl
+
+
+def emit_lbl(name):
+    print(f"{name}:", file=f)
+
+
+def emit(instr):
+    print(f"    {instr}", file=f)
+
+
+def emit_hdr():
+    print(
+        """
 ; RST
 START:   equ $00     ; 0 Start/Reboot
 SYNCHR:  equ $08     ; 1 SN Error if next character does not match
@@ -96,78 +128,62 @@ FBUFFR:  equ $38E8
     db "AQPLUS"
     db $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
     db $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
-    jp main
-
-main:
-    push hl
-
-""",
-    file=f,
-)
-
-
-# Info from https://community.embarcadero.com/index.php/article/technical-articles/162-programming/14799-converting-between-microsoft-binary-and-ieee-forma
-def float_to_mbf32(value):
-    ieee_val = struct.unpack("I", struct.pack("f", value))[0]
-    if ieee_val == 0:
-        return 0
-
-    mbf_exp = (((ieee_val >> 23) & 0xFF) + 2) & 0xFF
-    sign = ieee_val >> 31
-    mbf_val = (mbf_exp << 24) | (sign << 23) | (ieee_val & 0x7FFFFF)
-    return mbf_val
+    jp entry
+    """,
+        file=f,
+    )
 
 
 def assign_float_to_arg(val):
     mbf_val = float_to_mbf32(val)
-    print(f"    ld   bc, ${mbf_val >> 16:04x}", file=f)
-    print(f"    ld   de, ${mbf_val & 0xFFFF:04x}", file=f)
+    emit(f"ld   bc, ${mbf_val >> 16:04x}")
+    emit(f"ld   de, ${mbf_val & 0xFFFF:04x}")
 
 
 def assign_float_to_fac(val):
     assign_float_to_arg(val)
-    print(f"    call MOVFR", file=f)
+    emit(f"call MOVFR")
 
 
 def save_arg(varName):
-    print(f"    ld   (v{varName}+2), bc", file=f)
-    print(f"    ld   (v{varName}), de", file=f)
+    emit(f"ld   (var{varName}+2), bc")
+    emit(f"ld   (var{varName}), de")
 
 
 def save_fac(varName):
-    print(f"    ld   hl, v{varName}", file=f)
-    print(f"    call MOVMF", file=f)
+    emit(f"ld   hl, var{varName}")
+    emit(f"call MOVMF")
 
 
 def load_fac(varName):
-    print(f"    ld   hl, v{varName}", file=f)
-    print(f"    call MOVFM", file=f)
+    emit(f"ld   hl, var{varName}")
+    emit(f"call MOVFM")
 
 
 def load_arg(varName):
-    print(f"    ld   hl, v{varName}", file=f)
-    print(f"    call MOVRM", file=f)
+    emit(f"ld   hl, var{varName}")
+    emit(f"call MOVRM")
 
 
 def print_fac():
     # This destructs the value of FAC
-    print(f"    call FOUT", file=f)
-    print(f"    ld   hl, FBUFFR+1", file=f)
-    print(f"    call STROUT", file=f)
+    emit(f"call FOUT")
+    emit(f"ld   hl, FBUFFR+1")
+    emit(f"call STROUT")
 
 
 def push_fac():
-    print(f"    call PUSHF", file=f)
+    emit(f"call PUSHF")
 
 
 def pop_arg():
-    print(f"    pop bc", file=f)
-    print(f"    pop de", file=f)
+    emit(f"pop  bc")
+    emit(f"pop  de")
 
 
 def emit_unary_op(expr, func):
     emit_expr(expr[1])
-    print(f"    call {func}", file=f)
+    emit(f"call {func}")
 
 
 def emit_binary_op(expr, func):
@@ -175,7 +191,7 @@ def emit_binary_op(expr, func):
     push_fac()
     emit_expr(expr[2])
     pop_arg()
-    print(f"    call {func}", file=f)
+    emit(f"call {func}")
 
 
 def emit_compare(expr):
@@ -183,7 +199,7 @@ def emit_compare(expr):
     push_fac()
     emit_expr(expr[2])
     pop_arg()
-    print(f"    call FCOMP", file=f)
+    emit(f"call FCOMP")
 
 
 def emit_expr(expr):
@@ -230,90 +246,102 @@ def emit_expr(expr):
             emit_unary_op(expr, "INT")
         elif expr[0] == Operation.NOT:
             emit_expr(expr[1])
-            print(f"    call FRCINT", file=f)
+            emit(f"call FRCINT")
             # Should we check Z flag here for out of range?
-            print(f"    ld   a, $FF", file=f)
-            print(f"    xor  e", file=f)
-            print(f"    ld   b, a", file=f)
-            print(f"    ld   a, $FF", file=f)
-            print(f"    xor  d", file=f)
-            print(f"    call FLOATB", file=f)
+            emit(f"ld   a, $FF")
+            emit(f"xor  e")
+            emit(f"ld   b, a")
+            emit(f"ld   a, $FF")
+            emit(f"xor  d")
+            emit(f"call FLOATB")
 
         elif expr[0] == Operation.AND:
             emit_expr(expr[1])
-            print(f"    call FRCINT", file=f)
-            print(f"    push de", file=f)
+            emit(f"call FRCINT")
+            emit(f"push de")
             emit_expr(expr[2])
-            print(f"    call FRCINT", file=f)
-            print(f"    pop  bc", file=f)
-            print(f"    ld   a,c", file=f)
-            print(f"    and  e", file=f)
-            print(f"    ld   c,a", file=f)
-            print(f"    ld   a,b", file=f)
-            print(f"    and  d", file=f)
-            print(f"    call GIVINT", file=f)
+            emit(f"call FRCINT")
+            emit(f"pop  bc")
+            emit(f"ld   a,c")
+            emit(f"and  e")
+            emit(f"ld   c,a")
+            emit(f"ld   a,b")
+            emit(f"and  d")
+            emit(f"call GIVINT")
 
         elif expr[0] == Operation.OR:
             emit_expr(expr[1])
-            print(f"    call FRCINT", file=f)
-            print(f"    push de", file=f)
+            emit(f"call FRCINT")
+            emit(f"push de")
             emit_expr(expr[2])
-            print(f"    call FRCINT", file=f)
-            print(f"    pop  bc", file=f)
-            print(f"    ld   a,c", file=f)
-            print(f"    or   e", file=f)
-            print(f"    ld   c,a", file=f)
-            print(f"    ld   a,b", file=f)
-            print(f"    or   d", file=f)
-            print(f"    call GIVINT", file=f)
+            emit(f"call FRCINT")
+            emit(f"pop  bc")
+            emit(f"ld   a,c")
+            emit(f"or   e")
+            emit(f"ld   c,a")
+            emit(f"ld   a,b")
+            emit(f"or   d")
+            emit(f"call GIVINT")
 
         elif expr[0] == Operation.EQ:
             emit_compare(expr)
-            print(f"    cp   0", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   NZ, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   0")
+            emit(f"ld   a, 0")
+            emit(f"jp   NZ, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         elif expr[0] == Operation.NE:
             emit_compare(expr)
-            print(f"    cp   0", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   Z, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   0")
+            emit(f"ld   a, 0")
+            emit(f"jp   Z, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         elif expr[0] == Operation.LT:
             emit_compare(expr)
-            print(f"    cp   1", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   NZ, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   1")
+            emit(f"ld   a, 0")
+            emit(f"jp   NZ, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         elif expr[0] == Operation.LE:
             emit_compare(expr)
-            print(f"    cp   -1", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   Z, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   -1")
+            emit(f"ld   a, 0")
+            emit(f"jp   Z, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         elif expr[0] == Operation.GE:
             emit_compare(expr)
-            print(f"    cp   1", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   Z, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   1")
+            emit(f"ld   a, 0")
+            emit(f"jp   Z, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         elif expr[0] == Operation.GT:
             emit_compare(expr)
-            print(f"    cp   -1", file=f)
-            print(f"    ld   a, 0", file=f)
-            print(f"    jp   NZ, .l", file=f)
-            print(f"    ld   a, -1", file=f)
-            print(f".l: call FLOAT", file=f)
+            lbl = get_lbl()
+            emit(f"cp   -1")
+            emit(f"ld   a, 0")
+            emit(f"jp   NZ, {lbl}")
+            emit(f"ld   a, -1")
+            emit_lbl(lbl)
+            emit(f"call FLOAT")
 
         else:
             print(f"Unhandled expression {expr}")
@@ -325,7 +353,8 @@ def emit_expr(expr):
 
 def emit_statement(stmt):
     put_nxt_line_lbl = False
-    print(f"    ; {stmt}", file=f)
+    emit(f"; {stmt}")
+
     if stmt[0] == Statements.LET:
         varName = stmt[1].name
         expr = stmt[2]
@@ -333,24 +362,52 @@ def emit_statement(stmt):
         save_fac(varName)
 
     elif stmt[0] == Statements.GOTO:
-        print(f"    jp   l{stmt[1]:.0f}", file=f)
+        emit(f"jp   line{stmt[1]:.0f}")
 
     elif stmt[0] == Statements.END:
-        print(f"    jp   end", file=f)
+        emit(f"jp   exit")
 
     elif stmt[0] == Statements.PRINT:
         for expr in stmt[1]:
             emit_expr(expr)
             print_fac()
-        print(f"    call CRDO", file=f)
+        emit(f"call CRDO")
 
     elif stmt[0] == Statements.IF:
         emit_expr(stmt[1])
-        print(f"    ld   a,(FAC)", file=f)
-        print(f"    or   a", file=f)
-        print(f"    jp   z, .nxtln", file=f)
+        emit(f"ld   a,(FAC)")
+        emit(f"or   a")
+        emit(f"jp   z, .next_line")
         emit_statement(stmt[2])
         put_nxt_line_lbl = True
+
+    elif stmt[0] == Statements.FOR:
+        forLoopNames.add(stmt[1].name)
+        emit_expr(stmt[2])
+        save_fac(stmt[1].name)
+        emit_expr(stmt[3])
+        emit(f"ld   hl, forTo{stmt[1].name}")
+        emit(f"call MOVRM")
+        emit_expr(stmt[4])
+        emit(f"ld   hl, forStp{stmt[1].name}")
+        emit(f"call MOVRM")
+        lbl = get_lbl()
+        emit(f"ld   bc, {lbl}")
+        emit(f"ld   (forPtr{stmt[1].name}), bc")
+        emit_lbl(lbl)
+
+    elif stmt[0] == Statements.NEXT:
+        pass
+
+    elif stmt[0] == Statements.POKE:
+        emit_expr(stmt[1])
+        emit(f"call FRCINT")
+        emit(f"push de")
+        emit_expr(stmt[2])
+        emit(f"call FRCINT")
+        emit(f"ld   a,e")
+        emit(f"pop  de")
+        emit(f"ld   (de),a")
 
     else:
         print(f"Unhandled statement {stmt}")
@@ -359,8 +416,12 @@ def emit_statement(stmt):
     return put_nxt_line_lbl
 
 
+emit_hdr()
+emit_lbl("entry")
+emit("push hl")
+
 for line in lines:
-    print(f"l{line[0]}:", file=f)
+    emit_lbl(f"line{line[0]}")
 
     put_nxt_line_lbl = False
     for stmt in line[1]:
@@ -368,19 +429,20 @@ for line in lines:
             put_nxt_line_lbl = True
 
     if put_nxt_line_lbl:
-        print(f".nxtln:", file=f)
+        emit_lbl(".next_line")
 
-print(
-    """
-end:
-    pop hl
-    ret
-""",
-    file=f,
-)
+emit_lbl("exit")
+emit("pop  hl")
+emit("ret")
+emit("")
 
-for name in variableNames:
-    print(f"v{name}: defd 0", file=f)
+for name in sorted(list(variableNames)):
+    print(f"var{name}: defd 0", file=f)
+
+for name in sorted(list(forLoopNames)):
+    print(f"forTo{name}: defd 0", file=f)
+    print(f"forStp{name}: defd 0", file=f)
+    print(f"forPtr{name}: defd 0", file=f)
 
 
 print(
