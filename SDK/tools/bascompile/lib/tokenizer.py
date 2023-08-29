@@ -29,8 +29,9 @@ def tokenize(inputFile):
         lineNr = int(m.group())
         line = line[m.end() :]
 
-        if lineNr < lastLineNr or lineNr > 65000:
+        if lineNr <= lastLineNr or lineNr > 65000:
             error(inputFile, idx, "Invalid line number")
+        lastLineNr = lineNr
 
         subLines = []
         subLine = []

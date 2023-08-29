@@ -203,6 +203,7 @@ def emit_compare(expr):
 
 
 def emit_expr(expr):
+    emit(f"; Expr: {expr}")
     if isinstance(expr, float):
         assign_float_to_fac(expr)
 
@@ -350,10 +351,12 @@ def emit_expr(expr):
         print(f"Unhandled expression {expr}")
         exit(1)
 
+    emit(f"; EndExpr")
+
 
 def emit_statement(stmt):
     put_nxt_line_lbl = False
-    emit(f"; {stmt}")
+    emit(f"; Stmt: {stmt}")
 
     if stmt[0] == Statements.LET:
         varName = stmt[1].name
@@ -386,17 +389,39 @@ def emit_statement(stmt):
         emit_expr(stmt[2])
         save_fac(stmt[1].name)
         emit_expr(stmt[3])
-        emit(f"ld   hl, forTo{stmt[1].name}")
-        emit(f"call MOVRM")
+        save_fac(f"To{stmt[1].name}")
         emit_expr(stmt[4])
-        emit(f"ld   hl, forStp{stmt[1].name}")
-        emit(f"call MOVRM")
+        save_fac(f"Stp{stmt[1].name}")
         lbl = get_lbl()
         emit(f"ld   bc, {lbl}")
-        emit(f"ld   (forPtr{stmt[1].name}), bc")
+        emit(f"ld   (varPtr{stmt[1].name}), bc")
         emit_lbl(lbl)
 
     elif stmt[0] == Statements.NEXT:
+        if stmt[1] == None:
+            print(f"Next without variable, not yet implemented: {stmt}")
+            exit(1)
+        else:
+            # LoopVar += LoopStep
+            emit_statement(
+                (
+                    Statements.LET,
+                    stmt[1],
+                    (Operation.ADD, stmt[1], Variable(f"Stp{stmt[1].name}")),
+                )
+            )
+            # LoopVar >= LoopTo?
+            emit_expr((Operation.GT, stmt[1], Variable(f"To{stmt[1].name}")))
+            emit(f"ld   a,(FAC)")
+            emit(f"or   a")
+            lbl = get_lbl()
+            emit(f"jp   nz, {lbl}")
+
+            emit(f"ld   hl, (varPtr{stmt[1].name})")
+            emit(f"jp   (hl)")
+
+            emit_lbl(lbl)
+
         pass
 
     elif stmt[0] == Statements.POKE:
@@ -413,12 +438,15 @@ def emit_statement(stmt):
         print(f"Unhandled statement {stmt}")
         exit(1)
 
+    emit(f"; EndStmt")
+
     return put_nxt_line_lbl
 
 
 emit_hdr()
 emit_lbl("entry")
 emit("push hl")
+emit("ld   (savedSP), sp")
 
 for line in lines:
     emit_lbl(f"line{line[0]}")
@@ -432,17 +460,21 @@ for line in lines:
         emit_lbl(".next_line")
 
 emit_lbl("exit")
+emit("ld   sp, (savedSP)")
 emit("pop  hl")
 emit("ret")
 emit("")
+
+print(f"savedSP: defw 0", file=f)
+
 
 for name in sorted(list(variableNames)):
     print(f"var{name}: defd 0", file=f)
 
 for name in sorted(list(forLoopNames)):
-    print(f"forTo{name}: defd 0", file=f)
-    print(f"forStp{name}: defd 0", file=f)
-    print(f"forPtr{name}: defd 0", file=f)
+    print(f"varTo{name}: defd 0", file=f)
+    print(f"varStp{name}: defd 0", file=f)
+    print(f"varPtr{name}: defd 0", file=f)
 
 
 print(

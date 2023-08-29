@@ -109,7 +109,7 @@ def parsePowerExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == "^":
-            rhs, parts = parsePowerExpression(parts[1:])
+            rhs, parts = parsePrimaryExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = pow(result, rhs)
             else:
@@ -145,14 +145,14 @@ def parseMultiplicativeExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == "*":
-            rhs, parts = parsePrimaryExpression(parts[1:])
+            rhs, parts = parseUnaryExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result *= rhs
             else:
                 result = (Operation.MULT, result, rhs)
 
         elif parts[0] == "/":
-            rhs, parts = parsePrimaryExpression(parts[1:])
+            rhs, parts = parseUnaryExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result /= rhs
             else:
@@ -169,14 +169,14 @@ def parseAdditiveExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == "+":
-            rhs, parts = parseAdditiveExpression(parts[1:])
+            rhs, parts = parseMultiplicativeExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = result + rhs
             else:
                 result = (Operation.ADD, result, rhs)
 
         elif parts[0] == "-":
-            rhs, parts = parseAdditiveExpression(parts[1:])
+            rhs, parts = parseMultiplicativeExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = result - rhs
             else:
@@ -193,42 +193,42 @@ def parseRelationalExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == "=":
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result == rhs else 0.0
             else:
                 result = (Operation.EQ, result, rhs)
 
         elif parts[0] == Tokens["<>"]:
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result != rhs else 0.0
             else:
                 result = (Operation.NE, result, rhs)
 
         elif parts[0] == "<":
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result < rhs else 0.0
             else:
                 result = (Operation.LT, result, rhs)
 
         elif parts[0] == ">":
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result > rhs else 0.0
             else:
                 result = (Operation.GT, result, rhs)
 
         elif parts[0] == Tokens["<="]:
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result <= rhs else 0.0
             else:
                 result = (Operation.LE, result, rhs)
 
         elif parts[0] == Tokens[">="]:
-            rhs, parts = parseRelationalExpression(parts[1:])
+            rhs, parts = parseAdditiveExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = -1.0 if result >= rhs else 0.0
             else:
@@ -262,7 +262,7 @@ def parseAndExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == Tokens.AND:
-            rhs, parts = parseAndExpression(parts[1:])
+            rhs, parts = parseNotExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = float(int(result) & int(rhs))
             else:
@@ -279,7 +279,7 @@ def parseOrExpression(parts):
 
     while len(parts) > 0:
         if parts[0] == Tokens.OR:
-            rhs, parts = parseOrExpression(parts[1:])
+            rhs, parts = parseAndExpression(parts[1:])
             if isinstance(result, float) and isinstance(rhs, float):
                 result = float(int(result) | int(rhs))
             else:
@@ -327,6 +327,8 @@ def parseStatement(parts):
 
         exprs = []
         while len(parts) > 0:
+            if parts[0] == ";":
+                parts = parts[1:]
             expr, parts = parseExpression(parts)
             exprs.append(expr)
         result = (Statements.PRINT, exprs)
