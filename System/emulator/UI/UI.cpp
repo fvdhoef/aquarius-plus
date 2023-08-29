@@ -487,8 +487,11 @@ void UI::wndCpuState(bool *p_open) {
         };
 
         auto drawAF = [](const std::string &name, uint16_t val) {
+            auto a  = val >> 8;
+            auto ch = (a >= 32 && a <= 0x7E) ? a : '.';
+
             ImGui::Text(
-                "%-3s %04X      %c %c %c %c %c %c %c %c",
+                "%-3s %04X      %c %c %c %c %c %c %c %c      %c",
                 name.c_str(), val,
                 (val & 0x80) ? 'S' : '-',
                 (val & 0x40) ? 'Z' : '-',
@@ -497,7 +500,8 @@ void UI::wndCpuState(bool *p_open) {
                 (val & 0x08) ? 'X' : '-',
                 (val & 0x04) ? 'P' : '-',
                 (val & 0x02) ? 'N' : '-',
-                (val & 0x01) ? 'C' : '-');
+                (val & 0x01) ? 'C' : '-',
+                ch);
         };
 
         drawAddrVal("PC", emuState.z80ctx.PC);
