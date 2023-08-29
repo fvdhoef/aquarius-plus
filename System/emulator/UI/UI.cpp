@@ -451,8 +451,27 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::PopStyleColor();
 
         ImGui::SameLine();
-        if (ImGui::Button("Step")) {
+        if (ImGui::Button("Step Into")) {
             emuState.emuMode = EmuState::Em_Step;
+        }
+        ImGui::SameLine();
+
+        ImGui::SameLine();
+        if (ImGui::Button("Step Over")) {
+            char tmp1[64];
+            char tmp2[64];
+            emuState.z80ctx.tstates = 0;
+            Z80Debug(&emuState.z80ctx, tmp1, tmp2);
+
+            unsigned instLen = strlen(tmp1) / 3;
+            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0) || (strncmp(tmp2, "RST ", 4) == 0);
+
+            if (isCall) {
+                emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
+                emuState.emuMode       = EmuState::Em_Running;
+            } else {
+                emuState.emuMode       = EmuState::Em_Step;
+            }
         }
         ImGui::SameLine();
 
@@ -818,6 +837,8 @@ void UI::wndAssemblyListing(bool *p_open) {
                                 EmuState::Breakpoint bp;
                                 bp.enabled = true;
                                 bp.value   = line.addr;
+                                bp.onR     = false;
+                                bp.onW     = false;
                                 bp.onX     = true;
                                 emuState.breakpoints.push_back(bp);
                                 ImGui::CloseCurrentPopup();
