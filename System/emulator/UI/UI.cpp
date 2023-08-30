@@ -220,6 +220,7 @@ void UI::mainLoop() {
                 ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
+                ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
 
                 if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
                     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
@@ -267,6 +268,8 @@ void UI::mainLoop() {
             wndBreakpoints(&config.showBreakpoints);
         if (config.showAssemblyListing)
             wndAssemblyListing(&config.showAssemblyListing);
+        if (config.showCpuTrace)
+            wndCpuTrace(&config.showCpuTrace);
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -451,8 +454,27 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::PopStyleColor();
 
         ImGui::SameLine();
-        if (ImGui::Button("Step")) {
+        if (ImGui::Button("Step Into")) {
             emuState.emuMode = EmuState::Em_Step;
+        }
+        ImGui::SameLine();
+
+        ImGui::SameLine();
+        if (ImGui::Button("Step Over")) {
+            char tmp1[64];
+            char tmp2[64];
+            emuState.z80ctx.tstates = 0;
+            Z80Debug(&emuState.z80ctx, tmp1, tmp2);
+
+            unsigned instLen = (unsigned)strlen(tmp1) / 3;
+            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0) || (strncmp(tmp2, "RST ", 4) == 0);
+
+            if (isCall) {
+                emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
+                emuState.emuMode       = EmuState::Em_Running;
+            } else {
+                emuState.emuMode = EmuState::Em_Step;
+            }
         }
         ImGui::SameLine();
 
@@ -487,8 +509,11 @@ void UI::wndCpuState(bool *p_open) {
         };
 
         auto drawAF = [](const std::string &name, uint16_t val) {
+            auto a  = val >> 8;
+            auto ch = (a >= 32 && a <= 0x7E) ? a : '.';
+
             ImGui::Text(
-                "%-3s %04X      %c %c %c %c %c %c %c %c",
+                "%-3s %04X      %c %c %c %c %c %c %c %c      %c",
                 name.c_str(), val,
                 (val & 0x80) ? 'S' : '-',
                 (val & 0x40) ? 'Z' : '-',
@@ -497,7 +522,8 @@ void UI::wndCpuState(bool *p_open) {
                 (val & 0x08) ? 'X' : '-',
                 (val & 0x04) ? 'P' : '-',
                 (val & 0x02) ? 'N' : '-',
-                (val & 0x01) ? 'C' : '-');
+                (val & 0x01) ? 'C' : '-',
+                ch);
         };
 
         drawAddrVal("PC", emuState.z80ctx.PC);
@@ -814,6 +840,8 @@ void UI::wndAssemblyListing(bool *p_open) {
                                 EmuState::Breakpoint bp;
                                 bp.enabled = true;
                                 bp.value   = line.addr;
+                                bp.onR     = false;
+                                bp.onW     = false;
                                 bp.onX     = true;
                                 emuState.breakpoints.push_back(bp);
                                 ImGui::CloseCurrentPopup();
@@ -850,6 +878,89 @@ void UI::wndAssemblyListing(bool *p_open) {
                         ImGui::SetScrollY(std::max(0.0f, itemsHeight * (i - 5)));
                         break;
                     }
+                }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+    ImGui::End();
+}
+
+void UI::wndCpuTrace(bool *p_open) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(700, 200), ImVec2(FLT_MAX, FLT_MAX));
+    bool open = ImGui::Begin("CPU trace", p_open, 0);
+    if (open) {
+        ImGui::Checkbox("Enable tracing", &emuState.traceEnable);
+        ImGui::SameLine();
+
+        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 8);
+
+        const int minDepth = 16, maxDepth = 16384;
+        ImGui::DragInt("Trace depth", &emuState.traceDepth, 1, minDepth, maxDepth);
+        emuState.traceDepth = std::max(minDepth, std::min(emuState.traceDepth, maxDepth));
+
+        ImGui::Separator();
+
+        if (ImGui::BeginTable("Table", 15, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("PC", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Bytes", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Instruction", 0);
+            ImGui::TableSetupColumn("SP", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("AF", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("BC", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("DE", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("HL", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("IX", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("IY", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("AF'", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("BC'", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("DE'", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("HL'", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
+
+            ImGuiListClipper clipper;
+            clipper.Begin((int)emuState.cpuTrace.size());
+
+            auto regColumn = [](uint16_t value, uint16_t prevValue) {
+                ImGui::TableNextColumn();
+
+                if (prevValue != value)
+                    ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32((ImVec4)ImColor(0, 128, 0)));
+
+                ImGui::Text("%04X", value);
+            };
+
+            while (clipper.Step()) {
+                for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                    auto &entry     = emuState.cpuTrace[row_n];
+                    auto &prevEntry = row_n < 1 ? entry : emuState.cpuTrace[row_n - 1];
+
+                    ImGui::TableNextRow();
+
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%4d", row_n - (emuState.traceDepth - 1));
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%04X", entry.pc);
+                    ImGui::TableNextColumn();
+                    ImGui::Text("%-11s", entry.bytes + 1);
+                    ImGui::TableNextColumn();
+                    ImGui::TextUnformatted(entry.instrStr);
+
+                    regColumn(entry.r1.wr.SP, prevEntry.r1.wr.SP);
+                    regColumn(entry.r1.wr.AF, prevEntry.r1.wr.AF);
+                    regColumn(entry.r1.wr.BC, prevEntry.r1.wr.BC);
+                    regColumn(entry.r1.wr.DE, prevEntry.r1.wr.DE);
+                    regColumn(entry.r1.wr.HL, prevEntry.r1.wr.HL);
+                    regColumn(entry.r1.wr.IX, prevEntry.r1.wr.IX);
+                    regColumn(entry.r1.wr.IY, prevEntry.r1.wr.IY);
+                    regColumn(entry.r2.wr.AF, prevEntry.r2.wr.AF);
+                    regColumn(entry.r2.wr.BC, prevEntry.r2.wr.BC);
+                    regColumn(entry.r2.wr.DE, prevEntry.r2.wr.DE);
+                    regColumn(entry.r2.wr.HL, prevEntry.r2.wr.HL);
+                    // ImGui::TextUnformatted(line.file.c_str());
                 }
             }
 

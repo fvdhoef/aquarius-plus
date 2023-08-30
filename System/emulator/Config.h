@@ -34,4 +34,5 @@ public:
     bool showIoRegsWindow    = false;
     bool showBreakpoints     = false;
     bool showAssemblyListing = false;
+    bool showCpuTrace        = false;
 };
