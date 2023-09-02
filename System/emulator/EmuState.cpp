@@ -66,7 +66,7 @@ unsigned EmuState::emulate() {
     Z80Execute(&z80ctx);
     int delta = z80ctx.tstates * 2;
 
-    if (traceEnable) {
+    if (traceEnable && (!z80ctx.halted || !prevHalted)) {
         cpuTrace.emplace_back();
         auto &entry = cpuTrace.back();
         entry.pc    = z80ctx.PC;
@@ -80,6 +80,7 @@ unsigned EmuState::emulate() {
             cpuTrace.pop_front();
         }
     }
+    prevHalted = z80ctx.halted;
 
     int prevLineHalfCycles = lineHalfCycles;
 
