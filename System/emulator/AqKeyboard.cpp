@@ -54,7 +54,8 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
 
     // Hand controller emulation
-    handController(scanCode, keyDown);
+    if (handController(scanCode, keyDown))
+        return;
 
     if (keyDown && scanCode == SCANCODE_CAPSLOCK) {
         ledStatusNext ^= CAPS_LOCK;
@@ -364,21 +365,57 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 case SCANCODE_PAGEDOWN: _keyDown(KEY_PGDN); break;
                 case SCANCODE_PAUSE: _keyDown(KEY_PAUSE); break;
                 case SCANCODE_PRINTSCREEN: _keyDown(KEY_PRTSCR); break;
-                case SCANCODE_MENU: _keyDown(KEY_MENU); break;
+                case SCANCODE_APPLICATION: _keyDown(KEY_MENU); break;
                 case SCANCODE_TAB: _keyDown(KEY_TAB); break;
 
-                case SCANCODE_F1: _keyDown(KEY_ALT); _keyDown(KEY_1); break;
-                case SCANCODE_F2: _keyDown(KEY_ALT); _keyDown(KEY_2); break;
-                case SCANCODE_F3: _keyDown(KEY_ALT); _keyDown(KEY_3); break;
-                case SCANCODE_F4: _keyDown(KEY_ALT); _keyDown(KEY_4); break;
-                case SCANCODE_F5: _keyDown(KEY_ALT); _keyDown(KEY_5); break;
-                case SCANCODE_F6: _keyDown(KEY_ALT); _keyDown(KEY_6); break;
-                case SCANCODE_F7: _keyDown(KEY_ALT); _keyDown(KEY_7); break;
-                case SCANCODE_F8: _keyDown(KEY_ALT); _keyDown(KEY_8); break;
-                case SCANCODE_F9: _keyDown(KEY_ALT); _keyDown(KEY_9); break;
-                case SCANCODE_F10: _keyDown(KEY_ALT); _keyDown(KEY_0); break;
-                case SCANCODE_F11: _keyDown(KEY_ALT); _keyDown(KEY_MINUS); break;
-                case SCANCODE_F12: _keyDown(KEY_ALT); _keyDown(KEY_EQUALS); break;
+                case SCANCODE_F1:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_1);
+                    break;
+                case SCANCODE_F2:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_2);
+                    break;
+                case SCANCODE_F3:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_3);
+                    break;
+                case SCANCODE_F4:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_4);
+                    break;
+                case SCANCODE_F5:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_5);
+                    break;
+                case SCANCODE_F6:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_6);
+                    break;
+                case SCANCODE_F7:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_7);
+                    break;
+                case SCANCODE_F8:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_8);
+                    break;
+                case SCANCODE_F9:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_9);
+                    break;
+                case SCANCODE_F10:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_0);
+                    break;
+                case SCANCODE_F11:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_MINUS);
+                    break;
+                case SCANCODE_F12:
+                    _keyDown(KEY_ALT);
+                    _keyDown(KEY_EQUALS);
+                    break;
             }
         }
     }
@@ -391,12 +428,14 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
-void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
+bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
     handCtrl1 = 0xFF;
     if ((ledStatus & SCROLL_LOCK) == 0) {
         handCtrl1Pressed = 0;
-        return;
+        return false;
     }
+
+    bool result = true;
 
     enum {
         UP    = (1 << 0),
@@ -422,6 +461,7 @@ void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
         case SCANCODE_F4: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K4) : (handCtrl1Pressed & ~K4); break;
         case SCANCODE_F5: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K5) : (handCtrl1Pressed & ~K5); break;
         case SCANCODE_F6: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K6) : (handCtrl1Pressed & ~K6); break;
+        default: result = false;
     }
 
     switch (handCtrl1Pressed & 0xF) {
@@ -447,6 +487,8 @@ void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
         handCtrl1 &= ~((1 << 7) | (1 << 1));
     if (handCtrl1Pressed & K6)
         handCtrl1 &= ~((1 << 7) | (1 << 0));
+
+    return result;
 }
 
 void AqKeyboard::updateMatrix() {
