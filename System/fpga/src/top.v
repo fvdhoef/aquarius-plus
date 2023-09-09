@@ -96,6 +96,15 @@ module top(
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
+    // Synchronize cassette and printer input
+    //////////////////////////////////////////////////////////////////////////
+    reg [2:0] cassette_in_r;
+    always @(posedge ebus_phi) cassette_in_r <= {cassette_in_r[1:0], cassette_in};
+
+    reg [2:0] printer_in_r;
+    always @(posedge ebus_phi) printer_in_r <= {printer_in_r[1:0], printer_in};
+
+    //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
     reg sysctrl_dis_regs_r;
@@ -185,9 +194,9 @@ module top(
         if (sel_io_ay8910)            rddata <= rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_sysctrl)           rddata <= {6'b0, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
-        if (sel_io_cassette)          rddata <= {7'b0, cassette_in};                            // IO $FC
+        if (sel_io_cassette)          rddata <= {7'b0, !cassette_in_r[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};                            // IO $FD
-        if (sel_io_printer)           rddata <= {7'b0, printer_in};                             // IO $FE
+        if (sel_io_printer)           rddata <= {7'b0, printer_in_r[2]};                        // IO $FE
         if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;                                // IO $FF
     end
 
