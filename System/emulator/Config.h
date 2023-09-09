@@ -35,4 +35,6 @@ public:
     bool showBreakpoints     = false;
     bool showAssemblyListing = false;
     bool showCpuTrace        = false;
+
+    int memEditMemSelect = 0;
 };
