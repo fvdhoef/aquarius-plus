@@ -1,0 +1,6 @@
+- Remove old R18 - done SPH
+- Remove old R22 - done SPH
+- Make J5 Ring float - done SPH
+- Make J6 Ring float - done SPH
+- Add new R18 at R22 location as 82 ohm 0603 thick film, trace between J6 Tip and GND - done SPH
+- Update expansion port footprint to remove third row - done SPH
