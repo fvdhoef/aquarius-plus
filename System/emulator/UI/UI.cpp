@@ -467,11 +467,21 @@ void UI::wndCpuState(bool *p_open) {
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
 
             unsigned instLen = (unsigned)strlen(tmp1) / 3;
-            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0) || (strncmp(tmp2, "RST ", 4) == 0);
+            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0);
+            bool     isRst   = (strncmp(tmp2, "RST ", 4) == 0);
 
-            if (isCall) {
+            if (isCall || isRst) {
                 emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
-                emuState.emuMode       = EmuState::Em_Running;
+
+                if (strncmp(tmp2, "RST 10H", 7) == 0 ||
+                    strncmp(tmp2, "RST 30H", 7) == 0) {
+
+                    // Skip one extra byte on RST 10H/30H, since on the Aq these
+                    // system calls absorb the byte following this instruction.
+                    emuState.tmpBreakpoint++;
+                }
+
+                emuState.emuMode = EmuState::Em_Running;
             } else {
                 emuState.emuMode = EmuState::Em_Step;
             }
@@ -653,7 +663,6 @@ static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
 
 void UI::wndMemEdit(bool *p_open) {
     static MemoryEditor memEdit;
-    static int          itemCurrent = 0;
 
     struct MemoryArea {
         MemoryArea(const std::string &_name, void *_data, size_t _size)
@@ -683,27 +692,33 @@ void UI::wndMemEdit(bool *p_open) {
         }
     }
 
+    auto &config = Config::instance();
+    if (config.memEditMemSelect < 0 || config.memEditMemSelect > (int)memAreas.size()) {
+        // Invalid setting, reset to 0
+        config.memEditMemSelect = 0;
+    }
+
     MemoryEditor::Sizes s;
-    memEdit.calcSizes(s, memAreas[itemCurrent].size, 0);
+    memEdit.calcSizes(s, memAreas[config.memEditMemSelect].size, 0);
     ImGui::SetNextWindowSize(ImVec2(s.windowWidth, s.windowWidth * 0.60f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(s.windowWidth, 150.0f), ImVec2(s.windowWidth, FLT_MAX));
 
     if (ImGui::Begin("Memory editor", p_open, ImGuiWindowFlags_NoScrollbar)) {
-        if (ImGui::BeginCombo("Memory select", memAreas[itemCurrent].name.c_str(), ImGuiComboFlags_HeightLargest)) {
+        if (ImGui::BeginCombo("Memory select", memAreas[config.memEditMemSelect].name.c_str(), ImGuiComboFlags_HeightLargest)) {
             for (int i = 0; i < (int)memAreas.size(); i++) {
-                if (ImGui::Selectable(memAreas[i].name.c_str(), itemCurrent == i)) {
-                    itemCurrent = i;
+                if (ImGui::Selectable(memAreas[i].name.c_str(), config.memEditMemSelect == i)) {
+                    config.memEditMemSelect = i;
                 }
             }
             ImGui::EndCombo();
         }
         ImGui::Separator();
 
-        memEdit.readFn  = (itemCurrent == 0) ? z80memRead : nullptr;
-        memEdit.writeFn = (itemCurrent == 0) ? z80memWrite : nullptr;
-        memEdit.drawContents(memAreas[itemCurrent].data, memAreas[itemCurrent].size, 0);
+        memEdit.readFn  = (config.memEditMemSelect == 0) ? z80memRead : nullptr;
+        memEdit.writeFn = (config.memEditMemSelect == 0) ? z80memWrite : nullptr;
+        memEdit.drawContents(memAreas[config.memEditMemSelect].data, memAreas[config.memEditMemSelect].size, 0);
         if (memEdit.contentsWidthChanged) {
-            memEdit.calcSizes(s, memAreas[itemCurrent].size, 0);
+            memEdit.calcSizes(s, memAreas[config.memEditMemSelect].size, 0);
             ImGui::SetWindowSize(ImVec2(s.windowWidth, ImGui::GetWindowSize().y));
         }
     }

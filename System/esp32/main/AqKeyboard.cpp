@@ -48,15 +48,14 @@ void AqKeyboard::_keyDown(int key, bool shift) {
 }
 
 void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
-    // printf("Scancode: %u %s\n", scanCode, keyDown ? "Down" : "Up");
-
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
     uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
 
     // Hand controller emulation
-    handController(scanCode, keyDown);
+    if (handController(scanCode, keyDown))
+        return;
 
     if (keyDown && scanCode == SCANCODE_CAPSLOCK) {
         ledStatusNext ^= CAPS_LOCK;
@@ -429,12 +428,14 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
-void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
+bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
     handCtrl1 = 0xFF;
     if ((ledStatus & SCROLL_LOCK) == 0) {
         handCtrl1Pressed = 0;
-        return;
+        return false;
     }
+
+    bool result = true;
 
     enum {
         UP    = (1 << 0),
@@ -460,6 +461,7 @@ void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
         case SCANCODE_F4: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K4) : (handCtrl1Pressed & ~K4); break;
         case SCANCODE_F5: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K5) : (handCtrl1Pressed & ~K5); break;
         case SCANCODE_F6: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K6) : (handCtrl1Pressed & ~K6); break;
+        default: result = false;
     }
 
     switch (handCtrl1Pressed & 0xF) {
@@ -485,6 +487,8 @@ void AqKeyboard::handController(unsigned scanCode, bool keyDown) {
         handCtrl1 &= ~((1 << 7) | (1 << 1));
     if (handCtrl1Pressed & K6)
         handCtrl1 &= ~((1 << 7) | (1 << 0));
+
+    return result;
 }
 
 void AqKeyboard::updateMatrix() {

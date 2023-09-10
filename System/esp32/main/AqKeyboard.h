@@ -53,7 +53,7 @@ private:
     void _keyDown(int key);
     void _keyUp(int key);
     void _keyDown(int key, bool shift);
-    void handController(unsigned scanCode, bool keyDown);
+    bool handController(unsigned scanCode, bool keyDown);
 
     static const uint8_t scanCodeLut[];
 };

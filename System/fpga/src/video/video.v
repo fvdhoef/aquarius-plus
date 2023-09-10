@@ -45,6 +45,7 @@ module video(
     wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
 
+    reg        vctrl_border_remap_r;    // IO $E0 [5]
     reg        vctrl_text_priority_r;   // IO $E0 [4]
     reg        vctrl_sprites_enable_r;  // IO $E0 [3]
     reg  [1:0] vctrl_gfx_mode_r;        // IO $E0 [2:1]
@@ -81,7 +82,7 @@ module video(
 
     always @* begin
         io_rddata <= rddata_sprattr;
-        if (sel_io_vctrl)    io_rddata <= {3'b0, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
+        if (sel_io_vctrl)    io_rddata <= {2'b0, vctrl_border_remap_r, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
         if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];                             // IO $E1
         if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};                       // IO $E2
         if (sel_io_vscry)    io_rddata <= vscry_r;                                  // IO $E3
@@ -95,6 +96,7 @@ module video(
 
     always @(posedge clk or posedge reset)
         if (reset) begin
+            vctrl_border_remap_r   <= 1'b0;
             vctrl_text_priority_r  <= 1'b0;
             vctrl_sprites_enable_r <= 1'b0;
             vctrl_gfx_mode_r       <= 2'b0;
@@ -111,6 +113,7 @@ module video(
         end else begin
             if (io_wren) begin
                 if (sel_io_vctrl) begin
+                    vctrl_border_remap_r   <= io_wrdata[5];
                     vctrl_text_priority_r  <= io_wrdata[4];
                     vctrl_sprites_enable_r <= io_wrdata[3];
                     vctrl_gfx_mode_r       <= io_wrdata[2:1];
@@ -198,7 +201,7 @@ module video(
     always @(posedge(clk))
         if (next_char) begin
             if (vborder || column == 6'd0 || column >= 6'd41)
-                char_addr_r <= 10'd0;
+                char_addr_r <= vctrl_border_remap_r ? 10'h3FF : 10'h0;
             else if (column == 6'd1)
                 char_addr_r <= row_addr_r;
             else

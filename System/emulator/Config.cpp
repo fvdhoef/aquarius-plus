@@ -71,7 +71,7 @@ void Config::load() {
         showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
         showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
 
-        emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
+        memEditMemSelect = getIntValue(root, "memEditMemSelect", 0);
 
         auto breakpoints = cJSON_GetObjectItem(root, "breakpoints");
         if (cJSON_IsArray(breakpoints)) {
@@ -122,6 +122,8 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
     cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
     cJSON_AddBoolToObject(root, "showCpuTrace", showCpuTrace);
+
+    cJSON_AddNumberToObject(root, "memEditMemSelect", memEditMemSelect);
 
     cJSON_AddBoolToObject(root, "enableBreakpoints", emuState.enableBreakpoints);
 
