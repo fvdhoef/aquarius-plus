@@ -2,14 +2,15 @@
 #include "EmuState.h"
 
 enum {
-    VCTRL_TEXT_ENABLE      = (1 << 0),
-    VCTRL_MODE_OFF         = (0 << 1),
-    VCTRL_MODE_TILEMAP     = (1 << 1),
-    VCTRL_MODE_BITMAP      = (2 << 1),
-    VCTRL_MODE_BITMAP_4BPP = (3 << 1),
-    VCTRL_MODE_MASK        = (3 << 1),
-    VCTRL_SPRITES_ENABLE   = (1 << 3),
-    VCTRL_TEXT_PRIORITY    = (1 << 4),
+    VCTRL_TEXT_ENABLE       = (1 << 0),
+    VCTRL_MODE_OFF          = (0 << 1),
+    VCTRL_MODE_TILEMAP      = (1 << 1),
+    VCTRL_MODE_BITMAP       = (2 << 1),
+    VCTRL_MODE_BITMAP_4BPP  = (3 << 1),
+    VCTRL_MODE_MASK         = (3 << 1),
+    VCTRL_SPRITES_ENABLE    = (1 << 3),
+    VCTRL_TEXT_PRIORITY     = (1 << 4),
+    VCTRL_REMAP_BORDER_CHAR = (1 << 5),
 };
 
 Video::Video() {
@@ -35,9 +36,12 @@ void Video::drawLine() {
             int column = (i - 16) / 8;
             ch         = emuState.screenRam[row * 40 + column];
             color      = emuState.colorRam[row * 40 + column];
+
         } else {
-            ch    = emuState.screenRam[0];
-            color = emuState.colorRam[0];
+            unsigned borderAddr = (emuState.videoCtrl & VCTRL_REMAP_BORDER_CHAR) ? 0x3FF : 0;
+
+            ch    = emuState.screenRam[borderAddr];
+            color = emuState.colorRam[borderAddr];
         }
 
         uint8_t charBm = emuState.charRam[ch * 8 + (line & 7)];
