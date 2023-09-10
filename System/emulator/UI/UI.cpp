@@ -467,11 +467,19 @@ void UI::wndCpuState(bool *p_open) {
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
 
             unsigned instLen = (unsigned)strlen(tmp1) / 3;
-            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0) || (strncmp(tmp2, "RST ", 4) == 0);
+            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0);
+            bool     isRst   = (strncmp(tmp2, "RST ", 4) == 0);
 
-            if (isCall) {
+            if (isCall || isRst) {
                 emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
-                emuState.emuMode       = EmuState::Em_Running;
+
+                if (isRst && (strncmp(tmp2, "RST 10H", 7) == 0) || strncmp(tmp2, "RST 30H", 7) == 0) {
+                    // Skip one extra byte on RST 10H/30H, since on the Aq these
+                    // system calls absorb the byte following this instruction.
+                    emuState.tmpBreakpoint++;
+                }
+
+                emuState.emuMode = EmuState::Em_Running;
             } else {
                 emuState.emuMode = EmuState::Em_Step;
             }
