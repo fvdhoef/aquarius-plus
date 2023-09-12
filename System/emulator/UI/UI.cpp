@@ -735,6 +735,10 @@ void UI::wndIoRegs(bool *p_open) {
             ImGui::Text("$E1/$E2 VSCRX   : %u", emuState.videoScrX);
             ImGui::Text("$E3     VSCRY   : %u", emuState.videoScrY);
             ImGui::Text("$E4     VSPRSEL : %u", emuState.videoSprSel);
+            ImGui::Text("$E5/$E6 VSPRX   : %u", emuState.videoSprX[emuState.videoSprSel]);
+            ImGui::Text("$E7     VSPRY   : %u", emuState.videoSprY[emuState.videoSprSel]);
+            ImGui::Text("$E8/$E9 VSPRIDX : %u", emuState.videoSprIdx[emuState.videoSprSel]);
+            ImGui::Text("$E9     VSPRATTR: $%02X", emuState.videoSprAttr[emuState.videoSprSel]);
             ImGui::Text("$EA     VPALSEL : %u", emuState.videoPalSel);
             ImGui::Text("$EC     VLINE   : %u", emuState.videoLine);
             ImGui::Text("$ED     VIRQLINE: %u", emuState.videoIrqLine);
@@ -782,6 +786,94 @@ void UI::wndIoRegs(bool *p_open) {
             ImGui::Text("11 EAFINE  : $%02X", emuState.ay2.regs[11]);
             ImGui::Text("12 EACOARSE: $%02X", emuState.ay2.regs[12]);
             ImGui::Text("13 EASHAPE : $%02X", emuState.ay2.regs[13]);
+        }
+        if (ImGui::CollapsingHeader("Sprites")) {
+            if (ImGui::BeginTable("Table", 10, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("X", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Y", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Tile", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("En", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Pri", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Pal", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("H16", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("VF", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("HF");
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableHeadersRow();
+
+                ImGuiListClipper clipper;
+                clipper.Begin(64);
+                while (clipper.Step()) {
+                    for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", row_n);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%3d", emuState.videoSprX[row_n]);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%3d", emuState.videoSprY[row_n]);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%3d", emuState.videoSprIdx[row_n]);
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted((emuState.videoSprAttr[row_n] & 0x80) ? "X" : "");
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted((emuState.videoSprAttr[row_n] & 0x40) ? "X" : "");
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%d", (emuState.videoSprAttr[row_n] >> 4) & 3);
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted((emuState.videoSprAttr[row_n] & 0x08) ? "X" : "");
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted((emuState.videoSprAttr[row_n] & 0x04) ? "X" : "");
+                        ImGui::TableNextColumn();
+                        ImGui::TextUnformatted((emuState.videoSprAttr[row_n] & 0x02) ? "X" : "");
+                    }
+                }
+                ImGui::EndTable();
+            }
+        }
+        if (ImGui::CollapsingHeader("Palette")) {
+            if (ImGui::BeginTable("Table", 8, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+                ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Pal", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Idx", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Hex", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("R", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("G", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("B", ImGuiTableColumnFlags_WidthFixed);
+                ImGui::TableSetupColumn("Color");
+                ImGui::TableSetupScrollFreeze(0, 1);
+                ImGui::TableHeadersRow();
+
+                ImGuiListClipper clipper;
+                clipper.Begin(64);
+                while (clipper.Step()) {
+                    for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                        int r = (emuState.videoPalette[row_n] >> 8) & 0xF;
+                        int g = (emuState.videoPalette[row_n] >> 4) & 0xF;
+                        int b = (emuState.videoPalette[row_n] >> 0) & 0xF;
+
+                        ImGui::TableNextRow();
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", row_n);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%d", row_n / 16);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", row_n & 15);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%03X", emuState.videoPalette[row_n]);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", r);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", g);
+                        ImGui::TableNextColumn();
+                        ImGui::Text("%2d", b);
+                        ImGui::TableNextColumn();
+                        ImGui::TableSetBgColor(ImGuiTableBgTarget_CellBg, ImGui::GetColorU32((ImVec4)ImColor((r << 4) | r, (g << 4) | g, (b << 4) | b)));
+                    }
+                }
+                ImGui::EndTable();
+            }
         }
     }
     ImGui::End();
