@@ -8,6 +8,7 @@
 #include "AqKeyboard.h"
 #include "FPGA.h"
 #include "SDCardVFS.h"
+#include <source_location>
 
 typedef union {
     struct {
@@ -29,8 +30,11 @@ typedef union {
 
 static const char *TAG = "FileServer";
 
-static esp_err_t serverError(httpd_req_t *req) {
-    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Internal server error.");
+static esp_err_t serverError(httpd_req_t *req, const std::source_location location = std::source_location::current()) {
+    char tmp[256];
+    snprintf(tmp, sizeof(tmp), "Internal server error at %s:%lu [%s]", location.file_name(), location.line(), location.function_name());
+
+    httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, tmp);
     return ESP_OK;
 }
 
