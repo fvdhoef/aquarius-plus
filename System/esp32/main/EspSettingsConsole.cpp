@@ -494,6 +494,27 @@ done:
 #endif
 }
 
+#ifndef EMULATOR
+// trim from left
+static inline std::string ltrim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    std::string result = s;
+    result.erase(0, result.find_first_not_of(t));
+    return result;
+}
+
+// trim from right
+static inline std::string rtrim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    std::string result = s;
+    result.erase(result.find_last_not_of(t) + 1);
+    return result;
+}
+
+// trim from left & right
+static inline std::string trim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    return ltrim(rtrim(s, t), t);
+}
+#endif
+
 void EspSettingsConsole::systemUpdateGitHub() {
 #ifndef EMULATOR
     cprintf("Enter firmware version (GitHub tag, e.g. V0.7):");
@@ -502,7 +523,16 @@ void EspSettingsConsole::systemUpdateGitHub() {
     if (new_session)
         return;
 
-    auto url = std::string("https://github.com/fvdhoef/aquarius-plus/releases/download/") + str + "/aquarius-plus.bin";
+    auto trimmedStr = trim(str);
+    if (trimmedStr.empty()) {
+        cprintf("Invalid name, aborting.\n");
+        return;
+    }
+    if (trimmedStr[0] == 'v') {
+        trimmedStr[0] = 'V';
+    }
+
+    auto url = std::string("https://github.com/fvdhoef/aquarius-plus/releases/download/") + trimmedStr + "/aquarius-plus.bin";
 
     esp_http_client_config_t http_config = {
         .url                 = url.c_str(),
