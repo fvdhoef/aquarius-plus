@@ -127,6 +127,8 @@ void EspSettingsConsole::consoleTask() {
             systemUpdate();
         else if (strcasecmp(line, "updategh") == 0)
             systemUpdateGitHub();
+        else if (strcasecmp(line, "exit") == 0 || strcasecmp(line, "quit") == 0)
+            cputc(3); // Send CTRL-C
         else if (line[0])
             cprintf("Unknown command\n");
 
@@ -207,15 +209,15 @@ void EspSettingsConsole::creadline(char *buf, size_t max_len, bool is_password) 
 }
 
 void EspSettingsConsole::showHelp() {
-    cprintf("help    |this help\n");
-    cprintf("wifi    |show WiFi status\n");
-    cprintf("wifi set|set WiFi network\n");
-    cprintf("date    |show current time/date\n");
-    cprintf("tz      |show current time zone\n");
-    cprintf("tz set  |set time zone\n");
-    cprintf("update  |system update from SD card\n");
-    cprintf("updategh|system update from GitHub\n");
-    cprintf("ctrl-c  |exit to BASIC\n");
+    cprintf("help     |this help\n");
+    cprintf("wifi     |show WiFi status\n");
+    cprintf("wifi set |set WiFi network\n");
+    cprintf("date     |show current time/date\n");
+    cprintf("tz       |show current time zone\n");
+    cprintf("tz set   |set time zone\n");
+    cprintf("update   |system update from SD card\n");
+    cprintf("updategh |system update from GitHub\n");
+    cprintf("exit/quit|exit to BASIC (or CTRL-C)\n");
 }
 
 void EspSettingsConsole::wifiStatus() {
