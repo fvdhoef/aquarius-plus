@@ -67,7 +67,7 @@ static int mapFatFsResult(FRESULT res) {
         case FR_DENIED: return ERR_OTHER;
         case FR_EXIST: return ERR_EXISTS;
         case FR_INVALID_OBJECT: return ERR_OTHER;
-        case FR_WRITE_PROTECTED: return ERR_OTHER;
+        case FR_WRITE_PROTECTED: return ERR_WRITE_PROTECTED;
         case FR_INVALID_DRIVE: return ERR_NO_DISK;
         case FR_NOT_ENABLED: return ERR_NO_DISK;
         case FR_NO_FILESYSTEM: return ERR_NO_DISK;
