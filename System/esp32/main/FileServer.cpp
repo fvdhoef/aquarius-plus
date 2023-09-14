@@ -38,6 +38,10 @@ static esp_err_t serverError(httpd_req_t *req, const std::source_location locati
     return ESP_OK;
 }
 
+static esp_err_t resp400(httpd_req_t *req) {
+    return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, nullptr);
+}
+
 static esp_err_t resp404(httpd_req_t *req) {
     httpd_resp_send_404(req);
     return ESP_OK;
@@ -47,6 +51,24 @@ static esp_err_t resp204(httpd_req_t *req) {
     httpd_resp_set_status(req, HTTPD_204);
     httpd_resp_send(req, nullptr, 0);
     return ESP_OK;
+}
+
+static esp_err_t mapResult(httpd_req_t *req, int errorCode) {
+    if (errorCode == 0) {
+        return resp204(req);
+    }
+    switch (errorCode) {
+        case ERR_NOT_FOUND: return httpd_resp_send_404(req);
+        case ERR_TOO_MANY_OPEN: return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, "Too many open files");
+        case ERR_PARAM: return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, nullptr);
+        case ERR_EOF: return httpd_resp_send_err(req, HTTPD_405_METHOD_NOT_ALLOWED, "End-of-file");
+        case ERR_EXISTS: return httpd_resp_send_err(req, HTTPD_405_METHOD_NOT_ALLOWED, "Exists");
+        case ERR_OTHER: return httpd_resp_send_err(req, HTTPD_500_INTERNAL_SERVER_ERROR, nullptr);
+        case ERR_NO_DISK: return httpd_resp_send_err(req, HTTPD_405_METHOD_NOT_ALLOWED, "No Disk");
+        case ERR_NOT_EMPTY: return httpd_resp_send_err(req, HTTPD_405_METHOD_NOT_ALLOWED, "Not Empty");
+        case ERR_WRITE_PROTECTED: return httpd_resp_send_err(req, HTTPD_405_METHOD_NOT_ALLOWED, "Write protected");
+        default: return serverError(req);
+    };
 }
 
 FileServer::FileServer() {
@@ -200,7 +222,7 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
     // Get hostname in request header
     char host[64];
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
-        return ESP_FAIL;
+        return resp400(req);
 
     // Get depth
     char depth[16] = "0";
@@ -225,8 +247,9 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
 
     // Check file
     struct stat st;
-    if (vfs.stat(uriPath, &st) != 0)
-        return resp404(req);
+    int         result = vfs.stat(uriPath, &st);
+    if (result < 0)
+        return mapResult(req, result);
 
     httpd_resp_set_type(req, "text/xml; encoding=\"utf-8\"");
     httpd_resp_set_status(req, HTTPD_207);
@@ -284,14 +307,7 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
 
 esp_err_t FileServer::handleDelete(httpd_req_t *req) {
     auto &vfs = SDCardVFS::instance();
-
-    int result = vfs.delete_(getPathFromUri(req->uri));
-    if (result == ERR_NOT_FOUND) {
-        return resp404(req);
-    } else if (result != 0) {
-        return serverError(req);
-    }
-    return resp204(req);
+    return mapResult(req, vfs.delete_(getPathFromUri(req->uri)));
 }
 
 esp_err_t FileServer::handleGet(httpd_req_t *req) {
@@ -307,8 +323,9 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
     auto &vfs = SDCardVFS::instance();
 
     struct stat st;
-    if (vfs.stat(uriPath, &st) != 0)
-        return resp404(req);
+    int         result = vfs.stat(uriPath, &st);
+    if (result != 0)
+        return mapResult(req, result);
 
     if (S_ISDIR(st.st_mode)) {
         auto deCtx = vfs.direnum(uriPath);
@@ -352,7 +369,7 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
     } else {
         int fd = vfs.open(FO_RDONLY, uriPath);
         if (fd < 0) {
-            return resp404(req);
+            return mapResult(req, fd);
         } else {
             httpd_resp_set_type(req, "application/octet-stream");
             while (1) {
@@ -385,7 +402,7 @@ esp_err_t FileServer::handlePut(httpd_req_t *req) {
     // Open target file
     int fd = vfs.open(FO_WRONLY | FO_CREATE, path);
     if (fd < 0) {
-        return serverError(req);
+        return mapResult(req, fd);
     }
 
     auto remaining = req->content_len;
@@ -402,15 +419,19 @@ esp_err_t FileServer::handlePut(httpd_req_t *req) {
             // In case of unrecoverable error, close and delete the unfinished file
             vfs.close(fd);
             vfs.delete_(path);
-            return serverError(req);
+            if (received == 0)
+                return serverError(req);
+            else
+                return mapResult(req, received);
         }
 
         // Write buffer content to file on storage
-        if (received && (received != vfs.write(fd, received, tmp.get()))) {
+        int written = vfs.write(fd, received, tmp.get());
+        if (written != received) {
             // Couldn't write everything to file! Storage may be full?
             vfs.close(fd);
             vfs.delete_(path);
-            return serverError(req);
+            return mapResult(req, written);
         }
 
         // Keep track of remaining size of the file left to be uploaded
@@ -431,15 +452,15 @@ esp_err_t FileServer::handleMove(httpd_req_t *req) {
 
     // Get destination path from request header
     if (httpd_req_get_hdr_value_str(req, "Destination", tmp.get(), tmpSize) != ESP_OK)
-        return serverError(req);
+        return resp400(req);
 
     char host[64];
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
-        return serverError(req);
+        return resp400(req);
 
     char *p = strcasestr(tmp.get(), host);
     if (p == nullptr || p - tmp.get() > 8)
-        return resp404(req);
+        return resp400(req);
     p += strlen(host);
 
     auto path2 = urlDecode(p);
@@ -447,19 +468,13 @@ esp_err_t FileServer::handleMove(httpd_req_t *req) {
 
     // Do rename
     auto &vfs = SDCardVFS::instance();
-    if (vfs.rename(path, path2) < 0) {
-        return resp404(req);
-    }
-    return resp204(req);
+    return mapResult(req, vfs.rename(path, path2));
 }
 
 esp_err_t FileServer::handleMkCol(httpd_req_t *req) {
     // Unlink file
     auto &vfs = SDCardVFS::instance();
-    if (vfs.mkdir(getPathFromUri(req->uri)) < 0) {
-        return serverError(req);
-    }
-    return resp204(req);
+    return mapResult(req, vfs.mkdir(getPathFromUri(req->uri)));
 }
 
 esp_err_t FileServer::handleCopy(httpd_req_t *req) {
@@ -472,15 +487,15 @@ esp_err_t FileServer::handleCopy(httpd_req_t *req) {
 
     // Get destination path from request header
     if (httpd_req_get_hdr_value_str(req, "Destination", tmp.get(), tmpSize) != ESP_OK)
-        return serverError(req);
+        return resp400(req);
 
     char host[64];
     if (httpd_req_get_hdr_value_str(req, "Host", host, sizeof(host)) != ESP_OK)
-        return serverError(req);
+        return resp400(req);
 
     char *p = strcasestr(tmp.get(), host);
     if (p == nullptr || p - tmp.get() > 8)
-        return resp404(req);
+        return resp400(req);
     p += strlen(host);
 
     auto path2 = urlDecode(p);
@@ -492,11 +507,11 @@ esp_err_t FileServer::handleCopy(httpd_req_t *req) {
     auto &vfs = SDCardVFS::instance();
     int   fd  = vfs.open(FO_RDONLY, path);
     if (fd < 0)
-        return resp404(req);
+        return mapResult(req, fd);
     int fd2 = vfs.open(FO_CREATE | FO_WRONLY, path2);
     if (fd2 < 0) {
         vfs.close(fd);
-        return resp404(req);
+        return mapResult(req, fd2);
     }
 
     while (1) {
@@ -504,11 +519,17 @@ esp_err_t FileServer::handleCopy(httpd_req_t *req) {
         if (size <= 0)
             break;
 
-        if (vfs.write(fd2, size, tmp.get()) != size) {
+        int written = vfs.write(fd2, size, tmp.get());
+        if (written != size) {
             vfs.close(fd);
             vfs.close(fd2);
             vfs.delete_(path2);
-            return serverError(req);
+
+            if (written < 0) {
+                return mapResult(req, written);
+            } else {
+                return serverError(req);
+            }
         }
     }
     vfs.close(fd);
