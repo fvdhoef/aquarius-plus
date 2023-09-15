@@ -86,13 +86,18 @@ struct EmuState {
     std::deque<Z80TraceEntry> cpuTrace;
     bool                      traceEnable = false;
     int                       traceDepth  = 128;
-    bool                      prevHalted = false;
+    bool                      prevHalted  = false;
 
     // Virtual typing from command-line argument
     std::string typeInStr;
     int         typeInRelease = 10;
     int         typeInDelay   = 0;
     char        typeInChar    = 0;
+
+    // Mouse state
+    uint16_t mouseX       = 0;
+    uint8_t  mouseY       = 0;
+    uint8_t  mouseButtons = 0;
 
     // IO space
     uint8_t  videoCtrl        = 0;      // $E0   : Video control register

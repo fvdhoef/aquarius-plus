@@ -25,6 +25,7 @@ public:
     int  wndHeight   = VIDEO_HEIGHT * 2;
     int  scrScale    = 1;
     bool enableSound = true;
+    bool enableMouse = true;
 
     bool handCtrlEmulation = false;
 

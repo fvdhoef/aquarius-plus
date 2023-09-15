@@ -60,6 +60,7 @@ void Config::load() {
         wndHeight   = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
         scrScale    = getIntValue(root, "scrScale", 1);
         enableSound = getBoolValue(root, "enableSound", true);
+        enableMouse = getBoolValue(root, "enableMouse", true);
 
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
 
@@ -112,6 +113,7 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
     cJSON_AddNumberToObject(root, "scrScale", scrScale);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
+    cJSON_AddBoolToObject(root, "enableMouse", enableMouse);
 
     cJSON_AddBoolToObject(root, "handCtrlEmulation", handCtrlEmulation);
 

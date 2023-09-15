@@ -17,9 +17,9 @@ public:
 private:
     void mainLoop();
 
-    void renderScreen();
-    void renderTexture();
-    void emulate();
+    void     renderScreen();
+    SDL_Rect renderTexture();
+    void     emulate();
 
     void wndAbout(bool *p_open);
     void wndCpuState(bool *p_open);

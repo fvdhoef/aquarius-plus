@@ -10,6 +10,7 @@
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
@@ -196,6 +197,7 @@ void UI::mainLoop() {
                 }
                 ImGui::Separator();
                 ImGui::MenuItem("Enable sound", "", &config.enableSound);
+                ImGui::MenuItem("Enable mouse", "", &config.enableMouse);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Reset Aquarius+", "")) {
                     emuState.reset();
@@ -281,7 +283,24 @@ void UI::mainLoop() {
         SDL_RenderClear(renderer);
 
         if (!config.showScreenWindow) {
-            renderTexture();
+            auto dst = renderTexture();
+
+            // Update mouse
+            const ImVec2 p0(dst.x, dst.y);
+            const ImVec2 p1(dst.x + dst.w, dst.y + dst.h);
+            auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
+
+            int mx = std::max(0, std::min((int)pos.x, 319));
+            int my = std::max(0, std::min((int)pos.y, 199));
+
+            uint8_t buttonMask =
+                (io.MouseDown[0] ? 1 : 0) |
+                (io.MouseDown[1] ? 2 : 0) |
+                (io.MouseDown[2] ? 4 : 0);
+
+            emuState.mouseX       = mx;
+            emuState.mouseY       = my;
+            emuState.mouseButtons = buttonMask;
         }
 
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -322,7 +341,13 @@ void UI::renderScreen() {
     SDL_UnlockTexture(texture);
 }
 
-void UI::renderTexture() {
+SDL_Rect UI::renderTexture() {
+    SDL_Rect dst;
+    dst.x = 0;
+    dst.y = 0;
+    dst.w = 0;
+    dst.h = 0;
+
     float rsx, rsy;
     SDL_RenderGetScale(renderer, &rsx, &rsy);
     auto  drawData = ImGui::GetDrawData();
@@ -331,7 +356,7 @@ void UI::renderTexture() {
     int   w        = (int)(drawData->DisplaySize.x * scaleX);
     int   h        = (int)(drawData->DisplaySize.y * scaleY);
     if (w <= 0 || h <= 0)
-        return;
+        return dst;
 
     // Retain aspect ratio
     int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
@@ -351,12 +376,13 @@ void UI::renderTexture() {
         sh = h2;
     }
 
-    SDL_Rect dst;
     dst.w = (int)sw;
     dst.h = (int)sh;
     dst.x = (w - dst.w) / 2;
     dst.y = (h - dst.h) / 2;
     SDL_RenderCopy(renderer, texture, NULL, &dst);
+
+    return dst;
 }
 
 void UI::emulate() {
@@ -579,10 +605,49 @@ void UI::wndScreen(bool *p_open) {
             ImGui::RadioButton("3x", &e, 3);
             ImGui::SameLine();
             ImGui::RadioButton("4x", &e, 4);
+            // ImGui::SameLine();
+            // ImGui::Text("%3d %3d %d\n", emuState.mouseX, emuState.mouseY, emuState.mouseButtons);
+
             config.scrScale = e;
 
             if (texture) {
-                ImGui::Image((ImTextureID)(intptr_t)texture, ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e)));
+                ImGuiIO &io = ImGui::GetIO();
+
+                auto sz = ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e));
+                ImGui::InvisibleButton("##imgbtn", sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
+                const ImVec2 p0  = ImGui::GetItemRectMin();
+                const ImVec2 p1  = ImGui::GetItemRectMax();
+                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
+
+                int mx = std::max(0, std::min((int)pos.x, 319));
+                int my = std::max(0, std::min((int)pos.y, 199));
+
+                uint8_t buttonMask =
+                    (io.MouseDown[0] ? 1 : 0) |
+                    (io.MouseDown[1] ? 2 : 0) |
+                    (io.MouseDown[2] ? 4 : 0);
+
+                static bool dragging = false;
+                bool        update   = false;
+
+                if (ImGui::IsItemActive()) {
+                    dragging = true;
+                    update   = true;
+                } else if (dragging) {
+                    update   = true;
+                    dragging = false;
+                }
+                if (ImGui::IsItemHovered()) {
+                    update = true;
+                }
+                if (update) {
+                    emuState.mouseX       = mx;
+                    emuState.mouseY       = my;
+                    emuState.mouseButtons = buttonMask;
+                }
+
+                ImDrawList *draw_list = ImGui::GetWindowDrawList();
+                draw_list->AddImage(texture, p0, p1, {0, 0}, {1, 1});
             }
             allowTyping = ImGui::IsWindowFocused();
         }
