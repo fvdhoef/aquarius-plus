@@ -286,8 +286,8 @@ void UI::mainLoop() {
             auto dst = renderTexture();
 
             // Update mouse
-            const ImVec2 p0(dst.x, dst.y);
-            const ImVec2 p1(dst.x + dst.w, dst.y + dst.h);
+            const ImVec2 p0((float)dst.x, (float)dst.y);
+            const ImVec2 p1((float)(dst.x + dst.w), (float)(dst.y + dst.h));
             auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
 
             int mx = std::max(0, std::min((int)pos.x, 319));
