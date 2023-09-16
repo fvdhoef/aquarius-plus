@@ -32,4 +32,6 @@ private:
     void        eventHandler(esp_event_base_t eventBase, int32_t eventId, void *eventData);
 
     EWiFiStatus status;
+
+    bool sntpStarted = false;
 };

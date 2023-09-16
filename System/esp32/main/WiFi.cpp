@@ -43,12 +43,6 @@ void WiFi::init() {
     ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));
     // ESP_ERROR_CHECK(esp_wifi_set_ps(WIFI_PS_NONE));
     ESP_ERROR_CHECK(esp_wifi_start());
-
-    // Start SNTP client for time sync
-    esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
-    esp_sntp_setservername(0, "pool.ntp.org");
-    // esp_sntp_set_time_sync_notification_cb();
-    esp_sntp_init();
 }
 
 EWiFiStatus WiFi::getStatus() {
@@ -96,6 +90,16 @@ void WiFi::eventHandler(esp_event_base_t eventBase, int32_t eventId, void *event
         status                   = EWiFiStatus::connected;
 
         ESP_LOGI(TAG, "Connected with IP Address:" IPSTR, IP2STR(&event->ip_info.ip));
+
+        if (!sntpStarted) {
+            // Start SNTP client for time sync
+            esp_sntp_setoperatingmode(SNTP_OPMODE_POLL);
+            esp_sntp_setservername(0, "pool.ntp.org");
+            // esp_sntp_set_time_sync_notification_cb();
+            esp_sntp_init();
+
+            sntpStarted = true;
+        }
 
     } else if (eventBase == WIFI_EVENT && eventId == WIFI_EVENT_STA_DISCONNECTED) {
         status = EWiFiStatus::disconnected;
