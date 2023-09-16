@@ -1,4 +1,4 @@
-OUTFILE      = tiledemo.caq
+OUTFILE      = tiledemo.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 

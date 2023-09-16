@@ -1,4 +1,4 @@
-OUTFILE      = pt3player.caq
+OUTFILE      = pt3player.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 

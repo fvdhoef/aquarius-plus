@@ -1,4 +1,4 @@
-OUTFILE      = hello.caq
+OUTFILE      = hello.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 

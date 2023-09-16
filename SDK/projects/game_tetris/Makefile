@@ -1,4 +1,4 @@
-OUTFILE      = tetris.caq
+OUTFILE      = tetris.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 S_SRCS      += assets/tiledata.s

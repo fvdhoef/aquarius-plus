@@ -1,4 +1,4 @@
-OUTFILE      = settings.caq
+OUTFILE      = settings.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 

@@ -1,4 +1,4 @@
-OUTFILE      = play_pt3.caq
+OUTFILE      = play_pt3.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 

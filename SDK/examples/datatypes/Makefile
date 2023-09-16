@@ -1,4 +1,4 @@
-OUTFILE      = datatypes.caq
+OUTFILE      = datatypes.aqx
 INC_DIRS    += .
 SRC_DIRS    += .
 
