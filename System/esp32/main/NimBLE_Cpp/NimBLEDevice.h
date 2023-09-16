@@ -22,20 +22,8 @@
 #include "NimBLEScan.h"
 #endif
 
-#if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-#  if CONFIG_BT_NIMBLE_EXT_ADV
-#    include "NimBLEExtAdvertising.h"
-#  else
-#    include "NimBLEAdvertising.h"
-#  endif
-#endif
-
 #if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 #include "NimBLEClient.h"
-#endif
-
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-#include "NimBLEServer.h"
 #endif
 
 #include "NimBLEUtils.h"
@@ -111,11 +99,6 @@ public:
     static NimBLEScan*      getScan();
 #endif
 
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-    static NimBLEServer*    createServer();
-    static NimBLEServer*    getServer();
-#endif
-
 #ifdef ESP_PLATFORM
     static void             setPower(esp_power_level_t powerLevel, esp_ble_power_type_t powerType=ESP_BLE_PWR_TYPE_DEFAULT);
     static int              getPower(esp_ble_power_type_t powerType=ESP_BLE_PWR_TYPE_DEFAULT);
@@ -143,22 +126,6 @@ public:
     static void             addIgnored(const NimBLEAddress &address);
     static void             removeIgnored(const NimBLEAddress &address);
 
-#if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-#  if CONFIG_BT_NIMBLE_EXT_ADV
-    static NimBLEExtAdvertising* getAdvertising();
-    static bool                  startAdvertising(uint8_t inst_id,
-                                                  int duration = 0,
-                                                  int max_events = 0);
-    static bool                  stopAdvertising(uint8_t inst_id);
-    static bool                  stopAdvertising();
-#  endif
-#  if !CONFIG_BT_NIMBLE_EXT_ADV || defined(_DOXYGEN_)
-    static NimBLEAdvertising*    getAdvertising();
-    static bool                  startAdvertising();
-    static bool                  stopAdvertising();
-#  endif
-#endif
-
 #if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)
     static NimBLEClient*    createClient(NimBLEAddress peerAddress = NimBLEAddress(""));
     static bool             deleteClient(NimBLEClient* pClient);
@@ -169,7 +136,7 @@ public:
     static std::list<NimBLEClient*>* getClientList();
 #endif
 
-#if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL) || defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
+#if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
     static bool             deleteBond(const NimBLEAddress &address);
     static int              getNumBonds();
     static bool             isBonded(const NimBLEAddress &address);
@@ -186,19 +153,6 @@ private:
     friend class NimBLEScan;
 #endif
 
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-    friend class NimBLEServer;
-    friend class NimBLECharacteristic;
-#endif
-
-#if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-    friend class NimBLEAdvertising;
-#  if CONFIG_BT_NIMBLE_EXT_ADV
-    friend class NimBLEExtAdvertising;
-    friend class NimBLEExtAdvertisement;
-#  endif
-#endif
-
     static void        onReset(int reason);
     static void        onSync(void);
     static void        host_task(void *param);
@@ -206,18 +160,6 @@ private:
 
 #if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
     static NimBLEScan*                m_pScan;
-#endif
-
-#if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-    static NimBLEServer*              m_pServer;
-#endif
-
-#if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-#  if CONFIG_BT_NIMBLE_EXT_ADV
-    static NimBLEExtAdvertising*      m_bleAdvertising;
-#  else
-    static NimBLEAdvertising*         m_bleAdvertising;
-#  endif
 #endif
 
 #if defined( CONFIG_BT_NIMBLE_ROLE_CENTRAL)

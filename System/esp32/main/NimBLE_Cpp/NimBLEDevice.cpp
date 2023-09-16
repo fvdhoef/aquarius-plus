@@ -63,18 +63,8 @@ static bool initialized = false;
 #    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 NimBLEScan *NimBLEDevice::m_pScan = nullptr;
 #    endif
-#    if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-NimBLEServer *NimBLEDevice::m_pServer = nullptr;
-#    endif
 uint32_t NimBLEDevice::m_passkey = 123456;
 bool     NimBLEDevice::m_synced  = false;
-#    if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-#        if CONFIG_BT_NIMBLE_EXT_ADV
-NimBLEExtAdvertising *NimBLEDevice::m_bleAdvertising = nullptr;
-#        else
-NimBLEAdvertising *NimBLEDevice::m_bleAdvertising = nullptr;
-#        endif
-#    endif
 
 gap_event_handler      NimBLEDevice::m_customGapHandler = nullptr;
 ble_gap_event_listener NimBLEDevice::m_listener;
@@ -89,96 +79,6 @@ uint8_t                    NimBLEDevice::m_own_addr_type     = BLE_OWN_ADDR_PUBL
 uint16_t NimBLEDevice::m_scanDuplicateSize = CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE;
 uint8_t  NimBLEDevice::m_scanFilterMode    = CONFIG_BTDM_SCAN_DUPL_TYPE;
 #    endif
-
-/**
- * @brief Create a new instance of a server.
- * @return A new instance of the server.
- */
-#    if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-/* STATIC */ NimBLEServer *NimBLEDevice::createServer() {
-    if (NimBLEDevice::m_pServer == nullptr) {
-        NimBLEDevice::m_pServer = new NimBLEServer();
-        ble_gatts_reset();
-        ble_svc_gap_init();
-        ble_svc_gatt_init();
-    }
-
-    return m_pServer;
-} // createServer
-
-  /**
-   * @brief Get the instance of the server.
-   * @return A pointer to the server instance.
-   */
-/* STATIC */ NimBLEServer *NimBLEDevice::getServer() {
-    return m_pServer;
-} // getServer
-#    endif // #if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-
-#    if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-#        if CONFIG_BT_NIMBLE_EXT_ADV
-/**
- * @brief Get the instance of the advertising object.
- * @return A pointer to the advertising object.
- */
-NimBLEExtAdvertising *NimBLEDevice::getAdvertising() {
-    if (m_bleAdvertising == nullptr) {
-        m_bleAdvertising = new NimBLEExtAdvertising();
-    }
-    return m_bleAdvertising;
-}
-
-/**
- * @brief Convenience function to begin advertising.
- * @param [in] inst_id The extended advertisement instance ID to start.
- * @param [in] duration How long to advertise for in milliseconds, 0 = forever (default).
- * @param [in] max_events Maximum number of advertisement events to send, 0 = no limit (default).
- * @return True if advertising started successfully.
- */
-bool NimBLEDevice::startAdvertising(uint8_t inst_id, int duration, int max_events) {
-    return getAdvertising()->start(inst_id, duration, max_events);
-} // startAdvertising
-
-/**
- * @brief Convenience function to stop advertising a data set.
- * @param [in] inst_id The extended advertisement instance ID to stop advertising.
- * @return True if advertising stopped successfully.
- */
-bool NimBLEDevice::stopAdvertising(uint8_t inst_id) {
-    return getAdvertising()->stop(inst_id);
-} // stopAdvertising
-
-#        endif
-
-#        if !CONFIG_BT_NIMBLE_EXT_ADV || defined(_DOXYGEN_)
-/**
- * @brief Get the instance of the advertising object.
- * @return A pointer to the advertising object.
- */
-NimBLEAdvertising *NimBLEDevice::getAdvertising() {
-    if (m_bleAdvertising == nullptr) {
-        m_bleAdvertising = new NimBLEAdvertising();
-    }
-    return m_bleAdvertising;
-}
-
-/**
- * @brief Convenience function to begin advertising.
- * @return True if advertising started successfully.
- */
-bool NimBLEDevice::startAdvertising() {
-    return getAdvertising()->start();
-} // startAdvertising
-#        endif
-
-/**
- * @brief Convenience function to stop all advertising.
- * @return True if advertising stopped successfully.
- */
-bool NimBLEDevice::stopAdvertising() {
-    return getAdvertising()->stop();
-} // stopAdvertising
-#    endif // #if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
 
 /**
  * @brief Retrieve the Scan object that we use for scanning.
@@ -517,7 +417,7 @@ void NimBLEDevice::setScanFilterMode(uint8_t mode) {
 }
 #    endif
 
-#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL) || defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
+#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 /**
  * @brief Gets the number of bonded peers stored
  */
@@ -779,11 +679,6 @@ void NimBLEDevice::onSync(void) {
         }
 #    endif
 
-#    if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-        if (m_bleAdvertising != nullptr) {
-            m_bleAdvertising->onHostSync();
-        }
-#    endif
     }
 } // onSync
 
@@ -871,20 +766,6 @@ void NimBLEDevice::deinit(bool clearAll) {
         m_synced    = false;
 
         if (clearAll) {
-#    if defined(CONFIG_BT_NIMBLE_ROLE_PERIPHERAL)
-            if (NimBLEDevice::m_pServer != nullptr) {
-                delete NimBLEDevice::m_pServer;
-                NimBLEDevice::m_pServer = nullptr;
-            }
-#    endif
-
-#    if defined(CONFIG_BT_NIMBLE_ROLE_BROADCASTER)
-            if (NimBLEDevice::m_bleAdvertising != nullptr) {
-                delete NimBLEDevice::m_bleAdvertising;
-                NimBLEDevice::m_bleAdvertising = nullptr;
-            }
-#    endif
-
 #    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
             if (NimBLEDevice::m_pScan != nullptr) {
                 delete NimBLEDevice::m_pScan;

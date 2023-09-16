@@ -34,7 +34,6 @@ idf_component_register(
 
         "NimBLE_Cpp/NimBLEAddress.cpp"
         "NimBLE_Cpp/NimBLEAdvertisedDevice.cpp"
-        "NimBLE_Cpp/NimBLECharacteristic.cpp"
         "NimBLE_Cpp/NimBLEClient.cpp"
         "NimBLE_Cpp/NimBLEDevice.cpp"
         "NimBLE_Cpp/NimBLERemoteCharacteristic.cpp"

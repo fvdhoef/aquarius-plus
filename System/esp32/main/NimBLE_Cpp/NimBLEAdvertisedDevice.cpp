@@ -612,50 +612,6 @@ bool NimBLEAdvertisedDevice::haveTXPower() {
     return findAdvField(BLE_HS_ADV_TYPE_TX_PWR_LVL) > 0;
 } // haveTXPower
 
-
-#if CONFIG_BT_NIMBLE_EXT_ADV
-/**
- * @brief Get the set ID of the extended advertisement.
- * @return The set ID.
- */
-uint8_t NimBLEAdvertisedDevice::getSetId() {
-    return m_sid;
-} // getSetId
-
-
-/**
- * @brief Get the primary PHY used by this advertisement.
- * @return The PHY type, one of:
- *  * BLE_HCI_LE_PHY_1M
- *  * BLE_HCI_LE_PHY_CODED
- */
-uint8_t NimBLEAdvertisedDevice::getPrimaryPhy() {
-    return m_primPhy;
-} // getPrimaryPhy
-
-
-/**
- * @brief Get the primary PHY used by this advertisement.
- * @return The PHY type, one of:
- *  * BLE_HCI_LE_PHY_1M
- *  * BLE_HCI_LE_PHY_2M
- *  * BLE_HCI_LE_PHY_CODED
- */
-uint8_t NimBLEAdvertisedDevice::getSecondaryPhy() {
-    return m_secPhy;
-} // getSecondaryPhy
-
-
-/**
- * @brief Get the periodic interval of the advertisement.
- * @return The periodic advertising interval, 0 if not periodic advertising.
- */
-uint16_t NimBLEAdvertisedDevice::getPeriodicInterval() {
-    return m_periodicItvl;
-} // getPeriodicInterval
-#endif
-
-
 uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t * data_loc) {
     ble_hs_adv_field *field = nullptr;
     size_t  length = m_payload.size();
@@ -734,11 +690,7 @@ void NimBLEAdvertisedDevice::setAddress(NimBLEAddress address) {
  */
 void NimBLEAdvertisedDevice::setAdvType(uint8_t advType, bool isLegacyAdv) {
     m_advType = advType;
-#if CONFIG_BT_NIMBLE_EXT_ADV
-    m_isLegacyAdv = isLegacyAdv;
-#else
     (void)isLegacyAdv;
-#endif
 } // setAdvType
 
 
@@ -867,12 +819,6 @@ size_t NimBLEAdvertisedDevice::getPayloadLength() {
  * @return True if the device is connectable.
  */
 bool NimBLEAdvertisedDevice::isConnectable() {
-#if CONFIG_BT_NIMBLE_EXT_ADV
-    if (m_isLegacyAdv) {
-        return m_advType == BLE_HCI_ADV_RPT_EVTYPE_ADV_IND ||
-               m_advType == BLE_HCI_ADV_RPT_EVTYPE_DIR_IND;
-    }
-#endif
     return (m_advType & BLE_HCI_ADV_CONN_MASK) ||
            (m_advType & BLE_HCI_ADV_DIRECT_MASK);
 } // isConnectable
@@ -883,11 +829,7 @@ bool NimBLEAdvertisedDevice::isConnectable() {
  * @return True if legacy (Bluetooth 4.x), false if extended (bluetooth 5.x).
  */
 bool NimBLEAdvertisedDevice::isLegacyAdvertisement() {
-#if CONFIG_BT_NIMBLE_EXT_ADV
-    return m_isLegacyAdv;
-# else
     return true;
-#endif
 } // isLegacyAdvertisement
 
 #endif /* CONFIG_BT_ENABLED  && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

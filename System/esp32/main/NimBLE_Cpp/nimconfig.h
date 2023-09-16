@@ -8,10 +8,8 @@
 #define CONFIG_NIMBLE_CPP_LOG_LEVEL ESP_LOG_INFO
 
 #define CONFIG_BT_ENABLE 1
-// #define CONFIG_BT_NIMBLE_ROLE_PERIPHERAL 1
 #define CONFIG_BT_NIMBLE_ROLE_OBSERVER 1
 #define CONFIG_BT_NIMBLE_ROLE_CENTRAL 1
-// #define CONFIG_BT_NIMBLE_ROLE_BROADCASTER 1
 
 #define CONFIG_NIMBLE_CPP_ENABLE_RETURN_CODE_TEXT 1
 #define CONFIG_NIMBLE_CPP_ENABLE_ADVERTISEMENT_TYPE_TEXT 1
@@ -22,6 +20,3 @@
 #include <host/ble_hs.h>
 #include <host/util/util.h>
 #include <services/gap/ble_svc_gap.h>
-// #include <esp_central.h>
-
-// #define CONFIG_BT_NIMBLE_EXT_ADV 0

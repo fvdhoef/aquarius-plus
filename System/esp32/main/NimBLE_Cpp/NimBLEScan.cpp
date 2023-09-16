@@ -65,15 +65,9 @@ NimBLEScan::~NimBLEScan() {
                 NIMBLE_LOGI(LOG_TAG, "Scan op in progress - ignoring results");
                 return 0;
             }
-#    if CONFIG_BT_NIMBLE_EXT_ADV
-            const auto &disc        = event->ext_disc;
-            const bool  isLegacyAdv = disc.props & BLE_HCI_ADV_LEGACY_MASK;
-            const auto  event_type  = isLegacyAdv ? disc.legacy_event_type : disc.props;
-#    else
-            const auto &disc        = event->disc;
-            const bool  isLegacyAdv = true;
-            const auto  event_type  = disc.event_type;
-#    endif
+            const auto   &disc        = event->disc;
+            const bool    isLegacyAdv = true;
+            const auto    event_type  = disc.event_type;
             NimBLEAddress advertisedAddress(disc.addr);
 
             // Examine our list of ignored addresses and stop processing if we don't want to see it or are already connected
@@ -86,12 +80,7 @@ NimBLEScan::~NimBLEScan() {
 
             // If we've seen this device before get a pointer to it from the vector
             for (auto &it : pScan->m_scanResults.m_advertisedDevicesVector) {
-#    if CONFIG_BT_NIMBLE_EXT_ADV
-                // Same address but different set ID should create a new advertised device.
-                if (it->getAddress() == advertisedAddress && it->getSetId() == disc.sid) {
-#    else
                 if (it->getAddress() == advertisedAddress) {
-#    endif
                     advertisedDevice = it;
                     break;
                 }
@@ -111,12 +100,6 @@ NimBLEScan::~NimBLEScan() {
                 advertisedDevice = new NimBLEAdvertisedDevice();
                 advertisedDevice->setAddress(advertisedAddress);
                 advertisedDevice->setAdvType(event_type, isLegacyAdv);
-#    if CONFIG_BT_NIMBLE_EXT_ADV
-                advertisedDevice->setSetId(disc.sid);
-                advertisedDevice->setPrimaryPhy(disc.prim_phy);
-                advertisedDevice->setSecondaryPhy(disc.sec_phy);
-                advertisedDevice->setPeriodicInterval(disc.periodic_adv_itvl);
-#    endif
                 pScan->m_scanResults.m_advertisedDevicesVector.push_back(advertisedDevice);
                 NIMBLE_LOGI(LOG_TAG, "New advertiser: %s", advertisedAddress.toString().c_str());
             } else if (advertisedDevice != nullptr) {
@@ -312,15 +295,7 @@ bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResul
         m_ignoreResults = true;
     }
 
-#    if CONFIG_BT_NIMBLE_EXT_ADV
-    ble_gap_ext_disc_params scan_params;
-    scan_params.passive = m_scan_params.passive;
-    scan_params.itvl    = m_scan_params.itvl;
-    scan_params.window  = m_scan_params.window;
-    int rc              = ble_gap_ext_disc(NimBLEDevice::m_own_addr_type, duration / 10, 0, m_scan_params.filter_duplicates, m_scan_params.filter_policy, m_scan_params.limited, &scan_params, &scan_params, NimBLEScan::handleGapEvent, NULL);
-#    else
     int rc = ble_gap_disc(NimBLEDevice::m_own_addr_type, duration, &m_scan_params, NimBLEScan::handleGapEvent, NULL);
-#    endif
     switch (rc) {
         case 0:
             if (!is_continue) {
