@@ -12,13 +12,12 @@
  *      Author: kolban
  */
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
-#    include <algorithm>
+#include <algorithm>
 
-#    include "NimBLEAddress.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLELog.h"
+#include "NimBLEAddress.h"
+#include "NimBLEUtils.h"
+#include "NimBLELog.h"
 
 static const char *LOG_TAG = "NimBLEAddress";
 
@@ -179,5 +178,3 @@ NimBLEAddress::operator uint64_t() const {
     memcpy(&address, m_address, sizeof m_address);
     return address;
 } // operator uint64_t
-
-#endif

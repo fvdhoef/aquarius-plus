@@ -12,24 +12,18 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEADVERTISEDDEVICE_H_
-#define COMPONENTS_NIMBLEADVERTISEDDEVICE_H_
+#pragma once
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
-#    include "NimBLEAddress.h"
-#    include "NimBLEScan.h"
-#    include "NimBLEUUID.h"
+#include "NimBLEAddress.h"
+#include "NimBLEScan.h"
+#include "NimBLEUUID.h"
 
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "host/ble_hs_adv.h"
-#    else
-#        include "nimble/nimble/host/include/host/ble_hs_adv.h"
-#    endif
+#include "host/ble_hs_adv.h"
 
-#    include <map>
-#    include <vector>
-#    include <time.h>
+#include <map>
+#include <vector>
+#include <time.h>
 
 class NimBLEScan;
 /**
@@ -178,6 +172,3 @@ public:
      */
     virtual void onResult(NimBLEAdvertisedDevice *advertisedDevice) = 0;
 };
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_OBSERVER */
-#endif /* COMPONENTS_NIMBLEADVERTISEDDEVICE_H_ */

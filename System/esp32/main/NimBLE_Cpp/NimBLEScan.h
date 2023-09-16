@@ -11,22 +11,16 @@
  *  Created on: Jul 1, 2017
  *      Author: kolban
  */
-#ifndef COMPONENTS_NIMBLE_SCAN_H_
-#define COMPONENTS_NIMBLE_SCAN_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
-#    include "NimBLEAdvertisedDevice.h"
-#    include "NimBLEUtils.h"
+#include "NimBLEAdvertisedDevice.h"
+#include "NimBLEUtils.h"
 
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "host/ble_gap.h"
-#    else
-#        include "nimble/nimble/host/include/host/ble_gap.h"
-#    endif
+#include "host/ble_gap.h"
 
-#    include <vector>
+#include <vector>
 
 class NimBLEDevice;
 class NimBLEScan;
@@ -72,7 +66,6 @@ public:
     void              setDuplicateFilter(bool enabled);
     void              setLimitedOnly(bool enabled);
     void              setFilterPolicy(uint8_t filter);
-    void              clearDuplicateCache();
     bool              stop();
     void              clearResults();
     NimBLEScanResults getResults();
@@ -97,6 +90,3 @@ private:
     ble_task_data_t    *m_pTaskData;
     uint8_t             m_maxResults;
 };
-
-#endif /* CONFIG_BT_ENABLED CONFIG_BT_NIMBLE_ROLE_OBSERVER */
-#endif /* COMPONENTS_NIMBLE_SCAN_H_ */

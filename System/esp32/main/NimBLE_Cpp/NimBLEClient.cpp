@@ -12,21 +12,16 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLEClient.h"
-#    include "NimBLEDevice.h"
-#    include "NimBLELog.h"
+#include "NimBLEClient.h"
+#include "NimBLEDevice.h"
+#include "NimBLELog.h"
 
-#    include <string>
-#    include <unordered_set>
-#    include <climits>
+#include <string>
+#include <unordered_set>
+#include <climits>
 
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "nimble/nimble_port.h"
-#    else
-#        include "nimble/porting/nimble/include/nimble/nimble_port.h"
-#    endif
+#include "nimble/nimble_port.h"
 
 static const char           *LOG_TAG = "NimBLEClient";
 static NimBLEClientCallbacks defaultCallbacks;
@@ -249,10 +244,8 @@ bool NimBLEClient::connect(const NimBLEAddress &address, bool deleteAttributes) 
         return false;
     }
 
-#    ifdef ulTaskNotifyValueClear
     // Clear the task notification value to ensure we block
     ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
     // Wait for the connect timeout time +1 second for the connection to complete
     if (ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(m_connectTimeout + 1000)) == pdFALSE) {
         m_pTaskData = nullptr;
@@ -316,10 +309,8 @@ bool NimBLEClient::secureConnection() {
             return false;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     } while (taskData.rc == (BLE_HS_ERR_HCI_BASE + BLE_ERR_PINKEY_MISSING) && retryCount--);
 
@@ -441,17 +432,12 @@ void NimBLEClient::updateConnParams(uint16_t minInterval, uint16_t maxInterval, 
  * @param [in] tx_octets The preferred number of payload octets to use (Range 0x001B-0x00FB).
  */
 void NimBLEClient::setDataLen(uint16_t tx_octets) {
-#    if defined(CONFIG_NIMBLE_CPP_IDF) && !defined(ESP_IDF_VERSION) || \
-        (ESP_IDF_VERSION_MAJOR * 100 + ESP_IDF_VERSION_MINOR * 10 + ESP_IDF_VERSION_PATCH) < 432
-    return;
-#    else
     uint16_t tx_time = (tx_octets + 14) * 8;
 
     int rc = ble_gap_set_data_len(m_conn_id, tx_octets, tx_time);
     if (rc != 0) {
         NIMBLE_LOGE(LOG_TAG, "Set data length error: %d, %s", rc, NimBLEUtils::returnCodeToString(rc));
     }
-#    endif
 } // setDataLen
 
 /**
@@ -690,10 +676,8 @@ bool NimBLEClient::retrieveServices(const NimBLEUUID *uuid_filter) {
         return false;
     }
 
-#    ifdef ulTaskNotifyValueClear
     // Clear the task notification value to ensure we block
     ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
 
     // wait until we have all the services
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
@@ -1179,5 +1163,3 @@ bool NimBLEClientCallbacks::onConfirmPIN(uint32_t pin) {
     NIMBLE_LOGD("NimBLEClientCallbacks", "onConfirmPIN: default: true");
     return true;
 }
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

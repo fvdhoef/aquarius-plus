@@ -13,14 +13,13 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
-#    include "NimBLEScan.h"
-#    include "NimBLEDevice.h"
-#    include "NimBLELog.h"
+#include "NimBLEScan.h"
+#include "NimBLEDevice.h"
+#include "NimBLELog.h"
 
-#    include <string>
-#    include <climits>
+#include <string>
+#include <climits>
 
 static const char *LOG_TAG = "NimBLEScan";
 
@@ -304,8 +303,6 @@ bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResul
             break;
 
         case BLE_HS_EALREADY:
-            // Clear the cache if already scanning in case an advertiser was missed.
-            clearDuplicateCache();
             break;
 
         case BLE_HS_EBUSY:
@@ -349,10 +346,8 @@ NimBLEScanResults NimBLEScan::start(uint32_t duration, bool is_continue) {
     m_pTaskData              = &taskData;
 
     if (start(duration, nullptr, is_continue)) {
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     }
 
@@ -388,15 +383,6 @@ bool NimBLEScan::stop() {
     NIMBLE_LOGD(LOG_TAG, "<< stop()");
     return true;
 } // stop
-
-/**
- * @brief Clears the duplicate scan filter cache.
- */
-void NimBLEScan::clearDuplicateCache() {
-#    ifdef CONFIG_IDF_TARGET_ESP32 // Not available for ESP32C3
-    esp_ble_scan_dupilcate_list_flush();
-#    endif
-}
 
 /**
  * @brief Delete peer device from the scan results vector.
@@ -450,7 +436,6 @@ void NimBLEScan::clearResults() {
         delete it;
     }
     m_scanResults.m_advertisedDevicesVector.clear();
-    clearDuplicateCache();
 }
 
 /**
@@ -512,5 +497,3 @@ NimBLEAdvertisedDevice *NimBLEScanResults::getDevice(const NimBLEAddress &addres
 
     return nullptr;
 }
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_OBSERVER */

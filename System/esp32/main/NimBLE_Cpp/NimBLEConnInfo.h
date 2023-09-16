@@ -1,5 +1,4 @@
-#ifndef NIMBLECONNINFO_H_
-#define NIMBLECONNINFO_H_
+#pragma once
 
 #include "NimBLEAddress.h"
 
@@ -83,4 +82,3 @@ public:
         return m_desc.sec_state.key_size;
     }
 };
-#endif

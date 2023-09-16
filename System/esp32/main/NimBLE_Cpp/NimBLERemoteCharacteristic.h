@@ -12,18 +12,16 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_
-#define COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLERemoteService.h"
-#    include "NimBLERemoteDescriptor.h"
+#include "NimBLERemoteService.h"
+#include "NimBLERemoteDescriptor.h"
 
-#    include <vector>
-#    include <functional>
-#    include "NimBLELog.h"
+#include <vector>
+#include <functional>
+#include "NimBLELog.h"
 
 class NimBLERemoteService;
 class NimBLERemoteDescriptor;
@@ -85,11 +83,7 @@ public:
      * @details Only used for non-arrays and types without a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<!std::is_array<T>::value && !Has_c_str_len<T>::value, bool>::type
-#    endif
     writeValue(const T &s, bool response = false) {
         return writeValue((uint8_t *)&s, sizeof(T), response);
     }
@@ -101,11 +95,7 @@ public:
      * @details Only used if the <type\> has a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<Has_c_str_len<T>::value, bool>::type
-#    endif
     writeValue(const T &s, bool response = false) {
         return writeValue((uint8_t *)s.c_str(), s.length(), response);
     }
@@ -171,6 +161,3 @@ private:
     // We maintain a vector of descriptors owned by this characteristic.
     std::vector<NimBLERemoteDescriptor *> m_descriptorVector;
 }; // NimBLERemoteCharacteristic
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
-#endif /* COMPONENTS_NIMBLEREMOTECHARACTERISTIC_H_ */

@@ -13,13 +13,12 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
-#    include "NimBLEUtils.h"
-#    include "NimBLEUUID.h"
-#    include "NimBLELog.h"
+#include "NimBLEUtils.h"
+#include "NimBLEUUID.h"
+#include "NimBLELog.h"
 
-#    include <algorithm>
+#include <algorithm>
 
 static const char *LOG_TAG = "NimBLEUUID";
 
@@ -333,5 +332,3 @@ NimBLEUUID::operator std::string() const {
 
     return ble_uuid_to_str(&m_uuid.u, buf);
 }
-
-#endif /* CONFIG_BT_ENABLED */

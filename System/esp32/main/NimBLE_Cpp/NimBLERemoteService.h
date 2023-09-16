@@ -12,17 +12,15 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEREMOTESERVICE_H_
-#define COMPONENTS_NIMBLEREMOTESERVICE_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLEClient.h"
-#    include "NimBLEUUID.h"
-#    include "NimBLERemoteCharacteristic.h"
+#include "NimBLEClient.h"
+#include "NimBLEUUID.h"
+#include "NimBLERemoteCharacteristic.h"
 
-#    include <vector>
+#include <vector>
 
 class NimBLEClient;
 class NimBLERemoteCharacteristic;
@@ -75,6 +73,3 @@ private:
     uint16_t      m_startHandle;
     uint16_t      m_endHandle;
 }; // NimBLERemoteService
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
-#endif /* COMPONENTS_NIMBLEREMOTESERVICE_H_ */

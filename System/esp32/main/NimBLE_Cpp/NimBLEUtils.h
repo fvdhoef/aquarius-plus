@@ -6,24 +6,17 @@
  *
  */
 
-#ifndef COMPONENTS_NIMBLEUTILS_H_
-#define COMPONENTS_NIMBLEUTILS_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
-
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "host/ble_gap.h"
-#    else
-#        include "nimble/nimble/host/include/host/ble_gap.h"
-#    endif
+#include "host/ble_gap.h"
 
 /****  FIX COMPILATION ****/
-#    undef min
-#    undef max
+#undef min
+#undef max
 /**************************/
 
-#    include <string>
+#include <string>
 
 typedef struct {
     void        *pATT;
@@ -44,6 +37,3 @@ public:
     static const char *returnCodeToString(int rc);
     static int         checkConnParams(ble_gap_conn_params *params);
 };
-
-#endif // CONFIG_BT_ENABLED
-#endif // COMPONENTS_NIMBLEUTILS_H_

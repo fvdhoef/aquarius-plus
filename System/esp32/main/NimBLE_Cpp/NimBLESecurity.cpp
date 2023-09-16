@@ -13,10 +13,9 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
-#    include "NimBLESecurity.h"
-#    include "NimBLEDevice.h"
+#include "NimBLESecurity.h"
+#include "NimBLEDevice.h"
 
 NimBLESecurity::NimBLESecurity() {
 }
@@ -146,4 +145,3 @@ char* BLESecurity::esp_key_type_to_str(esp_ble_key_type_t key_type) {
 
 } // esp_key_type_to_str
 */
-#endif // CONFIG_BT_ENABLED

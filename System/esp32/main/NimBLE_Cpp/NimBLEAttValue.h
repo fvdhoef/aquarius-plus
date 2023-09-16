@@ -6,40 +6,26 @@
  *
  */
 
-#ifndef MAIN_NIMBLEATTVALUE_H_
-#define MAIN_NIMBLEATTVALUE_H_
+#pragma once
+
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
-
-#    ifdef NIMBLE_CPP_ARDUINO_STRING_AVAILABLE
-#        include <Arduino.h>
-#    endif
-
-#    include "NimBLELog.h"
+#include "NimBLELog.h"
 
 /****  FIX COMPILATION ****/
-#    undef min
-#    undef max
+#undef min
+#undef max
 /**************************/
 
-#    include <string>
-#    include <vector>
+#include <string>
+#include <vector>
 
-#    ifndef CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-#        define CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED 0
-#    endif
-
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-#        include <time.h>
-#    endif
-
-#    if !defined(CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH)
-#        define CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH 20
-#    elif CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH > BLE_ATT_ATTR_MAX_LEN
-#        error CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH cannot be larger than 512 (BLE_ATT_ATTR_MAX_LEN)
-#    elif CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH < 1
-#        error CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH cannot be less than 1; Range = 1 : 512
-#    endif
+#if !defined(CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH)
+#    define CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH 20
+#elif CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH > BLE_ATT_ATTR_MAX_LEN
+#    error CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH cannot be larger than 512 (BLE_ATT_ATTR_MAX_LEN)
+#elif CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH < 1
+#    error CONFIG_NIMBLE_CPP_ATT_VALUE_INIT_LENGTH cannot be less than 1; Range = 1 : 512
+#endif
 
 /* Used to determine if the type passed to a template has a c_str() and length() method. */
 template <typename T, typename = void, typename = void>
@@ -59,10 +45,8 @@ class NimBLEAttValue {
     uint16_t m_attr_max_len = 0;
     uint16_t m_attr_len     = 0;
     uint16_t m_capacity     = 0;
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-    time_t m_timestamp = 0;
-#    endif
-    void deepCopy(const NimBLEAttValue &source);
+    time_t   m_timestamp    = 0;
+    void     deepCopy(const NimBLEAttValue &source);
 
 public:
     /**
@@ -115,17 +99,6 @@ public:
     NimBLEAttValue(const std::vector<uint8_t> vec, uint16_t max_len = BLE_ATT_ATTR_MAX_LEN)
         : NimBLEAttValue(&vec[0], (uint16_t)vec.size(), max_len) {
     }
-
-#    ifdef NIMBLE_CPP_ARDUINO_STRING_AVAILABLE
-    /**
-     * @brief Construct with an initial value from an Arduino String.
-     * @param str An Arduino String containing to the initial value to set.
-     * @param[in] max_len The max size in bytes that the value can be.
-     */
-    NimBLEAttValue(const String str, uint16_t max_len = BLE_ATT_ATTR_MAX_LEN)
-        : NimBLEAttValue((uint8_t *)str.c_str(), str.length(), max_len) {
-    }
-#    endif
 
     /** @brief Copy constructor */
     NimBLEAttValue(const NimBLEAttValue &source) {
@@ -180,25 +153,6 @@ public:
         return m_attr_value + m_attr_len;
     }
 
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-    /** @brief Returns a timestamp of when the value was last updated */
-    time_t getTimeStamp() const {
-        return m_timestamp;
-    }
-
-    /** @brief Set the timestamp to the current time */
-    void setTimeStamp() {
-        m_timestamp = time(nullptr);
-    }
-
-    /**
-     * @brief Set the timestamp to the specified time
-     * @param[in] t The timestamp value to set
-     */
-    void setTimeStamp(time_t t) {
-        m_timestamp = t;
-    }
-#    else
     time_t getTimeStamp() const {
         return 0;
     }
@@ -206,7 +160,6 @@ public:
     }
     void setTimeStamp(time_t t) {
     }
-#    endif
 
     /**
      * @brief Set the value from a buffer
@@ -247,11 +200,7 @@ public:
      * @details Only used for types without a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<!Has_c_str_len<T>::value, bool>::type
-#    endif
     setValue(const T &s) {
         return setValue((uint8_t *)&s, sizeof(T));
     }
@@ -262,11 +211,7 @@ public:
      * @details Only used if the <type\> has a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<Has_c_str_len<T>::value, bool>::type
-#    endif
     setValue(const T &s) {
         return setValue((uint8_t *)s.c_str(), (uint16_t)s.length());
     }
@@ -338,13 +283,6 @@ public:
     bool operator!=(const NimBLEAttValue &source) {
         return !(*this == source);
     }
-
-#    ifdef NIMBLE_CPP_ARDUINO_STRING_AVAILABLE
-    /** @brief Operator; Get the value as an Arduino String value. */
-    operator String() const {
-        return String((char *)m_attr_value);
-    }
-#    endif
 };
 
 inline NimBLEAttValue::NimBLEAttValue(uint16_t init_len, uint16_t max_len) {
@@ -406,11 +344,7 @@ inline void NimBLEAttValue::deepCopy(const NimBLEAttValue &source) {
 
 inline const uint8_t *NimBLEAttValue::getValue(time_t *timestamp) {
     if (timestamp != nullptr) {
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-        *timestamp = m_timestamp;
-#    else
         *timestamp = 0;
-#    endif
     }
     return m_attr_value;
 }
@@ -428,11 +362,7 @@ inline bool NimBLEAttValue::setValue(const uint8_t *value, uint16_t len) {
     }
     assert(res && "setValue: realloc failed");
 
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-    time_t t = time(nullptr);
-#    else
     time_t t = 0;
-#    endif
 
     ble_npl_hw_enter_critical();
     m_attr_value = res;
@@ -462,11 +392,7 @@ inline NimBLEAttValue &NimBLEAttValue::append(const uint8_t *value, uint16_t len
     }
     assert(res && "append: realloc failed");
 
-#    if CONFIG_NIMBLE_CPP_ATT_VALUE_TIMESTAMP_ENABLED
-    time_t t = time(nullptr);
-#    else
     time_t t = 0;
-#    endif
 
     ble_npl_hw_enter_critical();
     m_attr_value = res;
@@ -478,6 +404,3 @@ inline NimBLEAttValue &NimBLEAttValue::append(const uint8_t *value, uint16_t len
 
     return *this;
 }
-
-#endif /*(CONFIG_BT_ENABLED) */
-#endif /* MAIN_NIMBLEATTVALUE_H_ */

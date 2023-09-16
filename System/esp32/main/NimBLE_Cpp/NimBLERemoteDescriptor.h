@@ -12,13 +12,11 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEREMOTEDESCRIPTOR_H_
-#define COMPONENTS_NIMBLEREMOTEDESCRIPTOR_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLERemoteCharacteristic.h"
+#include "NimBLERemoteCharacteristic.h"
 
 class NimBLERemoteCharacteristic;
 /**
@@ -48,11 +46,7 @@ public:
      * @details Only used for non-arrays and types without a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<!std::is_array<T>::value && !Has_c_str_len<T>::value, bool>::type
-#    endif
     writeValue(const T &s, bool response = false) {
         return writeValue((uint8_t *)&s, sizeof(T), response);
     }
@@ -64,11 +58,7 @@ public:
      * @details Only used if the <type\> has a `c_str()` method.
      */
     template <typename T>
-#    ifdef _DOXYGEN_
-    bool
-#    else
     typename std::enable_if<Has_c_str_len<T>::value, bool>::type
-#    endif
     writeValue(const T &s, bool response = false) {
         return writeValue((uint8_t *)s.c_str(), s.length(), response);
     }
@@ -100,6 +90,3 @@ private:
     NimBLEUUID                  m_uuid;
     NimBLERemoteCharacteristic *m_pRemoteCharacteristic;
 };
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
-#endif /* COMPONENTS_NIMBLEREMOTEDESCRIPTOR_H_ */

@@ -11,22 +11,20 @@
  *      Author: kolban
  */
 
-#ifndef MAIN_NIMBLECLIENT_H_
-#define MAIN_NIMBLECLIENT_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLEAddress.h"
-#    include "NimBLEUUID.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLEConnInfo.h"
-#    include "NimBLEAttValue.h"
-#    include "NimBLEAdvertisedDevice.h"
-#    include "NimBLERemoteService.h"
+#include "NimBLEAddress.h"
+#include "NimBLEUUID.h"
+#include "NimBLEUtils.h"
+#include "NimBLEConnInfo.h"
+#include "NimBLEAttValue.h"
+#include "NimBLEAdvertisedDevice.h"
+#include "NimBLERemoteService.h"
 
-#    include <vector>
-#    include <string>
+#include <vector>
+#include <string>
 
 class NimBLERemoteService;
 class NimBLERemoteCharacteristic;
@@ -149,6 +147,3 @@ public:
      */
     virtual bool onConfirmPIN(uint32_t pin);
 };
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
-#endif /* MAIN_NIMBLECLIENT_H_ */

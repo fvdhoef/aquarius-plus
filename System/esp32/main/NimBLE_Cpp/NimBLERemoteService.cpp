@@ -13,14 +13,13 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLERemoteService.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLEDevice.h"
-#    include "NimBLELog.h"
+#include "NimBLERemoteService.h"
+#include "NimBLEUtils.h"
+#include "NimBLEDevice.h"
+#include "NimBLELog.h"
 
-#    include <climits>
+#include <climits>
 
 static const char *LOG_TAG = "NimBLERemoteService";
 
@@ -213,10 +212,8 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
         return false;
     }
 
-#    ifdef ulTaskNotifyValueClear
     // Clear the task notification value to ensure we block
     ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     if (taskData.rc == 0) {
@@ -375,5 +372,3 @@ std::string NimBLERemoteService::toString() {
 
     return res;
 } // toString
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

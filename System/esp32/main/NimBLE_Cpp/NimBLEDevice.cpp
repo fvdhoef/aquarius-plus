@@ -13,79 +13,49 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
-#    include "NimBLEDevice.h"
-#    include "NimBLEUtils.h"
+#include "NimBLEDevice.h"
+#include "NimBLEUtils.h"
 
-#    ifdef ESP_PLATFORM
-#        include "esp_err.h"
-#        include "esp_bt.h"
-#        include "nvs_flash.h"
-#        if defined(CONFIG_NIMBLE_CPP_IDF)
-#            include "esp_nimble_hci.h"
-#            include "nimble/nimble_port.h"
-#            include "nimble/nimble_port_freertos.h"
-#            include "host/ble_hs.h"
-#            include "host/ble_hs_pvcy.h"
-#            include "host/util/util.h"
-#            include "services/gap/ble_svc_gap.h"
-#            include "services/gatt/ble_svc_gatt.h"
-#        else
-#            include "nimble/esp_port/esp-hci/include/esp_nimble_hci.h"
-#        endif
-#    else
-#        include "nimble/nimble/controller/include/controller/ble_phy.h"
-#    endif
+#include "esp_err.h"
+#include "esp_bt.h"
+#include "nvs_flash.h"
+#include "esp_nimble_hci.h"
+#include "nimble/nimble_port.h"
+#include "nimble/nimble_port_freertos.h"
+#include "host/ble_hs.h"
+#include "host/ble_hs_pvcy.h"
+#include "host/util/util.h"
+#include "services/gap/ble_svc_gap.h"
+#include "services/gatt/ble_svc_gatt.h"
 
-#    ifndef CONFIG_NIMBLE_CPP_IDF
-#        include "nimble/porting/nimble/include/nimble/nimble_port.h"
-#        include "nimble/porting/npl/freertos/include/nimble/nimble_port_freertos.h"
-#        include "nimble/nimble/host/include/host/ble_hs.h"
-#        include "nimble/nimble/host/include/host/ble_hs_pvcy.h"
-#        include "nimble/nimble/host/util/include/host/util/util.h"
-#        include "nimble/nimble/host/services/gap/include/services/gap/ble_svc_gap.h"
-#        include "nimble/nimble/host/services/gatt/include/services/gatt/ble_svc_gatt.h"
-#    endif
-
-#    if defined(ESP_PLATFORM) && defined(CONFIG_ENABLE_ARDUINO_DEPENDS)
-#        include "esp32-hal-bt.h"
-#    endif
-
-#    include "NimBLELog.h"
+#include "NimBLELog.h"
 
 static const char *LOG_TAG = "NimBLEDevice";
 
 /**
  * Singletons for the NimBLEDevice.
  */
-static bool initialized = false;
-#    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
-NimBLEScan *NimBLEDevice::m_pScan = nullptr;
-#    endif
-uint32_t NimBLEDevice::m_passkey = 123456;
-bool     NimBLEDevice::m_synced  = false;
+static bool initialized             = false;
+NimBLEScan *NimBLEDevice::m_pScan   = nullptr;
+uint32_t    NimBLEDevice::m_passkey = 123456;
+bool        NimBLEDevice::m_synced  = false;
 
-gap_event_handler      NimBLEDevice::m_customGapHandler = nullptr;
-ble_gap_event_listener NimBLEDevice::m_listener;
-#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-std::list<NimBLEClient *> NimBLEDevice::m_cList;
-#    endif
+gap_event_handler          NimBLEDevice::m_customGapHandler = nullptr;
+ble_gap_event_listener     NimBLEDevice::m_listener;
+std::list<NimBLEClient *>  NimBLEDevice::m_cList;
 std::list<NimBLEAddress>   NimBLEDevice::m_ignoreList;
 std::vector<NimBLEAddress> NimBLEDevice::m_whiteList;
 NimBLESecurityCallbacks   *NimBLEDevice::m_securityCallbacks = nullptr;
 uint8_t                    NimBLEDevice::m_own_addr_type     = BLE_OWN_ADDR_PUBLIC;
-#    ifdef ESP_PLATFORM
-uint16_t NimBLEDevice::m_scanDuplicateSize = CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE;
-uint8_t  NimBLEDevice::m_scanFilterMode    = CONFIG_BTDM_SCAN_DUPL_TYPE;
-#    endif
+uint16_t                   NimBLEDevice::m_scanDuplicateSize = CONFIG_BT_CTRL_SCAN_DUPL_CACHE_SIZE;
+uint8_t                    NimBLEDevice::m_scanFilterMode    = CONFIG_BT_CTRL_SCAN_DUPL_TYPE;
 
 /**
  * @brief Retrieve the Scan object that we use for scanning.
  * @return The scanning object reference.  This is a singleton object.  The caller should not
  * try and release/delete it.
  */
-#    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 /* STATIC */
 NimBLEScan *NimBLEDevice::getScan() {
     if (m_pScan == nullptr) {
@@ -93,7 +63,6 @@ NimBLEScan *NimBLEDevice::getScan() {
     }
     return m_pScan;
 } // getScan
-#    endif // #if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
 /**
  * @brief Creates a new client object and maintains a list of all client objects
@@ -102,11 +71,10 @@ NimBLEScan *NimBLEDevice::getScan() {
  * object, allows for calling NimBLEClient::connect(bool) without a device or address parameter.
  * @return A reference to the new client object.
  */
-#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 /* STATIC */
 NimBLEClient *NimBLEDevice::createClient(NimBLEAddress peerAddress) {
-    if (m_cList.size() >= NIMBLE_MAX_CONNECTIONS) {
-        NIMBLE_LOGW(LOG_TAG, "Number of clients exceeds Max connections. Cur=%d Max=%d", m_cList.size(), NIMBLE_MAX_CONNECTIONS);
+    if (m_cList.size() >= CONFIG_BT_NIMBLE_MAX_CONNECTIONS) {
+        NIMBLE_LOGW(LOG_TAG, "Number of clients exceeds Max connections. Cur=%d Max=%d", m_cList.size(), CONFIG_BT_NIMBLE_MAX_CONNECTIONS);
     }
 
     NimBLEClient *pClient = new NimBLEClient(peerAddress);
@@ -223,9 +191,6 @@ NimBLEClient *NimBLEDevice::getDisconnectedClient() {
     return nullptr;
 } // getDisconnectedClient
 
-#    endif // #if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
-
-#    ifdef ESP_PLATFORM
 /**
  * @brief Set the transmission power.
  * @param [in] powerLevel The power level to set, can be one of:
@@ -304,17 +269,6 @@ int NimBLEDevice::getPower(esp_ble_power_type_t powerType) {
     }
 } // getPower
 
-#    else
-
-void NimBLEDevice::setPower(int dbm) {
-    ble_phy_txpwr_set(dbm);
-}
-
-int NimBLEDevice::getPower() {
-    return ble_phy_txpwr_get();
-}
-#    endif
-
 /**
  * @brief Get our device address.
  * @return A NimBLEAddress object of our public address if we have one,
@@ -370,7 +324,6 @@ uint16_t NimBLEDevice::getMTU() {
     return ble_att_preferred_mtu();
 }
 
-#    ifdef ESP_PLATFORM
 /**
  * @brief Set the duplicate filter cache size for filtering scanned devices.
  * @param [in] cacheSize The number of advertisements filtered before the cache is reset.\n
@@ -415,9 +368,7 @@ void NimBLEDevice::setScanFilterMode(uint8_t mode) {
 
     m_scanFilterMode = mode;
 }
-#    endif
 
-#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 /**
  * @brief Gets the number of bonded peers stored
  */
@@ -507,7 +458,6 @@ NimBLEAddress NimBLEDevice::getBondedAddress(int index) {
 
     return NimBLEAddress(peer_id_addrs[index]);
 }
-#    endif
 
 /**
  * @brief Checks if a peer device is whitelisted.
@@ -633,13 +583,11 @@ void NimBLEDevice::onReset(int reason) {
 
     NIMBLE_LOGC(LOG_TAG, "Resetting state; reason=%d, %s", reason, NimBLEUtils::returnCodeToString(reason));
 
-#    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
     if (initialized) {
         if (m_pScan != nullptr) {
             m_pScan->onHostReset();
         }
     }
-#    endif
 } // onReset
 
 /**
@@ -658,14 +606,6 @@ void NimBLEDevice::onSync(void) {
     int rc = ble_hs_util_ensure_addr(0);
     assert(rc == 0);
 
-#    ifndef ESP_PLATFORM
-    rc = ble_hs_id_infer_auto(m_own_addr_type, &m_own_addr_type);
-    if (rc != 0) {
-        NIMBLE_LOGE(LOG_TAG, "error determining address type; rc=%d", rc);
-        return;
-    }
-#    endif
-
     // Yield for housekeeping before returning to operations.
     // Occasionally triggers exception without.
     taskYIELD();
@@ -673,11 +613,9 @@ void NimBLEDevice::onSync(void) {
     m_synced = true;
 
     if (initialized) {
-#    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
         if (m_pScan != nullptr) {
             m_pScan->onHostSync();
         }
-#    endif
     }
 } // onSync
 
@@ -703,11 +641,6 @@ void NimBLEDevice::init(const std::string &deviceName) {
     if (!initialized) {
         int       rc    = 0;
         esp_err_t errRc = ESP_OK;
-
-#    ifdef CONFIG_ENABLE_ARDUINO_DEPENDS
-        // make sure the linker includes esp32-hal-bt.c so Arduino init doesn't release BLE memory.
-        btStarted();
-#    endif
 
         errRc = nvs_flash_init();
 
@@ -765,19 +698,15 @@ void NimBLEDevice::deinit(bool clearAll) {
         m_synced    = false;
 
         if (clearAll) {
-#    if defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
             if (NimBLEDevice::m_pScan != nullptr) {
                 delete NimBLEDevice::m_pScan;
                 NimBLEDevice::m_pScan = nullptr;
             }
-#    endif
 
-#    if defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
             for (auto &it : m_cList) {
                 deleteClient(it);
                 m_cList.clear();
             }
-#    endif
 
             m_ignoreList.clear();
 
@@ -904,7 +833,6 @@ void NimBLEDevice::setSecurityCallbacks(NimBLESecurityCallbacks *callbacks) {
     NimBLEDevice::m_securityCallbacks = callbacks;
 } // setSecurityCallbacks
 
-#    ifdef ESP_PLATFORM
 /**
  * @brief Set the own address type.
  * @param [in] own_addr_type Own Bluetooth Device address type.\n
@@ -919,27 +847,26 @@ void NimBLEDevice::setSecurityCallbacks(NimBLESecurityCallbacks *callbacks) {
 void NimBLEDevice::setOwnAddrType(uint8_t own_addr_type, bool useNRPA) {
     m_own_addr_type = own_addr_type;
     switch (own_addr_type) {
-#        ifdef CONFIG_IDF_TARGET_ESP32
+#    ifdef CONFIG_IDF_TARGET_ESP32
         case BLE_OWN_ADDR_PUBLIC:
             ble_hs_pvcy_rpa_config(NIMBLE_HOST_DISABLE_PRIVACY);
             break;
-#        endif
+#    endif
         case BLE_OWN_ADDR_RANDOM:
             setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-#        ifdef CONFIG_IDF_TARGET_ESP32
+#    ifdef CONFIG_IDF_TARGET_ESP32
             ble_hs_pvcy_rpa_config(useNRPA ? NIMBLE_HOST_ENABLE_NRPA : NIMBLE_HOST_ENABLE_RPA);
-#        endif
+#    endif
             break;
         case BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT:
         case BLE_OWN_ADDR_RPA_RANDOM_DEFAULT:
             setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-#        ifdef CONFIG_IDF_TARGET_ESP32
+#    ifdef CONFIG_IDF_TARGET_ESP32
             ble_hs_pvcy_rpa_config(NIMBLE_HOST_ENABLE_RPA);
-#        endif
+#    endif
             break;
     }
 } // setOwnAddrType
-#    endif
 
 /**
  * @brief Start the connection securing and authorization for this connection.
@@ -1009,5 +936,3 @@ void NimBLEDevice::setCustomGapHandler(gap_event_handler handler) {
         assert(rc == 0);
     }
 } // setCustomGapHandler
-
-#endif // CONFIG_BT_ENABLED

@@ -13,14 +13,13 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
-#    include "NimBLEDevice.h"
-#    include "NimBLEAdvertisedDevice.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLELog.h"
+#include "NimBLEDevice.h"
+#include "NimBLEAdvertisedDevice.h"
+#include "NimBLEUtils.h"
+#include "NimBLELog.h"
 
-#    include <climits>
+#include <climits>
 
 static const char *LOG_TAG = "NimBLEAdvertisedDevice";
 
@@ -782,5 +781,3 @@ bool NimBLEAdvertisedDevice::isConnectable() {
 bool NimBLEAdvertisedDevice::isLegacyAdvertisement() {
     return true;
 } // isLegacyAdvertisement
-
-#endif /* CONFIG_BT_ENABLED  && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

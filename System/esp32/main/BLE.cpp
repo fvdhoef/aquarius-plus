@@ -74,11 +74,11 @@ void BLE::onDisconnect(NimBLEClient *client) {
 // the currently used parameters. Default will return true.
 bool BLE::onConnParamsUpdateRequest(NimBLEClient *client, const ble_gap_upd_params *params) {
     ESP_LOGI(TAG, "onConnParamsUpdateRequest");
-    if (params->itvl_min < 24) {                    // 1.25ms units
+    if (params->itvl_min < 24) { // 1.25ms units
         return false;
-    } else if (params->itvl_max > 40) {             // 1.25ms units
+    } else if (params->itvl_max > 40) { // 1.25ms units
         return false;
-    } else if (params->latency > 2) {               // Number of intervals allowed to skip
+    } else if (params->latency > 2) { // Number of intervals allowed to skip
         return false;
     } else if (params->supervision_timeout > 100) { // 10ms units
         return false;
@@ -150,7 +150,7 @@ bool BLE::connectToServer(NimBLEAdvertisedDevice *advDevice) {
 
     // No client to reuse? Create a new one.
     if (!client) {
-        if (NimBLEDevice::getClientListSize() >= NIMBLE_MAX_CONNECTIONS) {
+        if (NimBLEDevice::getClientListSize() >= CONFIG_BT_NIMBLE_MAX_CONNECTIONS) {
             ESP_LOGE(TAG, "Max clients reached - no more connections available");
             return false;
         }

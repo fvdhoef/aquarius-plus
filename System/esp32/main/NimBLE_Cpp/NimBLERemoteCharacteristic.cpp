@@ -13,13 +13,12 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLERemoteCharacteristic.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLELog.h"
+#include "NimBLERemoteCharacteristic.h"
+#include "NimBLEUtils.h"
+#include "NimBLELog.h"
 
-#    include <climits>
+#include <climits>
 
 static const char *LOG_TAG = "NimBLERemoteCharacteristic";
 
@@ -229,10 +228,8 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
             return false;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
         if (taskData.rc != 0) {
@@ -254,10 +251,8 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
         return false;
     }
 
-#    ifdef ulTaskNotifyValueClear
     // Clear the task notification value to ensure we block
     ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
 
     if (taskData.rc != 0) {
@@ -465,10 +460,8 @@ NimBLEAttValue NimBLERemoteCharacteristic::readValue(time_t *timestamp) {
             return value;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
@@ -736,10 +729,8 @@ bool NimBLERemoteCharacteristic::writeValue(const uint8_t *data, size_t length, 
             return false;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
@@ -789,5 +780,3 @@ int NimBLERemoteCharacteristic::onWriteCB(uint16_t conn_handle, const struct ble
 
     return 0;
 }
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

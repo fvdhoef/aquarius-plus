@@ -12,24 +12,18 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEADDRESS_H_
-#define COMPONENTS_NIMBLEADDRESS_H_
-#include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
+#pragma once
 
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "nimble/ble.h"
-#    else
-#        include "nimble/nimble/include/nimble/ble.h"
-#    endif
+#include "nimconfig.h"
+#include "nimble/ble.h"
 
 /****  FIX COMPILATION ****/
-#    undef min
-#    undef max
+#undef min
+#undef max
 /**************************/
 
-#    include <string>
-#    include <algorithm>
+#include <string>
+#include <algorithm>
 
 /**
  * @brief A %BLE device address.
@@ -57,6 +51,3 @@ private:
     uint8_t m_address[6];
     uint8_t m_addrType;
 };
-
-#endif /* CONFIG_BT_ENABLED */
-#endif /* COMPONENTS_NIMBLEADDRESS_H_ */

@@ -13,13 +13,12 @@
  */
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#    include "NimBLERemoteDescriptor.h"
-#    include "NimBLEUtils.h"
-#    include "NimBLELog.h"
+#include "NimBLERemoteDescriptor.h"
+#include "NimBLEUtils.h"
+#include "NimBLELog.h"
 
-#    include <climits>
+#include <climits>
 
 static const char *LOG_TAG = "NimBLERemoteDescriptor";
 
@@ -128,10 +127,8 @@ NimBLEAttValue NimBLERemoteDescriptor::readValue() {
             return value;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
@@ -299,10 +296,8 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
             return false;
         }
 
-#    ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
-#    endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
@@ -331,5 +326,3 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
     NIMBLE_LOGD(LOG_TAG, "<< Descriptor writeValue, rc: %d", rc);
     return (rc == 0);
 } // writeValue
-
-#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

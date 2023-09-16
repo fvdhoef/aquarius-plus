@@ -12,24 +12,18 @@
  *      Author: kolban
  */
 
-#ifndef COMPONENTS_NIMBLEUUID_H_
-#define COMPONENTS_NIMBLEUUID_H_
+#pragma once
 
 #include "nimconfig.h"
-#if defined(CONFIG_BT_ENABLED)
 
-#    if defined(CONFIG_NIMBLE_CPP_IDF)
-#        include "host/ble_uuid.h"
-#    else
-#        include "nimble/nimble/host/include/host/ble_uuid.h"
-#    endif
+#include "host/ble_uuid.h"
 
 /****  FIX COMPILATION ****/
-#    undef min
-#    undef max
+#undef min
+#undef max
 /**************************/
 
-#    include <string>
+#include <string>
 
 /**
  * @brief A model of a %BLE UUID.
@@ -59,6 +53,4 @@ public:
 private:
     ble_uuid_any_t m_uuid;
     bool           m_valueSet = false;
-};     // NimBLEUUID
-#endif /* CONFIG_BT_ENABLED */
-#endif /* COMPONENTS_NIMBLEUUID_H_ */
+}; // NimBLEUUID
