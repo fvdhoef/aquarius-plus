@@ -10,12 +10,6 @@
 
 #include "nimconfig.h"
 #include "host/ble_gap.h"
-
-/****  FIX COMPILATION ****/
-#undef min
-#undef max
-/**************************/
-
 #include <string>
 
 typedef struct {

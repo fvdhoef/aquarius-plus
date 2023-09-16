@@ -117,7 +117,6 @@ public:
     uint8_t       getAdvLength();
     size_t        getPayloadLength();
     uint8_t       getAddressType();
-    time_t        getTimestamp();
     bool          isAdvertisingService(const NimBLEUUID &uuid);
     bool          haveAppearance();
     bool          haveManufacturerData();
@@ -147,7 +146,6 @@ private:
     NimBLEAddress        m_address = NimBLEAddress("");
     uint8_t              m_advType;
     int                  m_rssi;
-    time_t               m_timestamp;
     bool                 m_callbackSent;
     uint8_t              m_advLength;
     std::vector<uint8_t> m_payload;

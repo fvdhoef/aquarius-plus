@@ -16,12 +16,6 @@
 
 #include "nimconfig.h"
 #include "nimble/ble.h"
-
-/****  FIX COMPILATION ****/
-#undef min
-#undef max
-/**************************/
-
 #include <string>
 #include <algorithm>
 

@@ -16,12 +16,6 @@
 
 #include "nimconfig.h"
 #include "host/ble_gap.h"
-
-/****  FIX COMPILATION ****/
-#undef min
-#undef max
-/**************************/
-
 #include <stdint.h>
 
 #define ESP_LE_AUTH_NO_BOND 0x00 /*!< 0*/                                                                             /* relate to BTM_LE_AUTH_NO_BOND in stack/btm_api.h */

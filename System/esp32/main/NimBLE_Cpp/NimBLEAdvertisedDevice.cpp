@@ -31,7 +31,6 @@ NimBLEAdvertisedDevice::NimBLEAdvertisedDevice()
     m_advType      = 0;
     m_rssi         = -9999;
     m_callbackSent = false;
-    m_timestamp    = 0;
     m_advLength    = 0;
 } // NimBLEAdvertisedDevice
 
@@ -748,14 +747,6 @@ uint8_t NimBLEAdvertisedDevice::getAdvLength() {
 uint8_t NimBLEAdvertisedDevice::getAddressType() {
     return m_address.getType();
 } // getAddressType
-
-/**
- * @brief Get the timeStamp of when the device last advertised.
- * @return The timeStamp of when the device was last seen.
- */
-time_t NimBLEAdvertisedDevice::getTimestamp() {
-    return m_timestamp;
-} // getTimestamp
 
 /**
  * @brief Get the length of the payload advertised by the device.

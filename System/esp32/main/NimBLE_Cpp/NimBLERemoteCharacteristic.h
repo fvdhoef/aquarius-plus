@@ -56,7 +56,7 @@ public:
     uint16_t                                        getHandle();
     uint16_t                                        getDefHandle();
     NimBLEUUID                                      getUUID();
-    NimBLEAttValue                                  readValue(time_t *timestamp = nullptr);
+    NimBLEAttValue                                  readValue();
     std::string                                     toString();
     NimBLERemoteService                            *getRemoteService();
 
@@ -64,7 +64,7 @@ public:
     uint16_t       readUInt16() __attribute__((deprecated("Use template readValue<uint16_t>()")));
     uint32_t       readUInt32() __attribute__((deprecated("Use template readValue<uint32_t>()")));
     float          readFloat() __attribute__((deprecated("Use template readValue<float>()")));
-    NimBLEAttValue getValue(time_t *timestamp = nullptr);
+    NimBLEAttValue getValue();
 
     bool subscribe(bool notifications = true, notify_callback notifyCallback = nullptr, bool response = false);
     bool unsubscribe(bool response = false);
@@ -103,34 +103,32 @@ public:
     /**
      * @brief Template to convert the remote characteristic data to <type\>.
      * @tparam T The type to convert the data to.
-     * @param [in] timestamp A pointer to a time_t struct to store the time the value was read.
      * @param [in] skipSizeCheck If true it will skip checking if the data size is less than <tt>sizeof(<type\>)</tt>.
      * @return The data converted to <type\> or NULL if skipSizeCheck is false and the data is
      * less than <tt>sizeof(<type\>)</tt>.
-     * @details <b>Use:</b> <tt>getValue<type>(&timestamp, skipSizeCheck);</tt>
+     * @details <b>Use:</b> <tt>getValue<type>(skipSizeCheck);</tt>
      */
     template <typename T>
-    T getValue(time_t *timestamp = nullptr, bool skipSizeCheck = false) {
+    T getValue(bool skipSizeCheck = false) {
         if (!skipSizeCheck && m_value.size() < sizeof(T))
             return T();
-        return *((T *)m_value.getValue(timestamp));
+        return *((T *)m_value.getValue());
     }
 
     /**
      * @brief Template to convert the remote characteristic data to <type\>.
      * @tparam T The type to convert the data to.
-     * @param [in] timestamp A pointer to a time_t struct to store the time the value was read.
      * @param [in] skipSizeCheck If true it will skip checking if the data size is less than <tt>sizeof(<type\>)</tt>.
      * @return The data converted to <type\> or NULL if skipSizeCheck is false and the data is
      * less than <tt>sizeof(<type\>)</tt>.
-     * @details <b>Use:</b> <tt>readValue<type>(&timestamp, skipSizeCheck);</tt>
+     * @details <b>Use:</b> <tt>readValue<type>(skipSizeCheck);</tt>
      */
     template <typename T>
-    T readValue(time_t *timestamp = nullptr, bool skipSizeCheck = false) {
+    T readValue(bool skipSizeCheck = false) {
         NimBLEAttValue value = readValue();
         if (!skipSizeCheck && value.size() < sizeof(T))
             return T();
-        return *((T *)value.getValue(timestamp));
+        return *((T *)value.getValue());
     }
 
 private:

@@ -10,12 +10,6 @@
 
 #include "nimconfig.h"
 #include "NimBLELog.h"
-
-/****  FIX COMPILATION ****/
-#undef min
-#undef max
-/**************************/
-
 #include <string>
 #include <vector>
 
@@ -45,7 +39,6 @@ class NimBLEAttValue {
     uint16_t m_attr_max_len = 0;
     uint16_t m_attr_len     = 0;
     uint16_t m_capacity     = 0;
-    time_t   m_timestamp    = 0;
     void     deepCopy(const NimBLEAttValue &source);
 
 public:
@@ -153,14 +146,6 @@ public:
         return m_attr_value + m_attr_len;
     }
 
-    time_t getTimeStamp() const {
-        return 0;
-    }
-    void setTimeStamp() {
-    }
-    void setTimeStamp(time_t t) {
-    }
-
     /**
      * @brief Set the value from a buffer
      * @param[in] value A ponter to a buffer containing the value.
@@ -178,11 +163,10 @@ public:
     }
 
     /**
-     * @brief Get a pointer to the value buffer with timestamp.
-     * @param[in] timestamp A ponter to a time_t variable to store the timestamp.
+     * @brief Get a pointer to the value buffer
      * @returns A pointer to the internal value buffer.
      */
-    const uint8_t *getValue(time_t *timestamp);
+    const uint8_t *getValue();
 
     /**
      * @brief Append data to the value.
@@ -219,19 +203,18 @@ public:
     /**
      * @brief Template to return the value as a <type\>.
      * @tparam T The type to convert the data to.
-     * @param [in] timestamp A pointer to a time_t struct to store the time the value was read.
      * @param [in] skipSizeCheck If true it will skip checking if the data size is less than\n
      * <tt>sizeof(<type\>)</tt>.
      * @return The data converted to <type\> or NULL if skipSizeCheck is false and the data is\n
      * less than <tt>sizeof(<type\>)</tt>.
-     * @details <b>Use:</b> <tt>getValue<type>(&timestamp, skipSizeCheck);</tt>
+     * @details <b>Use:</b> <tt>getValue<type>(skipSizeCheck);</tt>
      */
     template <typename T>
-    T getValue(time_t *timestamp = nullptr, bool skipSizeCheck = false) {
+    T getValue(bool skipSizeCheck = false) {
         if (!skipSizeCheck && size() < sizeof(T)) {
             return T();
         }
-        return *((T *)getValue(timestamp));
+        return *((T *)getValue());
     }
 
     /*********************** Operators ************************/
@@ -291,7 +274,6 @@ inline NimBLEAttValue::NimBLEAttValue(uint16_t init_len, uint16_t max_len) {
     m_attr_max_len = std::min(BLE_ATT_ATTR_MAX_LEN, (int)max_len);
     m_attr_len     = 0;
     m_capacity     = init_len;
-    setTimeStamp(0);
 }
 
 inline NimBLEAttValue::NimBLEAttValue(const uint8_t *value, uint16_t len, uint16_t max_len)
@@ -311,11 +293,10 @@ inline NimBLEAttValue &NimBLEAttValue::operator=(NimBLEAttValue &&source) {
     if (this != &source) {
         free(m_attr_value);
 
-        m_attr_value   = source.m_attr_value;
-        m_attr_max_len = source.m_attr_max_len;
-        m_attr_len     = source.m_attr_len;
-        m_capacity     = source.m_capacity;
-        setTimeStamp(source.getTimeStamp());
+        m_attr_value        = source.m_attr_value;
+        m_attr_max_len      = source.m_attr_max_len;
+        m_attr_len          = source.m_attr_len;
+        m_capacity          = source.m_capacity;
         source.m_attr_value = nullptr;
     }
     return *this;
@@ -337,15 +318,11 @@ inline void NimBLEAttValue::deepCopy(const NimBLEAttValue &source) {
     m_attr_max_len = source.m_attr_max_len;
     m_attr_len     = source.m_attr_len;
     m_capacity     = source.m_capacity;
-    setTimeStamp(source.getTimeStamp());
     memcpy(m_attr_value, source.m_attr_value, m_attr_len + 1);
     ble_npl_hw_exit_critical(0);
 }
 
-inline const uint8_t *NimBLEAttValue::getValue(time_t *timestamp) {
-    if (timestamp != nullptr) {
-        *timestamp = 0;
-    }
+inline const uint8_t *NimBLEAttValue::getValue() {
     return m_attr_value;
 }
 
@@ -362,14 +339,11 @@ inline bool NimBLEAttValue::setValue(const uint8_t *value, uint16_t len) {
     }
     assert(res && "setValue: realloc failed");
 
-    time_t t = 0;
-
     ble_npl_hw_enter_critical();
     m_attr_value = res;
     memcpy(m_attr_value, value, len);
     m_attr_value[len] = '\0';
     m_attr_len        = len;
-    setTimeStamp(t);
     ble_npl_hw_exit_critical(0);
     return true;
 }
@@ -392,14 +366,11 @@ inline NimBLEAttValue &NimBLEAttValue::append(const uint8_t *value, uint16_t len
     }
     assert(res && "append: realloc failed");
 
-    time_t t = 0;
-
     ble_npl_hw_enter_critical();
     m_attr_value = res;
     memcpy(m_attr_value + m_attr_len, value, len);
     m_attr_len               = new_len;
     m_attr_value[m_attr_len] = '\0';
-    setTimeStamp(t);
     ble_npl_hw_exit_critical(0);
 
     return *this;

@@ -28,36 +28,6 @@
 #include <string>
 #include <list>
 
-#define BLEDevice NimBLEDevice
-#define BLEClient NimBLEClient
-#define BLERemoteService NimBLERemoteService
-#define BLERemoteCharacteristic NimBLERemoteCharacteristic
-#define BLERemoteDescriptor NimBLERemoteDescriptor
-#define BLEAdvertisedDevice NimBLEAdvertisedDevice
-#define BLEScan NimBLEScan
-#define BLEUUID NimBLEUUID
-#define BLESecurity NimBLESecurity
-#define BLESecurityCallbacks NimBLESecurityCallbacks
-#define BLEAddress NimBLEAddress
-#define BLEUtils NimBLEUtils
-#define BLEClientCallbacks NimBLEClientCallbacks
-#define BLEAdvertisedDeviceCallbacks NimBLEAdvertisedDeviceCallbacks
-#define BLEScanResults NimBLEScanResults
-#define BLEServer NimBLEServer
-#define BLEService NimBLEService
-#define BLECharacteristic NimBLECharacteristic
-#define BLEAdvertising NimBLEAdvertising
-#define BLEServerCallbacks NimBLEServerCallbacks
-#define BLECharacteristicCallbacks NimBLECharacteristicCallbacks
-#define BLEAdvertisementData NimBLEAdvertisementData
-#define BLEDescriptor NimBLEDescriptor
-#define BLE2902 NimBLE2902
-#define BLE2904 NimBLE2904
-#define BLEDescriptorCallbacks NimBLEDescriptorCallbacks
-#define BLEBeacon NimBLEBeacon
-#define BLEEddystoneTLM NimBLEEddystoneTLM
-#define BLEEddystoneURL NimBLEEddystoneURL
-
 typedef int (*gap_event_handler)(ble_gap_event *event, void *arg);
 
 extern "C" void ble_store_config_init(void);

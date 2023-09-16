@@ -15,14 +15,7 @@
 #pragma once
 
 #include "nimconfig.h"
-
 #include "host/ble_uuid.h"
-
-/****  FIX COMPILATION ****/
-#undef min
-#undef max
-/**************************/
-
 #include <string>
 
 /**

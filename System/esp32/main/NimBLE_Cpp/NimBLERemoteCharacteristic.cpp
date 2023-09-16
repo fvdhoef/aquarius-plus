@@ -386,14 +386,9 @@ NimBLEUUID NimBLERemoteCharacteristic::getUUID() {
 
 /**
  * @brief Get the value of the remote characteristic.
- * @param [in] timestamp A pointer to a time_t struct to store the time the value was read.
  * @return The value of the remote characteristic.
  */
-NimBLEAttValue NimBLERemoteCharacteristic::getValue(time_t *timestamp) {
-    if (timestamp != nullptr) {
-        *timestamp = m_value.getTimeStamp();
-    }
-
+NimBLEAttValue NimBLERemoteCharacteristic::getValue() {
     return m_value;
 }
 
@@ -434,10 +429,9 @@ float NimBLERemoteCharacteristic::readFloat() {
 
 /**
  * @brief Read the value of the remote characteristic.
- * @param [in] timestamp A pointer to a time_t struct to store the time the value was read.
  * @return The value of the remote characteristic.
  */
-NimBLEAttValue NimBLERemoteCharacteristic::readValue(time_t *timestamp) {
+NimBLEAttValue NimBLERemoteCharacteristic::readValue() {
     NIMBLE_LOGD(LOG_TAG, ">> readValue(): uuid: %s, handle: %d 0x%.2x", getUUID().toString().c_str(), getHandle(), getHandle());
 
     NimBLEClient  *pClient = getRemoteService()->getClient();
@@ -487,11 +481,7 @@ NimBLEAttValue NimBLERemoteCharacteristic::readValue(time_t *timestamp) {
         }
     } while (rc != 0 && retryCount--);
 
-    value.setTimeStamp();
     m_value = value;
-    if (timestamp != nullptr) {
-        *timestamp = value.getTimeStamp();
-    }
 
     NIMBLE_LOGD(LOG_TAG, "<< readValue length: %d rc=%d", value.length(), rc);
     return value;
