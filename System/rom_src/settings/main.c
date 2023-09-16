@@ -42,10 +42,8 @@ int main(void) {
 cleanup:
     close(fd);
 
-    disp_set_bar_color(6);
-    disp_set_text_color(6);
-    disp_cursor_hide();
-    disp_clear();
+    // Clear screen
+    putchar(11);
 
     // Returning a value to exit the main loop
     return 0;

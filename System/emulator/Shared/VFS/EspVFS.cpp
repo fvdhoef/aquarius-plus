@@ -11,7 +11,7 @@ extern const uint8_t settings_aqx_start[] asm("_binary_settings_aqx_start");
 extern const uint8_t settings_aqx_end[] asm("_binary_settings_aqx_end");
 #endif
 
-static const char *fn_settings = "settings.aqx";
+static const char *fn_settings = "settings";
 static const char *fn_com      = "com";
 
 EspVFS::EspVFS() {
