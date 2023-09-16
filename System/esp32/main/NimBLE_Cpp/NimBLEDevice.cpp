@@ -678,7 +678,6 @@ void NimBLEDevice::onSync(void) {
             m_pScan->onHostSync();
         }
 #    endif
-
     }
 } // onSync
 

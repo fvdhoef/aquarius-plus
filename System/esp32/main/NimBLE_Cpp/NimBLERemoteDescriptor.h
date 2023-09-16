@@ -18,7 +18,7 @@
 #include "nimconfig.h"
 #if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
 
-#include "NimBLERemoteCharacteristic.h"
+#    include "NimBLERemoteCharacteristic.h"
 
 class NimBLERemoteCharacteristic;
 /**
@@ -27,18 +27,17 @@ class NimBLERemoteCharacteristic;
 class NimBLERemoteDescriptor {
 public:
     uint16_t                    getHandle();
-    NimBLERemoteCharacteristic* getRemoteCharacteristic();
+    NimBLERemoteCharacteristic *getRemoteCharacteristic();
     NimBLEUUID                  getUUID();
     NimBLEAttValue              readValue();
 
-    uint8_t                     readUInt8()  __attribute__ ((deprecated("Use template readValue<uint8_t>()")));
-    uint16_t                    readUInt16() __attribute__ ((deprecated("Use template readValue<uint16_t>()")));
-    uint32_t                    readUInt32() __attribute__ ((deprecated("Use template readValue<uint32_t>()")));
-    std::string                 toString(void);
-    bool                        writeValue(const uint8_t* data, size_t length, bool response = false);
-    bool                        writeValue(const std::vector<uint8_t>& v, bool response = false);
-    bool                        writeValue(const char* s, bool response = false);
-
+    uint8_t     readUInt8() __attribute__((deprecated("Use template readValue<uint8_t>()")));
+    uint16_t    readUInt16() __attribute__((deprecated("Use template readValue<uint16_t>()")));
+    uint32_t    readUInt32() __attribute__((deprecated("Use template readValue<uint32_t>()")));
+    std::string toString(void);
+    bool        writeValue(const uint8_t *data, size_t length, bool response = false);
+    bool        writeValue(const std::vector<uint8_t> &v, bool response = false);
+    bool        writeValue(const char *s, bool response = false);
 
     /*********************** Template Functions ************************/
 
@@ -48,14 +47,14 @@ public:
      * @param [in] response True == request write response.
      * @details Only used for non-arrays and types without a `c_str()` method.
      */
-    template<typename T>
-#ifdef _DOXYGEN_
+    template <typename T>
+#    ifdef _DOXYGEN_
     bool
-#else
+#    else
     typename std::enable_if<!std::is_array<T>::value && !Has_c_str_len<T>::value, bool>::type
-#endif
-    writeValue(const T& s, bool response = false) {
-        return writeValue((uint8_t*)&s, sizeof(T), response);
+#    endif
+    writeValue(const T &s, bool response = false) {
+        return writeValue((uint8_t *)&s, sizeof(T), response);
     }
 
     /**
@@ -64,14 +63,14 @@ public:
      * @param [in] response True == request write response.
      * @details Only used if the <type\> has a `c_str()` method.
      */
-    template<typename T>
-#ifdef _DOXYGEN_
+    template <typename T>
+#    ifdef _DOXYGEN_
     bool
-#else
+#    else
     typename std::enable_if<Has_c_str_len<T>::value, bool>::type
-#endif
-    writeValue(const T& s, bool response = false) {
-        return writeValue((uint8_t*)s.c_str(), s.length(), response);
+#    endif
+    writeValue(const T &s, bool response = false) {
+        return writeValue((uint8_t *)s.c_str(), s.length(), response);
     }
 
     /**
@@ -82,26 +81,24 @@ public:
      * less than <tt>sizeof(<type\>)</tt>.
      * @details <b>Use:</b> <tt>readValue<type>(skipSizeCheck);</tt>
      */
-    template<typename T>
+    template <typename T>
     T readValue(bool skipSizeCheck = false) {
         NimBLEAttValue value = readValue();
-        if(!skipSizeCheck && value.size() < sizeof(T)) return T();
+        if (!skipSizeCheck && value.size() < sizeof(T))
+            return T();
         return *((T *)value.data());
     }
 
 private:
-    friend class                NimBLERemoteCharacteristic;
+    friend class NimBLERemoteCharacteristic;
 
-    NimBLERemoteDescriptor      (NimBLERemoteCharacteristic* pRemoteCharacteristic,
-                                const struct ble_gatt_dsc *dsc);
-    static int                  onWriteCB(uint16_t conn_handle, const struct ble_gatt_error *error,
-                                          struct ble_gatt_attr *attr, void *arg);
-    static int                  onReadCB(uint16_t conn_handle, const struct ble_gatt_error *error,
-                                         struct ble_gatt_attr *attr, void *arg);
+    NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemoteCharacteristic, const struct ble_gatt_dsc *dsc);
+    static int onWriteCB(uint16_t conn_handle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg);
+    static int onReadCB(uint16_t conn_handle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg);
 
     uint16_t                    m_handle;
     NimBLEUUID                  m_uuid;
-    NimBLERemoteCharacteristic* m_pRemoteCharacteristic;
+    NimBLERemoteCharacteristic *m_pRemoteCharacteristic;
 };
 
 #endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */
