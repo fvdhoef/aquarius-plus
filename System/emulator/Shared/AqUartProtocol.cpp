@@ -78,7 +78,7 @@ void AqUartProtocol::init() {
 
     // Initialize UART to FPGA
     uart_config_t uart_config = {
-        .baud_rate           = 1789773,
+        .baud_rate           = 3579545,
         .data_bits           = UART_DATA_8_BITS,
         .parity              = UART_PARITY_DISABLE,
         .stop_bits           = UART_STOP_BITS_1,

@@ -10,10 +10,10 @@ module esp_uart_tx(
     output wire        tx_busy);
 
     // Bit-timing
-    reg [2:0] clk_cnt_r = 3'd0;
-    always @(posedge clk) clk_cnt_r <= clk_cnt_r + 3'd1;
+    reg [1:0] clk_cnt_r = 2'd0;
+    always @(posedge clk) clk_cnt_r <= clk_cnt_r + 2'd1;
 
-    wire next_bit = clk_cnt_r == 3'd0;
+    wire next_bit = clk_cnt_r == 2'd0;
 
     // Shift out serial data
     reg [8:0] tx_shift_r;

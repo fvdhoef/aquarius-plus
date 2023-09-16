@@ -19,12 +19,12 @@ module esp_uart_rx(
     wire start_condition = (rxd_r[3:2] == 'b10);
 
     // Bit-timing
-    reg [2:0] clk_cnt_r;
+    reg [1:0] clk_cnt_r;
     always @(posedge clk)
         if (!started_r)
             clk_cnt_r <= 0;
         else
-            clk_cnt_r <= clk_cnt_r + 3'd1;
+            clk_cnt_r <= clk_cnt_r + 2'd1;
 
     // Receive logic
     reg [3:0] bit_cnt_r;
@@ -50,7 +50,7 @@ module esp_uart_rx(
                 if (start_condition)
                     started_r <= 1;
 
-            end else if (clk_cnt_r == 3'd4) begin
+            end else if (clk_cnt_r == 2'd1) begin
                 if (bit_cnt_r == 4'd9) begin
                     if (rx_in) begin
                         started_r <= 0;
