@@ -499,10 +499,10 @@ void UI::wndCpuState(bool *p_open) {
             if (isCall || isRst) {
                 emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
 
-                if (strncmp(tmp2, "RST 10H", 7) == 0 ||
+                if (strncmp(tmp2, "RST 8H", 6) == 0 ||
                     strncmp(tmp2, "RST 30H", 7) == 0) {
 
-                    // Skip one extra byte on RST 10H/30H, since on the Aq these
+                    // Skip one extra byte on RST 08H/30H, since on the Aq these
                     // system calls absorb the byte following this instruction.
                     emuState.tmpBreakpoint++;
                 }
