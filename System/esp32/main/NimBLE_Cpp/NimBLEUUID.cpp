@@ -16,7 +16,6 @@
 
 #include "NimBLEUtils.h"
 #include "NimBLEUUID.h"
-#include "NimBLELog.h"
 
 #include <algorithm>
 

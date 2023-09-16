@@ -46,4 +46,4 @@ public:
 private:
     ble_uuid_any_t m_uuid;
     bool           m_valueSet = false;
-}; // NimBLEUUID
+};

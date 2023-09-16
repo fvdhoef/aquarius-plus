@@ -19,7 +19,6 @@
 #include "NimBLEScan.h"
 #include "NimBLEClient.h"
 #include "NimBLEUtils.h"
-#include "NimBLESecurity.h"
 #include "NimBLEAddress.h"
 
 #include "esp_bt.h"
@@ -64,7 +63,6 @@ public:
     static void     setSecurityRespKey(uint8_t init_key);
     static void     setSecurityPasskey(uint32_t pin);
     static uint32_t getSecurityPasskey();
-    static void     setSecurityCallbacks(NimBLESecurityCallbacks *pCallbacks);
     static int      startSecurity(uint16_t conn_id);
     static int      setMTU(uint16_t mtu);
     static uint16_t getMTU();
@@ -98,7 +96,6 @@ private:
     static NimBLEScan                *m_pScan;
     static std::list<NimBLEClient *>  m_cList;
     static std::list<NimBLEAddress>   m_ignoreList;
-    static NimBLESecurityCallbacks   *m_securityCallbacks;
     static uint32_t                   m_passkey;
     static ble_gap_event_listener     m_listener;
     static gap_event_handler          m_customGapHandler;

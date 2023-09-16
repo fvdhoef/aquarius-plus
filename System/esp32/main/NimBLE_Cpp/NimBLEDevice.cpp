@@ -29,8 +29,6 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 
-#include "NimBLELog.h"
-
 static const char *LOG_TAG = "NimBLEDevice";
 
 /**
@@ -46,7 +44,6 @@ ble_gap_event_listener     NimBLEDevice::m_listener;
 std::list<NimBLEClient *>  NimBLEDevice::m_cList;
 std::list<NimBLEAddress>   NimBLEDevice::m_ignoreList;
 std::vector<NimBLEAddress> NimBLEDevice::m_whiteList;
-NimBLESecurityCallbacks   *NimBLEDevice::m_securityCallbacks = nullptr;
 uint8_t                    NimBLEDevice::m_own_addr_type     = BLE_OWN_ADDR_PUBLIC;
 uint16_t                   NimBLEDevice::m_scanDuplicateSize = CONFIG_BT_CTRL_SCAN_DUPL_CACHE_SIZE;
 uint8_t                    NimBLEDevice::m_scanFilterMode    = CONFIG_BT_CTRL_SCAN_DUPL_TYPE;
@@ -709,10 +706,6 @@ void NimBLEDevice::deinit(bool clearAll) {
             }
 
             m_ignoreList.clear();
-
-            if (m_securityCallbacks != nullptr) {
-                delete m_securityCallbacks;
-            }
         }
     }
 } // deinit
@@ -824,16 +817,6 @@ uint32_t NimBLEDevice::getSecurityPasskey() {
 } // getSecurityPasskey
 
 /**
- * @brief Set callbacks that will be used to handle encryption negotiation events and authentication events
- * @param [in] callbacks Pointer to NimBLESecurityCallbacks class
- * @deprecated For backward compatibility, New code should use client/server callback methods.
- */
-/*STATIC*/
-void NimBLEDevice::setSecurityCallbacks(NimBLESecurityCallbacks *callbacks) {
-    NimBLEDevice::m_securityCallbacks = callbacks;
-} // setSecurityCallbacks
-
-/**
  * @brief Set the own address type.
  * @param [in] own_addr_type Own Bluetooth Device address type.\n
  * The available bits are defined as:
@@ -847,23 +830,12 @@ void NimBLEDevice::setSecurityCallbacks(NimBLESecurityCallbacks *callbacks) {
 void NimBLEDevice::setOwnAddrType(uint8_t own_addr_type, bool useNRPA) {
     m_own_addr_type = own_addr_type;
     switch (own_addr_type) {
-#    ifdef CONFIG_IDF_TARGET_ESP32
-        case BLE_OWN_ADDR_PUBLIC:
-            ble_hs_pvcy_rpa_config(NIMBLE_HOST_DISABLE_PRIVACY);
-            break;
-#    endif
         case BLE_OWN_ADDR_RANDOM:
             setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-#    ifdef CONFIG_IDF_TARGET_ESP32
-            ble_hs_pvcy_rpa_config(useNRPA ? NIMBLE_HOST_ENABLE_NRPA : NIMBLE_HOST_ENABLE_RPA);
-#    endif
             break;
         case BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT:
         case BLE_OWN_ADDR_RPA_RANDOM_DEFAULT:
             setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
-#    ifdef CONFIG_IDF_TARGET_ESP32
-            ble_hs_pvcy_rpa_config(NIMBLE_HOST_ENABLE_RPA);
-#    endif
             break;
     }
 } // setOwnAddrType

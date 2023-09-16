@@ -15,7 +15,6 @@
 
 #include "NimBLEClient.h"
 #include "NimBLEDevice.h"
-#include "NimBLELog.h"
 
 #include <string>
 #include <unordered_set>
@@ -991,8 +990,6 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 if (event->enc_change.status == (BLE_HS_ERR_HCI_BASE + BLE_ERR_PINKEY_MISSING)) {
                     // Key is missing, try deleting.
                     ble_store_util_delete_peer(&desc.peer_id_addr);
-                } else if (NimBLEDevice::m_securityCallbacks != nullptr) {
-                    NimBLEDevice::m_securityCallbacks->onAuthenticationComplete(&desc);
                 } else {
                     client->m_pClientCallbacks->onAuthenticationComplete(&desc);
                 }
@@ -1025,14 +1022,8 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
 
             } else if (event->passkey.params.action == BLE_SM_IOACT_NUMCMP) {
                 NIMBLE_LOGD(LOG_TAG, "Passkey on device's display: %" PRIu32, event->passkey.params.numcmp);
-                pkey.action = event->passkey.params.action;
-                // Compatibility only - Do not use, should be removed the in future
-                if (NimBLEDevice::m_securityCallbacks != nullptr) {
-                    pkey.numcmp_accept = NimBLEDevice::m_securityCallbacks->onConfirmPIN(event->passkey.params.numcmp);
-                    ////////////////////////////////////////////////////
-                } else {
-                    pkey.numcmp_accept = client->m_pClientCallbacks->onConfirmPIN(event->passkey.params.numcmp);
-                }
+                pkey.action        = event->passkey.params.action;
+                pkey.numcmp_accept = client->m_pClientCallbacks->onConfirmPIN(event->passkey.params.numcmp);
 
                 rc = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
                 NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);
@@ -1049,15 +1040,8 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 ////////
             } else if (event->passkey.params.action == BLE_SM_IOACT_INPUT) {
                 NIMBLE_LOGD(LOG_TAG, "Enter the passkey");
-                pkey.action = event->passkey.params.action;
-
-                // Compatibility only - Do not use, should be removed the in future
-                if (NimBLEDevice::m_securityCallbacks != nullptr) {
-                    pkey.passkey = NimBLEDevice::m_securityCallbacks->onPassKeyRequest();
-                    /////////////////////////////////////////////
-                } else {
-                    pkey.passkey = client->m_pClientCallbacks->onPassKeyRequest();
-                }
+                pkey.action  = event->passkey.params.action;
+                pkey.passkey = client->m_pClientCallbacks->onPassKeyRequest();
 
                 rc = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
                 NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);

@@ -11,13 +11,10 @@
  *  Created on: Jul 2, 2017
  *      Author: kolban
  */
-#include "nimconfig.h"
-
-#include <algorithm>
 
 #include "NimBLEAddress.h"
 #include "NimBLEUtils.h"
-#include "NimBLELog.h"
+#include <algorithm>
 
 static const char *LOG_TAG = "NimBLEAddress";
 

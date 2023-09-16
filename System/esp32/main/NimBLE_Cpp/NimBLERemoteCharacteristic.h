@@ -21,7 +21,6 @@
 
 #include <vector>
 #include <functional>
-#include "NimBLELog.h"
 
 class NimBLERemoteService;
 class NimBLERemoteDescriptor;

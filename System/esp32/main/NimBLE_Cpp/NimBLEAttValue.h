@@ -9,7 +9,6 @@
 #pragma once
 
 #include "nimconfig.h"
-#include "NimBLELog.h"
 #include <string>
 #include <vector>
 

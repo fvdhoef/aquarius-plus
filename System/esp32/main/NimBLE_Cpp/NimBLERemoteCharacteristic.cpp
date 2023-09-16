@@ -16,7 +16,6 @@
 
 #include "NimBLERemoteCharacteristic.h"
 #include "NimBLEUtils.h"
-#include "NimBLELog.h"
 
 #include <climits>
 

@@ -17,7 +17,6 @@
 #include "NimBLEDevice.h"
 #include "NimBLEAdvertisedDevice.h"
 #include "NimBLEUtils.h"
-#include "NimBLELog.h"
 
 #include <climits>
 

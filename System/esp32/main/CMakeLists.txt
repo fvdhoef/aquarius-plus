@@ -40,7 +40,6 @@ idf_component_register(
         "NimBLE_Cpp/NimBLERemoteDescriptor.cpp"
         "NimBLE_Cpp/NimBLERemoteService.cpp"
         "NimBLE_Cpp/NimBLEScan.cpp"
-        "NimBLE_Cpp/NimBLESecurity.cpp"
         "NimBLE_Cpp/NimBLEUUID.cpp"
         "NimBLE_Cpp/NimBLEUtils.cpp"
 

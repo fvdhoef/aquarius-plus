@@ -9,7 +9,6 @@
 #include "nimconfig.h"
 
 #include "NimBLEUtils.h"
-#include "NimBLELog.h"
 
 #include <stdlib.h>
 
@@ -202,22 +201,6 @@ const char *NimBLEUtils::returnCodeToString(int rc) {
 }
 
 /**
- * @brief Convert the advertising type flag to a string.
- * @param advType The type to convert.
- * @return A string representation of the advertising flags.
- */
-const char *NimBLEUtils::advTypeToString(uint8_t advType) {
-    switch (advType) {
-        case BLE_HCI_ADV_TYPE_ADV_IND: return "Undirected - Connectable / Scannable";           // 0
-        case BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD: return "Directed High Duty - Connectable";     // 1
-        case BLE_HCI_ADV_TYPE_ADV_SCAN_IND: return "Non-Connectable - Scan Response Available"; // 2
-        case BLE_HCI_ADV_TYPE_ADV_NONCONN_IND: return "Non-Connectable - No Scan Response";     // 3
-        case BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD: return "Directed Low Duty - Connectable";      // 4
-        default: return "Unknown flag";
-    }
-}
-
-/**
  * @brief Create a hex representation of data.
  *
  * @param [in] target Where to write the hex string. If this is null, we malloc storage.
@@ -252,16 +235,6 @@ char *NimBLEUtils::buildHexData(uint8_t *target, const uint8_t *source, uint8_t 
 
     return startOfData;
 } // buildHexData
-
-/**
- * @brief Utility function to log the gap event info.
- * @param [in] event A pointer to the gap event structure.
- * @param [in] arg Unused.
- */
-void NimBLEUtils::dumpGapEvent(ble_gap_event *event, void *arg) {
-    (void)arg;
-    NIMBLE_LOGD(LOG_TAG, "Received a GAP event: %s", gapEventToString(event->type));
-}
 
 /**
  * @brief Convert a GAP event type to a string representation.

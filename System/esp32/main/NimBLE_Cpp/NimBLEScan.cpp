@@ -16,7 +16,6 @@
 
 #include "NimBLEScan.h"
 #include "NimBLEDevice.h"
-#include "NimBLELog.h"
 
 #include <string>
 #include <climits>

@@ -17,7 +17,6 @@
 #include "NimBLERemoteService.h"
 #include "NimBLEUtils.h"
 #include "NimBLEDevice.h"
-#include "NimBLELog.h"
 
 #include <climits>
 
