@@ -21,6 +21,10 @@ public:
     uint8_t readData();
 #endif
 
+#ifndef EMULATOR
+    void mouseReport(int dx, int dy, uint8_t buttonMask);
+#endif
+
 private:
 #ifndef EMULATOR
     static void _uartEventTask(void *);
@@ -41,6 +45,7 @@ private:
     void cmdReset();
     void cmdVersion();
     void cmdGetDateTime(uint8_t type);
+    void cmdGetMouse();
     void cmdOpen(uint8_t flags, const char *pathArg);
     void cmdClose(uint8_t fd);
     void cmdRead(uint8_t fd, uint16_t size);
@@ -75,5 +80,13 @@ private:
     unsigned txBufWrIdx;
     unsigned txBufRdIdx;
     unsigned txBufCnt;
+#endif
+
+#ifndef EMULATOR
+    SemaphoreHandle_t mutexMouseData;
+    bool              mousePresent = false;
+    uint16_t          mouseX       = 0;
+    uint8_t           mouseY       = 0;
+    uint8_t           mouseButtons = 0;
 #endif
 };

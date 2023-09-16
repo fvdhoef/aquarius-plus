@@ -1,4 +1,5 @@
 #include "HIDReportHandlerMouse.h"
+#include "AqUartProtocol.h"
 
 HIDReportHandlerMouse::HIDReportHandlerMouse()
     : HIDReportHandler(TMouse) {
@@ -57,23 +58,21 @@ void HIDReportHandlerMouse::_inputReport(uint8_t reportId, const uint8_t *buf, s
 
     //	HexDump(buf, length);
 
-    if (xIdx >= 0) {
-        printf("X:%5d ", (int)readBits(buf, length, xIdx, xSize, true));
+    int     dx         = 0;
+    int     dy         = 0;
+    uint8_t buttonMask = 0;
+
+    if (xIdx >= 0)
+        dx = (int)readBits(buf, length, xIdx, xSize, true);
+    if (yIdx >= 0)
+        dy = (int)readBits(buf, length, yIdx, ySize, true);
+    // if (wheelIdx >= 0)
+    //     printf("W:%5d ", (int)readBits(buf, length, wheelIdx, wheelSize, true));
+
+    for (int i = 0; i < 3; i++) {
+        if (buttons[i] >= 0 && (int)readBits(buf, length, buttons[i], 1, false))
+            buttonMask |= (1 << i);
     }
-    if (yIdx >= 0) {
-        printf("Y:%5d ", (int)readBits(buf, length, yIdx, ySize, true));
-    }
-    if (wheelIdx >= 0) {
-        printf("W:%5d ", (int)readBits(buf, length, wheelIdx, wheelSize, true));
-    }
-    if (buttons[0] >= 0) {
-        printf("L:%d ", (int)readBits(buf, length, buttons[0], 1, false));
-    }
-    if (buttons[2] >= 0) {
-        printf("M:%d ", (int)readBits(buf, length, buttons[2], 1, false));
-    }
-    if (buttons[1] >= 0) {
-        printf("R:%d ", (int)readBits(buf, length, buttons[1], 1, false));
-    }
-    printf("\n");
+
+    AqUartProtocol::instance().mouseReport(dx, dy, buttonMask);
 }
