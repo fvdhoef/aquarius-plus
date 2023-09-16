@@ -6,8 +6,6 @@
  *
  */
 
-#include "nimconfig.h"
-
 #include "NimBLEUtils.h"
 
 #include <stdlib.h>

@@ -12,10 +12,8 @@
  *      Author: kolban
  */
 
-#include "nimconfig.h"
-
-#include "NimBLEUtils.h"
 #include "NimBLEUUID.h"
+#include "NimBLEUtils.h"
 
 #include <algorithm>
 

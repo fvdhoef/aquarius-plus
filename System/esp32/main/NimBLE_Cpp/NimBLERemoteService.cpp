@@ -12,8 +12,6 @@
  *      Author: kolban
  */
 
-#include "nimconfig.h"
-
 #include "NimBLERemoteService.h"
 #include "NimBLEUtils.h"
 #include "NimBLEDevice.h"

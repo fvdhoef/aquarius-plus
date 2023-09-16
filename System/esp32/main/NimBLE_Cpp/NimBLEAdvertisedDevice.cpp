@@ -12,12 +12,9 @@
  *      Author: kolban
  */
 
-#include "nimconfig.h"
-
-#include "NimBLEDevice.h"
 #include "NimBLEAdvertisedDevice.h"
+#include "NimBLEDevice.h"
 #include "NimBLEUtils.h"
-
 #include <climits>
 
 static const char *LOG_TAG = "NimBLEAdvertisedDevice";

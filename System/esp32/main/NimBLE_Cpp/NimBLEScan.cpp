@@ -12,8 +12,6 @@
  *      Author: kolban
  */
 
-#include "nimconfig.h"
-
 #include "NimBLEScan.h"
 #include "NimBLEDevice.h"
 

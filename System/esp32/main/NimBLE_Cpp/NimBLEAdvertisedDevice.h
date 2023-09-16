@@ -13,6 +13,7 @@
  */
 
 #pragma once
+
 #include "nimconfig.h"
 
 #include "NimBLEAddress.h"

@@ -12,8 +12,6 @@
  *      Author: kolban
  */
 
-#include "nimconfig.h"
-
 #include "NimBLERemoteCharacteristic.h"
 #include "NimBLEUtils.h"
 
