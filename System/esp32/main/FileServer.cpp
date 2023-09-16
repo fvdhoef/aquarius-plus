@@ -42,11 +42,6 @@ static esp_err_t resp400(httpd_req_t *req) {
     return httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, nullptr);
 }
 
-static esp_err_t resp404(httpd_req_t *req) {
-    httpd_resp_send_404(req);
-    return ESP_OK;
-}
-
 static esp_err_t resp204(httpd_req_t *req) {
     httpd_resp_set_status(req, HTTPD_204);
     httpd_resp_send(req, nullptr, 0);

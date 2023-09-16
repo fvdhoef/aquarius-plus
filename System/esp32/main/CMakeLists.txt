@@ -2,8 +2,6 @@ idf_component_register(
     SRCS
         "main.cpp"
         "FPGA.cpp"
-        "AqKeyboard.cpp"
-        "AqUartProtocol.cpp"
         "MemDump.cpp"
 
         "USB/USBHost.cpp"
@@ -11,13 +9,9 @@ idf_component_register(
         "USB/USBInterface.cpp"
         "USB/USBInterfaceHID.cpp"
 
-        "VFS/VFS.cpp"
-        "VFS/SDCardVFS.cpp"
-        "VFS/EspVFS.cpp"
-
-        "VFS/fatfs/ff.c"
-        "VFS/fatfs/ffsystem.c"
-        "VFS/fatfs/ffunicode.c"
+        "fatfs/ff.c"
+        "fatfs/ffsystem.c"
+        "fatfs/ffunicode.c"
 
         "HID/HIDReportDescriptor.cpp"
         "HID/HIDReportHandler.cpp"
@@ -25,7 +19,13 @@ idf_component_register(
         "HID/HIDReportHandlerMouse.cpp"
         "HID/HIDReportHandlerGamepad.cpp"
 
-        "EspSettingsConsole.cpp"
+        # Files shared between emulator and ESP32
+        "../../emulator/Shared/AqKeyboard.cpp"
+        "../../emulator/Shared/AqUartProtocol.cpp"
+        "../../emulator/Shared/EspSettingsConsole.cpp"
+        "../../emulator/Shared/VFS/VFS.cpp"
+        "../../emulator/Shared/VFS/EspVFS.cpp"
+        "../../emulator/Shared/VFS/SDCardVFS.cpp"
 
         "FileServer.cpp"
         "PowerLED.cpp"
@@ -58,8 +58,9 @@ idf_component_register(
 
     INCLUDE_DIRS
         "."
-        "VFS"
-        "VFS/fatfs"
+        "../../emulator/Shared"
+        "../../emulator/Shared/VFS"
+        "fatfs"
         "HID"
         "USB"
         "NimBLE_Cpp"

@@ -1,24 +1,39 @@
 #include "SDCardVFS.h"
-#include <sys/unistd.h>
-#include <sys/stat.h>
-#include <errno.h>
-#include "PowerLED.h"
-#include "ff.h"
-#include "diskio.h"
 
-static const char *TAG = "SDCardVFS";
-
-#if CONFIG_IDF_TARGET_ESP32S2
-#    define SPI_DMA_CHAN host.slot
+#ifndef EMULATOR
+#    include <sys/unistd.h>
+#    include <sys/stat.h>
+#    include <errno.h>
+#    include "PowerLED.h"
+#    include "ff.h"
+#    include "diskio.h"
 #else
-#    define SPI_DMA_CHAN SPI_DMA_CH_AUTO
+#    ifndef _WIN32
+#        include <sys/types.h>
+#        include <sys/stat.h>
+#        include <dirent.h>
+#        include <unistd.h>
+#    else
+#        include <io.h>
+#        include <time.h>
+#    endif
+#endif
+
+#ifndef EMULATOR
+static const char *TAG = "SDCardVFS";
 #endif
 
 #define MAX_FDS (10)
 
+#ifndef EMULATOR
 struct state {
     FIL *fds[MAX_FDS];
 };
+#else
+struct state {
+    FILE *fds[MAX_FDS];
+};
+#endif
 
 static struct state state;
 
@@ -30,6 +45,7 @@ SDCardVFS &SDCardVFS::instance() {
     return vfs;
 }
 
+#ifndef EMULATOR
 void SDCardVFS::init() {
     fatfs = calloc(1, sizeof(FATFS));
     assert(fatfs != nullptr);
@@ -43,7 +59,7 @@ void SDCardVFS::init() {
         .quadhd_io_num = -1,
         // .max_transfer_sz = 4000,
     };
-    ESP_ERROR_CHECK(spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CHAN));
+    ESP_ERROR_CHECK(spi_bus_initialize((spi_host_device_t)host.slot, &bus_cfg, SPI_DMA_CH_AUTO));
 
     sdspi_device_config_t slot_config = SDSPI_DEVICE_CONFIG_DEFAULT();
     slot_config.gpio_cs               = (gpio_num_t)IOPIN_SD_SSEL_N;
@@ -376,11 +392,11 @@ int SDCardVFS::diskIoctl(uint8_t pdrv, uint8_t cmd, void *buf) {
         case GET_SECTOR_COUNT: *((DWORD *)buf) = card->csd.capacity; return RES_OK;
         case GET_SECTOR_SIZE: *((WORD *)buf) = card->csd.sector_size; return RES_OK;
         case GET_BLOCK_SIZE: return RES_ERROR;
-#if FF_USE_TRIM
+#    if FF_USE_TRIM
         case CTRL_TRIM:
             return ff_sdmmc_trim(pdrv, *((DWORD *)buf),                        // start_sector
                                  (*((DWORD *)buf + 1) - *((DWORD *)buf) + 1)); // sector_count
-#endif                                                                         // FF_USE_TRIM
+#    endif                                                                     // FF_USE_TRIM
     }
     return RES_ERROR;
 }
@@ -412,3 +428,299 @@ DWORD get_fattime(void) {
     int year = tmr.tm_year < 80 ? 0 : tmr.tm_year - 80;
     return ((DWORD)(year) << 25) | ((DWORD)(tmr.tm_mon + 1) << 21) | ((DWORD)tmr.tm_mday << 16) | (WORD)(tmr.tm_hour << 11) | (WORD)(tmr.tm_min << 5) | (WORD)(tmr.tm_sec >> 1);
 }
+
+#else
+void SDCardVFS::init(const std::string &_basePath) {
+    // printf("Settings SD card directory: '%s'\n", _basePath.c_str());
+
+    basePath = _basePath;
+    stripTrailingSlashes(basePath);
+}
+
+std::string SDCardVFS::getFullPath(const std::string &path) {
+    // Compose full path
+    std::string result = basePath;
+    result += "/";
+    result += path;
+    stripTrailingSlashes(result);
+    return result;
+}
+
+static int mapErrNoResult(void) {
+    switch (errno) {
+        case EEXIST: return ERR_EXISTS;
+        case EACCES:
+        case ENOENT: return ERR_NOT_FOUND;
+        case EINVAL:
+        case EBADF: return ERR_PARAM;
+        case ENOTEMPTY: return ERR_NOT_EMPTY;
+    }
+    return ERR_OTHER;
+}
+
+int SDCardVFS::open(uint8_t flags, const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    // Translate flags
+    int  mi = 0;
+    char mode[5];
+
+    // if (flags & FO_CREATE)
+    //     oflag |= O_CREAT;
+
+    switch (flags & FO_ACCMODE) {
+        case FO_RDONLY:
+            mode[mi++] = 'r';
+            break;
+        case FO_WRONLY:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+            } else {
+                mode[mi++] = 'w';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+
+            break;
+        case FO_RDWR:
+            if (flags & FO_APPEND) {
+                mode[mi++] = 'a';
+                mode[mi++] = '+';
+            } else if (flags & FO_TRUNC) {
+                mode[mi++] = 'w';
+                mode[mi++] = '+';
+            } else {
+                mode[mi++] = 'r';
+                mode[mi++] = '+';
+            }
+            if (flags & FO_EXCL) {
+                mode[mi++] = 'x';
+            }
+            break;
+
+        default: {
+            // Error
+            return ERR_PARAM;
+        }
+    }
+    mode[mi++] = 'b';
+    mode[mi]   = 0;
+
+    // Find free file descriptor
+    int fd = -1;
+    for (int i = 0; i < MAX_FDS; i++) {
+        if (state.fds[i] == nullptr) {
+            fd = i;
+            break;
+        }
+    }
+    if (fd == -1)
+        return ERR_TOO_MANY_OPEN;
+
+    auto  fullPath = getFullPath(path);
+    FILE *f        = ::fopen(fullPath.c_str(), mode);
+    if (f == nullptr) {
+        return mapErrNoResult();
+    }
+    state.fds[fd] = f;
+    return fd;
+}
+
+int SDCardVFS::close(int fd) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    ::fclose(f);
+    state.fds[fd] = nullptr;
+    return 0;
+}
+
+int SDCardVFS::read(int fd, size_t size, void *buf) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = (int)::fread(buf, 1, size, f);
+    return (result < 0) ? mapErrNoResult() : result;
+}
+
+int SDCardVFS::write(int fd, size_t size, const void *buf) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = (int)::fwrite(buf, 1, size, f);
+    return (result < 0) ? mapErrNoResult() : result;
+}
+
+int SDCardVFS::seek(int fd, size_t offset) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = (int)::fseek(f, (long)offset, SEEK_SET);
+    return (result < 0) ? mapErrNoResult() : 0;
+}
+
+int SDCardVFS::tell(int fd) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+    FILE *f = state.fds[fd];
+
+    int result = (int)::ftell(f);
+    return (result < 0) ? mapErrNoResult() : result;
+}
+
+DirEnumCtx SDCardVFS::direnum(const std::string &path) {
+    if (basePath.empty())
+        return nullptr;
+
+    auto fullPath = getFullPath(path);
+
+#    ifndef _WIN32
+    DIR *dir      = ::opendir(fullPath.c_str());
+    if (dir == nullptr) {
+        return nullptr;
+    }
+#    else
+    struct _finddata_t fileinfo;
+    intptr_t           handle = _findfirst((fullPath + "/*.*").c_str(), &fileinfo);
+    if (handle < 0) {
+        return nullptr;
+    }
+    bool first = true;
+#    endif
+
+    auto result = std::make_shared<std::vector<DirEnumEntry>>();
+
+    // Read directory contents
+    while (1) {
+        DirEnumEntry dee;
+#    ifndef _WIN32
+        // Read directory entry
+        struct dirent *de = ::readdir(dir);
+        if (de == NULL) {
+            break;
+        }
+
+        // Read additional file stats
+        std::string filePath = fullPath + "/" + de->d_name;
+        struct stat st;
+        if (::stat(filePath.c_str(), &st) < 0) {
+            continue;
+        }
+
+        // Return file entry
+        dee.filename = de->d_name;
+        dee.size     = (de->d_type == DT_DIR) ? 0 : st.st_size;
+        dee.attr     = (de->d_type == DT_DIR) ? DE_DIR : 0;
+
+#        ifdef __APPLE__
+        time_t t     = st.st_mtimespec.tv_sec;
+#        else
+        time_t t = st.st_mtim.tv_sec;
+#        endif
+
+#    else
+        if (!first) {
+            if (_findnext(handle, &fileinfo) != 0)
+                break;
+        }
+        first = false;
+
+        // Skip hidden and system files
+        if (fileinfo.attrib & (_A_HIDDEN | _A_SYSTEM))
+            continue;
+
+        // Return file entry
+        dee.filename = fileinfo.name;
+        dee.size     = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
+        dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_DIR : 0;
+        time_t t     = fileinfo.time_write;
+#    endif
+
+        struct tm *tm = ::localtime(&t);
+        dee.ftime     = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
+        dee.fdate     = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
+
+        // Skip files starting with a dot
+        if (dee.filename.size() == 0 || dee.filename[0] == '.')
+            continue;
+
+        result->push_back(dee);
+    }
+
+#    ifndef _WIN32
+    ::closedir(dir);
+#    else
+    ::_findclose(handle);
+#    endif
+
+    return result;
+}
+
+int SDCardVFS::delete_(const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    auto fullPath = getFullPath(path);
+
+    int result = ::unlink(fullPath.c_str());
+    if (result < 0) {
+        result = ::rmdir(fullPath.c_str());
+    }
+    return (result < 0) ? mapErrNoResult() : 0;
+}
+
+int SDCardVFS::rename(const std::string &pathOld, const std::string &pathNew) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    auto fullOld = getFullPath(pathOld);
+    auto fullNew = getFullPath(pathNew);
+
+    int result = ::rename(fullOld.c_str(), fullNew.c_str());
+    return (result < 0) ? mapErrNoResult() : 0;
+}
+
+int SDCardVFS::mkdir(const std::string &path) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    auto fullPath = getFullPath(path);
+
+#    if _WIN32
+    int  result   = ::mkdir(fullPath.c_str());
+#    else
+    int result = ::mkdir(fullPath.c_str(), 0775);
+#    endif
+    return (result < 0) ? mapErrNoResult() : 0;
+}
+
+int SDCardVFS::stat(const std::string &path, struct stat *st) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    auto fullPath = getFullPath(path);
+    int  result   = ::stat(fullPath.c_str(), st);
+    return (result < 0) ? mapErrNoResult() : 0;
+}
+#endif

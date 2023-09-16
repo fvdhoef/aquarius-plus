@@ -74,6 +74,8 @@ AqUartProtocol &AqUartProtocol::instance() {
 
 void AqUartProtocol::init() {
 #ifndef EMULATOR
+    mutexMouseData = xSemaphoreCreateRecursiveMutex();
+
     // Initialize UART to FPGA
     uart_config_t uart_config = {
         .baud_rate           = 1789773,
@@ -546,6 +548,20 @@ void AqUartProtocol::cmdGetDateTime(uint8_t type) {
 
 void AqUartProtocol::cmdGetMouse() {
     DBGF("GETMOUSE");
+#ifndef EMULATOR
+    RecursiveMutexLock lock(mutexMouseData);
+
+    if (!mousePresent) {
+        txFifoWrite(ERR_NOT_FOUND);
+        return;
+    }
+    txFifoWrite(0);
+    txFifoWrite(mouseX & 0xFF);
+    txFifoWrite(mouseX >> 8);
+    txFifoWrite(mouseY);
+    txFifoWrite(mouseButtons);
+
+#else
     if (!Config::instance().enableMouse) {
         txFifoWrite(ERR_NOT_FOUND);
         return;
@@ -555,6 +571,7 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite(emuState.mouseX >> 8);
     txFifoWrite(emuState.mouseY);
     txFifoWrite(emuState.mouseButtons);
+#endif
 }
 
 void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
@@ -930,3 +947,13 @@ void AqUartProtocol::cmdCloseAll() {
     closeAllDescriptors();
     txFifoWrite(0);
 }
+
+#ifndef EMULATOR
+void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask) {
+    RecursiveMutexLock lock(mutexMouseData);
+    mouseX       = std::max(0, std::min(319, (int)mouseX + dx));
+    mouseY       = std::max(0, std::min(199, (int)mouseY + dy));
+    mouseButtons = buttonMask;
+    mousePresent = true;
+}
+#endif
