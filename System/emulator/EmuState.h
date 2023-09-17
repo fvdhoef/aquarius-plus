@@ -87,6 +87,7 @@ struct EmuState {
     bool                      traceEnable = false;
     int                       traceDepth  = 128;
     bool                      prevHalted  = false;
+    int                       cpuSpeed    = 1;
 
     // Virtual typing from command-line argument
     std::string typeInStr;

@@ -240,6 +240,20 @@ void UI::mainLoop() {
                     memset(emuState.charRam, 0xA5, sizeof(emuState.charRam));
                     emuState.reset();
                 }
+
+                ImGui::Separator();
+                {
+                    if (ImGui::MenuItem("CPU speed 1x", "", emuState.cpuSpeed == 1))
+                        emuState.cpuSpeed = 1;
+                    if (ImGui::MenuItem("CPU speed 2x", "", emuState.cpuSpeed == 2))
+                        emuState.cpuSpeed = 2;
+                    if (ImGui::MenuItem("CPU speed 4x", "", emuState.cpuSpeed == 4))
+                        emuState.cpuSpeed = 4;
+                    if (ImGui::MenuItem("CPU speed 8x", "", emuState.cpuSpeed == 8))
+                        emuState.cpuSpeed = 8;
+                    if (ImGui::MenuItem("CPU speed 16x", "", emuState.cpuSpeed == 16))
+                        emuState.cpuSpeed = 16;
+                }
                 ImGui::EndMenu();
             }
 
@@ -410,6 +424,7 @@ void UI::emulate() {
         // No buffer available, don't emulate for now.
         return;
     }
+    memset(abuf, 0, SAMPLES_PER_BUFFER * 2 * 2);
 
     // Only play audio in running mode, otherwise keep zero
     if (emuState.emuMode != EmuState::Em_Running) {
@@ -421,7 +436,7 @@ void UI::emulate() {
 
     if (emuState.emuMode == EmuState::Em_Running) {
         // Render each audio sample
-        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER; aidx++) {
+        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuState.cpuSpeed; aidx++) {
             while (true) {
                 auto flags = emuState.emulate();
                 if (emuState.emuMode != EmuState::Em_Running)
@@ -435,19 +450,17 @@ void UI::emulate() {
             if (emuState.emuMode != EmuState::Em_Running)
                 break;
 
-            float al = emuState.audioLeft / 65535.0f;
-            float ar = emuState.audioRight / 65535.0f;
-            float l  = dcBlockLeft.filter(al);
-            float r  = dcBlockRight.filter(ar);
-            l        = std::min(std::max(l, -1.0f), 1.0f);
-            r        = std::min(std::max(r, -1.0f), 1.0f);
+            if (config.enableSound && emuState.cpuSpeed == 1) {
+                float al = emuState.audioLeft / 65535.0f;
+                float ar = emuState.audioRight / 65535.0f;
+                float l  = dcBlockLeft.filter(al);
+                float r  = dcBlockRight.filter(ar);
+                l        = std::min(std::max(l, -1.0f), 1.0f);
+                r        = std::min(std::max(r, -1.0f), 1.0f);
 
-            if (!config.enableSound) {
-                l = 0;
-                r = 0;
+                abuf[aidx * 2 + 0] = (int16_t)(l * 32767.0f);
+                abuf[aidx * 2 + 1] = (int16_t)(r * 32767.0f);
             }
-            abuf[aidx * 2 + 0] = (int16_t)(l * 32767.0f);
-            abuf[aidx * 2 + 1] = (int16_t)(r * 32767.0f);
         }
     }
 
