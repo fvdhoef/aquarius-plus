@@ -40,38 +40,62 @@ public:
     ~NimBLERemoteCharacteristic();
 
     // Public member functions
-    bool                                            canBroadcast();
-    bool                                            canIndicate();
-    bool                                            canNotify();
-    bool                                            canRead();
-    bool                                            canWrite();
-    bool                                            canWriteNoResponse();
-    std::vector<NimBLERemoteDescriptor *>::iterator begin();
-    std::vector<NimBLERemoteDescriptor *>::iterator end();
-    NimBLERemoteDescriptor                         *getDescriptor(const NimBLEUUID &uuid);
-    std::vector<NimBLERemoteDescriptor *>          *getDescriptors(bool refresh = false);
-    void                                            deleteDescriptors();
-    size_t                                          deleteDescriptor(const NimBLEUUID &uuid);
-    uint16_t                                        getHandle();
-    uint16_t                                        getDefHandle();
-    NimBLEUUID                                      getUUID();
-    NimBLEAttValue                                  readValue();
-    std::string                                     toString();
-    NimBLERemoteService                            *getRemoteService();
+    bool canBroadcast() {
+        return (m_charProp & BLE_GATT_CHR_PROP_BROADCAST) != 0;
+    }
+    bool canIndicate() {
+        return (m_charProp & BLE_GATT_CHR_PROP_INDICATE) != 0;
+    }
+    bool canNotify() {
+        return (m_charProp & BLE_GATT_CHR_PROP_NOTIFY) != 0;
+    }
+    bool canRead() {
+        return (m_charProp & BLE_GATT_CHR_PROP_READ) != 0;
+    }
+    bool canWrite() {
+        return (m_charProp & BLE_GATT_CHR_PROP_WRITE) != 0;
+    }
+    bool canWriteNoResponse() {
+        return (m_charProp & BLE_GATT_CHR_PROP_WRITE_NO_RSP) != 0;
+    }
+    std::vector<NimBLERemoteDescriptor *>::iterator begin() {
+        return m_descriptorVector.begin();
+    }
+    std::vector<NimBLERemoteDescriptor *>::iterator end() {
+        return m_descriptorVector.end();
+    }
 
-    uint8_t        readUInt8() __attribute__((deprecated("Use template readValue<uint8_t>()")));
-    uint16_t       readUInt16() __attribute__((deprecated("Use template readValue<uint16_t>()")));
-    uint32_t       readUInt32() __attribute__((deprecated("Use template readValue<uint32_t>()")));
-    float          readFloat() __attribute__((deprecated("Use template readValue<float>()")));
-    NimBLEAttValue getValue();
+    NimBLERemoteDescriptor                *getDescriptor(const NimBLEUUID &uuid);
+    std::vector<NimBLERemoteDescriptor *> *getDescriptors(bool refresh = false);
+    void                                   deleteDescriptors();
+    size_t                                 deleteDescriptor(const NimBLEUUID &uuid);
+    uint16_t                               getHandle() {
+        return m_handle;
+    }
+    uint16_t getDefHandle() {
+        return m_defHandle;
+    }
+    NimBLEUUID getUUID() {
+        return m_uuid;
+    }
+    NimBLEAttValue       readValue();
+    std::string          toString();
+    NimBLERemoteService *getRemoteService() {
+        return m_pRemoteService;
+    }
+    NimBLEAttValue getValue() {
+        return m_value;
+    }
 
     bool subscribe(bool notifications = true, notify_callback notifyCallback = nullptr, bool response = false);
     bool unsubscribe(bool response = false);
-    bool registerForNotify(notify_callback notifyCallback, bool notifications = true, bool response = true)
-        __attribute__((deprecated("Use subscribe()/unsubscribe()")));
     bool writeValue(const uint8_t *data, size_t length, bool response = false);
-    bool writeValue(const std::vector<uint8_t> &v, bool response = false);
-    bool writeValue(const char *s, bool response = false);
+    bool writeValue(const std::vector<uint8_t> &vec, bool response = false) {
+        return writeValue((uint8_t *)&vec[0], vec.size(), response);
+    }
+    bool writeValue(const char *char_s, bool response = false) {
+        return writeValue((uint8_t *)char_s, strlen(char_s), response);
+    }
 
     /*********************** Template Functions ************************/
 

@@ -30,17 +30,10 @@ NimBLERemoteService::NimBLERemoteService(NimBLEClient *pClient, const struct ble
     NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteService()");
     m_pClient = pClient;
     switch (service->uuid.u.type) {
-        case BLE_UUID_TYPE_16:
-            m_uuid = NimBLEUUID(service->uuid.u16.value);
-            break;
-        case BLE_UUID_TYPE_32:
-            m_uuid = NimBLEUUID(service->uuid.u32.value);
-            break;
-        case BLE_UUID_TYPE_128:
-            m_uuid = NimBLEUUID(const_cast<ble_uuid128_t *>(&service->uuid.u128));
-            break;
-        default:
-            break;
+        case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(service->uuid.u16.value); break;
+        case BLE_UUID_TYPE_32: m_uuid = NimBLEUUID(service->uuid.u32.value); break;
+        case BLE_UUID_TYPE_128: m_uuid = NimBLEUUID(const_cast<ble_uuid128_t *>(&service->uuid.u128)); break;
+        default: break;
     }
     m_startHandle = service->start_handle;
     m_endHandle   = service->end_handle;
@@ -52,31 +45,6 @@ NimBLERemoteService::NimBLERemoteService(NimBLEClient *pClient, const struct ble
  */
 NimBLERemoteService::~NimBLERemoteService() {
     deleteCharacteristics();
-}
-
-/**
- * @brief Get iterator to the beginning of the vector of remote characteristic pointers.
- * @return An iterator to the beginning of the vector of remote characteristic pointers.
- */
-std::vector<NimBLERemoteCharacteristic *>::iterator NimBLERemoteService::begin() {
-    return m_characteristicVector.begin();
-}
-
-/**
- * @brief Get iterator to the end of the vector of remote characteristic pointers.
- * @return An iterator to the end of the vector of remote characteristic pointers.
- */
-std::vector<NimBLERemoteCharacteristic *>::iterator NimBLERemoteService::end() {
-    return m_characteristicVector.end();
-}
-
-/**
- * @brief Get the remote characteristic object for the characteristic UUID.
- * @param [in] uuid Remote characteristic uuid.
- * @return A pointer to the remote characteristic object.
- */
-NimBLERemoteCharacteristic *NimBLERemoteService::getCharacteristic(const char *uuid) {
-    return getCharacteristic(NimBLEUUID(uuid));
 }
 
 /**
@@ -236,35 +204,6 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
 
     NIMBLE_LOGE(LOG_TAG, "Could not retrieve characteristics");
     return false;
-}
-
-/**
- * @brief Get the client associated with this service.
- * @return A reference to the client associated with this service.
- */
-NimBLEClient *NimBLERemoteService::getClient() {
-    return m_pClient;
-}
-
-/**
- * @brief Get the service end handle.
- */
-uint16_t NimBLERemoteService::getEndHandle() {
-    return m_endHandle;
-}
-
-/**
- * @brief Get the service start handle.
- */
-uint16_t NimBLERemoteService::getStartHandle() {
-    return m_startHandle;
-}
-
-/**
- * @brief Get the service UUID.
- */
-NimBLEUUID NimBLERemoteService::getUUID() {
-    return m_uuid;
 }
 
 /**

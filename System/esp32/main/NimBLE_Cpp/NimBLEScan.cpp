@@ -42,9 +42,8 @@ NimBLEScan &NimBLEScan::instance() {
                 NIMBLE_LOGI(LOG_TAG, "Scan op in progress - ignoring results");
                 return 0;
             }
-            const auto   &disc        = event->disc;
-            const bool    isLegacyAdv = true;
-            const auto    event_type  = disc.event_type;
+            const auto   &disc       = event->disc;
+            const auto    event_type = disc.event_type;
             NimBLEAddress advertisedAddress(disc.addr);
 
             // Examine our list of ignored addresses and stop processing if we don't want to see it or are already connected
@@ -65,8 +64,7 @@ NimBLEScan &NimBLEScan::instance() {
 
             // If we haven't seen this device before; create a new instance and insert it in the vector.
             // Otherwise just update the relevant parameters of the already known device.
-            if (advertisedDevice == nullptr &&
-                (!isLegacyAdv || event_type != BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP)) {
+            if (advertisedDevice == nullptr && event_type != BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP) {
                 // Check if we have reach the scan results limit, ignore this one if so.
                 // We still need to store each device when maxResults is 0 to be able to append the scan results
                 if (scan.m_maxResults > 0 && scan.m_maxResults < 0xFF &&
@@ -76,7 +74,7 @@ NimBLEScan &NimBLEScan::instance() {
 
                 advertisedDevice = new NimBLEAdvertisedDevice();
                 advertisedDevice->setAddress(advertisedAddress);
-                advertisedDevice->setAdvType(event_type, isLegacyAdv);
+                advertisedDevice->setAdvType(event_type);
                 scan.m_scanResults.m_advertisedDevicesVector.push_back(advertisedDevice);
                 NIMBLE_LOGI(LOG_TAG, "New advertiser: %s", advertisedAddress.toString().c_str());
             } else if (advertisedDevice != nullptr) {
@@ -87,7 +85,7 @@ NimBLEScan &NimBLEScan::instance() {
             }
 
             advertisedDevice->setRSSI(disc.rssi);
-            advertisedDevice->setPayload(disc.data, disc.length_data, (isLegacyAdv && event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP));
+            advertisedDevice->setPayload(disc.data, disc.length_data, event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP);
 
             if (scan.m_pAdvertisedDeviceCallbacks) {
                 if (scan.m_scan_params.filter_duplicates && advertisedDevice->m_callbackSent) {
@@ -96,14 +94,12 @@ NimBLEScan &NimBLEScan::instance() {
 
                 // If not active scanning or scan response is not available
                 // or extended advertisement scanning, report the result to the callback now.
-                if (scan.m_scan_params.passive || !isLegacyAdv ||
-                    (advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_IND &&
-                     advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_SCAN_IND)) {
+                if (scan.m_scan_params.passive || (advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_IND && advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_SCAN_IND)) {
                     advertisedDevice->m_callbackSent = true;
                     scan.m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
 
                     // Otherwise, wait for the scan response so we can report the complete data.
-                } else if (isLegacyAdv && event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP) {
+                } else if (event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP) {
                     advertisedDevice->m_callbackSent = true;
                     scan.m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
                 }

@@ -20,38 +20,6 @@
 static const char *LOG_TAG = "NimBLEAdvertisedDevice";
 
 /**
- * @brief Constructor
- */
-NimBLEAdvertisedDevice::NimBLEAdvertisedDevice()
-    : m_payload(62, 0) {
-    m_advType      = 0;
-    m_rssi         = -9999;
-    m_callbackSent = false;
-    m_advLength    = 0;
-}
-
-/**
- * @brief Get the address of the advertising device.
- * @return The address of the advertised device.
- */
-NimBLEAddress NimBLEAdvertisedDevice::getAddress() {
-    return m_address;
-}
-
-/**
- * @brief Get the advertisement type.
- * @return The advertising type the device is reporting:
- * * BLE_HCI_ADV_TYPE_ADV_IND            (0) - indirect advertising
- * * BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_HD  (1) - direct advertising - high duty cycle
- * * BLE_HCI_ADV_TYPE_ADV_SCAN_IND       (2) - indirect scan response
- * * BLE_HCI_ADV_TYPE_ADV_NONCONN_IND    (3) - indirect advertising - not connectable
- * * BLE_HCI_ADV_TYPE_ADV_DIRECT_IND_LD  (4) - direct advertising - low duty cycle
- */
-uint8_t NimBLEAdvertisedDevice::getAdvType() {
-    return m_advType;
-}
-
-/**
  * @brief Get the advertisement flags.
  * @return The advertisement flags, a bitmask of:
  * BLE_HS_ADV_F_DISC_LTD (0x01) - limited discoverability
@@ -202,14 +170,6 @@ std::string NimBLEAdvertisedDevice::getName() {
     }
 
     return "";
-}
-
-/**
- * @brief Get the RSSI.
- * @return The RSSI of the advertised device.
- */
-int NimBLEAdvertisedDevice::getRSSI() {
-    return m_rssi;
 }
 
 /**
@@ -471,96 +431,6 @@ int8_t NimBLEAdvertisedDevice::getTXPower() {
     return -99;
 }
 
-/**
- * @brief Does this advertisement have preferred connection parameters?
- * @return True if connection parameters are present.
- */
-bool NimBLEAdvertisedDevice::haveConnParams() {
-    return findAdvField(BLE_HS_ADV_TYPE_SLAVE_ITVL_RANGE) > 0;
-}
-
-/**
- * @brief Does this advertisement have have the advertising interval?
- * @return True if the advertisement interval is present.
- */
-bool NimBLEAdvertisedDevice::haveAdvInterval() {
-    return findAdvField(BLE_HS_ADV_TYPE_ADV_ITVL) > 0;
-}
-
-/**
- * @brief Does this advertisement have an appearance value?
- * @return True if there is an appearance value present.
- */
-bool NimBLEAdvertisedDevice::haveAppearance() {
-    return findAdvField(BLE_HS_ADV_TYPE_APPEARANCE) > 0;
-}
-
-/**
- * @brief Does this advertisement have manufacturer data?
- * @return True if there is manufacturer data present.
- */
-bool NimBLEAdvertisedDevice::haveManufacturerData() {
-    return findAdvField(BLE_HS_ADV_TYPE_MFG_DATA) > 0;
-}
-
-/**
- * @brief Does this advertisement have a URI?
- * @return True if there is a URI present.
- */
-bool NimBLEAdvertisedDevice::haveURI() {
-    return findAdvField(BLE_HS_ADV_TYPE_URI) > 0;
-}
-
-/**
- * @brief Does the advertisement contain a target address?
- * @return True if an address is present.
- */
-bool NimBLEAdvertisedDevice::haveTargetAddress() {
-    return findAdvField(BLE_HS_ADV_TYPE_PUBLIC_TGT_ADDR) > 0 ||
-           findAdvField(BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR) > 0;
-}
-
-/**
- * @brief Does this advertisement have a name value?
- * @return True if there is a name value present.
- */
-bool NimBLEAdvertisedDevice::haveName() {
-    return findAdvField(BLE_HS_ADV_TYPE_COMP_NAME) > 0 ||
-           findAdvField(BLE_HS_ADV_TYPE_INCOMP_NAME) > 0;
-}
-
-/**
- * @brief Does this advertisement have a signal strength value?
- * @return True if there is a signal strength value present.
- */
-bool NimBLEAdvertisedDevice::haveRSSI() {
-    return m_rssi != -9999;
-}
-
-/**
- * @brief Does this advertisement have a service data value?
- * @return True if there is a service data value present.
- */
-bool NimBLEAdvertisedDevice::haveServiceData() {
-    return getServiceDataCount() > 0;
-}
-
-/**
- * @brief Does this advertisement have a service UUID value?
- * @return True if there is a service UUID value present.
- */
-bool NimBLEAdvertisedDevice::haveServiceUUID() {
-    return getServiceUUIDCount() > 0;
-}
-
-/**
- * @brief Does this advertisement have a transmission power value?
- * @return True if there is a transmission power value present.
- */
-bool NimBLEAdvertisedDevice::haveTXPower() {
-    return findAdvField(BLE_HS_ADV_TYPE_TX_PWR_LVL) > 0;
-}
-
 uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t *data_loc) {
     ble_hs_adv_field *field  = nullptr;
     size_t            length = m_payload.size();
@@ -624,31 +494,6 @@ uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t
 }
 
 /**
- * @brief Set the address of the advertised device.
- * @param [in] address The address of the advertised device.
- */
-void NimBLEAdvertisedDevice::setAddress(NimBLEAddress address) {
-    m_address = address;
-}
-
-/**
- * @brief Set the adFlag for this device.
- * @param [in] advType The advertisement flag data from the advertisement.
- */
-void NimBLEAdvertisedDevice::setAdvType(uint8_t advType, bool isLegacyAdv) {
-    m_advType = advType;
-    (void)isLegacyAdv;
-}
-
-/**
- * @brief Set the RSSI for this device.
- * @param [in] rssi The RSSI of the discovered device.
- */
-void NimBLEAdvertisedDevice::setRSSI(int rssi) {
-    m_rssi = rssi;
-}
-
-/**
  * @brief Create a string representation of this device.
  * @return A string representation of this device.
  */
@@ -693,14 +538,6 @@ std::string NimBLEAdvertisedDevice::toString() {
 }
 
 /**
- * @brief Get the payload advertised by the device.
- * @return The advertisement payload.
- */
-uint8_t *NimBLEAdvertisedDevice::getPayload() {
-    return &m_payload[0];
-}
-
-/**
  * @brief Stores the payload of the advertised device in a vector.
  * @param [in] payload The advertisement payload.
  * @param [in] length The length of the payload in bytes.
@@ -713,49 +550,4 @@ void NimBLEAdvertisedDevice::setPayload(const uint8_t *payload, uint8_t length, 
     } else {
         m_payload.insert(m_payload.end(), payload, payload + length);
     }
-}
-
-/**
- * @brief Get the length of the advertisement data in the payload.
- * @return The number of bytes in the payload that is from the advertisement.
- */
-uint8_t NimBLEAdvertisedDevice::getAdvLength() {
-    return m_advLength;
-}
-
-/**
- * @brief Get the advertised device address type.
- * @return The device address type:
- * * BLE_ADDR_PUBLIC      (0x00)
- * * BLE_ADDR_RANDOM      (0x01)
- * * BLE_ADDR_PUBLIC_ID   (0x02)
- * * BLE_ADDR_RANDOM_ID   (0x03)
- */
-uint8_t NimBLEAdvertisedDevice::getAddressType() {
-    return m_address.getType();
-}
-
-/**
- * @brief Get the length of the payload advertised by the device.
- * @return The size of the payload in bytes.
- */
-size_t NimBLEAdvertisedDevice::getPayloadLength() {
-    return m_payload.size();
-}
-
-/**
- * @brief Check if this device is advertising as connectable.
- * @return True if the device is connectable.
- */
-bool NimBLEAdvertisedDevice::isConnectable() {
-    return (m_advType & BLE_HCI_ADV_CONN_MASK) ||
-           (m_advType & BLE_HCI_ADV_DIRECT_MASK);
-}
-
-/**
- * @brief Check if this advertisement is a legacy or extended type
- * @return True if legacy (Bluetooth 4.x), false if extended (bluetooth 5.x).
- */
-bool NimBLEAdvertisedDevice::isLegacyAdvertisement() {
-    return true;
 }

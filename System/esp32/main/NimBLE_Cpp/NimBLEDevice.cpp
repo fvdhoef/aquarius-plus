@@ -576,7 +576,7 @@ void NimBLEDevice::onReset(int reason) {
  * @brief Host resynced with controller, all clear to make calls to the stack.
  */
 /* STATIC */
-void NimBLEDevice::onSync(void) {
+void NimBLEDevice::onSync() {
     NIMBLE_LOGI(LOG_TAG, "NimBle host synced.");
     // This check is needed due to potentially being called multiple times in succession
     // If this happens, the call to scan start may get stuck or cause an advertising fault.

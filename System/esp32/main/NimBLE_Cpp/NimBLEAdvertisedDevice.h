@@ -27,6 +27,7 @@
 #include <time.h>
 
 class NimBLEScan;
+
 /**
  * @brief A representation of a %BLE advertised device found by a scan.
  *
@@ -35,18 +36,18 @@ class NimBLEScan;
  */
 class NimBLEAdvertisedDevice {
 public:
-    NimBLEAdvertisedDevice();
+    NimBLEAdvertisedDevice()
+        : m_payload(62, 0) {
+    }
 
-    NimBLEAddress getAddress();
-    uint8_t       getAdvType();
-    uint8_t       getAdvFlags();
-    uint16_t      getAppearance();
-    uint16_t      getAdvInterval();
-    uint16_t      getMinInterval();
-    uint16_t      getMaxInterval();
-    uint8_t       getManufacturerDataCount();
-    std::string   getManufacturerData(uint8_t index = 0);
-    std::string   getURI();
+    uint8_t     getAdvFlags();
+    uint16_t    getAppearance();
+    uint16_t    getAdvInterval();
+    uint16_t    getMinInterval();
+    uint16_t    getMaxInterval();
+    uint8_t     getManufacturerDataCount();
+    std::string getManufacturerData(uint8_t index = 0);
+    std::string getURI();
 
     /**
      * @brief A template to convert the service data to <type\>.
@@ -66,7 +67,6 @@ public:
     }
 
     std::string getName();
-    int         getRSSI();
     uint8_t     getServiceDataCount();
     std::string getServiceData(uint8_t index = 0);
     std::string getServiceData(const NimBLEUUID &uuid);
@@ -113,41 +113,55 @@ public:
     NimBLEAddress getTargetAddress(uint8_t index = 0);
     uint8_t       getTargetAddressCount();
     int8_t        getTXPower();
-    uint8_t      *getPayload();
-    uint8_t       getAdvLength();
-    size_t        getPayloadLength();
-    uint8_t       getAddressType();
-    bool          isAdvertisingService(const NimBLEUUID &uuid);
-    bool          haveAppearance();
-    bool          haveManufacturerData();
-    bool          haveName();
-    bool          haveRSSI();
-    bool          haveServiceData();
-    bool          haveServiceUUID();
-    bool          haveTXPower();
-    bool          haveConnParams();
-    bool          haveAdvInterval();
-    bool          haveTargetAddress();
-    bool          haveURI();
-    std::string   toString();
-    bool          isConnectable();
-    bool          isLegacyAdvertisement();
+
+    bool isAdvertisingService(const NimBLEUUID &uuid);
+
+    // clang-format off
+    NimBLEAddress getAddress()       { return m_address; }
+    uint8_t       getAdvType()       { return m_advType; }
+    int           getRSSI()          { return m_rssi; }
+    uint8_t *     getPayload()       { return &m_payload[0]; }
+    uint8_t       getAdvLength()     { return m_advLength; }
+    size_t        getPayloadLength() { return m_payload.size(); }
+    uint8_t       getAddressType()   { return m_address.getType(); }
+
+    bool haveAppearance()       { return findAdvField(BLE_HS_ADV_TYPE_APPEARANCE) > 0; }
+    bool haveManufacturerData() { return findAdvField(BLE_HS_ADV_TYPE_MFG_DATA) > 0; }
+    bool haveName()             { return findAdvField(BLE_HS_ADV_TYPE_COMP_NAME) > 0 || findAdvField(BLE_HS_ADV_TYPE_INCOMP_NAME) > 0; }
+    bool haveRSSI()             { return m_rssi != -9999; }
+    bool haveServiceData()      { return getServiceDataCount() > 0; }
+    bool haveServiceUUID()      { return getServiceUUIDCount() > 0; }
+    bool haveTXPower()          { return findAdvField(BLE_HS_ADV_TYPE_TX_PWR_LVL) > 0; }
+    bool haveConnParams()       { return findAdvField(BLE_HS_ADV_TYPE_SLAVE_ITVL_RANGE) > 0; }
+    bool haveAdvInterval()      { return findAdvField(BLE_HS_ADV_TYPE_ADV_ITVL) > 0; }
+    bool haveTargetAddress()    { return findAdvField(BLE_HS_ADV_TYPE_PUBLIC_TGT_ADDR) > 0 || findAdvField(BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR) > 0; }
+    bool haveURI()              { return findAdvField(BLE_HS_ADV_TYPE_URI) > 0; }
+    bool isConnectable()        { return (m_advType & BLE_HCI_ADV_CONN_MASK) || (m_advType & BLE_HCI_ADV_DIRECT_MASK); }
+    // clang-format on
+
+    std::string toString();
 
 private:
     friend class NimBLEScan;
 
-    void    setAddress(NimBLEAddress address);
-    void    setAdvType(uint8_t advType, bool isLegacyAdv);
-    void    setPayload(const uint8_t *payload, uint8_t length, bool append);
-    void    setRSSI(int rssi);
+    void setAddress(NimBLEAddress address) {
+        m_address = address;
+    }
+    void setAdvType(uint8_t advType) {
+        m_advType = advType;
+    }
+    void setPayload(const uint8_t *payload, uint8_t length, bool append);
+    void setRSSI(int rssi) {
+        m_rssi = rssi;
+    }
     uint8_t findAdvField(uint8_t type, uint8_t index = 0, size_t *data_loc = nullptr);
     size_t  findServiceData(uint8_t index, uint8_t *bytes);
 
-    NimBLEAddress        m_address = NimBLEAddress("");
-    uint8_t              m_advType;
-    int                  m_rssi;
-    bool                 m_callbackSent;
-    uint8_t              m_advLength;
+    NimBLEAddress        m_address      = NimBLEAddress("");
+    uint8_t              m_advType      = 0;
+    int                  m_rssi         = -9999;
+    bool                 m_callbackSent = false;
+    uint8_t              m_advLength    = 0;
     std::vector<uint8_t> m_payload;
 };
 

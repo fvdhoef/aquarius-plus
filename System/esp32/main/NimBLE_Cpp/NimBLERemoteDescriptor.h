@@ -23,15 +23,20 @@ class NimBLERemoteCharacteristic;
  */
 class NimBLERemoteDescriptor {
 public:
-    uint16_t                    getHandle();
-    NimBLERemoteCharacteristic *getRemoteCharacteristic();
-    NimBLEUUID                  getUUID();
-    NimBLEAttValue              readValue();
+    uint16_t getHandle() {
+        return m_handle;
+    }
 
-    uint8_t     readUInt8() __attribute__((deprecated("Use template readValue<uint8_t>()")));
-    uint16_t    readUInt16() __attribute__((deprecated("Use template readValue<uint16_t>()")));
-    uint32_t    readUInt32() __attribute__((deprecated("Use template readValue<uint32_t>()")));
-    std::string toString(void);
+    NimBLERemoteCharacteristic *getRemoteCharacteristic() {
+        return m_pRemoteCharacteristic;
+    }
+
+    NimBLEUUID getUUID() {
+        return m_uuid;
+    }
+    NimBLEAttValue readValue();
+
+    std::string toString();
     bool        writeValue(const uint8_t *data, size_t length, bool response = false);
     bool        writeValue(const std::vector<uint8_t> &v, bool response = false);
     bool        writeValue(const char *s, bool response = false);

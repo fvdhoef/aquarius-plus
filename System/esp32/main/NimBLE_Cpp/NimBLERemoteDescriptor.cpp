@@ -27,74 +27,16 @@ static const char *LOG_TAG = "NimBLERemoteDescriptor";
 NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemoteCharacteristic, const struct ble_gatt_dsc *dsc) {
     NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteDescriptor()");
     switch (dsc->uuid.u.type) {
-        case BLE_UUID_TYPE_16:
-            m_uuid = NimBLEUUID(dsc->uuid.u16.value);
-            break;
-        case BLE_UUID_TYPE_32:
-            m_uuid = NimBLEUUID(dsc->uuid.u32.value);
-            break;
-        case BLE_UUID_TYPE_128:
-            m_uuid = NimBLEUUID(const_cast<ble_uuid128_t *>(&dsc->uuid.u128));
-            break;
-        default:
-            break;
+        case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(dsc->uuid.u16.value); break;
+        case BLE_UUID_TYPE_32: m_uuid = NimBLEUUID(dsc->uuid.u32.value); break;
+        case BLE_UUID_TYPE_128: m_uuid = NimBLEUUID(const_cast<ble_uuid128_t *>(&dsc->uuid.u128)); break;
+        default: break;
     }
 
     m_handle                = dsc->handle;
     m_pRemoteCharacteristic = pRemoteCharacteristic;
 
     NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteDescriptor(): %s", m_uuid.toString().c_str());
-}
-
-/**
- * @brief Retrieve the handle associated with this remote descriptor.
- * @return The handle associated with this remote descriptor.
- */
-uint16_t NimBLERemoteDescriptor::getHandle() {
-    return m_handle;
-}
-
-/**
- * @brief Get the characteristic that owns this descriptor.
- * @return The characteristic that owns this descriptor.
- */
-NimBLERemoteCharacteristic *NimBLERemoteDescriptor::getRemoteCharacteristic() {
-    return m_pRemoteCharacteristic;
-}
-
-/**
- * @brief Retrieve the UUID associated this remote descriptor.
- * @return The UUID associated this remote descriptor.
- */
-NimBLEUUID NimBLERemoteDescriptor::getUUID() {
-    return m_uuid;
-}
-
-/**
- * @brief Read a byte value
- * @return The value as a byte
- * @deprecated Use readValue<uint8_t>().
- */
-uint8_t NimBLERemoteDescriptor::readUInt8() {
-    return readValue<uint8_t>();
-}
-
-/**
- * @brief Read an unsigned 16 bit value
- * @return The unsigned 16 bit value.
- * @deprecated Use readValue<uint16_t>().
- */
-uint16_t NimBLERemoteDescriptor::readUInt16() {
-    return readValue<uint16_t>();
-}
-
-/**
- * @brief Read an unsigned 32 bit value.
- * @return the unsigned 32 bit value.
- * @deprecated Use readValue<uint32_t>().
- */
-uint32_t NimBLERemoteDescriptor::readUInt32() {
-    return readValue<uint32_t>();
 }
 
 /**

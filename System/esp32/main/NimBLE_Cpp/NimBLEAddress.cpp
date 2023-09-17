@@ -157,7 +157,7 @@ bool NimBLEAddress::operator!=(const NimBLEAddress &rhs) const {
 }
 
 /**
- * @brief Convienience operator to convert this address to string representation.
+ * @brief Convenience operator to convert this address to string representation.
  * @details This allows passing NimBLEAddress to functions
  * that accept std::string and/or or it's methods as a parameter.
  */

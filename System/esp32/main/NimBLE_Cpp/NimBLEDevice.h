@@ -88,7 +88,7 @@ private:
     friend class NimBLEScan;
 
     static void onReset(int reason);
-    static void onSync(void);
+    static void onSync();
     static void host_task(void *param);
     static bool m_synced;
 

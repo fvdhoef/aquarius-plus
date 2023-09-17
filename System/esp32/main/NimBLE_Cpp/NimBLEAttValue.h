@@ -105,45 +105,16 @@ public:
     /** @brief Destructor */
     ~NimBLEAttValue();
 
-    /** @brief Returns the max size in bytes */
-    uint16_t max_size() const {
-        return m_attr_max_len;
-    }
-
-    /** @brief Returns the currently allocated capacity in bytes */
-    uint16_t capacity() const {
-        return m_capacity;
-    }
-
-    /** @brief Returns the current length of the value in bytes */
-    uint16_t length() const {
-        return m_attr_len;
-    }
-
-    /** @brief Returns the current size of the value in bytes */
-    uint16_t size() const {
-        return m_attr_len;
-    }
-
-    /** @brief Returns a pointer to the internal buffer of the value */
-    const uint8_t *data() const {
-        return m_attr_value;
-    }
-
-    /** @brief Returns a pointer to the internal buffer of the value as a const char* */
-    const char *c_str() const {
-        return (const char *)m_attr_value;
-    }
-
-    /** @brief Iterator begin */
-    const uint8_t *begin() const {
-        return m_attr_value;
-    }
-
-    /** @brief Iterator end */
-    const uint8_t *end() const {
-        return m_attr_value + m_attr_len;
-    }
+    // clang-format off
+    uint16_t       max_size() const { return m_attr_max_len; }
+    uint16_t       capacity() const { return m_capacity; }
+    uint16_t       length()   const { return m_attr_len; }
+    uint16_t       size()     const { return m_attr_len; }
+    const uint8_t *data()     const { return m_attr_value; }
+    const char    *c_str()    const { return (const char *)m_attr_value; }
+    const uint8_t *begin()    const { return m_attr_value; }
+    const uint8_t *end()      const { return m_attr_value + m_attr_len; }
+    // clang-format on
 
     /**
      * @brief Set the value from a buffer
@@ -224,47 +195,22 @@ public:
         return m_attr_value[pos];
     }
 
-    /** @brief Operator; Get the value as a std::vector<uint8_t>. */
-    operator std::vector<uint8_t>() const {
-        return std::vector<uint8_t>(m_attr_value, m_attr_value + m_attr_len);
-    }
+    // clang-format off
+    operator std::vector<uint8_t>() const { return std::vector<uint8_t>(m_attr_value, m_attr_value + m_attr_len); }
+    operator std::string()          const { return std::string((char *)m_attr_value, m_attr_len); }
+    operator const uint8_t *()      const { return m_attr_value; }
 
-    /** @brief Operator; Get the value as a std::string. */
-    operator std::string() const {
-        return std::string((char *)m_attr_value, m_attr_len);
-    }
-
-    /** @brief Operator; Get the value as a const uint8_t*. */
-    operator const uint8_t *() const {
-        return m_attr_value;
-    }
-
-    /** @brief Operator; Append another NimBLEAttValue. */
-    NimBLEAttValue &operator+=(const NimBLEAttValue &source) {
-        return append(source.data(), source.size());
-    }
-
-    /** @brief Operator; Set the value from a std::string source. */
-    NimBLEAttValue &operator=(const std::string &source) {
-        setValue((uint8_t *)source.data(), (uint16_t)source.size());
-        return *this;
-    }
+    NimBLEAttValue &operator+=(const NimBLEAttValue &source) { return append(source.data(), source.size()); }
+    NimBLEAttValue &operator= (const std::string    &source) { setValue((uint8_t *)source.data(), (uint16_t)source.size()); return *this; }
+    bool            operator==(const NimBLEAttValue &source) { return (m_attr_len == source.size()) ? memcmp(m_attr_value, source.data(), m_attr_len) == 0 : false; }
+    bool            operator!=(const NimBLEAttValue &source) { return !(*this == source); }
+    // clang-format on
 
     /** @brief Move assignment operator */
     NimBLEAttValue &operator=(NimBLEAttValue &&source);
 
     /** @brief Copy assignment operator */
     NimBLEAttValue &operator=(const NimBLEAttValue &source);
-
-    /** @brief Equality operator */
-    bool operator==(const NimBLEAttValue &source) {
-        return (m_attr_len == source.size()) ? memcmp(m_attr_value, source.data(), m_attr_len) == 0 : false;
-    }
-
-    /** @brief Inequality operator */
-    bool operator!=(const NimBLEAttValue &source) {
-        return !(*this == source);
-    }
 };
 
 inline NimBLEAttValue::NimBLEAttValue(uint16_t init_len, uint16_t max_len) {
