@@ -157,4 +157,4 @@ private:
 
     // We maintain a vector of descriptors owned by this characteristic.
     std::vector<NimBLERemoteDescriptor *> m_descriptorVector;
-}; // NimBLERemoteCharacteristic
+};

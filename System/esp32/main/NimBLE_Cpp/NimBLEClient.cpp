@@ -440,17 +440,16 @@ void NimBLEClient::setDataLen(uint16_t tx_octets) {
 /**
  * @brief Get detailed information about the current peer connection.
  */
-NimBLEConnInfo NimBLEClient::getConnInfo() {
-    NimBLEConnInfo connInfo;
+ble_gap_conn_desc NimBLEClient::getConnInfo() {
+    ble_gap_conn_desc connInfo = {};
     if (!isConnected()) {
         NIMBLE_LOGE(LOG_TAG, "Not connected");
     } else {
-        int rc = ble_gap_conn_find(m_conn_id, &connInfo.m_desc);
+        int rc = ble_gap_conn_find(m_conn_id, &connInfo);
         if (rc != 0) {
             NIMBLE_LOGE(LOG_TAG, "Connection info not found");
         }
     }
-
     return connInfo;
 } // getConnInfo
 

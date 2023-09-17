@@ -15,7 +15,6 @@
 #pragma once
 
 #include "nimconfig.h"
-
 #include "NimBLERemoteCharacteristic.h"
 
 class NimBLERemoteCharacteristic;

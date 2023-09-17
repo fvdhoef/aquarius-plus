@@ -40,12 +40,11 @@ public:
     void                                                deleteCharacteristics();
     size_t                                              deleteCharacteristic(const NimBLEUUID &uuid);
     NimBLEClient                                       *getClient(void);
-    // uint16_t                                  getHandle();
-    NimBLEUUID                                 getUUID(void);
-    std::string                                getValue(const NimBLEUUID &characteristicUuid);
-    bool                                       setValue(const NimBLEUUID &characteristicUuid, const std::string &value);
-    std::string                                toString(void);
-    std::vector<NimBLERemoteCharacteristic *> *getCharacteristics(bool refresh = false);
+    NimBLEUUID                                          getUUID(void);
+    std::string                                         getValue(const NimBLEUUID &characteristicUuid);
+    bool                                                setValue(const NimBLEUUID &characteristicUuid, const std::string &value);
+    std::string                                         toString(void);
+    std::vector<NimBLERemoteCharacteristic *>          *getCharacteristics(bool refresh = false);
 
 private:
     // Private constructor ... never meant to be created by a user application.
@@ -72,4 +71,4 @@ private:
     NimBLEUUID    m_uuid;
     uint16_t      m_startHandle;
     uint16_t      m_endHandle;
-}; // NimBLERemoteService
+};
