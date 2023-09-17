@@ -571,6 +571,8 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite(emuState.mouseX >> 8);
     txFifoWrite(emuState.mouseY);
     txFifoWrite(emuState.mouseButtons);
+
+    emuState.mouseHideTimeout = 1.0f;
 #endif
 }
 

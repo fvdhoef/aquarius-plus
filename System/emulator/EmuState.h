@@ -95,9 +95,10 @@ struct EmuState {
     char        typeInChar    = 0;
 
     // Mouse state
-    uint16_t mouseX       = 0;
-    uint8_t  mouseY       = 0;
-    uint8_t  mouseButtons = 0;
+    uint16_t mouseX           = 0;
+    uint8_t  mouseY           = 0;
+    uint8_t  mouseButtons     = 0;
+    float    mouseHideTimeout = 0;
 
     // IO space
     uint8_t  videoCtrl        = 0;      // $E0   : Video control register

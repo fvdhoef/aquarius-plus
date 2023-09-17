@@ -282,25 +282,38 @@ void UI::mainLoop() {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
 
+        emuState.mouseHideTimeout -= io.DeltaTime;
+        if (emuState.mouseHideTimeout < 0)
+            emuState.mouseHideTimeout = 0;
+
         if (!config.showScreenWindow) {
             auto dst = renderTexture();
 
-            // Update mouse
-            const ImVec2 p0((float)dst.x, (float)dst.y);
-            const ImVec2 p1((float)(dst.x + dst.w), (float)(dst.y + dst.h));
-            auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
+            if (!io.WantCaptureMouse) {
+                // Update mouse
+                const ImVec2 p0((float)dst.x, (float)dst.y);
+                const ImVec2 p1((float)(dst.x + dst.w), (float)(dst.y + dst.h));
+                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
 
-            int mx = std::max(0, std::min((int)pos.x, 319));
-            int my = std::max(0, std::min((int)pos.y, 199));
+                bool hideMouse =
+                    (emuState.mouseHideTimeout > 0) &&
+                    (pos.x >= -16 && pos.x < VIDEO_WIDTH - 16) &&
+                    (pos.y >= -16 && pos.y < VIDEO_HEIGHT - 16);
 
-            uint8_t buttonMask =
-                (io.MouseDown[0] ? 1 : 0) |
-                (io.MouseDown[1] ? 2 : 0) |
-                (io.MouseDown[2] ? 4 : 0);
+                int mx = std::max(0, std::min((int)pos.x, 319));
+                int my = std::max(0, std::min((int)pos.y, 199));
 
-            emuState.mouseX       = mx;
-            emuState.mouseY       = my;
-            emuState.mouseButtons = buttonMask;
+                uint8_t buttonMask =
+                    (io.MouseDown[0] ? 1 : 0) |
+                    (io.MouseDown[1] ? 2 : 0) |
+                    (io.MouseDown[2] ? 4 : 0);
+
+                emuState.mouseX       = mx;
+                emuState.mouseY       = my;
+                emuState.mouseButtons = buttonMask;
+                if (hideMouse)
+                    ImGui::SetMouseCursor(ImGuiMouseCursor_None);
+            }
         }
 
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
@@ -639,6 +652,8 @@ void UI::wndScreen(bool *p_open) {
                 }
                 if (ImGui::IsItemHovered()) {
                     update = true;
+                    if (emuState.mouseHideTimeout > 0)
+                        ImGui::SetMouseCursor(ImGuiMouseCursor_None);
                 }
                 if (update) {
                     emuState.mouseX       = mx;
