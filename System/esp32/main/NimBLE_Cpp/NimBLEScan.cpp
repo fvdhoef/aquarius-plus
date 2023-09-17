@@ -108,8 +108,6 @@ static const char *LOG_TAG = "NimBLEScan";
             return 0;
         }
         case BLE_GAP_EVENT_DISC_COMPLETE: {
-            NIMBLE_LOGD(LOG_TAG, "discovery complete; reason=%d", event->disc_complete.reason);
-
             // If a device advertised with scan response available and it was not received
             // the callback would not have been invoked, so do it here.
             if (pScan->m_pAdvertisedDeviceCallbacks) {
@@ -149,7 +147,6 @@ static const char *LOG_TAG = "NimBLEScan";
  * @return True if scan started or false if there was an error.
  */
 bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResults), bool is_continue) {
-    NIMBLE_LOGD(LOG_TAG, ">> start: duration=%" PRIu32, duration);
 
     // Save the callback to be invoked when the scan completes.
     m_scanCompleteCB = scanCompleteCB;
@@ -197,7 +194,6 @@ bool NimBLEScan::start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResul
     }
 
     m_ignoreResults = false;
-    NIMBLE_LOGD(LOG_TAG, "<< start()");
 
     if (rc != 0 && rc != BLE_HS_EALREADY) {
         return false;
@@ -235,7 +231,6 @@ NimBLEScanResults NimBLEScan::start(uint32_t duration, bool is_continue) {
  * @return True if successful.
  */
 bool NimBLEScan::stop() {
-    NIMBLE_LOGD(LOG_TAG, ">> stop()");
 
     int rc = ble_gap_disc_cancel();
     if (rc != 0 && rc != BLE_HS_EALREADY) {
@@ -255,7 +250,6 @@ bool NimBLEScan::stop() {
         xTaskNotifyGive(m_pTaskData->task);
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< stop()");
     return true;
 }
 
@@ -265,7 +259,6 @@ bool NimBLEScan::stop() {
  * @details After disconnecting, it may be required in the case we were connected to a device without a public address.
  */
 void NimBLEScan::erase(const NimBLEAddress &address) {
-    NIMBLE_LOGD(LOG_TAG, "erase device: %s", address.toString().c_str());
 
     for (auto it = m_scanResults.m_advertisedDevicesVector.begin(); it != m_scanResults.m_advertisedDevicesVector.end(); ++it) {
         if ((*it)->getAddress() == address) {
@@ -302,7 +295,6 @@ void NimBLEScan::clearResults() {
  * @brief Dump the scan results to the log.
  */
 void NimBLEScanResults::dump() {
-    NIMBLE_LOGD(LOG_TAG, ">> Dump scan results:");
     for (int i = 0; i < getCount(); i++) {
         NIMBLE_LOGI(LOG_TAG, "- %s", getDevice(i)->toString().c_str());
     }

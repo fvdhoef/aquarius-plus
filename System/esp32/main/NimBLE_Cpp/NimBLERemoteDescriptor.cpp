@@ -25,7 +25,6 @@ static const char *LOG_TAG = "NimBLERemoteDescriptor";
  * @param [in] dsc A pointer to the struct that contains the descriptor information.
  */
 NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemoteCharacteristic, const struct ble_gatt_dsc *dsc) {
-    NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteDescriptor()");
     switch (dsc->uuid.u.type) {
         case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(dsc->uuid.u16.value); break;
         case BLE_UUID_TYPE_32: m_uuid = NimBLEUUID(dsc->uuid.u32.value); break;
@@ -35,8 +34,6 @@ NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemo
 
     m_handle                = dsc->handle;
     m_pRemoteCharacteristic = pRemoteCharacteristic;
-
-    NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteDescriptor(): %s", m_uuid.toString().c_str());
 }
 
 /**
@@ -44,7 +41,6 @@ NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemo
  * @return The value of the remote descriptor.
  */
 NimBLEAttValue NimBLERemoteDescriptor::readValue() {
-    NIMBLE_LOGD(LOG_TAG, ">> Descriptor readValue: %s", toString().c_str());
 
     NimBLEClient  *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
     NimBLEAttValue value;
@@ -92,7 +88,6 @@ NimBLEAttValue NimBLERemoteDescriptor::readValue() {
         }
     } while (rc != 0 && retryCount--);
 
-    NIMBLE_LOGD(LOG_TAG, "<< Descriptor readValue(): length: %u rc=%d", value.length(), rc);
     return value;
 }
 
@@ -110,8 +105,6 @@ int NimBLERemoteDescriptor::onReadCB(uint16_t conn_handle, const struct ble_gatt
         return 0;
     }
 
-    NIMBLE_LOGD(LOG_TAG, "Read complete; status=%d conn_handle=%d", error->status, conn_handle);
-
     NimBLEAttValue *valBuf = (NimBLEAttValue *)pTaskData->buf;
     int             rc     = error->status;
 
@@ -121,7 +114,6 @@ int NimBLERemoteDescriptor::onReadCB(uint16_t conn_handle, const struct ble_gatt
             if ((valBuf->size() + data_len) > BLE_ATT_ATTR_MAX_LEN) {
                 rc = BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
             } else {
-                NIMBLE_LOGD(LOG_TAG, "Got %u bytes", data_len);
                 valBuf->append(attr->om->om_data, data_len);
                 return 0;
             }
@@ -197,8 +189,6 @@ bool NimBLERemoteDescriptor::writeValue(const char *char_s, bool response) {
  */
 bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool response) {
 
-    NIMBLE_LOGD(LOG_TAG, ">> Descriptor writeValue: %s", toString().c_str());
-
     NimBLEClient *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
 
     // Check to see that we are connected.
@@ -262,6 +252,5 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
         }
     } while (rc != 0 && retryCount--);
 
-    NIMBLE_LOGD(LOG_TAG, "<< Descriptor writeValue, rc: %d", rc);
     return (rc == 0);
 }

@@ -55,7 +55,6 @@ uint16_t NimBLEAdvertisedDevice::getAppearance() {
             return *field->value | *(field->value + 1) << 8;
         }
     }
-
     return 0;
 }
 
@@ -72,7 +71,6 @@ uint16_t NimBLEAdvertisedDevice::getAdvInterval() {
             return *field->value | *(field->value + 1) << 8;
         }
     }
-
     return 0;
 }
 
@@ -89,7 +87,6 @@ uint16_t NimBLEAdvertisedDevice::getMinInterval() {
             return *field->value | *(field->value + 1) << 8;
         }
     }
-
     return 0;
 }
 
@@ -106,7 +103,6 @@ uint16_t NimBLEAdvertisedDevice::getMaxInterval() {
             return *(field->value + 2) | *(field->value + 3) << 8;
         }
     }
-
     return 0;
 }
 
@@ -125,7 +121,6 @@ std::string NimBLEAdvertisedDevice::getManufacturerData(uint8_t index) {
             return std::string((char *)field->value, field->length - 1);
         }
     }
-
     return "";
 }
 
@@ -150,7 +145,6 @@ std::string NimBLEAdvertisedDevice::getURI() {
             return std::string((char *)field->value, field->length - 1);
         }
     }
-
     return "";
 }
 
@@ -168,7 +162,6 @@ std::string NimBLEAdvertisedDevice::getName() {
             return std::string((char *)field->value, field->length - 1);
         }
     }
-
     return "";
 }
 
@@ -181,7 +174,6 @@ uint8_t NimBLEAdvertisedDevice::getTargetAddressCount() {
 
     count = findAdvField(BLE_HS_ADV_TYPE_PUBLIC_TGT_ADDR);
     count += findAdvField(BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR);
-
     return count;
 }
 
@@ -212,7 +204,6 @@ NimBLEAddress NimBLEAdvertisedDevice::getTargetAddress(uint8_t index) {
             return NimBLEAddress(field->value + (index - 1) * BLE_HS_ADV_PUBLIC_TGT_ADDR_ENTRY_LEN);
         }
     }
-
     return NimBLEAddress("");
 }
 
@@ -232,7 +223,6 @@ std::string NimBLEAdvertisedDevice::getServiceData(uint8_t index) {
             return std::string((char *)(field->value + bytes), field->length - bytes - 1);
         }
     }
-
     return "";
 }
 
@@ -279,7 +269,6 @@ NimBLEUUID NimBLEAdvertisedDevice::getServiceDataUUID(uint8_t index) {
             return NimBLEUUID(field->value, bytes, false);
         }
     }
-
     return NimBLEUUID("");
 }
 
@@ -314,7 +303,6 @@ size_t NimBLEAdvertisedDevice::findServiceData(uint8_t index, uint8_t *bytes) {
         *bytes = 16;
         return data_loc;
     }
-
     return ULONG_MAX;
 }
 
@@ -328,7 +316,6 @@ uint8_t NimBLEAdvertisedDevice::getServiceDataCount() {
     count += findAdvField(BLE_HS_ADV_TYPE_SVC_DATA_UUID16);
     count += findAdvField(BLE_HS_ADV_TYPE_SVC_DATA_UUID32);
     count += findAdvField(BLE_HS_ADV_TYPE_SVC_DATA_UUID128);
-
     return count;
 }
 
@@ -377,7 +364,6 @@ NimBLEUUID NimBLEAdvertisedDevice::getServiceUUID(uint8_t index) {
             return NimBLEUUID(field->value + uuidBytes * (index - 1), uuidBytes, false);
         }
     }
-
     return NimBLEUUID("");
 }
 
@@ -394,7 +380,6 @@ uint8_t NimBLEAdvertisedDevice::getServiceUUIDCount() {
     count += findAdvField(BLE_HS_ADV_TYPE_COMP_UUIDS32);
     count += findAdvField(BLE_HS_ADV_TYPE_INCOMP_UUIDS128);
     count += findAdvField(BLE_HS_ADV_TYPE_COMP_UUIDS128);
-
     return count;
 }
 
@@ -410,7 +395,6 @@ bool NimBLEAdvertisedDevice::isAdvertisingService(const NimBLEUUID &uuid) {
             return true;
         }
     }
-
     return false;
 }
 
@@ -427,7 +411,6 @@ int8_t NimBLEAdvertisedDevice::getTXPower() {
             return *(int8_t *)field->value;
         }
     }
-
     return -99;
 }
 
@@ -451,28 +434,14 @@ uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t
         if (field->type == type) {
             switch (type) {
                 case BLE_HS_ADV_TYPE_INCOMP_UUIDS16:
-                case BLE_HS_ADV_TYPE_COMP_UUIDS16:
-                    count += field->length / 2;
-                    break;
-
+                case BLE_HS_ADV_TYPE_COMP_UUIDS16: count += field->length / 2; break;
                 case BLE_HS_ADV_TYPE_INCOMP_UUIDS32:
-                case BLE_HS_ADV_TYPE_COMP_UUIDS32:
-                    count += field->length / 4;
-                    break;
-
+                case BLE_HS_ADV_TYPE_COMP_UUIDS32: count += field->length / 4; break;
                 case BLE_HS_ADV_TYPE_INCOMP_UUIDS128:
-                case BLE_HS_ADV_TYPE_COMP_UUIDS128:
-                    count += field->length / 16;
-                    break;
-
+                case BLE_HS_ADV_TYPE_COMP_UUIDS128: count += field->length / 16; break;
                 case BLE_HS_ADV_TYPE_PUBLIC_TGT_ADDR:
-                case BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR:
-                    count += field->length / 6;
-                    break;
-
-                default:
-                    count++;
-                    break;
+                case BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR: count += field->length / 6; break;
+                default: count++; break;
             }
 
             if (data_loc != nullptr) {
@@ -489,7 +458,6 @@ uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t
     if (data_loc != nullptr && field != nullptr) {
         *data_loc = data;
     }
-
     return count;
 }
 
@@ -537,7 +505,6 @@ std::string NimBLEAdvertisedDevice::toString() {
             res += ", Data: " + getServiceData(i);
         }
     }
-
     return res;
 }
 

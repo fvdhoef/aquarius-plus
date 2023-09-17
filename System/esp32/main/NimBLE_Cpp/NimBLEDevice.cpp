@@ -213,14 +213,10 @@ NimBLEClient *NimBLEDevice::getDisconnectedClient() {
  */
 /* STATIC */
 void NimBLEDevice::setPower(esp_power_level_t powerLevel, esp_ble_power_type_t powerType) {
-    NIMBLE_LOGD(LOG_TAG, ">> setPower: %d (type: %d)", powerLevel, powerType);
-
     esp_err_t errRc = esp_ble_tx_power_set(powerType, powerLevel);
     if (errRc != ESP_OK) {
         NIMBLE_LOGE(LOG_TAG, "esp_ble_tx_power_set: rc=%d", errRc);
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< setPower");
 }
 
 /**
@@ -274,7 +270,6 @@ NimBLEAddress NimBLEDevice::getAddress() {
     ble_addr_t addr = {BLE_ADDR_PUBLIC, 0};
 
     if (BLE_HS_ENOADDR == ble_hs_id_copy_addr(BLE_ADDR_PUBLIC, addr.val, NULL)) {
-        NIMBLE_LOGD(LOG_TAG, "Public address not found, checking random");
         addr.type = BLE_ADDR_RANDOM;
         ble_hs_id_copy_addr(BLE_ADDR_RANDOM, addr.val, NULL);
     }
@@ -298,7 +293,6 @@ std::string NimBLEDevice::toString() {
  */
 /* STATIC */
 int NimBLEDevice::setMTU(uint16_t mtu) {
-    NIMBLE_LOGD(LOG_TAG, ">> setLocalMTU: %d", mtu);
 
     int rc = ble_att_set_preferred_mtu(mtu);
 
@@ -306,7 +300,6 @@ int NimBLEDevice::setMTU(uint16_t mtu) {
         NIMBLE_LOGE(LOG_TAG, "Could not set local mtu value to: %d", mtu);
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< setLocalMTU");
     return rc;
 }
 
@@ -734,7 +727,6 @@ bool NimBLEDevice::getInitialized() {
  */
 /*STATIC*/
 void NimBLEDevice::setSecurityAuth(bool bonding, bool mitm, bool sc) {
-    NIMBLE_LOGD(LOG_TAG, "Setting bonding: %d, mitm: %d, sc: %d", bonding, mitm, sc);
     ble_hs_cfg.sm_bonding = bonding;
     ble_hs_cfg.sm_mitm    = mitm;
     ble_hs_cfg.sm_sc      = sc;

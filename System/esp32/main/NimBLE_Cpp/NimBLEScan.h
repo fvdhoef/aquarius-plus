@@ -73,24 +73,16 @@ public:
         setDuplicateFilter(!wantDuplicates);
         m_pAdvertisedDeviceCallbacks = pAdvertisedDeviceCallbacks;
     }
-    void setActiveScan(bool active) {
-        m_scan_params.passive = !active;
-    }
-    void setInterval(uint16_t intervalMSecs) {
-        m_scan_params.itvl = intervalMSecs / 0.625;
-    }
-    void setWindow(uint16_t windowMSecs) {
-        m_scan_params.window = windowMSecs / 0.625;
-    }
-    void setDuplicateFilter(bool enabled) {
-        m_scan_params.filter_duplicates = enabled;
-    }
-    void setLimitedOnly(bool enabled) {
-        m_scan_params.limited = enabled;
-    }
-    void setFilterPolicy(uint8_t filter) {
-        m_scan_params.filter_policy = filter;
-    }
+
+    // clang-format off
+    void setActiveScan(bool active)          { m_scan_params.passive = !active; }
+    void setInterval(uint16_t intervalMSecs) { m_scan_params.itvl = intervalMSecs / 0.625; }
+    void setWindow(uint16_t windowMSecs)     { m_scan_params.window = windowMSecs / 0.625; }
+    void setDuplicateFilter(bool enabled)    { m_scan_params.filter_duplicates = enabled; }
+    void setLimitedOnly(bool enabled)        { m_scan_params.limited = enabled; }
+    void setFilterPolicy(uint8_t filter)     { m_scan_params.filter_policy = filter; }
+    // clang-format on
+
     bool stop();
     void clearResults();
 

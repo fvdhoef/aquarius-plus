@@ -104,14 +104,11 @@ void NimBLEClient::dcTimerCb(ble_npl_event *event) {
  * @brief Delete all service objects created by this client and clear the vector.
  */
 void NimBLEClient::deleteServices() {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteServices");
     // Delete all the services.
     for (auto &it : m_servicesVector) {
         delete it;
     }
     m_servicesVector.clear();
-
-    NIMBLE_LOGD(LOG_TAG, "<< deleteServices");
 }
 
 /**
@@ -120,7 +117,6 @@ void NimBLEClient::deleteServices() {
  * @return Number of services left.
  */
 size_t NimBLEClient::deleteService(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteService");
     // Delete the requested service.
     for (auto it = m_servicesVector.begin(); it != m_servicesVector.end(); ++it) {
         if ((*it)->getUUID() == uuid) {
@@ -129,9 +125,6 @@ size_t NimBLEClient::deleteService(const NimBLEUUID &uuid) {
             break;
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< deleteService");
-
     return m_servicesVector.size();
 }
 
@@ -165,8 +158,6 @@ bool NimBLEClient::connect(NimBLEAdvertisedDevice *device, bool deleteAttributes
  * @return True on success.
  */
 bool NimBLEClient::connect(const NimBLEAddress &address, bool deleteAttributes) {
-    NIMBLE_LOGD(LOG_TAG, ">> connect(%s)", address.toString().c_str());
-
     if (!NimBLEDevice::m_synced) {
         NIMBLE_LOGC(LOG_TAG, "Host reset, wait for sync.");
         return false;
@@ -278,7 +269,6 @@ bool NimBLEClient::connect(const NimBLEAddress &address, bool deleteAttributes) 
     m_connEstablished = true;
     m_pClientCallbacks->onConnect(this);
 
-    NIMBLE_LOGD(LOG_TAG, "<< connect()");
     // Check if still connected before returning
     return isConnected();
 }
@@ -289,7 +279,6 @@ bool NimBLEClient::connect(const NimBLEAddress &address, bool deleteAttributes) 
  * @return True on success.
  */
 bool NimBLEClient::secureConnection() {
-    NIMBLE_LOGD(LOG_TAG, ">> secureConnection()");
     TaskHandle_t    cur_task = xTaskGetCurrentTaskHandle();
     ble_task_data_t taskData = {this, cur_task, 0, nullptr};
 
@@ -315,8 +304,6 @@ bool NimBLEClient::secureConnection() {
         NIMBLE_LOGE(LOG_TAG, "secureConnection: failed rc=%d", taskData.rc);
         return false;
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< secureConnection: success");
     return true;
 }
 
@@ -325,7 +312,6 @@ bool NimBLEClient::secureConnection() {
  * @return Error code from NimBLE stack, 0 = success.
  */
 int NimBLEClient::disconnect(uint8_t reason) {
-    NIMBLE_LOGD(LOG_TAG, ">> disconnect()");
     int rc = 0;
     if (isConnected()) {
         // If the timer was already started, ignore this call.
@@ -357,11 +343,8 @@ int NimBLEClient::disconnect(uint8_t reason) {
             }
             NIMBLE_LOGE(LOG_TAG, "ble_gap_terminate failed: rc=%d %s", rc, NimBLEUtils::returnCodeToString(rc));
         }
-    } else {
-        NIMBLE_LOGD(LOG_TAG, "Not connected to any peers");
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< disconnect()");
     m_lastErr = rc;
     return rc;
 }
@@ -487,7 +470,6 @@ void NimBLEClient::setPeerAddress(const NimBLEAddress &address) {
     }
 
     m_peerAddress = address;
-    NIMBLE_LOGD(LOG_TAG, "Peer address set: %s", std::string(m_peerAddress).c_str());
 }
 
 /**
@@ -495,7 +477,6 @@ void NimBLEClient::setPeerAddress(const NimBLEAddress &address) {
  * @return The RSSI value.
  */
 int NimBLEClient::getRssi() {
-    NIMBLE_LOGD(LOG_TAG, ">> getRssi()");
     if (!isConnected()) {
         NIMBLE_LOGE(LOG_TAG, "<< getRssi(): Not connected");
         return 0;
@@ -543,11 +524,8 @@ NimBLERemoteService *NimBLEClient::getService(const char *uuid) {
  * @return A pointer to the service or nullptr if not found.
  */
 NimBLERemoteService *NimBLEClient::getService(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> getService: uuid: %s", uuid.toString().c_str());
-
     for (auto &it : m_servicesVector) {
         if (it->getUUID() == uuid) {
-            NIMBLE_LOGD(LOG_TAG, "<< getService: found the service with uuid: %s", uuid.toString().c_str());
             return it;
         }
     }
@@ -584,8 +562,6 @@ NimBLERemoteService *NimBLEClient::getService(const NimBLEUUID &uuid) {
             }
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< getService: not found");
     return nullptr;
 }
 
@@ -648,8 +624,6 @@ bool NimBLEClient::retrieveServices(const NimBLEUUID *uuid_filter) {
      * peer BLE partner to be returned in the callback function provided.
      */
 
-    NIMBLE_LOGD(LOG_TAG, ">> retrieveServices");
-
     if (!isConnected()) {
         NIMBLE_LOGE(LOG_TAG, "Disconnected, could not retrieve services -aborting");
         return false;
@@ -678,13 +652,7 @@ bool NimBLEClient::retrieveServices(const NimBLEUUID *uuid_filter) {
     ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
     m_lastErr = taskData.rc;
 
-    if (taskData.rc == 0) {
-        NIMBLE_LOGD(LOG_TAG, "<< retrieveServices");
-        return true;
-    } else {
-        NIMBLE_LOGE(LOG_TAG, "Could not retrieve services");
-        return false;
-    }
+    return (taskData.rc == 0);
 }
 
 /**
@@ -696,7 +664,6 @@ int NimBLEClient::serviceDiscoveredCB(
     uint16_t                     conn_handle,
     const struct ble_gatt_error *error,
     const struct ble_gatt_svc *service, void *arg) {
-    NIMBLE_LOGD(LOG_TAG, "Service Discovered >> status: %d handle: %d", error->status, (error->status == 0) ? service->start_handle : -1);
 
     ble_task_data_t *pTaskData = (ble_task_data_t *)arg;
     NimBLEClient    *client    = (NimBLEClient *)pTaskData->pATT;
@@ -722,7 +689,6 @@ int NimBLEClient::serviceDiscoveredCB(
 
     xTaskNotifyGive(pTaskData->task);
 
-    NIMBLE_LOGD(LOG_TAG, "<< Service Discovered");
     return error->status;
 }
 
@@ -733,8 +699,6 @@ int NimBLEClient::serviceDiscoveredCB(
  * @returns characteristic value or an empty string if not found
  */
 NimBLEAttValue NimBLEClient::getValue(const NimBLEUUID &serviceUUID, const NimBLEUUID &characteristicUUID) {
-    NIMBLE_LOGD(LOG_TAG, ">> getValue: serviceUUID: %s, characteristicUUID: %s", serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
-
     NimBLEAttValue       ret;
     NimBLERemoteService *pService = getService(serviceUUID);
 
@@ -744,8 +708,6 @@ NimBLEAttValue NimBLEClient::getValue(const NimBLEUUID &serviceUUID, const NimBL
             ret = pChar->readValue();
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< getValue");
     return ret;
 }
 
@@ -758,8 +720,6 @@ NimBLEAttValue NimBLEClient::getValue(const NimBLEUUID &serviceUUID, const NimBL
  * @returns true if successful otherwise false
  */
 bool NimBLEClient::setValue(const NimBLEUUID &serviceUUID, const NimBLEUUID &characteristicUUID, const NimBLEAttValue &value, bool response) {
-    NIMBLE_LOGD(LOG_TAG, ">> setValue: serviceUUID: %s, characteristicUUID: %s", serviceUUID.toString().c_str(), characteristicUUID.toString().c_str());
-
     bool                 ret      = false;
     NimBLERemoteService *pService = getService(serviceUUID);
 
@@ -769,8 +729,6 @@ bool NimBLEClient::setValue(const NimBLEUUID &serviceUUID, const NimBLEUUID &cha
             ret = pChar->writeValue(value, response);
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< setValue");
     return ret;
 }
 
@@ -817,10 +775,7 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
     NimBLEClient *client = (NimBLEClient *)arg;
     int           rc;
 
-    NIMBLE_LOGD(LOG_TAG, "Got Client event %s", NimBLEUtils::gapEventToString(event->type));
-
     switch (event->type) {
-
         case BLE_GAP_EVENT_DISCONNECT: {
             rc = event->disconnect.reason;
             // If Host reset tell the device now before returning to prevent
@@ -905,17 +860,13 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 return 0;
             }
 
-            NIMBLE_LOGD(LOG_TAG, "Notify Recieved for handle: %d", event->notify_rx.attr_handle);
-
             for (auto &it : client->m_servicesVector) {
                 // Dont waste cycles searching services without this handle in its range
                 if (it->getEndHandle() < event->notify_rx.attr_handle) {
                     continue;
                 }
 
-                auto cVector = &it->m_characteristicVector;
-                NIMBLE_LOGD(LOG_TAG, "checking service %s for handle: %d", it->getUUID().toString().c_str(), event->notify_rx.attr_handle);
-
+                auto cVector        = &it->m_characteristicVector;
                 auto characteristic = cVector->cbegin();
                 for (; characteristic != cVector->cend(); ++characteristic) {
                     if ((*characteristic)->m_handle == event->notify_rx.attr_handle)
@@ -923,13 +874,10 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 }
 
                 if (characteristic != cVector->cend()) {
-                    NIMBLE_LOGD(LOG_TAG, "Got Notification for characteristic %s", (*characteristic)->toString().c_str());
-
                     uint32_t data_len = OS_MBUF_PKTLEN(event->notify_rx.om);
                     (*characteristic)->m_value.setValue(event->notify_rx.om->om_data, data_len);
 
                     if ((*characteristic)->m_notifyCallback != nullptr) {
-                        NIMBLE_LOGD(LOG_TAG, "Invoking callback for notification on characteristic %s", (*characteristic)->toString().c_str());
                         (*characteristic)->m_notifyCallback(*characteristic, event->notify_rx.om->om_data, data_len, !event->notify_rx.indication);
                     }
                     break;
@@ -944,9 +892,6 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
             if (client->m_conn_id != event->conn_update_req.conn_handle) {
                 return 0;
             }
-            NIMBLE_LOGD(LOG_TAG, "Peer requesting to update connection parameters");
-            NIMBLE_LOGD(LOG_TAG, "MinInterval: %d, MaxInterval: %d, Latency: %d, Timeout: %d", event->conn_update_req.peer_params->itvl_min, event->conn_update_req.peer_params->itvl_max, event->conn_update_req.peer_params->latency, event->conn_update_req.peer_params->supervision_timeout);
-
             rc = client->m_pClientCallbacks->onConnParamsUpdateRequest(client, event->conn_update_req.peer_params) ? 0 : BLE_ERR_CONN_PARMS;
 
             if (!rc && event->type == BLE_GAP_EVENT_CONN_UPDATE_REQ) {
@@ -955,8 +900,6 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 event->conn_update_req.self_params->latency             = client->m_pConnParams.latency;
                 event->conn_update_req.self_params->supervision_timeout = client->m_pConnParams.supervision_timeout;
             }
-
-            NIMBLE_LOGD(LOG_TAG, "%s peer params", (rc == 0) ? "Accepted" : "Rejected");
             return rc;
         }
 
@@ -1014,15 +957,12 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                 pkey.action  = event->passkey.params.action;
                 pkey.passkey = NimBLEDevice::m_passkey; // This is the passkey to be entered on peer
                 rc           = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
-                NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);
 
             } else if (event->passkey.params.action == BLE_SM_IOACT_NUMCMP) {
-                NIMBLE_LOGD(LOG_TAG, "Passkey on device's display: %" PRIu32, event->passkey.params.numcmp);
                 pkey.action        = event->passkey.params.action;
                 pkey.numcmp_accept = client->m_pClientCallbacks->onConfirmPIN(event->passkey.params.numcmp);
 
                 rc = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
-                NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);
 
                 // TODO: Handle out of band pairing
             } else if (event->passkey.params.action == BLE_SM_IOACT_OOB) {
@@ -1032,18 +972,12 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                     pkey.oob[i] = tem_oob[i];
                 }
                 rc = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
-                NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);
                 ////////
             } else if (event->passkey.params.action == BLE_SM_IOACT_INPUT) {
-                NIMBLE_LOGD(LOG_TAG, "Enter the passkey");
                 pkey.action  = event->passkey.params.action;
                 pkey.passkey = client->m_pClientCallbacks->onPassKeyRequest();
 
                 rc = ble_sm_inject_io(event->passkey.conn_handle, &pkey);
-                NIMBLE_LOGD(LOG_TAG, "ble_sm_inject_io result: %d", rc);
-
-            } else if (event->passkey.params.action == BLE_SM_IOACT_NONE) {
-                NIMBLE_LOGD(LOG_TAG, "No passkey action required");
             }
 
             return 0;
@@ -1111,35 +1045,20 @@ int NimBLEClient::getLastError() {
 }
 
 void NimBLEClientCallbacks::onConnect(NimBLEClient *pClient) {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onConnect: default");
 }
 
 void NimBLEClientCallbacks::onDisconnect(NimBLEClient *pClient) {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onDisconnect: default");
 }
 
 bool NimBLEClientCallbacks::onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params) {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onConnParamsUpdateRequest: default");
     return true;
 }
 
 uint32_t NimBLEClientCallbacks::onPassKeyRequest() {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onPassKeyRequest: default: 123456");
     return 123456;
 }
-/*
-void NimBLEClientCallbacks::onPassKeyNotify(uint32_t pass_key){
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onPassKeyNotify: default: %d", pass_key);
-}
-
-bool NimBLEClientCallbacks::onSecurityRequest(){
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onSecurityRequest: default: true");
-    return true;
-}*/
 void NimBLEClientCallbacks::onAuthenticationComplete(ble_gap_conn_desc *desc) {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onAuthenticationComplete: default");
 }
 bool NimBLEClientCallbacks::onConfirmPIN(uint32_t pin) {
-    NIMBLE_LOGD("NimBLEClientCallbacks", "onConfirmPIN: default: true");
     return true;
 }

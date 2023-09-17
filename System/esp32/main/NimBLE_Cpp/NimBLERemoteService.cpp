@@ -26,8 +26,6 @@ static const char *LOG_TAG = "NimBLERemoteService";
  * @param [in] service A pointer to the structure with the service information.
  */
 NimBLERemoteService::NimBLERemoteService(NimBLEClient *pClient, const struct ble_gatt_svc *service) {
-
-    NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteService()");
     m_pClient = pClient;
     switch (service->uuid.u.type) {
         case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(service->uuid.u16.value); break;
@@ -37,7 +35,6 @@ NimBLERemoteService::NimBLERemoteService(NimBLEClient *pClient, const struct ble
     }
     m_startHandle = service->start_handle;
     m_endHandle   = service->end_handle;
-    NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteService(): %s", m_uuid.toString().c_str());
 }
 
 /**
@@ -53,11 +50,8 @@ NimBLERemoteService::~NimBLERemoteService() {
  * @return A pointer to the characteristic object, or nullptr if not found.
  */
 NimBLERemoteCharacteristic *NimBLERemoteService::getCharacteristic(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> getCharacteristic: uuid: %s", uuid.toString().c_str());
-
     for (auto &it : m_characteristicVector) {
         if (it->getUUID() == uuid) {
-            NIMBLE_LOGD(LOG_TAG, "<< getCharacteristic: found the characteristic with uuid: %s", uuid.toString().c_str());
             return it;
         }
     }
@@ -95,7 +89,6 @@ NimBLERemoteCharacteristic *NimBLERemoteService::getCharacteristic(const NimBLEU
         }
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< getCharacteristic: not found");
     return nullptr;
 }
 
@@ -124,8 +117,6 @@ std::vector<NimBLERemoteCharacteristic *> *NimBLERemoteService::getCharacteristi
  * @return success == 0 or error code.
  */
 int NimBLERemoteService::characteristicDiscCB(uint16_t conn_handle, const struct ble_gatt_error *error, const struct ble_gatt_chr *chr, void *arg) {
-    NIMBLE_LOGD(LOG_TAG, "Characteristic Discovered >> status: %d handle: %d", error->status, (error->status == 0) ? chr->val_handle : -1);
-
     ble_task_data_t     *pTaskData = (ble_task_data_t *)arg;
     NimBLERemoteService *service   = (NimBLERemoteService *)pTaskData->pATT;
 
@@ -150,7 +141,6 @@ int NimBLERemoteService::characteristicDiscCB(uint16_t conn_handle, const struct
 
     xTaskNotifyGive(pTaskData->task);
 
-    NIMBLE_LOGD(LOG_TAG, "<< Characteristic Discovered");
     return error->status;
 }
 
@@ -160,8 +150,6 @@ int NimBLERemoteService::characteristicDiscCB(uint16_t conn_handle, const struct
  * @return True if successful.
  */
 bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter) {
-    NIMBLE_LOGD(LOG_TAG, ">> retrieveCharacteristics() for service: %s", getUUID().toString().c_str());
-
     int             rc       = 0;
     TaskHandle_t    cur_task = xTaskGetCurrentTaskHandle();
     ble_task_data_t taskData = {this, cur_task, 0, nullptr};
@@ -198,7 +186,6 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
             }
         }
 
-        NIMBLE_LOGD(LOG_TAG, "<< retrieveCharacteristics()");
         return true;
     }
 
@@ -212,8 +199,6 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
  * @returns a string containing the value or an empty string if not found or error.
  */
 std::string NimBLERemoteService::getValue(const NimBLEUUID &characteristicUuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> readValue: uuid: %s", characteristicUuid.toString().c_str());
-
     std::string                 ret   = "";
     NimBLERemoteCharacteristic *pChar = getCharacteristic(characteristicUuid);
 
@@ -221,7 +206,6 @@ std::string NimBLERemoteService::getValue(const NimBLEUUID &characteristicUuid) 
         ret = pChar->readValue();
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< readValue");
     return ret;
 }
 
@@ -232,8 +216,6 @@ std::string NimBLERemoteService::getValue(const NimBLEUUID &characteristicUuid) 
  * @returns true on success, false if not found or error
  */
 bool NimBLERemoteService::setValue(const NimBLEUUID &characteristicUuid, const std::string &value) {
-    NIMBLE_LOGD(LOG_TAG, ">> setValue: uuid: %s", characteristicUuid.toString().c_str());
-
     bool                        ret   = false;
     NimBLERemoteCharacteristic *pChar = getCharacteristic(characteristicUuid);
 
@@ -241,7 +223,6 @@ bool NimBLERemoteService::setValue(const NimBLEUUID &characteristicUuid, const s
         ret = pChar->writeValue(value);
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< setValue");
     return ret;
 }
 
@@ -252,12 +233,10 @@ bool NimBLERemoteService::setValue(const NimBLEUUID &characteristicUuid, const s
  * them. This method does just that.
  */
 void NimBLERemoteService::deleteCharacteristics() {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteCharacteristics");
     for (auto &it : m_characteristicVector) {
         delete it;
     }
     m_characteristicVector.clear();
-    NIMBLE_LOGD(LOG_TAG, "<< deleteCharacteristics");
 }
 
 /**
@@ -266,8 +245,6 @@ void NimBLERemoteService::deleteCharacteristics() {
  * @return Number of characteristics left.
  */
 size_t NimBLERemoteService::deleteCharacteristic(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteCharacteristic");
-
     for (auto it = m_characteristicVector.begin(); it != m_characteristicVector.end(); ++it) {
         if ((*it)->getUUID() == uuid) {
             delete *it;
@@ -275,9 +252,6 @@ size_t NimBLERemoteService::deleteCharacteristic(const NimBLEUUID &uuid) {
             break;
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< deleteCharacteristic");
-
     return m_characteristicVector.size();
 }
 

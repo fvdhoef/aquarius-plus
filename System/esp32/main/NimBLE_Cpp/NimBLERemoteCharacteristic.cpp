@@ -31,7 +31,6 @@ static const char *LOG_TAG = "NimBLERemoteCharacteristic";
  *  };
  */
 NimBLERemoteCharacteristic::NimBLERemoteCharacteristic(NimBLERemoteService *pRemoteService, const struct ble_gatt_chr *chr) {
-    NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteCharacteristic()");
     switch (chr->uuid.u.type) {
         case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(chr->uuid.u16.value); break;
         case BLE_UUID_TYPE_32: m_uuid = NimBLEUUID(chr->uuid.u32.value); break;
@@ -45,8 +44,6 @@ NimBLERemoteCharacteristic::NimBLERemoteCharacteristic(NimBLERemoteService *pRem
     m_charProp       = chr->properties;
     m_pRemoteService = pRemoteService;
     m_notifyCallback = nullptr;
-
-    NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteCharacteristic(): %s", m_uuid.toString().c_str());
 }
 
 /**
@@ -61,7 +58,6 @@ NimBLERemoteCharacteristic::~NimBLERemoteCharacteristic() {
  */
 int NimBLERemoteCharacteristic::descriptorDiscCB(uint16_t conn_handle, const struct ble_gatt_error *error, uint16_t chr_val_handle, const struct ble_gatt_dsc *dsc, void *arg) {
     int rc = error->status;
-    NIMBLE_LOGD(LOG_TAG, "Descriptor Discovered >> status: %d handle: %d", rc, (rc == 0) ? dsc->handle : -1);
 
     desc_filter_t              *filter         = (desc_filter_t *)arg;
     const NimBLEUUID           *uuid_filter    = filter->uuid;
@@ -103,7 +99,6 @@ int NimBLERemoteCharacteristic::descriptorDiscCB(uint16_t conn_handle, const str
         xTaskNotifyGive(pTaskData->task);
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< Descriptor Discovered. status: %d", pTaskData->rc);
     return rc;
 }
 
@@ -112,7 +107,6 @@ int NimBLERemoteCharacteristic::descriptorDiscCB(uint16_t conn_handle, const str
  */
 int NimBLERemoteCharacteristic::nextCharCB(uint16_t conn_handle, const struct ble_gatt_error *error, const struct ble_gatt_chr *chr, void *arg) {
     int rc = error->status;
-    NIMBLE_LOGD(LOG_TAG, "Next Characteristic >> status: %d handle: %d", rc, (rc == 0) ? chr->val_handle : -1);
 
     ble_task_data_t            *pTaskData = (ble_task_data_t *)arg;
     NimBLERemoteCharacteristic *pChar     = (NimBLERemoteCharacteristic *)pTaskData->pATT;
@@ -139,7 +133,6 @@ int NimBLERemoteCharacteristic::nextCharCB(uint16_t conn_handle, const struct bl
  * @param [in] the end handle of the characteristic, or the service, whichever comes first.
  */
 bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filter) {
-    NIMBLE_LOGD(LOG_TAG, ">> retrieveDescriptors() for characteristic: %s", getUUID().toString().c_str());
 
     // If this is the last handle then there are no descriptors
     if (m_handle == getRemoteService()->getEndHandle()) {
@@ -190,7 +183,6 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
         NIMBLE_LOGE(LOG_TAG, "Failed to retrieve descriptors; startHandle:%d endHandle:%d taskData.rc=%d", m_handle, m_endHandle, taskData.rc);
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< retrieveDescriptors(): Found %d descriptors.", m_descriptorVector.size());
     return (taskData.rc == 0);
 }
 
@@ -200,11 +192,9 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
  * @return The Remote descriptor (if present) or null if not present.
  */
 NimBLERemoteDescriptor *NimBLERemoteCharacteristic::getDescriptor(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> getDescriptor: uuid: %s", uuid.toString().c_str());
 
     for (auto &it : m_descriptorVector) {
         if (it->getUUID() == uuid) {
-            NIMBLE_LOGD(LOG_TAG, "<< getDescriptor: found the descriptor with uuid: %s", uuid.toString().c_str());
             return it;
         }
     }
@@ -242,7 +232,6 @@ NimBLERemoteDescriptor *NimBLERemoteCharacteristic::getDescriptor(const NimBLEUU
         }
     }
 
-    NIMBLE_LOGD(LOG_TAG, "<< getDescriptor: Not found");
     return nullptr;
 }
 
@@ -272,7 +261,6 @@ std::vector<NimBLERemoteDescriptor *> *NimBLERemoteCharacteristic::getDescriptor
  * @return The value of the remote characteristic.
  */
 NimBLEAttValue NimBLERemoteCharacteristic::readValue() {
-    NIMBLE_LOGD(LOG_TAG, ">> readValue(): uuid: %s, handle: %d 0x%.2x", getUUID().toString().c_str(), getHandle(), getHandle());
 
     NimBLEClient  *pClient = getRemoteService()->getClient();
     NimBLEAttValue value;
@@ -323,7 +311,6 @@ NimBLEAttValue NimBLERemoteCharacteristic::readValue() {
 
     m_value = value;
 
-    NIMBLE_LOGD(LOG_TAG, "<< readValue length: %d rc=%d", value.length(), rc);
     return value;
 }
 
@@ -351,7 +338,6 @@ int NimBLERemoteCharacteristic::onReadCB(uint16_t conn_handle, const struct ble_
             if ((valBuf->size() + data_len) > BLE_ATT_ATTR_MAX_LEN) {
                 rc = BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
             } else {
-                NIMBLE_LOGD(LOG_TAG, "Got %u bytes", data_len);
                 valBuf->append(attr->om->om_data, data_len);
                 return 0;
             }
@@ -373,7 +359,6 @@ int NimBLERemoteCharacteristic::onReadCB(uint16_t conn_handle, const struct ble_
  * @return false if writing to the descriptor failed.
  */
 bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyCallback, bool response) {
-    NIMBLE_LOGD(LOG_TAG, ">> setNotify(): %s, %02x", toString().c_str(), val);
 
     m_notifyCallback = notifyCallback;
 
@@ -382,8 +367,6 @@ bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyC
         NIMBLE_LOGW(LOG_TAG, "<< setNotify(): Callback set, CCCD not found");
         return true;
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< setNotify()");
 
     return desc->writeValue((uint8_t *)&val, 2, response);
 }
@@ -420,13 +403,11 @@ bool NimBLERemoteCharacteristic::unsubscribe(bool response) {
  * them. This method does just that.
  */
 void NimBLERemoteCharacteristic::deleteDescriptors() {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteDescriptors");
 
     for (auto &it : m_descriptorVector) {
         delete it;
     }
     m_descriptorVector.clear();
-    NIMBLE_LOGD(LOG_TAG, "<< deleteDescriptors");
 }
 
 /**
@@ -435,7 +416,6 @@ void NimBLERemoteCharacteristic::deleteDescriptors() {
  * @return Number of descriptors left in the vector.
  */
 size_t NimBLERemoteCharacteristic::deleteDescriptor(const NimBLEUUID &uuid) {
-    NIMBLE_LOGD(LOG_TAG, ">> deleteDescriptor");
 
     for (auto it = m_descriptorVector.begin(); it != m_descriptorVector.end(); ++it) {
         if ((*it)->getUUID() == uuid) {
@@ -444,8 +424,6 @@ size_t NimBLERemoteCharacteristic::deleteDescriptor(const NimBLEUUID &uuid) {
             break;
         }
     }
-
-    NIMBLE_LOGD(LOG_TAG, "<< deleteDescriptor");
 
     return m_descriptorVector.size();
 }
@@ -483,8 +461,6 @@ std::string NimBLERemoteCharacteristic::toString() {
  * @return false if not connected or otherwise cannot perform write.
  */
 bool NimBLERemoteCharacteristic::writeValue(const uint8_t *data, size_t length, bool response) {
-
-    NIMBLE_LOGD(LOG_TAG, ">> writeValue(), length: %d", length);
 
     NimBLEClient *pClient = getRemoteService()->getClient();
 
@@ -548,7 +524,6 @@ bool NimBLERemoteCharacteristic::writeValue(const uint8_t *data, size_t length, 
         }
     } while (rc != 0 && retryCount--);
 
-    NIMBLE_LOGD(LOG_TAG, "<< writeValue, rc: %d", rc);
     return (rc == 0);
 }
 

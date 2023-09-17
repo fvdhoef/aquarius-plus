@@ -264,8 +264,6 @@ const char *NimBLEUtils::gapEventToString(uint8_t eventType) {
         case BLE_GAP_EVENT_PERIODIC_REPORT: return "BLE_GAP_EVENT_PERIODIC_REPORT";         // 21
         case BLE_GAP_EVENT_PERIODIC_SYNC_LOST: return "BLE_GAP_EVENT_PERIODIC_SYNC_LOST";   // 22
         case BLE_GAP_EVENT_SCAN_REQ_RCVD: return "BLE_GAP_EVENT_SCAN_REQ_RCVD";             // 23
-        default:
-            NIMBLE_LOGD(LOG_TAG, "gapEventToString: Unknown event type %d 0x%.2x", eventType, eventType);
-            return "Unknown event type";
+        default: return "Unknown event type";
     }
 }

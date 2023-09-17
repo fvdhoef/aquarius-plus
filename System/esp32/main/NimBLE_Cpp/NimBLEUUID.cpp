@@ -146,33 +146,6 @@ NimBLEUUID::NimBLEUUID(uint32_t first, uint16_t second, uint16_t third, uint64_t
 }
 
 /**
- * @brief Creates an empty UUID.
- */
-NimBLEUUID::NimBLEUUID() {
-    m_valueSet = false;
-}
-
-/**
- * @brief Get the number of bits in this uuid.
- * @return The number of bits in the UUID.  One of 16, 32 or 128.
- */
-uint8_t NimBLEUUID::bitSize() const {
-    if (!m_valueSet)
-        return 0;
-    return m_uuid.u.type;
-}
-
-/**
- * @brief Compare a UUID against this UUID.
- *
- * @param [in] uuid The UUID to compare against.
- * @return True if the UUIDs are equal and false otherwise.
- */
-bool NimBLEUUID::equals(const NimBLEUUID &uuid) const {
-    return *this == uuid;
-}
-
-/**
  * Create a NimBLEUUID from a string of the form:
  * 0xNNNN
  * 0xNNNNNNNN
@@ -207,11 +180,7 @@ NimBLEUUID NimBLEUUID::fromString(const std::string &uuid) {
  * @return The native UUID value or nullptr if not set.
  */
 const ble_uuid_any_t *NimBLEUUID::getNative() const {
-    if (m_valueSet == false) {
-        NIMBLE_LOGD(LOG_TAG, "<< Return of un-initialized UUID!");
-        return nullptr;
-    }
-    return &m_uuid;
+    return m_valueSet ? &m_uuid : nullptr;
 }
 
 /**
@@ -258,21 +227,6 @@ const NimBLEUUID &NimBLEUUID::to16() {
 }
 
 /**
- * @brief Get a string representation of the UUID.
- * @details
- * The format of a string is:
- * 01234567 8901 2345 6789 012345678901
- * 0000180d-0000-1000-8000-00805f9b34fb
- * 0 1 2 3  4 5  6 7  8 9  0 1 2 3 4 5
- *
- * @return A string representation of the UUID.
- * @deprecated Use std::string() operator instead.
- */
-std::string NimBLEUUID::toString() const {
-    return std::string(*this);
-}
-
-/**
  * @brief Convenience operator to check if this UUID is equal to another.
  */
 bool NimBLEUUID::operator==(const NimBLEUUID &rhs) const {
@@ -307,25 +261,4 @@ bool NimBLEUUID::operator==(const NimBLEUUID &rhs) const {
     }
 
     return m_valueSet == rhs.m_valueSet;
-}
-
-/**
- * @brief Convenience operator to check if this UUID is not equal to another.
- */
-bool NimBLEUUID::operator!=(const NimBLEUUID &rhs) const {
-    return !this->operator==(rhs);
-}
-
-/**
- * @brief Convenience operator to convert this UUID to string representation.
- * @details This allows passing NimBLEUUID to functions
- * that accept std::string and/or or it's methods as a parameter.
- */
-NimBLEUUID::operator std::string() const {
-    if (!m_valueSet)
-        return std::string(); // If we have no value, nothing to format.
-
-    char buf[BLE_UUID_STR_LEN];
-
-    return ble_uuid_to_str(&m_uuid.u, buf);
 }
