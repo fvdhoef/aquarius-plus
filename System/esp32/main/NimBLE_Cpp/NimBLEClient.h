@@ -18,6 +18,7 @@
 #include "NimBLEAddress.h"
 #include "NimBLEUUID.h"
 #include "NimBLEUtils.h"
+#include "NimBLEConnInfo.h"
 #include "NimBLEAttValue.h"
 #include "NimBLEAdvertisedDevice.h"
 #include "NimBLERemoteService.h"
@@ -63,7 +64,7 @@ public:
     void                                         updateConnParams(uint16_t minInterval, uint16_t maxInterval, uint16_t latency, uint16_t timeout);
     void                                         setDataLen(uint16_t tx_octets);
     bool                                         discoverAttributes();
-    ble_gap_conn_desc                            getConnInfo();
+    NimBLEConnInfo                               getConnInfo();
     int                                          getLastError();
 
 private:

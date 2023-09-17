@@ -32,13 +32,13 @@ void BLE::bleTask() {
     while (1) {
         if (!connected) {
             if (!scanning && advDevice == nullptr) {
-                scanning  = true;
-                auto scan = NimBLEScan::instance();
-                scan.setAdvertisedDeviceCallbacks(this);
-                // scan.setInterval(45);
-                // scan.setWindow(15);
+                scanning   = true;
+                auto pScan = NimBLEDevice::getScan();
+                pScan->setAdvertisedDeviceCallbacks(this);
+                // pScan->setInterval(45);
+                // pScan->setWindow(15);
                 ESP_LOGI(TAG, "Start scan");
-                scan.start(0, _scanEndedCB);
+                pScan->start(10, _scanEndedCB);
             }
             if (advDevice != nullptr) {
                 if (connectToServer(advDevice)) {
@@ -103,7 +103,7 @@ void BLE::onResult(NimBLEAdvertisedDevice *advertisedDevice) {
         ESP_LOGI(TAG, "Found Our Service");
 
         // Stop scan before connecting
-        NimBLEScan::instance().stop();
+        NimBLEDevice::getScan()->stop();
 
         // Save the device reference in a global for the client to use
         advDevice = advertisedDevice;
@@ -173,7 +173,7 @@ bool BLE::connectToServer(NimBLEAdvertisedDevice *advDevice) {
             vTaskDelay(pdMS_TO_TICKS(1000));
         }
 
-        NimBLEScan::instance().stop();
+        NimBLEDevice::getScan()->stop();
         client->disconnect();
         vTaskDelay(pdMS_TO_TICKS(500));
         client->connect(true);

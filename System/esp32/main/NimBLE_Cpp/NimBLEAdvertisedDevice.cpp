@@ -493,6 +493,10 @@ uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t
     return count;
 }
 
+NimBLEScan *NimBLEAdvertisedDevice::getScan() {
+    return NimBLEDevice::getScan();
+}
+
 /**
  * @brief Create a string representation of this device.
  * @return A string representation of this device.

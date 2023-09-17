@@ -209,7 +209,7 @@ bool NimBLEClient::connect(const NimBLEAddress &address, bool deleteAttributes) 
 
             case BLE_HS_EBUSY:
                 // Scan was still running, stop it and try again
-                if (!NimBLEScan::instance().stop()) {
+                if (!NimBLEDevice::getScan()->stop()) {
                     rc = BLE_HS_EUNKNOWN;
                 }
                 break;
@@ -439,12 +439,12 @@ void NimBLEClient::setDataLen(uint16_t tx_octets) {
 /**
  * @brief Get detailed information about the current peer connection.
  */
-ble_gap_conn_desc NimBLEClient::getConnInfo() {
-    ble_gap_conn_desc connInfo = {};
+NimBLEConnInfo NimBLEClient::getConnInfo() {
+    NimBLEConnInfo connInfo;
     if (!isConnected()) {
         NIMBLE_LOGE(LOG_TAG, "Not connected");
     } else {
-        int rc = ble_gap_conn_find(m_conn_id, &connInfo);
+        int rc = ble_gap_conn_find(m_conn_id, &connInfo.m_desc);
         if (rc != 0) {
             NIMBLE_LOGE(LOG_TAG, "Connection info not found");
         }

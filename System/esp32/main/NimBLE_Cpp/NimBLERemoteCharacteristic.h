@@ -39,25 +39,15 @@ class NimBLERemoteCharacteristic {
 public:
     ~NimBLERemoteCharacteristic();
 
-    // Public member functions
-    bool canBroadcast() {
-        return (m_charProp & BLE_GATT_CHR_PROP_BROADCAST) != 0;
-    }
-    bool canIndicate() {
-        return (m_charProp & BLE_GATT_CHR_PROP_INDICATE) != 0;
-    }
-    bool canNotify() {
-        return (m_charProp & BLE_GATT_CHR_PROP_NOTIFY) != 0;
-    }
-    bool canRead() {
-        return (m_charProp & BLE_GATT_CHR_PROP_READ) != 0;
-    }
-    bool canWrite() {
-        return (m_charProp & BLE_GATT_CHR_PROP_WRITE) != 0;
-    }
-    bool canWriteNoResponse() {
-        return (m_charProp & BLE_GATT_CHR_PROP_WRITE_NO_RSP) != 0;
-    }
+    // clang-format off
+    bool canBroadcast()       { return (m_charProp & BLE_GATT_CHR_PROP_BROADCAST) != 0; }
+    bool canIndicate()        { return (m_charProp & BLE_GATT_CHR_PROP_INDICATE) != 0; }
+    bool canNotify()          { return (m_charProp & BLE_GATT_CHR_PROP_NOTIFY) != 0; }
+    bool canRead()            { return (m_charProp & BLE_GATT_CHR_PROP_READ) != 0; }
+    bool canWrite()           { return (m_charProp & BLE_GATT_CHR_PROP_WRITE) != 0; }
+    bool canWriteNoResponse() { return (m_charProp & BLE_GATT_CHR_PROP_WRITE_NO_RSP) != 0; }
+    // clang-format on
+
     std::vector<NimBLERemoteDescriptor *>::iterator begin() {
         return m_descriptorVector.begin();
     }

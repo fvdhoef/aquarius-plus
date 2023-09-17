@@ -63,15 +63,7 @@ private:
  * Scanning is associated with a %BLE client that is attempting to locate BLE servers.
  */
 class NimBLEScan {
-    NimBLEScan() {
-    }
-
 public:
-    static NimBLEScan &instance();
-    virtual ~NimBLEScan() {
-        clearResults();
-    }
-
     bool              start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResults), bool is_continue = false);
     NimBLEScanResults start(uint32_t duration, bool is_continue = false);
     bool              isScanning() {
@@ -102,10 +94,6 @@ public:
     bool stop();
     void clearResults();
 
-    /**
-     * @brief Get the results of the scan.
-     * @return NimBLEScanResults object.
-     */
     NimBLEScanResults getResults() {
         return m_scanResults;
     }
@@ -115,14 +103,16 @@ public:
     }
     void erase(const NimBLEAddress &address);
 
-    // private:
-    // friend class NimBLEDevice;
+private:
+    friend class NimBLEDevice;
 
+    NimBLEScan() {
+    }
+    ~NimBLEScan() {
+        clearResults();
+    }
     static int handleGapEvent(ble_gap_event *event, void *arg);
 
-    /**
-     * @brief Called when host reset, we set a flag to stop scanning until synced.
-     */
     void onHostReset() {
         m_ignoreResults = true;
     }

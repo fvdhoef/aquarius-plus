@@ -20,11 +20,6 @@
 
 static const char *LOG_TAG = "NimBLEScan";
 
-NimBLEScan &NimBLEScan::instance() {
-    static NimBLEScan obj;
-    return obj;
-}
-
 /**
  * @brief Handle GAP events related to scans.
  * @param [in] event The event type for this event.
@@ -32,13 +27,13 @@ NimBLEScan &NimBLEScan::instance() {
  */
 /*STATIC*/ int NimBLEScan::handleGapEvent(ble_gap_event *event, void *arg) {
     (void)arg;
-    auto scan = NimBLEScan::instance();
+    NimBLEScan *pScan = NimBLEDevice::getScan();
 
     switch (event->type) {
 
         case BLE_GAP_EVENT_EXT_DISC:
         case BLE_GAP_EVENT_DISC: {
-            if (scan.m_ignoreResults) {
+            if (pScan->m_ignoreResults) {
                 NIMBLE_LOGI(LOG_TAG, "Scan op in progress - ignoring results");
                 return 0;
             }
@@ -55,7 +50,7 @@ NimBLEScan &NimBLEScan::instance() {
             NimBLEAdvertisedDevice *advertisedDevice = nullptr;
 
             // If we've seen this device before get a pointer to it from the vector
-            for (auto &it : scan.m_scanResults.m_advertisedDevicesVector) {
+            for (auto &it : pScan->m_scanResults.m_advertisedDevicesVector) {
                 if (it->getAddress() == advertisedAddress) {
                     advertisedDevice = it;
                     break;
@@ -64,18 +59,19 @@ NimBLEScan &NimBLEScan::instance() {
 
             // If we haven't seen this device before; create a new instance and insert it in the vector.
             // Otherwise just update the relevant parameters of the already known device.
-            if (advertisedDevice == nullptr && event_type != BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP) {
+            if (advertisedDevice == nullptr &&
+                (event_type != BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP)) {
                 // Check if we have reach the scan results limit, ignore this one if so.
                 // We still need to store each device when maxResults is 0 to be able to append the scan results
-                if (scan.m_maxResults > 0 && scan.m_maxResults < 0xFF &&
-                    (scan.m_scanResults.m_advertisedDevicesVector.size() >= scan.m_maxResults)) {
+                if (pScan->m_maxResults > 0 && pScan->m_maxResults < 0xFF &&
+                    (pScan->m_scanResults.m_advertisedDevicesVector.size() >= pScan->m_maxResults)) {
                     return 0;
                 }
 
                 advertisedDevice = new NimBLEAdvertisedDevice();
                 advertisedDevice->setAddress(advertisedAddress);
                 advertisedDevice->setAdvType(event_type);
-                scan.m_scanResults.m_advertisedDevicesVector.push_back(advertisedDevice);
+                pScan->m_scanResults.m_advertisedDevicesVector.push_back(advertisedDevice);
                 NIMBLE_LOGI(LOG_TAG, "New advertiser: %s", advertisedAddress.toString().c_str());
             } else if (advertisedDevice != nullptr) {
                 NIMBLE_LOGI(LOG_TAG, "Updated advertiser: %s", advertisedAddress.toString().c_str());
@@ -87,25 +83,25 @@ NimBLEScan &NimBLEScan::instance() {
             advertisedDevice->setRSSI(disc.rssi);
             advertisedDevice->setPayload(disc.data, disc.length_data, event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP);
 
-            if (scan.m_pAdvertisedDeviceCallbacks) {
-                if (scan.m_scan_params.filter_duplicates && advertisedDevice->m_callbackSent) {
+            if (pScan->m_pAdvertisedDeviceCallbacks) {
+                if (pScan->m_scan_params.filter_duplicates && advertisedDevice->m_callbackSent) {
                     return 0;
                 }
 
                 // If not active scanning or scan response is not available
                 // or extended advertisement scanning, report the result to the callback now.
-                if (scan.m_scan_params.passive || (advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_IND && advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_SCAN_IND)) {
+                if (pScan->m_scan_params.passive || (advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_IND && advertisedDevice->getAdvType() != BLE_HCI_ADV_TYPE_ADV_SCAN_IND)) {
                     advertisedDevice->m_callbackSent = true;
-                    scan.m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
+                    pScan->m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
 
                     // Otherwise, wait for the scan response so we can report the complete data.
                 } else if (event_type == BLE_HCI_ADV_RPT_EVTYPE_SCAN_RSP) {
                     advertisedDevice->m_callbackSent = true;
-                    scan.m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
+                    pScan->m_pAdvertisedDeviceCallbacks->onResult(advertisedDevice);
                 }
                 // If not storing results and we have invoked the callback, delete the device.
-                if (scan.m_maxResults == 0 && advertisedDevice->m_callbackSent) {
-                    scan.erase(advertisedAddress);
+                if (pScan->m_maxResults == 0 && advertisedDevice->m_callbackSent) {
+                    pScan->erase(advertisedAddress);
                 }
             }
 
@@ -116,25 +112,25 @@ NimBLEScan &NimBLEScan::instance() {
 
             // If a device advertised with scan response available and it was not received
             // the callback would not have been invoked, so do it here.
-            if (scan.m_pAdvertisedDeviceCallbacks) {
-                for (auto &it : scan.m_scanResults.m_advertisedDevicesVector) {
+            if (pScan->m_pAdvertisedDeviceCallbacks) {
+                for (auto &it : pScan->m_scanResults.m_advertisedDevicesVector) {
                     if (!it->m_callbackSent) {
-                        scan.m_pAdvertisedDeviceCallbacks->onResult(it);
+                        pScan->m_pAdvertisedDeviceCallbacks->onResult(it);
                     }
                 }
             }
 
-            if (scan.m_maxResults == 0) {
-                scan.clearResults();
+            if (pScan->m_maxResults == 0) {
+                pScan->clearResults();
             }
 
-            if (scan.m_scanCompleteCB != nullptr) {
-                scan.m_scanCompleteCB(scan.m_scanResults);
+            if (pScan->m_scanCompleteCB != nullptr) {
+                pScan->m_scanCompleteCB(pScan->m_scanResults);
             }
 
-            if (scan.m_pTaskData != nullptr) {
-                scan.m_pTaskData->rc = event->disc_complete.reason;
-                xTaskNotifyGive(scan.m_pTaskData->task);
+            if (pScan->m_pTaskData != nullptr) {
+                pScan->m_pTaskData->rc = event->disc_complete.reason;
+                xTaskNotifyGive(pScan->m_pTaskData->task);
             }
 
             return 0;

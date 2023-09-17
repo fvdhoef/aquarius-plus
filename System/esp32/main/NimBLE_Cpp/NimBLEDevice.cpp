@@ -47,6 +47,19 @@ uint16_t                   NimBLEDevice::m_scanDuplicateSize = CONFIG_BT_CTRL_SC
 uint8_t                    NimBLEDevice::m_scanFilterMode    = CONFIG_BT_CTRL_SCAN_DUPL_TYPE;
 
 /**
+ * @brief Retrieve the Scan object that we use for scanning.
+ * @return The scanning object reference.  This is a singleton object.  The caller should not
+ * try and release/delete it.
+ */
+/* STATIC */
+NimBLEScan *NimBLEDevice::getScan() {
+    if (m_pScan == nullptr) {
+        m_pScan = new NimBLEScan();
+    }
+    return m_pScan;
+}
+
+/**
  * @brief Creates a new client object and maintains a list of all client objects
  * each client can connect to 1 peripheral device.
  * @param [in] peerAddress An optional peer address that is copied to the new client

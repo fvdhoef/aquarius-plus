@@ -47,6 +47,7 @@ public:
     static bool          onWhiteList(const NimBLEAddress &address);
     static size_t        getWhiteListCount();
     static NimBLEAddress getWhiteListAddress(size_t index);
+    static NimBLEScan   *getScan();
 
     static void setPower(esp_power_level_t powerLevel, esp_ble_power_type_t powerType = ESP_BLE_PWR_TYPE_DEFAULT);
     static int  getPower(esp_ble_power_type_t powerType = ESP_BLE_PWR_TYPE_DEFAULT);
