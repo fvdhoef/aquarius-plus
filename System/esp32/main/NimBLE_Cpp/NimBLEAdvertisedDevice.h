@@ -67,7 +67,6 @@ public:
 
     std::string getName();
     int         getRSSI();
-    NimBLEScan *getScan();
     uint8_t     getServiceDataCount();
     std::string getServiceData(uint8_t index = 0);
     std::string getServiceData(const NimBLEUUID &uuid);

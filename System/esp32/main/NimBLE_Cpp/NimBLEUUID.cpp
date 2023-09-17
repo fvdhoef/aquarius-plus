@@ -59,7 +59,7 @@ NimBLEUUID::NimBLEUUID(const std::string &value) {
     } else {
         m_valueSet = false;
     }
-} // NimBLEUUID(std::string)
+}
 
 /**
  * @brief Create a UUID from 2, 4, 16 bytes of memory.
@@ -94,7 +94,7 @@ NimBLEUUID::NimBLEUUID(const uint8_t *pData, size_t size, bool msbFirst) {
         memcpy(uuidValue, pData, size);
     }
     m_valueSet = true;
-} // NimBLEUUID
+}
 
 /**
  * @brief Create a UUID from the 16bit value.
@@ -104,7 +104,7 @@ NimBLEUUID::NimBLEUUID(uint16_t uuid) {
     m_uuid.u.type    = BLE_UUID_TYPE_16;
     m_uuid.u16.value = uuid;
     m_valueSet       = true;
-} // NimBLEUUID
+}
 
 /**
  * @brief Create a UUID from the 32bit value.
@@ -114,7 +114,7 @@ NimBLEUUID::NimBLEUUID(uint32_t uuid) {
     m_uuid.u.type    = BLE_UUID_TYPE_32;
     m_uuid.u32.value = uuid;
     m_valueSet       = true;
-} // NimBLEUUID
+}
 
 /**
  * @brief Create a UUID from the native UUID.
@@ -124,7 +124,7 @@ NimBLEUUID::NimBLEUUID(const ble_uuid128_t *uuid) {
     m_uuid.u.type = BLE_UUID_TYPE_128;
     memcpy(m_uuid.u128.value, uuid->value, 16);
     m_valueSet = true;
-} // NimBLEUUID
+}
 
 /**
  * @brief Create a UUID from the 128bit value using hex parts instead of string,
@@ -150,7 +150,7 @@ NimBLEUUID::NimBLEUUID(uint32_t first, uint16_t second, uint16_t third, uint64_t
  */
 NimBLEUUID::NimBLEUUID() {
     m_valueSet = false;
-} // NimBLEUUID
+}
 
 /**
  * @brief Get the number of bits in this uuid.
@@ -160,7 +160,7 @@ uint8_t NimBLEUUID::bitSize() const {
     if (!m_valueSet)
         return 0;
     return m_uuid.u.type;
-} // bitSize
+}
 
 /**
  * @brief Compare a UUID against this UUID.
@@ -200,7 +200,7 @@ NimBLEUUID NimBLEUUID::fromString(const std::string &uuid) {
         return NimBLEUUID(uuid);
     }
     return NimBLEUUID();
-} // fromString
+}
 
 /**
  * @brief Get the native UUID value.
@@ -212,7 +212,7 @@ const ble_uuid_any_t *NimBLEUUID::getNative() const {
         return nullptr;
     }
     return &m_uuid;
-} // getNative
+}
 
 /**
  * @brief Convert a UUID to its 128 bit representation.
@@ -234,7 +234,7 @@ const NimBLEUUID &NimBLEUUID::to128() {
     }
 
     return *this;
-} // to128
+}
 
 /**
  * @brief Convert 128 bit UUID to its 16 bit representation.
@@ -270,7 +270,7 @@ const NimBLEUUID &NimBLEUUID::to16() {
  */
 std::string NimBLEUUID::toString() const {
     return std::string(*this);
-} // toString
+}
 
 /**
  * @brief Convenience operator to check if this UUID is equal to another.

@@ -232,7 +232,7 @@ char *NimBLEUtils::buildHexData(uint8_t *target, const uint8_t *source, uint8_t 
     }
 
     return startOfData;
-} // buildHexData
+}
 
 /**
  * @brief Convert a GAP event type to a string representation.

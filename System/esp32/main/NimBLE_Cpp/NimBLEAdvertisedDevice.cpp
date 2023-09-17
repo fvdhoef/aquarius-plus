@@ -28,7 +28,7 @@ NimBLEAdvertisedDevice::NimBLEAdvertisedDevice()
     m_rssi         = -9999;
     m_callbackSent = false;
     m_advLength    = 0;
-} // NimBLEAdvertisedDevice
+}
 
 /**
  * @brief Get the address of the advertising device.
@@ -36,7 +36,7 @@ NimBLEAdvertisedDevice::NimBLEAdvertisedDevice()
  */
 NimBLEAddress NimBLEAdvertisedDevice::getAddress() {
     return m_address;
-} // getAddress
+}
 
 /**
  * @brief Get the advertisement type.
@@ -49,7 +49,7 @@ NimBLEAddress NimBLEAdvertisedDevice::getAddress() {
  */
 uint8_t NimBLEAdvertisedDevice::getAdvType() {
     return m_advType;
-} // getAdvType
+}
 
 /**
  * @brief Get the advertisement flags.
@@ -68,7 +68,7 @@ uint8_t NimBLEAdvertisedDevice::getAdvFlags() {
         }
     }
     return 0;
-} // getAdvFlags
+}
 
 /**
  * @brief Get the appearance.
@@ -89,7 +89,7 @@ uint16_t NimBLEAdvertisedDevice::getAppearance() {
     }
 
     return 0;
-} // getAppearance
+}
 
 /**
  * @brief Get the advertisement interval.
@@ -106,7 +106,7 @@ uint16_t NimBLEAdvertisedDevice::getAdvInterval() {
     }
 
     return 0;
-} // getAdvInterval
+}
 
 /**
  * @brief Get the preferred min connection interval.
@@ -123,7 +123,7 @@ uint16_t NimBLEAdvertisedDevice::getMinInterval() {
     }
 
     return 0;
-} // getMinInterval
+}
 
 /**
  * @brief Get the preferred max connection interval.
@@ -140,7 +140,7 @@ uint16_t NimBLEAdvertisedDevice::getMaxInterval() {
     }
 
     return 0;
-} // getMaxInterval
+}
 
 /**
  * @brief Get the manufacturer data.
@@ -159,7 +159,7 @@ std::string NimBLEAdvertisedDevice::getManufacturerData(uint8_t index) {
     }
 
     return "";
-} // getManufacturerData
+}
 
 /**
  * @brief Get the count of manufacturer data sets.
@@ -167,7 +167,7 @@ std::string NimBLEAdvertisedDevice::getManufacturerData(uint8_t index) {
  */
 uint8_t NimBLEAdvertisedDevice::getManufacturerDataCount() {
     return findAdvField(BLE_HS_ADV_TYPE_MFG_DATA);
-} // getManufacturerDataCount
+}
 
 /**
  * @brief Get the URI from the advertisement.
@@ -184,7 +184,7 @@ std::string NimBLEAdvertisedDevice::getURI() {
     }
 
     return "";
-} // getURI
+}
 
 /**
  * @brief Get the advertised name.
@@ -202,7 +202,7 @@ std::string NimBLEAdvertisedDevice::getName() {
     }
 
     return "";
-} // getName
+}
 
 /**
  * @brief Get the RSSI.
@@ -210,15 +210,7 @@ std::string NimBLEAdvertisedDevice::getName() {
  */
 int NimBLEAdvertisedDevice::getRSSI() {
     return m_rssi;
-} // getRSSI
-
-/**
- * @brief Get the scan object that created this advertised device.
- * @return The scan object.
- */
-NimBLEScan *NimBLEAdvertisedDevice::getScan() {
-    return NimBLEDevice::getScan();
-} // getScan
+}
 
 /**
  * @brief Get the number of target addresses.
@@ -282,7 +274,7 @@ std::string NimBLEAdvertisedDevice::getServiceData(uint8_t index) {
     }
 
     return "";
-} // getServiceData
+}
 
 /**
  * @brief Get the service data.
@@ -309,7 +301,7 @@ std::string NimBLEAdvertisedDevice::getServiceData(const NimBLEUUID &uuid) {
 
     NIMBLE_LOGI(LOG_TAG, "No service data found");
     return "";
-} // getServiceData
+}
 
 /**
  * @brief Get the UUID of the service data at the index.
@@ -329,7 +321,7 @@ NimBLEUUID NimBLEAdvertisedDevice::getServiceDataUUID(uint8_t index) {
     }
 
     return NimBLEUUID("");
-} // getServiceDataUUID
+}
 
 /**
  * @brief Find the service data at the index.
@@ -378,7 +370,7 @@ uint8_t NimBLEAdvertisedDevice::getServiceDataCount() {
     count += findAdvField(BLE_HS_ADV_TYPE_SVC_DATA_UUID128);
 
     return count;
-} // getServiceDataCount
+}
 
 /**
  * @brief Get the Service UUID.
@@ -427,7 +419,7 @@ NimBLEUUID NimBLEAdvertisedDevice::getServiceUUID(uint8_t index) {
     }
 
     return NimBLEUUID("");
-} // getServiceUUID
+}
 
 /**
  * @brief Get the number of services advertised
@@ -444,7 +436,7 @@ uint8_t NimBLEAdvertisedDevice::getServiceUUIDCount() {
     count += findAdvField(BLE_HS_ADV_TYPE_COMP_UUIDS128);
 
     return count;
-} // getServiceUUIDCount
+}
 
 /**
  * @brief Check advertised services for existence of the required UUID
@@ -460,7 +452,7 @@ bool NimBLEAdvertisedDevice::isAdvertisingService(const NimBLEUUID &uuid) {
     }
 
     return false;
-} // isAdvertisingService
+}
 
 /**
  * @brief Get the TX Power.
@@ -477,7 +469,7 @@ int8_t NimBLEAdvertisedDevice::getTXPower() {
     }
 
     return -99;
-} // getTXPower
+}
 
 /**
  * @brief Does this advertisement have preferred connection parameters?
@@ -485,7 +477,7 @@ int8_t NimBLEAdvertisedDevice::getTXPower() {
  */
 bool NimBLEAdvertisedDevice::haveConnParams() {
     return findAdvField(BLE_HS_ADV_TYPE_SLAVE_ITVL_RANGE) > 0;
-} // haveConnParams
+}
 
 /**
  * @brief Does this advertisement have have the advertising interval?
@@ -493,7 +485,7 @@ bool NimBLEAdvertisedDevice::haveConnParams() {
  */
 bool NimBLEAdvertisedDevice::haveAdvInterval() {
     return findAdvField(BLE_HS_ADV_TYPE_ADV_ITVL) > 0;
-} // haveAdvInterval
+}
 
 /**
  * @brief Does this advertisement have an appearance value?
@@ -501,7 +493,7 @@ bool NimBLEAdvertisedDevice::haveAdvInterval() {
  */
 bool NimBLEAdvertisedDevice::haveAppearance() {
     return findAdvField(BLE_HS_ADV_TYPE_APPEARANCE) > 0;
-} // haveAppearance
+}
 
 /**
  * @brief Does this advertisement have manufacturer data?
@@ -509,7 +501,7 @@ bool NimBLEAdvertisedDevice::haveAppearance() {
  */
 bool NimBLEAdvertisedDevice::haveManufacturerData() {
     return findAdvField(BLE_HS_ADV_TYPE_MFG_DATA) > 0;
-} // haveManufacturerData
+}
 
 /**
  * @brief Does this advertisement have a URI?
@@ -517,7 +509,7 @@ bool NimBLEAdvertisedDevice::haveManufacturerData() {
  */
 bool NimBLEAdvertisedDevice::haveURI() {
     return findAdvField(BLE_HS_ADV_TYPE_URI) > 0;
-} // haveURI
+}
 
 /**
  * @brief Does the advertisement contain a target address?
@@ -535,7 +527,7 @@ bool NimBLEAdvertisedDevice::haveTargetAddress() {
 bool NimBLEAdvertisedDevice::haveName() {
     return findAdvField(BLE_HS_ADV_TYPE_COMP_NAME) > 0 ||
            findAdvField(BLE_HS_ADV_TYPE_INCOMP_NAME) > 0;
-} // haveName
+}
 
 /**
  * @brief Does this advertisement have a signal strength value?
@@ -543,7 +535,7 @@ bool NimBLEAdvertisedDevice::haveName() {
  */
 bool NimBLEAdvertisedDevice::haveRSSI() {
     return m_rssi != -9999;
-} // haveRSSI
+}
 
 /**
  * @brief Does this advertisement have a service data value?
@@ -551,7 +543,7 @@ bool NimBLEAdvertisedDevice::haveRSSI() {
  */
 bool NimBLEAdvertisedDevice::haveServiceData() {
     return getServiceDataCount() > 0;
-} // haveServiceData
+}
 
 /**
  * @brief Does this advertisement have a service UUID value?
@@ -559,7 +551,7 @@ bool NimBLEAdvertisedDevice::haveServiceData() {
  */
 bool NimBLEAdvertisedDevice::haveServiceUUID() {
     return getServiceUUIDCount() > 0;
-} // haveServiceUUID
+}
 
 /**
  * @brief Does this advertisement have a transmission power value?
@@ -567,7 +559,7 @@ bool NimBLEAdvertisedDevice::haveServiceUUID() {
  */
 bool NimBLEAdvertisedDevice::haveTXPower() {
     return findAdvField(BLE_HS_ADV_TYPE_TX_PWR_LVL) > 0;
-} // haveTXPower
+}
 
 uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t *data_loc) {
     ble_hs_adv_field *field  = nullptr;
@@ -637,7 +629,7 @@ uint8_t NimBLEAdvertisedDevice::findAdvField(uint8_t type, uint8_t index, size_t
  */
 void NimBLEAdvertisedDevice::setAddress(NimBLEAddress address) {
     m_address = address;
-} // setAddress
+}
 
 /**
  * @brief Set the adFlag for this device.
@@ -646,7 +638,7 @@ void NimBLEAdvertisedDevice::setAddress(NimBLEAddress address) {
 void NimBLEAdvertisedDevice::setAdvType(uint8_t advType, bool isLegacyAdv) {
     m_advType = advType;
     (void)isLegacyAdv;
-} // setAdvType
+}
 
 /**
  * @brief Set the RSSI for this device.
@@ -654,7 +646,7 @@ void NimBLEAdvertisedDevice::setAdvType(uint8_t advType, bool isLegacyAdv) {
  */
 void NimBLEAdvertisedDevice::setRSSI(int rssi) {
     m_rssi = rssi;
-} // setRSSI
+}
 
 /**
  * @brief Create a string representation of this device.
@@ -698,8 +690,7 @@ std::string NimBLEAdvertisedDevice::toString() {
     }
 
     return res;
-
-} // toString
+}
 
 /**
  * @brief Get the payload advertised by the device.
@@ -707,7 +698,7 @@ std::string NimBLEAdvertisedDevice::toString() {
  */
 uint8_t *NimBLEAdvertisedDevice::getPayload() {
     return &m_payload[0];
-} // getPayload
+}
 
 /**
  * @brief Stores the payload of the advertised device in a vector.
@@ -742,7 +733,7 @@ uint8_t NimBLEAdvertisedDevice::getAdvLength() {
  */
 uint8_t NimBLEAdvertisedDevice::getAddressType() {
     return m_address.getType();
-} // getAddressType
+}
 
 /**
  * @brief Get the length of the payload advertised by the device.
@@ -750,7 +741,7 @@ uint8_t NimBLEAdvertisedDevice::getAddressType() {
  */
 size_t NimBLEAdvertisedDevice::getPayloadLength() {
     return m_payload.size();
-} // getPayloadLength
+}
 
 /**
  * @brief Check if this device is advertising as connectable.
@@ -759,7 +750,7 @@ size_t NimBLEAdvertisedDevice::getPayloadLength() {
 bool NimBLEAdvertisedDevice::isConnectable() {
     return (m_advType & BLE_HCI_ADV_CONN_MASK) ||
            (m_advType & BLE_HCI_ADV_DIRECT_MASK);
-} // isConnectable
+}
 
 /**
  * @brief Check if this advertisement is a legacy or extended type
@@ -767,4 +758,4 @@ bool NimBLEAdvertisedDevice::isConnectable() {
  */
 bool NimBLEAdvertisedDevice::isLegacyAdvertisement() {
     return true;
-} // isLegacyAdvertisement
+}

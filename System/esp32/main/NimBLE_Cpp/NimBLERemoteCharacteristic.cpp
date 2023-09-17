@@ -54,14 +54,14 @@ NimBLERemoteCharacteristic::NimBLERemoteCharacteristic(NimBLERemoteService *pRem
     m_notifyCallback = nullptr;
 
     NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteCharacteristic(): %s", m_uuid.toString().c_str());
-} // NimBLERemoteCharacteristic
+}
 
 /**
  *@brief Destructor.
  */
 NimBLERemoteCharacteristic::~NimBLERemoteCharacteristic() {
     deleteDescriptors();
-} // ~NimBLERemoteCharacteristic
+}
 
 /*
 #define BLE_GATT_CHR_PROP_BROADCAST                     0x01
@@ -80,7 +80,7 @@ NimBLERemoteCharacteristic::~NimBLERemoteCharacteristic() {
  */
 bool NimBLERemoteCharacteristic::canBroadcast() {
     return (m_charProp & BLE_GATT_CHR_PROP_BROADCAST) != 0;
-} // canBroadcast
+}
 
 /**
  * @brief Does the characteristic support indications?
@@ -88,7 +88,7 @@ bool NimBLERemoteCharacteristic::canBroadcast() {
  */
 bool NimBLERemoteCharacteristic::canIndicate() {
     return (m_charProp & BLE_GATT_CHR_PROP_INDICATE) != 0;
-} // canIndicate
+}
 
 /**
  * @brief Does the characteristic support notifications?
@@ -96,7 +96,7 @@ bool NimBLERemoteCharacteristic::canIndicate() {
  */
 bool NimBLERemoteCharacteristic::canNotify() {
     return (m_charProp & BLE_GATT_CHR_PROP_NOTIFY) != 0;
-} // canNotify
+}
 
 /**
  * @brief Does the characteristic support reading?
@@ -104,7 +104,7 @@ bool NimBLERemoteCharacteristic::canNotify() {
  */
 bool NimBLERemoteCharacteristic::canRead() {
     return (m_charProp & BLE_GATT_CHR_PROP_READ) != 0;
-} // canRead
+}
 
 /**
  * @brief Does the characteristic support writing?
@@ -112,7 +112,7 @@ bool NimBLERemoteCharacteristic::canRead() {
  */
 bool NimBLERemoteCharacteristic::canWrite() {
     return (m_charProp & BLE_GATT_CHR_PROP_WRITE) != 0;
-} // canWrite
+}
 
 /**
  * @brief Does the characteristic support writing with no response?
@@ -120,7 +120,7 @@ bool NimBLERemoteCharacteristic::canWrite() {
  */
 bool NimBLERemoteCharacteristic::canWriteNoResponse() {
     return (m_charProp & BLE_GATT_CHR_PROP_WRITE_NO_RSP) != 0;
-} // canWriteNoResponse
+}
 
 /**
  * @brief Callback used by the API when a descriptor is discovered or search complete.
@@ -258,7 +258,7 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
 
     NIMBLE_LOGD(LOG_TAG, "<< retrieveDescriptors(): Found %d descriptors.", m_descriptorVector.size());
     return (taskData.rc == 0);
-} // retrieveDescriptors
+}
 
 /**
  * @brief Get the descriptor instance with the given UUID that belongs to this characteristic.
@@ -310,7 +310,7 @@ NimBLERemoteDescriptor *NimBLERemoteCharacteristic::getDescriptor(const NimBLEUU
 
     NIMBLE_LOGD(LOG_TAG, "<< getDescriptor: Not found");
     return nullptr;
-} // getDescriptor
+}
 
 /**
  * @brief Get a pointer to the vector of found descriptors.
@@ -331,7 +331,7 @@ std::vector<NimBLERemoteDescriptor *> *NimBLERemoteCharacteristic::getDescriptor
         }
     }
     return &m_descriptorVector;
-} // getDescriptors
+}
 
 /**
  * @brief Get iterator to the beginning of the vector of remote descriptor pointers.
@@ -355,7 +355,7 @@ std::vector<NimBLERemoteDescriptor *>::iterator NimBLERemoteCharacteristic::end(
  */
 uint16_t NimBLERemoteCharacteristic::getHandle() {
     return m_handle;
-} // getHandle
+}
 
 /**
  * @brief Get the handle for this characteristics definition.
@@ -363,7 +363,7 @@ uint16_t NimBLERemoteCharacteristic::getHandle() {
  */
 uint16_t NimBLERemoteCharacteristic::getDefHandle() {
     return m_defHandle;
-} // getDefHandle
+}
 
 /**
  * @brief Get the remote service associated with this characteristic.
@@ -371,7 +371,7 @@ uint16_t NimBLERemoteCharacteristic::getDefHandle() {
  */
 NimBLERemoteService *NimBLERemoteCharacteristic::getRemoteService() {
     return m_pRemoteService;
-} // getRemoteService
+}
 
 /**
  * @brief Get the UUID for this characteristic.
@@ -379,7 +379,7 @@ NimBLERemoteService *NimBLERemoteCharacteristic::getRemoteService() {
  */
 NimBLEUUID NimBLERemoteCharacteristic::getUUID() {
     return m_uuid;
-} // getUUID
+}
 
 /**
  * @brief Get the value of the remote characteristic.
@@ -396,7 +396,7 @@ NimBLEAttValue NimBLERemoteCharacteristic::getValue() {
  */
 uint16_t NimBLERemoteCharacteristic::readUInt16() {
     return readValue<uint16_t>();
-} // readUInt16
+}
 
 /**
  * @brief Read an unsigned 32 bit value.
@@ -405,7 +405,7 @@ uint16_t NimBLERemoteCharacteristic::readUInt16() {
  */
 uint32_t NimBLERemoteCharacteristic::readUInt32() {
     return readValue<uint32_t>();
-} // readUInt32
+}
 
 /**
  * @brief Read a byte value
@@ -414,7 +414,7 @@ uint32_t NimBLERemoteCharacteristic::readUInt32() {
  */
 uint8_t NimBLERemoteCharacteristic::readUInt8() {
     return readValue<uint8_t>();
-} // readUInt8
+}
 
 /**
  * @brief Read a float value.
@@ -422,7 +422,7 @@ uint8_t NimBLERemoteCharacteristic::readUInt8() {
  */
 float NimBLERemoteCharacteristic::readFloat() {
     return readValue<float>();
-} // readFloat
+}
 
 /**
  * @brief Read the value of the remote characteristic.
@@ -482,7 +482,7 @@ NimBLEAttValue NimBLERemoteCharacteristic::readValue() {
 
     NIMBLE_LOGD(LOG_TAG, "<< readValue length: %d rc=%d", value.length(), rc);
     return value;
-} // readValue
+}
 
 /**
  * @brief Callback for characteristic read operation.
@@ -543,7 +543,7 @@ bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyC
     NIMBLE_LOGD(LOG_TAG, "<< setNotify()");
 
     return desc->writeValue((uint8_t *)&val, 2, response);
-} // setNotify
+}
 
 /**
  * @brief Subscribe for notifications or indications.
@@ -559,7 +559,7 @@ bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback n
     } else {
         return setNotify(0x02, notifyCallback, response);
     }
-} // subscribe
+}
 
 /**
  * @brief Unsubscribe for notifications or indications.
@@ -568,7 +568,7 @@ bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback n
  */
 bool NimBLERemoteCharacteristic::unsubscribe(bool response) {
     return setNotify(0x00, nullptr, response);
-} // unsubscribe
+}
 
 /**
  * @brief backward-compatibility method for subscribe/unsubscribe notifications/indications
@@ -587,7 +587,7 @@ bool NimBLERemoteCharacteristic::registerForNotify(notify_callback notifyCallbac
         success = unsubscribe(response);
     }
     return success;
-} // registerForNotify
+}
 
 /**
  * @brief Delete the descriptors in the descriptor vector.
@@ -603,7 +603,7 @@ void NimBLERemoteCharacteristic::deleteDescriptors() {
     }
     m_descriptorVector.clear();
     NIMBLE_LOGD(LOG_TAG, "<< deleteDescriptors");
-} // deleteDescriptors
+}
 
 /**
  * @brief Delete descriptor by UUID
@@ -624,7 +624,7 @@ size_t NimBLERemoteCharacteristic::deleteDescriptor(const NimBLEUUID &uuid) {
     NIMBLE_LOGD(LOG_TAG, "<< deleteDescriptor");
 
     return m_descriptorVector.size();
-} // deleteDescriptor
+}
 
 /**
  * @brief Convert a NimBLERemoteCharacteristic to a string representation;
@@ -649,7 +649,7 @@ std::string NimBLERemoteCharacteristic::toString() {
     }
 
     return res;
-} // toString
+}
 
 /**
  * @brief Write a new value to the remote characteristic from a std::vector<uint8_t>.
@@ -659,7 +659,7 @@ std::string NimBLERemoteCharacteristic::toString() {
  */
 bool NimBLERemoteCharacteristic::writeValue(const std::vector<uint8_t> &vec, bool response) {
     return writeValue((uint8_t *)&vec[0], vec.size(), response);
-} // writeValue
+}
 
 /**
  * @brief Write a new value to the remote characteristic from a const char*.
@@ -669,7 +669,7 @@ bool NimBLERemoteCharacteristic::writeValue(const std::vector<uint8_t> &vec, boo
  */
 bool NimBLERemoteCharacteristic::writeValue(const char *char_s, bool response) {
     return writeValue((uint8_t *)char_s, strlen(char_s), response);
-} // writeValue
+}
 
 /**
  * @brief Write a new value to the remote characteristic from a data buffer.
@@ -746,7 +746,7 @@ bool NimBLERemoteCharacteristic::writeValue(const uint8_t *data, size_t length, 
 
     NIMBLE_LOGD(LOG_TAG, "<< writeValue, rc: %d", rc);
     return (rc == 0);
-} // writeValue
+}
 
 /**
  * @brief Callback for characteristic write operation.

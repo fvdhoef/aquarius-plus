@@ -52,7 +52,7 @@ NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemo
  */
 uint16_t NimBLERemoteDescriptor::getHandle() {
     return m_handle;
-} // getHandle
+}
 
 /**
  * @brief Get the characteristic that owns this descriptor.
@@ -60,7 +60,7 @@ uint16_t NimBLERemoteDescriptor::getHandle() {
  */
 NimBLERemoteCharacteristic *NimBLERemoteDescriptor::getRemoteCharacteristic() {
     return m_pRemoteCharacteristic;
-} // getRemoteCharacteristic
+}
 
 /**
  * @brief Retrieve the UUID associated this remote descriptor.
@@ -68,7 +68,7 @@ NimBLERemoteCharacteristic *NimBLERemoteDescriptor::getRemoteCharacteristic() {
  */
 NimBLEUUID NimBLERemoteDescriptor::getUUID() {
     return m_uuid;
-} // getUUID
+}
 
 /**
  * @brief Read a byte value
@@ -77,7 +77,7 @@ NimBLEUUID NimBLERemoteDescriptor::getUUID() {
  */
 uint8_t NimBLERemoteDescriptor::readUInt8() {
     return readValue<uint8_t>();
-} // readUInt8
+}
 
 /**
  * @brief Read an unsigned 16 bit value
@@ -86,7 +86,7 @@ uint8_t NimBLERemoteDescriptor::readUInt8() {
  */
 uint16_t NimBLERemoteDescriptor::readUInt16() {
     return readValue<uint16_t>();
-} // readUInt16
+}
 
 /**
  * @brief Read an unsigned 32 bit value.
@@ -95,7 +95,7 @@ uint16_t NimBLERemoteDescriptor::readUInt16() {
  */
 uint32_t NimBLERemoteDescriptor::readUInt32() {
     return readValue<uint32_t>();
-} // readUInt32
+}
 
 /**
  * @brief Read the value of the remote descriptor.
@@ -152,7 +152,7 @@ NimBLEAttValue NimBLERemoteDescriptor::readValue() {
 
     NIMBLE_LOGD(LOG_TAG, "<< Descriptor readValue(): length: %u rc=%d", value.length(), rc);
     return value;
-} // readValue
+}
 
 /**
  * @brief Callback for Descriptor read operation.
@@ -204,7 +204,7 @@ std::string NimBLERemoteDescriptor::toString() {
     res += val;
 
     return res;
-} // toString
+}
 
 /**
  * @brief Callback for descriptor write operation.
@@ -234,7 +234,7 @@ int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle, const struct ble_gat
  */
 bool NimBLERemoteDescriptor::writeValue(const std::vector<uint8_t> &vec, bool response) {
     return writeValue((uint8_t *)&vec[0], vec.size(), response);
-} // writeValue
+}
 
 /**
  * @brief Write a new value to the remote descriptor from a const char*.
@@ -244,7 +244,7 @@ bool NimBLERemoteDescriptor::writeValue(const std::vector<uint8_t> &vec, bool re
  */
 bool NimBLERemoteDescriptor::writeValue(const char *char_s, bool response) {
     return writeValue((uint8_t *)char_s, strlen(char_s), response);
-} // writeValue
+}
 
 /**
  * @brief Write a new value to a remote descriptor.
@@ -322,4 +322,4 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
 
     NIMBLE_LOGD(LOG_TAG, "<< Descriptor writeValue, rc: %d", rc);
     return (rc == 0);
-} // writeValue
+}

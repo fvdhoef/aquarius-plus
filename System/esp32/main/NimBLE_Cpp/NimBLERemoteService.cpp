@@ -77,7 +77,7 @@ std::vector<NimBLERemoteCharacteristic *>::iterator NimBLERemoteService::end() {
  */
 NimBLERemoteCharacteristic *NimBLERemoteService::getCharacteristic(const char *uuid) {
     return getCharacteristic(NimBLEUUID(uuid));
-} // getCharacteristic
+}
 
 /**
  * @brief Get the characteristic object for the UUID.
@@ -129,7 +129,7 @@ NimBLERemoteCharacteristic *NimBLERemoteService::getCharacteristic(const NimBLEU
 
     NIMBLE_LOGD(LOG_TAG, "<< getCharacteristic: not found");
     return nullptr;
-} // getCharacteristic
+}
 
 /**
  * @brief Get a pointer to the vector of found characteristics.
@@ -149,7 +149,7 @@ std::vector<NimBLERemoteCharacteristic *> *NimBLERemoteService::getCharacteristi
         }
     }
     return &m_characteristicVector;
-} // getCharacteristics
+}
 
 /**
  * @brief Callback for Characteristic discovery.
@@ -236,8 +236,7 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
 
     NIMBLE_LOGE(LOG_TAG, "Could not retrieve characteristics");
     return false;
-
-} // retrieveCharacteristics
+}
 
 /**
  * @brief Get the client associated with this service.
@@ -245,21 +244,21 @@ bool NimBLERemoteService::retrieveCharacteristics(const NimBLEUUID *uuid_filter)
  */
 NimBLEClient *NimBLERemoteService::getClient() {
     return m_pClient;
-} // getClient
+}
 
 /**
  * @brief Get the service end handle.
  */
 uint16_t NimBLERemoteService::getEndHandle() {
     return m_endHandle;
-} // getEndHandle
+}
 
 /**
  * @brief Get the service start handle.
  */
 uint16_t NimBLERemoteService::getStartHandle() {
     return m_startHandle;
-} // getStartHandle
+}
 
 /**
  * @brief Get the service UUID.
@@ -285,7 +284,7 @@ std::string NimBLERemoteService::getValue(const NimBLEUUID &characteristicUuid) 
 
     NIMBLE_LOGD(LOG_TAG, "<< readValue");
     return ret;
-} // readValue
+}
 
 /**
  * @brief Set the value of a characteristic.
@@ -305,7 +304,7 @@ bool NimBLERemoteService::setValue(const NimBLEUUID &characteristicUuid, const s
 
     NIMBLE_LOGD(LOG_TAG, "<< setValue");
     return ret;
-} // setValue
+}
 
 /**
  * @brief Delete the characteristics in the characteristics vector.
@@ -320,7 +319,7 @@ void NimBLERemoteService::deleteCharacteristics() {
     }
     m_characteristicVector.clear();
     NIMBLE_LOGD(LOG_TAG, "<< deleteCharacteristics");
-} // deleteCharacteristics
+}
 
 /**
  * @brief Delete characteristic by UUID
@@ -341,7 +340,7 @@ size_t NimBLERemoteService::deleteCharacteristic(const NimBLEUUID &uuid) {
     NIMBLE_LOGD(LOG_TAG, "<< deleteCharacteristic");
 
     return m_characteristicVector.size();
-} // deleteCharacteristic
+}
 
 /**
  * @brief Create a string representation of this remote service.
@@ -368,4 +367,4 @@ std::string NimBLERemoteService::toString() {
     }
 
     return res;
-} // toString
+}

@@ -47,19 +47,6 @@ uint16_t                   NimBLEDevice::m_scanDuplicateSize = CONFIG_BT_CTRL_SC
 uint8_t                    NimBLEDevice::m_scanFilterMode    = CONFIG_BT_CTRL_SCAN_DUPL_TYPE;
 
 /**
- * @brief Retrieve the Scan object that we use for scanning.
- * @return The scanning object reference.  This is a singleton object.  The caller should not
- * try and release/delete it.
- */
-/* STATIC */
-NimBLEScan *NimBLEDevice::getScan() {
-    if (m_pScan == nullptr) {
-        m_pScan = new NimBLEScan();
-    }
-    return m_pScan;
-} // getScan
-
-/**
  * @brief Creates a new client object and maintains a list of all client objects
  * each client can connect to 1 peripheral device.
  * @param [in] peerAddress An optional peer address that is copied to the new client
@@ -76,7 +63,7 @@ NimBLEClient *NimBLEDevice::createClient(NimBLEAddress peerAddress) {
     m_cList.push_back(pClient);
 
     return pClient;
-} // createClient
+}
 
 /**
  * @brief Delete the client object and remove it from the list.\n
@@ -121,7 +108,7 @@ bool NimBLEDevice::deleteClient(NimBLEClient *pClient) {
     delete pClient;
 
     return true;
-} // deleteClient
+}
 
 /**
  * @brief Get the list of created client objects.
@@ -130,7 +117,7 @@ bool NimBLEDevice::deleteClient(NimBLEClient *pClient) {
 /* STATIC */
 std::list<NimBLEClient *> *NimBLEDevice::getClientList() {
     return &m_cList;
-} // getClientList
+}
 
 /**
  * @brief Get the number of created client objects.
@@ -139,7 +126,7 @@ std::list<NimBLEClient *> *NimBLEDevice::getClientList() {
 /* STATIC */
 size_t NimBLEDevice::getClientListSize() {
     return m_cList.size();
-} // getClientList
+}
 
 /**
  * @brief Get a reference to a client by connection ID.
@@ -155,7 +142,7 @@ NimBLEClient *NimBLEDevice::getClientByID(uint16_t conn_id) {
     }
     assert(0);
     return nullptr;
-} // getClientByID
+}
 
 /**
  * @brief Get a reference to a client by peer address.
@@ -170,7 +157,7 @@ NimBLEClient *NimBLEDevice::getClientByPeerAddress(const NimBLEAddress &peer_add
         }
     }
     return nullptr;
-} // getClientPeerAddress
+}
 
 /**
  * @brief Finds the first disconnected client in the list.
@@ -184,7 +171,7 @@ NimBLEClient *NimBLEDevice::getDisconnectedClient() {
         }
     }
     return nullptr;
-} // getDisconnectedClient
+}
 
 /**
  * @brief Set the transmission power.
@@ -221,7 +208,7 @@ void NimBLEDevice::setPower(esp_power_level_t powerLevel, esp_ble_power_type_t p
     }
 
     NIMBLE_LOGD(LOG_TAG, "<< setPower");
-} // setPower
+}
 
 /**
  * @brief Get the transmission power.
@@ -262,7 +249,7 @@ int NimBLEDevice::getPower(esp_ble_power_type_t powerType) {
         default:
             return BLE_HS_ADV_TX_PWR_LVL_AUTO;
     }
-} // getPower
+}
 
 /**
  * @brief Get our device address.
@@ -280,7 +267,7 @@ NimBLEAddress NimBLEDevice::getAddress() {
     }
 
     return NimBLEAddress(addr);
-} // getAddress
+}
 
 /**
  * @brief Return a string representation of the address of this device.
@@ -289,7 +276,7 @@ NimBLEAddress NimBLEDevice::getAddress() {
 /* STATIC */
 std::string NimBLEDevice::toString() {
     return getAddress().toString();
-} // toString
+}
 
 /**
  * @brief Setup local mtu that will be used to negotiate mtu during request from client peer.
@@ -308,7 +295,7 @@ int NimBLEDevice::setMTU(uint16_t mtu) {
 
     NIMBLE_LOGD(LOG_TAG, "<< setLocalMTU");
     return rc;
-} // setMTU
+}
 
 /**
  * @brief Get local MTU value set.
@@ -583,7 +570,7 @@ void NimBLEDevice::onReset(int reason) {
             m_pScan->onHostReset();
         }
     }
-} // onReset
+}
 
 /**
  * @brief Host resynced with controller, all clear to make calls to the stack.
@@ -612,7 +599,7 @@ void NimBLEDevice::onSync(void) {
             m_pScan->onHostSync();
         }
     }
-} // onSync
+}
 
 /**
  * @brief The main host task.
@@ -625,7 +612,7 @@ void NimBLEDevice::host_task(void *param) {
     nimble_port_run();
 
     nimble_port_freertos_deinit();
-} // host_task
+}
 
 /**
  * @brief Initialize the %BLE environment.
@@ -677,7 +664,7 @@ void NimBLEDevice::init(const std::string &deviceName) {
     }
 
     initialized = true; // Set the initialization flag to ensure we are only initialized once.
-} // init
+}
 
 /**
  * @brief Shutdown the NimBLE stack/controller.
@@ -706,7 +693,7 @@ void NimBLEDevice::deinit(bool clearAll) {
             m_ignoreList.clear();
         }
     }
-} // deinit
+}
 
 /**
  * @brief Set the BLEDevice's name
@@ -715,7 +702,7 @@ void NimBLEDevice::deinit(bool clearAll) {
 /* STATIC */
 void NimBLEDevice::setDeviceName(const std::string &deviceName) {
     ble_svc_gap_device_name_set(deviceName.c_str());
-} // setDeviceName
+}
 
 /**
  * @brief Check if the initialization is complete.
@@ -724,7 +711,7 @@ void NimBLEDevice::setDeviceName(const std::string &deviceName) {
 /*STATIC*/
 bool NimBLEDevice::getInitialized() {
     return initialized;
-} // getInitialized
+}
 
 /**
  * @brief Set the authorization mode for this device.
@@ -738,7 +725,7 @@ void NimBLEDevice::setSecurityAuth(bool bonding, bool mitm, bool sc) {
     ble_hs_cfg.sm_bonding = bonding;
     ble_hs_cfg.sm_mitm    = mitm;
     ble_hs_cfg.sm_sc      = sc;
-} // setSecurityAuth
+}
 
 /**
  * @brief Set the authorization mode for this device.
@@ -752,7 +739,7 @@ void NimBLEDevice::setSecurityAuth(bool bonding, bool mitm, bool sc) {
 /*STATIC*/
 void NimBLEDevice::setSecurityAuth(uint8_t auth_req) {
     NimBLEDevice::setSecurityAuth((auth_req & BLE_SM_PAIR_AUTHREQ_BOND) > 0, (auth_req & BLE_SM_PAIR_AUTHREQ_MITM) > 0, (auth_req & BLE_SM_PAIR_AUTHREQ_SC) > 0);
-} // setSecurityAuth
+}
 
 /**
  * @brief Set the Input/Output capabilities of this device.
@@ -766,7 +753,7 @@ void NimBLEDevice::setSecurityAuth(uint8_t auth_req) {
 /*STATIC*/
 void NimBLEDevice::setSecurityIOCap(uint8_t iocap) {
     ble_hs_cfg.sm_io_cap = iocap;
-} // setSecurityIOCap
+}
 
 /**
  * @brief If we are the initiator of the security procedure this sets the keys we will distribute.
@@ -780,7 +767,7 @@ void NimBLEDevice::setSecurityIOCap(uint8_t iocap) {
 /*STATIC*/
 void NimBLEDevice::setSecurityInitKey(uint8_t init_key) {
     ble_hs_cfg.sm_our_key_dist = init_key;
-} // setsSecurityInitKey
+}
 
 /**
  * @brief Set the keys we are willing to accept during pairing.
@@ -794,7 +781,7 @@ void NimBLEDevice::setSecurityInitKey(uint8_t init_key) {
 /*STATIC*/
 void NimBLEDevice::setSecurityRespKey(uint8_t resp_key) {
     ble_hs_cfg.sm_their_key_dist = resp_key;
-} // setsSecurityRespKey
+}
 
 /**
  * @brief Set the passkey the server will ask for when pairing.
@@ -803,7 +790,7 @@ void NimBLEDevice::setSecurityRespKey(uint8_t resp_key) {
 /*STATIC*/
 void NimBLEDevice::setSecurityPasskey(uint32_t pin) {
     m_passkey = pin;
-} // setSecurityPasskey
+}
 
 /**
  * @brief Get the current passkey used for pairing.
@@ -812,7 +799,7 @@ void NimBLEDevice::setSecurityPasskey(uint32_t pin) {
 /*STATIC*/
 uint32_t NimBLEDevice::getSecurityPasskey() {
     return m_passkey;
-} // getSecurityPasskey
+}
 
 /**
  * @brief Set the own address type.
@@ -836,7 +823,7 @@ void NimBLEDevice::setOwnAddrType(uint8_t own_addr_type, bool useNRPA) {
             setSecurityInitKey(BLE_SM_PAIR_KEY_DIST_ENC | BLE_SM_PAIR_KEY_DIST_ID);
             break;
     }
-} // setOwnAddrType
+}
 
 /**
  * @brief Start the connection securing and authorization for this connection.
@@ -851,7 +838,7 @@ int NimBLEDevice::startSecurity(uint16_t conn_id) {
     }
 
     return rc;
-} // startSecurity
+}
 
 /**
  * @brief Check if the device address is on our ignore list.
@@ -905,4 +892,4 @@ void NimBLEDevice::setCustomGapHandler(gap_event_handler handler) {
     } else {
         assert(rc == 0);
     }
-} // setCustomGapHandler
+}
