@@ -41,7 +41,6 @@ NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemo
  * @return The value of the remote descriptor.
  */
 NimBLEAttValue NimBLERemoteDescriptor::readValue() {
-
     NimBLEClient  *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
     NimBLEAttValue value;
 
@@ -136,7 +135,6 @@ std::string NimBLERemoteDescriptor::toString() {
     res += ", handle: ";
     snprintf(val, sizeof(val), "%d", getHandle());
     res += val;
-
     return res;
 }
 
@@ -156,7 +154,6 @@ int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle, const struct ble_gat
 
     pTaskData->rc = error->status;
     xTaskNotifyGive(pTaskData->task);
-
     return 0;
 }
 
@@ -188,7 +185,6 @@ bool NimBLERemoteDescriptor::writeValue(const char *char_s, bool response) {
  * @return false if not connected or otherwise cannot perform write.
  */
 bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool response) {
-
     NimBLEClient *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
 
     // Check to see that we are connected.

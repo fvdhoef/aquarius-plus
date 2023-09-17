@@ -77,8 +77,12 @@ public:
         return m_value;
     }
 
-    bool subscribe(bool notifications = true, notify_callback notifyCallback = nullptr, bool response = false);
-    bool unsubscribe(bool response = false);
+    bool subscribe(bool notifications = true, notify_callback notifyCallback = nullptr, bool response = false) {
+        return setNotify(notifications ? 0x01 : 0x02, notifyCallback, response);
+    }
+    bool unsubscribe(bool response = false) {
+        return setNotify(0x00, nullptr, response);
+    }
     bool writeValue(const uint8_t *data, size_t length, bool response = false);
     bool writeValue(const std::vector<uint8_t> &vec, bool response = false) {
         return writeValue((uint8_t *)&vec[0], vec.size(), response);

@@ -35,24 +35,18 @@
 NimBLEAddress::NimBLEAddress(const std::string &stringAddress, uint8_t type) {
     m_addrType = type;
 
-    if (stringAddress.length() == 0) {
-        memset(m_address, 0, 6);
-        return;
-    }
-
     if (stringAddress.length() == 6) {
         std::reverse_copy(stringAddress.data(), stringAddress.data() + 6, m_address);
         return;
     }
 
-    if (stringAddress.length() != 17) {
-        memset(m_address, 0, sizeof(m_address)); // "00:00:00:00:00:00" represents an invalid address
-        return;
-    }
-
     int data[6];
-    if (sscanf(stringAddress.c_str(), "%x:%x:%x:%x:%x:%x", &data[5], &data[4], &data[3], &data[2], &data[1], &data[0]) != 6) {
-        memset(m_address, 0, sizeof(m_address)); // "00:00:00:00:00:00" represents an invalid address
+
+    if (stringAddress.length() == 0 ||
+        stringAddress.length() != 17 ||
+        sscanf(stringAddress.c_str(), "%x:%x:%x:%x:%x:%x", &data[5], &data[4], &data[3], &data[2], &data[1], &data[0]) != 6) {
+        memset(m_address, 0, sizeof(m_address));
+        return;
     }
     for (size_t index = 0; index < sizeof(m_address); index++) {
         m_address[index] = data[index];

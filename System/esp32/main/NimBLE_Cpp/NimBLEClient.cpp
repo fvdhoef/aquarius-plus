@@ -88,19 +88,6 @@ NimBLEClient::~NimBLEClient() {
 }
 
 /**
- * @brief If we have asked to disconnect and the event does not
- * occur within the supervision timeout + added delay, this will
- * be called to reset the host in the case of a stalled controller.
- */
-void NimBLEClient::dcTimerCb(ble_npl_event *event) {
-    /*   NimBLEClient *pClient = (NimBLEClient*)event->arg;
-       NIMBLE_LOGC(LOG_TAG, "Timed out disconnecting from %s - resetting host",
-                   std::string(pClient->getPeerAddress()).c_str());
-    */
-    ble_hs_sched_reset(BLE_HS_ECONTROLLER);
-}
-
-/**
  * @brief Delete all service objects created by this client and clear the vector.
  */
 void NimBLEClient::deleteServices() {
@@ -126,16 +113,6 @@ size_t NimBLEClient::deleteService(const NimBLEUUID &uuid) {
         }
     }
     return m_servicesVector.size();
-}
-
-/**
- * @brief Connect to the BLE Server.
- * @param [in] deleteAttributes If true this will delete any attribute objects this client may already\n
- * have created and clears the vectors after successful connection.
- * @return True on success.
- */
-bool NimBLEClient::connect(bool deleteAttributes) {
-    return connect(m_peerAddress, deleteAttributes);
 }
 
 /**
@@ -358,10 +335,7 @@ int NimBLEClient::disconnect(uint8_t reason) {
  * @param [in] scanInterval The scan interval to use when attempting to connect in 0.625ms units.
  * @param [in] scanWindow The scan window to use when attempting to connect in 0.625ms units.
  */
-void NimBLEClient::setConnectionParams(uint16_t minInterval, uint16_t maxInterval, uint16_t latency, uint16_t timeout, uint16_t scanInterval, uint16_t scanWindow) /*,
-                                                                                                                        uint16_t minConnTime, uint16_t maxConnTime)*/
-{
-
+void NimBLEClient::setConnectionParams(uint16_t minInterval, uint16_t maxInterval, uint16_t latency, uint16_t timeout, uint16_t scanInterval, uint16_t scanWindow) {
     m_pConnParams.scan_itvl           = scanInterval;
     m_pConnParams.scan_window         = scanWindow;
     m_pConnParams.itvl_min            = minInterval;
@@ -436,29 +410,6 @@ NimBLEConnInfo NimBLEClient::getConnInfo() {
 }
 
 /**
- * @brief Set the timeout to wait for connection attempt to complete.
- * @param [in] time The number of seconds before timeout.
- */
-void NimBLEClient::setConnectTimeout(uint8_t time) {
-    m_connectTimeout = (uint32_t)(time * 1000);
-}
-
-/**
- * @brief Get the connection id for this client.
- * @return The connection id.
- */
-uint16_t NimBLEClient::getConnId() {
-    return m_conn_id;
-}
-
-/**
- * @brief Retrieve the address of the peer.
- */
-NimBLEAddress NimBLEClient::getPeerAddress() {
-    return m_peerAddress;
-}
-
-/**
  * @brief Set the peer address.
  * @param [in] address The address of the peer that this client is
  * connected or should connect to.
@@ -468,7 +419,6 @@ void NimBLEClient::setPeerAddress(const NimBLEAddress &address) {
         NIMBLE_LOGE(LOG_TAG, "Cannot set peer address while connected");
         return;
     }
-
     m_peerAddress = address;
 }
 
@@ -489,33 +439,7 @@ int NimBLEClient::getRssi() {
         m_lastErr = rc;
         return 0;
     }
-
     return rssiValue;
-}
-
-/**
- * @brief Get iterator to the beginning of the vector of remote service pointers.
- * @return An iterator to the beginning of the vector of remote service pointers.
- */
-std::vector<NimBLERemoteService *>::iterator NimBLEClient::begin() {
-    return m_servicesVector.begin();
-}
-
-/**
- * @brief Get iterator to the end of the vector of remote service pointers.
- * @return An iterator to the end of the vector of remote service pointers.
- */
-std::vector<NimBLERemoteService *>::iterator NimBLEClient::end() {
-    return m_servicesVector.end();
-}
-
-/**
- * @brief Get the service BLE Remote Service instance corresponding to the uuid.
- * @param [in] uuid The UUID of the service being sought.
- * @return A pointer to the service or nullptr if not found.
- */
-NimBLERemoteService *NimBLEClient::getService(const char *uuid) {
-    return getService(NimBLEUUID(uuid));
 }
 
 /**
@@ -592,22 +516,17 @@ std::vector<NimBLERemoteService *> *NimBLEClient::getServices(bool refresh) {
 bool NimBLEClient::discoverAttributes() {
     deleteServices();
 
-    if (!retrieveServices()) {
+    if (!retrieveServices())
         return false;
-    }
 
     for (auto svc : m_servicesVector) {
-        if (!svc->retrieveCharacteristics()) {
+        if (!svc->retrieveCharacteristics())
             return false;
-        }
 
-        for (auto chr : svc->m_characteristicVector) {
-            if (!chr->retrieveDescriptors()) {
+        for (auto chr : svc->m_characteristicVector)
+            if (!chr->retrieveDescriptors())
                 return false;
-            }
-        }
     }
-
     return true;
 }
 
@@ -753,16 +672,7 @@ NimBLERemoteCharacteristic *NimBLEClient::getCharacteristic(const uint16_t handl
             }
         }
     }
-
     return nullptr;
-}
-
-/**
- * @brief Get the current mtu of this connection.
- * @returns The MTU value.
- */
-uint16_t NimBLEClient::getMTU() {
-    return ble_att_mtu(m_conn_id);
 }
 
 /**
@@ -883,7 +793,6 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
                     break;
                 }
             }
-
             return 0;
         }
 
@@ -1000,14 +909,6 @@ int NimBLEClient::handleGapEvent(struct ble_gap_event *event, void *arg) {
 }
 
 /**
- * @brief Are we connected to a server?
- * @return True if we are connected and false if we are not connected.
- */
-bool NimBLEClient::isConnected() {
-    return m_conn_id != BLE_HS_CONN_HANDLE_NONE;
-}
-
-/**
  * @brief Set the callbacks that will be invoked when events are received.
  * @param [in] pClientCallbacks A pointer to a class to receive the event callbacks.
  * @param [in] deleteCallbacks If true this will delete the callback class sent when the client is destructed.
@@ -1034,31 +935,4 @@ std::string NimBLEClient::toString() {
     }
 
     return res;
-}
-
-/**
- * @brief Get the last error code reported by the NimBLE host
- * @return int, the NimBLE error code.
- */
-int NimBLEClient::getLastError() {
-    return m_lastErr;
-}
-
-void NimBLEClientCallbacks::onConnect(NimBLEClient *pClient) {
-}
-
-void NimBLEClientCallbacks::onDisconnect(NimBLEClient *pClient) {
-}
-
-bool NimBLEClientCallbacks::onConnParamsUpdateRequest(NimBLEClient *pClient, const ble_gap_upd_params *params) {
-    return true;
-}
-
-uint32_t NimBLEClientCallbacks::onPassKeyRequest() {
-    return 123456;
-}
-void NimBLEClientCallbacks::onAuthenticationComplete(ble_gap_conn_desc *desc) {
-}
-bool NimBLEClientCallbacks::onConfirmPIN(uint32_t pin) {
-    return true;
 }

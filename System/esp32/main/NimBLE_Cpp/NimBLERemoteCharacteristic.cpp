@@ -133,7 +133,6 @@ int NimBLERemoteCharacteristic::nextCharCB(uint16_t conn_handle, const struct bl
  * @param [in] the end handle of the characteristic, or the service, whichever comes first.
  */
 bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filter) {
-
     // If this is the last handle then there are no descriptors
     if (m_handle == getRemoteService()->getEndHandle()) {
         return true;
@@ -192,7 +191,6 @@ bool NimBLERemoteCharacteristic::retrieveDescriptors(const NimBLEUUID *uuid_filt
  * @return The Remote descriptor (if present) or null if not present.
  */
 NimBLERemoteDescriptor *NimBLERemoteCharacteristic::getDescriptor(const NimBLEUUID &uuid) {
-
     for (auto &it : m_descriptorVector) {
         if (it->getUUID() == uuid) {
             return it;
@@ -261,7 +259,6 @@ std::vector<NimBLERemoteDescriptor *> *NimBLERemoteCharacteristic::getDescriptor
  * @return The value of the remote characteristic.
  */
 NimBLEAttValue NimBLERemoteCharacteristic::readValue() {
-
     NimBLEClient  *pClient = getRemoteService()->getClient();
     NimBLEAttValue value;
 
@@ -359,7 +356,6 @@ int NimBLERemoteCharacteristic::onReadCB(uint16_t conn_handle, const struct ble_
  * @return false if writing to the descriptor failed.
  */
 bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyCallback, bool response) {
-
     m_notifyCallback = notifyCallback;
 
     NimBLERemoteDescriptor *desc = getDescriptor(NimBLEUUID((uint16_t)0x2902));
@@ -367,33 +363,7 @@ bool NimBLERemoteCharacteristic::setNotify(uint16_t val, notify_callback notifyC
         NIMBLE_LOGW(LOG_TAG, "<< setNotify(): Callback set, CCCD not found");
         return true;
     }
-
     return desc->writeValue((uint8_t *)&val, 2, response);
-}
-
-/**
- * @brief Subscribe for notifications or indications.
- * @param [in] notifications If true, subscribe for notifications, false subscribe for indications.
- * @param [in] notifyCallback A callback to be invoked for a notification.
- * @param [in] response If true, require a write response from the descriptor write operation.
- * If NULL is provided then no callback is performed.
- * @return false if writing to the descriptor failed.
- */
-bool NimBLERemoteCharacteristic::subscribe(bool notifications, notify_callback notifyCallback, bool response) {
-    if (notifications) {
-        return setNotify(0x01, notifyCallback, response);
-    } else {
-        return setNotify(0x02, notifyCallback, response);
-    }
-}
-
-/**
- * @brief Unsubscribe for notifications or indications.
- * @param [in] response bool if true, require a write response from the descriptor write operation.
- * @return false if writing to the descriptor failed.
- */
-bool NimBLERemoteCharacteristic::unsubscribe(bool response) {
-    return setNotify(0x00, nullptr, response);
 }
 
 /**
@@ -403,7 +373,6 @@ bool NimBLERemoteCharacteristic::unsubscribe(bool response) {
  * them. This method does just that.
  */
 void NimBLERemoteCharacteristic::deleteDescriptors() {
-
     for (auto &it : m_descriptorVector) {
         delete it;
     }
@@ -416,7 +385,6 @@ void NimBLERemoteCharacteristic::deleteDescriptors() {
  * @return Number of descriptors left in the vector.
  */
 size_t NimBLERemoteCharacteristic::deleteDescriptor(const NimBLEUUID &uuid) {
-
     for (auto it = m_descriptorVector.begin(); it != m_descriptorVector.end(); ++it) {
         if ((*it)->getUUID() == uuid) {
             delete *it;
@@ -449,7 +417,6 @@ std::string NimBLERemoteCharacteristic::toString() {
     for (auto &it : m_descriptorVector) {
         res += "\n" + it->toString();
     }
-
     return res;
 }
 
@@ -461,7 +428,6 @@ std::string NimBLERemoteCharacteristic::toString() {
  * @return false if not connected or otherwise cannot perform write.
  */
 bool NimBLERemoteCharacteristic::writeValue(const uint8_t *data, size_t length, bool response) {
-
     NimBLEClient *pClient = getRemoteService()->getClient();
 
     if (!pClient->isConnected()) {
@@ -543,6 +509,5 @@ int NimBLERemoteCharacteristic::onWriteCB(uint16_t conn_handle, const struct ble
 
     pTaskData->rc = error->status;
     xTaskNotifyGive(pTaskData->task);
-
     return 0;
 }
