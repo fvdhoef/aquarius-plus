@@ -243,16 +243,16 @@ void UI::mainLoop() {
 
                 ImGui::Separator();
                 {
-                    if (ImGui::MenuItem("CPU speed 1x", "", emuState.cpuSpeed == 1))
-                        emuState.cpuSpeed = 1;
-                    if (ImGui::MenuItem("CPU speed 2x", "", emuState.cpuSpeed == 2))
-                        emuState.cpuSpeed = 2;
-                    if (ImGui::MenuItem("CPU speed 4x", "", emuState.cpuSpeed == 4))
-                        emuState.cpuSpeed = 4;
-                    if (ImGui::MenuItem("CPU speed 8x", "", emuState.cpuSpeed == 8))
-                        emuState.cpuSpeed = 8;
-                    if (ImGui::MenuItem("CPU speed 16x", "", emuState.cpuSpeed == 16))
-                        emuState.cpuSpeed = 16;
+                    if (ImGui::MenuItem("Emulation speed 1x", "", emuState.emulationSpeed == 1))
+                        emuState.emulationSpeed = 1;
+                    if (ImGui::MenuItem("Emulation speed 2x", "", emuState.emulationSpeed == 2))
+                        emuState.emulationSpeed = 2;
+                    if (ImGui::MenuItem("Emulation speed 4x", "", emuState.emulationSpeed == 4))
+                        emuState.emulationSpeed = 4;
+                    if (ImGui::MenuItem("Emulation speed 8x", "", emuState.emulationSpeed == 8))
+                        emuState.emulationSpeed = 8;
+                    if (ImGui::MenuItem("Emulation speed 16x", "", emuState.emulationSpeed == 16))
+                        emuState.emulationSpeed = 16;
                 }
                 ImGui::EndMenu();
             }
@@ -436,7 +436,7 @@ void UI::emulate() {
 
     if (emuState.emuMode == EmuState::Em_Running) {
         // Render each audio sample
-        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuState.cpuSpeed; aidx++) {
+        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuState.emulationSpeed; aidx++) {
             while (true) {
                 auto flags = emuState.emulate();
                 if (emuState.emuMode != EmuState::Em_Running)
@@ -450,7 +450,7 @@ void UI::emulate() {
             if (emuState.emuMode != EmuState::Em_Running)
                 break;
 
-            if (config.enableSound && emuState.cpuSpeed == 1) {
+            if (config.enableSound && emuState.emulationSpeed == 1) {
                 float al = emuState.audioLeft / 65535.0f;
                 float ar = emuState.audioRight / 65535.0f;
                 float l  = dcBlockLeft.filter(al);

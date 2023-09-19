@@ -84,10 +84,10 @@ struct EmuState {
         char     instrStr[32];
     };
     std::deque<Z80TraceEntry> cpuTrace;
-    bool                      traceEnable = false;
-    int                       traceDepth  = 128;
-    bool                      prevHalted  = false;
-    int                       cpuSpeed    = 1;
+    bool                      traceEnable    = false;
+    int                       traceDepth     = 128;
+    bool                      prevHalted     = false;
+    int                       emulationSpeed = 1;
 
     // Virtual typing from command-line argument
     std::string typeInStr;
