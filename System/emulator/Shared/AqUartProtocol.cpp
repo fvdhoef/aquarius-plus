@@ -556,9 +556,12 @@ void AqUartProtocol::cmdGetMouse() {
         return;
     }
     txFifoWrite(0);
-    txFifoWrite(mouseX & 0xFF);
-    txFifoWrite(mouseX >> 8);
-    txFifoWrite(mouseY);
+
+    uint16_t x = (uint16_t)mouseX;
+    uint8_t  y = (uint8_t)mouseY;
+    txFifoWrite(x & 0xFF);
+    txFifoWrite(x >> 8);
+    txFifoWrite(y);
     txFifoWrite(mouseButtons);
 
 #else
@@ -908,7 +911,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
 #ifdef __APPLE__
     time_t t = st.st_mtimespec.tv_sec;
 #elif _WIN32
-    time_t t = st.st_mtime;
+    time_t t                  = st.st_mtime;
 #else
     time_t t = st.st_mtim.tv_sec;
 #endif
@@ -953,8 +956,10 @@ void AqUartProtocol::cmdCloseAll() {
 #ifndef EMULATOR
 void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask) {
     RecursiveMutexLock lock(mutexMouseData);
-    mouseX       = std::max(0, std::min(319, (int)mouseX + dx));
-    mouseY       = std::max(0, std::min(199, (int)mouseY + dy));
+    float              sensitivity = 1.0f / 4.0f;
+
+    mouseX       = std::max(0.0f, std::min(319.0f, mouseX + (float)(dx * sensitivity)));
+    mouseY       = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
     mouseButtons = buttonMask;
     mousePresent = true;
 }
