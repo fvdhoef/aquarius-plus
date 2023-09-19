@@ -189,6 +189,8 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #ifndef EMULATOR
                     if (ctrlPressed && shiftPressed) {
                         // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
+                        FPGA::instance().aqpAqcuireBus();
+                        FPGA::instance().aqpReset();
                         esp_restart();
                     }
 #endif
