@@ -85,8 +85,8 @@ private:
 #ifndef EMULATOR
     SemaphoreHandle_t mutexMouseData;
     bool              mousePresent = false;
-    uint16_t          mouseX       = 0;
-    uint8_t           mouseY       = 0;
+    float             mouseX       = 0;
+    float             mouseY       = 0;
     uint8_t           mouseButtons = 0;
 #endif
 };
