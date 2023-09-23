@@ -1,25 +1,27 @@
 #pragma once
 
+#define CONFIG_NIMBLE_CPP_IDF 1
+
+#define CONFIG_BTDM_SCAN_DUPL_CACHE_SIZE CONFIG_BT_CTRL_SCAN_DUPL_CACHE_SIZE
+#define CONFIG_BTDM_SCAN_DUPL_TYPE CONFIG_BT_CTRL_SCAN_DUPL_TYPE
+
 #define CONFIG_NIMBLE_CPP_LOG_LEVEL ESP_LOG_INFO
+
+#define CONFIG_BT_ENABLE 1
+// #define CONFIG_BT_NIMBLE_ROLE_PERIPHERAL 1
+#define CONFIG_BT_NIMBLE_ROLE_OBSERVER 1
+#define CONFIG_BT_NIMBLE_ROLE_CENTRAL 1
+// #define CONFIG_BT_NIMBLE_ROLE_BROADCASTER 1
+
+#define CONFIG_NIMBLE_CPP_ENABLE_RETURN_CODE_TEXT 1
+#define CONFIG_NIMBLE_CPP_ENABLE_ADVERTISEMENT_TYPE_TEXT 1
+#define CONFIG_NIMBLE_CPP_ENABLE_GAP_EVENT_CODE_TEXT 1
 
 #include <nimble/nimble_port.h>
 #include <nimble/nimble_port_freertos.h>
 #include <host/ble_hs.h>
 #include <host/util/util.h>
 #include <services/gap/ble_svc_gap.h>
+// #include <esp_central.h>
 
-#include "esp_log.h"
-#ifndef CONFIG_NIMBLE_CPP_LOG_LEVEL
-#    define CONFIG_NIMBLE_CPP_LOG_LEVEL 0
-#endif
-
-#define NIMBLE_CPP_LOG_PRINT(level, tag, format, ...)               \
-    do {                                                            \
-        if (CONFIG_NIMBLE_CPP_LOG_LEVEL >= level)                   \
-            ESP_LOG_LEVEL_LOCAL(level, tag, format, ##__VA_ARGS__); \
-    } while (0)
-
-#define NIMBLE_LOGI(tag, format, ...) NIMBLE_CPP_LOG_PRINT(ESP_LOG_INFO, tag, format, ##__VA_ARGS__)
-#define NIMBLE_LOGW(tag, format, ...) NIMBLE_CPP_LOG_PRINT(ESP_LOG_WARN, tag, format, ##__VA_ARGS__)
-#define NIMBLE_LOGE(tag, format, ...) NIMBLE_CPP_LOG_PRINT(ESP_LOG_ERROR, tag, format, ##__VA_ARGS__)
-#define NIMBLE_LOGC(tag, format, ...) NIMBLE_CPP_LOG_PRINT(ESP_LOG_ERROR, tag, format, ##__VA_ARGS__)
+// #define CONFIG_BT_NIMBLE_EXT_ADV 0

@@ -12,36 +12,112 @@
  *      Author: kolban
  */
 
+#include "nimconfig.h"
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_CENTRAL)
+
 #include "NimBLERemoteDescriptor.h"
 #include "NimBLEUtils.h"
+#include "NimBLELog.h"
 
 #include <climits>
 
-static const char *LOG_TAG = "NimBLERemoteDescriptor";
+static const char* LOG_TAG = "NimBLERemoteDescriptor";
 
 /**
  * @brief Remote descriptor constructor.
  * @param [in] pRemoteCharacteristic A pointer to the Characteristic that this belongs to.
  * @param [in] dsc A pointer to the struct that contains the descriptor information.
  */
-NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic *pRemoteCharacteristic, const struct ble_gatt_dsc *dsc) {
+NimBLERemoteDescriptor::NimBLERemoteDescriptor(NimBLERemoteCharacteristic* pRemoteCharacteristic,
+                                               const struct ble_gatt_dsc *dsc)
+{
+    NIMBLE_LOGD(LOG_TAG, ">> NimBLERemoteDescriptor()");
     switch (dsc->uuid.u.type) {
-        case BLE_UUID_TYPE_16: m_uuid = NimBLEUUID(dsc->uuid.u16.value); break;
-        case BLE_UUID_TYPE_32: m_uuid = NimBLEUUID(dsc->uuid.u32.value); break;
-        case BLE_UUID_TYPE_128: m_uuid = NimBLEUUID(const_cast<ble_uuid128_t *>(&dsc->uuid.u128)); break;
-        default: break;
+        case BLE_UUID_TYPE_16:
+            m_uuid = NimBLEUUID(dsc->uuid.u16.value);
+            break;
+        case BLE_UUID_TYPE_32:
+            m_uuid = NimBLEUUID(dsc->uuid.u32.value);
+            break;
+        case BLE_UUID_TYPE_128:
+            m_uuid = NimBLEUUID(const_cast<ble_uuid128_t*>(&dsc->uuid.u128));
+            break;
+        default:
+            break;
     }
 
     m_handle                = dsc->handle;
     m_pRemoteCharacteristic = pRemoteCharacteristic;
+
+    NIMBLE_LOGD(LOG_TAG, "<< NimBLERemoteDescriptor(): %s", m_uuid.toString().c_str());
 }
+
+
+/**
+ * @brief Retrieve the handle associated with this remote descriptor.
+ * @return The handle associated with this remote descriptor.
+ */
+uint16_t NimBLERemoteDescriptor::getHandle() {
+    return m_handle;
+} // getHandle
+
+
+/**
+ * @brief Get the characteristic that owns this descriptor.
+ * @return The characteristic that owns this descriptor.
+ */
+NimBLERemoteCharacteristic* NimBLERemoteDescriptor::getRemoteCharacteristic() {
+    return m_pRemoteCharacteristic;
+} // getRemoteCharacteristic
+
+
+/**
+ * @brief Retrieve the UUID associated this remote descriptor.
+ * @return The UUID associated this remote descriptor.
+ */
+NimBLEUUID NimBLERemoteDescriptor::getUUID() {
+    return m_uuid;
+} // getUUID
+
+
+/**
+ * @brief Read a byte value
+ * @return The value as a byte
+ * @deprecated Use readValue<uint8_t>().
+ */
+uint8_t NimBLERemoteDescriptor::readUInt8() {
+    return readValue<uint8_t>();
+} // readUInt8
+
+
+/**
+ * @brief Read an unsigned 16 bit value
+ * @return The unsigned 16 bit value.
+ * @deprecated Use readValue<uint16_t>().
+ */
+uint16_t NimBLERemoteDescriptor::readUInt16() {
+    return readValue<uint16_t>();
+} // readUInt16
+
+
+/**
+ * @brief Read an unsigned 32 bit value.
+ * @return the unsigned 32 bit value.
+ * @deprecated Use readValue<uint32_t>().
+ */
+uint32_t NimBLERemoteDescriptor::readUInt32() {
+    return readValue<uint32_t>();
+} // readUInt32
+
 
 /**
  * @brief Read the value of the remote descriptor.
  * @return The value of the remote descriptor.
  */
 NimBLEAttValue NimBLERemoteDescriptor::readValue() {
-    NimBLEClient  *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
+    NIMBLE_LOGD(LOG_TAG, ">> Descriptor readValue: %s", toString().c_str());
+
+    NimBLEClient* pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
     NimBLEAttValue value;
 
     if (!pClient->isConnected()) {
@@ -49,24 +125,29 @@ NimBLEAttValue NimBLERemoteDescriptor::readValue() {
         return value;
     }
 
-    int             rc         = 0;
-    int             retryCount = 1;
-    TaskHandle_t    cur_task   = xTaskGetCurrentTaskHandle();
-    ble_task_data_t taskData   = {this, cur_task, 0, &value};
+    int rc = 0;
+    int retryCount = 1;
+    TaskHandle_t cur_task = xTaskGetCurrentTaskHandle();
+    ble_task_data_t taskData = {this, cur_task, 0, &value};
 
     do {
-        rc = ble_gattc_read_long(pClient->getConnId(), m_handle, 0, NimBLERemoteDescriptor::onReadCB, &taskData);
+        rc = ble_gattc_read_long(pClient->getConnId(), m_handle, 0,
+                                 NimBLERemoteDescriptor::onReadCB,
+                                 &taskData);
         if (rc != 0) {
-            NIMBLE_LOGE(LOG_TAG, "Error: Failed to read descriptor; rc=%d, %s", rc, NimBLEUtils::returnCodeToString(rc));
+            NIMBLE_LOGE(LOG_TAG, "Error: Failed to read descriptor; rc=%d, %s",
+                                  rc, NimBLEUtils::returnCodeToString(rc));
             return value;
         }
 
+#ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
+#endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
-        switch (rc) {
+        switch(rc){
             case 0:
             case BLE_HS_EDONE:
                 rc = 0;
@@ -85,34 +166,42 @@ NimBLEAttValue NimBLERemoteDescriptor::readValue() {
             default:
                 return value;
         }
-    } while (rc != 0 && retryCount--);
+    } while(rc != 0 && retryCount--);
 
+    NIMBLE_LOGD(LOG_TAG, "<< Descriptor readValue(): length: %u rc=%d", value.length(), rc);
     return value;
-}
+} // readValue
+
 
 /**
  * @brief Callback for Descriptor read operation.
  * @return success == 0 or error code.
  */
-int NimBLERemoteDescriptor::onReadCB(uint16_t conn_handle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg) {
+int NimBLERemoteDescriptor::onReadCB(uint16_t conn_handle,
+                const struct ble_gatt_error *error,
+                struct ble_gatt_attr *attr, void *arg)
+{
     (void)attr;
-    ble_task_data_t        *pTaskData = (ble_task_data_t *)arg;
-    NimBLERemoteDescriptor *desc      = (NimBLERemoteDescriptor *)pTaskData->pATT;
-    uint16_t                conn_id   = desc->getRemoteCharacteristic()->getRemoteService()->getClient()->getConnId();
+    ble_task_data_t *pTaskData = (ble_task_data_t*)arg;
+    NimBLERemoteDescriptor* desc = (NimBLERemoteDescriptor*)pTaskData->pATT;
+    uint16_t conn_id = desc->getRemoteCharacteristic()->getRemoteService()->getClient()->getConnId();
 
-    if (conn_id != conn_handle) {
+    if(conn_id != conn_handle){
         return 0;
     }
 
-    NimBLEAttValue *valBuf = (NimBLEAttValue *)pTaskData->buf;
-    int             rc     = error->status;
+    NIMBLE_LOGD(LOG_TAG, "Read complete; status=%d conn_handle=%d", error->status, conn_handle);
 
-    if (rc == 0) {
-        if (attr) {
+    NimBLEAttValue *valBuf = (NimBLEAttValue*)pTaskData->buf;
+    int rc = error->status;
+
+    if(rc == 0) {
+        if(attr) {
             uint16_t data_len = OS_MBUF_PKTLEN(attr->om);
-            if ((valBuf->size() + data_len) > BLE_ATT_ATTR_MAX_LEN) {
+            if((valBuf->size() + data_len) > BLE_ATT_ATTR_MAX_LEN) {
                 rc = BLE_ATT_ERR_INVALID_ATTR_VALUE_LEN;
             } else {
+                NIMBLE_LOGD(LOG_TAG, "Got %u bytes", data_len);
                 valBuf->append(attr->om->om_data, data_len);
                 return 0;
             }
@@ -125,28 +214,34 @@ int NimBLERemoteDescriptor::onReadCB(uint16_t conn_handle, const struct ble_gatt
     return rc;
 }
 
+
 /**
  * @brief Return a string representation of this Remote Descriptor.
  * @return A string representation of this Remote Descriptor.
  */
 std::string NimBLERemoteDescriptor::toString() {
     std::string res = "Descriptor: uuid: " + getUUID().toString();
-    char        val[6];
+    char val[6];
     res += ", handle: ";
     snprintf(val, sizeof(val), "%d", getHandle());
     res += val;
+
     return res;
-}
+} // toString
+
 
 /**
  * @brief Callback for descriptor write operation.
  * @return success == 0 or error code.
  */
-int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg) {
-    ble_task_data_t        *pTaskData  = (ble_task_data_t *)arg;
-    NimBLERemoteDescriptor *descriptor = (NimBLERemoteDescriptor *)pTaskData->pATT;
+int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle,
+                const struct ble_gatt_error *error,
+                struct ble_gatt_attr *attr, void *arg)
+{
+    ble_task_data_t *pTaskData = (ble_task_data_t*)arg;
+    NimBLERemoteDescriptor* descriptor = (NimBLERemoteDescriptor*)pTaskData->pATT;
 
-    if (descriptor->getRemoteCharacteristic()->getRemoteService()->getClient()->getConnId() != conn_handle) {
+    if(descriptor->getRemoteCharacteristic()->getRemoteService()->getClient()->getConnId() != conn_handle){
         return 0;
     }
 
@@ -154,8 +249,10 @@ int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle, const struct ble_gat
 
     pTaskData->rc = error->status;
     xTaskNotifyGive(pTaskData->task);
+
     return 0;
 }
+
 
 /**
  * @brief Write a new value to a remote descriptor from a std::vector<uint8_t>.
@@ -163,9 +260,10 @@ int NimBLERemoteDescriptor::onWriteCB(uint16_t conn_handle, const struct ble_gat
  * @param [in] response Whether we require a response from the write.
  * @return false if not connected or otherwise cannot perform write.
  */
-bool NimBLERemoteDescriptor::writeValue(const std::vector<uint8_t> &vec, bool response) {
-    return writeValue((uint8_t *)&vec[0], vec.size(), response);
-}
+bool NimBLERemoteDescriptor::writeValue(const std::vector<uint8_t>& vec, bool response) {
+    return writeValue((uint8_t*)&vec[0], vec.size(), response);
+} // writeValue
+
 
 /**
  * @brief Write a new value to the remote descriptor from a const char*.
@@ -173,9 +271,10 @@ bool NimBLERemoteDescriptor::writeValue(const std::vector<uint8_t> &vec, bool re
  * @param [in] response Whether we require a response from the write.
  * @return false if not connected or otherwise cannot perform write.
  */
-bool NimBLERemoteDescriptor::writeValue(const char *char_s, bool response) {
-    return writeValue((uint8_t *)char_s, strlen(char_s), response);
-}
+bool NimBLERemoteDescriptor::writeValue(const char* char_s, bool response) {
+    return writeValue((uint8_t*)char_s, strlen(char_s), response);
+} // writeValue
+
 
 /**
  * @brief Write a new value to a remote descriptor.
@@ -184,8 +283,11 @@ bool NimBLERemoteDescriptor::writeValue(const char *char_s, bool response) {
  * @param [in] response True if we expect a write response.
  * @return false if not connected or otherwise cannot perform write.
  */
-bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool response) {
-    NimBLEClient *pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
+bool NimBLERemoteDescriptor::writeValue(const uint8_t* data, size_t length, bool response) {
+
+    NIMBLE_LOGD(LOG_TAG, ">> Descriptor writeValue: %s", toString().c_str());
+
+    NimBLEClient* pClient = getRemoteCharacteristic()->getRemoteService()->getClient();
 
     // Check to see that we are connected.
     if (!pClient->isConnected()) {
@@ -193,27 +295,32 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
         return false;
     }
 
-    int      rc         = 0;
-    int      retryCount = 1;
-    uint16_t mtu        = ble_att_mtu(pClient->getConnId()) - 3;
+    int rc = 0;
+    int retryCount = 1;
+    uint16_t mtu = ble_att_mtu(pClient->getConnId()) - 3;
 
     // Check if the data length is longer than we can write in 1 connection event.
     // If so we must do a long write which requires a response.
-    if (length <= mtu && !response) {
-        rc = ble_gattc_write_no_rsp_flat(pClient->getConnId(), m_handle, data, length);
+    if(length <= mtu && !response) {
+        rc =  ble_gattc_write_no_rsp_flat(pClient->getConnId(), m_handle, data, length);
         return (rc == 0);
     }
 
-    TaskHandle_t    cur_task = xTaskGetCurrentTaskHandle();
+    TaskHandle_t cur_task = xTaskGetCurrentTaskHandle();
     ble_task_data_t taskData = {this, cur_task, 0, nullptr};
 
     do {
-        if (length > mtu) {
-            NIMBLE_LOGI(LOG_TAG, "long write %d bytes", length);
+        if(length > mtu) {
+            NIMBLE_LOGI(LOG_TAG,"long write %d bytes", length);
             os_mbuf *om = ble_hs_mbuf_from_flat(data, length);
-            rc          = ble_gattc_write_long(pClient->getConnId(), m_handle, 0, om, NimBLERemoteDescriptor::onWriteCB, &taskData);
+            rc = ble_gattc_write_long(pClient->getConnId(), m_handle, 0, om,
+                                      NimBLERemoteDescriptor::onWriteCB,
+                                      &taskData);
         } else {
-            rc = ble_gattc_write_flat(pClient->getConnId(), m_handle, data, length, NimBLERemoteDescriptor::onWriteCB, &taskData);
+            rc = ble_gattc_write_flat(pClient->getConnId(), m_handle,
+                                      data, length,
+                                      NimBLERemoteDescriptor::onWriteCB,
+                                      &taskData);
         }
 
         if (rc != 0) {
@@ -221,12 +328,14 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
             return false;
         }
 
+#ifdef ulTaskNotifyValueClear
         // Clear the task notification value to ensure we block
         ulTaskNotifyValueClear(cur_task, ULONG_MAX);
+#endif
         ulTaskNotifyTake(pdTRUE, portMAX_DELAY);
         rc = taskData.rc;
 
-        switch (rc) {
+        switch(rc) {
             case 0:
             case BLE_HS_EDONE:
                 rc = 0;
@@ -246,7 +355,11 @@ bool NimBLERemoteDescriptor::writeValue(const uint8_t *data, size_t length, bool
             default:
                 return false;
         }
-    } while (rc != 0 && retryCount--);
+    } while(rc != 0 && retryCount--);
 
+    NIMBLE_LOGD(LOG_TAG, "<< Descriptor writeValue, rc: %d",rc);
     return (rc == 0);
-}
+} // writeValue
+
+
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_CENTRAL */

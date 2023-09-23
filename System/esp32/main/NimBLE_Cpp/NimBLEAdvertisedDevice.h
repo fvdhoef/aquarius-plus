@@ -12,22 +12,27 @@
  *      Author: kolban
  */
 
-#pragma once
-
+#ifndef COMPONENTS_NIMBLEADVERTISEDDEVICE_H_
+#define COMPONENTS_NIMBLEADVERTISEDDEVICE_H_
 #include "nimconfig.h"
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
 #include "NimBLEAddress.h"
 #include "NimBLEScan.h"
 #include "NimBLEUUID.h"
 
+#if defined(CONFIG_NIMBLE_CPP_IDF)
 #include "host/ble_hs_adv.h"
+#else
+#include "nimble/nimble/host/include/host/ble_hs_adv.h"
+#endif
 
 #include <map>
 #include <vector>
 #include <time.h>
 
-class NimBLEScan;
 
+class NimBLEScan;
 /**
  * @brief A representation of a %BLE advertised device found by a scan.
  *
@@ -36,18 +41,18 @@ class NimBLEScan;
  */
 class NimBLEAdvertisedDevice {
 public:
-    NimBLEAdvertisedDevice()
-        : m_payload(62, 0) {
-    }
+    NimBLEAdvertisedDevice();
 
-    uint8_t     getAdvFlags();
-    uint16_t    getAppearance();
-    uint16_t    getAdvInterval();
-    uint16_t    getMinInterval();
-    uint16_t    getMaxInterval();
-    uint8_t     getManufacturerDataCount();
-    std::string getManufacturerData(uint8_t index = 0);
-    std::string getURI();
+    NimBLEAddress   getAddress();
+    uint8_t         getAdvType();
+    uint8_t         getAdvFlags();
+    uint16_t        getAppearance();
+    uint16_t        getAdvInterval();
+    uint16_t        getMinInterval();
+    uint16_t        getMaxInterval();
+    uint8_t         getManufacturerDataCount();
+    std::string     getManufacturerData(uint8_t index = 0);
+    std::string     getURI();
 
     /**
      * @brief A template to convert the service data to <type\>.
@@ -57,20 +62,20 @@ public:
      * less than <tt>sizeof(<type\>)</tt>.
      * @details <b>Use:</b> <tt>getManufacturerData<type>(skipSizeCheck);</tt>
      */
-    template <typename T>
-    T getManufacturerData(bool skipSizeCheck = false) {
+    template<typename T>
+    T       getManufacturerData(bool skipSizeCheck = false) {
         std::string data = getManufacturerData();
-        if (!skipSizeCheck && data.size() < sizeof(T))
-            return T();
+        if(!skipSizeCheck && data.size() < sizeof(T)) return T();
         const char *pData = data.data();
         return *((T *)pData);
     }
 
-    std::string getName();
-    NimBLEScan *getScan();
-    uint8_t     getServiceDataCount();
-    std::string getServiceData(uint8_t index = 0);
-    std::string getServiceData(const NimBLEUUID &uuid);
+    std::string     getName();
+    int             getRSSI();
+    NimBLEScan*     getScan();
+    uint8_t         getServiceDataCount();
+    std::string     getServiceData(uint8_t index = 0);
+    std::string     getServiceData(const NimBLEUUID &uuid);
 
     /**
      * @brief A template to convert the service data to <tt><type\></tt>.
@@ -81,11 +86,10 @@ public:
      * less than <tt>sizeof(<type\>)</tt>.
      * @details <b>Use:</b> <tt>getServiceData<type>(skipSizeCheck);</tt>
      */
-    template <typename T>
-    T getServiceData(uint8_t index = 0, bool skipSizeCheck = false) {
+    template<typename T>
+    T       getServiceData(uint8_t index = 0, bool skipSizeCheck = false) {
         std::string data = getServiceData(index);
-        if (!skipSizeCheck && data.size() < sizeof(T))
-            return T();
+        if(!skipSizeCheck && data.size() < sizeof(T)) return T();
         const char *pData = data.data();
         return *((T *)pData);
     }
@@ -99,71 +103,78 @@ public:
      * less than <tt>sizeof(<type\>)</tt>.
      * @details <b>Use:</b> <tt>getServiceData<type>(skipSizeCheck);</tt>
      */
-    template <typename T>
-    T getServiceData(const NimBLEUUID &uuid, bool skipSizeCheck = false) {
+    template<typename T>
+    T       getServiceData(const NimBLEUUID &uuid, bool skipSizeCheck = false) {
         std::string data = getServiceData(uuid);
-        if (!skipSizeCheck && data.size() < sizeof(T))
-            return T();
+        if(!skipSizeCheck && data.size() < sizeof(T)) return T();
         const char *pData = data.data();
         return *((T *)pData);
     }
 
-    NimBLEUUID    getServiceDataUUID(uint8_t index = 0);
-    NimBLEUUID    getServiceUUID(uint8_t index = 0);
-    uint8_t       getServiceUUIDCount();
-    NimBLEAddress getTargetAddress(uint8_t index = 0);
-    uint8_t       getTargetAddressCount();
-    int8_t        getTXPower();
-
-    bool isAdvertisingService(const NimBLEUUID &uuid);
-
-    // clang-format off
-    NimBLEAddress getAddress()       { return m_address; }
-    uint8_t       getAdvType()       { return m_advType; }
-    int           getRSSI()          { return m_rssi; }
-    uint8_t *     getPayload()       { return &m_payload[0]; }
-    uint8_t       getAdvLength()     { return m_advLength; }
-    size_t        getPayloadLength() { return m_payload.size(); }
-    uint8_t       getAddressType()   { return m_address.getType(); }
-
-    bool haveAppearance()       { return findAdvField(BLE_HS_ADV_TYPE_APPEARANCE) > 0; }
-    bool haveManufacturerData() { return findAdvField(BLE_HS_ADV_TYPE_MFG_DATA) > 0; }
-    bool haveName()             { return findAdvField(BLE_HS_ADV_TYPE_COMP_NAME) > 0 || findAdvField(BLE_HS_ADV_TYPE_INCOMP_NAME) > 0; }
-    bool haveRSSI()             { return m_rssi != -9999; }
-    bool haveServiceData()      { return getServiceDataCount() > 0; }
-    bool haveServiceUUID()      { return getServiceUUIDCount() > 0; }
-    bool haveTXPower()          { return findAdvField(BLE_HS_ADV_TYPE_TX_PWR_LVL) > 0; }
-    bool haveConnParams()       { return findAdvField(BLE_HS_ADV_TYPE_SLAVE_ITVL_RANGE) > 0; }
-    bool haveAdvInterval()      { return findAdvField(BLE_HS_ADV_TYPE_ADV_ITVL) > 0; }
-    bool haveTargetAddress()    { return findAdvField(BLE_HS_ADV_TYPE_PUBLIC_TGT_ADDR) > 0 || findAdvField(BLE_HS_ADV_TYPE_RANDOM_TGT_ADDR) > 0; }
-    bool haveURI()              { return findAdvField(BLE_HS_ADV_TYPE_URI) > 0; }
-    bool isConnectable()        { return (m_advType & BLE_HCI_ADV_CONN_MASK) || (m_advType & BLE_HCI_ADV_DIRECT_MASK); }
-    // clang-format on
-
-    std::string toString();
+    NimBLEUUID      getServiceDataUUID(uint8_t index = 0);
+    NimBLEUUID      getServiceUUID(uint8_t index = 0);
+    uint8_t         getServiceUUIDCount();
+    NimBLEAddress   getTargetAddress(uint8_t index = 0);
+    uint8_t         getTargetAddressCount();
+    int8_t          getTXPower();
+    uint8_t*        getPayload();
+    uint8_t         getAdvLength();
+    size_t          getPayloadLength();
+    uint8_t         getAddressType();
+    time_t          getTimestamp();
+    bool            isAdvertisingService(const NimBLEUUID &uuid);
+    bool            haveAppearance();
+    bool            haveManufacturerData();
+    bool            haveName();
+    bool            haveRSSI();
+    bool            haveServiceData();
+    bool            haveServiceUUID();
+    bool            haveTXPower();
+    bool            haveConnParams();
+    bool            haveAdvInterval();
+    bool            haveTargetAddress();
+    bool            haveURI();
+    std::string     toString();
+    bool            isConnectable();
+    bool            isLegacyAdvertisement();
+#if CONFIG_BT_NIMBLE_EXT_ADV
+    uint8_t         getSetId();
+    uint8_t         getPrimaryPhy();
+    uint8_t         getSecondaryPhy();
+    uint16_t        getPeriodicInterval();
+#endif
 
 private:
     friend class NimBLEScan;
 
-    void setAddress(NimBLEAddress address) {
-        m_address = address;
-    }
-    void setAdvType(uint8_t advType) {
-        m_advType = advType;
-    }
-    void setPayload(const uint8_t *payload, uint8_t length, bool append);
-    void setRSSI(int rssi) {
-        m_rssi = rssi;
-    }
-    uint8_t findAdvField(uint8_t type, uint8_t index = 0, size_t *data_loc = nullptr);
-    size_t  findServiceData(uint8_t index, uint8_t *bytes);
+    void    setAddress(NimBLEAddress address);
+    void    setAdvType(uint8_t advType, bool isLegacyAdv);
+    void    setPayload(const uint8_t *payload, uint8_t length, bool append);
+    void    setRSSI(int rssi);
+#if CONFIG_BT_NIMBLE_EXT_ADV
+    void    setSetId(uint8_t sid)              { m_sid = sid; }
+    void    setPrimaryPhy(uint8_t phy)         { m_primPhy = phy; }
+    void    setSecondaryPhy(uint8_t phy)       { m_secPhy = phy; }
+    void    setPeriodicInterval(uint16_t itvl) { m_periodicItvl = itvl; }
+#endif
+    uint8_t findAdvField(uint8_t type, uint8_t index = 0, size_t * data_loc = nullptr);
+    size_t  findServiceData(uint8_t index, uint8_t* bytes);
 
-    NimBLEAddress        m_address      = NimBLEAddress("");
-    uint8_t              m_advType      = 0;
-    int                  m_rssi         = -9999;
-    bool                 m_callbackSent = false;
-    uint8_t              m_advLength    = 0;
-    std::vector<uint8_t> m_payload;
+    NimBLEAddress   m_address = NimBLEAddress("");
+    uint8_t         m_advType;
+    int             m_rssi;
+    time_t          m_timestamp;
+    bool            m_callbackSent;
+    uint8_t         m_advLength;
+#if CONFIG_BT_NIMBLE_EXT_ADV
+    bool            m_isLegacyAdv;
+    uint8_t         m_sid;
+    uint8_t         m_primPhy;
+    uint8_t         m_secPhy;
+    uint16_t        m_periodicItvl;
+#endif
+
+    std::vector<uint8_t>    m_payload;
 };
 
 /**
@@ -175,13 +186,15 @@ private:
  */
 class NimBLEAdvertisedDeviceCallbacks {
 public:
-    virtual ~NimBLEAdvertisedDeviceCallbacks() {
-    }
+    virtual ~NimBLEAdvertisedDeviceCallbacks() {}
     /**
      * @brief Called when a new scan result is detected.
      *
      * As we are scanning, we will find new devices.  When found, this call back is invoked with a reference to the
      * device that was found.  During any individual scan, a device will only be detected one time.
      */
-    virtual void onResult(NimBLEAdvertisedDevice *advertisedDevice) = 0;
+    virtual void onResult(NimBLEAdvertisedDevice* advertisedDevice) = 0;
 };
+
+#endif /* CONFIG_BT_ENABLED && CONFIG_BT_NIMBLE_ROLE_OBSERVER */
+#endif /* COMPONENTS_NIMBLEADVERTISEDDEVICE_H_ */

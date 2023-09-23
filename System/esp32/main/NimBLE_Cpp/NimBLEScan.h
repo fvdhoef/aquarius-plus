@@ -11,14 +11,20 @@
  *  Created on: Jul 1, 2017
  *      Author: kolban
  */
-#pragma once
+#ifndef COMPONENTS_NIMBLE_SCAN_H_
+#define COMPONENTS_NIMBLE_SCAN_H_
 
 #include "nimconfig.h"
+#if defined(CONFIG_BT_ENABLED) && defined(CONFIG_BT_NIMBLE_ROLE_OBSERVER)
 
 #include "NimBLEAdvertisedDevice.h"
 #include "NimBLEUtils.h"
 
+#if defined(CONFIG_NIMBLE_CPP_IDF)
 #include "host/ble_gap.h"
+#else
+#include "nimble/nimble/host/include/host/ble_gap.h"
+#endif
 
 #include <vector>
 
@@ -37,24 +43,16 @@ class NimBLEAddress;
  */
 class NimBLEScanResults {
 public:
-    void dump();
-    int  getCount() {
-        return m_advertisedDevicesVector.size();
-    }
-    NimBLEAdvertisedDevice *getDevice(uint32_t i) {
-        return m_advertisedDevicesVector[i];
-    }
-    std::vector<NimBLEAdvertisedDevice *>::iterator begin() {
-        return m_advertisedDevicesVector.begin();
-    }
-    std::vector<NimBLEAdvertisedDevice *>::iterator end() {
-        return m_advertisedDevicesVector.end();
-    }
-    NimBLEAdvertisedDevice *getDevice(const NimBLEAddress &address);
+    void                                           dump();
+    int                                            getCount();
+    NimBLEAdvertisedDevice                         getDevice(uint32_t i);
+    std::vector<NimBLEAdvertisedDevice*>::iterator begin();
+    std::vector<NimBLEAdvertisedDevice*>::iterator end();
+    NimBLEAdvertisedDevice                         *getDevice(const NimBLEAddress &address);
 
 private:
     friend NimBLEScan;
-    std::vector<NimBLEAdvertisedDevice *> m_advertisedDevicesVector;
+    std::vector<NimBLEAdvertisedDevice*> m_advertisedDevicesVector;
 };
 
 /**
@@ -64,66 +62,42 @@ private:
  */
 class NimBLEScan {
 public:
-    bool              start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResults), bool is_continue = false);
-    NimBLEScanResults start(uint32_t duration, bool is_continue = false);
-    bool              isScanning() {
-        return ble_gap_disc_active();
-    }
-    void setAdvertisedDeviceCallbacks(NimBLEAdvertisedDeviceCallbacks *pAdvertisedDeviceCallbacks, bool wantDuplicates = false) {
-        setDuplicateFilter(!wantDuplicates);
-        m_pAdvertisedDeviceCallbacks = pAdvertisedDeviceCallbacks;
-    }
+    bool                start(uint32_t duration, void (*scanCompleteCB)(NimBLEScanResults), bool is_continue = false);
+    NimBLEScanResults   start(uint32_t duration, bool is_continue = false);
+    bool                isScanning();
+    void                setAdvertisedDeviceCallbacks(NimBLEAdvertisedDeviceCallbacks* pAdvertisedDeviceCallbacks, bool wantDuplicates = false);
+    void                setActiveScan(bool active);
+    void                setInterval(uint16_t intervalMSecs);
+    void                setWindow(uint16_t windowMSecs);
+    void                setDuplicateFilter(bool enabled);
+    void                setLimitedOnly(bool enabled);
+    void                setFilterPolicy(uint8_t filter);
+    void                clearDuplicateCache();
+    bool                stop();
+    void                clearResults();
+    NimBLEScanResults   getResults();
+    void                setMaxResults(uint8_t maxResults);
+    void                erase(const NimBLEAddress &address);
 
-    // clang-format off
-    void setActiveScan(bool active)          { m_scan_params.passive = !active; }
-    void setInterval(uint16_t intervalMSecs) { m_scan_params.itvl = intervalMSecs / 0.625; }
-    void setWindow(uint16_t windowMSecs)     { m_scan_params.window = windowMSecs / 0.625; }
-    void setDuplicateFilter(bool enabled)    { m_scan_params.filter_duplicates = enabled; }
-    void setLimitedOnly(bool enabled)        { m_scan_params.limited = enabled; }
-    void setFilterPolicy(uint8_t filter)     { m_scan_params.filter_policy = filter; }
-    // clang-format on
-
-    bool stop();
-    void clearResults();
-
-    NimBLEScanResults getResults() {
-        return m_scanResults;
-    }
-
-    void setMaxResults(uint8_t maxResults) {
-        m_maxResults = maxResults;
-    }
-    void erase(const NimBLEAddress &address);
 
 private:
     friend class NimBLEDevice;
 
-    NimBLEScan() {
-    }
-    ~NimBLEScan() {
-        clearResults();
-    }
-    static int handleGapEvent(ble_gap_event *event, void *arg);
+    NimBLEScan();
+    ~NimBLEScan();
+    static int          handleGapEvent(ble_gap_event*  event, void* arg);
+    void                onHostReset();
+    void                onHostSync();
 
-    void onHostReset() {
-        m_ignoreResults = true;
-    }
-
-    void onHostSync();
-
-    NimBLEAdvertisedDeviceCallbacks *m_pAdvertisedDeviceCallbacks = nullptr;
-    void (*m_scanCompleteCB)(NimBLEScanResults scanResults);
-    ble_gap_disc_params m_scan_params = {
-        .itvl              = 0,
-        .window            = 0,
-        .filter_policy     = BLE_HCI_SCAN_FILT_NO_WL,
-        .limited           = 0,
-        .passive           = 1,
-        .filter_duplicates = 1,
-    };
-    bool              m_ignoreResults = false;
-    NimBLEScanResults m_scanResults;
-    uint32_t          m_duration   = BLE_HS_FOREVER;
-    ble_task_data_t  *m_pTaskData  = nullptr;
-    uint8_t           m_maxResults = 0xFF;
+    NimBLEAdvertisedDeviceCallbacks*    m_pAdvertisedDeviceCallbacks = nullptr;
+    void                                (*m_scanCompleteCB)(NimBLEScanResults scanResults);
+    ble_gap_disc_params                 m_scan_params;
+    bool                                m_ignoreResults;
+    NimBLEScanResults                   m_scanResults;
+    uint32_t                            m_duration;
+    ble_task_data_t                     *m_pTaskData;
+    uint8_t                             m_maxResults;
 };
+
+#endif /* CONFIG_BT_ENABLED CONFIG_BT_NIMBLE_ROLE_OBSERVER */
+#endif /* COMPONENTS_NIMBLE_SCAN_H_ */
