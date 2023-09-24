@@ -3,7 +3,7 @@
 
 #include "EmuState.h"
 
-#include "EmuState.h"
+#include "KeyMaps.h"
 
 #include "Video.h"
 #include "AqKeyboard.h"
@@ -212,6 +212,13 @@ void UI::mainLoop() {
                 ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config.handCtrlEmulation);
                 if (ImGui::MenuItem("Paste text from clipboard", "")) {
                     emuState.typeInStr = io.GetClipboardTextFn(nullptr);
+                }
+                ImGui::Separator();
+                for (int i = 0; i < (int)KeyLayout::Count; i++) {
+                    char tmp[64];
+                    snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", getKeyLayoutName((KeyLayout)i).c_str());
+                    if (ImGui::MenuItem(tmp, "", getKeyLayout() == (KeyLayout)i))
+                        setKeyLayout((KeyLayout)i);
                 }
                 ImGui::EndMenu();
             }

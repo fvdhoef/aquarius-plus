@@ -1,4 +1,3 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "Common.h"
 #ifndef EMULATOR
 #    include <freertos/stream_buffer.h>
@@ -49,6 +48,9 @@ private:
     void showDate();
     void timeZoneShow();
     void timeZoneSet();
+    void keybShow();
+    void keybSet();
     void systemUpdate();
     void systemUpdateGitHub();
+    void systemReset();
 };

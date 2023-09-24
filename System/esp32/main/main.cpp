@@ -8,6 +8,7 @@
 #include "FileServer.h"
 #include "AqKeyboard.h"
 #include "PowerLED.h"
+#include "KeyMaps.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -30,7 +31,7 @@ static void init() {
         ESP_ERROR_CHECK(nvs_flash_init());
     }
 
-    // Initialize timezone
+    // Initialize timezone, keyboard layout
     {
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
@@ -38,6 +39,11 @@ static void init() {
             size_t len = sizeof(tz);
             if (nvs_get_str(h, "tz", tz, &len) == ESP_OK) {
                 setenv("TZ", tz, 1);
+            }
+
+            uint8_t kblayout = 0;
+            if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
+                setKeyLayout((KeyLayout)kblayout);
             }
             nvs_close(h);
         }

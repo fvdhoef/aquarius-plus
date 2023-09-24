@@ -1,5 +1,5 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "EspSettingsConsole.h"
+#include "KeyMaps.h"
 #ifndef EMULATOR
 #    include <esp_ota_ops.h>
 #    include <esp_app_format.h>
@@ -123,10 +123,16 @@ void EspSettingsConsole::consoleTask() {
             timeZoneShow();
         else if (strcasecmp(line, "tz set") == 0)
             timeZoneSet();
+        else if (strcasecmp(line, "kb") == 0)
+            keybShow();
+        else if (strcasecmp(line, "kb set") == 0)
+            keybSet();
         else if (strcasecmp(line, "update") == 0)
             systemUpdate();
         else if (strcasecmp(line, "updategh") == 0)
             systemUpdateGitHub();
+        else if (strcasecmp(line, "sysreset") == 0)
+            systemReset();
         else if (strcasecmp(line, "exit") == 0 || strcasecmp(line, "quit") == 0)
             cputc(3); // Send CTRL-C
         else if (line[0])
@@ -215,8 +221,11 @@ void EspSettingsConsole::showHelp() {
     cprintf("date     |show current time/date\n");
     cprintf("tz       |show current time zone\n");
     cprintf("tz set   |set time zone\n");
+    cprintf("kb       |show current keyboard layout\n");
+    cprintf("kb set   |set keyboard layout\n");
     cprintf("update   |system update from SD card\n");
     cprintf("updategh |system update from GitHub\n");
+    cprintf("sysreset |factory reset\n");
     cprintf("exit/quit|exit to BASIC (or CTRL-C)\n");
 }
 
@@ -876,4 +885,57 @@ void EspSettingsConsole::timeZoneShow() {
     } else {
         cprintf("Timezone:%s\n", tzName.c_str());
     }
+}
+
+void EspSettingsConsole::keybShow() {
+    cprintf("Current keyboard layout: %s\n", getKeyLayoutName(getKeyLayout()).c_str());
+}
+
+void EspSettingsConsole::keybSet() {
+    for (int i = 0; i < (int)KeyLayout::Count; i++) {
+        cprintf("%d) %s\n", i, getKeyLayoutName((KeyLayout)i).c_str());
+    }
+
+    unsigned value;
+    if (!creadUint(&value) || value >= (unsigned)KeyLayout::Count) {
+        if (new_session)
+            return;
+        cprintf("Invalid entry, aborting.\n");
+        return;
+    }
+    setKeyLayout((KeyLayout)value);
+
+#ifndef EMULATOR
+    // Save layout to flash
+    {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+            if (nvs_set_u8(h, "kblayout", (unsigned)getKeyLayout()) == ESP_OK) {
+                nvs_commit(h);
+            }
+            nvs_close(h);
+        }
+    }
+#endif
+}
+
+void EspSettingsConsole::systemReset() {
+    char str[4];
+    cprintf("This will clear all stored settings,\nsuch as WiFi credentials, Bluetooth\nsettings, etc.\n\n");
+    cprintf("Do you want to continue?\nType yes to confirm\n");
+    creadline(str, sizeof(str), false);
+    if (strcmp(str, "yes") != 0) {
+        cprintf("Aborting factory reset.\n");
+        return;
+    }
+#ifdef EMULATOR
+    cprintf("Not available on emulator\n");
+#else
+    cprintf("Erasing settings...");
+    ESP_ERROR_CHECK(nvs_flash_erase());
+    ESP_ERROR_CHECK(nvs_flash_init());
+    cprintf("Done.\nPress enter to reboot.\n");
+    creadline(str, sizeof(str), false);
+    esp_restart();
+#endif
 }

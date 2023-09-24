@@ -1,7 +1,7 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #pragma once
 
 #include "Common.h"
+#include <map>
 
 enum {
     NUM_LOCK    = (1 << 0),
@@ -37,22 +37,19 @@ private:
     SemaphoreHandle_t mutex;
 #endif
 
-    uint8_t  pressedKeys[16]  = {0};
+    std::map<unsigned, uint64_t> keyMaskMap;
+
+    bool     dontSend         = false;
     uint16_t modifiers        = 0;
-    bool     prevShiftPressed = false;
     unsigned handCtrl1Pressed = 0;
-    uint8_t  prevMatrix[8]    = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
-    uint8_t  keybMatrix[8]    = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF};
+    uint64_t prevMatrix       = 0;
+    uint64_t keybMatrix       = 0;
     uint8_t  prevHandCtrl1    = 0xFF;
     uint8_t  prevHandCtrl2    = 0xFF;
     uint8_t  handCtrl1        = 0xFF;
     uint8_t  handCtrl2        = 0xFF;
     uint8_t  ledStatus        = 0xFF;
-    bool     waitAllReleased  = false;
 
-    void _keyDown(int key);
-    void _keyUp(int key);
-    void _keyDown(int key, bool shift);
     bool handController(unsigned scanCode, bool keyDown);
 
     static const uint8_t scanCodeLut[];

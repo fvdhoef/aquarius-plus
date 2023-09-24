@@ -1,6 +1,7 @@
 #include "Config.h"
 #include "cJSON.h"
 #include "EmuState.h"
+#include "KeyMaps.h"
 
 Config::Config() {
 }
@@ -62,6 +63,8 @@ void Config::load() {
         enableSound = getBoolValue(root, "enableSound", true);
         enableMouse = getBoolValue(root, "enableMouse", true);
 
+        setKeyLayout((KeyLayout)getIntValue(root, "keyLayout", 0));
+
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
 
         showScreenWindow    = getBoolValue(root, "showScreenWindow", false);
@@ -114,6 +117,8 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "scrScale", scrScale);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
     cJSON_AddBoolToObject(root, "enableMouse", enableMouse);
+
+    cJSON_AddNumberToObject(root, "keyLayout", (int)getKeyLayout());
 
     cJSON_AddBoolToObject(root, "handCtrlEmulation", handCtrlEmulation);
 
