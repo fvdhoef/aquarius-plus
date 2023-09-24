@@ -36,6 +36,7 @@
     <ClCompile Include="..\Shared\AqKeyboard.cpp" />
     <ClCompile Include="..\Shared\AqUartProtocol.cpp" />
     <ClCompile Include="..\Shared\EspSettingsConsole.cpp" />
+    <ClCompile Include="..\Shared\KeyMaps.cpp" />
     <ClCompile Include="..\Shared\VFS\EspVFS.cpp" />
     <ClCompile Include="..\Shared\VFS\SDCardVFS.cpp" />
     <ClCompile Include="..\Shared\VFS\VFS.cpp" />
@@ -68,6 +69,7 @@
     <ClInclude Include="..\Shared\AqKeyboardDefs.h" />
     <ClInclude Include="..\Shared\AqUartProtocol.h" />
     <ClInclude Include="..\Shared\EspSettingsConsole.h" />
+    <ClInclude Include="..\Shared\KeyMaps.h" />
     <ClInclude Include="..\Shared\VFS\EspVFS.h" />
     <ClInclude Include="..\Shared\VFS\SDCardVFS.h" />
     <ClInclude Include="..\Shared\VFS\VFS.h" />
