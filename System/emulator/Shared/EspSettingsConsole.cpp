@@ -1,4 +1,3 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "EspSettingsConsole.h"
 #include "KeyMaps.h"
 #ifndef EMULATOR

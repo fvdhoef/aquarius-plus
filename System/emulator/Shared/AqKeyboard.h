@@ -1,7 +1,7 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #pragma once
 
 #include "Common.h"
+#include <map>
 
 enum {
     NUM_LOCK    = (1 << 0),
@@ -36,6 +36,8 @@ private:
 #ifndef EMULATOR
     SemaphoreHandle_t mutex;
 #endif
+
+    std::map<unsigned, uint64_t> keyMaskMap;
 
     bool     dontSend         = false;
     uint16_t modifiers        = 0;

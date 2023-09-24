@@ -1,4 +1,3 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #include "AqKeyboard.h"
 #include "AqKeyboardDefs.h"
 #include "KeyMaps.h"
@@ -35,7 +34,7 @@ void AqKeyboard::init() {
 }
 
 void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
-    // printf("%d\n", scanCode);
+    // printf("%3d: %s\n", scanCode, keyDown ? "DOWN" : "UP");
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
@@ -115,38 +114,52 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     const keymap_t *keymap = getKeyMap();
 
     // Lookup key
-    uint16_t code    = 0xFFFF;
     uint64_t keyMask = 0;
-    if (scanCode >= 4 && scanCode <= 101) {
-        if (onlyShift) {
-            code = (*keymap)[scanCode - 4][1];
-            if (doCapsToggle && (code & CAPS)) {
-                code = (*keymap)[scanCode - 4][0];
-            }
-        } else {
-            code = (*keymap)[scanCode - 4][0];
-            if (doCapsToggle && (code & CAPS)) {
+    if (keyDown) {
+        uint16_t code = 0xFFFF;
+        if (scanCode >= 4 && scanCode <= 101) {
+            if (onlyShift) {
                 code = (*keymap)[scanCode - 4][1];
+                if (doCapsToggle && (code & CAPS)) {
+                    code = (*keymap)[scanCode - 4][0];
+                }
+            } else {
+                code = (*keymap)[scanCode - 4][0];
+                if (doCapsToggle && (code & CAPS)) {
+                    code = (*keymap)[scanCode - 4][1];
+                }
+
+                if (ctrlPressed)
+                    code |= CTRL;
+                if (altPressed)
+                    code |= ALT;
+                if (guiPressed)
+                    code |= GUI;
             }
 
-            if (ctrlPressed)
-                code |= CTRL;
-            if (altPressed)
-                code |= ALT;
-            if (guiPressed)
-                code |= GUI;
+            if (code & CTRL)
+                keyMask |= 1ULL << KEY_CTRL;
+            if (code & ALT)
+                keyMask |= 1ULL << KEY_ALT;
+            if (code & SHFT)
+                keyMask |= 1ULL << KEY_SHIFT;
+            if (code & GUI)
+                keyMask |= 1ULL << KEY_GUI;
+            keyMask |= 1ULL << (code & 63);
         }
 
-        if (code & CTRL)
-            keyMask |= 1ULL << KEY_CTRL;
-        if (code & ALT)
-            keyMask |= 1ULL << KEY_ALT;
-        if (code & SHFT)
-            keyMask |= 1ULL << KEY_SHIFT;
-        if (code & GUI)
-            keyMask |= 1ULL << KEY_GUI;
-        keyMask |= 1ULL << (code & 63);
+        // Store the key mask for use on key up
+        keyMaskMap.insert(std::make_pair(scanCode, keyMask));
+
+    } else {
+        // Use the key mask that was used on key down
+        auto it = keyMaskMap.find(scanCode);
+        if (it != keyMaskMap.end()) {
+            keyMask = it->second;
+        }
     }
+
+    // printf("keyMask   : %016llx\n", keyMask);
 
     // Check if new key is compatible with already pressed keys
     if (keyMask == 0 && (keybMatrix & KEY_MASK) == 0) {
@@ -161,8 +174,12 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 keybMatrix = keyMask;
             }
         } else {
-            if (((keybMatrix & KEY_MASK) & (keyMask & KEY_MASK)) == (keyMask & KEY_MASK)) {
+            if ((keyMask & KEY_MOD_MASK) == (keybMatrix & KEY_MOD_MASK)) {
+                // Modifiers are the same, so remove key
                 keybMatrix &= ~(keyMask & KEY_MASK);
+            } else {
+                // Modifiers are different, clear all keys
+                keybMatrix = 0;
             }
         }
     }
