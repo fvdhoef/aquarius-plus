@@ -112,19 +112,21 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
         }
     }
 
+    const keymap_t *keymap = getKeyMap();
+
     // Lookup key
     uint16_t code    = 0xFFFF;
     uint64_t keyMask = 0;
     if (scanCode >= 4 && scanCode <= 101) {
         if (onlyShift) {
-            code = keymapUS_shifted[scanCode - 4];
+            code = (*keymap)[scanCode - 4][1];
             if (doCapsToggle && (code & CAPS)) {
-                code = keymapUS[scanCode - 4];
+                code = (*keymap)[scanCode - 4][0];
             }
         } else {
-            code = keymapUS[scanCode - 4];
+            code = (*keymap)[scanCode - 4][0];
             if (doCapsToggle && (code & CAPS)) {
-                code = keymapUS_shifted[scanCode - 4];
+                code = (*keymap)[scanCode - 4][1];
             }
 
             if (ctrlPressed)

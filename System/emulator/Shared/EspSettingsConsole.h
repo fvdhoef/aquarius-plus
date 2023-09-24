@@ -49,6 +49,9 @@ private:
     void showDate();
     void timeZoneShow();
     void timeZoneSet();
+    void keybShow();
+    void keybSet();
     void systemUpdate();
     void systemUpdateGitHub();
+    void systemReset();
 };
