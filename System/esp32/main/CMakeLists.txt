@@ -20,6 +20,7 @@ idf_component_register(
         "HID/HIDReportHandlerGamepad.cpp"
 
         # Files shared between emulator and ESP32
+        "../../emulator/Shared/KeyMaps.cpp"
         "../../emulator/Shared/AqKeyboard.cpp"
         "../../emulator/Shared/AqUartProtocol.cpp"
         "../../emulator/Shared/EspSettingsConsole.cpp"

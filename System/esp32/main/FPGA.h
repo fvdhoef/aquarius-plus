@@ -20,7 +20,7 @@ public:
     bool loadBitstream(const void *data, size_t length);
 
     void    aqpReset();
-    void    aqpUpdateKeybMatrix(uint8_t *keyb_matrix);
+    void    aqpUpdateKeybMatrix(uint64_t keyb_matrix);
     void    aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait = portMAX_DELAY);
     void    aqpAqcuireBus();
     void    aqpReleaseBus();

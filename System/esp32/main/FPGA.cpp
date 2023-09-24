@@ -203,12 +203,12 @@ void FPGA::aqpReset() {
     aqpSel(false);
 }
 
-void FPGA::aqpUpdateKeybMatrix(uint8_t *keyb_matrix) {
+void FPGA::aqpUpdateKeybMatrix(uint64_t keyb_matrix) {
     RecursiveMutexLock lock(mutex);
     aqpSel(true);
     uint8_t buf[9];
     buf[0] = CMD_SET_KEYB_MATRIX;
-    memcpy(&buf[1], keyb_matrix, 8);
+    memcpy(&buf[1], &keyb_matrix, 8);
     aqpTx(buf, sizeof(buf));
     aqpSel(false);
 }
