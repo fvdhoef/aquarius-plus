@@ -359,23 +359,22 @@ module video(
     // Compositing
     //////////////////////////////////////////////////////////////////////////
     reg  [5:0] pixel_colidx;
-    reg        render_pixel;
     wire       active = !vborder && !hborder_rr;
 
     always @* begin
-        render_pixel = (linebuf_data[3:0] != 4'd0) || (!vctrl_text_enable_r && vctrl_gfx_mode_r != 2'b00);
-
         pixel_colidx = 6'b0;
-        if (vctrl_text_enable_r)
-            pixel_colidx = {2'b0, text_colidx};
+        if (!active) begin
+            if (vctrl_text_enable_r)
+                pixel_colidx = {2'b0, text_colidx};
 
-        if (active) begin
-            if (vctrl_text_priority_r && (pixel_colidx[3:0] != 4'd0))
-                render_pixel = 1'b0;
-
-            if (render_pixel)
+        end else begin
+            if (vctrl_text_enable_r && !vctrl_text_priority_r)
+                pixel_colidx = {2'b0, text_colidx};
+            if (!vctrl_text_enable_r || vctrl_text_priority_r || linebuf_data[3:0] != 4'd0)
                 pixel_colidx = linebuf_data;
-        end 
+            if (vctrl_text_enable_r && vctrl_text_priority_r && text_colidx != 4'd0)
+                pixel_colidx = {2'b0, text_colidx};
+        end
     end
 
     //////////////////////////////////////////////////////////////////////////

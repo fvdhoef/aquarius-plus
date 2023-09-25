@@ -956,11 +956,11 @@ void AqUartProtocol::cmdCloseAll() {
 #ifndef EMULATOR
 void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask) {
     RecursiveMutexLock lock(mutexMouseData);
-    float              sensitivity = 1.0f / 4.0f;
 
-    mouseX       = std::max(0.0f, std::min(319.0f, mouseX + (float)(dx * sensitivity)));
-    mouseY       = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
-    mouseButtons = buttonMask;
-    mousePresent = true;
+    float sensitivity = 1.0f / (float)mouseSensitivityDiv;
+    mouseX            = std::max(0.0f, std::min(319.0f, mouseX + (float)(dx * sensitivity)));
+    mouseY            = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
+    mouseButtons      = buttonMask;
+    mousePresent      = true;
 }
 #endif

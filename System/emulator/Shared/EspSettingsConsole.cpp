@@ -1,5 +1,6 @@
 #include "EspSettingsConsole.h"
 #include "KeyMaps.h"
+#include "AqUartProtocol.h"
 #ifndef EMULATOR
 #    include <esp_ota_ops.h>
 #    include <esp_app_format.h>
@@ -127,6 +128,8 @@ void EspSettingsConsole::consoleTask() {
             keybShow();
         else if (strcasecmp(line, "kb set") == 0)
             keybSet();
+        else if (strcasecmp(line, "mousesens") == 0)
+            mouseSensitivity();
         else if (strcasecmp(line, "update") == 0)
             systemUpdate();
         else if (strcasecmp(line, "updategh") == 0)
@@ -223,6 +226,7 @@ void EspSettingsConsole::showHelp() {
     cprintf("tz set   |set time zone\n");
     cprintf("kb       |show current keyboard layout\n");
     cprintf("kb set   |set keyboard layout\n");
+    cprintf("mousesens|set mouse sensitivity\n");
     cprintf("update   |system update from SD card\n");
     cprintf("updategh |system update from GitHub\n");
     cprintf("sysreset |factory reset\n");
@@ -896,6 +900,7 @@ void EspSettingsConsole::keybSet() {
         cprintf("%d) %s\n", i, getKeyLayoutName((KeyLayout)i).c_str());
     }
 
+    cprintf("Select layout:");
     unsigned value;
     if (!creadUint(&value) || value >= (unsigned)KeyLayout::Count) {
         if (new_session)
@@ -937,5 +942,34 @@ void EspSettingsConsole::systemReset() {
     cprintf("Done.\nPress enter to reboot.\n");
     creadline(str, sizeof(str), false);
     esp_restart();
+#endif
+}
+
+void EspSettingsConsole::mouseSensitivity() {
+#ifdef EMULATOR
+    cprintf("Not available on emulator\n");
+#else
+    cprintf("Current setting: 1/%u\n", AqUartProtocol::instance().getMouseSensitivityDiv());
+
+    cprintf("\nEnter sensitivity divider (1-8):");
+    unsigned value;
+    if (!creadUint(&value) || value < 1 || value > 8) {
+        if (new_session)
+            return;
+        cprintf("Invalid entry, aborting.\n");
+        return;
+    }
+    AqUartProtocol::instance().setMouseSensitivityDiv(value);
+
+    {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+            if (nvs_set_u8(h, "mouseDiv", AqUartProtocol::instance().getMouseSensitivityDiv()) == ESP_OK) {
+                nvs_commit(h);
+            }
+            nvs_close(h);
+        }
+    }
+
 #endif
 }

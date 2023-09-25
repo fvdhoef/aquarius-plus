@@ -228,23 +228,19 @@ void Video::drawLine() {
         bool textEnable   = (emuState.videoCtrl & VCTRL_TEXT_ENABLE) != 0;
 
         uint8_t colIdx = 0;
-        if (textEnable) {
-            colIdx = lineText[idx];
-        }
-        if (active) {
-            uint8_t bmColIdx    = lineGfx[idx];
-            bool    renderPixel = ((bmColIdx & 0xF) != 0) || (!textEnable && (emuState.videoCtrl & VCTRL_MODE_MASK) != 0);
-
-            if (textPriority && (colIdx & 0xF) != 0) {
-                renderPixel = false;
-            }
-            if (renderPixel) {
-                colIdx = bmColIdx;
-            }
+        if (!active) {
+            if (textEnable)
+                colIdx = lineText[idx];
+        } else {
+            if (textEnable && !textPriority)
+                colIdx = lineText[idx];
+            if (!textEnable || textPriority || (lineGfx[idx] & 0xF) != 0)
+                colIdx = lineGfx[idx];
+            if (textEnable && textPriority && (lineText[idx] & 0xF) != 0)
+                colIdx = lineText[idx];
         }
 
         pd[i] = emuState.videoPalette[colIdx & 0x3F];
-
-        idx = (idx + 1) & 511;
+        idx   = (idx + 1) & 511;
     }
 }

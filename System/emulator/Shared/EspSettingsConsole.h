@@ -53,4 +53,5 @@ private:
     void systemUpdate();
     void systemUpdateGitHub();
     void systemReset();
+    void mouseSensitivity();
 };
