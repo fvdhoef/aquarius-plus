@@ -226,7 +226,6 @@ void Video::drawLine() {
         bool active       = idx < 320 && vActive;
         bool textPriority = (emuState.videoCtrl & VCTRL_TEXT_PRIORITY) != 0;
         bool textEnable   = (emuState.videoCtrl & VCTRL_TEXT_ENABLE) != 0;
-        bool gfxEnable    = (emuState.videoCtrl & VCTRL_MODE_MASK) != 0;
 
         uint8_t colIdx = 0;
         if (!active) {
@@ -235,7 +234,7 @@ void Video::drawLine() {
         } else {
             if (textEnable && !textPriority)
                 colIdx = lineText[idx];
-            if (gfxEnable && (!textEnable || textPriority || (lineGfx[idx] & 0xF) != 0))
+            if (!textEnable || textPriority || (lineGfx[idx] & 0xF) != 0)
                 colIdx = lineGfx[idx];
             if (textEnable && textPriority && (lineText[idx] & 0xF) != 0)
                 colIdx = lineText[idx];
