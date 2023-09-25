@@ -23,6 +23,12 @@ public:
 
 #ifndef EMULATOR
     void mouseReport(int dx, int dy, uint8_t buttonMask);
+    void setMouseSensitivityDiv(uint8_t val) {
+        mouseSensitivityDiv = std::max((uint8_t)1, std::min((uint8_t)8, val));
+    }
+    uint8_t getMouseSensitivityDiv() {
+        return mouseSensitivityDiv;
+    }
 #endif
 
 private:
@@ -84,9 +90,10 @@ private:
 
 #ifndef EMULATOR
     SemaphoreHandle_t mutexMouseData;
-    bool              mousePresent = false;
-    float             mouseX       = 0;
-    float             mouseY       = 0;
-    uint8_t           mouseButtons = 0;
+    bool              mousePresent        = false;
+    float             mouseX              = 0;
+    float             mouseY              = 0;
+    uint8_t           mouseButtons        = 0;
+    uint8_t           mouseSensitivityDiv = 4;
 #endif
 };

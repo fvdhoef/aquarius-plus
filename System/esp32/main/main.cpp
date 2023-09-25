@@ -45,6 +45,11 @@ static void init() {
             if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
                 setKeyLayout((KeyLayout)kblayout);
             }
+
+            uint8_t mouseDiv = 0;
+            if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
+                AqUartProtocol::instance().setMouseSensitivityDiv(mouseDiv);
+            }
             nvs_close(h);
         }
     }
