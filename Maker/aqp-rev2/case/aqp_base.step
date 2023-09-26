@@ -10,7 +10,7 @@ FILE_DESCRIPTION(
 
 FILE_NAME(
 /* name */ 'aqp_base.step',
-/* time_stamp */ '2023-08-08T07:48:39-07:00',
+/* time_stamp */ '2023-09-25T21:21:48-07:00',
 /* author */ (''),
 /* organization */ (''),
 /* preprocessor_version */ 'ST-DEVELOPER v19.2',
@@ -26355,15 +26355,15 @@ SOLID_ANGLE_UNIT()
 #25718=PRODUCT_DEFINITION_SHAPE('',$,#25721);
 #25719=SHAPE_REPRESENTATION('',(#14892),#25712);
 #25720=PRODUCT_DEFINITION_CONTEXT('part definition',#25725,'design');
-#25721=PRODUCT_DEFINITION('case','case v32',#25722,#25720);
+#25721=PRODUCT_DEFINITION('aqp-case','aqp-case v35',#25722,#25720);
 #25722=PRODUCT_DEFINITION_FORMATION('',$,#25727);
-#25723=PRODUCT_RELATED_PRODUCT_CATEGORY('case v32','case v32',(#25727));
+#25723=PRODUCT_RELATED_PRODUCT_CATEGORY('aqp-case v35','aqp-case v35',(#25727));
 #25724=APPLICATION_PROTOCOL_DEFINITION('international standard',
 'automotive_design',2009,#25725);
 #25725=APPLICATION_CONTEXT(
 'Core Data for Automotive Mechanical Design Process');
 #25726=PRODUCT_CONTEXT('part definition',#25725,'mechanical');
-#25727=PRODUCT('case','case v32',$,(#25726));
+#25727=PRODUCT('aqp-case','aqp-case v35',$,(#25726));
 #25728=PRESENTATION_STYLE_ASSIGNMENT((#25735));
 #25729=PRESENTATION_STYLE_ASSIGNMENT((#25736));
 #25730=PRESENTATION_STYLE_ASSIGNMENT((#25737));
