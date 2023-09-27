@@ -104,7 +104,7 @@ static const keymap_t keymapUS = {
     {        KEY_LEFT,      SHFT | KEY_LEFT      }, //  80: SCANCODE_LEFT
     {        KEY_DOWN,      SHFT | KEY_DOWN      }, //  81: SCANCODE_DOWN
     {        KEY_UP,        SHFT | KEY_UP        }, //  82: SCANCODE_UP
-    {        0xFFFF,               0xFFFF        }, //  83: SCANCODE_NUMLOCKCLEAR
+    {        0xFFFF,               0xFFFF        }, //  83: SCANCODE_NUMLOCK
     {        KEY_SLASH,            KEY_SLASH     }, //  84: SCANCODE_KP_DIVIDE
     { SHFT | KEY_COLON,     SHFT | KEY_COLON     }, //  85: SCANCODE_KP_MULTIPLY
     {        KEY_MINUS,            KEY_MINUS     }, //  86: SCANCODE_KP_MINUS
@@ -205,7 +205,7 @@ static const keymap_t keymapUK = {
     {        KEY_LEFT,      SHFT | KEY_LEFT      }, //  80: SCANCODE_LEFT
     {        KEY_DOWN,      SHFT | KEY_DOWN      }, //  81: SCANCODE_DOWN
     {        KEY_UP,        SHFT | KEY_UP        }, //  82: SCANCODE_UP
-    {        0xFFFF,               0xFFFF        }, //  83: SCANCODE_NUMLOCKCLEAR
+    {        0xFFFF,               0xFFFF        }, //  83: SCANCODE_NUMLOCK
     {        KEY_SLASH,            KEY_SLASH     }, //  84: SCANCODE_KP_DIVIDE
     { SHFT | KEY_COLON,     SHFT | KEY_COLON     }, //  85: SCANCODE_KP_MULTIPLY
     {        KEY_MINUS,            KEY_MINUS     }, //  86: SCANCODE_KP_MINUS

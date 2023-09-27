@@ -19,6 +19,114 @@ static const char *TAG = "keyboard";
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
 
+void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
+    // Keep track of pressed modifier keys
+    if (scanCode == SCANCODE_LCTRL)
+        modifiers = (modifiers & ~ModLCtrl) | (keyDown ? ModLCtrl : 0);
+    if (scanCode == SCANCODE_LSHIFT)
+        modifiers = (modifiers & ~ModLShift) | (keyDown ? ModLShift : 0);
+    if (scanCode == SCANCODE_LALT)
+        modifiers = (modifiers & ~ModLAlt) | (keyDown ? ModLAlt : 0);
+    if (scanCode == SCANCODE_LGUI)
+        modifiers = (modifiers & ~ModLGui) | (keyDown ? ModLGui : 0);
+    if (scanCode == SCANCODE_RCTRL)
+        modifiers = (modifiers & ~ModRCtrl) | (keyDown ? ModRCtrl : 0);
+    if (scanCode == SCANCODE_RSHIFT)
+        modifiers = (modifiers & ~ModRShift) | (keyDown ? ModRShift : 0);
+    if (scanCode == SCANCODE_RALT)
+        modifiers = (modifiers & ~ModRAlt) | (keyDown ? ModRAlt : 0);
+    if (scanCode == SCANCODE_RGUI)
+        modifiers = (modifiers & ~ModRGui) | (keyDown ? ModRGui : 0);
+    if (scanCode == SCANCODE_NUMLOCK && keyDown)
+        leds ^= LedNumLock;
+    if (scanCode == SCANCODE_CAPSLOCK && keyDown)
+        leds ^= LedCapsLock;
+    if (scanCode == SCANCODE_SCROLLLOCK && keyDown)
+        leds ^= LedScrollLock;
+
+    if (keyDown) {
+        int ch = -1;
+        printf("%d\n", scanCode);
+
+        if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
+            static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', '\033', '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
+            static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', '\033', '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
+
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+
+        } else if (
+            scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
+            scanCode != SCANCODE_SCROLLLOCK &&
+            scanCode != SCANCODE_NUMLOCK) {
+            static const uint8_t lut[] = {
+                0x80, // SCANCODE_F1
+                0x81, // SCANCODE_F2
+                0x82, // SCANCODE_F3
+                0x83, // SCANCODE_F4
+                0x84, // SCANCODE_F5
+                0x85, // SCANCODE_F6
+                0x86, // SCANCODE_F7
+                0x87, // SCANCODE_F8
+                0x90, // SCANCODE_F9
+                0x91, // SCANCODE_F10
+                0x92, // SCANCODE_F11
+                0x93, // SCANCODE_F12
+                0x88, // SCANCODE_PRINTSCREEN
+                0,    // SCANCODE_SCROLLLOCK
+                0x89, // SCANCODE_PAUSE
+                0x9D, // SCANCODE_INSERT
+                0x9B, // SCANCODE_HOME
+                0x8A, // SCANCODE_PAGEUP
+                0x7F, // SCANCODE_DELETE
+                0x9A, // SCANCODE_END
+                0x8B, // SCANCODE_PAGEDOWN
+                0x8E, // SCANCODE_RIGHT
+                0x9E, // SCANCODE_LEFT
+                0x9F, // SCANCODE_DOWN
+                0x8F, // SCANCODE_UP
+                0,    // SCANCODE_NUMLOCK
+                '/',  // SCANCODE_KP_DIVIDE
+                '*',  // SCANCODE_KP_MULTIPLY
+                '-',  // SCANCODE_KP_MINUS
+                '+',  // SCANCODE_KP_PLUS
+                '\r', // SCANCODE_KP_ENTER
+                '1',  // SCANCODE_KP_1
+                '2',  // SCANCODE_KP_2
+                '3',  // SCANCODE_KP_3
+                '4',  // SCANCODE_KP_4
+                '5',  // SCANCODE_KP_5
+                '6',  // SCANCODE_KP_6
+                '7',  // SCANCODE_KP_7
+                '8',  // SCANCODE_KP_8
+                '9',  // SCANCODE_KP_9
+                '0',  // SCANCODE_KP_0
+                '.',  // SCANCODE_KP_PERIOD
+            };
+            ch = lut[scanCode - SCANCODE_F1];
+        }
+
+        if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
+            if (ch == '@') {
+                ch = 0;
+            } else if (ch >= 'a' && ch <= 'z') {
+                ch = ch - 'a' + 1;
+            } else if (ch >= 'A' && ch <= '_') {
+                ch = ch - 'A' + 1;
+            }
+        }
+
+        if (leds & LedCapsLock) {
+            if (ch >= 'a' && ch <= 'z') {
+                ch = (ch - 'a') + 'A';
+            } else if (ch >= 'A' && ch <= 'Z') {
+                ch = (ch - 'A') + 'a';
+            }
+        }
+        if (ch >= 0)
+            printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
+    }
+}
+
 AqKeyboard::AqKeyboard() {
 }
 
@@ -42,10 +150,104 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (handController(scanCode, keyDown))
         return;
 
+    kbLayout.processScancode(scanCode, keyDown);
+
+    int key = -1;
+    switch (scanCode) {
+        case SCANCODE_EQUALS: key = KEY_EQUALS; break;
+        case SCANCODE_BACKSPACE: key = KEY_BACKSPACE; break;
+        case SCANCODE_APOSTROPHE: key = KEY_COLON; break;
+        case SCANCODE_RETURN: key = KEY_RETURN; break;
+        case SCANCODE_SEMICOLON: key = KEY_SEMICOLON; break;
+        case SCANCODE_PERIOD: key = KEY_PERIOD; break;
+        case SCANCODE_INSERT: key = KEY_INSERT; break;
+        case SCANCODE_DELETE: key = KEY_DELETE; break;
+        case SCANCODE_MINUS: key = KEY_MINUS; break;
+        case SCANCODE_SLASH: key = KEY_SLASH; break;
+        case SCANCODE_0: key = KEY_0; break;
+        case SCANCODE_P: key = KEY_P; break;
+        case SCANCODE_L: key = KEY_L; break;
+        case SCANCODE_COMMA: key = KEY_COMMA; break;
+        case SCANCODE_UP: key = KEY_UP; break;
+        case SCANCODE_RIGHT: key = KEY_RIGHT; break;
+        case SCANCODE_9: key = KEY_9; break;
+        case SCANCODE_O: key = KEY_O; break;
+        case SCANCODE_K: key = KEY_K; break;
+        case SCANCODE_M: key = KEY_M; break;
+        case SCANCODE_N: key = KEY_N; break;
+        case SCANCODE_J: key = KEY_J; break;
+        case SCANCODE_LEFT: key = KEY_LEFT; break;
+        case SCANCODE_DOWN: key = KEY_DOWN; break;
+        case SCANCODE_8: key = KEY_8; break;
+        case SCANCODE_I: key = KEY_I; break;
+        case SCANCODE_7: key = KEY_7; break;
+        case SCANCODE_U: key = KEY_U; break;
+        case SCANCODE_H: key = KEY_H; break;
+        case SCANCODE_B: key = KEY_B; break;
+        case SCANCODE_HOME: key = KEY_HOME; break;
+        case SCANCODE_END: key = KEY_END; break;
+        case SCANCODE_6: key = KEY_6; break;
+        case SCANCODE_Y: key = KEY_Y; break;
+        case SCANCODE_G: key = KEY_G; break;
+        case SCANCODE_V: key = KEY_V; break;
+        case SCANCODE_C: key = KEY_C; break;
+        case SCANCODE_F: key = KEY_F; break;
+        case SCANCODE_PAGEUP: key = KEY_PGUP; break;
+        case SCANCODE_PAGEDOWN: key = KEY_PGDN; break;
+        case SCANCODE_5: key = KEY_5; break;
+        case SCANCODE_T: key = KEY_T; break;
+        case SCANCODE_4: key = KEY_4; break;
+        case SCANCODE_R: key = KEY_R; break;
+        case SCANCODE_D: key = KEY_D; break;
+        case SCANCODE_X: key = KEY_X; break;
+        case SCANCODE_PAUSE: key = KEY_PAUSE; break;
+        case SCANCODE_PRINTSCREEN: key = KEY_PRTSCR; break;
+        case SCANCODE_3: key = KEY_3; break;
+        case SCANCODE_E: key = KEY_E; break;
+        case SCANCODE_S: key = KEY_S; break;
+        case SCANCODE_Z: key = KEY_Z; break;
+        case SCANCODE_SPACE: key = KEY_SPACE; break;
+        case SCANCODE_A: key = KEY_A; break;
+        case SCANCODE_APPLICATION: key = KEY_MENU; break;
+        case SCANCODE_TAB: key = KEY_TAB; break;
+        case SCANCODE_2: key = KEY_2; break;
+        case SCANCODE_W: key = KEY_W; break;
+        case SCANCODE_1: key = KEY_1; break;
+        case SCANCODE_Q: key = KEY_Q; break;
+        default: break;
+    }
+    if (key >= 0) {
+        if (keyDown)
+            keybMatrix |= (1ULL << key);
+        else
+            keybMatrix &= ~(1ULL << key);
+    }
+
+    if (kbLayout.modifiers & (KeyboardLayout::ModLShift | KeyboardLayout::ModRShift))
+        keybMatrix |= (1ULL << KEY_SHIFT);
+    else
+        keybMatrix &= ~(1ULL << KEY_SHIFT);
+
+    if (kbLayout.modifiers & (KeyboardLayout::ModLAlt | KeyboardLayout::ModRAlt))
+        keybMatrix |= (1ULL << KEY_ALT);
+    else
+        keybMatrix &= ~(1ULL << KEY_ALT);
+
+    if (kbLayout.modifiers & (KeyboardLayout::ModLCtrl | KeyboardLayout::ModRCtrl))
+        keybMatrix |= (1ULL << KEY_CTRL);
+    else
+        keybMatrix &= ~(1ULL << KEY_CTRL);
+
+    if (kbLayout.modifiers & (KeyboardLayout::ModLGui | KeyboardLayout::ModRGui))
+        keybMatrix |= (1ULL << KEY_GUI);
+    else
+        keybMatrix &= ~(1ULL << KEY_GUI);
+
+#if 0
     uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
     if (keyDown && scanCode == SCANCODE_CAPSLOCK)
         ledStatusNext ^= CAPS_LOCK;
-    if (keyDown && scanCode == SCANCODE_NUMLOCKCLEAR)
+    if (keyDown && scanCode == SCANCODE_NUMLOCK)
         ledStatusNext ^= NUM_LOCK;
     if (keyDown && scanCode == SCANCODE_SCROLLLOCK)
         ledStatusNext ^= SCROLL_LOCK;
@@ -89,22 +291,22 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
         if (keyDown) {
             if (ctrlPressed && shiftPressed) {
                 dontSend = true;
-#ifdef EMULATOR
+#    ifdef EMULATOR
                 emuState.reset();
-#else
+#    else
                 // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                 FPGA::instance().aqpAqcuireBus();
                 FPGA::instance().aqpReset();
                 esp_restart();
-#endif
+#    endif
             } else if (ctrlPressed) {
                 dontSend = true;
 
-#ifdef EMULATOR
+#    ifdef EMULATOR
                 emuState.reset();
-#else
+#    else
                 FPGA::instance().aqpReset();
-#endif
+#    endif
             }
         } else {
             dontSend = false;
@@ -186,10 +388,11 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 
     if (ledStatus != ledStatusNext) {
         ledStatus = ledStatusNext;
-#ifndef EMULATOR
+#    ifndef EMULATOR
         USBHost::instance().keyboardSetLeds(ledStatus);
-#endif
+#    endif
     }
+#endif
 }
 
 bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {

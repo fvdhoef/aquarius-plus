@@ -153,7 +153,7 @@ enum ScanCode {
     SCANCODE_LEFT           = 80,
     SCANCODE_DOWN           = 81,
     SCANCODE_UP             = 82,
-    SCANCODE_NUMLOCKCLEAR   = 83,
+    SCANCODE_NUMLOCK        = 83,
     SCANCODE_KP_DIVIDE      = 84,
     SCANCODE_KP_MULTIPLY    = 85,
     SCANCODE_KP_MINUS       = 86,

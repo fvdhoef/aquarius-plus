@@ -9,6 +9,30 @@ enum {
     SCROLL_LOCK = (1 << 2),
 };
 
+class KeyboardLayout {
+public:
+    enum {
+        LedNumLock    = (1 << 0),
+        LedCapsLock   = (1 << 1),
+        LedScrollLock = (1 << 2),
+    };
+    enum {
+        ModLCtrl  = (1 << 0),
+        ModLShift = (1 << 1),
+        ModLAlt   = (1 << 2),
+        ModLGui   = (1 << 3),
+        ModRCtrl  = (1 << 4),
+        ModRShift = (1 << 5),
+        ModRAlt   = (1 << 6),
+        ModRGui   = (1 << 7),
+    };
+
+    void processScancode(unsigned scanCode, bool keyDown);
+
+    uint8_t modifiers = 0;
+    uint8_t leds      = 0;
+};
+
 class AqKeyboard {
     AqKeyboard();
 
@@ -36,6 +60,8 @@ private:
 #ifndef EMULATOR
     SemaphoreHandle_t mutex;
 #endif
+
+    KeyboardLayout kbLayout;
 
     std::map<unsigned, uint64_t> keyMaskMap;
 
