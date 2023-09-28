@@ -74,6 +74,7 @@ module top(
     wire [7:0] rddata_espdata;          // IO $F5
     wire [7:0] rddata_ay8910;           // IO $F6/F7
     wire [7:0] rddata_ay8910_2;         // IO $F8/F9
+    wire [7:0] rddata_kbbuf;            // IO $FA
     wire [7:0] rddata_keyboard;         // IO $FF:R
 
     reg  [7:0] reg_bank0_r;             // IO $F0
@@ -154,6 +155,7 @@ module top(
     wire sel_io_espdata           = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
     wire sel_io_ay8910            = !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
     wire sel_io_ay8910_2          = !sysctrl_dis_regs_r && !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
+    wire sel_io_kbbuf             = !ebus_iorq_n && ebus_a[7:0] == 8'hFA;
     wire sel_io_sysctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hFB;
     wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
     wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
@@ -365,6 +367,9 @@ module top(
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;
 
+    wire  [7:0] kbbuf_data;
+    wire        kbbuf_wren;
+
     assign spibm_en      = spibm_busreq && !ebus_busack_n;
     assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
     assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
@@ -398,7 +403,10 @@ module top(
         .keys(keys),
         .hctrl1(spi_hctrl1),
         .hctrl2(spi_hctrl2),
-        .rom_p2_wren(rom_p2_wren));
+        .rom_p2_wren(rom_p2_wren),
+        
+        .kbbuf_data(kbbuf_data),
+        .kbbuf_wren(kbbuf_wren));
 
     assign esp_notify = 1'b0;
 
@@ -414,6 +422,29 @@ module top(
         (ebus_a[10] ? 8'hFF : keys[23:16]) &
         (ebus_a[ 9] ? 8'hFF : keys[15: 8]) &
         (ebus_a[ 8] ? 8'hFF : keys[ 7: 0]);
+
+    //////////////////////////////////////////////////////////////////////////
+    // Keyboard buffer
+    //////////////////////////////////////////////////////////////////////////
+    wire [7:0] kbbuf_rddata;
+    wire       kbbuf_empty;
+    wire       kbbuf_rden = sel_io_kbbuf && bus_read;
+    wire       kbbuf_rst  = (sel_io_kbbuf && bus_write) || reset;
+
+    assign rddata_kbbuf = kbbuf_empty ? 8'h00 : kbbuf_rddata;
+
+    fifo16 kbbuf(
+        .clk(sysclk),
+        .rst(kbbuf_rst),
+
+        .wrdata(kbbuf_data),
+        .wr_en(kbbuf_wren),
+
+        .rddata(kbbuf_rddata),
+        .rd_en(kbbuf_rden),
+
+        .empty(kbbuf_empty)
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // AY-3-8910
