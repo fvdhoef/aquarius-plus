@@ -46,11 +46,11 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 
     if (keyDown) {
         int ch = -1;
-        printf("%d\n", scanCode);
+        // printf("%d\n", scanCode);
 
         if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
-            static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', '\033', '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
-            static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', '\033', '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
+            static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', 3, '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
+            static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', 3, '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
 
             ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
 
@@ -122,8 +122,10 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
                 ch = (ch - 'A') + 'a';
             }
         }
-        if (ch >= 0)
-            printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
+        if (ch > 0) {
+            emuState.kbBufWrite(ch);
+            // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
+        }
     }
 }
 
@@ -150,249 +152,132 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     if (handController(scanCode, keyDown))
         return;
 
+    // Keyboard layout handling
     kbLayout.processScancode(scanCode, keyDown);
 
-    int key = -1;
-    switch (scanCode) {
-        case SCANCODE_EQUALS: key = KEY_EQUALS; break;
-        case SCANCODE_BACKSPACE: key = KEY_BACKSPACE; break;
-        case SCANCODE_APOSTROPHE: key = KEY_COLON; break;
-        case SCANCODE_RETURN: key = KEY_RETURN; break;
-        case SCANCODE_SEMICOLON: key = KEY_SEMICOLON; break;
-        case SCANCODE_PERIOD: key = KEY_PERIOD; break;
-        case SCANCODE_INSERT: key = KEY_INSERT; break;
-        case SCANCODE_DELETE: key = KEY_DELETE; break;
-        case SCANCODE_MINUS: key = KEY_MINUS; break;
-        case SCANCODE_SLASH: key = KEY_SLASH; break;
-        case SCANCODE_0: key = KEY_0; break;
-        case SCANCODE_P: key = KEY_P; break;
-        case SCANCODE_L: key = KEY_L; break;
-        case SCANCODE_COMMA: key = KEY_COMMA; break;
-        case SCANCODE_UP: key = KEY_UP; break;
-        case SCANCODE_RIGHT: key = KEY_RIGHT; break;
-        case SCANCODE_9: key = KEY_9; break;
-        case SCANCODE_O: key = KEY_O; break;
-        case SCANCODE_K: key = KEY_K; break;
-        case SCANCODE_M: key = KEY_M; break;
-        case SCANCODE_N: key = KEY_N; break;
-        case SCANCODE_J: key = KEY_J; break;
-        case SCANCODE_LEFT: key = KEY_LEFT; break;
-        case SCANCODE_DOWN: key = KEY_DOWN; break;
-        case SCANCODE_8: key = KEY_8; break;
-        case SCANCODE_I: key = KEY_I; break;
-        case SCANCODE_7: key = KEY_7; break;
-        case SCANCODE_U: key = KEY_U; break;
-        case SCANCODE_H: key = KEY_H; break;
-        case SCANCODE_B: key = KEY_B; break;
-        case SCANCODE_HOME: key = KEY_HOME; break;
-        case SCANCODE_END: key = KEY_END; break;
-        case SCANCODE_6: key = KEY_6; break;
-        case SCANCODE_Y: key = KEY_Y; break;
-        case SCANCODE_G: key = KEY_G; break;
-        case SCANCODE_V: key = KEY_V; break;
-        case SCANCODE_C: key = KEY_C; break;
-        case SCANCODE_F: key = KEY_F; break;
-        case SCANCODE_PAGEUP: key = KEY_PGUP; break;
-        case SCANCODE_PAGEDOWN: key = KEY_PGDN; break;
-        case SCANCODE_5: key = KEY_5; break;
-        case SCANCODE_T: key = KEY_T; break;
-        case SCANCODE_4: key = KEY_4; break;
-        case SCANCODE_R: key = KEY_R; break;
-        case SCANCODE_D: key = KEY_D; break;
-        case SCANCODE_X: key = KEY_X; break;
-        case SCANCODE_PAUSE: key = KEY_PAUSE; break;
-        case SCANCODE_PRINTSCREEN: key = KEY_PRTSCR; break;
-        case SCANCODE_3: key = KEY_3; break;
-        case SCANCODE_E: key = KEY_E; break;
-        case SCANCODE_S: key = KEY_S; break;
-        case SCANCODE_Z: key = KEY_Z; break;
-        case SCANCODE_SPACE: key = KEY_SPACE; break;
-        case SCANCODE_A: key = KEY_A; break;
-        case SCANCODE_APPLICATION: key = KEY_MENU; break;
-        case SCANCODE_TAB: key = KEY_TAB; break;
-        case SCANCODE_2: key = KEY_2; break;
-        case SCANCODE_W: key = KEY_W; break;
-        case SCANCODE_1: key = KEY_1; break;
-        case SCANCODE_Q: key = KEY_Q; break;
-        default: break;
-    }
-    if (key >= 0) {
-        if (keyDown)
-            keybMatrix |= (1ULL << key);
+    // Keyboard matrix emulation
+    {
+        int key = -1;
+        switch (scanCode) {
+            case SCANCODE_EQUALS: key = KEY_EQUALS; break;
+            case SCANCODE_BACKSPACE: key = KEY_BACKSPACE; break;
+            case SCANCODE_APOSTROPHE: key = KEY_COLON; break;
+            case SCANCODE_RETURN: key = KEY_RETURN; break;
+            case SCANCODE_SEMICOLON: key = KEY_SEMICOLON; break;
+            case SCANCODE_PERIOD: key = KEY_PERIOD; break;
+            case SCANCODE_INSERT: key = KEY_INSERT; break;
+            case SCANCODE_DELETE: key = KEY_DELETE; break;
+            case SCANCODE_MINUS: key = KEY_MINUS; break;
+            case SCANCODE_SLASH: key = KEY_SLASH; break;
+            case SCANCODE_0: key = KEY_0; break;
+            case SCANCODE_P: key = KEY_P; break;
+            case SCANCODE_L: key = KEY_L; break;
+            case SCANCODE_COMMA: key = KEY_COMMA; break;
+            case SCANCODE_UP: key = KEY_UP; break;
+            case SCANCODE_RIGHT: key = KEY_RIGHT; break;
+            case SCANCODE_9: key = KEY_9; break;
+            case SCANCODE_O: key = KEY_O; break;
+            case SCANCODE_K: key = KEY_K; break;
+            case SCANCODE_M: key = KEY_M; break;
+            case SCANCODE_N: key = KEY_N; break;
+            case SCANCODE_J: key = KEY_J; break;
+            case SCANCODE_LEFT: key = KEY_LEFT; break;
+            case SCANCODE_DOWN: key = KEY_DOWN; break;
+            case SCANCODE_8: key = KEY_8; break;
+            case SCANCODE_I: key = KEY_I; break;
+            case SCANCODE_7: key = KEY_7; break;
+            case SCANCODE_U: key = KEY_U; break;
+            case SCANCODE_H: key = KEY_H; break;
+            case SCANCODE_B: key = KEY_B; break;
+            case SCANCODE_HOME: key = KEY_HOME; break;
+            case SCANCODE_END: key = KEY_END; break;
+            case SCANCODE_6: key = KEY_6; break;
+            case SCANCODE_Y: key = KEY_Y; break;
+            case SCANCODE_G: key = KEY_G; break;
+            case SCANCODE_V: key = KEY_V; break;
+            case SCANCODE_C: key = KEY_C; break;
+            case SCANCODE_F: key = KEY_F; break;
+            case SCANCODE_PAGEUP: key = KEY_PGUP; break;
+            case SCANCODE_PAGEDOWN: key = KEY_PGDN; break;
+            case SCANCODE_5: key = KEY_5; break;
+            case SCANCODE_T: key = KEY_T; break;
+            case SCANCODE_4: key = KEY_4; break;
+            case SCANCODE_R: key = KEY_R; break;
+            case SCANCODE_D: key = KEY_D; break;
+            case SCANCODE_X: key = KEY_X; break;
+            case SCANCODE_PAUSE: key = KEY_PAUSE; break;
+            case SCANCODE_PRINTSCREEN: key = KEY_PRTSCR; break;
+            case SCANCODE_3: key = KEY_3; break;
+            case SCANCODE_E: key = KEY_E; break;
+            case SCANCODE_S: key = KEY_S; break;
+            case SCANCODE_Z: key = KEY_Z; break;
+            case SCANCODE_SPACE: key = KEY_SPACE; break;
+            case SCANCODE_A: key = KEY_A; break;
+            case SCANCODE_APPLICATION: key = KEY_MENU; break;
+            case SCANCODE_TAB: key = KEY_TAB; break;
+            case SCANCODE_2: key = KEY_2; break;
+            case SCANCODE_W: key = KEY_W; break;
+            case SCANCODE_1: key = KEY_1; break;
+            case SCANCODE_Q: key = KEY_Q; break;
+            default: break;
+        }
+        if (key >= 0) {
+            if (keyDown)
+                keybMatrix |= (1ULL << key);
+            else
+                keybMatrix &= ~(1ULL << key);
+        }
+
+        if (kbLayout.modifiers & (KeyboardLayout::ModLShift | KeyboardLayout::ModRShift))
+            keybMatrix |= (1ULL << KEY_SHIFT);
         else
-            keybMatrix &= ~(1ULL << key);
+            keybMatrix &= ~(1ULL << KEY_SHIFT);
+
+        if (kbLayout.modifiers & (KeyboardLayout::ModLAlt | KeyboardLayout::ModRAlt))
+            keybMatrix |= (1ULL << KEY_ALT);
+        else
+            keybMatrix &= ~(1ULL << KEY_ALT);
+
+        if (kbLayout.modifiers & (KeyboardLayout::ModLCtrl | KeyboardLayout::ModRCtrl))
+            keybMatrix |= (1ULL << KEY_CTRL);
+        else
+            keybMatrix &= ~(1ULL << KEY_CTRL);
+
+        if (kbLayout.modifiers & (KeyboardLayout::ModLGui | KeyboardLayout::ModRGui))
+            keybMatrix |= (1ULL << KEY_GUI);
+        else
+            keybMatrix &= ~(1ULL << KEY_GUI);
     }
 
-    if (kbLayout.modifiers & (KeyboardLayout::ModLShift | KeyboardLayout::ModRShift))
-        keybMatrix |= (1ULL << KEY_SHIFT);
-    else
-        keybMatrix &= ~(1ULL << KEY_SHIFT);
-
-    if (kbLayout.modifiers & (KeyboardLayout::ModLAlt | KeyboardLayout::ModRAlt))
-        keybMatrix |= (1ULL << KEY_ALT);
-    else
-        keybMatrix &= ~(1ULL << KEY_ALT);
-
-    if (kbLayout.modifiers & (KeyboardLayout::ModLCtrl | KeyboardLayout::ModRCtrl))
-        keybMatrix |= (1ULL << KEY_CTRL);
-    else
-        keybMatrix &= ~(1ULL << KEY_CTRL);
-
-    if (kbLayout.modifiers & (KeyboardLayout::ModLGui | KeyboardLayout::ModRGui))
-        keybMatrix |= (1ULL << KEY_GUI);
-    else
-        keybMatrix &= ~(1ULL << KEY_GUI);
-
-#if 0
-    uint8_t ledStatusNext = ledStatus == 0xFF ? 0 : ledStatus;
-    if (keyDown && scanCode == SCANCODE_CAPSLOCK)
-        ledStatusNext ^= CAPS_LOCK;
-    if (keyDown && scanCode == SCANCODE_NUMLOCK)
-        ledStatusNext ^= NUM_LOCK;
-    if (keyDown && scanCode == SCANCODE_SCROLLLOCK)
-        ledStatusNext ^= SCROLL_LOCK;
-
-    // Keep track of pressed modifier keys
-    if (scanCode == SCANCODE_LSHIFT)
-        modifiers = (modifiers & ~KEYMOD_LSHIFT) | (keyDown ? KEYMOD_LSHIFT : 0);
-    if (scanCode == SCANCODE_RSHIFT)
-        modifiers = (modifiers & ~KEYMOD_RSHIFT) | (keyDown ? KEYMOD_RSHIFT : 0);
-    if (scanCode == SCANCODE_LCTRL)
-        modifiers = (modifiers & ~KEYMOD_LCTRL) | (keyDown ? KEYMOD_LCTRL : 0);
-    if (scanCode == SCANCODE_RCTRL)
-        modifiers = (modifiers & ~KEYMOD_RCTRL) | (keyDown ? KEYMOD_RCTRL : 0);
-    if (scanCode == SCANCODE_LALT)
-        modifiers = (modifiers & ~KEYMOD_LALT) | (keyDown ? KEYMOD_LALT : 0);
-    if (scanCode == SCANCODE_RALT)
-        modifiers = (modifiers & ~KEYMOD_RALT) | (keyDown ? KEYMOD_RALT : 0);
-    if (scanCode == SCANCODE_LGUI)
-        modifiers = (modifiers & ~KEYMOD_LGUI) | (keyDown ? KEYMOD_LGUI : 0);
-
-    uint64_t modMask =
-        ((modifiers & (KEYMOD_LCTRL | KEYMOD_RCTRL)) ? (1ULL << KEY_CTRL) : 0) |
-        ((modifiers & (KEYMOD_LALT | KEYMOD_RALT)) ? (1ULL << KEY_ALT) : 0) |
-        ((modifiers & (KEYMOD_LSHIFT | KEYMOD_RSHIFT)) ? (1ULL << KEY_SHIFT) : 0) |
-        ((modifiers & (KEYMOD_LGUI | KEYMOD_RGUI)) ? (1ULL << KEY_GUI) : 0);
-
-    if (scanCode == SCANCODE_RGUI)
-        modifiers = (modifiers & ~KEYMOD_RGUI) | (keyDown ? KEYMOD_RGUI : 0);
-
-    bool ctrlPressed  = (modifiers & (KEYMOD_LCTRL | KEYMOD_RCTRL)) != 0;
-    bool altPressed   = (modifiers & (KEYMOD_LALT | KEYMOD_RALT)) != 0;
-    bool shiftPressed = (modifiers & (KEYMOD_LSHIFT | KEYMOD_RSHIFT)) != 0;
-    bool guiPressed   = (modifiers & (KEYMOD_LGUI | KEYMOD_RGUI)) != 0;
-    bool onlyShift    = (modifiers & KEYMOD_SHIFT) != 0 && (modifiers & ~KEYMOD_SHIFT) == 0;
-    bool doCapsToggle = (ledStatus & CAPS_LOCK) && (onlyShift || modifiers == 0);
-
-    // printf("modifiers: %016llx\n", modMask);
-
-    // Handle RESET key-combos
-    if (scanCode == SCANCODE_ESCAPE) {
-        if (keyDown) {
-            if (ctrlPressed && shiftPressed) {
-                dontSend = true;
-#    ifdef EMULATOR
+    // Special keys
+    {
+        uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
+        if (scanCode == SCANCODE_ESCAPE && keyDown) {
+            if (combinedModifiers == KeyboardLayout::ModLCtrl) {
+#ifdef EMULATOR
                 emuState.reset();
-#    else
+#else
+                FPGA::instance().aqpReset();
+#endif
+            } else if (combinedModifiers == (KeyboardLayout::ModLShift | KeyboardLayout::ModLCtrl)) {
+#ifdef EMULATOR
+                emuState.reset();
+#else
                 // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                 FPGA::instance().aqpAqcuireBus();
                 FPGA::instance().aqpReset();
                 esp_restart();
-#    endif
-            } else if (ctrlPressed) {
-                dontSend = true;
-
-#    ifdef EMULATOR
-                emuState.reset();
-#    else
-                FPGA::instance().aqpReset();
-#    endif
-            }
-        } else {
-            dontSend = false;
-        }
-    }
-
-    const keymap_t *keymap = getKeyMap();
-
-    // Lookup key
-    uint64_t keyMask = 0;
-    if (keyDown) {
-        uint16_t code = 0xFFFF;
-        if (scanCode >= 4 && scanCode <= 101) {
-            if (onlyShift) {
-                code = (*keymap)[scanCode - 4][1];
-                if (doCapsToggle && (code & CAPS)) {
-                    code = (*keymap)[scanCode - 4][0];
-                }
-            } else {
-                code = (*keymap)[scanCode - 4][0];
-                if (doCapsToggle && (code & CAPS)) {
-                    code = (*keymap)[scanCode - 4][1];
-                }
-
-                if (ctrlPressed)
-                    code |= CTRL;
-                if (altPressed)
-                    code |= ALT;
-                if (guiPressed)
-                    code |= GUI;
-            }
-
-            if (code & CTRL)
-                keyMask |= 1ULL << KEY_CTRL;
-            if (code & ALT)
-                keyMask |= 1ULL << KEY_ALT;
-            if (code & SHFT)
-                keyMask |= 1ULL << KEY_SHIFT;
-            if (code & GUI)
-                keyMask |= 1ULL << KEY_GUI;
-            keyMask |= 1ULL << (code & 63);
-        }
-
-        // Store the key mask for use on key up
-        keyMaskMap.insert(std::make_pair(scanCode, keyMask));
-
-    } else {
-        // Use the key mask that was used on key down
-        auto it = keyMaskMap.find(scanCode);
-        if (it != keyMaskMap.end()) {
-            keyMask = it->second;
-        }
-    }
-
-    // printf("keyMask   : %016llx\n", keyMask);
-
-    // Check if new key is compatible with already pressed keys
-    if (keyMask == 0 && (keybMatrix & KEY_MASK) == 0) {
-        keybMatrix = modMask;
-    } else {
-        if (keyDown) {
-            if ((keyMask & KEY_MOD_MASK) == (keybMatrix & KEY_MOD_MASK)) {
-                // Modifiers are the same, so add key to already pressed keys
-                keybMatrix |= keyMask;
-            } else {
-                // Modifiers are different, replace keyboard matrix
-                keybMatrix = keyMask;
-            }
-        } else {
-            if ((keyMask & KEY_MOD_MASK) == (keybMatrix & KEY_MOD_MASK)) {
-                // Modifiers are the same, so remove key
-                keybMatrix &= ~(keyMask & KEY_MASK);
-            } else {
-                // Modifiers are different, clear all keys
-                keybMatrix = 0;
-            }
-        }
-    }
-
-    if (ledStatus != ledStatusNext) {
-        ledStatus = ledStatusNext;
-#    ifndef EMULATOR
-        USBHost::instance().keyboardSetLeds(ledStatus);
-#    endif
-    }
 #endif
+            }
+        }
+    }
+
+    if (ledStatus != kbLayout.leds) {
+        ledStatus = kbLayout.leds;
+#ifndef EMULATOR
+        USBHost::instance().keyboardSetLeds(ledStatus);
+#endif
+    }
 }
 
 bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {

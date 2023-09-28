@@ -75,6 +75,16 @@ struct EmuState {
     bool       cartridgeInserted = false;
     size_t     systemRomSize     = 0;
 
+    // Keyboard buffer
+    uint8_t kbBuf[16];
+    uint8_t kbBufWrIdx = 0;
+    uint8_t kbBufRdIdx = 0;
+    uint8_t kbBufCnt   = 0;
+
+    void    kbBufReset();
+    void    kbBufWrite(uint8_t val);
+    uint8_t kbBufRead();
+
     // CPU tracing
     struct Z80TraceEntry {
         Z80Regs  r1;

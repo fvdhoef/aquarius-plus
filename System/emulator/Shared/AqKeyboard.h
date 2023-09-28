@@ -66,7 +66,6 @@ private:
     std::map<unsigned, uint64_t> keyMaskMap;
 
     bool     dontSend         = false;
-    uint16_t modifiers        = 0;
     unsigned handCtrl1Pressed = 0;
     uint64_t prevMatrix       = 0;
     uint64_t keybMatrix       = 0;
