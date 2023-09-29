@@ -29,6 +29,9 @@ public:
 
     void processScancode(unsigned scanCode, bool keyDown);
 
+    int layoutUS(unsigned scanCode, bool keyDown);
+    int layoutUK(unsigned scanCode, bool keyDown);
+
     uint8_t modifiers = 0;
     uint8_t leds      = 0;
 };

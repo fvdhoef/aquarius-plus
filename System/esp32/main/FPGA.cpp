@@ -11,6 +11,7 @@ enum {
     CMD_RESET           = 0x01,
     CMD_SET_KEYB_MATRIX = 0x10,
     CMD_SET_HCTRL       = 0x11,
+    CMD_WRITE_KBBUF     = 0x12,
     CMD_BUS_ACQUIRE     = 0x20,
     CMD_BUS_RELEASE     = 0x21,
     CMD_MEM_WRITE       = 0x22,
@@ -218,6 +219,16 @@ void FPGA::aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to
         return;
     aqpSel(true);
     aqpTx(CMD_SET_HCTRL, hctrl1, hctrl2);
+    aqpSel(false);
+    xSemaphoreGiveRecursive(mutex);
+}
+
+void FPGA::aqpWriteKeybBuffer(uint8_t ch) {
+    if (ch == 0)
+        return;
+    RecursiveMutexLock lock(mutex);
+    aqpSel(true);
+    aqpTx(CMD_WRITE_KBBUF, ch);
     aqpSel(false);
     xSemaphoreGiveRecursive(mutex);
 }

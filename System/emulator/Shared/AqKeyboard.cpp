@@ -48,13 +48,14 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
         int ch = -1;
         // printf("%d\n", scanCode);
 
-        if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
-            static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', 3, '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
-            static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', 3, '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
+        switch (getKeyLayout()) {
+            default:
+            case KeyLayout::US: ch = layoutUS(scanCode, keyDown); break;
+            case KeyLayout::UK: ch = layoutUK(scanCode, keyDown); break;
+        }
 
-            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
-
-        } else if (
+        if (
+            ch < 0 &&
             scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
             scanCode != SCANCODE_SCROLLLOCK &&
             scanCode != SCANCODE_NUMLOCK) {
@@ -123,10 +124,47 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
             }
         }
         if (ch > 0) {
+#ifdef EMULATOR
             emuState.kbBufWrite(ch);
+#else
+            FPGA::instance().aqpWriteKeybBuffer(ch);
+#endif
             // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
         }
     }
+}
+
+int KeyboardLayout::layoutUS(unsigned scanCode, bool keyDown) {
+    uint8_t ch = 0;
+    if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
+        static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', 3, '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
+        static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', 3, '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
+
+        ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+    }
+    return ch == 0 ? -1 : ch;
+}
+
+int KeyboardLayout::layoutUK(unsigned scanCode, bool keyDown) {
+    uint8_t ch = 0;
+    if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
+        // clang-format off
+        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ', '-', '=', '[', ']', '~','\\', ';','\'', '`', ',', '.', '/'};
+        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"',0xA3, '$', '%', '^', '&', '*', '(', ')', '\r',0x03,'\b',0x8C, ' ', '_', '+', '{', '}', '#', '|', ':', '@',0xAC, '<', '>', '?'};
+        static const uint8_t lut3[] = {0xE1,   0,   0,   0,0xE9,   0,   0,   0,0xED,   0,   0,   0,   0,   0,0xF3,   0,   0,   0,   0,   0,0xFA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xA6,   0,   0,   0};
+        static const uint8_t lut4[] = {0xC1,   0,   0,   0,0xC9,   0,   0,   0,0xCD,   0,   0,   0,   0,   0,0xD3,   0,   0,   0,   0,   0,0xDA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xA6,   0,   0,   0};
+        // clang-format on
+
+        if (modifiers & ModRAlt) {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut4[scanCode - SCANCODE_A] : lut3[scanCode - SCANCODE_A];
+        } else {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+        }
+
+    } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
+        ch = (modifiers & (ModLShift | ModRShift)) ? '|' : '\\';
+    }
+    return ch == 0 ? -1 : ch;
 }
 
 AqKeyboard::AqKeyboard() {

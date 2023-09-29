@@ -22,6 +22,7 @@ public:
     void    aqpReset();
     void    aqpUpdateKeybMatrix(uint64_t keyb_matrix);
     void    aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait = portMAX_DELAY);
+    void    aqpWriteKeybBuffer(uint8_t ch);
     void    aqpAqcuireBus();
     void    aqpReleaseBus();
     void    aqpWriteMem(uint16_t addr, uint8_t data);
