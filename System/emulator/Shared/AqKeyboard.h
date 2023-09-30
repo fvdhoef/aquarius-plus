@@ -39,11 +39,13 @@ public:
 
     void processScancode(unsigned scanCode, bool keyDown);
 
-    int layoutUS(unsigned scanCode);
-    int layoutUK(unsigned scanCode);
+    uint8_t layoutUS(unsigned scanCode);
+    uint8_t layoutUK(unsigned scanCode);
+    uint8_t compose(uint8_t first, uint8_t second);
 
-    uint8_t modifiers = 0;
-    uint8_t leds      = 0;
+    uint8_t modifiers    = 0;
+    uint8_t leds         = 0;
+    uint8_t composeFirst = 0;
 };
 
 class AqKeyboard {

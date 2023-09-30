@@ -19,6 +19,143 @@ static const char *TAG = "keyboard";
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
 
+struct ComposeCombo {
+    const char *combo;
+    uint8_t     result;
+};
+
+// From https://math.dartmouth.edu/~sarunas/Linux_Compose_Key_Sequences.html
+static ComposeCombo composeCombos[] = {
+    {"C=", 0x80},
+    {"=C", 0x80},
+    {"c=", 0x80},
+    {"=c", 0x80},
+    {"E=", 0x80},
+    {"=E", 0x80},
+    {":)", 0x81},
+    {"<3", 0x84},
+
+    {"  ", 0xA0},
+    {"!!", 0xA1},
+    {"|c", 0xA2},
+    {"c|", 0xA2},
+    {"c/", 0xA2},
+    {"/c", 0xA2},
+    {"L-", 0xA3},
+    {"-L", 0xA3},
+    {"ox", 0xA4},
+    {"xo", 0xA4},
+    {"oA", 0xA5},
+    {"oA", 0xA5},
+    {"!^", 0xA6},
+    {"so", 0xA7},
+    {"os", 0xA7},
+    // how to type 0xA8?
+    {"oc", 0xA9},
+    {"oC", 0xA9},
+    {"Oc", 0xA9},
+    {"OC", 0xA9},
+    // how to type 0xAA?
+    {"<<", 0xAB},
+    {",-", 0xAC},
+    {"-,", 0xAC},
+    // how to type 0xAD?
+    {"or", 0xAE},
+    {"oR", 0xAE},
+    {"Or", 0xAE},
+    {"OR", 0xAE},
+    // how to type 0xAF?
+
+    {"oo", 0xB0},
+    {"+-", 0xB1},
+    {"^2", 0xB2},
+    {"^3", 0xB3},
+    // how to type 0xB4?
+    {"mu", 0xB5},
+    {"p!", 0xB6},
+    {"P!", 0xB6},
+    {"PP", 0xB6},
+    {"..", 0xB7},
+    {", ", 0xB8},
+    {" ,", 0xB8},
+    {"^1", 0xB9},
+    // how to type 0xBA?
+    {">>", 0xBB},
+    {"14", 0xBC},
+    {"12", 0xBD},
+    {"34", 0xBE},
+    {"??", 0xBF},
+
+    {"`A", 0xC0},
+    {"'A", 0xC1},
+    {"^A", 0xC2},
+    {"~A", 0xC3},
+    {"\"A", 0xC4},
+    {"oA", 0xC5},
+    {"AE", 0xC6},
+    {",C", 0xC7},
+    {"`E", 0xC8},
+    {"'E", 0xC9},
+    {"^E", 0xCA},
+    {"\"E", 0xCB},
+    {"`I", 0xCC},
+    {"'I", 0xCD},
+    {"^I", 0xCE},
+    {"\"I", 0xCF},
+
+    {"DH", 0xD0},
+    {"~N", 0xD1},
+    {"`O", 0xD2},
+    {"'O", 0xD3},
+    {"^O", 0xD4},
+    {"~O", 0xD5},
+    {"\"O", 0xD6},
+    {"xx", 0xD7},
+    {"/O", 0xD8},
+    {"`U", 0xD9},
+    {"'U", 0xDA},
+    {"^U", 0xDB},
+    {"\"U", 0xDC},
+    {"'Y", 0xDD},
+    {"TH", 0xDE},
+    {"ss", 0xDF},
+
+    {"`a", 0xE0},
+    {"'a", 0xE1},
+    {"^a", 0xE2},
+    {"~a", 0xE3},
+    {"\"a", 0xE4},
+    {"oa", 0xE5},
+    {"ae", 0xE6},
+    {",c", 0xE7},
+    {"`e", 0xE8},
+    {"'e", 0xE9},
+    {"^e", 0xEA},
+    {"\"e", 0xEB},
+    {"`i", 0xEC},
+    {"'i", 0xED},
+    {"^i", 0xEE},
+    {"\"i", 0xEF},
+
+    {"dh", 0xF0},
+    {"~n", 0xF1},
+    {"`o", 0xF2},
+    {"'o", 0xF3},
+    {"^o", 0xF4},
+    {"~o", 0xF5},
+    {"\"o", 0xF6},
+    {":-", 0xF7},
+    {"-:", 0xF7},
+    {"/o", 0xF8},
+    {"`u", 0xF9},
+    {"'u", 0xFA},
+    {"^u", 0xFB},
+    {"\"u", 0xFC},
+    {"'y", 0xFD},
+    {"th", 0xFE},
+    {"\"y", 0xFF},
+};
+
 static KeyLayout curLayout = KeyLayout::US;
 
 void setKeyLayout(KeyLayout layout) {
@@ -63,7 +200,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
         leds ^= LedScrollLock;
 
     if (keyDown) {
-        int ch = -1;
+        uint8_t ch = 0;
         // printf("%d\n", scanCode);
 
         switch (getKeyLayout()) {
@@ -73,7 +210,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
         }
 
         if (
-            ch < 0 &&
+            ch == 0 &&
             scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
             scanCode != SCANCODE_SCROLLLOCK &&
             scanCode != SCANCODE_NUMLOCK) {
@@ -126,7 +263,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 
         if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
             if (ch == '@') {
-                ch = 0;
+                ch = 0x80;
             } else if (ch >= 'a' && ch <= 'z') {
                 ch = ch - 'a' + 1;
             } else if (ch >= 'A' && ch <= '_') {
@@ -141,6 +278,18 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
                 ch = (ch - 'A') + 'a';
             }
         }
+
+        if (ch > 0) {
+            if (composeFirst > 0) {
+                ch           = compose(composeFirst, ch);
+                composeFirst = 0;
+
+            } else if (modifiers & ModLAlt) {
+                composeFirst = ch;
+                ch           = 0;
+            }
+        }
+
         if (ch > 0) {
 #ifdef EMULATOR
             emuState.kbBufWrite(ch);
@@ -152,25 +301,43 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
-int KeyboardLayout::layoutUS(unsigned scanCode) {
+uint8_t KeyboardLayout::compose(uint8_t first, uint8_t second) {
+    // printf("Compose '%c' and '%c'\n", first, second);
+
+    char str[3];
+    str[0] = first;
+    str[1] = second;
+    str[2] = 0;
+
+    for (auto &combo : composeCombos) {
+        if (strcmp(str, combo.combo) == 0)
+            return combo.result;
+    }
+    return second;
+}
+
+uint8_t KeyboardLayout::layoutUS(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', 3, '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
         static const uint8_t lut2[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '@', '#', '$', '%', '^', '&', '*', '(', ')', '\r', 3, '\b', 0x8C, ' ', '_', '+', '{', '}', '|', '|', ':', '"', '~', '<', '>', '?'};
 
         ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+
+    } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
+        ch = (modifiers & (ModLShift | ModRShift)) ? '|' : '\\';
     }
-    return ch == 0 ? -1 : ch;
+    return ch;
 }
 
-int KeyboardLayout::layoutUK(unsigned scanCode) {
+uint8_t KeyboardLayout::layoutUK(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         // clang-format off
-        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ', '-', '=', '[', ']', '~','\\', ';','\'', '`', ',', '.', '/'};
-        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"',0xA3, '$', '%', '^', '&', '*', '(', ')', '\r',0x03,'\b',0x8C, ' ', '_', '+', '{', '}', '#', '|', ':', '@',0xAC, '<', '>', '?'};
-        static const uint8_t lut3[] = {0xE1,   0,   0,   0,0xE9,   0,   0,   0,0xED,   0,   0,   0,   0,   0,0xF3,   0,   0,   0,   0,   0,0xFA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xA6,   0,   0,   0};
-        static const uint8_t lut4[] = {0xC1,   0,   0,   0,0xC9,   0,   0,   0,0xCD,   0,   0,   0,   0,   0,0xD3,   0,   0,   0,   0,   0,0xDA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xA6,   0,   0,   0};
+        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ', '-', '=', '[', ']', '~', '~', ';','\'', '`', ',', '.', '/'};
+        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"',0xA3, '$', '%', '^', '&', '*', '(', ')', '\r',0x03,'\b',0x8C, ' ', '_', '+', '{', '}', '#', '#', ':', '@',0xAC, '<', '>', '?'};
+        static const uint8_t lut3[] = {0xE1,   0,   0,   0,0xE9,   0,   0,   0,0xED,   0,   0,   0,   0,   0,0xF3,   0,   0,   0,   0,   0,0xFA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,'\\','\\',   0,   0,0xA6,   0,   0,   0};
+        static const uint8_t lut4[] = {0xC1,   0,   0,   0,0xC9,   0,   0,   0,0xCD,   0,   0,   0,   0,   0,0xD3,   0,   0,   0,   0,   0,0xDA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '|',   0,   0,0xA6,   0,   0,   0};
         // clang-format on
 
         if (modifiers & ModRAlt) {
@@ -182,7 +349,7 @@ int KeyboardLayout::layoutUK(unsigned scanCode) {
     } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
         ch = (modifiers & (ModLShift | ModRShift)) ? '|' : '\\';
     }
-    return ch == 0 ? -1 : ch;
+    return ch;
 }
 
 AqKeyboard::AqKeyboard() {
