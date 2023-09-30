@@ -1,0 +1,35 @@
+[*]
+[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
+[*] Sat Sep 30 08:46:38 2023
+[*]
+[dumpfile] "/Users/frank/Work/aquarius-plus/System/fpga/src/sim/tb.vcd"
+[dumpfile_mtime] "Sat Sep 30 08:45:59 2023"
+[dumpfile_size] 7982451
+[savefile] "/Users/frank/Work/aquarius-plus/System/fpga/src/sim/tb_kbbuf.gtkw"
+[timestart] 22548000
+[size] 2350 1289
+[pos] -1 -1
+*-18.476971 23793000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] tb.
+[treeopen] tb.top_inst.
+[sst_width] 193
+[signals_width] 392
+[sst_expanded] 1
+[sst_vpaned_height] 437
+@28
+tb.top_inst.spiregs.kbbuf_wren
+@22
+tb.top_inst.spiregs.kbbuf_data[7:0]
+@28
+tb.top_inst.kbbuf.empty
+@22
+tb.top_inst.kbbuf.rddata[7:0]
+tb.top_inst.rddata_kbbuf[7:0]
+@28
+tb.top_inst.bus_read
+tb.top_inst.ebus_rd_n
+tb.top_inst.ebus_iorq_n
+@23
+tb.top_inst.ebus_d[7:0]
+[pattern_trace] 1
+[pattern_trace] 0

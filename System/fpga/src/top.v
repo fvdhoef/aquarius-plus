@@ -166,7 +166,7 @@ module top(
         sel_mem_tram | sel_mem_vram | sel_mem_chram | sel_mem_rom |
         sel_io_video |
         sel_io_bank0 | sel_io_bank1 | sel_io_bank2 | sel_io_bank3 |
-        sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 |
+        sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 | sel_io_kbbuf | sel_io_sysctrl |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
     wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
@@ -195,6 +195,7 @@ module top(
         if (sel_io_espdata)           rddata <= rddata_espdata;                                 // IO $F5
         if (sel_io_ay8910)            rddata <= rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;                                // IO $F8/F9
+        if (sel_io_kbbuf)             rddata <= rddata_kbbuf;                                   // IO $FA
         if (sel_io_sysctrl)           rddata <= {6'b0, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
         if (sel_io_cassette)          rddata <= {7'b0, !cassette_in_r[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};                            // IO $FD
@@ -427,23 +428,18 @@ module top(
     // Keyboard buffer
     //////////////////////////////////////////////////////////////////////////
     wire [7:0] kbbuf_rddata;
-    wire       kbbuf_empty;
     wire       kbbuf_rden = sel_io_kbbuf && bus_read;
     wire       kbbuf_rst  = (sel_io_kbbuf && bus_write) || reset;
 
-    assign rddata_kbbuf = kbbuf_empty ? 8'h00 : kbbuf_rddata;
-
-    fifo16 kbbuf(
+    kbbuf kbbuf(
         .clk(sysclk),
         .rst(kbbuf_rst),
 
         .wrdata(kbbuf_data),
         .wr_en(kbbuf_wren),
 
-        .rddata(kbbuf_rddata),
-        .rd_en(kbbuf_rden),
-
-        .empty(kbbuf_empty)
+        .rddata(rddata_kbbuf),
+        .rd_en(kbbuf_rden)
     );
 
     //////////////////////////////////////////////////////////////////////////
