@@ -326,6 +326,14 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #endif
             }
         }
+
+#ifndef EMULATOR
+        else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F12) {
+            MemDump::dumpCartridge();
+        } else if (keyDown && scanCode == SCANCODE_PRINTSCREEN) {
+            MemDump::dumpScreen();
+        }
+#endif
     }
 
     if (ledStatus != kbLayout.leds) {

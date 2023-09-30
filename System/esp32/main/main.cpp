@@ -8,7 +8,6 @@
 #include "FileServer.h"
 #include "AqKeyboard.h"
 #include "PowerLED.h"
-#include "KeyMaps.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
