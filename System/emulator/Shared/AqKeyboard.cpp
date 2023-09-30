@@ -26,11 +26,8 @@ struct ComposeCombo {
 
 // From https://math.dartmouth.edu/~sarunas/Linux_Compose_Key_Sequences.html
 static ComposeCombo composeCombos[] = {
-    {"C=", 0x80},
     {"=C", 0x80},
-    {"c=", 0x80},
     {"=c", 0x80},
-    {"E=", 0x80},
     {"=E", 0x80},
     {":)", 0x81},
     {"<3", 0x84},
@@ -38,17 +35,11 @@ static ComposeCombo composeCombos[] = {
     {"  ", 0xA0},
     {"!!", 0xA1},
     {"|c", 0xA2},
-    {"c|", 0xA2},
-    {"c/", 0xA2},
     {"/c", 0xA2},
-    {"L-", 0xA3},
     {"-L", 0xA3},
     {"ox", 0xA4},
-    {"xo", 0xA4},
-    {"oA", 0xA5},
     {"oA", 0xA5},
     {"!^", 0xA6},
-    {"so", 0xA7},
     {"os", 0xA7},
     // how to type 0xA8?
     {"oc", 0xA9},
@@ -57,7 +48,6 @@ static ComposeCombo composeCombos[] = {
     {"OC", 0xA9},
     // how to type 0xAA?
     {"<<", 0xAB},
-    {",-", 0xAC},
     {"-,", 0xAC},
     // how to type 0xAD?
     {"or", 0xAE},
@@ -77,7 +67,6 @@ static ComposeCombo composeCombos[] = {
     {"PP", 0xB6},
     {"..", 0xB7},
     {", ", 0xB8},
-    {" ,", 0xB8},
     {"^1", 0xB9},
     // how to type 0xBA?
     {">>", 0xBB},
@@ -144,7 +133,6 @@ static ComposeCombo composeCombos[] = {
     {"^o", 0xF4},
     {"~o", 0xF5},
     {"\"o", 0xF6},
-    {":-", 0xF7},
     {"-:", 0xF7},
     {"/o", 0xF8},
     {"`u", 0xF9},
@@ -303,14 +291,9 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 
 uint8_t KeyboardLayout::compose(uint8_t first, uint8_t second) {
     // printf("Compose '%c' and '%c'\n", first, second);
-
-    char str[3];
-    str[0] = first;
-    str[1] = second;
-    str[2] = 0;
-
     for (auto &combo : composeCombos) {
-        if (strcmp(str, combo.combo) == 0)
+        if ((combo.combo[0] == first && combo.combo[1] == second) ||
+            (combo.combo[0] == second && combo.combo[1] == first))
             return combo.result;
     }
     return second;
