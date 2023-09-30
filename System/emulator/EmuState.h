@@ -101,9 +101,6 @@ struct EmuState {
 
     // Virtual typing from command-line argument
     std::string typeInStr;
-    int         typeInRelease = 10;
-    int         typeInDelay   = 0;
-    char        typeInChar    = 0;
 
     // Mouse state
     uint16_t mouseX           = 0;

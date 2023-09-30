@@ -56,11 +56,7 @@ public:
 
     void init();
     void handleScancode(unsigned scanCode, bool keyDown);
-#ifdef EMULATOR
-    void pressKey(unsigned char ch, bool keyDown);
-#else
-    void pressKey(unsigned ch);
-#endif
+    void pressKey(unsigned char ch);
     void updateMatrix();
     bool scrollLockOn() {
         return (ledStatus != 0xFF) && (ledStatus & SCROLL_LOCK);

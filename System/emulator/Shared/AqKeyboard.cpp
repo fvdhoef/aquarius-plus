@@ -605,24 +605,14 @@ void AqKeyboard::updateMatrix() {
     }
 }
 
+void AqKeyboard::pressKey(unsigned char ch) {
+    if (ch == '\n') {
+        ch = '\r';
+    }
+
 #ifdef EMULATOR
-void AqKeyboard::pressKey(unsigned char ch, bool keyDown) {
-    if (ch > '~')
-        return;
-
-    uint8_t val = scanCodeLut[ch];
-    if (val == 0)
-        return;
-
-    if (val & FLAG_SHFT)
-        handleScancode(SCANCODE_LSHIFT, keyDown);
-    if (val & FLAG_CTRL)
-        handleScancode(SCANCODE_LCTRL, keyDown);
-    handleScancode(val & 0x3F, keyDown);
-    AqKeyboard::instance().updateMatrix();
-}
+    emuState.kbBufWrite(ch);
 #else
-void AqKeyboard::pressKey(unsigned ch) {
     if (ch == 0x1C) {
         // Delay for 100ms
         vTaskDelay(pdMS_TO_TICKS(100));
@@ -633,161 +623,13 @@ void AqKeyboard::pressKey(unsigned ch) {
         vTaskDelay(pdMS_TO_TICKS(500));
         return;
     }
-
     if (ch > '~')
         return;
-    uint8_t val = scanCodeLut[ch];
-    if (val == 0)
-        return;
-
-    if (val & FLAG_SHFT)
-        handleScancode(SCANCODE_LSHIFT, true);
-    if (val & FLAG_CTRL)
-        handleScancode(SCANCODE_LCTRL, true);
-    handleScancode(val & 0x3F, true);
-    updateMatrix();
-    vTaskDelay(pdMS_TO_TICKS(20));
-
-    if (val & FLAG_SHFT)
-        handleScancode(SCANCODE_LSHIFT, false);
-    if (val & FLAG_CTRL)
-        handleScancode(SCANCODE_LCTRL, false);
-    handleScancode(val & 0x3F, false);
-    updateMatrix();
-    vTaskDelay(pdMS_TO_TICKS(20));
+    FPGA::instance().aqpWriteKeybBuffer(ch);
+    vTaskDelay(pdMS_TO_TICKS(10));
 
     // Delay a little longer on reset
     if (ch == 0x1E)
         vTaskDelay(pdMS_TO_TICKS(500));
-}
 #endif
-
-const uint8_t AqKeyboard::scanCodeLut[] = {
-    0,                                       //  0 CTRL-@
-    0,                                       //  1 CTRL-A
-    0,                                       //  2 CTRL-B
-    FLAG_CTRL | SCANCODE_C,                  //  3 CTRL-C
-    0,                                       //  4 CTRL-D
-    0,                                       //  5 CTRL-E
-    0,                                       //  6 CTRL-F
-    FLAG_CTRL | SCANCODE_G,                  //  7 CTRL-G
-    0,                                       //  8 CTRL-H
-    0,                                       //  9 CTRL-I
-    SCANCODE_RETURN,                         // 10 CTRL-J \n
-    0,                                       // 11 CTRL-K
-    0,                                       // 12 CTRL-L
-    0,                                       // 13 CTRL-M \r
-    0,                                       // 14 CTRL-N
-    0,                                       // 15 CTRL-O
-    0,                                       // 16 CTRL-P
-    0,                                       // 17 CTRL-Q
-    0,                                       // 18 CTRL-R
-    0,                                       // 19 CTRL-S
-    0,                                       // 20 CTRL-T
-    0,                                       // 21 CTRL-U
-    0,                                       // 22 CTRL-V
-    0,                                       // 23 CTRL-W
-    0,                                       // 24 CTRL-X
-    0,                                       // 25 CTRL-Y
-    0,                                       // 26 CTRL-Z
-    0,                                       // 27 CTRL-[
-    0,                                       // \x1C 28 CTRL-backslash
-    0,                                       // \x1D 29 CTRL-]
-    FLAG_CTRL | SCANCODE_ESCAPE,             // \x1E 30 CTRL-^
-    FLAG_CTRL | FLAG_SHFT | SCANCODE_ESCAPE, // \x1F 31 CTRL-_
-    SCANCODE_SPACE,                          // Space
-    FLAG_SHFT | SCANCODE_1,                  // !
-    FLAG_SHFT | SCANCODE_APOSTROPHE,         // "
-    FLAG_SHFT | SCANCODE_3,                  // #
-    FLAG_SHFT | SCANCODE_4,                  // $
-    FLAG_SHFT | SCANCODE_5,                  // %
-    FLAG_SHFT | SCANCODE_7,                  // &
-    SCANCODE_APOSTROPHE,                     // '
-    FLAG_SHFT | SCANCODE_9,                  // (
-    FLAG_SHFT | SCANCODE_0,                  // )
-    FLAG_SHFT | SCANCODE_8,                  // *
-    FLAG_SHFT | SCANCODE_EQUALS,             // +
-    SCANCODE_COMMA,                          // ,
-    SCANCODE_MINUS,                          // -
-    SCANCODE_PERIOD,                         // .
-    SCANCODE_SLASH,                          // /
-    SCANCODE_0,                              // 0
-    SCANCODE_1,                              // 1
-    SCANCODE_2,                              // 2
-    SCANCODE_3,                              // 3
-    SCANCODE_4,                              // 4
-    SCANCODE_5,                              // 5
-    SCANCODE_6,                              // 6
-    SCANCODE_7,                              // 7
-    SCANCODE_8,                              // 8
-    SCANCODE_9,                              // 9
-    FLAG_SHFT | SCANCODE_SEMICOLON,          // :
-    SCANCODE_SEMICOLON,                      // ;
-    FLAG_SHFT | SCANCODE_COMMA,              // <
-    SCANCODE_EQUALS,                         // =
-    FLAG_SHFT | SCANCODE_PERIOD,             // >
-    FLAG_SHFT | SCANCODE_SLASH,              // ?
-    FLAG_SHFT | SCANCODE_2,                  // @
-    FLAG_SHFT | SCANCODE_A,                  // A
-    FLAG_SHFT | SCANCODE_B,                  // B
-    FLAG_SHFT | SCANCODE_C,                  // C
-    FLAG_SHFT | SCANCODE_D,                  // D
-    FLAG_SHFT | SCANCODE_E,                  // E
-    FLAG_SHFT | SCANCODE_F,                  // F
-    FLAG_SHFT | SCANCODE_G,                  // G
-    FLAG_SHFT | SCANCODE_H,                  // H
-    FLAG_SHFT | SCANCODE_I,                  // I
-    FLAG_SHFT | SCANCODE_J,                  // J
-    FLAG_SHFT | SCANCODE_K,                  // K
-    FLAG_SHFT | SCANCODE_L,                  // L
-    FLAG_SHFT | SCANCODE_M,                  // M
-    FLAG_SHFT | SCANCODE_N,                  // N
-    FLAG_SHFT | SCANCODE_O,                  // O
-    FLAG_SHFT | SCANCODE_P,                  // P
-    FLAG_SHFT | SCANCODE_Q,                  // Q
-    FLAG_SHFT | SCANCODE_R,                  // R
-    FLAG_SHFT | SCANCODE_S,                  // S
-    FLAG_SHFT | SCANCODE_T,                  // T
-    FLAG_SHFT | SCANCODE_U,                  // U
-    FLAG_SHFT | SCANCODE_V,                  // V
-    FLAG_SHFT | SCANCODE_W,                  // W
-    FLAG_SHFT | SCANCODE_X,                  // X
-    FLAG_SHFT | SCANCODE_Y,                  // Y
-    FLAG_SHFT | SCANCODE_Z,                  // Z
-    SCANCODE_LEFTBRACKET,                    // [
-    SCANCODE_BACKSLASH,                      // backslash
-    SCANCODE_RIGHTBRACKET,                   // ]
-    FLAG_SHFT | SCANCODE_6,                  // ^
-    FLAG_SHFT | SCANCODE_MINUS,              // _
-    SCANCODE_GRAVE,                          // `
-    SCANCODE_A,                              // a
-    SCANCODE_B,                              // b
-    SCANCODE_C,                              // c
-    SCANCODE_D,                              // d
-    SCANCODE_E,                              // e
-    SCANCODE_F,                              // f
-    SCANCODE_G,                              // g
-    SCANCODE_H,                              // h
-    SCANCODE_I,                              // i
-    SCANCODE_J,                              // j
-    SCANCODE_K,                              // k
-    SCANCODE_L,                              // l
-    SCANCODE_M,                              // m
-    SCANCODE_N,                              // n
-    SCANCODE_O,                              // o
-    SCANCODE_P,                              // p
-    SCANCODE_Q,                              // q
-    SCANCODE_R,                              // r
-    SCANCODE_S,                              // s
-    SCANCODE_T,                              // t
-    SCANCODE_U,                              // u
-    SCANCODE_V,                              // v
-    SCANCODE_W,                              // w
-    SCANCODE_X,                              // x
-    SCANCODE_Y,                              // y
-    SCANCODE_Z,                              // z
-    FLAG_SHFT | SCANCODE_LEFTBRACKET,        // {
-    FLAG_SHFT | SCANCODE_BACKSLASH,          // |
-    FLAG_SHFT | SCANCODE_RIGHTBRACKET,       // }
-    FLAG_SHFT | SCANCODE_GRAVE,              // ~
-};
+}

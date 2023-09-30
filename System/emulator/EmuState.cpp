@@ -189,39 +189,21 @@ bool EmuState::loadCartridgeROM(const std::string &path) {
 }
 
 void EmuState::keyboardTypeIn() {
-    if (typeInRelease > 0) {
-        typeInRelease--;
-        if (typeInRelease > 0)
-            return;
-        AqKeyboard::instance().pressKey(typeInChar, false);
-        typeInDelay = 1;
-        return;
-    }
-
-    if (typeInDelay > 0) {
-        typeInDelay--;
-        if (typeInDelay > 0)
-            return;
-    }
-
-    if (typeInStr.size() == 0)
-        return;
-
-    char ch = typeInStr.front();
-    typeInStr.erase(typeInStr.begin());
-    if (ch == '\\') {
-        if (typeInStr.size() == 0)
-            return;
-
-        ch = typeInStr.front();
+    if (emuState.kbBufCnt < 16 && !typeInStr.empty()) {
+        char ch = typeInStr.front();
         typeInStr.erase(typeInStr.begin());
-        if (ch == 'n') {
-            ch = '\n';
+        if (ch == '\\') {
+            if (typeInStr.size() == 0)
+                return;
+
+            ch = typeInStr.front();
+            typeInStr.erase(typeInStr.begin());
+            if (ch == 'n') {
+                ch = '\n';
+            }
         }
+        AqKeyboard::instance().pressKey(ch);
     }
-    typeInChar = ch;
-    AqKeyboard::instance().pressKey(typeInChar, true);
-    typeInRelease = (ch == '\n') ? 10 : 1;
 }
 
 uint8_t EmuState::memRead(size_t param, uint16_t addr) {
