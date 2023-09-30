@@ -3,8 +3,6 @@
 
 #include "EmuState.h"
 
-#include "KeyMaps.h"
-
 #include "Video.h"
 #include "AqKeyboard.h"
 #include "AqUartProtocol.h"

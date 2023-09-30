@@ -280,7 +280,31 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
-        iowr(16'hE0, 8'd06);
+        @(posedge phi);
+        spi_ssel_n_r <= 1'b0;
+        spi_tx(8'h12);
+        spi_tx(8'hA5);
+        spi_ssel_n_r <= 1'b1;
+     
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+
+        iord(16'h00FA);
+
+        iord(16'h00FA);
+
+
+        // iowr(16'hE0, 8'd06);
 
         // iowr(16'hED, 8'd02);
         // iowr(16'hEF, 8'd03);

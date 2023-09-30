@@ -38,6 +38,7 @@ void EmuState::reset() {
     cpmRemap = false;
     ay1.reset();
     ay2.reset();
+    kbBufReset();
 }
 
 unsigned EmuState::emulate() {
@@ -188,39 +189,21 @@ bool EmuState::loadCartridgeROM(const std::string &path) {
 }
 
 void EmuState::keyboardTypeIn() {
-    if (typeInRelease > 0) {
-        typeInRelease--;
-        if (typeInRelease > 0)
-            return;
-        AqKeyboard::instance().pressKey(typeInChar, false);
-        typeInDelay = 1;
-        return;
-    }
-
-    if (typeInDelay > 0) {
-        typeInDelay--;
-        if (typeInDelay > 0)
-            return;
-    }
-
-    if (typeInStr.size() == 0)
-        return;
-
-    char ch = typeInStr.front();
-    typeInStr.erase(typeInStr.begin());
-    if (ch == '\\') {
-        if (typeInStr.size() == 0)
-            return;
-
-        ch = typeInStr.front();
+    if (emuState.kbBufCnt < 16 && !typeInStr.empty()) {
+        char ch = typeInStr.front();
         typeInStr.erase(typeInStr.begin());
-        if (ch == 'n') {
-            ch = '\n';
+        if (ch == '\\') {
+            if (typeInStr.size() == 0)
+                return;
+
+            ch = typeInStr.front();
+            typeInStr.erase(typeInStr.begin());
+            if (ch == 'n') {
+                ch = '\n';
+            }
         }
+        AqKeyboard::instance().pressKey(ch);
     }
-    typeInChar = ch;
-    AqKeyboard::instance().pressKey(typeInChar, true);
-    typeInRelease = (ch == '\n') ? 10 : 1;
 }
 
 uint8_t EmuState::memRead(size_t param, uint16_t addr) {
@@ -399,6 +382,7 @@ uint8_t EmuState::ioRead(size_t param, uint16_t addr) {
             else
                 return emuState.ay2.readReg(emuState.ay1Addr);
 
+        case 0xFA: return emuState.kbBufRead();
         case 0xFB: return (
             (emuState.sysCtrlDisableExt ? (1 << 0) : 0) |
             (emuState.sysCtrlAyDisable ? (1 << 1) : 0));
@@ -473,6 +457,7 @@ void EmuState::ioWrite(size_t param, uint16_t addr, uint8_t data) {
             case 0xF3: emuState.bankRegs[3] = data; return;
             case 0xF4: AqUartProtocol::instance().writeCtrl(data); return;
             case 0xF5: AqUartProtocol::instance().writeData(data); return;
+            case 0xFA: emuState.kbBufReset(); return;
         }
     }
 
@@ -508,4 +493,30 @@ void EmuState::ioWrite(size_t param, uint16_t addr, uint8_t data) {
         case 0xFF: break;
         default: printf("ioWrite(0x%02x, 0x%02x)\n", addr & 0xFF, data); break;
     }
+}
+
+void EmuState::kbBufReset() {
+    kbBufCnt   = 0;
+    kbBufRdIdx = 0;
+    kbBufWrIdx = 0;
+}
+
+void EmuState::kbBufWrite(uint8_t val) {
+    if (kbBufCnt < sizeof(kbBuf)) {
+        kbBufCnt++;
+        kbBuf[kbBufWrIdx++] = val;
+        if (kbBufWrIdx == sizeof(kbBuf))
+            kbBufWrIdx = 0;
+    }
+}
+
+uint8_t EmuState::kbBufRead() {
+    uint8_t result = 0;
+    if (kbBufCnt > 0) {
+        result = kbBuf[kbBufRdIdx++];
+        if (kbBufRdIdx == sizeof(kbBuf))
+            kbBufRdIdx = 0;
+        kbBufCnt--;
+    }
+    return result;
 }

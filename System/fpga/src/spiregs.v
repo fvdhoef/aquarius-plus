@@ -23,7 +23,10 @@ module spiregs(
     output reg  [63:0] keys,
     output reg   [7:0] hctrl1,
     output reg   [7:0] hctrl2,
-    output reg         rom_p2_wren);
+    output reg         rom_p2_wren,
+    
+    output reg   [7:0] kbbuf_data,
+    output reg         kbbuf_wren);
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave
@@ -98,6 +101,7 @@ module spiregs(
         CMD_RESET           = 8'h01,
         CMD_SET_KEYB_MATRIX = 8'h10,
         CMD_SET_HCTRL       = 8'h11,
+        CMD_WRITE_KBBUF     = 8'h12,
         CMD_BUS_ACQUIRE     = 8'h20,
         CMD_BUS_RELEASE     = 8'h21,
         CMD_MEM_WRITE       = 8'h22,
@@ -125,6 +129,19 @@ module spiregs(
             {hctrl2, hctrl1} <= 16'hFFFF;
         else if (cmd_r == CMD_SET_HCTRL && msg_end)
             {hctrl2, hctrl1} <= data_r[63:48];
+
+    // 12h: Write keyboard buffer
+    always @(posedge clk)
+        if (reset) begin
+            kbbuf_data <= 8'h00;
+            kbbuf_wren <= 1'b0;
+        end else begin
+            kbbuf_wren <= 1'b0;
+            if (cmd_r == CMD_WRITE_KBBUF && msg_end) begin
+                kbbuf_data <= data_r[63:56];
+                kbbuf_wren <= 1'b1;
+            end
+        end
 
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin
