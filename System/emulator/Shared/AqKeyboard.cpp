@@ -1,10 +1,10 @@
 #include "AqKeyboard.h"
 #include "AqKeyboardDefs.h"
-#include "KeyMaps.h"
 
 #ifdef EMULATOR
 #    include <SDL.h>
 #    include "EmuState.h"
+#    include "Config.h"
 #else
 #    include "FPGA.h"
 #    include <esp_system.h>
@@ -18,6 +18,24 @@ static const char *TAG = "keyboard";
 
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
+
+static KeyLayout curLayout = KeyLayout::US;
+
+void setKeyLayout(KeyLayout layout) {
+    curLayout = layout;
+}
+
+KeyLayout getKeyLayout() {
+    return curLayout;
+}
+
+std::string getKeyLayoutName(KeyLayout layout) {
+    switch (layout) {
+        default: return "Unknown";
+        case KeyLayout::US: return "US";
+        case KeyLayout::UK: return "UK";
+    }
+}
 
 void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
     // Keep track of pressed modifier keys
@@ -50,8 +68,8 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 
         switch (getKeyLayout()) {
             default:
-            case KeyLayout::US: ch = layoutUS(scanCode, keyDown); break;
-            case KeyLayout::UK: ch = layoutUK(scanCode, keyDown); break;
+            case KeyLayout::US: ch = layoutUS(scanCode); break;
+            case KeyLayout::UK: ch = layoutUK(scanCode); break;
         }
 
         if (
@@ -134,7 +152,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
-int KeyboardLayout::layoutUS(unsigned scanCode, bool keyDown) {
+int KeyboardLayout::layoutUS(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         static const uint8_t lut1[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r', 3, '\b', '\t', ' ', '-', '=', '[', ']', '\\', '\\', ';', '\'', '`', ',', '.', '/'};
@@ -145,7 +163,7 @@ int KeyboardLayout::layoutUS(unsigned scanCode, bool keyDown) {
     return ch == 0 ? -1 : ch;
 }
 
-int KeyboardLayout::layoutUK(unsigned scanCode, bool keyDown) {
+int KeyboardLayout::layoutUK(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         // clang-format off

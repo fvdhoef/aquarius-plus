@@ -3,6 +3,16 @@
 #include "Common.h"
 #include <map>
 
+enum class KeyLayout {
+    US = 0,
+    UK = 1,
+    Count,
+};
+
+void        setKeyLayout(KeyLayout layout);
+KeyLayout   getKeyLayout();
+std::string getKeyLayoutName(KeyLayout layout);
+
 enum {
     NUM_LOCK    = (1 << 0),
     CAPS_LOCK   = (1 << 1),
@@ -29,8 +39,8 @@ public:
 
     void processScancode(unsigned scanCode, bool keyDown);
 
-    int layoutUS(unsigned scanCode, bool keyDown);
-    int layoutUK(unsigned scanCode, bool keyDown);
+    int layoutUS(unsigned scanCode);
+    int layoutUK(unsigned scanCode);
 
     uint8_t modifiers = 0;
     uint8_t leds      = 0;
