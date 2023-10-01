@@ -26,7 +26,8 @@ struct ComposeCombo {
 
 // From https://math.dartmouth.edu/~sarunas/Linux_Compose_Key_Sequences.html
 static ComposeCombo composeCombos[] = {
-    {"\xB4 ", 0xB4},
+    {"\xA8 ", 0xA8}, // Diacritic
+    {"\xB4 ", 0xB4}, // Acute accent
     {"' ", '\''},
     {"\" ", '"'},
     {"` ", '`'},
@@ -305,6 +306,12 @@ uint8_t KeyboardLayout::compose(uint8_t first, uint8_t second) {
             ((uint8_t)combo.combo[0] == second && (uint8_t)combo.combo[1] == first))
             return combo.result;
     }
+
+    if (first == 0xA8) {
+        return compose('"', second);
+    } else if (first == 0xB4) {
+        return compose('\'', second);
+    }
     return second;
 }
 
@@ -348,7 +355,7 @@ uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         // clang-format off
-        static const uint8_t lut2[] = { 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '?', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b',0x8C, ' ',0xB0, '_', '"', '*',0xA3,0xA3, 'M', '%',0xB3, '.', '/', '+'};
+        static const uint8_t lut2[] = { 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '?', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b',0x8C, ' ',0xB0, '_',0xA8, '*',0xA3,0xA3, 'M', '%',0xB3, '.', '/', '+'};
         static const uint8_t lut1[] = { 'q', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ',', 'n', 'o', 'p', 'a', 'r', 's', 't', 'u', 'v', 'z', 'x', 'y', 'w', '&',0xE9, '"','\'', '(',0xA7,0xE8, '!',0xE7,0xE0, '\r',0x03,'\b','\t', ' ', ')', '-', '^', '$',0xB5,0xB5, 'm',0xF9,0xB2, ';', ':', '='};
         static const uint8_t lut3[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
         static const uint8_t lut4[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
@@ -368,7 +375,7 @@ uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
     }
 
     // Handle dead-keys
-    if (ch == '^' || ch == '"' || ch == 0xB4 || ch == '`' || ch == '~') {
+    if (ch == '^' || ch == 0xA8 || ch == 0xB4 || ch == '`' || ch == '~') {
         composeFirst = ch;
         ch           = 0;
     }
