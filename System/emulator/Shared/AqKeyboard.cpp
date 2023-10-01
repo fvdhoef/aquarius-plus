@@ -26,6 +26,13 @@ struct ComposeCombo {
 
 // From https://math.dartmouth.edu/~sarunas/Linux_Compose_Key_Sequences.html
 static ComposeCombo composeCombos[] = {
+    {"\xB4 ", 0xB4},
+    {"' ", '\''},
+    {"\" ", '"'},
+    {"` ", '`'},
+    {"~ ", '~'},
+    {"^ ", '^'},
+
     {"=C", 0x80},
     {"=c", 0x80},
     {"=E", 0x80},
@@ -159,6 +166,7 @@ std::string getKeyLayoutName(KeyLayout layout) {
         default: return "Unknown";
         case KeyLayout::US: return "US";
         case KeyLayout::UK: return "UK";
+        case KeyLayout::FR: return "FR/BE";
     }
 }
 
@@ -195,6 +203,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
             default:
             case KeyLayout::US: ch = layoutUS(scanCode); break;
             case KeyLayout::UK: ch = layoutUK(scanCode); break;
+            case KeyLayout::FR: ch = layoutFR(scanCode); break;
         }
 
         if (
@@ -292,8 +301,8 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 uint8_t KeyboardLayout::compose(uint8_t first, uint8_t second) {
     // printf("Compose '%c' and '%c'\n", first, second);
     for (auto &combo : composeCombos) {
-        if ((combo.combo[0] == first && combo.combo[1] == second) ||
-            (combo.combo[0] == second && combo.combo[1] == first))
+        if (((uint8_t)combo.combo[0] == first && (uint8_t)combo.combo[1] == second) ||
+            ((uint8_t)combo.combo[0] == second && (uint8_t)combo.combo[1] == first))
             return combo.result;
     }
     return second;
@@ -331,6 +340,37 @@ uint8_t KeyboardLayout::layoutUK(unsigned scanCode) {
 
     } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
         ch = (modifiers & (ModLShift | ModRShift)) ? '|' : '\\';
+    }
+    return ch;
+}
+
+uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
+    uint8_t ch = 0;
+    if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
+        // clang-format off
+        static const uint8_t lut2[] = { 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '?', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b',0x8C, ' ',0xB0, '_', '"', '*',0xA3,0xA3, 'M', '%',0xB3, '.', '/', '+'};
+        static const uint8_t lut1[] = { 'q', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ',', 'n', 'o', 'p', 'a', 'r', 's', 't', 'u', 'v', 'z', 'x', 'y', 'w', '&',0xE9, '"','\'', '(',0xA7,0xE8, '!',0xE7,0xE0, '\r',0x03,'\b','\t', ' ', ')', '-', '^', '$',0xB5,0xB5, 'm',0xF9,0xB2, ';', ':', '='};
+        static const uint8_t lut3[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
+        static const uint8_t lut4[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
+        // clang-format on
+
+        if (modifiers & ModRAlt) {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut4[scanCode - SCANCODE_A] : lut3[scanCode - SCANCODE_A];
+        } else {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+        }
+
+    } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
+        if (modifiers & ModRAlt)
+            ch = '\\';
+        else
+            ch = (modifiers & (ModLShift | ModRShift)) ? '>' : '<';
+    }
+
+    // Handle dead-keys
+    if (ch == '^' || ch == '"' || ch == 0xB4 || ch == '`' || ch == '~') {
+        composeFirst = ch;
+        ch           = 0;
     }
     return ch;
 }
