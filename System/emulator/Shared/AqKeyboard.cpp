@@ -168,6 +168,7 @@ std::string getKeyLayoutName(KeyLayout layout) {
         case KeyLayout::US: return "US";
         case KeyLayout::UK: return "UK";
         case KeyLayout::FR: return "FR/BE";
+        case KeyLayout::DE: return "DE";
     }
 }
 
@@ -333,8 +334,8 @@ uint8_t KeyboardLayout::layoutUK(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         // clang-format off
-        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ', '-', '=', '[', ']', '~', '~', ';','\'', '`', ',', '.', '/'};
-        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"',0xA3, '$', '%', '^', '&', '*', '(', ')', '\r',0x03,'\b',0x8C, ' ', '_', '+', '{', '}', '#', '#', ':', '@',0xAC, '<', '>', '?'};
+        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '!', '"',0xA3, '$', '%', '^', '&', '*', '(', ')', '\r',0x03,'\b',0x8C, ' ', '_', '+', '{', '}', '~', '~', ':', '@',0xAC, '<', '>', '?'};
+        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ', '-', '=', '[', ']', '#', '#', ';','\'', '`', ',', '.', '/'};
         static const uint8_t lut3[] = {0xE1,   0,   0,   0,0xE9,   0,   0,   0,0xED,   0,   0,   0,   0,   0,0xF3,   0,   0,   0,   0,   0,0xFA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0,'\\','\\',   0,   0,0xA6,   0,   0,   0};
         static const uint8_t lut4[] = {0xC1,   0,   0,   0,0xC9,   0,   0,   0,0xCD,   0,   0,   0,   0,   0,0xD3,   0,   0,   0,   0,   0,0xDA,   0,   0,   0,   0,   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,    0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '|',   0,   0,0xA6,   0,   0,   0};
         // clang-format on
@@ -355,10 +356,10 @@ uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
     uint8_t ch = 0;
     if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
         // clang-format off
-        static const uint8_t lut2[] = { 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '?', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b',0x8C, ' ',0xB0, '_',0xA8, '*',0xA3,0xA3, 'M', '%',0xB3, '.', '/', '+'};
-        static const uint8_t lut1[] = { 'q', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ',', 'n', 'o', 'p', 'a', 'r', 's', 't', 'u', 'v', 'z', 'x', 'y', 'w', '&',0xE9, '"','\'', '(',0xA7,0xE8, '!',0xE7,0xE0, '\r',0x03,'\b','\t', ' ', ')', '-', '^', '$',0xB5,0xB5, 'm',0xF9,0xB2, ';', ':', '='};
-        static const uint8_t lut3[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
-        static const uint8_t lut4[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '|', '@', '#',   0,   0, '^',   0,   0, '{', '}',    0,   0,   0,   0,   0,   0,   0, '[', ']', '`', '`',   0,0xB4,   0,   0,   0, '~'};
+        static const uint8_t lut2[] = { 'Q', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', '?', 'N', 'O', 'P', 'A', 'R', 'S', 'T', 'U', 'V', 'Z', 'X', 'Y', 'W', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b',0x8C, ' ',0xB0, '+',0xA8,0xA3,0xB5,0xB5, 'M', '%',0xB3, '.', '/',0xA7};
+        static const uint8_t lut1[] = { 'q', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', ',', 'n', 'o', 'p', 'a', 'r', 's', 't', 'u', 'v', 'z', 'x', 'y', 'w', '&',0xE9, '"','\'', '(', '-',0xE8, '_',0xE7,0xE0, '\r',0x03,'\b','\t', ' ', ')', '=', '^', '$', '*', '*', 'm',0xF9,0xB2, ';', ':', '!'};
+        static const uint8_t lut3[] = {   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '~', '#', '{', '[', '|', '`','\\', '^', '@',    0,   0,   0,   0,   0, ']', '}',   0,0xA4,   0,   0,   0,   0,   0,   0,   0,   0};
+        static const uint8_t lut4[] = {   0,   0,   0,   0,0x80,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0, '~', '#', '{', '[', '|', '`','\\', '^', '@',    0,   0,   0,   0,   0, ']', '}',   0,0xA4,   0,   0,   0,   0,   0,   0,   0,   0};
         // clang-format on
 
         if (modifiers & ModRAlt) {
@@ -375,7 +376,7 @@ uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
     }
 
     // Handle dead-keys
-    if (ch == '^' || ch == 0xA8 || ch == 0xB4 || ch == '`' || ch == '~') {
+    if ((scanCode == SCANCODE_LEFTBRACKET && ch == '^') || ch == 0xA8) {
         composeFirst = ch;
         ch           = 0;
     }
