@@ -7,6 +7,7 @@ enum class KeyLayout {
     US = 0,
     UK = 1,
     FR = 2,
+    DE = 3,
     Count,
 };
 
@@ -43,6 +44,7 @@ public:
     uint8_t layoutUS(unsigned scanCode);
     uint8_t layoutUK(unsigned scanCode);
     uint8_t layoutFR(unsigned scanCode);
+    uint8_t layoutDE(unsigned scanCode);
     uint8_t compose(uint8_t first, uint8_t second);
 
     uint8_t modifiers    = 0;

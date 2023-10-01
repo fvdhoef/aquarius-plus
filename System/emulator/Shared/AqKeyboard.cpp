@@ -167,8 +167,8 @@ std::string getKeyLayoutName(KeyLayout layout) {
         default: return "Unknown";
         case KeyLayout::US: return "US";
         case KeyLayout::UK: return "UK";
-        case KeyLayout::FR: return "FR/BE";
-        case KeyLayout::DE: return "DE";
+        case KeyLayout::FR: return "FR/BE (AZERTY)";
+        case KeyLayout::DE: return "DE (QWERTZ)";
     }
 }
 
@@ -206,6 +206,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
             case KeyLayout::US: ch = layoutUS(scanCode); break;
             case KeyLayout::UK: ch = layoutUK(scanCode); break;
             case KeyLayout::FR: ch = layoutFR(scanCode); break;
+            case KeyLayout::DE: ch = layoutDE(scanCode); break;
         }
 
         if (
@@ -380,6 +381,38 @@ uint8_t KeyboardLayout::layoutFR(unsigned scanCode) {
         composeFirst = ch;
         ch           = 0;
     }
+    return ch;
+}
+
+uint8_t KeyboardLayout::layoutDE(unsigned scanCode) {
+    uint8_t ch = 0;
+    if (scanCode >= SCANCODE_A && scanCode <= SCANCODE_SLASH) {
+        // clang-format off
+        static const uint8_t lut2[] = { 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Z', 'Y', '!', '"',0xA7, '$', '%', '&', '/', '(', ')', '=', '\r',0x03,'\b',0x8C, ' ', '?', '`',0xDC, '*','\'','\'',0xD6,0xC4,0xB0, ';', ':', '_'};
+        static const uint8_t lut1[] = { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'z', 'y', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '\r',0x03,'\b','\t', ' ',0xDF,0xB4,0xFC, '+', '#', '#',0xF6,0xE4, '^', ',', '.', '-'};
+        static const uint8_t lut3[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xB5,   0,   0,   0, '@',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xB2,0xB3,   0,   0,   0, '{', '[', ']', '}',    0,   0,   0,   0,   0,'\\',   0,   0, '~',   0,   0,   0,   0,   0,   0,   0,   0};
+        static const uint8_t lut4[] = {   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xB5,   0,   0,   0, '@',   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,0xB2,0xB3,   0,   0,   0, '{', '[', ']', '}',    0,   0,   0,   0,   0,'\\',   0,   0, '~',   0,   0,   0,   0,   0,   0,   0,   0};
+        // clang-format on
+
+        if (modifiers & ModRAlt) {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut4[scanCode - SCANCODE_A] : lut3[scanCode - SCANCODE_A];
+        } else {
+            ch = (modifiers & (ModLShift | ModRShift)) != 0 ? lut2[scanCode - SCANCODE_A] : lut1[scanCode - SCANCODE_A];
+        }
+
+    } else if (scanCode == SCANCODE_NONUSBACKSLASH) {
+        if (modifiers & ModRAlt)
+            ch = '|';
+        else
+            ch = (modifiers & (ModLShift | ModRShift)) ? '>' : '<';
+    }
+
+    // Handle dead-keys
+    if (ch == '^' || ch == '`' || ch == 0xB4) {
+        composeFirst = ch;
+        ch           = 0;
+    }
+
     return ch;
 }
 
