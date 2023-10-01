@@ -172,7 +172,15 @@ std::string getKeyLayoutName(KeyLayout layout) {
     }
 }
 
+static uint8_t keyMode = 3;
+
+void setKeyMode(uint8_t mode) {
+    keyMode = mode;
+}
+
 void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
+    repeat = 0;
+
     // Keep track of pressed modifier keys
     if (scanCode == SCANCODE_LCTRL)
         modifiers = (modifiers & ~ModLCtrl) | (keyDown ? ModLCtrl : 0);
@@ -197,106 +205,134 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
     if (scanCode == SCANCODE_SCROLLLOCK && keyDown)
         leds ^= LedScrollLock;
 
-    if (keyDown) {
-        uint8_t ch = 0;
-        // printf("%d\n", scanCode);
-
-        switch (getKeyLayout()) {
-            default:
-            case KeyLayout::US: ch = layoutUS(scanCode); break;
-            case KeyLayout::UK: ch = layoutUK(scanCode); break;
-            case KeyLayout::FR: ch = layoutFR(scanCode); break;
-            case KeyLayout::DE: ch = layoutDE(scanCode); break;
+    if ((keyMode & 1) == 0) {
+        return;
+    }
+    if ((keyMode & 2) == 0) {
+        uint8_t code = 0;
+        if (scanCode <= 0x6F) {
+            code = scanCode;
+        } else if (scanCode >= SCANCODE_LCTRL && scanCode <= SCANCODE_RGUI) {
+            code = scanCode - SCANCODE_LCTRL + 0x70;
         }
+        if (code && keyDown) {
+            code |= 0x80;
 
-        if (
-            ch == 0 &&
-            scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
-            scanCode != SCANCODE_SCROLLLOCK &&
-            scanCode != SCANCODE_NUMLOCK) {
-            static const uint8_t lut[] = {
-                0x80, // SCANCODE_F1
-                0x81, // SCANCODE_F2
-                0x82, // SCANCODE_F3
-                0x83, // SCANCODE_F4
-                0x84, // SCANCODE_F5
-                0x85, // SCANCODE_F6
-                0x86, // SCANCODE_F7
-                0x87, // SCANCODE_F8
-                0x90, // SCANCODE_F9
-                0x91, // SCANCODE_F10
-                0x92, // SCANCODE_F11
-                0x93, // SCANCODE_F12
-                0x88, // SCANCODE_PRINTSCREEN
-                0,    // SCANCODE_SCROLLLOCK
-                0x89, // SCANCODE_PAUSE
-                0x9D, // SCANCODE_INSERT
-                0x9B, // SCANCODE_HOME
-                0x8A, // SCANCODE_PAGEUP
-                0x7F, // SCANCODE_DELETE
-                0x9A, // SCANCODE_END
-                0x8B, // SCANCODE_PAGEDOWN
-                0x8E, // SCANCODE_RIGHT
-                0x9E, // SCANCODE_LEFT
-                0x9F, // SCANCODE_DOWN
-                0x8F, // SCANCODE_UP
-                0,    // SCANCODE_NUMLOCK
-                '/',  // SCANCODE_KP_DIVIDE
-                '*',  // SCANCODE_KP_MULTIPLY
-                '-',  // SCANCODE_KP_MINUS
-                '+',  // SCANCODE_KP_PLUS
-                '\r', // SCANCODE_KP_ENTER
-                '1',  // SCANCODE_KP_1
-                '2',  // SCANCODE_KP_2
-                '3',  // SCANCODE_KP_3
-                '4',  // SCANCODE_KP_4
-                '5',  // SCANCODE_KP_5
-                '6',  // SCANCODE_KP_6
-                '7',  // SCANCODE_KP_7
-                '8',  // SCANCODE_KP_8
-                '9',  // SCANCODE_KP_9
-                '0',  // SCANCODE_KP_0
-                '.',  // SCANCODE_KP_PERIOD
-            };
-            ch = lut[scanCode - SCANCODE_F1];
+            if (scanCode <= 0x6F && scanCode != SCANCODE_CAPSLOCK && scanCode != SCANCODE_NUMLOCK && scanCode != SCANCODE_SCROLLLOCK)
+                repeat = code;
         }
-
-        if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
-            if (ch == '@') {
-                ch = 0x80;
-            } else if (ch >= 'a' && ch <= 'z') {
-                ch = ch - 'a' + 1;
-            } else if (ch >= 'A' && ch <= '_') {
-                ch = ch - 'A' + 1;
-            }
-        }
-
-        if (leds & LedCapsLock) {
-            if (ch >= 'a' && ch <= 'z') {
-                ch = (ch - 'a') + 'A';
-            } else if (ch >= 'A' && ch <= 'Z') {
-                ch = (ch - 'A') + 'a';
-            }
-        }
-
-        if (ch > 0) {
-            if (composeFirst > 0) {
-                ch           = compose(composeFirst, ch);
-                composeFirst = 0;
-
-            } else if (modifiers & ModLAlt) {
-                composeFirst = ch;
-                ch           = 0;
-            }
-        }
-
-        if (ch > 0) {
+        if (code > 0) {
 #ifdef EMULATOR
-            emuState.kbBufWrite(ch);
+            emuState.kbBufWrite(code);
 #else
-            FPGA::instance().aqpWriteKeybBuffer(ch);
+            FPGA::instance().aqpWriteKeybBuffer(code);
 #endif
-            // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
+        }
+
+    } else {
+        if (keyDown) {
+            uint8_t ch = 0;
+            // printf("%d\n", scanCode);
+
+            switch (getKeyLayout()) {
+                default:
+                case KeyLayout::US: ch = layoutUS(scanCode); break;
+                case KeyLayout::UK: ch = layoutUK(scanCode); break;
+                case KeyLayout::FR: ch = layoutFR(scanCode); break;
+                case KeyLayout::DE: ch = layoutDE(scanCode); break;
+            }
+
+            if (
+                ch == 0 &&
+                scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
+                scanCode != SCANCODE_SCROLLLOCK &&
+                scanCode != SCANCODE_NUMLOCK) {
+                static const uint8_t lut[] = {
+                    0x80, // SCANCODE_F1
+                    0x81, // SCANCODE_F2
+                    0x82, // SCANCODE_F3
+                    0x83, // SCANCODE_F4
+                    0x84, // SCANCODE_F5
+                    0x85, // SCANCODE_F6
+                    0x86, // SCANCODE_F7
+                    0x87, // SCANCODE_F8
+                    0x90, // SCANCODE_F9
+                    0x91, // SCANCODE_F10
+                    0x92, // SCANCODE_F11
+                    0x93, // SCANCODE_F12
+                    0x88, // SCANCODE_PRINTSCREEN
+                    0,    // SCANCODE_SCROLLLOCK
+                    0x89, // SCANCODE_PAUSE
+                    0x9D, // SCANCODE_INSERT
+                    0x9B, // SCANCODE_HOME
+                    0x8A, // SCANCODE_PAGEUP
+                    0x7F, // SCANCODE_DELETE
+                    0x9A, // SCANCODE_END
+                    0x8B, // SCANCODE_PAGEDOWN
+                    0x8E, // SCANCODE_RIGHT
+                    0x9E, // SCANCODE_LEFT
+                    0x9F, // SCANCODE_DOWN
+                    0x8F, // SCANCODE_UP
+                    0,    // SCANCODE_NUMLOCK
+                    '/',  // SCANCODE_KP_DIVIDE
+                    '*',  // SCANCODE_KP_MULTIPLY
+                    '-',  // SCANCODE_KP_MINUS
+                    '+',  // SCANCODE_KP_PLUS
+                    '\r', // SCANCODE_KP_ENTER
+                    '1',  // SCANCODE_KP_1
+                    '2',  // SCANCODE_KP_2
+                    '3',  // SCANCODE_KP_3
+                    '4',  // SCANCODE_KP_4
+                    '5',  // SCANCODE_KP_5
+                    '6',  // SCANCODE_KP_6
+                    '7',  // SCANCODE_KP_7
+                    '8',  // SCANCODE_KP_8
+                    '9',  // SCANCODE_KP_9
+                    '0',  // SCANCODE_KP_0
+                    '.',  // SCANCODE_KP_PERIOD
+                };
+                ch = lut[scanCode - SCANCODE_F1];
+            }
+
+            if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
+                if (ch == '@') {
+                    ch = 0x80;
+                } else if (ch >= 'a' && ch <= 'z') {
+                    ch = ch - 'a' + 1;
+                } else if (ch >= 'A' && ch <= '_') {
+                    ch = ch - 'A' + 1;
+                }
+            }
+
+            if (leds & LedCapsLock) {
+                if (ch >= 'a' && ch <= 'z') {
+                    ch = (ch - 'a') + 'A';
+                } else if (ch >= 'A' && ch <= 'Z') {
+                    ch = (ch - 'A') + 'a';
+                }
+            }
+
+            if (ch > 0) {
+                if (composeFirst > 0) {
+                    ch           = compose(composeFirst, ch);
+                    composeFirst = 0;
+
+                } else if (modifiers & ModLAlt) {
+                    composeFirst = ch;
+                    ch           = 0;
+                }
+            }
+
+            if (ch > 0) {
+                repeat = ch;
+
+#ifdef EMULATOR
+                emuState.kbBufWrite(ch);
+#else
+                FPGA::instance().aqpWriteKeybBuffer(ch);
+#endif
+                // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
+            }
         }
     }
 }
@@ -427,14 +463,33 @@ AqKeyboard &AqKeyboard::instance() {
 void AqKeyboard::init() {
 #ifndef EMULATOR
     mutex = xSemaphoreCreateRecursiveMutex();
+
+    const esp_timer_create_args_t periodic_timer_args = {
+        .callback              = &keyRepeatTimer,
+        .arg                   = (void *)this,
+        .name                  = "key_repeat",
+        .skip_unhandled_events = true,
+    };
+
+    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
+    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 16666));
 #endif
 }
+
+#ifndef EMULATOR
+void AqKeyboard::keyRepeatTimer(void *arg) {
+    static_cast<AqKeyboard *>(arg)->repeatTimer();
+}
+#endif
 
 void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     // printf("%3d: %s\n", scanCode, keyDown ? "DOWN" : "UP");
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutex);
 #endif
+    kbLayout.repeat       = 0;
+    kbLayout.pressCounter = 0;
+
     // Hand controller emulation
     if (handController(scanCode, keyDown))
         return;
@@ -575,6 +630,25 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
+void AqKeyboard::repeatTimer() {
+#ifndef EMULATOR
+    RecursiveMutexLock lock(mutex);
+#endif
+    if ((keyMode & 1) == 0 || (keyMode & 4) == 0 || kbLayout.repeat == 0) {
+        kbLayout.pressCounter = 0;
+        return;
+    }
+
+    kbLayout.pressCounter++;
+    if (kbLayout.pressCounter > 15 && kbLayout.pressCounter % 3 == 0) {
+#ifdef EMULATOR
+        emuState.kbBufWrite(kbLayout.repeat);
+#else
+        FPGA::instance().aqpWriteKeybBuffer(kbLayout.repeat);
+#endif
+    }
+}
+
 bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
     handCtrl1 = 0xFF;
     if ((ledStatus & SCROLL_LOCK) == 0) {
@@ -647,13 +721,11 @@ void AqKeyboard::updateMatrix() {
 
         uint64_t tmpMatrix = ~keybMatrix;
 
-        if (!dontSend) {
 #ifdef EMULATOR
-            memcpy(emuState.keybMatrix, &tmpMatrix, 8);
+        memcpy(emuState.keybMatrix, &tmpMatrix, 8);
 #else
-            FPGA::instance().aqpUpdateKeybMatrix(tmpMatrix);
+        FPGA::instance().aqpUpdateKeybMatrix(tmpMatrix);
 #endif
-        }
         prevMatrix = keybMatrix;
     }
 

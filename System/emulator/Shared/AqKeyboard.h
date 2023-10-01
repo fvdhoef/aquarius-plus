@@ -14,6 +14,7 @@ enum class KeyLayout {
 void        setKeyLayout(KeyLayout layout);
 KeyLayout   getKeyLayout();
 std::string getKeyLayoutName(KeyLayout layout);
+void        setKeyMode(uint8_t mode);
 
 enum {
     NUM_LOCK    = (1 << 0),
@@ -47,9 +48,11 @@ public:
     uint8_t layoutDE(unsigned scanCode);
     uint8_t compose(uint8_t first, uint8_t second);
 
-    uint8_t modifiers    = 0;
-    uint8_t leds         = 0;
-    uint8_t composeFirst = 0;
+    uint8_t  modifiers    = 0;
+    uint8_t  leds         = 0;
+    uint8_t  composeFirst = 0;
+    uint8_t  repeat       = 0;
+    unsigned pressCounter = 0;
 };
 
 class AqKeyboard {
@@ -70,17 +73,17 @@ public:
             ledStatus = 0;
         ledStatus = (ledStatus & ~SCROLL_LOCK) | (value ? SCROLL_LOCK : 0);
     }
+    void repeatTimer();
 
 private:
 #ifndef EMULATOR
-    SemaphoreHandle_t mutex;
+    SemaphoreHandle_t  mutex;
+    static void        keyRepeatTimer(void *arg);
+    esp_timer_handle_t periodic_timer;
 #endif
 
     KeyboardLayout kbLayout;
 
-    std::map<unsigned, uint64_t> keyMaskMap;
-
-    bool     dontSend         = false;
     unsigned handCtrl1Pressed = 0;
     uint64_t prevMatrix       = 0;
     uint64_t keybMatrix       = 0;

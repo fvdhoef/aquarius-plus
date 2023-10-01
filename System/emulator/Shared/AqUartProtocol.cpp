@@ -1,6 +1,7 @@
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 #include "EspVFS.h"
+#include "AqKeyboard.h"
 #include <algorithm>
 #include <time.h>
 
@@ -22,6 +23,7 @@ enum {
     ESPCMD_RESET       = 0x01, // Indicate to ESP that system has been reset
     ESPCMD_VERSION     = 0x02, // Get version string
     ESPCMD_GETDATETIME = 0x03, // Get current date/time
+    ESPCMD_KEYMODE     = 0x08, // Set keyboard mode
     ESPCMD_GETMOUSE    = 0x0C, // Get mouse state
     ESPCMD_OPEN        = 0x10, // Open / create file
     ESPCMD_CLOSE       = 0x11, // Close open file
@@ -343,6 +345,14 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 }
                 break;
             }
+            case ESPCMD_KEYMODE: {
+                if (rxBufIdx == 2) {
+                    uint8_t keyMode = rxBuf[1];
+                    cmdKeyMode(keyMode);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
             case ESPCMD_GETMOUSE: {
                 cmdGetMouse();
                 rxBufIdx = 0;
@@ -542,6 +552,12 @@ void AqUartProtocol::cmdGetDateTime(uint8_t type) {
     while (*p) {
         txFifoWrite(*(p++));
     }
+    txFifoWrite(0);
+    return;
+}
+
+void AqUartProtocol::cmdKeyMode(uint8_t mode) {
+    setKeyMode(mode);
     txFifoWrite(0);
     return;
 }

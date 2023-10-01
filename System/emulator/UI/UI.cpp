@@ -161,6 +161,8 @@ void UI::mainLoop() {
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
 
+        AqKeyboard::instance().repeatTimer();
+
         if (ImGui::BeginMainMenuBar()) {
             if (ImGui::BeginMenu("System")) {
                 if (ImGui::MenuItem("Select SD card directory...", "")) {
