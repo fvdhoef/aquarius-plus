@@ -853,6 +853,36 @@ void UI::wndIoRegs(bool *p_open) {
             ImGui::Text("$F2 BANK2: $%02X - page:%u%s%s", emuState.bankRegs[2], emuState.bankRegs[2] & 0x3F, emuState.bankRegs[2] & 0x80 ? " RO" : "", emuState.bankRegs[2] & 0x40 ? " OVL" : "");
             ImGui::Text("$F3 BANK3: $%02X - page:%u%s%s", emuState.bankRegs[3], emuState.bankRegs[3] & 0x3F, emuState.bankRegs[3] & 0x80 ? " RO" : "", emuState.bankRegs[3] & 0x40 ? " OVL" : "");
         }
+        if (ImGui::CollapsingHeader("Key buffer")) {
+            auto keyMode = getKeyMode();
+
+            {
+                uint8_t val = emuState.kbBufCnt == 0 ? 0 : emuState.kbBuf[emuState.kbBufRdIdx];
+                ImGui::Text("$FA KEYBUF: $%02X (%c)", val, val > 32 && val < 127 ? val : '.');
+            }
+            ImGui::Text(
+                "   KEYMODE: $%02X %s%s%s\n",
+                keyMode,
+                (keyMode & 1) ? "[Enable]" : "",
+                (keyMode & 2) ? "[ASCII]" : "[ScanCode]",
+                (keyMode & 4) ? "[Repeat]" : "");
+
+            std::string str = "Key buffer: ";
+
+            int rdIdx = emuState.kbBufRdIdx;
+            for (int i = 0; i < emuState.kbBufCnt; i++) {
+                if (keyMode & 2) {
+                    uint8_t val = emuState.kbBuf[rdIdx];
+                    str += fmtstr("%c", val > 32 && val < 127 ? val : '.');
+                } else {
+                    str += fmtstr("%02X ", emuState.kbBuf[rdIdx]);
+                }
+                rdIdx++;
+                if (rdIdx == sizeof(emuState.kbBuf))
+                    rdIdx = 0;
+            }
+            ImGui::Text("%s", str.c_str());
+        }
         if (ImGui::CollapsingHeader("Audio AY1")) {
             ImGui::Text(" 0 AFINE   : $%02X", emuState.ay1.regs[0]);
             ImGui::Text(" 1 ACOARSE : $%02X", emuState.ay1.regs[1]);

@@ -57,7 +57,7 @@ static ComposeCombo composeCombos[] = {
     {"aa", 0xAA},
     {"<<", 0xAB},
     {"-,", 0xAC},
-    // how to type 0xAD?
+    {"--", 0xAD},
     {"or", 0xAE},
     {"oR", 0xAE},
     {"Or", 0xAE},
@@ -68,7 +68,7 @@ static ComposeCombo composeCombos[] = {
     {"+-", 0xB1},
     {"^2", 0xB2},
     {"^3", 0xB3},
-    // how to type 0xB4?
+    {"''", 0xB4},
     {"mu", 0xB5},
     {"p!", 0xB6},
     {"P!", 0xB6},
@@ -176,6 +176,10 @@ static uint8_t keyMode = 3;
 
 void setKeyMode(uint8_t mode) {
     keyMode = mode;
+}
+
+uint8_t getKeyMode() {
+    return keyMode;
 }
 
 void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {

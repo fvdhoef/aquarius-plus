@@ -15,6 +15,7 @@ void        setKeyLayout(KeyLayout layout);
 KeyLayout   getKeyLayout();
 std::string getKeyLayoutName(KeyLayout layout);
 void        setKeyMode(uint8_t mode);
+uint8_t     getKeyMode();
 
 enum {
     NUM_LOCK    = (1 << 0),
