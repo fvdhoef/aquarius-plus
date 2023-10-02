@@ -54,7 +54,7 @@ static ComposeCombo composeCombos[] = {
     {"oC", 0xA9},
     {"Oc", 0xA9},
     {"OC", 0xA9},
-    {"^a", 0xAA},
+    {"aa", 0xAA},
     {"<<", 0xAB},
     {"-,", 0xAC},
     // how to type 0xAD?
