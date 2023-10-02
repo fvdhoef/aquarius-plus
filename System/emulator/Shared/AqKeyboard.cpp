@@ -46,7 +46,7 @@ static ComposeCombo composeCombos[] = {
     {"/c", 0xA2},
     {"-L", 0xA3},
     {"ox", 0xA4},
-    {"oA", 0xA5},
+    {"Y=", 0xA5},
     {"!^", 0xA6},
     {"os", 0xA7},
     // how to type 0xA8?
@@ -54,7 +54,7 @@ static ComposeCombo composeCombos[] = {
     {"oC", 0xA9},
     {"Oc", 0xA9},
     {"OC", 0xA9},
-    // how to type 0xAA?
+    {"^a", 0xAA},
     {"<<", 0xAB},
     {"-,", 0xAC},
     // how to type 0xAD?
@@ -62,7 +62,7 @@ static ComposeCombo composeCombos[] = {
     {"oR", 0xAE},
     {"Or", 0xAE},
     {"OR", 0xAE},
-    // how to type 0xAF?
+    {"^-", 0xAF},
 
     {"oo", 0xB0},
     {"+-", 0xB1},
@@ -76,7 +76,7 @@ static ComposeCombo composeCombos[] = {
     {"..", 0xB7},
     {", ", 0xB8},
     {"^1", 0xB9},
-    // how to type 0xBA?
+    {"^0", 0xBA},
     {">>", 0xBB},
     {"14", 0xBC},
     {"12", 0xBD},
