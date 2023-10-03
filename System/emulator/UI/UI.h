@@ -40,5 +40,7 @@ private:
     bool allowTyping = false;
     bool first       = true;
 
+    uint64_t lastKeyRepeatCall = 0;
+
     AssemblyListing asmListing;
 };
