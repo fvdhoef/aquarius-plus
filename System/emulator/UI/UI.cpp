@@ -1067,7 +1067,7 @@ void UI::wndAssemblyListing(bool *p_open) {
                     ImGui::TextUnformatted(line.file.c_str());
                     ImGui::TableNextColumn();
                     if (line.addr >= 0) {
-                        char addr[10];
+                        char addr[32];
                         snprintf(addr, sizeof(addr), "%04X##%d", line.addr, row_n);
                         ImGui::Selectable(addr);
                         if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
