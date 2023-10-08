@@ -12,6 +12,10 @@ Option 1: Use the built-in update functionality
 - Insert the SD card into the Aquarius+ and power the system on.
 - At the BASIC prompt type the text below, and press ENTER/RETURN:
 
+RUN "esp:settings"
+
+or if you are on an old version of the firmware:
+
 RUN "esp:settings.aqx"
 
 - This will start the built-in settings system, and an ESP> prompt will appear. Here type the text below, and press ENTER/RETURN:
