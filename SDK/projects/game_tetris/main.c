@@ -557,21 +557,44 @@ static void draw_preview(void) {
     draw_tetromino(x, y, next_tetromino, 0, false, false);
 }
 
+static uint8_t get_joystick(void) {
+    uint8_t old_addr = IO_PSG1ADDR;
+    IO_PSG1ADDR      = 14;
+    uint8_t joyval   = IO_PSG1DATA;
+    IO_PSG1ADDR      = old_addr;
+    return joyval;
+}
+
 // Compose keys bitmap with only the keys used by the game
 static uint8_t getkeys(void) {
     uint8_t result = 0;
-    if (kb_pressing(KEY_A))
+    if (kb_pressing(KEY_A) || kb_pressing(KEY_LEFT))
         result |= KBM_LEFT;
-    if (kb_pressing(KEY_D))
+    if (kb_pressing(KEY_D) || kb_pressing(KEY_RIGHT))
         result |= KBM_RIGHT;
-    if (kb_pressing(KEY_W))
+    if (kb_pressing(KEY_W) || kb_pressing(KEY_UP))
         result |= KBM_UP;
-    if (kb_pressing(KEY_S))
+    if (kb_pressing(KEY_S) || kb_pressing(KEY_DOWN))
         result |= KBM_DOWN;
-    if (kb_pressing(KEY_N))
+    if (kb_pressing(KEY_N) || kb_pressing(KEY_Z))
         result |= KBM_ROTATE_CCW;
-    if (kb_pressing(KEY_M))
+    if (kb_pressing(KEY_M) || kb_pressing(KEY_X))
         result |= KBM_ROTATE_CW;
+
+    uint8_t joyval = ~get_joystick();
+    if (joyval & (1 << 0))
+        result |= KBM_DOWN;
+    if (joyval & (1 << 1))
+        result |= KBM_RIGHT;
+    if (joyval & (1 << 2))
+        result |= KBM_UP;
+    if (joyval & (1 << 3))
+        result |= KBM_LEFT;
+    if (joyval & (1 << 6))
+        result |= KBM_ROTATE_CW;
+    if (joyval & (1 << 7))
+        result |= KBM_ROTATE_CCW;
+
     return result;
 }
 
