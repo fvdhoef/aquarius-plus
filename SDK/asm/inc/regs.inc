@@ -191,6 +191,7 @@ IO_PSG1DATA:    equ $F6
 IO_PSG1ADDR:    equ $F7
 IO_PSG2DATA:    equ $F8
 IO_PSG2ADDR:    equ $F9
+IO_KEYBUF:      equ $FA
 IO_SYSCTRL:     equ $FB
 IO_CASSETTE:    equ $FC
 IO_CPM:         equ $FD     ; Write-only
