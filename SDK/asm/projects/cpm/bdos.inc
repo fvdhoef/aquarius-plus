@@ -1,31 +1,19 @@
-
-;
-;   Note that the following six bytes must match those at
-; (PATTRN1) or cp/m will HALT. Why?
-;
+; Note that the following six bytes must match those at (PATTRN1) or cp/m will HALT. Why?
 PATTRN2:DEFB    0,22,0,0,0,0    ;(* serial number bytes *).
 
-
-
-;
 ;**************************************************************
-;*
-;*                    B D O S   E N T R Y
-;*
+;* BDOS ENTRY
 ;**************************************************************
-;
 FBASE:  JP      FBASE1
-;
-;   Bdos error table.
-;
+
+; Bdos error table.
 BADSCTR:DEFW    ERROR1          ;bad sector on read or write.
 BADSLCT:DEFW    ERROR2          ;bad disk select.
 RODISK: DEFW    ERROR3          ;disk is read only.
 ROFILE: DEFW    ERROR4          ;file is read only.
-;
-;   Entry into bdos. (DE) or (E) are the parameters passed. The
+
+; Entry into BDOS. (DE) or (E) are the parameters passed. The
 ; function number desired is in register (C).
-;
 FBASE1: EX      DE,HL           ;save the (DE) parameters.
         LD      (PARAMS),HL
         EX      DE,HL
@@ -56,46 +44,42 @@ FBASE1: EX      DE,HL           ;save the (DE) parameters.
         LD      HL,(PARAMS)     ;retrieve parameters.
         EX      DE,HL           ;now (DE) has the original parameters.
         JP      (HL)            ;execute desired function.
-;
-;   BDOS function jump table.
-;
-NFUNCTS EQU     41              ;number of functions in followin table.
-;
+
+; BDOS function jump table.
+NFUNCTS EQU     41              ;number of functions in following table.
 FUNCTNS:DEFW    WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
         DEFW    SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
         DEFW    CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
         DEFW    RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,WRTPRTD,GETROV,SETATTR
         DEFW    GETPARM,GETUSER,RDRANDOM,WTRANDOM,FILESIZE,SETRAN,LOGOFF,RTN
         DEFW    RTN,WTSPECL
-;
-;   Bdos error message section.
-;
+
+; Bdos error message section.
 ERROR1: LD      HL,BADSEC       ;bad sector message.
         CALL    PRTERR          ;print it and get a 1 char responce.
-        CP      CNTRLC          ;re-boot request (control-c)?
+        CP      CTRL_C          ;re-boot request (control-c)?
         JP      Z,0             ;yes.
         RET                     ;no, return to retry i/o function.
-;
+
 ERROR2: LD      HL,BADSEL       ;bad drive selected.
         JP      ERROR5
-;
+
 ERROR3: LD      HL,DISKRO       ;disk is read only.
         JP      ERROR5
-;
+
 ERROR4: LD      HL,FILERO       ;file is read only.
-;
+
 ERROR5: CALL    PRTERR
         JP      0               ;always reboot on these errors.
-;
+
 BDOSERR:DEFB    'Bdos Err On '
 BDOSDRV:DEFB    ' : $'
 BADSEC: DEFB    'Bad Sector$'
 BADSEL: DEFB    'Select$'
 FILERO: DEFB    'File '
 DISKRO: DEFB    'R/O$'
-;
-;   Print bdos error message.
-;
+
+; Print BDOS error message.
 PRTERR: PUSH    HL              ;save second message pointer.
         CALL    OUTCRLF         ;send (cr)(lf).
         LD      A,(ACTIVE)      ;get active drive.
@@ -105,19 +89,17 @@ PRTERR: PUSH    HL              ;save second message pointer.
         CALL    PRTMESG
         POP     BC              ;print second message line now.
         CALL    PRTMESG
-;
-;   Get an input character. We will check our 1 character
+
+; Get an input character. We will check our 1 character
 ; buffer first. This may be set by the console status routine.
-;
 GETCHAR:LD      HL,CHARBUF      ;check character buffer.
         LD      A,(HL)          ;anything present already?
         LD      (HL),0          ;...either case clear it.
         OR      A
         RET     NZ              ;yes, use it.
         JP      CONIN           ;nope, go get a character responce.
-;
-;   Input and echo a character.
-;
+
+; Input and echo a character.
 GETECHO:CALL    GETCHAR         ;input a character.
         CALL    CHKCHAR         ;carriage control?
         RET     C               ;no, a regular control char so don't echo.
@@ -126,11 +108,10 @@ GETECHO:CALL    GETCHAR         ;input a character.
         CALL    OUTCON          ;and echo it.
         POP     AF              ;get character and return.
         RET     
-;
-;   Check character in (A). Set the zero flag on a carriage
+
+; Check character in (A). Set the zero flag on a carriage
 ; control character and the carry flag on any other control
 ; character.
-;
 CHKCHAR:CP      CR              ;check for carriage return, line feed, backspace,
         RET     Z               ;or a tab.
         CP      LF
@@ -154,10 +135,10 @@ CKCONSOL: LD    A,(CHARBUF)     ;check buffer.
         AND     01H             ;look at bit 0.
         RET     Z               ;return if nothing.
         CALL    CONIN           ;ok, get it.
-        CP      CNTRLS          ;if not control-s, return with zero cleared.
+        CP      CTRL_S          ;if not control-s, return with zero cleared.
         JP      NZ,CKCON1
         CALL    CONIN           ;halt processing until another char
-        CP      CNTRLC          ;is typed. Control-c?
+        CP      CTRL_C          ;is typed. Control-c?
         JP      Z,0             ;yes, reboot now.
         XOR     A               ;no, just pretend nothing was ever ready.
         RET     
@@ -310,7 +291,7 @@ RDBUF3: CP      DEL             ;user typed a rubout?
         DEC     B               ;and reset pointers (counters).
         DEC     HL
         JP      RDBUF15
-RDBUF4: CP      CNTRLE          ;physical end of line?
+RDBUF4: CP      CTRL_E          ;physical end of line?
         JP      NZ,RDBUF5
         PUSH    BC              ;yes, do it.
         PUSH    HL
@@ -318,7 +299,7 @@ RDBUF4: CP      CNTRLE          ;physical end of line?
         XOR     A               ;and update starting position.
         LD      (STARTING),A
         JP      RDBUF2
-RDBUF5: CP      CNTRLP          ;control-p?
+RDBUF5: CP      CTRL_P          ;control-p?
         JP      NZ,RDBUF6
         PUSH    HL              ;yes, flip the print flag filp-flop byte.
         LD      HL,PRTFLAG
@@ -327,7 +308,7 @@ RDBUF5: CP      CNTRLP          ;control-p?
         LD      (HL),A
         POP     HL
         JP      RDBUF1
-RDBUF6: CP      CNTRLX          ;control-x (cancel)?
+RDBUF6: CP      CTRL_X          ;control-x (cancel)?
         JP      NZ,RDBUF8
         POP     HL
 RDBUF7: LD      A,(STARTING)    ;yes, backup the cursor to here.
@@ -337,12 +318,12 @@ RDBUF7: LD      A,(STARTING)    ;yes, backup the cursor to here.
         DEC     (HL)            ;no, decrement pointer and output back up one space.
         CALL    BACKUP
         JP      RDBUF7
-RDBUF8: CP      CNTRLU          ;cntrol-u (cancel line)?
+RDBUF8: CP      CTRL_U          ;cntrol-u (cancel line)?
         JP      NZ,RDBUF9
         CALL    NEWLINE         ;start a new line.
         POP     HL
         JP      RDBUFF
-RDBUF9: CP      CNTRLR          ;control-r?
+RDBUF9: CP      CTRL_R          ;control-r?
         JP      NZ,RDBUF14
 RDBUF10:PUSH    BC              ;yes, start a new line and retype the old one.
         CALL    NEWLINE
@@ -387,7 +368,7 @@ RDBUF15:PUSH    BC
         POP     HL
         POP     BC
         LD      A,(HL)          ;was it an abort request?
-        CP      CNTRLC          ;control-c abort?
+        CP      CTRL_C          ;control-c abort?
         LD      A,B
         JP      NZ,RDBUF16
         CP      1               ;only if at start of line.
@@ -476,7 +457,7 @@ STKAREA EQU     $               ;end of stack area.
 USERNO: DEFB    0               ;current user number.
 ACTIVE: DEFB    0               ;currently active drive.
 PARAMS: DEFW    0               ;save (DE) parameters here on entry.
-STATUS: DEFW    0               ;status returned from bdos function.
+STATUS: DEFW    0               ;status returned from BDOS function.
 ;
 ;   Select error occured, jump to error routine.
 ;
@@ -2419,33 +2400,27 @@ WTSPECL:CALL    AUTOSEL         ;select proper drive.
         CALL    POSITN1         ;position the file.
         CALL    Z,WTSEQ1        ;and write (if no errors).
         RET     
-;
+
 ;**************************************************************
-;*
-;*     BDOS data storage pool.
-;*
+;* BDOS data storage pool.
 ;**************************************************************
-;
 EMPTYFCB: DEFB  0E5H            ;empty directory segment indicator.
 WRTPRT: DEFW    0               ;write protect status for all 16 drives.
 LOGIN:  DEFW    0               ;drive active word (1 bit per drive).
 USERDMA:DEFW    080H            ;user's dma address (defaults to 80h).
-;
-;   Scratch areas from parameter block.
-;
+
+; Scratch areas from parameter block.
 SCRATCH1: DEFW  0               ;relative position within dir segment for file (0-3).
 SCRATCH2: DEFW  0               ;last selected track number.
 SCRATCH3: DEFW  0               ;last selected sector number.
-;
-;   Disk storage areas from parameter block.
-;
+
+; Disk storage areas from parameter block.
 DIRBUF: DEFW    0               ;address of directory buffer to use.
 DISKPB: DEFW    0               ;contains address of disk parameter block.
 CHKVECT:DEFW    0               ;address of check vector.
 ALOCVECT: DEFW  0               ;address of allocation vector (bit map).
-;
-;   Parameter block returned from the bios.
-;
+
+; Parameter block returned from the bios.
 SECTORS:DEFW    0               ;sectors per track from bios.
 BLKSHFT:DEFB    0               ;block shift.
 BLKMASK:DEFB    0               ;block mask.
@@ -2462,7 +2437,7 @@ CLOSEFLG: DEFB  0               ;close flag (=0ffh is extent written ok).
 RDWRTFLG: DEFB  0               ;read/write flag (0ffh=read, 0=write).
 FNDSTAT:DEFB    0               ;filename found status (0=found first entry).
 MODE:   DEFB    0               ;I/o mode select (0=random, 1=sequential, 2=special random).
-EPARAM: DEFB    0               ;storage for register (E) on entry to bdos.
+EPARAM: DEFB    0               ;storage for register (E) on entry to BDOS.
 RELBLOCK: DEFB  0               ;relative position within fcb of block number written.
 COUNTER:DEFB    0               ;byte counter for directory name searches.
 SAVEFCB:DEFW    0,0             ;save space for address of fcb (for directory searches).
