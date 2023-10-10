@@ -14,6 +14,16 @@ cpm_start:
 cpm_end:
 
 main:
+    ; Clear screen
+    ld      hl, $3000
+    ld      bc, $400
+    ld      a, ' '
+    call    _memset
+    ld      hl, $3400
+    ld      bc, $400
+    ld      a, $8F
+    call    _memset
+
     ; Map RAM in bank 3
     ld  a, 35
     out (IO_BANK3), a

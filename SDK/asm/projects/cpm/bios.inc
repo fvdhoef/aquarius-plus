@@ -3,26 +3,32 @@
 ;-----------------------------------------------------------------------------
 ; BIOS jump table
 ;-----------------------------------------------------------------------------
-BOOT:   jp  _boot
-WBOOT:  jp  _wboot
-CONST:  jp  _const
-CONIN:  jp  _conin
-CONOUT: jp  _conout
-LIST:   jp  _list
-PUNCH:  jp  _punch
-READER: jp  _reader
-HOME:   jp  _home
-SELDSK: jp  _seldsk
-SETTRK: jp  _settrk
-SETSEC: jp  _setsec
-SETDMA: jp  _setdma
-READ:   jp  _read
-WRITE:  jp  _write
-PRSTAT: jp  _prstat
-SECTRN: jp  _sectrn
+BOOT:       jp  _boot
+WBOOT:      jp  _wboot
+CONST:      jp  _const
+CONIN:      jp  _conin
+CONOUT:     jp  _conout
+LIST:       jp  _list
+PUNCH:      jp  _punch
+READER:     jp  _reader
+HOME:       jp  _home
+SELDSK:     jp  _seldsk
+SETTRK:     jp  _settrk
+SETSEC:     jp  _setsec
+SETDMA:     jp  _setdma
+READ:       jp  _read
+WRITE:      jp  _write
+PRSTAT:     jp  _prstat
+SECTRN:     jp  _sectrn
 
+;-----------------------------------------------------------------------------
+; Variables used by BIOS
+;-----------------------------------------------------------------------------
 _dma_addr:  dw 0
 _keyval:    db 0
+_text_addr: dw $3000
+_text_col:  db 0
+_text_row:  db 0
 
 ;-----------------------------------------------------------------------------
 ; _memset
@@ -55,6 +61,10 @@ __low_storage_values_end:
 ; BOOT - Cold start routine
 ;-----------------------------------------------------------------------------
 _boot:
+    ; Set video mode to text with remapped border character
+    ld      a, $21
+    out     (IO_VCTRL), a
+
     ; Setup a stack
     ld      sp, $0
 
@@ -84,7 +94,7 @@ _boot:
 ; of a floppy disc or extra memory.
 ;-----------------------------------------------------------------------------
 _wboot:
-    jr _wboot
+    jr      _wboot
 
 ;-----------------------------------------------------------------------------
 ; CONST - Console status
@@ -115,7 +125,7 @@ _const:
 ; Wait until the keyboard is ready to provide a character, and return it in A.
 ;-----------------------------------------------------------------------------
 _conin:
-    jr      const
+    jr      _const
     or      a
     jr      z, _conin
     ld      a, (_keyval)
@@ -127,7 +137,98 @@ _conin:
 ; Write the character in C to the screen.
 ;-----------------------------------------------------------------------------
 _conout:
-    jr _conout
+    ; Save bank 0 and set to screen memory
+    in      a, (IO_BANK0)
+    push    a
+    ld      a, $C0
+    out     (IO_BANK0), a
+
+    ; Write to text address
+    ld      hl, (_text_addr)
+    ld      a, c
+    cp      a, 13
+    jr      z, .cr
+    cp      a, 10
+    jr      z, .lf
+    ld      (hl), a
+
+    ; Increment text address
+    inc     hl
+    ld      (_text_addr), hl
+
+    ld      a, (_text_col)
+    inc     a
+    cp      40
+    jr      z, .next_line
+    ld      (_text_col), a
+
+.done:
+    ; Restore bank 0
+    pop     a
+    out     (IO_BANK0), a
+
+    ret
+
+.next_line:
+    xor     a
+    ld      (_text_col), a
+    ld      a, (_text_row)
+    inc     a
+    cp      25
+    jr      z, .next_line_scroll
+    ld      (_text_row), a
+    jr      .done
+
+.next_line_scroll:
+    call    .do_scroll
+    ld      a, 24
+    ld      (_text_row), a
+    ld      hl, $3000 + 40 * 24
+    ld      (_text_addr), hl
+    jr      .done
+
+.cr:
+    ; Cursor back to start of line
+    ld      hl, (_text_addr)
+    ld      a, (_text_col)
+    ld      c, a
+    xor     a
+    ld      (_text_col), a
+    ld      b, a
+    sbc     hl, bc
+    ld      (_text_addr), hl
+    jr      .done
+
+.lf:
+    ; Cursor to next line
+    ld      a, (_text_row)
+    cp      24
+    jr      z, .lf_scroll
+    inc     a
+    ld      (_text_row), a
+
+    ld      hl, (_text_addr)
+    ld      bc, 40
+    or      a   ; Clear carry
+    adc     hl, bc
+    ld      (_text_addr), hl
+    jr      .done
+
+.lf_scroll:
+    call    .do_scroll
+    jr      .done
+
+.do_scroll:
+    ld      de, $3000
+    ld      hl, $3000 + 40
+    ld      bc, 40 * 24
+    ldir
+    ld      hl, $3000 + 40 * 24
+    ld      bc, 40
+    ld      a, ' '
+    call    _memset
+    ret
+
 
 ;-----------------------------------------------------------------------------
 ; LIST - Printer output
@@ -135,7 +236,8 @@ _conout:
 ; Write the character in C to the printer. If the printer isn't ready,
 ; wait until it is.
 ;-----------------------------------------------------------------------------
-_list:       jr _list
+_list:
+    jr      _list
 
 ;-----------------------------------------------------------------------------
 ; PUNCH - Paper tape punch output
@@ -143,7 +245,8 @@ _list:       jr _list
 ; Write the character in C to the "paper tape punch" - or whatever the current
 ; auxiliary device is. If the device isn't ready, wait until it is.
 ;-----------------------------------------------------------------------------
-_punch:      jr _punch
+_punch:
+    jr      _punch
 
 ;-----------------------------------------------------------------------------
 ; READER - Paper tape reader input
@@ -153,14 +256,16 @@ _punch:      jr _punch
 ; character will be returned in A. If this device isn't implemented, return
 ; character 26 (^Z).
 ;-----------------------------------------------------------------------------
-_reader:     jr _reader
+_reader:
+    jr      _reader
 
 ;-----------------------------------------------------------------------------
 ; HOME - Move disc head to track 0
 ;
 ; Move the current drive to track 0
 ;-----------------------------------------------------------------------------
-_home:       jr _home
+_home:
+    jr      _home
 
 ;-----------------------------------------------------------------------------
 ; SELDSK - Select disc drive
@@ -190,7 +295,7 @@ _seldsk:
 ; Set the track in BC (0-based).
 ;-----------------------------------------------------------------------------
 _settrk:
-    jr _settrk
+    jr      _settrk
 
 ;-----------------------------------------------------------------------------
 ; SETSEC - Set sector number
@@ -198,7 +303,7 @@ _settrk:
 ; Set the sector in BC. Under CP/M 1 and 2 a sector is 128 bytes.
 ;-----------------------------------------------------------------------------
 _setsec:
-    jr _setsec
+    jr      _setsec
 
 ;-----------------------------------------------------------------------------
 ; SETDMA - Set DMA address
@@ -207,7 +312,7 @@ _setsec:
 ; the address given in BC.
 ;-----------------------------------------------------------------------------
 _setdma:
-    ld (_dma_addr), bc
+    ld      (_dma_addr), bc
     ret
 
 ;-----------------------------------------------------------------------------
@@ -217,7 +322,7 @@ _setdma:
 ; Returns A=0 for OK, 1 for unrecoverable error, $FF if media changed.
 ;-----------------------------------------------------------------------------
 _read:
-    jr _read
+    jr      _read
 
 ;-----------------------------------------------------------------------------
 ; WRITE - Write a sector
@@ -230,7 +335,7 @@ _read:
 ; $FF if media changed.
 ;-----------------------------------------------------------------------------
 _write:
-    jr _write
+    jr      _write
 
 ;-----------------------------------------------------------------------------
 ; LISTST - Status of list device
