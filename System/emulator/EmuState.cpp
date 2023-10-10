@@ -34,8 +34,28 @@ EmuState::EmuState() {
 }
 
 void EmuState::reset() {
+    // Reset registers
+    videoCtrl         = 0;
+    videoScrX         = 0;
+    videoScrY         = 0;
+    videoSprSel       = 0;
+    videoPalSel       = 0;
+    videoLine         = 0;
+    videoIrqLine      = 0;
+    irqMask           = 0;
+    irqStatus         = 0;
+    bankRegs[0]       = 0xC0 | 0;
+    bankRegs[1]       = 33;
+    bankRegs[2]       = 34;
+    bankRegs[3]       = 19;
+    ay1Addr           = 0;
+    ay2Addr           = 0;
+    sysCtrlDisableExt = false;
+    sysCtrlAyDisable  = false;
+    soundOutput       = false;
+    cpmRemap          = false;
+
     Z80RESET(&z80ctx);
-    cpmRemap = false;
     ay1.reset();
     ay2.reset();
     kbBufReset();
