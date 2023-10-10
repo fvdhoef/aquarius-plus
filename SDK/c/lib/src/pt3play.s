@@ -1,4 +1,5 @@
     .z80
+    .allow_undocumented
 
 ; PT3 header
 ;
@@ -366,8 +367,7 @@ L1: push bc
     push de
     ex   de,hl
     ld   de,#23
-
-    .db 0xDD,0x26,0x08      ; TODO: use correct syntax instead for: ld ixh,#8
+    ld   ixh,#8
 
 L2: srl  b
     rr   c

@@ -26,8 +26,8 @@ C_OBJS      := $(addprefix $(BUILD_DIR)/, $(C_SRCS:.c=.rel))
 OBJS        := $(S_OBJS) $(C_OBJS)
 
 CFLAGS      += -mz80 --opt-code-speed
-CFLAGS      += -I$(AQPLUS_SDK)/include $(addprefix -I,$(INC_DIRS))
-LFLAGS      += -mz80 --code-loc 0x391B --data-loc 0 --no-std-crt0 -L $(AQPLUS_SDK)/lib aqplus.lib
+CFLAGS      += -I$(AQPLUS_SDK)/c/include $(addprefix -I,$(INC_DIRS))
+LFLAGS      += -mz80 --code-loc 0x391B --data-loc 0 --no-std-crt0 -L $(AQPLUS_SDK)/c/lib aqplus.lib
 
 .PHONY: all clean run_emu run_aqp
 
@@ -36,7 +36,7 @@ all: $(OUT) $(DEPS)
 $(OUT): $(OBJS)
 	@echo Linking $@
 	@mkdir -p $(dir $@)
-	@sdcc $(LFLAGS) $(AQPLUS_SDK)/lib/crt0.rel $(OBJS) -o $(OUT).ihx
+	@sdcc $(LFLAGS) $(AQPLUS_SDK)/c/lib/crt0.rel $(OBJS) -o $(OUT).ihx
 	@sdobjcopy -I ihex -O binary $(OUT).ihx $(OUT)
 
 $(S_OBJS): $(BUILD_DIR)/%.rel: %.s

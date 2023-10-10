@@ -10,4 +10,4 @@ FILES_TO_COPY += assets/tiledata.bin
 assets/tiledata.bin: assets/tiledemo.tmx
 	../../tools/tmxconvert.py $< $@
 
-include $(AQPLUS_SDK)/lib/Makefile.common
+include $(AQPLUS_SDK)/c/lib/Makefile.common
