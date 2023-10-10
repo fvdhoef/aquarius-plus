@@ -763,13 +763,16 @@ void AqKeyboard::pressKey(unsigned char ch) {
         vTaskDelay(pdMS_TO_TICKS(500));
         return;
     }
+    if (ch == 0x1E) {
+        // Reset
+        FPGA::instance().aqpReset();
+        vTaskDelay(pdMS_TO_TICKS(500));
+        return;
+    }
     if (ch > '~')
         return;
     FPGA::instance().aqpWriteKeybBuffer(ch);
     vTaskDelay(pdMS_TO_TICKS(10));
 
-    // Delay a little longer on reset
-    if (ch == 0x1E)
-        vTaskDelay(pdMS_TO_TICKS(500));
 #endif
 }
