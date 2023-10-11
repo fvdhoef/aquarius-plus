@@ -281,6 +281,10 @@ void UI::mainLoop() {
             ImGui::EndMainMenuBar();
         }
 
+        if (emuState.emuMode == EmuState::Em_Halted) {
+            config.showCpuState = true;
+        }
+
         if (config.showScreenWindow) {
             wndScreen(&config.showScreenWindow);
         } else {
