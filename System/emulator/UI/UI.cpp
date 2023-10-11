@@ -105,6 +105,8 @@ void UI::mainLoop() {
     bool showAppAbout   = false;
     bool showDemoWindow = false;
 
+    bool escapePressed = false;
+
     bool done = false;
     while (!done) {
         SDL_Event event;
@@ -113,6 +115,15 @@ void UI::mainLoop() {
             switch (event.type) {
                 case SDL_KEYDOWN:
                 case SDL_KEYUP: {
+                    if (event.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+                        escapePressed = (event.type == SDL_KEYDOWN);
+                    }
+                    // We decode CTRL-ESCAPE in this weird way to allow the sequence ESCAPE and then CTRL to be used on Windows.
+                    if (escapePressed && !event.key.repeat && event.type == SDL_KEYDOWN && (event.key.keysym.mod & KMOD_LCTRL)) {
+                        emuState.reset();
+                        break;
+                    }
+
                     // Don't pass keypresses to emulator when ImGUI has keyboard focus
                     if (io.WantCaptureKeyboard)
                         break;
