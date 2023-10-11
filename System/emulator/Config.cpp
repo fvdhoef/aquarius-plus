@@ -94,6 +94,7 @@ void Config::load() {
                 emuState.breakpoints.push_back(bp);
             }
         }
+        emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
 
         cJSON_free(root);
     }
