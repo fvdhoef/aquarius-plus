@@ -59,6 +59,8 @@ void EmuState::reset() {
     ay1.reset();
     ay2.reset();
     kbBufReset();
+
+    emuMode = Em_Running;
 }
 
 unsigned EmuState::emulate() {
