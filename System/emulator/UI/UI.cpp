@@ -461,7 +461,11 @@ void UI::emulate() {
         }
     }
 
+    static bool dbgUpdateScreen = false;
+
     if (emuState.emuMode == EmuState::Em_Running) {
+        dbgUpdateScreen = true;
+
         // Render each audio sample
         for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuState.emulationSpeed; aidx++) {
             while (true) {
@@ -494,10 +498,24 @@ void UI::emulate() {
     if (emuState.emuMode != EmuState::Em_Running) {
         emuState.tmpBreakpoint = -1;
         if (emuState.emuMode == EmuState::Em_Step) {
+            dbgUpdateScreen  = true;
             emuState.emuMode = EmuState::Em_Halted;
             emuState.emulate();
         }
-        renderScreen();
+
+        if (dbgUpdateScreen) {
+            dbgUpdateScreen = false;
+
+            // Update screen
+            int line = emuState.videoLine;
+            for (int i = 0; i < 240; i++) {
+                emuState.videoLine = i;
+                emuState.video.drawLine();
+            }
+            emuState.videoLine = line;
+
+            renderScreen();
+        }
     }
 
     // Return buffer to audio subsystem.
