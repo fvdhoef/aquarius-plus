@@ -30,6 +30,57 @@ _text_addr: dw $3000
 _text_col:  db 0
 _text_row:  db 0
 
+_cur_track: dw 0
+_cur_sector: dw 0
+
+
+; http://www.gaby.de/cpm/manuals/archive/cpm22htm/ch6.htm
+
+_dph:
+    dw _trans   ; XLT
+    dw 0,0,0    ; Track/Sector/DirNum scratch pad words
+    dw _dirbuf  ; Pointer to 128-byte scratch pad area for directory operations
+    dw _dpb     ; Pointer to DPB
+    dw _csv     ; Pointer to checksum vector
+    dw _alv     ; Pointer to allocation vector
+
+_dpb:
+    dw 26       ; SPT - Sectors Per Track
+    db 3        ; BSH - data allocation block shift factor  (128 << BSH)
+    db 7        ; BLM - data allocation block mask (2^BSH - 1])
+    db 0        ; EXM - extent mask
+    dw 242      ; DSM - total storage capacity of the disk drive
+    dw 63       ; DRM - total number of directory entries that can be stored on this drive
+    db 192      ; AL0 - reserved directory blocks
+    db 0        ; AL1 - reserved directory blocks
+    dw 16       ; size of the directory check vector
+    dw 2        ; number of reserved tracks at the beginning of the (logical) disk
+
+_trans:
+    db   1,  7, 13, 19  ; sectors  1,  2,  3,  4
+    db  25,  5, 11, 17  ; sectors  5,  6,  7,  6
+    db  23,  3,  9, 15  ; sectors  9, 10, 11, 12
+    db  21,  2,  8, 14  ; sectors 13, 14, 15, 16
+    db  20, 26,  6, 12  ; sectors 17, 18, 19, 20
+    db  18, 24,  4, 10  ; sectors 21, 22, 23, 24
+    db  16, 22          ; sectors 25, 26
+
+_csv: defs 16
+_alv: defs 31
+
+_dirbuf: defs 128
+
+
+;-----------------------------------------------------------------------------
+; Initialization values for low storage area ($0000-$0007)
+;-----------------------------------------------------------------------------
+__low_storage_values:
+    jp      WBOOT   ; Jump to BIOS
+    db      0       ; IO byte
+    db      0       ; DSK byte (current default drive)
+    jp      $E406   ; Jump to BDOS
+__low_storage_values_end:
+
 ;-----------------------------------------------------------------------------
 ; _memset
 ;-----------------------------------------------------------------------------
@@ -46,16 +97,6 @@ _memset:
     dec     b
     jr      nz, .repeat
     ret
-
-;-----------------------------------------------------------------------------
-; Initialization values for low storage area ($0000-$0007)
-;-----------------------------------------------------------------------------
-__low_storage_values:
-    jp      $F200   ; Jump to BIOS
-    db      0       ; IO byte
-    db      0       ; DSK byte (current default drive)
-    jp      $E400   ; Jump to BDOS
-__low_storage_values_end:
 
 ;-----------------------------------------------------------------------------
 ; BOOT - Cold start routine
@@ -79,6 +120,10 @@ _boot:
     ld  hl, __low_storage_values
     ld  bc, __low_storage_values_end - __low_storage_values
     ldir
+
+    ; Default dma address is $80
+    ld      bc, $80
+    call    _setdma
 
     ; Jump to CCP
     jp      $DC00
@@ -125,10 +170,14 @@ _const:
 ; Wait until the keyboard is ready to provide a character, and return it in A.
 ;-----------------------------------------------------------------------------
 _conin:
-    jr      _const
+    call    _const
     or      a
     jr      z, _conin
     ld      a, (_keyval)
+    ld      b, a
+    xor     a
+    ld      (_keyval), a
+    ld      a, b
     ret
 
 ;-----------------------------------------------------------------------------
@@ -265,7 +314,10 @@ _reader:
 ; Move the current drive to track 0
 ;-----------------------------------------------------------------------------
 _home:
-    jr      _home
+    xor     a
+    ld      (_cur_track + 0), a
+    ld      (_cur_track + 1), a
+    ret
 
 ;-----------------------------------------------------------------------------
 ; SELDSK - Select disc drive
@@ -286,7 +338,7 @@ _home:
 ; If the disc could not be selected it returns HL=0.
 ;-----------------------------------------------------------------------------
 _seldsk:
-    ld      hl, 0
+    ld      hl, _dph
     ret
 
 ;-----------------------------------------------------------------------------
@@ -295,7 +347,8 @@ _seldsk:
 ; Set the track in BC (0-based).
 ;-----------------------------------------------------------------------------
 _settrk:
-    jr      _settrk
+    ld      (_cur_track), bc
+    ret
 
 ;-----------------------------------------------------------------------------
 ; SETSEC - Set sector number
@@ -303,7 +356,8 @@ _settrk:
 ; Set the sector in BC. Under CP/M 1 and 2 a sector is 128 bytes.
 ;-----------------------------------------------------------------------------
 _setsec:
-    jr      _setsec
+    ld      (_cur_sector), bc
+    ret
 
 ;-----------------------------------------------------------------------------
 ; SETDMA - Set DMA address
@@ -322,7 +376,12 @@ _setdma:
 ; Returns A=0 for OK, 1 for unrecoverable error, $FF if media changed.
 ;-----------------------------------------------------------------------------
 _read:
-    jr      _read
+    ; TODO: READ
+
+    ld      a, 1
+    ; xor     a
+    ret
+    ; jr      _read
 
 ;-----------------------------------------------------------------------------
 ; WRITE - Write a sector
