@@ -95,6 +95,8 @@ void Config::load() {
             }
         }
         emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
+        emuState.traceEnable       = getBoolValue(root, "traceEnable", false);
+        emuState.traceDepth        = getIntValue(root, "traceDepth", 16);
 
         cJSON_free(root);
     }
@@ -134,6 +136,8 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "memEditMemSelect", memEditMemSelect);
 
     cJSON_AddBoolToObject(root, "enableBreakpoints", emuState.enableBreakpoints);
+    cJSON_AddBoolToObject(root, "traceEnable", emuState.traceEnable);
+    cJSON_AddNumberToObject(root, "traceDepth", emuState.traceDepth);
 
     auto breakpoints = cJSON_AddArrayToObject(root, "breakpoints");
     for (auto &bp : emuState.breakpoints) {
