@@ -78,7 +78,7 @@ __low_storage_values:
     jp      WBOOT   ; Jump to BIOS
     db      0       ; IO byte
     db      0       ; DSK byte (current default drive)
-    jp      $E406   ; Jump to BDOS
+    jp      FBASE   ; Jump to BDOS
 __low_storage_values_end:
 
 ;-----------------------------------------------------------------------------
@@ -111,7 +111,7 @@ _boot:
 
     ; Clear user memory
     ld      hl, $0
-    ld      bc, $DC00
+    ld      bc, ccp
     ld      a, 0
     call    _memset
 
@@ -126,7 +126,7 @@ _boot:
     call    _setdma
 
     ; Jump to CCP
-    jp      $DC00
+    jp      ccp
 
 .loop:
     jr      .loop

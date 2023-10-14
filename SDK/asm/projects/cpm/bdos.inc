@@ -1,6 +1,3 @@
-; Note that the following six bytes must match those at (PATTRN1) or cp/m will HALT. Why?
-PATTRN2:DEFB    0,22,0,0,0,0    ;(* serial number bytes *).
-
 ;**************************************************************
 ;* BDOS ENTRY
 ;**************************************************************
@@ -2457,7 +2454,3 @@ FILEPOS:DEFW    0               ;files position within directory (0 to max entri
 ; 16 possible drives.
 ;
 CKSUMTBL: DEFB  0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
-;
-;   Extra space ?
-;
-        DEFB    0,0,0,0
