@@ -52,8 +52,9 @@ void Config::load() {
 
     std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
     if (auto root = cJSON_ParseWithLength(str.c_str(), str.size())) {
-        imguiConf  = getStringValue(root, "imguiConfig", "");
-        sdCardPath = getStringValue(root, "sdCardPath", "");
+        imguiConf      = getStringValue(root, "imguiConfig", "");
+        sdCardPath     = getStringValue(root, "sdCardPath", "");
+        asmListingPath = getStringValue(root, "asmListingPath", "");
 
         wndPosX     = getIntValue(root, "wndPosX", VIDEO_WIDTH * 2);
         wndPosY     = getIntValue(root, "wndPosY", VIDEO_HEIGHT * 2);
@@ -112,6 +113,7 @@ void Config::save() {
     auto root = cJSON_CreateObject();
     cJSON_AddItemToObject(root, "imguiConfig", cJSON_CreateString(imguiConf.c_str()));
     cJSON_AddStringToObject(root, "sdCardPath", sdCardPath.c_str());
+    cJSON_AddStringToObject(root, "asmListingPath", asmListingPath.c_str());
 
     cJSON_AddNumberToObject(root, "wndPosX", wndPosX);
     cJSON_AddNumberToObject(root, "wndPosY", wndPosY);

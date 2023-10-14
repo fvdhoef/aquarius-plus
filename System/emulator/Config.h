@@ -18,6 +18,7 @@ public:
     std::string configPath;
     std::string imguiConf;
     std::string sdCardPath;
+    std::string asmListingPath;
 
     int  wndPosX     = SDL_WINDOWPOS_CENTERED;
     int  wndPosY     = SDL_WINDOWPOS_CENTERED;

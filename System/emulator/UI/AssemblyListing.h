@@ -7,6 +7,7 @@ public:
     AssemblyListing();
 
     void load(const std::string &path);
+    void clear();
 
     const std::string &getPath() {
         return path;

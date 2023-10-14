@@ -1,4 +1,5 @@
 #include "AssemblyListing.h"
+#include "Config.h"
 #include <stack>
 
 static inline void ltrim(std::string &s) {
@@ -22,7 +23,10 @@ static inline void trim(std::string &s) {
 }
 
 AssemblyListing::AssemblyListing() {
-    // load("/Users/frank/Work/CurtisAquariusPlus/plusBasic/zout/aqplusbas.lst");
+    auto cfgPath = Config::instance().asmListingPath;
+    if (!cfgPath.empty()) {
+        load(cfgPath);
+    }
 }
 
 void AssemblyListing::load(const std::string &_path) {
@@ -135,8 +139,16 @@ void AssemblyListing::load(const std::string &_path) {
                 break;
             l.file = mainFileName;
         }
+
+        Config::instance().asmListingPath = path;
+
     } catch (...) {
-        lines.clear();
-        path.clear();
+        clear();
     }
+}
+
+void AssemblyListing::clear() {
+    lines.clear();
+    path.clear();
+    Config::instance().asmListingPath.clear();
 }

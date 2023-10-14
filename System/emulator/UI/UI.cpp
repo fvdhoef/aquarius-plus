@@ -1052,15 +1052,21 @@ void UI::wndAssemblyListing(bool *p_open) {
 
     bool open = ImGui::Begin("Assembly listing", p_open, 0);
     if (open) {
-        if (ImGui::Button("Load zmac listing")) {
-            char const *lFilterPatterns[1] = {"*.lst"};
-            char       *lstFile            = tinyfd_openFileDialog("Open zmac listing file", "", 1, lFilterPatterns, "Zmac listing files", 0);
-            if (lstFile) {
-                asmListing.load(lstFile);
+        if (asmListing.lines.empty()) {
+            if (ImGui::Button("Load zmac listing")) {
+                char const *lFilterPatterns[1] = {"*.lst"};
+                char       *lstFile            = tinyfd_openFileDialog("Open zmac listing file", "", 1, lFilterPatterns, "Zmac listing files", 0);
+                if (lstFile) {
+                    asmListing.load(lstFile);
+                }
             }
+        } else {
+            if (ImGui::Button("X")) {
+                asmListing.clear();
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted(asmListing.getPath().c_str());
         }
-        ImGui::SameLine();
-        ImGui::TextUnformatted(asmListing.getPath().c_str());
         ImGui::Separator();
 
         if (ImGui::BeginTable("Table", 5, ImGuiTableFlags_ScrollY | ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
