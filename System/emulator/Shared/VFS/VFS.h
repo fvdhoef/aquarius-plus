@@ -1,4 +1,3 @@
-// This file is shared between the emulator and ESP32. It needs to be manually copied when changed.
 #pragma once
 
 #include "Common.h"
@@ -64,7 +63,7 @@ public:
     virtual int tell(int fd);
 
     // Directory operations
-    virtual DirEnumCtx direnum(const std::string &path);
+    virtual DirEnumCtx direnum(const std::string &path, bool mode83 = false);
 
     // Filesystem operations
     virtual int delete_(const std::string &path);

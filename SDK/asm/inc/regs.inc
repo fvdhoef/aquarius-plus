@@ -251,6 +251,7 @@ ESPCMD_CHDIR:      equ $1C     ; Change directory
 ESPCMD_STAT:       equ $1D     ; Get file status
 ESPCMD_GETCWD:     equ $1E     ; Get current working directory
 ESPCMD_CLOSEALL:   equ $1F     ; Close any open file/directory descriptor
+ESPCMD_OPENDIR83:  equ $20     ; Open directory in 8.3 mode
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories

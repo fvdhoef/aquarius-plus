@@ -59,7 +59,7 @@ private:
     void cmdWrite(uint8_t fd, uint16_t size, const void *data);
     void cmdSeek(uint8_t fd, uint32_t offset);
     void cmdTell(uint8_t fd);
-    void cmdOpenDir(const char *pathArg);
+    void cmdOpenDir(const char *pathArg, bool mode83 = false);
     void cmdCloseDir(uint8_t dd);
     void cmdReadDir(uint8_t dd);
     void cmdDelete(const char *pathArg);

@@ -18,8 +18,8 @@ OUTFILE = cpmloader.aqx
 FILES_TO_COPY = zout/$(OUTFILE)
 
 all:
-	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n -c cpm22.asm --oo cim,lst
-	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n -c cpmloader.asm --oo cim,lst
+	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n cpm22.asm --oo cim,lst
+	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n cpmloader.asm --oo cim,lst
 	mv zout/cpmloader.cim zout/cpmloader.aqx
 
 run_emu: all

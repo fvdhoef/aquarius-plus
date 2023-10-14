@@ -19,7 +19,7 @@ int VFS::seek(int, size_t) {
 int VFS::tell(int) {
     return ERR_OTHER;
 }
-DirEnumCtx VFS::direnum(const std::string &) {
+DirEnumCtx VFS::direnum(const std::string &, bool) {
     return nullptr;
 }
 int VFS::delete_(const std::string &) {

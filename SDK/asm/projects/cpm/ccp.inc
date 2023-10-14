@@ -207,7 +207,7 @@ _setcdrv:
         add     a,a
         add     a,a
         add     a,a
-        ld      hl,_cdrive       ; now add in the current drive number.
+        ld      hl,_cdrive      ; now add in the current drive number.
         or      (hl)
         ld      (TDRIVE),a      ; and save.
         ret
@@ -843,7 +843,9 @@ _direct3:
         ld      a,e             ; bump name count.
         inc     e
         push    de
-        and     $03             ; at end of line?
+;       and     $03             ; at end of line?
+        ; *40 columns fix*
+        and     $01             ; at end of line?
         push    af
         jp      nz,_direct4
         call    _crlf           ; yes, end this line and start another.

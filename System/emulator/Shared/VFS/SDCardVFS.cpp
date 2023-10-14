@@ -589,7 +589,7 @@ int SDCardVFS::tell(int fd) {
     return (result < 0) ? mapErrNoResult() : result;
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path) {
+DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
     if (basePath.empty())
         return nullptr;
 
@@ -664,6 +664,42 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         // Skip files starting with a dot
         if (dee.filename.size() == 0 || dee.filename[0] == '.')
             continue;
+
+        if (mode83) {
+            // Skip file if it does not conform to 8.3
+
+            // Filename length > 12 characters?
+            if (dee.filename.size() > 12)
+                continue;
+
+            auto extPos = dee.filename.find_first_of('.');
+            if (extPos == std::string::npos) {
+                // No extension and length > 8?
+                if (dee.filename.size() > 8)
+                    continue;
+
+            } else {
+                // Base filename > 8 characters
+                if (extPos > 8) {
+                    continue;
+                }
+                // Multiple dots?
+                if (dee.filename.find_first_of('.', extPos + 1) != std::string::npos)
+                    continue;
+            }
+
+            // Disallowed characters?
+            bool ok = true;
+            for (unsigned i = 0; i < dee.filename.size(); i++) {
+                dee.filename[i] = std::toupper(dee.filename[i]);
+                if (dee.filename[i] <= ' ' || dee.filename[i] >= '~') {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok)
+                continue;
+        }
 
         result->push_back(dee);
     }

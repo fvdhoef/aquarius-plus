@@ -41,6 +41,7 @@ enum {
     ESPCMD_STAT        = 0x1D, // Get file status
     ESPCMD_GETCWD      = 0x1E, // Get current working directory
     ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
+    ESPCMD_OPENDIR83   = 0x20, // Open directory in 8.3 mode
 };
 
 #define ESP_PREFIX "esp:"
@@ -423,6 +424,15 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 }
                 break;
             }
+            case ESPCMD_OPENDIR83: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    const char *pathArg = (const char *)&rxBuf[1];
+                    cmdOpenDir(pathArg, true);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
             case ESPCMD_CLOSEDIR: {
                 if (rxBufIdx == 2) {
                     uint8_t dd = rxBuf[1];
@@ -749,7 +759,7 @@ static bool wildcardMatch(const std::string &text, const std::string &pattern) {
     return (textPos == (int)text.size() && patternPos == (int)pattern.size());
 }
 
-void AqUartProtocol::cmdOpenDir(const char *pathArg) {
+void AqUartProtocol::cmdOpenDir(const char *pathArg, bool mode83) {
     DBGF("OPENDIR: '%s'\n", pathArg);
 
     // Find free directory descriptor
@@ -775,7 +785,7 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg) {
         return;
     }
 
-    auto deCtx = vfs->direnum(path);
+    auto deCtx = vfs->direnum(path, mode83);
     if (!deCtx) {
         txFifoWrite(ERR_NOT_FOUND);
     } else {

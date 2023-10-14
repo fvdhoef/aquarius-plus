@@ -11,15 +11,15 @@ CONOUT:     jp  _conout
 LIST:       jp  _list
 PUNCH:      jp  _punch
 READER:     jp  _reader
-HOME:       jp  _home
-SELDSK:     jp  _seldsk
-SETTRK:     jp  _settrk
-SETSEC:     jp  _setsec
+; HOME:       jp  _home
+; SELDSK:     jp  _seldsk
+; SETTRK:     jp  _settrk
+; SETSEC:     jp  _setsec
 SETDMA:     jp  _setdma
-READ:       jp  _read
-WRITE:      jp  _write
-PRSTAT:     jp  _prstat
-SECTRN:     jp  _sectrn
+; READ:       jp  _read
+; WRITE:      jp  _write
+; PRSTAT:     jp  _prstat
+; SECTRN:     jp  _sectrn
 
 ;-----------------------------------------------------------------------------
 ; Variables used by BIOS
@@ -29,47 +29,6 @@ _keyval:    db 0
 _text_addr: dw $3000
 _text_col:  db 0
 _text_row:  db 0
-
-_cur_track: dw 0
-_cur_sector: dw 0
-
-
-; http://www.gaby.de/cpm/manuals/archive/cpm22htm/ch6.htm
-
-_dph:
-    dw _trans   ; XLT
-    dw 0,0,0    ; Track/Sector/DirNum scratch pad words
-    dw _dirbuf  ; Pointer to 128-byte scratch pad area for directory operations
-    dw _dpb     ; Pointer to DPB
-    dw _csv     ; Pointer to checksum vector
-    dw _alv     ; Pointer to allocation vector
-
-_dpb:
-    dw 26       ; SPT - Sectors Per Track
-    db 3        ; BSH - data allocation block shift factor  (128 << BSH)
-    db 7        ; BLM - data allocation block mask (2^BSH - 1])
-    db 0        ; EXM - extent mask
-    dw 242      ; DSM - total storage capacity of the disk drive
-    dw 63       ; DRM - total number of directory entries that can be stored on this drive
-    db 192      ; AL0 - reserved directory blocks
-    db 0        ; AL1 - reserved directory blocks
-    dw 16       ; size of the directory check vector
-    dw 2        ; number of reserved tracks at the beginning of the (logical) disk
-
-_trans:
-    db   1,  7, 13, 19  ; sectors  1,  2,  3,  4
-    db  25,  5, 11, 17  ; sectors  5,  6,  7,  6
-    db  23,  3,  9, 15  ; sectors  9, 10, 11, 12
-    db  21,  2,  8, 14  ; sectors 13, 14, 15, 16
-    db  20, 26,  6, 12  ; sectors 17, 18, 19, 20
-    db  18, 24,  4, 10  ; sectors 21, 22, 23, 24
-    db  16, 22          ; sectors 25, 26
-
-_csv: defs 16
-_alv: defs 31
-
-_dirbuf: defs 128
-
 
 ;-----------------------------------------------------------------------------
 ; Initialization values for low storage area ($0000-$0007)
@@ -125,11 +84,16 @@ _boot:
     ld      bc, $80
     call    _setdma
 
+    ;
+    ld      bc, .bootstr
+    call    PRTMESG
+
     ; Jump to CCP
+    ld      c, 0
     jp      ccp
 
-.loop:
-    jr      .loop
+.bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
+
 
 ;-----------------------------------------------------------------------------
 ; WBOOT - Warm boot - reload command processor
@@ -139,7 +103,8 @@ _boot:
 ; of a floppy disc or extra memory.
 ;-----------------------------------------------------------------------------
 _wboot:
-    jr      _wboot
+    ; Jump to CCP
+    jp      ccp
 
 ;-----------------------------------------------------------------------------
 ; CONST - Console status
@@ -278,7 +243,6 @@ _conout:
     call    _memset
     ret
 
-
 ;-----------------------------------------------------------------------------
 ; LIST - Printer output
 ;
@@ -286,7 +250,17 @@ _conout:
 ; wait until it is.
 ;-----------------------------------------------------------------------------
 _list:
-    jr      _list
+    ret
+
+;-----------------------------------------------------------------------------
+; LISTST - Status of list device
+;
+; Return status of current printer device.
+; Returns A=0 (not ready) or A=$FF (ready).
+;-----------------------------------------------------------------------------
+_prstat:
+    ld      a, $FF
+    ret
 
 ;-----------------------------------------------------------------------------
 ; PUNCH - Paper tape punch output
@@ -295,7 +269,7 @@ _list:
 ; auxiliary device is. If the device isn't ready, wait until it is.
 ;-----------------------------------------------------------------------------
 _punch:
-    jr      _punch
+    ret
 
 ;-----------------------------------------------------------------------------
 ; READER - Paper tape reader input
@@ -306,18 +280,19 @@ _punch:
 ; character 26 (^Z).
 ;-----------------------------------------------------------------------------
 _reader:
-    jr      _reader
+    ld      a, 26
+    ret
 
 ;-----------------------------------------------------------------------------
 ; HOME - Move disc head to track 0
 ;
 ; Move the current drive to track 0
 ;-----------------------------------------------------------------------------
-_home:
-    xor     a
-    ld      (_cur_track + 0), a
-    ld      (_cur_track + 1), a
-    ret
+; _home:
+;     xor     a
+;     ld      (_cur_track + 0), a
+;     ld      (_cur_track + 1), a
+;     ret
 
 ;-----------------------------------------------------------------------------
 ; SELDSK - Select disc drive
@@ -337,27 +312,27 @@ _home:
 ;
 ; If the disc could not be selected it returns HL=0.
 ;-----------------------------------------------------------------------------
-_seldsk:
-    ld      hl, _dph
-    ret
+; _seldsk:
+;     ld      hl, _dph
+;     ret
 
 ;-----------------------------------------------------------------------------
 ; SETTRK - Set track number
 ;
 ; Set the track in BC (0-based).
 ;-----------------------------------------------------------------------------
-_settrk:
-    ld      (_cur_track), bc
-    ret
+; _settrk:
+;     ld      (_cur_track), bc
+;     ret
 
 ;-----------------------------------------------------------------------------
 ; SETSEC - Set sector number
 ;
 ; Set the sector in BC. Under CP/M 1 and 2 a sector is 128 bytes.
 ;-----------------------------------------------------------------------------
-_setsec:
-    ld      (_cur_sector), bc
-    ret
+; _setsec:
+;     ld      (_cur_sector), bc
+;     ret
 
 ;-----------------------------------------------------------------------------
 ; SETDMA - Set DMA address
@@ -375,13 +350,13 @@ _setdma:
 ; Read the currently set track and sector at the current DMA address.
 ; Returns A=0 for OK, 1 for unrecoverable error, $FF if media changed.
 ;-----------------------------------------------------------------------------
-_read:
-    ; TODO: READ
+; _read:
+;     ; TODO: READ
 
-    ld      a, 1
-    ; xor     a
-    ret
-    ; jr      _read
+;     ld      a, 1
+;     ; xor     a
+;     ret
+;     ; jr      _read
 
 ;-----------------------------------------------------------------------------
 ; WRITE - Write a sector
@@ -393,18 +368,8 @@ _read:
 ; Returns A=0 for OK, 1 for unrecoverable error, 2 if disc is readonly,
 ; $FF if media changed.
 ;-----------------------------------------------------------------------------
-_write:
-    jr      _write
-
-;-----------------------------------------------------------------------------
-; LISTST - Status of list device
-;
-; Return status of current printer device.
-; Returns A=0 (not ready) or A=$FF (ready).
-;-----------------------------------------------------------------------------
-_prstat:
-    ld      a, 0
-    ret
+; _write:
+;     jr      _write
 
 ;-----------------------------------------------------------------------------
 ; SECTRAN - Sector translation for skewing
@@ -415,7 +380,7 @@ _prstat:
 ; with hardware skewing, this would normally ignore DE and return either
 ; BC or BC+1.
 ;-----------------------------------------------------------------------------
-_sectrn:
-    push    hl
-    pop     bc
-    ret
+; _sectrn:
+;     push    hl
+;     pop     bc
+;     ret

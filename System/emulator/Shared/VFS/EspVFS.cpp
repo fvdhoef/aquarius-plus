@@ -82,8 +82,11 @@ int EspVFS::close(int fd) {
     return 0;
 }
 
-DirEnumCtx EspVFS::direnum(const std::string &path) {
+DirEnumCtx EspVFS::direnum(const std::string &path, bool mode83) {
     (void)path;
+    if (mode83)
+        return nullptr;
+
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
     result->emplace_back(fn_settings, (int)(settings_aqx_end - settings_aqx_start), 0, 0, 0);
     return result;

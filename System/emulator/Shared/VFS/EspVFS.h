@@ -18,7 +18,7 @@ public:
     int write(int fd, size_t size, const void *buf) override;
 
     // Directory operations
-    DirEnumCtx direnum(const std::string &path) override;
+    DirEnumCtx direnum(const std::string &path, bool mode83) override;
 
     // Filesystem operations
     int stat(const std::string &path, struct stat *st) override;
