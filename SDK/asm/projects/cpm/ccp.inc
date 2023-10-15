@@ -1126,7 +1126,7 @@ _unkwn1:
 
         ; Load in the program.
         ld      hl,TBASE        ; store the program starting here.
-_unkwn2:
+.load_loop:
         push    hl
         ex      de,hl
         call    _dmaset         ; set transfer address.
@@ -1137,12 +1137,12 @@ _unkwn2:
         ld      de,128
         add     hl,de
         ld      de,CBASE        ; enough room for the whole file?
-        ld      A,L
-        SUB     E
-        ld      A,H
-        SBC     a,d
+        ld      a,l
+        sub     e
+        ld      a,h
+        sbc     a,d
         jp      nc,_unkwn0      ; no, it can't fit.
-        jp      _unkwn2
+        jp      .load_loop
 
         ; Get here after finished reading.
 _unkwn4:
@@ -1154,7 +1154,7 @@ _unkwn4:
         ld      hl,_chgdrv      ; command name.
         push    hl
         ld      a,(hl)          ; set drive code in default fcb.
-        ld      (_fcb),A
+        ld      (_fcb),a
         ld      a,16            ; put second name 16 bytes later.
         call    _convert        ; convert second file name.
         pop     hl

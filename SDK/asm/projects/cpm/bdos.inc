@@ -633,24 +633,14 @@ SETRAN:
 ; not already active.
 ;-----------------------------------------------------------------------------
 LOGINDRV:
-        ; ld      hl,(LOGIN)      ; get the login bitmap.
-        ; ld      A,(ACTIVE)      ; get the default drive.
-        ; ld      C,A
-        ; call    SHIFTR          ; position active bit for this drive
-        ; push    hl              ; into bit 0.
-        ; ex      de,hl
-        ; call    SELECT          ; select this drive.
-        ; pop     hl
-        ; call    z,SLCTERR       ; valid drive?
-        ; ld      a,l             ; is this a newly activated drive?
-        ; rra
-        ; ret     c
+        cp      a,16
+        call    nc,SLCTERR      ; valid drive?
         ld      hl,(LOGIN)      ; yes, update the login bitmap.
         ld      c,l
         ld      b,h
         call    SETBIT
         ld      (LOGIN),hl      ; and save.
-        ; jp      BITMAP          ; now update the bitmap.
+        ; jp      BITMAP        ; now update the bitmap.
         ret
 
 ;-----------------------------------------------------------------------------
@@ -715,7 +705,22 @@ RSTDSK:
 ; [15] OPENFIL - Function to open a specified file.
 ;-----------------------------------------------------------------------------
 OPENFIL:
+        ld      (SAVEFCB), de   ; Save FCB
+        call    _findfst
+        jr      nz, .notfound
+
+        ; Open file        
+        call    _openfile
+        bit     7,a
+        jr      nz,.notfound
+
         ; FIXME
+
+        ; Return success
+        xor     a
+        jp      SETSTAT
+
+.notfound:
         ld      a,$FF
         jp      SETSTAT
 
@@ -727,6 +732,8 @@ OPENFIL:
 ; [16] CLOSEFIL - Function to close a specified file.
 ;-----------------------------------------------------------------------------
 CLOSEFIL:
+        jr      CLOSEFIL
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -742,81 +749,24 @@ CLOSEFIL:
 ; DE=Address of FCB
 ;-----------------------------------------------------------------------------
 GETFST:
-        ; Save FCB
-        ld      (SAVEFCB), de
-
-        ; Close directory descriptor 0
-        ld      a, ESPCMD_CLOSEDIR
-        call    esp_cmd
-        xor     a
-        call    esp_send_byte
-        call    esp_get_byte
-
-        ; Open directory
-        ld      a, ESPCMD_OPENDIR83
-        call    esp_cmd
-        xor     a
-        call    esp_send_byte
-        call    esp_get_byte
-        or      a
-        jr      z, _getnxt      ; Continue to get file name
-
-        ; Error
-        ld      a,$FF
-        jp      SETSTAT
+        ld      (SAVEFCB), de   ; Save FCB
+        call    _findfst        ; Open directory & find first entry
+        jr      _getnxt_result  ; Continue in result handler of GETNXT
 
 ;-----------------------------------------------------------------------------
 ; [18] GETNXT - Function to return the next occurence of a file name.
 ;-----------------------------------------------------------------------------
 GETNXT:
-        ; FIXME
-        ; ld      a,$FF
-        ; jp      SETSTAT
-
         ; ld      hl,(SAVEFCB)    ;restore pointers. note that no
         ; ld      (PARAMS),hl     ;other dbos calls are allowed.
         ; call    AUTOSEL         ;no error will be returned, but the
         ; call    FINDNXT         ;results will be wrong.
         ; jp      MOVEDIR
 
-_getnxt:
-        ; Read entry
-        call    _read_dirent
+        call    _findnxt
+_getnxt_result:
         jr      nz,.err
-
-        ; Check against FCB
-        ld      de,(SAVEFCB)
-        ld      a,(de)
-        cp      '?'             ; '?' in user field gives back all entries
-        jr      z,.ok
-        inc     de
-
-        ; Compare filename against FCB
-        ld      c,11
-        ld      hl,_dirent_name
-.nxt:   ld      a,(de)
-        cp      a,'?'           ; Wildcard?
-        jr      z,.nxt2
-        cp      a,(hl)
-        jr      nz,_getnxt     ; Filename does not match, next entry
-
-.nxt2:  inc     hl
-        inc     de
-        dec     c
-        jr      nz,.nxt
-
-        ; Copy directory entry to DMA pointer
-.ok:    ld      de, (USERDMA)
-        ld      a, (USERNO)             ; Always give back current user (no user filtering implemented)
-        ld      (de),a
-        inc     de
-        ld      hl,_dirent_name         ; Copy filename
-        ld      bc,11
-        ldir
-        ex      de,hl
-        xor     a                       ; Fill rest of entry with zeroes for now
-        ld      bc,20
-        call    _memset
+        call    _copy_dirent_to_dma
         xor     a                       ; Indicate success, direntry at first 32 of DMA
         jp      SETSTAT
 .err:   ld      a,$FF                   ; Indicate failure
@@ -826,6 +776,8 @@ _getnxt:
 ; [19] DELFILE - Function to delete a file by name.
 ;-----------------------------------------------------------------------------
 DELFILE:
+        jr      DELFILE
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -839,7 +791,17 @@ DELFILE:
 ;                record number.
 ;-----------------------------------------------------------------------------
 READSEQ:
-        ; FIXME
+        ld      hl,(USERDMA)
+        ld      de,128
+        call    esp_read_bytes
+        jr      nz,.err
+
+        ; TODO fill bytes with zeroes up to 128 bytes
+
+        xor     a
+        jp      SETSTAT
+
+.err:
         ld      a,$FF
         jp      SETSTAT
 
@@ -850,6 +812,8 @@ READSEQ:
 ; [21] WRTSEQ - Function to write the next sequential record.
 ;-----------------------------------------------------------------------------
 WRTSEQ:
+        jr      WRTSEQ
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -861,6 +825,8 @@ WRTSEQ:
 ; [22] FCREATE - Create a file function.
 ;-----------------------------------------------------------------------------
 FCREATE:
+        jr      FCREATE
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -873,6 +839,8 @@ FCREATE:
 ; [23] RENFILE - Function to rename a file.
 ;-----------------------------------------------------------------------------
 RENFILE:
+        jr      RENFILE
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -916,6 +884,8 @@ GETROV: ld      hl,(WRTPRT)
 ; [30] SETATTR - Function to set the file attributes (read-only, system).
 ;-----------------------------------------------------------------------------
 SETATTR:
+        jr      SETATTR
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -950,6 +920,8 @@ SETUSER:and     1FH             ;no, we should set it instead. keep low
 ; [33] RDRANDOM - Function to read a random record from a file.
 ;-----------------------------------------------------------------------------
 RDRANDOM:
+        jr      RDRANDOM
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -961,6 +933,8 @@ RDRANDOM:
 ; [34] WTRANDOM - Function to compute the file size for random files.
 ;-----------------------------------------------------------------------------
 WTRANDOM:
+        jr      WTRANDOM
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -972,6 +946,8 @@ WTRANDOM:
 ; [35] FILESIZE - Function to compute the size of a random file.
 ;-----------------------------------------------------------------------------
 FILESIZE:
+        jr      FILESIZE
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -1041,6 +1017,8 @@ GOBACK1:ld      hl,(USRSTACK)   ; reset the users stack pointer.
 ;                written over.
 ;-----------------------------------------------------------------------------
 WTSPECL:
+        jr      WTSPECL
+
         ; FIXME
         ld      a,$FF
         jp      SETSTAT
@@ -1053,6 +1031,52 @@ WTSPECL:
         ; call    Z,WTSEQ1        ;and write (if no errors).
         ; ret
 
+
+
+;-----------------------------------------------------------------------------
+;* BDOS data storage pool.
+;-----------------------------------------------------------------------------
+WRTPRT:   defw  0               ;write protect status for all 16 drives.
+LOGIN:    defw  0               ;drive active word (1 bit per drive).
+USERDMA:  defw  $80             ;user's DMA address (defaults to 80h).
+
+;-----------------------------------------------------------------------------
+; Scratch areas from parameter block.
+;-----------------------------------------------------------------------------
+SCRATCH1: defw  0               ;relative position within dir segment for file (0-3).
+
+;-----------------------------------------------------------------------------
+; Disk storage areas from parameter block.
+;-----------------------------------------------------------------------------
+DIRBUF:   defw  0               ;address of directory buffer to use.
+DISKPB:   defw  0               ;contains address of disk parameter block.
+CHKVECT:  defw  0               ;address of check bitmap.
+ALOCVECT: defw  0               ;address of allocation bitmap.
+
+;-----------------------------------------------------------------------------
+; Parameter block returned from the bios.
+;-----------------------------------------------------------------------------
+DIRSIZE:  defw  0               ;directory size.
+FNDSTAT:  defb  0               ;filename found status (0=found first entry).
+EPARAM:   defb  0               ;storage for register (E) on entry to BDOS.
+SAVEFCB:  defw  0               ;save space for address of FCB (for directory searches).
+AUTO:     defb  0               ;if non-zero, then auto select activated.
+OLDDRV:   defb  0               ;on auto select, storage for previous drive.
+AUTOFLAG: defb  0               ;if non-zero, then auto select changed drives.
+FCBPOS:   defb  0               ;relative position within buffer for FCB of file of interest.
+
+
+;-----------------------------------------------------------------------------
+; Directory entry
+;-----------------------------------------------------------------------------
+_dirent:
+_dirent_date: defw 0
+_dirent_time: defw 0
+_dirent_attr: defb 0
+_dirent_size: defd 0
+_dirent_name: ds 8
+_dirent_ext:  ds 3
+_dirent_end:
 
 ;-----------------------------------------------------------------------------
 ; _read_dirent
@@ -1121,146 +1145,166 @@ _read_dirent:
         ret
 
 ;-----------------------------------------------------------------------------
-;* BDOS data storage pool.
+; Find first directory entry matching SAVEFCB
 ;-----------------------------------------------------------------------------
-WRTPRT:   defw  0               ;write protect status for all 16 drives.
-LOGIN:    defw  0               ;drive active word (1 bit per drive).
-USERDMA:  defw  $80             ;user's DMA address (defaults to 80h).
+_findfst:
+        ; Close directory descriptor 0
+        ld      a, ESPCMD_CLOSEDIR
+        call    esp_cmd
+        xor     a
+        call    esp_send_byte
+        call    esp_get_byte
 
-_dirent:
-_dirent_date: defw 0
-_dirent_time: defw 0
-_dirent_attr: defb 0
-_dirent_size: defd 0
-_dirent_name: ds 8
-_dirent_ext:  ds 3
-_dirent_end:
+        ; Open directory
+        ld      a, ESPCMD_OPENDIR83
+        call    esp_cmd
+        xor     a
+        call    esp_send_byte
+        call    esp_get_byte
+        or      a
+        ret     nz
 
-;-----------------------------------------------------------------------------
-; Scratch areas from parameter block.
-;-----------------------------------------------------------------------------
-SCRATCH1: defw  0               ;relative position within dir segment for file (0-3).
-
-;-----------------------------------------------------------------------------
-; Disk storage areas from parameter block.
-;-----------------------------------------------------------------------------
-DIRBUF:   defw  0               ;address of directory buffer to use.
-DISKPB:   defw  0               ;contains address of disk parameter block.
-CHKVECT:  defw  0               ;address of check bitmap.
-ALOCVECT: defw  0               ;address of allocation bitmap.
+        ; Find matching entry
+        jr      _findnxt
 
 ;-----------------------------------------------------------------------------
-; Parameter block returned from the bios.
+; Get next directory entry matching SAVEFCB
 ;-----------------------------------------------------------------------------
-DIRSIZE:  defw  0               ;directory size.
-FNDSTAT:  defb  0               ;filename found status (0=found first entry).
-EPARAM:   defb  0               ;storage for register (E) on entry to BDOS.
-SAVEFCB:  defw  0               ;save space for address of FCB (for directory searches).
-AUTO:     defb  0               ;if non-zero, then auto select activated.
-OLDDRV:   defb  0               ;on auto select, storage for previous drive.
-AUTOFLAG: defb  0               ;if non-zero, then auto select changed drives.
-FCBPOS:   defb  0               ;relative position within buffer for FCB of file of interest.
+_findnxt:
+        ; Read entry
+        call    _read_dirent
+        ret     nz
 
-;-----------------------------------------------------------------------------
-; Issue command to ESP
-;-----------------------------------------------------------------------------
-esp_cmd:
-    push    a
+        ; Check against FCB
+        ld      de,(SAVEFCB)
+        ld      a,(de)
+        cp      '?'             ; '?' in user field gives back all entries
+        ret     z
+        inc     de
 
-    ; Drain RX FIFO
-.drain:
-    in      a, (IO_ESPCTRL)
-    and     a, 1
-    jr      z, .done
-    in      a, (IO_ESPDATA)
-    jr      .drain
-.done:
+        ; Compare filename against FCB
+        ld      c,11
+        ld      hl,_dirent_name
+.nxt:   ld      a,(de)
+        cp      a,'?'           ; Wildcard?
+        jr      z,.nxt2
+        cp      a,(hl)
+        jr      nz,_findnxt     ; Filename does not match, next entry
 
-    ; Issue start of command
-    ld      a, $80
-    out     (IO_ESPCTRL), a
-
-    ; Issue command
-    pop     a
-    jp      esp_send_byte
+.nxt2:  inc     hl
+        inc     de
+        dec     c
+        jr      nz,.nxt
+        ret
 
 ;-----------------------------------------------------------------------------
-; Wait for data from ESP
+; Copy current directory entry to DMA buffer
 ;-----------------------------------------------------------------------------
-esp_get_byte:
-.wait:
-    in      a, (IO_ESPCTRL)
-    and     a, 1
-    jr      z, .wait
-    in      a, (IO_ESPDATA)
-    ret
+_copy_dirent_to_dma:
+        ld      de, (USERDMA)
+        ld      a, (USERNO)             ; Always give back current user (no user filtering implemented)
+        ld      (de),a
+        inc     de
+        ld      hl,_dirent_name         ; Copy filename
+        ld      bc,11
+        ldir
+        ex      de,hl
+        xor     a                       ; Fill rest of entry with zeroes for now
+        ld      bc,20
+        call    memset
+        ret
 
 ;-----------------------------------------------------------------------------
-; Write data to ESP
+; Open file in _dirent_name
 ;-----------------------------------------------------------------------------
-esp_send_byte:
-    push    a
+_openfile:
+        ld      a, ESPCMD_OPEN
+        call    esp_cmd
+        ld      a,0             ; Flags (read-only)
+        call    esp_send_byte
 
-.wait:
-    in      a, (IO_ESPCTRL)
-    and     a, 2
-    jr      nz, .wait
+        ; Send filename
+        ld      hl, _dirent_name
+        ld      c,8
+.1:     ld      a,(hl)
+        cp      a,' '
+        jr      z,.ext
+        call    esp_send_byte
+        inc     hl
+        dec     c
+        jr      nz,.1
 
-    pop     a
-    out     (IO_ESPDATA), a
-    ret
+        ; Send extension
+.ext:   ld      a,'.'
+        call    esp_send_byte
+        ld      hl, _dirent_ext
+        ld      c,3
+.2:     ld      a,(hl)
+        cp      a,' '
+        jr      z,.zterm
+        call    esp_send_byte
+        inc     hl
+        dec     c
+        jr      nz,.2
+
+        ; Send zero-termination
+.zterm: xor     a
+        call    esp_send_byte
+
+        ; Get result
+        call    esp_get_byte
+        ret
 
 ;-----------------------------------------------------------------------------
-; Get bytes
+; Read bytes
 ; Input:  HL: destination address
 ;         DE: number of bytes to read
+; Output: HL: next address (start address if no bytes read)
+;         DE: number of bytes actually read
+;
+; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
-esp_get_bytes:
-.loop:
-    ; Done reading? (DE=0)
+esp_read_bytes:
+    ld      a, ESPCMD_READ
+    call    esp_cmd
+
+    ; Send file descriptor
+    xor     a
+    call    esp_send_byte
+
+    ; Send read size
+    ld      a, e
+    call    esp_send_byte
     ld      a, d
-    or      a, e
-    ret     z
+    call    esp_send_byte
 
+    ; Get result
     call    esp_get_byte
-    ld      (hl), a
-    inc     hl
-    dec     de
-    jr      .loop
-
-;-----------------------------------------------------------------------------
-; Get bytes
-; Input:  HL: destination address
-;         DE: number of bytes to read
-;-----------------------------------------------------------------------------
-esp_get_bytes_zeroterm:
-.loop:
-    ; Done reading? (DE=0)
-    ld      a, d
-    or      a, e
-    ret     z
-
-    call    esp_get_byte
-    ld      (hl), a
-    inc     hl
-    dec     de
     or      a
-    ret     z
-    jr      .loop
+    ret     nz
 
-;-----------------------------------------------------------------------------
-; _memset
-;-----------------------------------------------------------------------------
-_memset:
-    inc     c
-    inc     b
-    jr      .start
-.repeat:
+    ; Get number of bytes actual read
+    call    esp_get_byte
+    ld      e, a
+    call    esp_get_byte
+    ld      d, a
+
+    push    de
+
+.loop:
+    ; Done reading? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    call    esp_get_byte
     ld      (hl), a
     inc     hl
-.start:
-    dec     c
-    jr      nz, .repeat
-    dec     b
-    jr      nz, .repeat
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+
+    xor     a
     ret

@@ -41,23 +41,6 @@ __low_storage_values:
 __low_storage_values_end:
 
 ;-----------------------------------------------------------------------------
-; _memset
-;-----------------------------------------------------------------------------
-_memset:
-    inc     c
-    inc     b
-    jr      .start
-.repeat:
-    ld      (hl), a
-    inc     hl
-.start:
-    dec     c
-    jr      nz, .repeat
-    dec     b
-    jr      nz, .repeat
-    ret
-
-;-----------------------------------------------------------------------------
 ; BOOT - Cold start routine
 ;-----------------------------------------------------------------------------
 _boot:
@@ -72,7 +55,7 @@ _boot:
     ld      hl, $0
     ld      bc, ccp
     ld      a, 0
-    call    _memset
+    call    memset
 
     ; Setup low storage area
     ld  de, $0
@@ -88,9 +71,7 @@ _boot:
     ld      bc, .bootstr
     call    PRTMESG
 
-    ; Jump to CCP
-    ld      c, 0
-    jp      ccp
+    jr      _wboot
 
 .bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
 
@@ -103,6 +84,11 @@ _boot:
 ; of a floppy disc or extra memory.
 ;-----------------------------------------------------------------------------
 _wboot:
+    ; Close any open descriptor
+    ld      a, ESPCMD_CLOSEALL
+    call    esp_cmd
+    call    esp_get_byte
+
     ; Jump to CCP
     ld      c, 0
     jp      ccp
@@ -243,7 +229,7 @@ _conout:
     ld      hl, $3000 + 40 * 24
     ld      bc, 40
     ld      a, ' '
-    call    _memset
+    call    memset
     ret
 
 .bs:
@@ -413,3 +399,91 @@ _setdma:
 ;     push    hl
 ;     pop     bc
 ;     ret
+
+
+
+
+
+;-----------------------------------------------------------------------------
+; memset
+;-----------------------------------------------------------------------------
+memset:
+    inc     c
+    inc     b
+    jr      .start
+.repeat:
+    ld      (hl), a
+    inc     hl
+.start:
+    dec     c
+    jr      nz, .repeat
+    dec     b
+    jr      nz, .repeat
+    ret
+
+;-----------------------------------------------------------------------------
+; Issue command to ESP
+;-----------------------------------------------------------------------------
+esp_cmd:
+    push    a
+
+    ; Drain RX FIFO
+.drain:
+    in      a, (IO_ESPCTRL)
+    and     a, 1
+    jr      z, .done
+    in      a, (IO_ESPDATA)
+    jr      .drain
+.done:
+
+    ; Issue start of command
+    ld      a, $80
+    out     (IO_ESPCTRL), a
+
+    ; Issue command
+    pop     a
+    jp      esp_send_byte
+
+;-----------------------------------------------------------------------------
+; Wait for data from ESP
+;-----------------------------------------------------------------------------
+esp_get_byte:
+.wait:
+    in      a, (IO_ESPCTRL)
+    and     a, 1
+    jr      z, .wait
+    in      a, (IO_ESPDATA)
+    ret
+
+;-----------------------------------------------------------------------------
+; Write data to ESP
+;-----------------------------------------------------------------------------
+esp_send_byte:
+    push    a
+
+.wait:
+    in      a, (IO_ESPCTRL)
+    and     a, 2
+    jr      nz, .wait
+
+    pop     a
+    out     (IO_ESPDATA), a
+    ret
+
+;-----------------------------------------------------------------------------
+; Get bytes
+; Input:  HL: destination address
+;         DE: number of bytes to read
+;-----------------------------------------------------------------------------
+esp_get_bytes:
+.loop:
+    ; Done reading? (DE=0)
+    ld      a, d
+    or      a, e
+    ret     z
+
+    call    esp_get_byte
+    ld      (hl), a
+    inc     hl
+    dec     de
+    jr      .loop
