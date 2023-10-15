@@ -496,7 +496,7 @@ void UI::emulate() {
     }
 
     if (emuState.emuMode != EmuState::Em_Running) {
-        emuState.haltAtRet     = false;
+        emuState.haltAfterRet  = -1;
         emuState.tmpBreakpoint = -1;
         if (emuState.emuMode == EmuState::Em_Step) {
             dbgUpdateScreen  = true;
@@ -591,8 +591,8 @@ void UI::wndCpuState(bool *p_open) {
 
         ImGui::SameLine();
         if (ImGui::Button("Step Out")) {
-            emuState.haltAtRet = true;
-            emuState.emuMode   = EmuState::Em_Running;
+            emuState.haltAfterRet = 0;
+            emuState.emuMode      = EmuState::Em_Running;
         }
         ImGui::SameLine();
 

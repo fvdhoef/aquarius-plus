@@ -86,14 +86,20 @@ unsigned EmuState::emulate() {
     unsigned resultFlags = 0;
 
     bool haltAfterThis = false;
-    if (haltAtRet) {
+    if (haltAfterRet >= 0) {
         z80ctx.tstates = 0;
         char tmp[20];
         Z80Debug(&z80ctx, nullptr, tmp);
 
-        if (strncmp(tmp, "RET", 3) == 0) {
-            haltAfterThis = true;
-            haltAtRet     = false;
+        if (strncmp(tmp, "CALL", 4) == 0) {
+            haltAfterRet++;
+        } else if (strcmp(tmp, "RET") == 0) {
+            haltAfterRet--;
+
+            if (haltAfterRet < 0) {
+                haltAfterThis = true;
+                haltAfterRet  = -1;
+            }
         }
     }
 
