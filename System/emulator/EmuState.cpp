@@ -85,6 +85,18 @@ unsigned EmuState::emulate() {
 
     unsigned resultFlags = 0;
 
+    bool haltAfterThis = false;
+    if (haltAtRet) {
+        z80ctx.tstates = 0;
+        char tmp[20];
+        Z80Debug(&z80ctx, nullptr, tmp);
+
+        if (strncmp(tmp, "RET", 3) == 0) {
+            haltAfterThis = true;
+            haltAtRet     = false;
+        }
+    }
+
     z80ctx.tstates = 0;
     Z80Execute(&z80ctx);
     int delta = z80ctx.tstates * 2;
@@ -163,6 +175,11 @@ unsigned EmuState::emulate() {
     }
 
     lastBpAddress = -1;
+
+    if (haltAfterThis) {
+        emuMode = EmuState::Em_Halted;
+    }
+
     return resultFlags;
 }
 

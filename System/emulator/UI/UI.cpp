@@ -496,6 +496,7 @@ void UI::emulate() {
     }
 
     if (emuState.emuMode != EmuState::Em_Running) {
+        emuState.haltAtRet     = false;
         emuState.tmpBreakpoint = -1;
         if (emuState.emuMode == EmuState::Em_Step) {
             dbgUpdateScreen  = true;
@@ -524,6 +525,9 @@ void UI::emulate() {
 
 void UI::wndAbout(bool *p_open) {
     if (ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+        extern const char *versionStr;
+        ImGui::Text("Aquarius+ emulator version: %s", versionStr);
+        ImGui::Separator();
         ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
         ImGui::Text("Developed by Frank van den Hoef.\n");
         ImGui::Separator();
@@ -532,7 +536,6 @@ void UI::wndAbout(bool *p_open) {
         ImGui::Text("- Sean P. Harrington");
         ImGui::Text("- Curtis F. Kaylor");
         ImGui::Separator();
-        ImGui::Text("Thanks to James W. Pyle III for creating the emulator icons.");
         ImGui::Text(
             "Thanks go out all the people contributing to this project and\n"
             "those who enjoy playing with it, either with this emulator or\n"
@@ -545,18 +548,20 @@ void UI::wndCpuState(bool *p_open) {
     bool open = ImGui::Begin("CPU state", p_open, ImGuiWindowFlags_AlwaysAutoResize);
     if (open) {
         ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Halted ? (ImVec4)ImColor(192, 0, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+        ImGui::BeginDisabled(emuState.emuMode != EmuState::Em_Running);
         if (ImGui::Button("Halt")) {
             emuState.emuMode = EmuState::Em_Halted;
         }
+        ImGui::EndDisabled();
         ImGui::PopStyleColor();
 
+        ImGui::BeginDisabled(emuState.emuMode == EmuState::Em_Running);
         ImGui::SameLine();
         if (ImGui::Button("Step Into")) {
             emuState.emuMode = EmuState::Em_Step;
         }
         ImGui::SameLine();
 
-        ImGui::SameLine();
         if (ImGui::Button("Step Over")) {
             char tmp1[64];
             char tmp2[64];
@@ -583,6 +588,12 @@ void UI::wndCpuState(bool *p_open) {
                 emuState.emuMode = EmuState::Em_Step;
             }
         }
+
+        ImGui::SameLine();
+        if (ImGui::Button("Step Out")) {
+            emuState.haltAtRet = true;
+            emuState.emuMode   = EmuState::Em_Running;
+        }
         ImGui::SameLine();
 
         ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Running ? (ImVec4)ImColor(0, 128, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
@@ -590,6 +601,7 @@ void UI::wndCpuState(bool *p_open) {
             emuState.emuMode = EmuState::Em_Running;
         }
         ImGui::PopStyleColor();
+        ImGui::EndDisabled();
 
         ImGui::Separator();
         {

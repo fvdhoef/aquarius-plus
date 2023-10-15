@@ -56,6 +56,7 @@ struct EmuState {
     int                     tmpBreakpoint = -1;
     int                     lastBpAddress = -1;
     int                     lastBp        = -1;
+    bool                    haltAtRet     = false;
 
     enum EmuMode {
         Em_Halted,
