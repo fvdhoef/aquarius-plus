@@ -160,10 +160,12 @@ _conout:
     ; Write to text address
     ld      hl, (_text_addr)
     ld      a, c
-    cp      a, 13
+    cp      a, 13       ; CR?
     jr      z, .cr
     cp      a, 10
-    jr      z, .lf
+    jr      z, .lf      ; LF?
+    cp      a, 8
+    jr      z, .bs      ; BS?
     ld      (hl), a
 
     ; Increment text address
@@ -242,6 +244,32 @@ _conout:
     ld      a, ' '
     call    _memset
     ret
+
+.bs:
+    ; Backspace
+    ld      a, (_text_col)
+    or      a                   ; At first column?
+    jr      z, .bs2
+    dec     a                   ; Decrement column
+.bs3:
+    ld      (_text_col), a      ; Update column
+
+    ld      hl, (_text_addr)    ; Decrement text address
+    dec     hl
+    ld      (_text_addr), hl
+.bs_done:
+    jp      .done
+
+.bs2:
+    ld      a, (_text_row)
+    or      a                   ; At first row?
+    jr      z, .bs_done
+    dec     a                   ; Decrement row
+    ld      (_text_row), a
+    ld      a, 39               ; Update column to 39
+    jr      .bs3
+
+
 
 ;-----------------------------------------------------------------------------
 ; LIST - Printer output
