@@ -202,7 +202,7 @@ int SDCardVFS::tell(int fd) {
     return f_tell(state.fds[fd]);
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path) {
+DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
     DIR dir;
     if (f_opendir(&dir, path.c_str()) != F_OK) {
         return nullptr;
@@ -222,7 +222,9 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path) {
         if ((fno.fattrib & (AM_SYS | AM_HID)))
             continue;
 
-        result->emplace_back(fno.fname, fno.fsize, (fno.fattrib & AM_DIR) ? DE_DIR : 0, fno.fdate, fno.ftime);
+        result->emplace_back(
+            mode83 ? fno.altname : fno.fname,
+            fno.fsize, (fno.fattrib & AM_DIR) ? DE_DIR : 0, fno.fdate, fno.ftime);
     }
 
     // Close directory
