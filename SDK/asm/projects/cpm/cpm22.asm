@@ -38,12 +38,16 @@ DEL:    equ     $7F             ; rubout
         ; Set origin for CP/M
         org     (MEM - 7) * 1024
 
-ccp:    include "ccp.inc"
-bdos:   include "bdos.inc"
+ccp:
+        include "ccp.inc"
+bdos:
+        include "bdos.inc"
 
         assert $ <= $F200
         ds $F200 - $
-bios:   include "bios.inc"
+
+bios:
+        include "bios.inc"
 
         assert ccp  == $DC00
         ; assert bdos == $E400
