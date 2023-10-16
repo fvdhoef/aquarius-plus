@@ -22,6 +22,7 @@
 #include <memory>
 #include <functional>
 #include <fstream>
+#include <map>
 
 #include <sys/types.h>
 #include <sys/stat.h>

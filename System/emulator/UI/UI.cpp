@@ -246,6 +246,8 @@ void UI::mainLoop() {
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
                 ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
+                ImGui::MenuItem("ESP info", "", &config.showEspInfo);
+                ImGui::Separator();
 
                 if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
                     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
@@ -313,6 +315,8 @@ void UI::mainLoop() {
             wndAssemblyListing(&config.showAssemblyListing);
         if (config.showCpuTrace)
             wndCpuTrace(&config.showCpuTrace);
+        if (config.showEspInfo)
+            wndEspInfo(&config.showEspInfo);
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -1255,6 +1259,59 @@ void UI::wndCpuTrace(bool *p_open) {
                     regColumn(entry.r2.wr.HL, prevEntry.r2.wr.HL);
                     // ImGui::TextUnformatted(line.file.c_str());
                 }
+            }
+
+            ImGui::EndTable();
+        }
+    }
+    ImGui::End();
+}
+
+void UI::wndEspInfo(bool *p_open) {
+    bool open = ImGui::Begin("ESP info", p_open, 0);
+    if (open) {
+        ImGui::SeparatorText("Current path");
+        auto &curPath = AqUartProtocol::instance().currentPath;
+        ImGui::Text("%s", curPath.empty() ? "/" : curPath.c_str());
+        ImGui::SeparatorText("File descriptors");
+        if (ImGui::BeginTable("Table", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Flags", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("File", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
+
+            for (auto &entry : AqUartProtocol::instance().fi) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", entry.first);
+                ImGui::TableNextColumn();
+                ImGui::Text("$%02X", entry.second.flags);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", entry.second.name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", entry.second.offset);
+            }
+
+            ImGui::EndTable();
+        }
+        ImGui::SeparatorText("Directory descriptors");
+        if (ImGui::BeginTable("Table2", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("#", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Path", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Offset", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
+
+            for (auto &entry : AqUartProtocol::instance().di) {
+                ImGui::TableNextRow();
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", entry.first);
+                ImGui::TableNextColumn();
+                ImGui::Text("%s", entry.second.name.c_str());
+                ImGui::TableNextColumn();
+                ImGui::Text("%u", entry.second.offset);
             }
 
             ImGui::EndTable();

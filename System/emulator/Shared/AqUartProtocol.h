@@ -31,6 +31,21 @@ public:
     }
 #endif
 
+#ifdef EMULATOR
+    struct FileInfo {
+        uint8_t     flags;
+        std::string name;
+        unsigned    offset;
+    };
+    std::map<uint8_t, FileInfo> fi;
+
+    struct DirInfo {
+        std::string name;
+        unsigned    offset;
+    };
+    std::map<uint8_t, DirInfo> di;
+#endif
+
 private:
 #ifndef EMULATOR
     static void _uartEventTask(void *);
@@ -96,5 +111,9 @@ private:
     float             mouseY              = 0;
     uint8_t           mouseButtons        = 0;
     uint8_t           mouseSensitivityDiv = 4;
+#endif
+
+#ifdef EMULATOR
+    friend class UI;
 #endif
 };

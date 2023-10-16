@@ -637,6 +637,14 @@ void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
         fdVfs[fd] = vfs;
         fds[fd]   = vfs_fd;
         txFifoWrite(fd);
+
+#ifdef EMULATOR
+        FileInfo tmp;
+        tmp.flags  = flags;
+        tmp.name   = pathArg;
+        tmp.offset = 0;
+        fi.insert(std::make_pair(fd, tmp));
+#endif
     }
 }
 
@@ -650,6 +658,13 @@ void AqUartProtocol::cmdClose(uint8_t fd) {
 
     txFifoWrite(fdVfs[fd]->close(fds[fd]));
     fdVfs[fd] = nullptr;
+
+#ifdef EMULATOR
+    auto it = fi.find(fd);
+    if (it != fi.end()) {
+        fi.erase(it);
+    }
+#endif
 }
 
 void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
@@ -668,6 +683,10 @@ void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
         txFifoWrite((result >> 0) & 0xFF);
         txFifoWrite((result >> 8) & 0xFF);
         txFifoWrite(rxBuf, result);
+
+#ifdef EMULATOR
+        fi[fd].offset += result;
+#endif
     }
 }
 
@@ -686,6 +705,10 @@ void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
         txFifoWrite(0);
         txFifoWrite((result >> 0) & 0xFF);
         txFifoWrite((result >> 8) & 0xFF);
+
+#ifdef EMULATOR
+        fi[fd].offset += result;
+#endif
     }
 }
 
@@ -698,6 +721,10 @@ void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
     }
 
     txFifoWrite(fdVfs[fd]->seek(fds[fd], offset));
+
+#ifdef EMULATOR
+    fi[fd].offset = fdVfs[fd]->tell(fds[fd]);
+#endif
 }
 
 void AqUartProtocol::cmdTell(uint8_t fd) {
@@ -808,6 +835,13 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg, bool mode83) {
         deCtxs[dd] = deCtx;
         deIdx[dd]  = 0;
         txFifoWrite(dd);
+
+#ifdef EMULATOR
+        DirInfo tmp;
+        tmp.name   = pathArg;
+        tmp.offset = 0;
+        di.insert(std::make_pair(dd, tmp));
+#endif
     }
 }
 
@@ -820,6 +854,13 @@ void AqUartProtocol::cmdCloseDir(uint8_t dd) {
     }
     deCtxs[dd] = nullptr;
     txFifoWrite(0);
+
+#ifdef EMULATOR
+    auto it = di.find(dd);
+    if (it != di.end()) {
+        di.erase(it);
+    }
+#endif
 }
 
 void AqUartProtocol::cmdReadDir(uint8_t dd) {
@@ -849,6 +890,10 @@ void AqUartProtocol::cmdReadDir(uint8_t dd) {
     txFifoWrite((de.size >> 24) & 0xFF);
     txFifoWrite(de.filename.c_str(), de.filename.size());
     txFifoWrite(0);
+
+#ifdef EMULATOR
+    di[dd].offset++;
+#endif
 }
 
 void AqUartProtocol::cmdDelete(const char *pathArg) {
@@ -977,6 +1022,11 @@ void AqUartProtocol::cmdCloseAll() {
     DBGF("CLOSEALL\n");
     closeAllDescriptors();
     txFifoWrite(0);
+
+#ifdef EMULATOR
+    fi.clear();
+    di.clear();
+#endif
 }
 
 #ifndef EMULATOR

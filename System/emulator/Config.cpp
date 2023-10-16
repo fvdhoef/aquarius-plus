@@ -75,6 +75,7 @@ void Config::load() {
         showBreakpoints     = getBoolValue(root, "showBreakpoints", false);
         showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
         showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
+        showEspInfo         = getBoolValue(root, "showEspInfo", false);
 
         memEditMemSelect = getIntValue(root, "memEditMemSelect", 0);
 
@@ -134,6 +135,7 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
     cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
     cJSON_AddBoolToObject(root, "showCpuTrace", showCpuTrace);
+    cJSON_AddBoolToObject(root, "showEspInfo", showEspInfo);
 
     cJSON_AddNumberToObject(root, "memEditMemSelect", memEditMemSelect);
 
