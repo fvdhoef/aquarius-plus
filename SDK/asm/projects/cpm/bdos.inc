@@ -931,11 +931,16 @@ SETUSER:and     1FH             ;no, we should set it instead. keep low
 ; [33] RDRANDOM - Function to read a random record from a file.
 ;-----------------------------------------------------------------------------
 RDRANDOM:
-        jr      RDRANDOM
+        ld      hl,(PARAMS)
+        ld      de,33
+        add     hl,de
 
-        ; FIXME
-        ld      a,$FF
-        jp      SETSTAT
+        ld      e,(hl)
+        inc     hl
+        ld      d,(hl)
+        call    _seek
+
+        jp      READSEQ
 
         ; call  AUTOSEL         ;select proper drive and read.
         ; jp      READRAN
@@ -1226,6 +1231,15 @@ _copy_dirent_to_dma:
 ; Open file in _dirent_name
 ;-----------------------------------------------------------------------------
 _openfile:
+        ; Close file descriptor 0
+        ld      a, ESPCMD_CLOSE
+        call    esp_cmd
+        xor     a
+        call    esp_send_byte
+        call    esp_get_byte
+
+
+
         ld      a, ESPCMD_OPEN
         call    esp_cmd
         ld      a,0             ; Flags (read-only)
@@ -1260,6 +1274,41 @@ _openfile:
         call    esp_send_byte
 
         ; Get result
+        call    esp_get_byte
+        ret
+
+;-----------------------------------------------------------------------------
+; Seek to record DE
+;-----------------------------------------------------------------------------
+_seek:
+        ld      a, ESPCMD_SEEK
+        call    esp_cmd
+
+        xor     a
+        call    esp_send_byte   ; File descriptor
+
+        ; a = (de << 7) & 0xFF
+        ld      a,e
+        rrca
+        and     $80
+        call    esp_send_byte
+
+        ; a = (de >> 1) & 0xFF
+        ld      a,d
+        rra                     ; Shift lowest bit in B into carry
+        ld      a,e
+        rra
+        call    esp_send_byte
+
+        ; a = (de >> 9) & 0xFF
+        ld      a,d
+        rra
+        and     $7F
+        call    esp_send_byte
+
+        xor     a
+        call    esp_send_byte
+
         call    esp_get_byte
         ret
 
