@@ -776,15 +776,28 @@ _getnxt_result:
 ; [19] DELFILE - Function to delete a file by name.
 ;-----------------------------------------------------------------------------
 DELFILE:
-        jr      DELFILE
+        ld      (SAVEFCB), de   ; Save FCB
+        call    _findfst
+        jr      nz, .notfound
 
-        ; FIXME
-        ld      a,$FF
+        ld      a, ESPCMD_DELETE
+        call    esp_cmd
+        call    _send_filename
+        call    esp_get_byte
+        bit     7,a
+        jr      nz,.notfound
+
+        ; Return success
+        xor     a
         jp      SETSTAT
 
         ; call    AUTOSEL         ;select proper drive.
         ; call    ERAFILE         ;erase the file.
         ; jp      STSTATUS        ;set status and return.
+
+.notfound:
+        ld      a,$FF
+        jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
 ; [20] READSEQ - Function to execute a sequential read of the specified
@@ -1228,23 +1241,9 @@ _copy_dirent_to_dma:
         ret
 
 ;-----------------------------------------------------------------------------
-; Open file in _dirent_name
+; Send filename in _dirent_name
 ;-----------------------------------------------------------------------------
-_openfile:
-        ; Close file descriptor 0
-        ld      a, ESPCMD_CLOSE
-        call    esp_cmd
-        xor     a
-        call    esp_send_byte
-        call    esp_get_byte
-
-
-
-        ld      a, ESPCMD_OPEN
-        call    esp_cmd
-        ld      a,0             ; Flags (read-only)
-        call    esp_send_byte
-
+_send_filename:
         ; Send filename
         ld      hl, _dirent_name
         ld      c,8
@@ -1272,6 +1271,24 @@ _openfile:
         ; Send zero-termination
 .zterm: xor     a
         call    esp_send_byte
+        ret
+
+;-----------------------------------------------------------------------------
+; Open file in _dirent_name
+;-----------------------------------------------------------------------------
+_openfile:
+        ; Close file descriptor 0
+        ld      a, ESPCMD_CLOSE
+        call    esp_cmd
+        xor     a
+        call    esp_send_byte
+        call    esp_get_byte
+
+        ld      a, ESPCMD_OPEN
+        call    esp_cmd
+        ld      a,0             ; Flags (read-only)
+        call    esp_send_byte
+        call    _send_filename
 
         ; Get result
         call    esp_get_byte
