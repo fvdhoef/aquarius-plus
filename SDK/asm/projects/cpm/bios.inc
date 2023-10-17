@@ -89,6 +89,13 @@ _wboot:
     call    esp_cmd
     call    esp_get_byte
 
+    ; Enable keyboard repeat
+    ld      a,ESPCMD_KEYMODE
+    call    esp_cmd
+    ld      a,7
+    call    esp_send_byte
+    call    esp_get_byte
+
     ; Jump to CCP
     ld      c, 0
     jp      ccp
@@ -132,6 +139,37 @@ _conin:
     ld      a, b
     ret
 
+_saved_col: .defb $8F
+
+;-----------------------------------------------------------------------------
+; Hide cursor
+;-----------------------------------------------------------------------------
+_hide_cursor:
+    ld      hl, (_text_addr)
+    ld      a,4
+    or      a,h
+    ld      h,a
+
+    ld      a,(_saved_col)
+    ld      (hl),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Show cursor
+;-----------------------------------------------------------------------------
+_show_cursor:
+    ld      hl, (_text_addr)
+    ld      a,4
+    or      a,h
+    ld      h,a
+
+    ld      a,(hl)
+    ld      (_saved_col),a
+
+    ld      a, $F9
+    ld      (hl),a
+    ret
+
 ;-----------------------------------------------------------------------------
 ; CONOUT - Console output
 ;
@@ -144,6 +182,9 @@ _conout:
     ld      a, $C0
     out     (IO_BANK0), a
 
+    ; Hide cursor
+    call    _hide_cursor
+
     ; Write to text address
     ld      hl, (_text_addr)
     ld      a, c
@@ -152,7 +193,7 @@ _conout:
     cp      a, 10
     jr      z, .lf      ; LF?
     cp      a, 8
-    jr      z, .bs      ; BS?
+    jp      z, .bs      ; BS?
     ld      (hl), a
 
     ; Increment text address
@@ -166,6 +207,8 @@ _conout:
     ld      (_text_col), a
 
 .done:
+    call    _show_cursor
+
     ; Restore bank 0
     pop     a
     out     (IO_BANK0), a
