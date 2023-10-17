@@ -145,9 +145,9 @@ unsigned EmuState::emulate() {
         } else if (videoLine == 262) {
             resultFlags |= ERF_RENDER_SCREEN;
             videoLine = 0;
-            keyboardTypeIn();
         }
     }
+    keyboardTypeIn();
 
     // Generate interrupt if needed
     if ((irqStatus & irqMask) != 0) {

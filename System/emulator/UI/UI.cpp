@@ -470,8 +470,12 @@ void UI::emulate() {
     if (emuState.emuMode == EmuState::Em_Running) {
         dbgUpdateScreen = true;
 
+        // Increase emulation speed while pasting text
+        int emuSpeed = emuState.typeInStr.empty() ? emuState.emulationSpeed : 16;
+        emuSpeed     = emuState.emulationSpeed;
+
         // Render each audio sample
-        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuState.emulationSpeed; aidx++) {
+        for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuSpeed; aidx++) {
             while (true) {
                 auto flags = emuState.emulate();
                 if (emuState.emuMode != EmuState::Em_Running)
