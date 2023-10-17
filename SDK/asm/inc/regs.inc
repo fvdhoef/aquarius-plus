@@ -233,25 +233,28 @@ endm
 ;-----------------------------------------------------------------------------
 ; ESP32 commands
 ;-----------------------------------------------------------------------------
-ESPCMD_RESET:      equ $01     ; Reset ESP
-ESPCMD_VERSION:    equ $02     ; Get version string
-ESPCMD_OPEN:       equ $10     ; Open / create file
-ESPCMD_CLOSE:      equ $11     ; Close open file
-ESPCMD_READ:       equ $12     ; Read from file
-ESPCMD_WRITE:      equ $13     ; Write to file
-ESPCMD_SEEK:       equ $14     ; Move read/write pointer
-ESPCMD_TELL:       equ $15     ; Get current read/write
-ESPCMD_OPENDIR:    equ $16     ; Open directory
-ESPCMD_CLOSEDIR:   equ $17     ; Close open directory
-ESPCMD_READDIR:    equ $18     ; Read from directory
-ESPCMD_DELETE:     equ $19     ; Remove file or directory
-ESPCMD_RENAME:     equ $1A     ; Rename / move file or directory
-ESPCMD_MKDIR:      equ $1B     ; Create directory
-ESPCMD_CHDIR:      equ $1C     ; Change directory
-ESPCMD_STAT:       equ $1D     ; Get file status
-ESPCMD_GETCWD:     equ $1E     ; Get current working directory
-ESPCMD_CLOSEALL:   equ $1F     ; Close any open file/directory descriptor
-ESPCMD_OPENDIR83:  equ $20     ; Open directory in 8.3 mode
+ESPCMD_RESET:       equ $01     ; Reset ESP
+ESPCMD_VERSION:     equ $02     ; Get version string
+ESPCMD_GETDATETIME: equ $03     ; Get current date/time
+ESPCMD_KEYMODE:     equ $08     ; Set keyboard buffer mode
+ESPCMD_GETMOUSE:    equ $0C     ; Get mouse state
+ESPCMD_OPEN:        equ $10     ; Open / create file
+ESPCMD_CLOSE:       equ $11     ; Close open file
+ESPCMD_READ:        equ $12     ; Read from file
+ESPCMD_WRITE:       equ $13     ; Write to file
+ESPCMD_SEEK:        equ $14     ; Move read/write pointer
+ESPCMD_TELL:        equ $15     ; Get current read/write
+ESPCMD_OPENDIR:     equ $16     ; Open directory
+ESPCMD_CLOSEDIR:    equ $17     ; Close open directory
+ESPCMD_READDIR:     equ $18     ; Read from directory
+ESPCMD_DELETE:      equ $19     ; Remove file or directory
+ESPCMD_RENAME:      equ $1A     ; Rename / move file or directory
+ESPCMD_MKDIR:       equ $1B     ; Create directory
+ESPCMD_CHDIR:       equ $1C     ; Change directory
+ESPCMD_STAT:        equ $1D     ; Get file status
+ESPCMD_GETCWD:      equ $1E     ; Get current working directory
+ESPCMD_CLOSEALL:    equ $1F     ; Close any open file/directory descriptor
+ESPCMD_OPENDIR83:   equ $20     ; Open directory in 8.3 mode
 
 ERR_NOT_FOUND:     equ -1   ; File / directory not found
 ERR_TOO_MANY_OPEN: equ -2   ; Too many open files / directories
