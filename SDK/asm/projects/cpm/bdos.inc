@@ -795,14 +795,25 @@ READSEQ:
         ld      de,128
         call    esp_read_bytes
         jr      nz,.err
+        ld      a,d
+        or      a,e
+        jr      z,.eof
 
-        ; TODO fill bytes with zeroes up to 128 bytes
-
-        xor     a
+        ; Pad up to 128 bytes with EOF mark (CTRL-Z/$1A)
+        ld      a,$1A
+.1:     bit     7,e
+        jr      nz,.done
+        ld      (hl),a
+        inc     hl
+        inc     e
+        jr      .1
+.done:  xor     a
         jp      SETSTAT
 
-.err:
-        ld      a,$FF
+.eof:   ld      a,1
+        jp      SETSTAT
+
+.err:   ld      a,$FF
         jp      SETSTAT
 
         ; call    AUTOSEL         ;select proper drive then read.
@@ -1031,8 +1042,6 @@ WTSPECL:
         ; call    Z,WTSEQ1        ;and write (if no errors).
         ; ret
 
-
-
 ;-----------------------------------------------------------------------------
 ;* BDOS data storage pool.
 ;-----------------------------------------------------------------------------
@@ -1065,7 +1074,6 @@ OLDDRV:   defb  0               ;on auto select, storage for previous drive.
 AUTOFLAG: defb  0               ;if non-zero, then auto select changed drives.
 FCBPOS:   defb  0               ;relative position within buffer for FCB of file of interest.
 
-
 ;-----------------------------------------------------------------------------
 ; Directory entry
 ;-----------------------------------------------------------------------------
@@ -1074,8 +1082,8 @@ _dirent_date: defw 0
 _dirent_time: defw 0
 _dirent_attr: defb 0
 _dirent_size: defd 0
-_dirent_name: ds 8
-_dirent_ext:  ds 3
+_dirent_name: defs 8
+_dirent_ext:  defs 3
 _dirent_end:
 
 ;-----------------------------------------------------------------------------

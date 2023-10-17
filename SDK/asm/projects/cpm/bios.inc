@@ -145,11 +145,9 @@ _saved_col: .defb $8F
 ; Hide cursor
 ;-----------------------------------------------------------------------------
 _hide_cursor:
+    ; Restored saved color at cursor position
     ld      hl, (_text_addr)
-    ld      a,4
-    or      a,h
-    ld      h,a
-
+    set     2,h
     ld      a,(_saved_col)
     ld      (hl),a
     ret
@@ -158,14 +156,13 @@ _hide_cursor:
 ; Show cursor
 ;-----------------------------------------------------------------------------
 _show_cursor:
+    ; Save color at cursor position
     ld      hl, (_text_addr)
-    ld      a,4
-    or      a,h
-    ld      h,a
-
+    set     2,h
     ld      a,(hl)
     ld      (_saved_col),a
 
+    ; Set color at cursor position
     ld      a, $F9
     ld      (hl),a
     ret
@@ -298,8 +295,6 @@ _conout:
     ld      (_text_row), a
     ld      a, 39               ; Update column to 39
     jr      .bs3
-
-
 
 ;-----------------------------------------------------------------------------
 ; LIST - Printer output

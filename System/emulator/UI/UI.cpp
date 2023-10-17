@@ -12,7 +12,6 @@
 #include "imgui.h"
 #include "imgui_impl_sdl2.h"
 #include "imgui_impl_sdlrenderer2.h"
-#include "MemoryEditor.h"
 #include "tinyfiledialogs.h"
 #include "Config.h"
 
@@ -241,7 +240,7 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Debug")) {
                 ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
                 ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
-                ImGui::MenuItem("CPU State", "", &config.showCpuState);
+                ImGui::MenuItem("CPU state", "", &config.showCpuState);
                 ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
                 ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                 ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
@@ -621,55 +620,102 @@ void UI::wndCpuState(bool *p_open) {
         }
         ImGui::Separator();
 
-        auto drawAddrVal = [](const std::string &name, uint16_t val) {
+        auto drawAddrVal = [&](const std::string &name, uint16_t val) {
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%-3s", name.c_str());
+            ImGui::TableNextColumn();
+
+            if (emuState.emuMode == EmuState::Em_Running) {
+                ImGui::Text("%04X", val);
+            } else {
+
+                char addr[32];
+                snprintf(addr, sizeof(addr), "%04X##%s", val, name.c_str());
+                ImGui::Selectable(addr);
+                addrPopup(val);
+            }
+
+            ImGui::TableNextColumn();
+
             uint8_t data[8];
             for (int i = 0; i < 8; i++)
                 data[i] = emuState.memRead(0, val + i);
+            ImGui::Text(
+                "%02X %02X %02X %02X %02X %02X %02X %02X",
+                emuState.memRead(0, val + 0),
+                emuState.memRead(0, val + 1),
+                emuState.memRead(0, val + 2),
+                emuState.memRead(0, val + 3),
+                emuState.memRead(0, val + 4),
+                emuState.memRead(0, val + 5),
+                emuState.memRead(0, val + 6),
+                emuState.memRead(0, val + 7));
 
-            auto str = fmtstr("%-3s %04X ", name.c_str(), val);
-            for (int i = 0; i < 8; i++)
-                str += fmtstr(" %02X", data[i]);
-            str += "  ";
+            ImGui::TableNextColumn();
+            std::string str;
             for (int i = 0; i < 8; i++)
                 str.push_back((data[i] >= 32 && data[i] <= 0x7E) ? data[i] : '.');
             ImGui::TextUnformatted(str.c_str());
         };
 
         auto drawAF = [](const std::string &name, uint16_t val) {
-            auto a  = val >> 8;
-            auto ch = (a >= 32 && a <= 0x7E) ? a : '.';
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("%-3s", name.c_str());
+            ImGui::TableNextColumn();
+            ImGui::Text("%04X", val);
+            ImGui::TableNextColumn();
+
+            auto a = val >> 8;
+            auto f = val & 0xFF;
 
             ImGui::Text(
-                "%-3s %04X      %c %c %c %c %c %c %c %c      %c",
-                name.c_str(), val,
-                (val & 0x80) ? 'S' : '-',
-                (val & 0x40) ? 'Z' : '-',
-                (val & 0x20) ? 'X' : '-',
-                (val & 0x10) ? 'H' : '-',
-                (val & 0x08) ? 'X' : '-',
-                (val & 0x04) ? 'P' : '-',
-                (val & 0x02) ? 'N' : '-',
-                (val & 0x01) ? 'C' : '-',
-                ch);
+                "    %c %c %c %c %c %c %c %c", //      %c",
+                (f & 0x80) ? 'S' : '-',
+                (f & 0x40) ? 'Z' : '-',
+                (f & 0x20) ? 'X' : '-',
+                (f & 0x10) ? 'H' : '-',
+                (f & 0x08) ? 'X' : '-',
+                (f & 0x04) ? 'P' : '-',
+                (f & 0x02) ? 'N' : '-',
+                (f & 0x01) ? 'C' : '-');
+
+            ImGui::TableNextColumn();
+            ImGui::Text("%c", (a >= 32 && a <= 0x7E) ? a : '.');
         };
 
-        drawAddrVal("PC", emuState.z80ctx.PC);
-        drawAddrVal("SP", emuState.z80ctx.R1.wr.SP);
-        drawAF("AF", emuState.z80ctx.R1.wr.AF);
-        drawAddrVal("BC", emuState.z80ctx.R1.wr.BC);
-        drawAddrVal("DE", emuState.z80ctx.R1.wr.DE);
-        drawAddrVal("HL", emuState.z80ctx.R1.wr.HL);
-        drawAddrVal("IX", emuState.z80ctx.R1.wr.IX);
-        drawAddrVal("IY", emuState.z80ctx.R1.wr.IY);
-        drawAF("AF'", emuState.z80ctx.R2.wr.AF);
-        drawAddrVal("BC'", emuState.z80ctx.R2.wr.BC);
-        drawAddrVal("DE'", emuState.z80ctx.R2.wr.DE);
-        drawAddrVal("HL'", emuState.z80ctx.R2.wr.HL);
-        ImGui::Text(
-            "IR  %04X  IM %u  Interrupts %3s",
-            (emuState.z80ctx.I << 8) | emuState.z80ctx.R,
-            emuState.z80ctx.IM,
-            emuState.z80ctx.IFF1 ? "On" : "Off");
+        if (ImGui::BeginTable("RegTable", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV)) {
+            ImGui::TableSetupColumn("Reg", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Contents", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("ASCII", ImGuiTableColumnFlags_WidthFixed);
+            // ImGui::TableHeadersRow();
+
+            drawAddrVal("PC", emuState.z80ctx.PC);
+            drawAddrVal("SP", emuState.z80ctx.R1.wr.SP);
+            drawAF("AF", emuState.z80ctx.R1.wr.AF);
+            drawAddrVal("BC", emuState.z80ctx.R1.wr.BC);
+            drawAddrVal("DE", emuState.z80ctx.R1.wr.DE);
+            drawAddrVal("HL", emuState.z80ctx.R1.wr.HL);
+            drawAddrVal("IX", emuState.z80ctx.R1.wr.IX);
+            drawAddrVal("IY", emuState.z80ctx.R1.wr.IY);
+            drawAF("AF'", emuState.z80ctx.R2.wr.AF);
+            drawAddrVal("BC'", emuState.z80ctx.R2.wr.BC);
+            drawAddrVal("DE'", emuState.z80ctx.R2.wr.DE);
+            drawAddrVal("HL'", emuState.z80ctx.R2.wr.HL);
+
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::Text("IR");
+            ImGui::TableNextColumn();
+            ImGui::Text("%04X", (emuState.z80ctx.I << 8) | emuState.z80ctx.R);
+            ImGui::TableNextColumn();
+            ImGui::Text("IM %u  Interrupts %3s", emuState.z80ctx.IM, emuState.z80ctx.IFF1 ? "On" : "Off");
+            ImGui::TableNextColumn();
+
+            ImGui::EndTable();
+        }
     }
     ImGui::End();
 }
@@ -820,8 +866,6 @@ static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
 }
 
 void UI::wndMemEdit(bool *p_open) {
-    static MemoryEditor memEdit;
-
     struct MemoryArea {
         MemoryArea(const std::string &_name, void *_data, size_t _size)
             : name(_name), data(_data), size(_size) {
@@ -1067,6 +1111,36 @@ void UI::wndIoRegs(bool *p_open) {
     ImGui::End();
 }
 
+void UI::addrPopup(uint16_t addr) {
+    if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
+        ImGui::Text("Address $%04X", addr);
+        ImGui::Separator();
+        if (ImGui::MenuItem("Run to here")) {
+            emuState.tmpBreakpoint = addr;
+            emuState.emuMode       = EmuState::Em_Running;
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Add breakpoint")) {
+            EmuState::Breakpoint bp;
+            bp.enabled = true;
+            bp.value   = addr;
+            bp.onR     = false;
+            bp.onW     = false;
+            bp.onX     = true;
+            emuState.breakpoints.push_back(bp);
+            ImGui::CloseCurrentPopup();
+        }
+        if (ImGui::MenuItem("Show in memory editor")) {
+            auto &config            = Config::instance();
+            config.showMemEdit      = true;
+            config.memEditMemSelect = 0;
+            memEdit.gotoAddr        = addr;
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
 void UI::wndAssemblyListing(bool *p_open) {
     ImGui::SetNextWindowSizeConstraints(ImVec2(300, 200), ImVec2(FLT_MAX, FLT_MAX));
 
@@ -1129,26 +1203,7 @@ void UI::wndAssemblyListing(bool *p_open) {
                         char addr[32];
                         snprintf(addr, sizeof(addr), "%04X##%d", line.addr, row_n);
                         ImGui::Selectable(addr);
-                        if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
-                            ImGui::Text("Address $%04X", line.addr);
-                            ImGui::Separator();
-                            if (ImGui::MenuItem("Run to here")) {
-                                emuState.tmpBreakpoint = line.addr;
-                                emuState.emuMode       = EmuState::Em_Running;
-                                ImGui::CloseCurrentPopup();
-                            }
-                            if (ImGui::MenuItem("Add breakpoint")) {
-                                EmuState::Breakpoint bp;
-                                bp.enabled = true;
-                                bp.value   = line.addr;
-                                bp.onR     = false;
-                                bp.onW     = false;
-                                bp.onX     = true;
-                                emuState.breakpoints.push_back(bp);
-                                ImGui::CloseCurrentPopup();
-                            }
-                            ImGui::EndPopup();
-                        }
+                        addrPopup(line.addr);
                     }
 
                     // ImGui::Text("%04X", line.addr);

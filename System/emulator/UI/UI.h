@@ -5,6 +5,9 @@
 #include "Audio.h"
 #include "AssemblyListing.h"
 
+#define IMGUI_DEFINE_MATH_OPERATORS
+#include "MemoryEditor.h"
+
 class UI {
 public:
     UI();
@@ -44,4 +47,7 @@ private:
     uint64_t lastKeyRepeatCall = 0;
 
     AssemblyListing asmListing;
+    MemoryEditor    memEdit;
+
+    void addrPopup(uint16_t addr);
 };
