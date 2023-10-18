@@ -782,6 +782,7 @@ DELFILE:
 
         ld      a, ESPCMD_DELETE
         call    esp_cmd
+        ld      hl, _dirent_name
         call    _send_filename
         call    esp_get_byte
         bit     7,a
@@ -1241,11 +1242,12 @@ _copy_dirent_to_dma:
         ret
 
 ;-----------------------------------------------------------------------------
-; Send filename in _dirent_name
+; Send filename in hl
 ;-----------------------------------------------------------------------------
 _send_filename:
+        push    hl
+
         ; Send filename
-        ld      hl, _dirent_name
         ld      c,8
 .1:     ld      a,(hl)
         cp      a,' '
@@ -1258,7 +1260,9 @@ _send_filename:
         ; Send extension
 .ext:   ld      a,'.'
         call    esp_send_byte
-        ld      hl, _dirent_ext
+        pop     hl
+        ld      bc,8
+        add     hl,bc
         ld      c,3
 .2:     ld      a,(hl)
         cp      a,' '
@@ -1288,6 +1292,7 @@ _openfile:
         call    esp_cmd
         ld      a,0             ; Flags (read-only)
         call    esp_send_byte
+        ld      hl, _dirent_name
         call    _send_filename
 
         ; Get result
