@@ -51,13 +51,14 @@ _fbase1:
 ;-----------------------------------------------------------------------------
 ; BDOS function jump table.
 ;-----------------------------------------------------------------------------
-NFUNCTS equ     41              ; number of functions in following table.
-FUNCTNS:defw    WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
-        defw    SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
-        defw    CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
-        defw    RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,WRTPRTD,GETROV,SETATTR
-        defw    GETPARM,GETUSER,RDRANDOM,WTRANDOM,FILESIZE,SETRAN,LOGOFF,RTN
-        defw    RTN,WTSPECL
+NFUNCTS:    equ 41          ; number of functions in following table.
+FUNCTNS:
+    defw    WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
+    defw    SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
+    defw    CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
+    defw    RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,WRTPRTD,GETROV,SETATTR
+    defw    GETPARM,GETUSER,RDRANDOM,WTRANDOM,FILESIZE,SETRAN,LOGOFF,RTN
+    defw    RTN,WTSPECL
 
 ;-----------------------------------------------------------------------------
 ; BDOS error message section.

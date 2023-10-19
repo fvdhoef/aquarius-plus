@@ -35,20 +35,20 @@ CTRL_X: equ     $18             ; control-x
 CTRL_Z: equ     $1A             ; control-z (end-of-file mark)
 DEL:    equ     $7F             ; rubout
 
-        ; Set origin for CP/M
-        org     (MEM - 7) * 1024
+    ; Set origin for CP/M
+    org     (MEM - 7) * 1024
 
 ccp:
-        include "ccp.inc"
+    include "ccp.inc"
 bdos:
-        include "bdos.inc"
+    include "bdos.inc"
 
-        assert $ <= $F200
-        ds $F200 - $
+    assert $ <= $F200
+    ds $F200 - $
 
 bios:
-        include "bios.inc"
+    include "bios.inc"
 
-        assert ccp  == $DC00
-        ; assert bdos == $E400
-        ; assert bios == $F200
+    assert ccp  == $DC00
+    ; assert bdos == $E400
+    ; assert bios == $F200
