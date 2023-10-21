@@ -178,7 +178,10 @@ void UI::mainLoop() {
             AqKeyboard::instance().repeatTimer();
         }
 
+        ImVec2 menuBarSize;
         if (ImGui::BeginMainMenuBar()) {
+            menuBarSize = ImGui::GetWindowSize();
+
             if (ImGui::BeginMenu("System")) {
                 if (ImGui::MenuItem("Select SD card directory...", "")) {
                     auto path = tinyfd_selectFolderDialog("Select SD card directory", nullptr);
@@ -343,7 +346,7 @@ void UI::mainLoop() {
             emuState.mouseHideTimeout = 0;
 
         if (!config.showScreenWindow) {
-            auto dst = renderTexture();
+            auto dst = renderTexture((int)menuBarSize.y);
 
             if (!io.WantCaptureMouse) {
                 // Update mouse
@@ -409,7 +412,7 @@ void UI::renderScreen() {
     SDL_UnlockTexture(texture);
 }
 
-SDL_Rect UI::renderTexture() {
+SDL_Rect UI::renderTexture(int menuHeight) {
     auto &config = Config::instance();
 
     SDL_Rect dst;
@@ -424,7 +427,7 @@ SDL_Rect UI::renderTexture() {
     float scaleX   = (rsx == 1.0f) ? drawData->FramebufferScale.x : 1.0f;
     float scaleY   = (rsy == 1.0f) ? drawData->FramebufferScale.y : 1.0f;
     int   w        = (int)(drawData->DisplaySize.x * scaleX);
-    int   h        = (int)(drawData->DisplaySize.y * scaleY);
+    int   h        = (int)(drawData->DisplaySize.y * scaleY) - menuHeight;
     if (w <= 0 || h <= 0)
         return dst;
 
@@ -447,6 +450,7 @@ SDL_Rect UI::renderTexture() {
             sw = w2;
             sh = h2;
         }
+        SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
 
     } else {
         float aspect = (float)VIDEO_WIDTH / (float)(VIDEO_HEIGHT * 2);
@@ -457,14 +461,13 @@ SDL_Rect UI::renderTexture() {
             sw = (int)((float)w);
             sh = (int)((float)sw / aspect);
         }
+        SDL_SetTextureScaleMode(texture, config.displayScaling == DisplayScaling::NearestNeighbor ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
     }
 
     dst.w = (int)sw;
     dst.h = (int)sh;
     dst.x = (w - dst.w) / 2;
-    dst.y = (h - dst.h) / 2;
-
-    SDL_SetTextureScaleMode(texture, config.displayScaling == DisplayScaling::Linear ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
+    dst.y = menuHeight + (h - dst.h) / 2;
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 
     return dst;

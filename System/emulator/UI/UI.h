@@ -21,7 +21,7 @@ private:
     void mainLoop();
 
     void     renderScreen();
-    SDL_Rect renderTexture();
+    SDL_Rect renderTexture(int menuHeight);
     void     emulate();
 
     void wndAbout(bool *p_open);
