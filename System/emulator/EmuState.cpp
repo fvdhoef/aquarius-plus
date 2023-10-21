@@ -286,12 +286,24 @@ uint8_t EmuState::memRead(size_t param, uint16_t addr) {
     addr &= 0x3FFF;
 
     if (overlayRam && addr >= 0x3000) {
-        if (addr < 0x3400) {
-            return emuState.screenRam[addr & 0x3FF];
-        } else if (addr < 0x3800) {
-            return emuState.colorRam[addr & 0x3FF];
-        } else {
+        if (addr >= 0x3800) {
             return emuState.mainRam[addr];
+        }
+
+        if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
+            if (emuState.videoCtrl & VCTRL_TRAM_PAGE) {
+                return emuState.colorRam[addr & 0x7FF];
+            } else {
+                return emuState.screenRam[addr & 0x7FF];
+            }
+
+        } else {
+            unsigned offset = (emuState.videoCtrl & VCTRL_TRAM_PAGE) ? 0x400 : 0;
+            if (addr < 0x3400) {
+                return emuState.screenRam[offset | (addr & 0x3FF)];
+            } else {
+                return emuState.colorRam[offset | (addr & 0x3FF)];
+            }
         }
     }
 
