@@ -414,28 +414,22 @@ SDL_Rect UI::renderTexture() {
     if (w <= 0 || h <= 0)
         return dst;
 
-    // Retain aspect ratio
-    int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
-    int h1 = (w1 * (VIDEO_HEIGHT * 2)) / VIDEO_WIDTH;
-    int h2 = (h / (VIDEO_HEIGHT * 2)) * (VIDEO_HEIGHT * 2);
-    int w2 = (h2 * VIDEO_WIDTH) / (VIDEO_HEIGHT * 2);
+    float aspect = (float)VIDEO_WIDTH / (float)(VIDEO_HEIGHT * 2);
+    int   sw, sh;
 
-    int sw, sh;
-    if (w1 == 0 || h1 == 0) {
-        sw = w;
-        sh = h;
-    } else if (w1 <= w && h1 <= h) {
-        sw = w1;
-        sh = h1;
-    } else {
-        sw = w2;
-        sh = h2;
+    sh = (int)((float)h);
+    sw = (int)((float)sh * aspect);
+    if (sw > w) {
+        sw = (int)((float)w);
+        sh = (int)((float)sw / aspect);
     }
 
     dst.w = (int)sw;
     dst.h = (int)sh;
     dst.x = (w - dst.w) / 2;
     dst.y = (h - dst.h) / 2;
+
+    SDL_SetTextureScaleMode(texture, SDL_ScaleModeLinear);
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 
     return dst;
@@ -785,6 +779,7 @@ void UI::wndScreen(bool *p_open) {
                 }
 
                 ImDrawList *draw_list = ImGui::GetWindowDrawList();
+                SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
                 draw_list->AddImage(texture, p0, p1, {0, 0}, {1, 1});
             }
             allowTyping = ImGui::IsWindowFocused();
