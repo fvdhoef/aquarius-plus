@@ -205,14 +205,14 @@ module video(
         end else if (next_row)
             row_addr_r <= row_addr_next;
 
-    wire       next_char = (hpos[3:0] == 4'd15);
-    wire [5:0] column = hpos[9:4];
+    wire       next_char = mode80_r ? (hpos[2:0] == 3'd7) : (hpos[3:0] == 4'd15);
+    wire [6:0] column = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
 
     always @(posedge(clk))
         if (next_char) begin
-            if (vborder || column == 6'd0 || column >= 6'd41)
+            if (vborder || column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41))
                 char_addr_r <= border_char_addr;
-            else if (column == 6'd1)
+            else if (column == (mode80_r ? 7'd3 : 7'd1))
                 char_addr_r <= row_addr_r;
             else
                 char_addr_r <= char_addr_r + 11'd1;
@@ -258,7 +258,7 @@ module video(
         .addr2(charram_addr),
         .rddata2(charram_data));
 
-    wire [2:0] pixel_sel    = hpos_rr[3:1] ^ 3'b111;
+    wire [2:0] pixel_sel    = (mode80_r ? hpos_rr[2:0] : hpos_rr[3:1]) ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
     wire [3:0] text_colidx  = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
 
