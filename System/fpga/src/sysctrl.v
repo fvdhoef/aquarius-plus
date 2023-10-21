@@ -3,6 +3,8 @@ module sysctrl(
     inout  wire ebus_reset_n,
     input  wire reset_req,
 
+    input  wire turbo_mode,
+
     output wire ebus_phi,
     output wire reset);
 
@@ -65,8 +67,19 @@ module sysctrl(
     //////////////////////////////////////////////////////////////////////////
     // Generate phi signal @ 3.58MHz
     //////////////////////////////////////////////////////////////////////////
-    reg [2:0] phi_div_r = 3'b0;
-    always @(posedge sysclk) phi_div_r <= phi_div_r + 3'b1;
-    assign ebus_phi = phi_div_r[2];
+    reg       phi_r = 1'b0;
+    reg [1:0] phi_div_r = 3'd0;
+
+    wire [1:0] toggle_val = turbo_mode ? 2'd1 : 2'd3;
+
+    assign ebus_phi = phi_r;
+    always @(posedge sysclk) begin
+        if (phi_div_r == toggle_val) begin
+            phi_r <= !phi_r;
+            phi_div_r <= 3'd0;
+        end else begin
+            phi_div_r <= phi_div_r + 3'd1;
+        end
+    end
 
 endmodule

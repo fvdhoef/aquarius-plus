@@ -61,27 +61,29 @@ module top(
     wire        spibm_wrdata_en;
     wire        spibm_en;
 
-    wire       reset_req;
-    wire       vga_vblank;
+    wire        reset_req;
+    wire        vga_vblank;
 
-    wire [7:0] rddata_tram;             // MEM $3000-$37FF
-    wire [7:0] rddata_chram;
-    wire [7:0] rddata_vram;
-    wire [7:0] rddata_rom;
+    wire  [7:0] rddata_tram;             // MEM $3000-$37FF
+    wire  [7:0] rddata_chram;
+    wire  [7:0] rddata_vram;
+    wire  [7:0] rddata_rom;
 
-    wire [7:0] rddata_io_video;         // IO $E0-$EF
-    wire [7:0] rddata_espctrl;          // IO $F4
-    wire [7:0] rddata_espdata;          // IO $F5
-    wire [7:0] rddata_ay8910;           // IO $F6/F7
-    wire [7:0] rddata_ay8910_2;         // IO $F8/F9
-    wire [7:0] rddata_kbbuf;            // IO $FA
-    wire [7:0] rddata_keyboard;         // IO $FF:R
+    wire  [7:0] rddata_io_video;         // IO $E0-$EF
+    wire  [7:0] rddata_espctrl;          // IO $F4
+    wire  [7:0] rddata_espdata;          // IO $F5
+    wire  [7:0] rddata_ay8910;           // IO $F6/F7
+    wire  [7:0] rddata_ay8910_2;         // IO $F8/F9
+    wire  [7:0] rddata_kbbuf;            // IO $FA
+    wire  [7:0] rddata_keyboard;         // IO $FF:R
 
-    reg  [7:0] reg_bank0_r;             // IO $F0
-    reg  [7:0] reg_bank1_r;             // IO $F1
-    reg  [7:0] reg_bank2_r;             // IO $F2
-    reg  [7:0] reg_bank3_r;             // IO $F3
-    reg        reg_cpm_remap_r;         // IO $FD:W
+    reg   [7:0] reg_bank0_r;             // IO $F0
+    reg   [7:0] reg_bank1_r;             // IO $F1
+    reg   [7:0] reg_bank2_r;             // IO $F2
+    reg   [7:0] reg_bank3_r;             // IO $F3
+    reg         reg_cpm_remap_r;         // IO $FD:W
+
+    reg         sysctrl_turbo_r;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -102,6 +104,8 @@ module top(
         .sysclk(clk),
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
+
+        .turbo_mode(sysctrl_turbo_r),
 
         .ebus_phi(ebus_phi),
         .reset(reset));
@@ -206,7 +210,7 @@ module top(
         if (sel_io_ay8910)            rddata <= rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_kbbuf)             rddata <= rddata_kbbuf;                                   // IO $FA
-        if (sel_io_sysctrl)           rddata <= {6'b0, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
+        if (sel_io_sysctrl)           rddata <= {5'b0, sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
         if (sel_io_cassette)          rddata <= {7'b0, !cassette_in_r[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};                            // IO $FD
         if (sel_io_printer)           rddata <= {7'b0, printer_in_r[2]};                        // IO $FE
@@ -231,6 +235,7 @@ module top(
             reg_bank3_r          <= {2'b00, 6'd19};
             sysctrl_dis_regs_r   <= 1'b0;
             sysctrl_dis_psgs_r   <= 1'b0;
+            sysctrl_turbo_r      <= 1'b0;
             cassette_out         <= 1'b0;
             reg_cpm_remap_r      <= 1'b0;
             printer_out          <= 1'b0;
@@ -240,7 +245,7 @@ module top(
             if (sel_io_bank1             && bus_write) reg_bank1_r                              <= wrdata;
             if (sel_io_bank2             && bus_write) reg_bank2_r                              <= wrdata;
             if (sel_io_bank3             && bus_write) reg_bank3_r                              <= wrdata;
-            if (sel_io_sysctrl           && bus_write) {sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[1:0];
+            if (sel_io_sysctrl           && bus_write) {sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[2:0];
             if (sel_io_cassette          && bus_write) cassette_out                             <= wrdata[0];
             if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r                          <= wrdata[0];
             if (sel_io_printer           && bus_write) printer_out                              <= wrdata[0];
