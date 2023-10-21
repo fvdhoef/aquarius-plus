@@ -131,6 +131,7 @@ struct EmuState {
     uint8_t  ay2Addr           = 0;     // $F9   : AY-3-8910: Selected address to access via data register
     bool     sysCtrlDisableExt = false; // $FB<0>: Disable access to extended registers
     bool     sysCtrlAyDisable  = false; // $FB<1>: Disable AY PSGs
+    bool     sysCtrlTurbo      = false; // $FB<2>: Turbo mode
     bool     soundOutput       = false; // $FC<1>: Cassette/Sound output
     bool     cpmRemap          = false; // $FD<1>: Remap memory for CP/M
 

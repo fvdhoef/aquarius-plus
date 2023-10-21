@@ -985,6 +985,17 @@ void UI::wndIoRegs(bool *p_open) {
             }
             ImGui::Text("%s", str.c_str());
         }
+        if (ImGui::CollapsingHeader("Other")) {
+            uint8_t sysctrl =
+                ((emuState.sysCtrlTurbo ? (1 << 2) : 0) |
+                 (emuState.sysCtrlAyDisable ? (1 << 1) : 0) |
+                 (emuState.sysCtrlDisableExt ? (1 << 0) : 0));
+            ImGui::Text(
+                "$FB SYSCTRL: $%02X %s%s%s", sysctrl,
+                sysctrl & 4 ? "[TURBO]" : "",
+                sysctrl & 2 ? "[AYDIS]" : "",
+                sysctrl & 1 ? "[EXTDIS]" : "");
+        }
         if (ImGui::CollapsingHeader("Audio AY1")) {
             ImGui::Text(" 0 AFINE   : $%02X", emuState.ay1.regs[0]);
             ImGui::Text(" 1 ACOARSE : $%02X", emuState.ay1.regs[1]);

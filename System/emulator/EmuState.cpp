@@ -52,6 +52,7 @@ void EmuState::reset() {
     ay2Addr           = 0;
     sysCtrlDisableExt = false;
     sysCtrlAyDisable  = false;
+    sysCtrlTurbo      = false;
     soundOutput       = false;
     cpmRemap          = false;
 
@@ -103,25 +104,30 @@ unsigned EmuState::emulate() {
         }
     }
 
-    z80ctx.tstates = 0;
-    Z80Execute(&z80ctx);
-    int delta = z80ctx.tstates * 2;
-
-    if (traceEnable && (!z80ctx.halted || !prevHalted)) {
-        cpuTrace.emplace_back();
-        auto &entry = cpuTrace.back();
-        entry.pc    = z80ctx.PC;
-        entry.r1    = z80ctx.R1;
-        entry.r2    = z80ctx.R2;
-
+    int delta = 0;
+    int count = emuState.sysCtrlTurbo ? 2 : 1;
+    for (int i = 0; i < count; i++) {
         z80ctx.tstates = 0;
-        Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
+        Z80Execute(&z80ctx);
+        delta += z80ctx.tstates * 2;
 
-        while ((int)cpuTrace.size() > traceDepth) {
-            cpuTrace.pop_front();
+        if (traceEnable && (!z80ctx.halted || !prevHalted)) {
+            cpuTrace.emplace_back();
+            auto &entry = cpuTrace.back();
+            entry.pc    = z80ctx.PC;
+            entry.r1    = z80ctx.R1;
+            entry.r2    = z80ctx.R2;
+
+            z80ctx.tstates = 0;
+            Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
+
+            while ((int)cpuTrace.size() > traceDepth) {
+                cpuTrace.pop_front();
+            }
         }
+        prevHalted = z80ctx.halted;
     }
-    prevHalted = z80ctx.halted;
+    delta /= count;
 
     int prevLineHalfCycles = lineHalfCycles;
 
@@ -429,8 +435,9 @@ uint8_t EmuState::ioRead(size_t param, uint16_t addr) {
 
         case 0xFA: return emuState.kbBufRead();
         case 0xFB: return (
-            (emuState.sysCtrlDisableExt ? (1 << 0) : 0) |
-            (emuState.sysCtrlAyDisable ? (1 << 1) : 0));
+            (emuState.sysCtrlTurbo ? (1 << 2) : 0) |
+            (emuState.sysCtrlAyDisable ? (1 << 1) : 0) |
+            (emuState.sysCtrlDisableExt ? (1 << 0) : 0));
 
         case 0xFC: /* printf("Cassette port input (%04x)\n", addr); */ return 0xFF;
         case 0xFD: return (emuState.videoLine >= 242) ? 0 : 1;
@@ -530,6 +537,7 @@ void EmuState::ioWrite(size_t param, uint16_t addr, uint8_t data) {
         case 0xFB:
             emuState.sysCtrlDisableExt = (data & (1 << 0)) != 0;
             emuState.sysCtrlAyDisable  = (data & (1 << 1)) != 0;
+            emuState.sysCtrlTurbo      = (data & (1 << 2)) != 0;
             return;
 
         case 0xFC: emuState.soundOutput = (data & 1) != 0; break;
