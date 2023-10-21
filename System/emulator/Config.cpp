@@ -64,6 +64,8 @@ void Config::load() {
         enableSound = getBoolValue(root, "enableSound", true);
         enableMouse = getBoolValue(root, "enableMouse", true);
 
+        displayScaling = (DisplayScaling)getIntValue(root, "displayScaling", (int)DisplayScaling::Linear);
+
         setKeyLayout((KeyLayout)getIntValue(root, "keyLayout", 0));
 
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
@@ -123,6 +125,8 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "scrScale", scrScale);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
     cJSON_AddBoolToObject(root, "enableMouse", enableMouse);
+
+    cJSON_AddNumberToObject(root, "displayScaling", (int)displayScaling);
 
     cJSON_AddNumberToObject(root, "keyLayout", (int)getKeyLayout());
 

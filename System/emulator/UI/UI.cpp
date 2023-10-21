@@ -223,6 +223,18 @@ void UI::mainLoop() {
                 }
                 ImGui::EndMenu();
             }
+            if (ImGui::BeginMenu("Display")) {
+                if (ImGui::MenuItem("Scaling: Nearest Neighbor", "", config.displayScaling == DisplayScaling::NearestNeighbor)) {
+                    config.displayScaling = DisplayScaling::NearestNeighbor;
+                }
+                if (ImGui::MenuItem("Scaling: Linear", "", config.displayScaling == DisplayScaling::Linear)) {
+                    config.displayScaling = DisplayScaling::Linear;
+                }
+                if (ImGui::MenuItem("Scaling: Integer", "", config.displayScaling == DisplayScaling::Integer)) {
+                    config.displayScaling = DisplayScaling::Integer;
+                }
+                ImGui::EndMenu();
+            }
             if (ImGui::BeginMenu("Keyboard")) {
                 ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config.handCtrlEmulation);
                 if (ImGui::MenuItem("Paste text from clipboard", "")) {
@@ -398,6 +410,8 @@ void UI::renderScreen() {
 }
 
 SDL_Rect UI::renderTexture() {
+    auto &config = Config::instance();
+
     SDL_Rect dst;
     dst.x = 0;
     dst.y = 0;
@@ -414,14 +428,35 @@ SDL_Rect UI::renderTexture() {
     if (w <= 0 || h <= 0)
         return dst;
 
-    float aspect = (float)VIDEO_WIDTH / (float)(VIDEO_HEIGHT * 2);
-    int   sw, sh;
+    int sw, sh;
 
-    sh = (int)((float)h);
-    sw = (int)((float)sh * aspect);
-    if (sw > w) {
-        sw = (int)((float)w);
-        sh = (int)((float)sw / aspect);
+    if (config.displayScaling == DisplayScaling::Integer && w >= VIDEO_WIDTH && h >= VIDEO_HEIGHT * 2) {
+        // Retain aspect ratio
+        int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
+        int h1 = (w1 * (VIDEO_HEIGHT * 2)) / VIDEO_WIDTH;
+        int h2 = (h / (VIDEO_HEIGHT * 2)) * (VIDEO_HEIGHT * 2);
+        int w2 = (h2 * VIDEO_WIDTH) / (VIDEO_HEIGHT * 2);
+
+        if (w1 == 0 || h1 == 0) {
+            sw = w;
+            sh = h;
+        } else if (w1 <= w && h1 <= h) {
+            sw = w1;
+            sh = h1;
+        } else {
+            sw = w2;
+            sh = h2;
+        }
+
+    } else {
+        float aspect = (float)VIDEO_WIDTH / (float)(VIDEO_HEIGHT * 2);
+
+        sh = (int)((float)h);
+        sw = (int)((float)sh * aspect);
+        if (sw > w) {
+            sw = (int)((float)w);
+            sh = (int)((float)sw / aspect);
+        }
     }
 
     dst.w = (int)sw;
@@ -429,7 +464,7 @@ SDL_Rect UI::renderTexture() {
     dst.x = (w - dst.w) / 2;
     dst.y = (h - dst.h) / 2;
 
-    SDL_SetTextureScaleMode(texture, SDL_ScaleModeLinear);
+    SDL_SetTextureScaleMode(texture, config.displayScaling == DisplayScaling::Linear ? SDL_ScaleModeLinear : SDL_ScaleModeNearest);
     SDL_RenderCopy(renderer, texture, NULL, &dst);
 
     return dst;

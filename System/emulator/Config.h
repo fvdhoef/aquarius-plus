@@ -3,6 +3,12 @@
 #include "Common.h"
 #include <SDL.h>
 
+enum class DisplayScaling {
+    NearestNeighbor = 0,
+    Linear,
+    Integer,
+};
+
 class Config {
     Config();
 
@@ -40,4 +46,6 @@ public:
     bool showEspInfo         = false;
 
     int memEditMemSelect = 0;
+
+    DisplayScaling displayScaling = DisplayScaling::Linear;
 };
