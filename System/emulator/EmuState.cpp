@@ -340,12 +340,25 @@ void EmuState::memWrite(size_t param, uint16_t addr, uint8_t data) {
     addr &= 0x3FFF;
 
     if (overlayRam && addr >= 0x3000) {
-        if (addr < 0x3400) {
-            emuState.screenRam[addr & 0x3FF] = data;
-        } else if (addr < 0x3800) {
-            emuState.colorRam[addr & 0x3FF] = data;
-        } else {
+        if (addr >= 0x3800) {
             emuState.mainRam[addr] = data;
+            return;
+        }
+
+        if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
+            if (emuState.videoCtrl & VCTRL_TRAM_PAGE) {
+                emuState.colorRam[addr & 0x7FF] = data;
+            } else {
+                emuState.screenRam[addr & 0x7FF] = data;
+            }
+
+        } else {
+            unsigned offset = (emuState.videoCtrl & VCTRL_TRAM_PAGE) ? 0x400 : 0;
+            if (addr < 0x3400) {
+                emuState.screenRam[offset | (addr & 0x3FF)] = data;
+            } else {
+                emuState.colorRam[offset | (addr & 0x3FF)] = data;
+            }
         }
         return;
     }

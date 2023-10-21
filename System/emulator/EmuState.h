@@ -136,8 +136,8 @@ struct EmuState {
     bool     cpmRemap          = false; // $FD<1>: Remap memory for CP/M
 
     // Memory space
-    uint8_t screenRam[1024];       // $3000-33FF: Screen RAM for text mode
-    uint8_t colorRam[1024];        // $3400-37FF: Color RAM for text mode
+    uint8_t screenRam[2048];       // $3000-33FF: Screen RAM for text mode
+    uint8_t colorRam[2048];        // $3400-37FF: Color RAM for text mode
     uint8_t systemRom[256 * 1024]; // Flash memory
     uint8_t mainRam[512 * 1024];   // Main RAM
     uint8_t cartRom[16 * 1024];    // Cartridge ROM

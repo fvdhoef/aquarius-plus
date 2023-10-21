@@ -60,7 +60,7 @@ void UI::start(
     }
 
     // Create screen texture
-    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT);
+    texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, VIDEO_WIDTH, VIDEO_HEIGHT * 2);
     if (texture == NULL) {
         fprintf(stderr, "SDL_CreateTexture Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -337,7 +337,7 @@ void UI::mainLoop() {
                 // Update mouse
                 const ImVec2 p0((float)dst.x, (float)dst.y);
                 const ImVec2 p1((float)(dst.x + dst.w), (float)(dst.y + dst.h));
-                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
+                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH / 2, VIDEO_HEIGHT) - ImVec2(16, 16);
 
                 bool hideMouse =
                     (emuState.mouseHideTimeout > 0) &&
@@ -377,11 +377,10 @@ void UI::renderScreen() {
 
     const uint16_t *fb = emuState.video.getFb();
 
-    for (int j = 0; j < VIDEO_HEIGHT; j++) {
+    for (int j = 0; j < VIDEO_HEIGHT * 2; j++) {
         for (int i = 0; i < VIDEO_WIDTH; i++) {
-
             // Convert from RGB444 to RGB888
-            uint16_t col444 = fb[j * VIDEO_WIDTH + i];
+            uint16_t col444 = fb[j / 2 * VIDEO_WIDTH + i];
 
             unsigned r4 = (col444 >> 8) & 0xF;
             unsigned g4 = (col444 >> 4) & 0xF;
@@ -417,9 +416,9 @@ SDL_Rect UI::renderTexture() {
 
     // Retain aspect ratio
     int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
-    int h1 = (w1 * VIDEO_HEIGHT) / VIDEO_WIDTH;
-    int h2 = (h / VIDEO_HEIGHT) * VIDEO_HEIGHT;
-    int w2 = (h2 * VIDEO_WIDTH) / VIDEO_HEIGHT;
+    int h1 = (w1 * (VIDEO_HEIGHT * 2)) / VIDEO_WIDTH;
+    int h2 = (h / (VIDEO_HEIGHT * 2)) * (VIDEO_HEIGHT * 2);
+    int w2 = (h2 * VIDEO_WIDTH) / (VIDEO_HEIGHT * 2);
 
     int sw, sh;
     if (w1 == 0 || h1 == 0) {
@@ -750,11 +749,11 @@ void UI::wndScreen(bool *p_open) {
             if (texture) {
                 ImGuiIO &io = ImGui::GetIO();
 
-                auto sz = ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * e));
+                auto sz = ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * 2 * e));
                 ImGui::InvisibleButton("##imgbtn", sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
                 const ImVec2 p0  = ImGui::GetItemRectMin();
                 const ImVec2 p1  = ImGui::GetItemRectMax();
-                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH, VIDEO_HEIGHT) - ImVec2(16, 16);
+                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH / 2, VIDEO_HEIGHT) - ImVec2(16, 16);
 
                 int mx = std::max(0, std::min((int)pos.x, 319));
                 int my = std::max(0, std::min((int)pos.y, 199));

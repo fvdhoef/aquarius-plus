@@ -1,18 +1,6 @@
 #include "Video.h"
 #include "EmuState.h"
 
-enum {
-    VCTRL_TEXT_ENABLE       = (1 << 0),
-    VCTRL_MODE_OFF          = (0 << 1),
-    VCTRL_MODE_TILEMAP      = (1 << 1),
-    VCTRL_MODE_BITMAP       = (2 << 1),
-    VCTRL_MODE_BITMAP_4BPP  = (3 << 1),
-    VCTRL_MODE_MASK         = (3 << 1),
-    VCTRL_SPRITES_ENABLE    = (1 << 3),
-    VCTRL_TEXT_PRIORITY     = (1 << 4),
-    VCTRL_REMAP_BORDER_CHAR = (1 << 5),
-};
-
 Video::Video() {
 }
 
@@ -21,32 +9,40 @@ void Video::drawLine() {
     if (line < 0 || line >= VIDEO_HEIGHT)
         return;
 
-    // Render text
-    uint8_t  lineText[512];
-    unsigned idx = 512 - 16;
-
     bool vActive = line >= 16 && line < 216;
 
-    for (int i = 0; i < VIDEO_WIDTH; i++) {
-        // Draw text character
-        uint8_t ch;
-        uint8_t color;
-        if (vActive && idx < 320) {
-            int row    = (line - 16) / 8;
-            int column = (i - 16) / 8;
-            ch         = emuState.screenRam[row * 40 + column];
-            color      = emuState.colorRam[row * 40 + column];
+    // Render text
+    uint8_t lineText[1024];
+    {
+        unsigned idx = 1024 - 32;
+        for (int i = 0; i < VIDEO_WIDTH; i++) {
+            // Draw text character
+            unsigned addr   = 0;
+            int      pixidx = i;
 
-        } else {
-            unsigned borderAddr = (emuState.videoCtrl & VCTRL_REMAP_BORDER_CHAR) ? 0x3FF : 0;
+            if (vActive && idx < 640) {
+                int row = (line - 16) / 8;
+                if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
+                    int column = (i - 32) / 8;
+                    addr       = row * 80 + column;
+                } else {
+                    int column = ((i / 2) - 16) / 8;
+                    addr       = row * 40 + column;
+                    pixidx /= 2;
+                }
 
-            ch    = emuState.screenRam[borderAddr];
-            color = emuState.colorRam[borderAddr];
+            } else if (emuState.videoCtrl & VCTRL_REMAP_BORDER_CHAR) {
+                addr = (emuState.videoCtrl & VCTRL_80_COLUMNS) ? 0x7FF : 0x3FF;
+            }
+
+            uint8_t ch    = emuState.screenRam[addr];
+            uint8_t color = emuState.colorRam[addr];
+
+            uint8_t charBm = emuState.charRam[ch * 8 + (line & 7)];
+
+            lineText[idx] = (charBm & (1 << (7 - (pixidx & 7)))) ? (color >> 4) : (color & 0xF);
+            idx           = (idx + 1) & 1023;
         }
-
-        uint8_t charBm = emuState.charRam[ch * 8 + (line & 7)];
-        lineText[idx]  = (charBm & (1 << (7 - (i & 7)))) ? (color >> 4) : (color & 0xF);
-        idx            = (idx + 1) & 511;
     }
 
     // Render bitmap/tile layer
@@ -83,7 +79,7 @@ void Video::drawLine() {
 
             case VCTRL_MODE_TILEMAP: {
                 // Tile mode
-                idx               = (-(emuState.videoScrX & 7)) & 511;
+                unsigned idx      = (-(emuState.videoScrX & 7)) & 511;
                 unsigned tileLine = (bmline + emuState.videoScrY) & 255;
                 unsigned row      = (tileLine >> 3) & 31;
                 unsigned col      = emuState.videoScrX >> 3;
@@ -168,7 +164,7 @@ void Video::drawLine() {
                 uint8_t  palette  = sprAttr & 0x30;
                 bool     priority = (sprAttr & (1 << 6)) != 0;
 
-                idx = sprX;
+                unsigned idx = sprX;
 
                 if (vFlip)
                     sprLine ^= (h16 ? 15 : 7);
@@ -219,28 +215,33 @@ void Video::drawLine() {
     }
 
     // Compose layers
-    uint16_t *pd = &screen[line * VIDEO_WIDTH];
-    idx          = 512 - 16;
+    {
+        uint16_t *pd  = &screen[line * VIDEO_WIDTH];
+        unsigned  idx = 1024 - 32;
 
-    for (int i = 0; i < VIDEO_WIDTH; i++) {
-        bool active       = idx < 320 && vActive;
-        bool textPriority = (emuState.videoCtrl & VCTRL_TEXT_PRIORITY) != 0;
-        bool textEnable   = (emuState.videoCtrl & VCTRL_TEXT_ENABLE) != 0;
+        for (int i = 0; i < VIDEO_WIDTH; i++) {
+            bool active       = idx < 640 && vActive;
+            bool textPriority = (emuState.videoCtrl & VCTRL_TEXT_PRIORITY) != 0;
+            bool textEnable   = (emuState.videoCtrl & VCTRL_TEXT_ENABLE) != 0;
 
-        uint8_t colIdx = 0;
-        if (!active) {
-            if (textEnable)
-                colIdx = lineText[idx];
-        } else {
-            if (textEnable && !textPriority)
-                colIdx = lineText[idx];
-            if (!textEnable || textPriority || (lineGfx[idx] & 0xF) != 0)
-                colIdx = lineGfx[idx];
-            if (textEnable && textPriority && (lineText[idx] & 0xF) != 0)
-                colIdx = lineText[idx];
+            uint8_t colIdx = 0;
+            if (!active) {
+                if (textEnable)
+                    colIdx = lineText[idx];
+            } else {
+                if (textEnable)
+                    colIdx = lineText[idx];
+
+                if (textEnable && !textPriority)
+                    colIdx = lineText[idx];
+                if (!textEnable || textPriority || (lineGfx[idx / 2] & 0xF) != 0)
+                    colIdx = lineGfx[idx / 2];
+                if (textEnable && textPriority && (lineText[idx] & 0xF) != 0)
+                    colIdx = lineText[idx];
+            }
+
+            pd[i] = emuState.videoPalette[colIdx & 0x3F];
+            idx   = (idx + 1) & 1023;
         }
-
-        pd[i] = emuState.videoPalette[colIdx & 0x3F];
-        idx   = (idx + 1) & 511;
     }
 }
