@@ -84,12 +84,22 @@ module top(
     reg        reg_cpm_remap_r;         // IO $FD:W
 
     //////////////////////////////////////////////////////////////////////////
+    // Clock synthesizer
+    //////////////////////////////////////////////////////////////////////////
+    wire clk;
+
+    clkctrl clkctrl(
+        .clk_in(sysclk),
+        .clk_out(clk)
+    );
+
+    //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
     wire reset;
 
     sysctrl sysctrl(
-        .sysclk(sysclk),
+        .sysclk(clk),
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
 
@@ -126,12 +136,12 @@ module top(
 
     // Register data from external bus
     reg [7:0] wrdata;
-    always @(posedge sysclk) if (!ebus_wr_n) wrdata <= ebus_d;
+    always @(posedge clk) if (!ebus_wr_n) wrdata <= ebus_d;
 
     reg [2:0] ebus_wr_n_r;
     reg [2:0] ebus_rd_n_r;
-    always @(posedge sysclk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
-    always @(posedge sysclk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
+    always @(posedge clk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
+    always @(posedge clk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
 
     wire bus_read  = ebus_rd_n_r[2:1] == 3'b10;
     wire bus_write = ebus_wr_n_r[2:1] == 3'b10;
@@ -213,7 +223,7 @@ module top(
 
     assign exp              = 10'b0;
 
-    always @(posedge sysclk or posedge reset)
+    always @(posedge clk or posedge reset)
         if (reset) begin
             reg_bank0_r          <= {2'b11, 6'd0};
             reg_bank1_r          <= {2'b00, 6'd33};
@@ -242,7 +252,7 @@ module top(
     wire rom_p2_wren;
 
     rom rom(
-        .clk(sysclk),
+        .clk(clk),
         .addr({reg_bank_page[1:0], ebus_a[13:0]}),
         .rddata(rddata_rom),
         
@@ -262,7 +272,7 @@ module top(
     wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
 
     reg [2:0] esp_ctrl_status_r;
-    always @(posedge sysclk or posedge reset) begin
+    always @(posedge clk or posedge reset) begin
         if (reset)
             esp_ctrl_status_r <= 3'b0;
         else begin
@@ -278,7 +288,7 @@ module top(
 
     esp_uart esp_uart(
         .rst(reset),
-        .clk(sysclk),
+        .clk(clk),
 
         .tx_data(wrdata),
         .tx_valid(esp_txvalid),
@@ -306,7 +316,7 @@ module top(
     wire io_video_wren = sel_io_video    && bus_write;
 
     video video(
-        .clk(sysclk),
+        .clk(clk),
         .reset(reset),
 
         .io_addr(ebus_a[3:0]),
@@ -351,10 +361,10 @@ module top(
     // Synchronize inputs
     reg [7:0] hctrl1_r, hctrl1_rr;
     reg [7:0] hctrl2_r, hctrl2_rr;
-    always @(posedge sysclk) hctrl1_r  <= hctrl1;
-    always @(posedge sysclk) hctrl1_rr <= hctrl1_r;
-    always @(posedge sysclk) hctrl2_r  <= hctrl2;
-    always @(posedge sysclk) hctrl2_rr <= hctrl2_r;
+    always @(posedge clk) hctrl1_r  <= hctrl1;
+    always @(posedge clk) hctrl1_rr <= hctrl1_r;
+    always @(posedge clk) hctrl2_r  <= hctrl2;
+    always @(posedge clk) hctrl2_rr <= hctrl2_r;
 
     // Combine data from ESP with data from handcontroller input
     wire [7:0] hctrl1_data = hctrl1_rr & spi_hctrl1;
@@ -380,7 +390,7 @@ module top(
     assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
 
     spiregs spiregs(
-        .clk(sysclk),
+        .clk(clk),
         .reset(reset),
 
         .esp_ssel_n(esp_ssel_n),
@@ -432,7 +442,7 @@ module top(
     wire       kbbuf_rst  = (sel_io_kbbuf && bus_write) || reset;
 
     kbbuf kbbuf(
-        .clk(sysclk),
+        .clk(clk),
         .rst(kbbuf_rst),
 
         .wrdata(kbbuf_data),
@@ -453,7 +463,7 @@ module top(
     wire [9:0] beep = cassette_out ? 10'd1023 : 10'd0;
 
     ay8910 ay8910(
-        .clk(sysclk),
+        .clk(clk),
         .reset(reset),
 
         .a0(ebus_a[0]),
@@ -469,7 +479,7 @@ module top(
         .ch_c(ay8910_ch_c));
 
     ay8910 ay8910_2(
-        .clk(sysclk),
+        .clk(clk),
         .reset(reset),
 
         .a0(ebus_a[0]),
@@ -504,7 +514,7 @@ module top(
 
     pwm_dac pwm_dac(
         .rst(reset),
-        .clk(sysclk),
+        .clk(clk),
 
         // Sample input
         .next_sample(next_sample),
