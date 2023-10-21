@@ -859,9 +859,7 @@ _direct3:
     ld      a,e             ; bump name count.
     inc     e
     push    de
-;   and     $03             ; at end of line?
-    ; *40 columns fix*
-    and     $01             ; at end of line?
+    and     $03             ; at end of line?
     push    af
     jp      nz,_direct4
     call    _crlf           ; yes, end this line and start another.

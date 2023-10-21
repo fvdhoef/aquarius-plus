@@ -44,8 +44,8 @@ __low_storage_values_end:
 ; BOOT - Cold start routine
 ;-----------------------------------------------------------------------------
 _boot:
-    ; Set video mode to text with remapped border character
-    ld      a, $21
+    ; Set video mode to 80-columns mode text with remapped border character
+    ld      a, $61
     out     (IO_VCTRL), a
 
     ; Setup a stack
@@ -145,11 +145,16 @@ _saved_col: .defb $8F
 ; Hide cursor
 ;-----------------------------------------------------------------------------
 _hide_cursor:
-    ; Restored saved color at cursor position
-    ld      hl, (_text_addr)
-    set     2,h
+    ; Restore saved color at cursor position
+    ld      a,$E1
+    out     (IO_VCTRL),a
+
+    ld      hl,(_text_addr)
     ld      a,(_saved_col)
     ld      (hl),a
+
+    ld      a,$61
+    out     (IO_VCTRL),a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -157,14 +162,19 @@ _hide_cursor:
 ;-----------------------------------------------------------------------------
 _show_cursor:
     ; Save color at cursor position
+    ld      a,$E1
+    out     (IO_VCTRL),a
+
     ld      hl, (_text_addr)
-    set     2,h
     ld      a,(hl)
     ld      (_saved_col),a
 
     ; Set color at cursor position
     ld      a, $F9
     ld      (hl),a
+
+    ld      a,$61
+    out     (IO_VCTRL),a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -199,7 +209,7 @@ _conout:
 
     ld      a, (_text_col)
     inc     a
-    cp      40
+    cp      80
     jr      z, .next_line
     ld      (_text_col), a
 
@@ -226,7 +236,7 @@ _conout:
     call    .do_scroll
     ld      a, 24
     ld      (_text_row), a
-    ld      hl, $3000 + 40 * 24
+    ld      hl, $3000 + 80 * 24
     ld      (_text_addr), hl
     jr      .done
 
@@ -251,7 +261,7 @@ _conout:
     ld      (_text_row), a
 
     ld      hl, (_text_addr)
-    ld      bc, 40
+    ld      bc, 80
     or      a   ; Clear carry
     adc     hl, bc
     ld      (_text_addr), hl
@@ -263,11 +273,11 @@ _conout:
 
 .do_scroll:
     ld      de, $3000
-    ld      hl, $3000 + 40
-    ld      bc, 40 * 24
+    ld      hl, $3000 + 80
+    ld      bc, 80 * 24
     ldir
-    ld      hl, $3000 + 40 * 24
-    ld      bc, 40
+    ld      hl, $3000 + 80 * 24
+    ld      bc, 80
     ld      a, ' '
     call    memset
     ret
@@ -293,7 +303,7 @@ _conout:
     jr      z, .bs_done
     dec     a                   ; Decrement row
     ld      (_text_row), a
-    ld      a, 39               ; Update column to 39
+    ld      a, 79               ; Update column to 79
     jr      .bs3
 
 ;-----------------------------------------------------------------------------

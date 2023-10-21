@@ -14,15 +14,27 @@ cpm_start:
 cpm_end:
 
 main:
+    ; Enable turbo mode
+    ld      a,$4
+    out     (IO_SYSCTRL), a
+
     ; Clear screen
+    ld      a,$61
+    out     (IO_VCTRL), a
     ld      hl, $3000
-    ld      bc, $400
+    ld      bc, $800
     ld      a, ' '
     call    _memset
-    ld      hl, $3400
-    ld      bc, $400
+
+    ld      a,$E1
+    out     (IO_VCTRL), a
+    ld      hl, $3000
+    ld      bc, $800
     ld      a, $8F
     call    _memset
+
+    ld      a,$61
+    out     (IO_VCTRL), a
 
     ; Map RAM in bank 3
     ld  a, 35
