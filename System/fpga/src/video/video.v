@@ -45,6 +45,8 @@ module video(
     wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
 
+    reg        vctrl_tram_page_r;       // IO $E0 [7]
+    reg        vctrl_80_columns_r;      // IO $E0 [6]
     reg        vctrl_border_remap_r;    // IO $E0 [5]
     reg        vctrl_text_priority_r;   // IO $E0 [4]
     reg        vctrl_sprites_enable_r;  // IO $E0 [3]
@@ -82,7 +84,7 @@ module video(
 
     always @* begin
         io_rddata <= rddata_sprattr;
-        if (sel_io_vctrl)    io_rddata <= {2'b0, vctrl_border_remap_r, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
+        if (sel_io_vctrl)    io_rddata <= {vctrl_tram_page_r, vctrl_80_columns_r, vctrl_border_remap_r, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
         if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];                             // IO $E1
         if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};                       // IO $E2
         if (sel_io_vscry)    io_rddata <= vscry_r;                                  // IO $E3
@@ -96,6 +98,8 @@ module video(
 
     always @(posedge clk or posedge reset)
         if (reset) begin
+            vctrl_tram_page_r      <= 1'b0;
+            vctrl_80_columns_r     <= 1'b0;
             vctrl_border_remap_r   <= 1'b0;
             vctrl_text_priority_r  <= 1'b0;
             vctrl_sprites_enable_r <= 1'b0;
@@ -113,6 +117,8 @@ module video(
         end else begin
             if (io_wren) begin
                 if (sel_io_vctrl) begin
+                    vctrl_tram_page_r      <= io_wrdata[7];
+                    vctrl_80_columns_r     <= io_wrdata[6];
                     vctrl_border_remap_r   <= io_wrdata[5];
                     vctrl_text_priority_r  <= io_wrdata[4];
                     vctrl_sprites_enable_r <= io_wrdata[3];
@@ -183,16 +189,20 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Character address
     //////////////////////////////////////////////////////////////////////////
-    reg [9:0] row_addr_r = 10'd0;
-    reg [9:0] char_addr_r = 10'd0;
+    reg  mode80_r = 1'b0;
 
-    wire       next_row = (vpos >= 9'd23) && vnext && (vpos[2:0] == 3'd7);
-    wire [9:0] row_addr_next = row_addr_r + 10'd40;
+    reg  [10:0] row_addr_r  = 11'd0;
+    reg  [10:0] char_addr_r = 11'd0;
+
+    wire        next_row         = (vpos >= 9'd23) && vnext && (vpos[2:0] == 3'd7);
+    wire [10:0] row_addr_next    = row_addr_r + (mode80_r ? 11'd80 : 11'd40);
+    wire [10:0] border_char_addr = vctrl_border_remap_r ? (mode80_r ? 11'h7FF : 11'h3FF) : 11'h0;
 
     always @(posedge(clk))
-        if (vblank)
-            row_addr_r <= 10'd0;
-        else if (next_row)
+        if (vblank) begin
+            mode80_r <= vctrl_80_columns_r;
+            row_addr_r <= 11'd0;
+        end else if (next_row)
             row_addr_r <= row_addr_next;
 
     wire       next_char = (hpos[3:0] == 4'd15);
@@ -201,18 +211,18 @@ module video(
     always @(posedge(clk))
         if (next_char) begin
             if (vborder || column == 6'd0 || column >= 6'd41)
-                char_addr_r <= vctrl_border_remap_r ? 10'h3FF : 10'h0;
+                char_addr_r <= border_char_addr;
             else if (column == 6'd1)
                 char_addr_r <= row_addr_r;
             else
-                char_addr_r <= char_addr_r + 10'd1;
+                char_addr_r <= char_addr_r + 11'd1;
         end
 
     //////////////////////////////////////////////////////////////////////////
     // Text RAM
     //////////////////////////////////////////////////////////////////////////
     wire [15:0] textram_rddata;
-    wire [10:0] p1_addr = {tram_addr[9:0], tram_addr[10]};
+    wire [11:0] p1_addr = vctrl_80_columns_r ? {tram_addr[10:0], vctrl_tram_page_r} : {vctrl_tram_page_r, tram_addr[9:0], tram_addr[10]};
 
     textram textram(
         .p1_clk(clk),
