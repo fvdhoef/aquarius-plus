@@ -543,8 +543,8 @@ STATUS:   defw  0               ; status returned from BDOS function.
 ; Stack area for BDOS calls.
 ;-----------------------------------------------------------------------------
 USRSTACK:
-        defw 0                  ; save users stack pointer here.
-        defs 48
+        defw    0               ; save users stack pointer here.
+        defs    48
 STKAREA equ     $               ; end of stack area.
 
 ;-----------------------------------------------------------------------------
@@ -563,20 +563,6 @@ JUMPHL:
     ld      d,(hl)              ; now (de) contain the desired address.
     ex      de,hl
     jp      (hl)
-
-;-----------------------------------------------------------------------------
-; Block move. (de) to (hl), (C) bytes total.
-;-----------------------------------------------------------------------------
-DE2HL:
-    inc     c               ; is count down to zero?
-DE2HL1:
-    dec     c
-    ret     z               ; yes, we are done.
-    ld      a,(de)          ; no, move one more byte.
-    ld      (hl),a
-    inc     de
-    inc     hl
-    jp      DE2HL1          ; and repeat.
 
 ;-----------------------------------------------------------------------------
 ; Shift (hl) right (C) bits.
@@ -778,9 +764,9 @@ RSTDSK:
 ; [15] OPENFIL - Function to open a specified file.
 ;-----------------------------------------------------------------------------
 OPENFIL:
-    ld      (SAVEFCB), de   ; Save FCB
+    ld      (SAVEFCB),de    ; Save FCB
     call    _findfst
-    jr      nz, .notfound
+    jr      nz,.notfound
 
     ; Open file
     call    _openfile
@@ -820,7 +806,7 @@ CLOSEFIL:
 ; DE=Address of FCB
 ;-----------------------------------------------------------------------------
 GETFST:
-    ld      (SAVEFCB), de   ; Save FCB
+    ld      (SAVEFCB),de   ; Save FCB
     call    _findfst        ; Open directory & find first entry
     jr      _getnxt_result  ; Continue in result handler of GETNXT
 
@@ -848,13 +834,13 @@ _getnxt_result:
 ; [19] DELFILE - Function to delete a file by name.
 ;-----------------------------------------------------------------------------
 DELFILE:
-    ld      (SAVEFCB), de   ; Save FCB
+    ld      (SAVEFCB),de    ; Save FCB
     call    _findfst
-    jr      nz, .notfound
+    jr      nz,.notfound
 
-    ld      a, ESPCMD_DELETE
+    ld      a,ESPCMD_DELETE
     call    esp_cmd
-    ld      hl, _dirent_name
+    ld      hl,_dirent_name
     call    _send_filename
     call    esp_get_byte
     bit     7,a
@@ -939,7 +925,7 @@ FCREATE:
 ; [23] RENFILE - Function to rename a file.
 ;-----------------------------------------------------------------------------
 RENFILE:
-    ld      a, ESPCMD_RENAME
+    ld      a,ESPCMD_RENAME
     call    esp_cmd
     ld      hl,(PARAMS)
     inc     hl
@@ -1213,7 +1199,7 @@ _dirent_end:
 ; _read_dirent
 ;-----------------------------------------------------------------------------
 _read_dirent:
-    ld      a, ESPCMD_READDIR
+    ld      a,ESPCMD_READDIR
     call    esp_cmd
     xor     a
     call    esp_send_byte
@@ -1232,17 +1218,17 @@ _read_dirent:
     ld      c,8
 .1: call    esp_get_byte
     cp      '.'
-    jr      z, .pad2        ; Dot
+    jr      z,.pad2         ; Dot
     or      a
-    jr      z, .pad1        ; Zero-byte
+    jr      z,.pad1         ; Zero-byte
     ld      (hl),a
     inc     hl
     dec     c
-    jr      nz, .1
+    jr      nz,.1
 
     call    esp_get_byte    ; Dot
     or      a
-    jr      nz, .ext
+    jr      nz,.ext
 
 .pad1:
     inc     c
@@ -1256,18 +1242,18 @@ _read_dirent:
 .2: ld      (hl),a
     inc     hl
     dec     c
-    jr      nz, .2
+    jr      nz,.2
 
     ; Read extension
 .ext:
     ld      c,3
 .3: call    esp_get_byte
     or      a
-    jr      z, .pad3        ; Zero-byte
+    jr      z,.pad3         ; Zero-byte
     ld      (hl),a
     inc     hl
     dec     c
-    jr      nz, .3
+    jr      nz,.3
     ret
 
 .pad3:
@@ -1276,7 +1262,7 @@ _read_dirent:
 .4: ld      (hl),a
     inc     hl
     dec     c
-    jr      nz, .4
+    jr      nz,.4
     ret
 
 ;-----------------------------------------------------------------------------
@@ -1284,14 +1270,14 @@ _read_dirent:
 ;-----------------------------------------------------------------------------
 _findfst:
     ; Close directory descriptor 0
-    ld      a, ESPCMD_CLOSEDIR
+    ld      a,ESPCMD_CLOSEDIR
     call    esp_cmd
     xor     a
     call    esp_send_byte
     call    esp_get_byte
 
     ; Open directory
-    ld      a, ESPCMD_OPENDIR83
+    ld      a,ESPCMD_OPENDIR83
     call    esp_cmd
     xor     a
     call    esp_send_byte
@@ -1338,8 +1324,8 @@ _findnxt:
 ; Copy current directory entry to DMA buffer
 ;-----------------------------------------------------------------------------
 _copy_dirent_to_dma:
-    ld      de, (USERDMA)
-    ld      a, (USERNO)             ; Always give back current user (no user filtering implemented)
+    ld      de,(USERDMA)
+    ld      a,(USERNO)              ; Always give back current user (no user filtering implemented)
     ld      (de),a
     inc     de
     ld      hl,_dirent_name         ; Copy filename
@@ -1394,17 +1380,17 @@ _send_filename:
 ;-----------------------------------------------------------------------------
 _openfile:
     ; Close file descriptor 0
-    ld      a, ESPCMD_CLOSE
+    ld      a,ESPCMD_CLOSE
     call    esp_cmd
     xor     a
     call    esp_send_byte
     call    esp_get_byte
 
-    ld      a, ESPCMD_OPEN
+    ld      a,ESPCMD_OPEN
     call    esp_cmd
     ld      a,0             ; Flags (read-only)
     call    esp_send_byte
-    ld      hl, _dirent_name
+    ld      hl,_dirent_name
     call    _send_filename
 
     ; Get result
@@ -1415,7 +1401,7 @@ _openfile:
 ; Seek to record DE
 ;-----------------------------------------------------------------------------
 _seek:
-    ld      a, ESPCMD_SEEK
+    ld      a,ESPCMD_SEEK
     call    esp_cmd
 
     xor     a
@@ -1456,7 +1442,7 @@ _seek:
 ; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_read_bytes:
-    ld      a, ESPCMD_READ
+    ld      a,ESPCMD_READ
     call    esp_cmd
 
     ; Send file descriptor
@@ -1464,9 +1450,9 @@ esp_read_bytes:
     call    esp_send_byte
 
     ; Send read size
-    ld      a, e
+    ld      a,e
     call    esp_send_byte
-    ld      a, d
+    ld      a,d
     call    esp_send_byte
 
     ; Get result
@@ -1476,20 +1462,20 @@ esp_read_bytes:
 
     ; Get number of bytes actual read
     call    esp_get_byte
-    ld      e, a
+    ld      e,a
     call    esp_get_byte
-    ld      d, a
+    ld      d,a
 
     push    de
 
 .loop:
     ; Done reading? (DE=0)
-    ld      a, d
-    or      a, e
-    jr      z, .done
+    ld      a,d
+    or      a,e
+    jr      z,.done
 
     call    esp_get_byte
-    ld      (hl), a
+    ld      (hl),a
     inc     hl
     dec     de
     jr      .loop

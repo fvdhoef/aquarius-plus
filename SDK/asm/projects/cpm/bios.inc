@@ -45,30 +45,30 @@ __low_storage_values_end:
 ;-----------------------------------------------------------------------------
 _boot:
     ; Set video mode to 80-columns mode text with remapped border character
-    ld      a, $61
-    out     (IO_VCTRL), a
+    ld      a,$61
+    out     (IO_VCTRL),a
 
     ; Setup a stack
-    ld      sp, $0
+    ld      sp,$0
 
     ; Clear user memory
-    ld      hl, $0
-    ld      bc, ccp
-    ld      a, 0
+    ld      hl,$0
+    ld      bc,ccp
+    ld      a,0
     call    memset
 
     ; Setup low storage area
-    ld  de, $0
-    ld  hl, __low_storage_values
-    ld  bc, __low_storage_values_end - __low_storage_values
+    ld      de,$0
+    ld      hl,__low_storage_values
+    ld      bc,__low_storage_values_end - __low_storage_values
     ldir
 
     ; Default dma address is $80
-    ld      bc, $80
+    ld      bc,$80
     call    _setdma
 
     ;
-    ld      bc, .bootstr
+    ld      bc,.bootstr
     call    PRTMESG
 
     jr      _wboot
@@ -85,7 +85,7 @@ _boot:
 ;-----------------------------------------------------------------------------
 _wboot:
     ; Close any open descriptor
-    ld      a, ESPCMD_CLOSEALL
+    ld      a,ESPCMD_CLOSEALL
     call    esp_cmd
     call    esp_get_byte
 
@@ -97,7 +97,7 @@ _wboot:
     call    esp_get_byte
 
     ; Jump to CCP
-    ld      c, 0
+    ld      c,0
     jp      ccp
 
 ;-----------------------------------------------------------------------------
@@ -107,20 +107,20 @@ _wboot:
 ;-----------------------------------------------------------------------------
 _const:
     ; First check _keyval buffer
-    ld      a, (_keyval)
+    ld      a,(_keyval)
     or      a
-    jr      nz, .haschar
+    jr      nz,.haschar
 
     ; Check KEYBUF IO port
-    in      a, (IO_KEYBUF)
+    in      a,(IO_KEYBUF)
     or      a
     ret     z   ; No key
 
     ; Save value in _keyval buffer
-    ld      (_keyval), a
+    ld      (_keyval),a
 
 .haschar:
-    ld      a, $FF
+    ld      a,$FF
     ret
 
 ;-----------------------------------------------------------------------------
@@ -131,12 +131,12 @@ _const:
 _conin:
     call    _const
     or      a
-    jr      z, _conin
-    ld      a, (_keyval)
-    ld      b, a
+    jr      z,_conin
+    ld      a,(_keyval)
+    ld      b,a
     xor     a
-    ld      (_keyval), a
-    ld      a, b
+    ld      (_keyval),a
+    ld      a,b
     ret
 
 _saved_col: .defb $8F
@@ -165,12 +165,12 @@ _show_cursor:
     ld      a,$E1
     out     (IO_VCTRL),a
 
-    ld      hl, (_text_addr)
+    ld      hl,(_text_addr)
     ld      a,(hl)
     ld      (_saved_col),a
 
     ; Set color at cursor position
-    ld      a, $F9
+    ld      a,$F9
     ld      (hl),a
 
     ld      a,$61
@@ -184,87 +184,87 @@ _show_cursor:
 ;-----------------------------------------------------------------------------
 _conout:
     ; Save bank 0 and set to screen memory
-    in      a, (IO_BANK0)
+    in      a,(IO_BANK0)
     push    a
-    ld      a, $C0
-    out     (IO_BANK0), a
+    ld      a,$C0
+    out     (IO_BANK0),a
 
     ; Hide cursor
     call    _hide_cursor
 
     ; Write to text address
-    ld      hl, (_text_addr)
-    ld      a, c
-    cp      a, 13       ; CR?
-    jr      z, .cr
-    cp      a, 10
-    jr      z, .lf      ; LF?
-    cp      a, 8
-    jp      z, .bs      ; BS?
-    ld      (hl), a
+    ld      hl,(_text_addr)
+    ld      a,c
+    cp      a,13       ; CR?
+    jr      z,.cr
+    cp      a,10
+    jr      z,.lf      ; LF?
+    cp      a,8
+    jp      z,.bs      ; BS?
+    ld      (hl),a
 
     ; Increment text address
     inc     hl
-    ld      (_text_addr), hl
+    ld      (_text_addr),hl
 
-    ld      a, (_text_col)
+    ld      a,(_text_col)
     inc     a
     cp      80
-    jr      z, .next_line
-    ld      (_text_col), a
+    jr      z,.next_line
+    ld      (_text_col),a
 
 .done:
     call    _show_cursor
 
     ; Restore bank 0
     pop     a
-    out     (IO_BANK0), a
+    out     (IO_BANK0),a
 
     ret
 
 .next_line:
     xor     a
-    ld      (_text_col), a
-    ld      a, (_text_row)
+    ld      (_text_col),a
+    ld      a,(_text_row)
     inc     a
     cp      25
-    jr      z, .next_line_scroll
-    ld      (_text_row), a
+    jr      z,.next_line_scroll
+    ld      (_text_row),a
     jr      .done
 
 .next_line_scroll:
     call    .do_scroll
-    ld      a, 24
-    ld      (_text_row), a
-    ld      hl, $3000 + 80 * 24
-    ld      (_text_addr), hl
+    ld      a,24
+    ld      (_text_row),a
+    ld      hl,$3000 + 80 * 24
+    ld      (_text_addr),hl
     jr      .done
 
 .cr:
     ; Cursor back to start of line
-    ld      hl, (_text_addr)
-    ld      a, (_text_col)
-    ld      c, a
+    ld      hl,(_text_addr)
+    ld      a,(_text_col)
+    ld      c,a
     xor     a
-    ld      (_text_col), a
-    ld      b, a
-    sbc     hl, bc
-    ld      (_text_addr), hl
+    ld      (_text_col),a
+    ld      b,a
+    sbc     hl,bc
+    ld      (_text_addr),hl
     jr      .done
 
 .lf:
     ; Cursor to next line
-    ld      a, (_text_row)
+    ld      a,(_text_row)
     cp      24
-    jr      z, .lf_scroll
+    jr      z,.lf_scroll
     inc     a
-    ld      (_text_row), a
+    ld      (_text_row),a
 
-    ld      hl, (_text_addr)
-    ld      bc, 80
+    ld      hl,(_text_addr)
+    ld      bc,80
     or      a   ; Clear carry
-    adc     hl, bc
-    ld      (_text_addr), hl
+    adc     hl,bc
+    ld      (_text_addr),hl
     jr      .done
 
 .lf_scroll:
@@ -272,38 +272,38 @@ _conout:
     jr      .done
 
 .do_scroll:
-    ld      de, $3000
-    ld      hl, $3000 + 80
-    ld      bc, 80 * 24
+    ld      de,$3000
+    ld      hl,$3000 + 80
+    ld      bc,80 * 24
     ldir
-    ld      hl, $3000 + 80 * 24
-    ld      bc, 80
-    ld      a, ' '
+    ld      hl,$3000 + 80 * 24
+    ld      bc,80
+    ld      a,' '
     call    memset
     ret
 
 .bs:
     ; Backspace
-    ld      a, (_text_col)
+    ld      a,(_text_col)
     or      a                   ; At first column?
-    jr      z, .bs2
+    jr      z,.bs2
     dec     a                   ; Decrement column
 .bs3:
-    ld      (_text_col), a      ; Update column
+    ld      (_text_col),a       ; Update column
 
-    ld      hl, (_text_addr)    ; Decrement text address
+    ld      hl,(_text_addr)     ; Decrement text address
     dec     hl
-    ld      (_text_addr), hl
+    ld      (_text_addr),hl
 .bs_done:
     jp      .done
 
 .bs2:
-    ld      a, (_text_row)
+    ld      a,(_text_row)
     or      a                   ; At first row?
-    jr      z, .bs_done
+    jr      z,.bs_done
     dec     a                   ; Decrement row
-    ld      (_text_row), a
-    ld      a, 79               ; Update column to 79
+    ld      (_text_row),a
+    ld      a,79                ; Update column to 79
     jr      .bs3
 
 ;-----------------------------------------------------------------------------
@@ -322,7 +322,7 @@ _list:
 ; Returns A=0 (not ready) or A=$FF (ready).
 ;-----------------------------------------------------------------------------
 _prstat:
-    ld      a, $FF
+    ld      a,$FF
     ret
 
 ;-----------------------------------------------------------------------------
@@ -343,7 +343,7 @@ _punch:
 ; character 26 (^Z).
 ;-----------------------------------------------------------------------------
 _reader:
-    ld      a, 26
+    ld      a,26
     ret
 
 ;-----------------------------------------------------------------------------
@@ -353,8 +353,8 @@ _reader:
 ;-----------------------------------------------------------------------------
 ; _home:
 ;     xor     a
-;     ld      (_cur_track + 0), a
-;     ld      (_cur_track + 1), a
+;     ld      (_cur_track + 0),a
+;     ld      (_cur_track + 1),a
 ;     ret
 
 ;-----------------------------------------------------------------------------
@@ -376,7 +376,7 @@ _reader:
 ; If the disc could not be selected it returns HL=0.
 ;-----------------------------------------------------------------------------
 ; _seldsk:
-;     ld      hl, _dph
+;     ld      hl,_dph
 ;     ret
 
 ;-----------------------------------------------------------------------------
@@ -385,7 +385,7 @@ _reader:
 ; Set the track in BC (0-based).
 ;-----------------------------------------------------------------------------
 ; _settrk:
-;     ld      (_cur_track), bc
+;     ld      (_cur_track),bc
 ;     ret
 
 ;-----------------------------------------------------------------------------
@@ -394,7 +394,7 @@ _reader:
 ; Set the sector in BC. Under CP/M 1 and 2 a sector is 128 bytes.
 ;-----------------------------------------------------------------------------
 ; _setsec:
-;     ld      (_cur_sector), bc
+;     ld      (_cur_sector),bc
 ;     ret
 
 ;-----------------------------------------------------------------------------
@@ -404,7 +404,7 @@ _reader:
 ; the address given in BC.
 ;-----------------------------------------------------------------------------
 _setdma:
-    ld      (_dma_addr), bc
+    ld      (_dma_addr),bc
     ret
 
 ;-----------------------------------------------------------------------------
@@ -416,7 +416,7 @@ _setdma:
 ; _read:
 ;     ; TODO: READ
 
-;     ld      a, 1
+;     ld      a,1
 ;     ; xor     a
 ;     ret
 ;     ; jr      _read
@@ -460,13 +460,13 @@ memset:
     inc     b
     jr      .start
 .repeat:
-    ld      (hl), a
+    ld      (hl),a
     inc     hl
 .start:
     dec     c
-    jr      nz, .repeat
+    jr      nz,.repeat
     dec     b
-    jr      nz, .repeat
+    jr      nz,.repeat
     ret
 
 ;-----------------------------------------------------------------------------
@@ -477,16 +477,16 @@ esp_cmd:
 
     ; Drain RX FIFO
 .drain:
-    in      a, (IO_ESPCTRL)
-    and     a, 1
-    jr      z, .done
-    in      a, (IO_ESPDATA)
+    in      a,(IO_ESPCTRL)
+    and     a,1
+    jr      z,.done
+    in      a,(IO_ESPDATA)
     jr      .drain
 .done:
 
     ; Issue start of command
-    ld      a, $80
-    out     (IO_ESPCTRL), a
+    ld      a,$80
+    out     (IO_ESPCTRL),a
 
     ; Issue command
     pop     a
@@ -497,10 +497,10 @@ esp_cmd:
 ;-----------------------------------------------------------------------------
 esp_get_byte:
 .wait:
-    in      a, (IO_ESPCTRL)
-    and     a, 1
-    jr      z, .wait
-    in      a, (IO_ESPDATA)
+    in      a,(IO_ESPCTRL)
+    and     a,1
+    jr      z,.wait
+    in      a,(IO_ESPDATA)
     ret
 
 ;-----------------------------------------------------------------------------
@@ -510,12 +510,12 @@ esp_send_byte:
     push    a
 
 .wait:
-    in      a, (IO_ESPCTRL)
-    and     a, 2
-    jr      nz, .wait
+    in      a,(IO_ESPCTRL)
+    and     a,2
+    jr      nz,.wait
 
     pop     a
-    out     (IO_ESPDATA), a
+    out     (IO_ESPDATA),a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -526,12 +526,12 @@ esp_send_byte:
 esp_get_bytes:
 .loop:
     ; Done reading? (DE=0)
-    ld      a, d
-    or      a, e
+    ld      a,d
+    or      a,e
     ret     z
 
     call    esp_get_byte
-    ld      (hl), a
+    ld      (hl),a
     inc     hl
     dec     de
     jr      .loop
