@@ -27,15 +27,15 @@ module sysctrl(
 `else
 
     // Synthesis: reset duration ~146ms
-    reg [21:0] ext_reset_cnt_r = 0;
+    reg [22:0] ext_reset_cnt_r = 0;
     always @(posedge sysclk) begin
-        if (!ext_reset_cnt_r[21])
-            ext_reset_cnt_r <= ext_reset_cnt_r + 22'b1;
+        if (!ext_reset_cnt_r[22])
+            ext_reset_cnt_r <= ext_reset_cnt_r + 23'b1;
         if (reset_req)
-            ext_reset_cnt_r <= 22'b0;
+            ext_reset_cnt_r <= 23'b0;
     end
 
-    assign ext_reset = !ext_reset_cnt_r[21];
+    assign ext_reset = !ext_reset_cnt_r[22];
 
 `endif
 
@@ -63,10 +63,10 @@ module sysctrl(
     assign reset = !reset_cnt_r[4];
 
     //////////////////////////////////////////////////////////////////////////
-    // Generate phi signal
+    // Generate phi signal @ 3.58MHz
     //////////////////////////////////////////////////////////////////////////
-    reg [1:0] phi_div_r = 2'b0;
-    always @(posedge sysclk) phi_div_r <= phi_div_r + 2'b1;
-    assign ebus_phi = phi_div_r[1];
+    reg [2:0] phi_div_r = 3'b0;
+    always @(posedge sysclk) phi_div_r <= phi_div_r + 3'b1;
+    assign ebus_phi = phi_div_r[2];
 
 endmodule

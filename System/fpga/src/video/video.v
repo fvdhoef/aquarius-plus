@@ -141,7 +141,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Video timing
     //////////////////////////////////////////////////////////////////////////
-    wire [8:0] hpos;
+    wire [9:0] hpos;
     wire       hsync, hblank, hlast;
     wire       vsync, vnext;
     wire       blank;
@@ -163,10 +163,10 @@ module video(
 
     assign vga_vblank = vblank;
 
-    wire hborder = hpos < 9'd16 || hpos >= 9'd336;
+    wire hborder = hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336;
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
 
-    reg [8:0] hpos_r, hpos_rr;
+    reg [9:0] hpos_r, hpos_rr;
     always @(posedge clk) hpos_r <= hpos;
     always @(posedge clk) hpos_rr <= hpos_r;
 
@@ -195,8 +195,8 @@ module video(
         else if (next_row)
             row_addr_r <= row_addr_next;
 
-    wire       next_char = (hpos[2:0] == 3'd7);
-    wire [5:0] column = hpos[8:3];
+    wire       next_char = (hpos[3:0] == 4'd15);
+    wire [5:0] column = hpos[9:4];
 
     always @(posedge(clk))
         if (next_char) begin
@@ -248,7 +248,7 @@ module video(
         .addr2(charram_addr),
         .rddata2(charram_data));
 
-    wire [2:0] pixel_sel    = hpos_rr[2:0] ^ 3'b111;
+    wire [2:0] pixel_sel    = hpos_rr[3:1] ^ 3'b111;
     wire       char_pixel   = charram_data[pixel_sel];
     wire [3:0] text_colidx  = char_pixel ? color_data_r[7:4] : color_data_r[3:0];
 
@@ -312,7 +312,7 @@ module video(
     wire [5:0] linebuf_data;
     reg  [8:0] linebuf_rdidx;
 
-    always @(posedge clk) linebuf_rdidx <= hpos - 9'd16;
+    always @(posedge clk) linebuf_rdidx <= hpos[9:1] - 9'd16;
 
     reg hborder_r, hborder_rr;
     always @(posedge clk) hborder_r <= hborder;

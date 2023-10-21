@@ -1,9 +1,9 @@
-// VGA video timing module - 352x240 visible (455x525 total)
+// VGA video timing module - 704x240 visible (910x525 total)
 
 module video_timing(
-    input  wire        clk,     // 14.31818MHz
+    input  wire        clk,     // 28.63636MHz
 
-    output wire [8:0]  hpos,
+    output wire [9:0]  hpos,
     output wire        hsync,
     output wire        hblank,
     output wire        hlast,
@@ -18,19 +18,19 @@ module video_timing(
     //////////////////////////////////////////////////////////////////////////
     // Horizontal timing
     //////////////////////////////////////////////////////////////////////////
-    reg [8:0] hcnt_r = 9'd0;
+    reg [9:0] hcnt_r = 10'd0;
 
-    wire hcnt_done = (hcnt_r == 9'd454);
+    wire hcnt_done = (hcnt_r == 10'd909);
 
     always @(posedge(clk))
         if (hcnt_done)
-            hcnt_r <= 9'd0;
+            hcnt_r <= 10'd0;
         else
-            hcnt_r <= hcnt_r + 9'd1;
+            hcnt_r <= hcnt_r + 10'd1;
 
     assign hpos    = hcnt_r;
-    assign hsync   = !(hcnt_r >= 9'd373 && hcnt_r < 9'd427);
-    assign hblank  = !(hcnt_r < 9'd352);
+    assign hsync   = !(hcnt_r >= 10'd746 && hcnt_r < 10'd854);
+    assign hblank  = !(hcnt_r < 10'd704);
     assign hlast   = hcnt_done;
 
     //////////////////////////////////////////////////////////////////////////

@@ -12,9 +12,9 @@ module tb();
         #200000 $finish;
     end
 
-    // Generate approx. 14.31818MHz sysclk
+    // Generate approx. 28.63636MHz sysclk
     reg sysclk = 0;
-    always #35 sysclk = !sysclk;
+    always #17 sysclk = !sysclk;
 
     reg  [7:0] bus_wrdata = 8'b0;
     reg        bus_wren = 1'b0;

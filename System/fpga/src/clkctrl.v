@@ -6,6 +6,10 @@ module clkctrl(
 `ifdef __ICARUS__
     assign clk_out = clk_in;
 `else
+    wire clk0;
+    wire clk2x;
+    assign clk_out = clk2x;
+
     DCM_SP #(
         .CLKDV_DIVIDE(2.0),
         .CLKFX_DIVIDE(1),
@@ -24,10 +28,10 @@ module clkctrl(
         .STARTUP_WAIT("FALSE")
     )
     dcm(
-        .CLK0(clk_out),
-        .CLK2X(),
+        .CLK0(clk0),
+        .CLK2X(clk2x),
         .LOCKED(),
-        .CLKFB(clk_out),
+        .CLKFB(clk0),
         .CLKIN(clk_in),
         .DSSEN(1'b0),
         .PSCLK(1'b0),

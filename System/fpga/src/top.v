@@ -89,8 +89,8 @@ module top(
     wire clk;
 
     clkctrl clkctrl(
-        .clk_in(sysclk),
-        .clk_out(clk)
+        .clk_in(sysclk),    // 14.31818MHz
+        .clk_out(clk)       // 28.63636MHz
     );
 
     //////////////////////////////////////////////////////////////////////////
