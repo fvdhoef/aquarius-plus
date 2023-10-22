@@ -37,6 +37,7 @@ struct EmuState {
     static void    ioWrite(size_t param, uint16_t addr, uint8_t data);
 
     unsigned emulate();
+    int      cpuEmulate();
     unsigned audioLeft  = 0;
     unsigned audioRight = 0;
 

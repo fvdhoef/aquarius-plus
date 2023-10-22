@@ -64,7 +64,7 @@ void EmuState::reset() {
     emuMode = Em_Running;
 }
 
-unsigned EmuState::emulate() {
+int EmuState::cpuEmulate() {
     if (tmpBreakpoint == z80ctx.PC) {
         tmpBreakpoint = -1;
         emuMode       = EmuState::Em_Halted;
@@ -75,6 +75,8 @@ unsigned EmuState::emulate() {
         for (int i = 0; i < (int)breakpoints.size(); i++) {
             auto &bp = breakpoints[i];
             if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value && bp.value != lastBpAddress) {
+                printf("Halted!  %d\n", lastBpAddress);
+
                 emuMode       = EmuState::Em_Halted;
                 lastBp        = i;
                 lastBpAddress = bp.value;
@@ -83,8 +85,6 @@ unsigned EmuState::emulate() {
         }
     }
     lastBp = -1;
-
-    unsigned resultFlags = 0;
 
     bool haltAfterThis = false;
     if (haltAfterRet >= 0) {
@@ -104,33 +104,43 @@ unsigned EmuState::emulate() {
         }
     }
 
-    int delta = 0;
-    int count = emuState.sysCtrlTurbo ? 2 : 1;
-    for (int i = 0; i < count; i++) {
+    z80ctx.tstates = 0;
+    Z80Execute(&z80ctx);
+    int delta = z80ctx.tstates * 2;
+
+    if (traceEnable && (!z80ctx.halted || !prevHalted)) {
+        cpuTrace.emplace_back();
+        auto &entry = cpuTrace.back();
+        entry.pc    = z80ctx.PC;
+        entry.r1    = z80ctx.R1;
+        entry.r2    = z80ctx.R2;
+
         z80ctx.tstates = 0;
-        Z80Execute(&z80ctx);
-        delta += z80ctx.tstates * 2;
+        Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
 
-        if (traceEnable && (!z80ctx.halted || !prevHalted)) {
-            cpuTrace.emplace_back();
-            auto &entry = cpuTrace.back();
-            entry.pc    = z80ctx.PC;
-            entry.r1    = z80ctx.R1;
-            entry.r2    = z80ctx.R2;
-
-            z80ctx.tstates = 0;
-            Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
-
-            while ((int)cpuTrace.size() > traceDepth) {
-                cpuTrace.pop_front();
-            }
+        while ((int)cpuTrace.size() > traceDepth) {
+            cpuTrace.pop_front();
         }
-        prevHalted = z80ctx.halted;
     }
-    delta /= count;
+    prevHalted = z80ctx.halted;
+
+    if (haltAfterThis) {
+        emuMode = EmuState::Em_Halted;
+    }
+    return delta;
+}
+
+unsigned EmuState::emulate() {
+    unsigned resultFlags = 0;
+
+    int delta = cpuEmulate();
+    if (emuState.sysCtrlTurbo) {
+        if (emuMode != EmuState::Em_Halted)
+            delta += cpuEmulate();
+        delta /= 2;
+    }
 
     int prevLineHalfCycles = lineHalfCycles;
-
     lineHalfCycles += delta;
     sampleHalfCycles += delta;
 
@@ -186,11 +196,8 @@ unsigned EmuState::emulate() {
         resultFlags |= ERF_NEW_AUDIO_SAMPLE;
     }
 
-    lastBpAddress = -1;
-
-    if (haltAfterThis) {
-        emuMode = EmuState::Em_Halted;
-    }
+    if (delta)
+        lastBpAddress = -1;
 
     return resultFlags;
 }

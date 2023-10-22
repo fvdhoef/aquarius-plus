@@ -607,10 +607,19 @@ void UI::wndCpuState(bool *p_open) {
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
 
             unsigned instLen = (unsigned)strlen(tmp1) / 3;
-            bool     isCall  = (strncmp(tmp2, "CALL ", 5) == 0);
-            bool     isRst   = (strncmp(tmp2, "RST ", 4) == 0);
+            bool     doStepOver =
+                (strncmp(tmp2, "CALL ", 5) == 0 ||
+                 strncmp(tmp2, "RST ", 4) == 0 ||
+                 strcmp(tmp2, "CPDR") == 0 ||
+                 strcmp(tmp2, "CPIR") == 0 ||
+                 strcmp(tmp2, "INDR") == 0 ||
+                 strcmp(tmp2, "INIR") == 0 ||
+                 strcmp(tmp2, "LDDR") == 0 ||
+                 strcmp(tmp2, "LDIR") == 0 ||
+                 strcmp(tmp2, "OTDR") == 0 ||
+                 strcmp(tmp2, "OTIR") == 0);
 
-            if (isCall || isRst) {
+            if (doStepOver) {
                 emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
 
                 if (strncmp(tmp2, "RST 8H", 6) == 0 ||
