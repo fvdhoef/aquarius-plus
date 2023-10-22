@@ -216,6 +216,9 @@ module video(
                 char_addr_r <= row_addr_r;
             else
                 char_addr_r <= char_addr_r + 11'd1;
+
+            if (!mode80_r)
+                char_addr_r[10] <= vctrl_tram_page_r;
         end
 
     //////////////////////////////////////////////////////////////////////////
