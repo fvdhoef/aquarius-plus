@@ -226,7 +226,7 @@ void UI::mainLoop() {
                 }
                 ImGui::EndMenu();
             }
-            if (ImGui::BeginMenu("Display")) {
+            if (ImGui::BeginMenu("Screen")) {
                 if (ImGui::MenuItem("Scaling: Nearest Neighbor", "", config.displayScaling == DisplayScaling::NearestNeighbor)) {
                     config.displayScaling = DisplayScaling::NearestNeighbor;
                 }
@@ -567,17 +567,17 @@ void UI::wndAbout(bool *p_open) {
         ImGui::Text("Aquarius+ emulator version: %s", versionStr);
         ImGui::Separator();
         ImGui::Text("The Aquarius+ emulator is part of the Aquarius+ project.");
-        ImGui::Text("Developed by Frank van den Hoef.\n");
+        ImGui::Text("Developed by Frank van den Hoef.");
         ImGui::Separator();
         ImGui::Text("Members of the Aquarius+ project team:");
-        ImGui::Text("- Frank van den Hoef");
-        ImGui::Text("- Sean P. Harrington");
-        ImGui::Text("- Curtis F. Kaylor");
+        ImGui::Text("* Frank van den Hoef - Hardware / Firmware / Emulator");
+        ImGui::Text("* Sean P. Harrington - Platform evangelist");
+        ImGui::Text("* Curtis F. Kaylor   - plusBASIC");
         ImGui::Separator();
         ImGui::Text(
-            "Thanks go out all the people contributing to this project and\n"
-            "those who enjoy playing with it, either with this emulator or\n"
-            "the actual hardware!");
+            "Thanks go out to all the people contributing to this\n"
+            "project and those who enjoy playing with it, either with\n"
+            "this emulator or the actual hardware!");
     }
     ImGui::End();
 }
