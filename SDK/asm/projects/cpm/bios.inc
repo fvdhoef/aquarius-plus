@@ -11,15 +11,15 @@ CONOUT:     jp  _conout
 LIST:       jp  _list
 PUNCH:      jp  _punch
 READER:     jp  _reader
-; HOME:       jp  _home
-; SELDSK:     jp  _seldsk
-; SETTRK:     jp  _settrk
-; SETSEC:     jp  _setsec
+HOME:       jp  HOME
+SELDSK:     jp  SELDSK
+SETTRK:     jp  SETTRK
+SETSEC:     jp  SETSEC
 SETDMA:     jp  _setdma
-; READ:       jp  _read
-; WRITE:      jp  _write
-; PRSTAT:     jp  _prstat
-; SECTRN:     jp  _sectrn
+READ:       jp  READ
+WRITE:      jp  WRITE
+PRSTAT:     jp  PRSTAT
+SECTRN:     jp  SECTRN
 
 ;-----------------------------------------------------------------------------
 ; Variables used by BIOS
@@ -41,21 +41,12 @@ __low_storage_values:
 __low_storage_values_end:
 
 ;-----------------------------------------------------------------------------
-; BOOT - Cold start routine
+; Initialize
 ;-----------------------------------------------------------------------------
-_boot:
+_init:
     ; Set video mode to 80-columns mode text with remapped border character
     ld      a,$61
     out     (IO_VCTRL),a
-
-    ; Setup a stack
-    ld      sp,$0
-
-    ; Clear user memory
-    ld      hl,$0
-    ld      bc,ccp
-    ld      a,0
-    call    memset
 
     ; Setup low storage area
     ld      de,$0
@@ -67,23 +58,6 @@ _boot:
     ld      bc,$80
     call    _setdma
 
-    ;
-    ld      bc,.bootstr
-    call    PRTMESG
-
-    jr      _wboot
-
-.bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
-
-
-;-----------------------------------------------------------------------------
-; WBOOT - Warm boot - reload command processor
-;
-; Reloads the command processor and (on some systems) the BDOS as well.
-; How it does this is implementation-dependent; it may use the reserved tracks
-; of a floppy disc or extra memory.
-;-----------------------------------------------------------------------------
-_wboot:
     ; Close any open descriptor
     ld      a,ESPCMD_CLOSEALL
     call    esp_cmd
@@ -96,9 +70,72 @@ _wboot:
     call    esp_send_byte
     call    esp_get_byte
 
+    ret
+
+;-----------------------------------------------------------------------------
+; Copy CP/M to page 36 so it can be reloaded by _load_cpm.
+;-----------------------------------------------------------------------------
+_save_cpm:
+    ld      a,36
+    out     (IO_BANK0),a
+    ld      de,$0
+    ld      hl,ccp
+    ld      bc,bios-ccp
+    ldir
+    ld      a,32
+    out     (IO_BANK0),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Load CP/M from page 36
+;-----------------------------------------------------------------------------
+_load_cpm:
+    ld      a,36
+    out     (IO_BANK0),a
+    ld      de,ccp
+    ld      hl,0
+    ld      bc,bios-ccp
+    ldir
+    ld      a,32
+    out     (IO_BANK0),a
+    ret
+
+;-----------------------------------------------------------------------------
+; BOOT - Cold start routine
+;-----------------------------------------------------------------------------
+_boot:
+    ld      sp,$0           ; Setup a stack
+    call    _save_cpm       ; Save CP/M for later reloading by warm boot
+
+    ; Clear user memory
+    ld      hl,$0
+    ld      bc,ccp
+    ld      a,0
+    call    memset
+
+    call    _init           ; Initialize
+    ld      bc,.bootstr     ; Boot message
+    call    PRTMESG
+    jr      _go_ccp
+
+.bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
+
+;-----------------------------------------------------------------------------
+; WBOOT - Warm boot - reload command processor
+;
+; Reloads the command processor and (on some systems) the BDOS as well.
+; How it does this is implementation-dependent; it may use the reserved tracks
+; of a floppy disc or extra memory.
+;-----------------------------------------------------------------------------
+_wboot:
+    ld      sp,$0           ; Setup a stack
+    call    _load_cpm       ; Load CP/M
+    call    _init           ; Initialize
+
+_go_ccp:
     ; Jump to CCP
     ld      c,0
-    jp      ccp
+    jp      CBASE+3     ; Clear input buffer before starting CCP
 
 ;-----------------------------------------------------------------------------
 ; CONST - Console status
@@ -347,57 +384,6 @@ _reader:
     ret
 
 ;-----------------------------------------------------------------------------
-; HOME - Move disc head to track 0
-;
-; Move the current drive to track 0
-;-----------------------------------------------------------------------------
-; _home:
-;     xor     a
-;     ld      (_cur_track + 0),a
-;     ld      (_cur_track + 1),a
-;     ret
-
-;-----------------------------------------------------------------------------
-; SELDSK - Select disc drive
-;
-; Select the disc drive in register C (0=A:, 1=B: ...).
-; Called with E=0 or $FFFF.
-;
-; If bit 0 of E is 0, then the disc is logged in as if new;
-; if the format has to be determined from the boot sector, for example,
-; this will be done.
-;
-; If bit 0 if E is 1, then the disc has been logged in before.
-; The disc is not accessed; the DPH address (or zero) is returned immediately.
-;
-; SELDSK returns the address of a Disc Parameter Header in HL.
-; The exact format of a DPH varies between CP/M versions.
-;
-; If the disc could not be selected it returns HL=0.
-;-----------------------------------------------------------------------------
-; _seldsk:
-;     ld      hl,_dph
-;     ret
-
-;-----------------------------------------------------------------------------
-; SETTRK - Set track number
-;
-; Set the track in BC (0-based).
-;-----------------------------------------------------------------------------
-; _settrk:
-;     ld      (_cur_track),bc
-;     ret
-
-;-----------------------------------------------------------------------------
-; SETSEC - Set sector number
-;
-; Set the sector in BC. Under CP/M 1 and 2 a sector is 128 bytes.
-;-----------------------------------------------------------------------------
-; _setsec:
-;     ld      (_cur_sector),bc
-;     ret
-
-;-----------------------------------------------------------------------------
 ; SETDMA - Set DMA address
 ;
 ; The next disc operation will read its data from (or write its data to)
@@ -406,51 +392,6 @@ _reader:
 _setdma:
     ld      (_dma_addr),bc
     ret
-
-;-----------------------------------------------------------------------------
-; READ - Read a sector
-;
-; Read the currently set track and sector at the current DMA address.
-; Returns A=0 for OK, 1 for unrecoverable error, $FF if media changed.
-;-----------------------------------------------------------------------------
-; _read:
-;     ; TODO: READ
-
-;     ld      a,1
-;     ; xor     a
-;     ret
-;     ; jr      _read
-
-;-----------------------------------------------------------------------------
-; WRITE - Write a sector
-;
-; Write the currently set track and sector. C contains a deblocking code:
-; C=0 - Write can be deferred
-; C=1 - Write must be immediate
-; C=2 - Write can be deferred, no pre-read is necessary.
-; Returns A=0 for OK, 1 for unrecoverable error, 2 if disc is readonly,
-; $FF if media changed.
-;-----------------------------------------------------------------------------
-; _write:
-;     jr      _write
-
-;-----------------------------------------------------------------------------
-; SECTRAN - Sector translation for skewing
-;
-; Translate sector numbers to take account of skewing.
-; On entry, BC=logical sector number (zero based) and DE=address of
-; translation table. On exit, HL contains physical sector number. On a system
-; with hardware skewing, this would normally ignore DE and return either
-; BC or BC+1.
-;-----------------------------------------------------------------------------
-; _sectrn:
-;     push    hl
-;     pop     bc
-;     ret
-
-
-
-
 
 ;-----------------------------------------------------------------------------
 ; memset

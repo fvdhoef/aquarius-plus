@@ -2,21 +2,92 @@
 ; bdos.inc - Basic Disk Operating System
 ;-----------------------------------------------------------------------------
 FBASE:
-    jp      _fbase1
+    jp      _bdos_entry
 
 ;-----------------------------------------------------------------------------
-; BDOS error table.
+; BDOS error table
 ;-----------------------------------------------------------------------------
-BADSCTR:    defw    ERROR1  ; bad sector on read or write.
-BADSLCT:    defw    ERROR2  ; bad disk select.
-RODISK:     defw    ERROR3  ; disk is read only.
-ROFILE:     defw    ERROR4  ; file is read only.
+BADSCTR:    defw    _err_bad_sect   ; bad sector on read or write.
+BADSLCT:    defw    _err_bad_sel    ; bad disk select.
+RODISK:     defw    _err_disk_ro    ; disk is read only.
+ROFILE:     defw    _err_file_ro    ; file is read only.
 
 ;-----------------------------------------------------------------------------
-; Entry into BDOS. (de) or (E) are the parameters passed. The
+; BDOS function jump table.
+;-----------------------------------------------------------------------------
+NFUNCTS:    equ 41          ; number of functions in following table.
+FUNCTNS:
+    defw    WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
+    defw    SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
+    defw    CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
+    defw    RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,RTN,GETROV,SETATTR
+    defw    GETPARM,GETUSER,RDRANDOM,WTRANDOM,FILESIZE,SETRAN,RTN,RTN
+    defw    RTN,WTSPECL
+
+;-----------------------------------------------------------------------------
+; Variables
+;-----------------------------------------------------------------------------
+SAVEFCB:  defw  0           ; save space for address of FCB (for directory searches).
+AUTO:     defb  0           ; if non-zero, then auto select activated.
+OLDDRV:   defb  0           ; on auto select, storage for previous drive.
+AUTOFLAG: defb  0           ; if non-zero, then auto select changed drives.
+USERDMA:  defw  $80         ; user's DMA address (defaults to 80h).
+OUTFLAG:  defb  0           ; output flag (non zero means no output).
+STARTING: defb  2           ; starting position for cursor.
+CURPOS:   defb  0           ; cursor position (0=start of line).
+PRTFLAG:  defb  0           ; printer flag (control-p toggle). List if non zero.
+CHARBUF:  defb  0           ; single input character buffer.
+USERNO:   defb  0           ; current user number.
+ACTIVE:   defb  0           ; currently active drive.
+PARAMS:   defw  0           ; save (de) parameters here on entry.
+EPARAM:   defb  0           ; storage for register (E) on entry to BDOS.
+STATUS:   defw  0           ; status returned from BDOS function.
+
+;-----------------------------------------------------------------------------
+; Stack area for BDOS calls.
+;-----------------------------------------------------------------------------
+USRSTACK:
+        defw    0           ; save users stack pointer here.
+        defs    48
+STKAREA equ     $           ; end of stack area.
+
+;-----------------------------------------------------------------------------
+; Directory entry
+;-----------------------------------------------------------------------------
+_dirent:
+_dirent_date: defw 0
+_dirent_time: defw 0
+_dirent_attr: defb 0
+_dirent_size: defd 0
+_dirent_name: defs 8
+_dirent_ext:  defs 3
+_dirent_end:
+
+;-----------------------------------------------------------------------------
+; Current path for drive letters A-D
+;-----------------------------------------------------------------------------
+_path_a: defs 64
+_path_b: defs 64
+_path_c: defs 64
+_path_d: defs 64
+
+;-----------------------------------------------------------------------------
+; Open files
+; - 0  2 fcb address
+; - 2  1 file descriptor
+; - 3  1 disk
+; - 4 11 file name
+;-----------------------------------------------------------------------------
+_file1: defs 16
+_file2: defs 16
+_file3: defs 16
+_file4: defs 16
+
+;-----------------------------------------------------------------------------
+; Entry into BDOS. (DE) or (E) are the parameters passed. The
 ; function number desired is in register (C).
 ;-----------------------------------------------------------------------------
-_fbase1:
+_bdos_entry:
     ex      de,hl           ; save the (de) parameters.
     ld      (PARAMS),hl
     ex      de,hl
@@ -30,7 +101,7 @@ _fbase1:
     xor     a               ; clear auto select storage space.
     ld      (AUTOFLAG),a
     ld      (AUTO),a
-    ld      hl,GOBACK       ; set return address.
+    ld      hl,_bdos_exit   ; set return address.
     push    hl
     ld      a,c             ; get function number.
     cp      NFUNCTS         ; valid function number?
@@ -49,62 +120,94 @@ _fbase1:
     jp      (hl)            ; execute desired function.
 
 ;-----------------------------------------------------------------------------
-; BDOS function jump table.
+; Return to user
 ;-----------------------------------------------------------------------------
-NFUNCTS:    equ 41          ; number of functions in following table.
-FUNCTNS:
-    defw    WBOOT,GETCON,OUTCON,GETRDR,PUNCH,LIST,DIRCIO,GETIOB
-    defw    SETIOB,PRTSTR,RDBUFF,GETCSTS,GETVER,RSTDSK,SETDSK,OPENFIL
-    defw    CLOSEFIL,GETFST,GETNXT,DELFILE,READSEQ,WRTSEQ,FCREATE
-    defw    RENFILE,GETLOG,GETCRNT,PUTDMA,GETALOC,WRTPRTD,GETROV,SETATTR
-    defw    GETPARM,GETUSER,RDRANDOM,WTRANDOM,FILESIZE,SETRAN,LOGOFF,RTN
-    defw    RTN,WTSPECL
+_bdos_exit:
+    ld      a,(AUTO)        ; was auto select activated?
+    or      a
+    jp      z,_bdos_exit2
+    ld      hl,(PARAMS)     ; yes, but was a change made?
+    ld      (hl),0          ; (* reset first byte of FCB *)
+    ld      a,(AUTOFLAG)
+    or      a
+    jp      z,_bdos_exit2
+    ld      (hl),a          ; yes, reset first byte properly.
+    ld      a,(OLDDRV)      ; and get the old drive and select it.
+    ld      (EPARAM),a
+    call    SETDSK
+_bdos_exit2:
+    ld      hl,(USRSTACK)   ; reset the users stack pointer.
+    ld      sp,hl
+    ld      hl,(STATUS)     ; get return status.
+    ld      a,l             ; force version 1.4 compatability.
+    ld      b,h
+    ret                     ; and go back to user.
 
 ;-----------------------------------------------------------------------------
-; BDOS error message section.
+; Error: Bad Sector
 ;-----------------------------------------------------------------------------
-ERROR1:
-    ld      hl,BADSEC       ; bad sector message.
-    call    PRTERR          ; print it and get a 1 char responce.
+_err_bad_sect:
+    ld      hl,.msg         ; bad sector message.
+    call    _print_err      ; print it and get a 1 char response.
     cp      CTRL_C          ; re-boot request (control-c)?
     jp      z,0             ; yes.
     ret                     ; no, return to retry i/o function.
+.msg:
+    defb    'Bad Sector$'
 
-ERROR2:
-    ld      hl,BADSEL       ; bad drive selected.
-    jp      ERROR5
+;-----------------------------------------------------------------------------
+; Error: Bad Drive Selected
+;-----------------------------------------------------------------------------
+_err_bad_sel:
+    ld      hl,.msg         ; bad drive selected.
+    jr      _print_err_reboot
+.msg:
+    defb    'Select$'
 
-ERROR3:
-    ld      hl,DISKRO       ; disk is read only.
-    jp      ERROR5
+;-----------------------------------------------------------------------------
+; Error: Disk is Read Only
+;-----------------------------------------------------------------------------
+_err_disk_ro:
+    ld      hl,.msg         ; disk is read only.
+    jr      _print_err_reboot
+.msg:
+    defb    'R/O$'
 
-ERROR4:
-    ld      hl,FILERO       ; file is read only.
+;-----------------------------------------------------------------------------
+; Error: File is Read Only
+;-----------------------------------------------------------------------------
+_err_file_ro:
+    ld      hl,.msg         ; file is read only.
+    jr      _print_err_reboot
+.msg:
+    defb    'File R/O$'
 
-ERROR5:
-    call    PRTERR
+;-----------------------------------------------------------------------------
+; Print error, followed by reboot
+;-----------------------------------------------------------------------------
+_print_err_reboot:
+    call    _print_err
     jp      0               ; always reboot on these errors.
-
-BDOSERR:defb    'Bdos Err On '
-BDOSDRV:defb    ' : $'
-BADSEC: defb    'Bad Sector$'
-BADSEL: defb    'Select$'
-FILERO: defb    'File '
-DISKRO: defb    'R/O$'
 
 ;-----------------------------------------------------------------------------
 ; Print BDOS error message.
 ;-----------------------------------------------------------------------------
-PRTERR:
+_print_err:
     push    hl              ; save second message pointer.
-    call    OUTCRLF         ; send (cr)(lf).
+    call    OUTCRLF         ; send CRLF.
     ld      a,(ACTIVE)      ; get active drive.
-    add     a,'A'           ; make ascii.
-    ld      (BDOSDRV),a     ; and put in message.
-    ld      bc,BDOSERR      ; and print it.
+    add     a,'A'           ; make ASCII.
+    ld      (.msg_drv),a    ; and put in message.
+    ld      bc,.msg         ; and print it.
     call    PRTMESG
     pop     bc              ; print second message line now.
     call    PRTMESG
+    jr      GETCHAR
+
+.msg:
+    defb    'Bdos Err On '
+.msg_drv:
+    defb    ' : $'
 
 ;-----------------------------------------------------------------------------
 ; Get an input character. We will check our 1 character
@@ -116,7 +219,7 @@ GETCHAR:
     ld      (hl),0          ; ...either case clear it.
     or      a
     ret     nz              ; yes, use it.
-    jp      CONIN           ; nope, go get a character responce.
+    jp      CONIN           ; nope, go get a character response.
 
 ;-----------------------------------------------------------------------------
 ; Input and echo a character.
@@ -157,22 +260,20 @@ CHKCHAR:
 CKCONSOL:
     ld      a,(CHARBUF)     ; check buffer.
     or      a               ; if anything, just return without checking.
-    jp      nz,CKCON2
+    jr      nz,.2
     call    CONST           ; nothing in buffer. Check console.
     and     $01             ; look at bit 0.
     ret     z               ; return if nothing.
     call    CONIN           ; ok, get it.
     cp      CTRL_S          ; if not control-s, return with zero cleared.
-    jp      nz,CKCON1
+    jr      nz,.1
     call    CONIN           ; halt processing until another char
     cp      CTRL_C          ; is typed. Control-c?
     jp      z,0             ; yes, reboot now.
     xor     a               ; no, just pretend nothing was ever ready.
     ret
-CKCON1:
-    ld      (CHARBUF),a     ; save character in buffer for later processing.
-CKCON2:
-    ld      a,1             ; set (A) to non zero to mean something is ready.
+.1: ld      (CHARBUF),a     ; save character in buffer for later processing.
+.2: ld      a,1             ; set (A) to non zero to mean something is ready.
     ret
 
 ;-----------------------------------------------------------------------------
@@ -182,7 +283,7 @@ CKCON2:
 OUTCHAR:
     ld      a,(OUTFLAG)     ; check output flag.
     or      a               ; anything and we won't generate output.
-    jp      nz,OUTCHR1
+    jr      nz,.1
     push    bc
     call    CKCONSOL        ; check console (we don't care whats there).
     pop     bc
@@ -194,8 +295,7 @@ OUTCHAR:
     or      a
     call    nz,LIST         ; print it also if non-zero.
     pop     bc
-OUTCHR1:
-    ld      a,c             ; update cursors position.
+.1: ld      a,c             ; update cursors position.
     ld      hl,CURPOS
     cp      DEL             ; rubouts don't do anything here.
     ret     z
@@ -208,11 +308,10 @@ OUTCHR1:
     ret     z               ; ingnore control characters at the start of the line.
     ld      a,c
     cp      BS              ; is it a backspace?
-    jp      nz,OUTCHR2
+    jr      nz,.2
     dec     (hl)            ; yes, backup pointer.
     ret
-OUTCHR2:
-    cp      LF              ; is it a line feed?
+.2: cp      LF              ; is it a line feed?
     ret     nz              ; ignore anything else.
     ld      (hl),0          ; reset pointer to start of line.
     ret
@@ -242,24 +341,21 @@ OUTCON:
     ld      a,c
     cp      TAB             ; is it a tab?
     jp      nz,OUTCHAR      ; use regular output.
-OUTCON1:
-    ld      c,' '           ; yes it is, use spaces instead.
+.1: ld      c,' '           ; yes it is, use spaces instead.
     call    OUTCHAR
     ld      a,(CURPOS)      ; go until the cursor is at a multiple of 8
-
     and     $07             ; position.
-    jp      nz,OUTCON1
+    jr      nz,.1
     ret
 
 ;-----------------------------------------------------------------------------
 ; Echo a backspace character. Erase the prevoius character on the screen.
 ;-----------------------------------------------------------------------------
 BACKUP:
-    call    BACKUP1         ; backup the screen 1 place.
+    call    .1              ; backup the screen 1 place.
     ld      c,' '           ; then blank that character.
     call    CONOUT
-BACKUP1:
-    ld      c,BS            ; then back space once more.
+.1: ld      c,BS            ; then back space once more.
     jp      CONOUT
 
 ;-----------------------------------------------------------------------------
@@ -269,17 +365,16 @@ NEWLINE:
     ld      c,'#'
     call    OUTCHAR         ; print this.
     call    OUTCRLF         ; start new line.
-NEWLN1:
-    ld      a,(CURPOS)      ; move the cursor to the starting position.
+.1: ld      a,(CURPOS)      ; move the cursor to the starting position.
     ld      hl,STARTING
     cp      (hl)
     ret     nc              ; there yet?
     ld      c,' '
     call    OUTCHAR         ; nope, keep going.
-    jp      NEWLN1
+    jr      .1
 
 ;-----------------------------------------------------------------------------
-; Output a (cr) (lf) to the console device (screen).
+; Output a CRLF to the console device (screen).
 ;-----------------------------------------------------------------------------
 OUTCRLF:
     ld      c,CR
@@ -312,88 +407,79 @@ RDBUFF:
     inc     hl              ; point to first available space.
     push    hl              ; and save.
     ld      b,0             ; keep a character count.
-RDBUF1:
-    push    bc
+.1: push    bc
     push    hl
-RDBUF2:
-    call    GETCHAR         ; get the next input character.
+.2: call    GETCHAR         ; get the next input character.
     and     $7F             ; strip bit 7.
     pop     hl              ; reset registers.
     pop     bc
     cp      CR              ; en of the line?
-    jp      z,RDBUF17
+    jp      z,.17
     cp      LF
-    jp      z,RDBUF17
+    jp      z,.17
     cp      BS              ; how about a backspace?
-    jp      nz,RDBUF3
+    jr      nz,.3
     ld      a,b             ; yes, but ignore at the beginning of the line.
     or      a
-    jp      z,RDBUF1
+    jr      z,.1
     dec     b               ; ok, update counter.
     ld      a,(CURPOS)      ; if we backspace to the start of the line,
     ld      (OUTFLAG),a     ; treat as a cancel (control-x).
-    jp      RDBUF10
-RDBUF3:
-    cp      DEL             ; user typed a rubout?
-    jp      nz,RDBUF4
+    jr      .10
+.3: cp      DEL             ; user typed a rubout?
+    jr      nz,.4
     ld      a,b             ; ignore at the start of the line.
     or      a
-    jp      z,RDBUF1
+    jr      z,.1
     ld      a,(hl)          ; ok, echo the previous character.
     dec     b               ; and reset pointers (counters).
     dec     hl
-    jp      RDBUF15
-RDBUF4:
-    cp      CTRL_E          ; physical end of line?
-    jp      nz,RDBUF5
+    jr      .15
+.4: cp      CTRL_E          ; physical end of line?
+    jr      nz,.5
     push    bc              ; yes, do it.
     push    hl
     call    OUTCRLF
     xor     a               ; and update starting position.
     ld      (STARTING),a
-    jp      RDBUF2
-RDBUF5:
-    cp      CTRL_P          ; control-p?
-    jp      nz,RDBUF6
+    jr      .2
+.5: cp      CTRL_P          ; control-p?
+    jr      nz,.6
     push    hl              ; yes, flip the print flag filp-flop byte.
     ld      hl,PRTFLAG
     ld      a,1             ; PRTFLAG=1-PRTFLAG
     sub     (hl)
     ld      (hl),a
     pop     hl
-    jp      RDBUF1
-RDBUF6:
-    cp      CTRL_X          ; control-x (cancel)?
-    jp      nz,RDBUF8
+    jr      .1
+.6: cp      CTRL_X          ; control-x (cancel)?
+    jr      nz,.8
     pop     hl
-RDBUF7:
-    ld      a,(STARTING)    ; yes, backup the cursor to here.
+.7: ld      a,(STARTING)    ; yes, backup the cursor to here.
     ld      hl,CURPOS
     cp      (hl)
-    jp      nc,RDBUFF       ; done yet?
+    jr      nc,RDBUFF       ; done yet?
     dec     (hl)            ; no, decrement pointer and output back up one space.
     call    BACKUP
-    jp      RDBUF7
-RDBUF8:
-    cp      CTRL_U          ; control-U (cancel line)?
-    jp      nz,RDBUF9
+    jr      .7
+.8: cp      CTRL_U          ; control-U (cancel line)?
+    jr      nz,.9
     call    NEWLINE         ; start a new line.
     pop     hl
-    jp      RDBUFF
-RDBUF9:
-    cp      CTRL_R          ; control-r?
-    jp      nz,RDBUF14
-RDBUF10:
+    jr      RDBUFF
+.9: cp      CTRL_R          ; control-r?
+    jr      nz,.14
+.10:
     push    bc              ; yes, start a new line and retype the old one.
     call    NEWLINE
     pop     bc
     pop     hl
     push    hl
     push    bc
-RDBUF11:
+.11:
     ld      a,b             ; done whole line yet?
     or      a
-    jp      z,RDBUF12
+    jr      z,.12
     inc     hl              ; nope, get next character.
     ld      c,(hl)
     dec     b               ; count it.
@@ -402,28 +488,28 @@ RDBUF11:
     call    SHOWIT          ; and display it.
     pop     hl
     pop     bc
-    jp      RDBUF11
-RDBUF12:
+    jr      .11
+.12:
     push    hl              ; done with line. If we were displaying
     ld      a,(OUTFLAG)     ; then update cursor position.
     or      a
-    jp      z,RDBUF2
+    jp      z,.2
     ld      hl,CURPOS       ; because this line is shorter, we must
     sub     (hl)            ; back up the cursor (not the screen however)
     ld      (OUTFLAG),a     ; some number of positions.
-RDBUF13:
+.13:
     call    BACKUP          ; note that as long as (OUTFLAG) is non
     ld      hl,OUTFLAG      ; zero, the screen will not be changed.
     dec     (hl)
-    jp      nz,RDBUF13
-    jp      RDBUF2          ; now just get the next character.
+    jr      nz,.13
+    jp      .2              ; now just get the next character.
 
     ; Just a normal character, put this in our buffer and echo.
-RDBUF14:
+.14:
     inc     hl
     ld      (hl),a          ; store character.
     inc     b               ; and count it.
-RDBUF15:
+.15:
     push    bc
     push    hl
     ld      c,a             ; echo it now.
@@ -433,17 +519,17 @@ RDBUF15:
     ld      a,(hl)          ; was it an abort request?
     cp      CTRL_C          ; control-c abort?
     ld      a,b
-    jp      nz,RDBUF16
+    jr      nz,.16
     cp      1               ; only if at start of line.
     jp      z,0
-RDBUF16:
+.16:
     cp      c               ; nope, have we filled the buffer?
-    jp      c,RDBUF1
-RDBUF17:
+    jp      c,.1
+.17:
     pop     hl              ; yes end the line and return.
     ld      (hl),b
     ld      c,CR
-    jp      OUTCHAR         ; output (cr) and return.
+    jp      OUTCHAR         ; output CR and return.
 
 ;-----------------------------------------------------------------------------
 ; [ 1] GETCON - Function to get a character from the console device.
@@ -467,14 +553,13 @@ GETRDR:
 DIRCIO:
     ld      a,c             ; test for (FF).
     inc     a
-    jp      z,DIRC1
+    jr      z,.1
     inc     a               ; test for (FE).
     jp      z,CONST
     jp      CONOUT          ; just output (C).
-DIRC1:
-    call    CONST           ; this is an input request.
+.1: call    CONST           ; this is an input request.
     or      a
-    jp      z,GOBACK1       ; not ready? Just return (directly).
+    jp      z,_bdos_exit2   ; not ready? Just return (directly).
     call    CONIN           ; yes, get character.
     jp      SETSTAT         ; set status and return.
 
@@ -527,27 +612,6 @@ IOERR1:
     jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
-; Variables used by BDOS
-;-----------------------------------------------------------------------------
-OUTFLAG:  defb  0               ; output flag (non zero means no output).
-STARTING: defb  2               ; starting position for cursor.
-CURPOS:   defb  0               ; cursor position (0=start of line).
-PRTFLAG:  defb  0               ; printer flag (control-p toggle). List if non zero.
-CHARBUF:  defb  0               ; single input character buffer.
-USERNO:   defb  0               ; current user number.
-ACTIVE:   defb  0               ; currently active drive.
-PARAMS:   defw  0               ; save (de) parameters here on entry.
-STATUS:   defw  0               ; status returned from BDOS function.
-
-;-----------------------------------------------------------------------------
-; Stack area for BDOS calls.
-;-----------------------------------------------------------------------------
-USRSTACK:
-        defw    0               ; save users stack pointer here.
-        defs    48
-STKAREA equ     $               ; end of stack area.
-
-;-----------------------------------------------------------------------------
 ; Select error occured, jump to error routine.
 ;-----------------------------------------------------------------------------
 SLCTERR:
@@ -569,8 +633,7 @@ JUMPHL:
 ;-----------------------------------------------------------------------------
 SHIFTR:
     inc     c
-SHIFTR1:
-    dec     c
+.1: dec     c
     ret     z
     ld      a,h
     or      a
@@ -579,18 +642,17 @@ SHIFTR1:
     ld      a,l
     rra
     ld      l,a
-    jp      SHIFTR1
+    jp      .1
 
 ;-----------------------------------------------------------------------------
 ; Shift (hl) left (C) bits.
 ;-----------------------------------------------------------------------------
 SHIFTL:
     inc     c
-SHIFTL1:
-    dec     c
+.1: dec     c
     ret     z
     add     hl,hl           ; shift left 1 bit.
-    jp      SHIFTL1
+    jp      .1
 
 ;-----------------------------------------------------------------------------
 ; Routine to set a bit in a 16 bit value contained in (bc).
@@ -612,47 +674,6 @@ SETBIT:
     ret
 
 ;-----------------------------------------------------------------------------
-; Extract the write protect status bit for the current drive.
-; The result is returned in (A), bit 0.
-;-----------------------------------------------------------------------------
-GETWPRT:
-    ld      hl,(WRTPRT)     ; get status bytes.
-    ld      A,(ACTIVE)      ; which drive is current?
-    ld      c,a
-    call    SHIFTR          ; shift status such that bit 0 is the
-    ld      a,l             ; one of interest for this drive.
-    and     $01             ; and isolate it.
-    ret
-
-;-----------------------------------------------------------------------------
-; [28] WRTPRTD - Function to write protect the current disk.
-;-----------------------------------------------------------------------------
-WRTPRTD:
-    ld      hl,WRTPRT       ; point to status word.
-    ld      c,(hl)          ; set (bc) equal to the status.
-    inc     hl
-    ld      b,(hl)
-    call    SETBIT          ; and set this bit according to current drive.
-    ld      (WRTPRT),hl     ; then save.
-    ld      hl,(DIRSIZE)    ; now save directory size limit.
-    inc     hl              ; remember the last one.
-    ex      de,hl
-    ld      hl,(SCRATCH1)   ; and store it here.
-    ld      (hl),e          ; put low byte.
-    inc     hl
-    ld      (hl),d          ; then high byte.
-    ret
-
-;-----------------------------------------------------------------------------
-; Check the write protect status of the active disk.
-;-----------------------------------------------------------------------------
-CHKWPRT:
-    call    GETWPRT
-    ret     z               ; return if ok.
-    ld      hl,RODISK       ; else print message and terminate.
-    jp      JUMPHL
-
-;-----------------------------------------------------------------------------
 ; Routine to set the DMA address to the users choice.
 ;-----------------------------------------------------------------------------
 DEFDMA:
@@ -670,34 +691,11 @@ DIRDMA1:
     jp      SETDMA
 
 ;-----------------------------------------------------------------------------
-; Set the status (STATUS) and return.
-;-----------------------------------------------------------------------------
-STSTATUS:
-    ld      a,(FNDSTAT)
-    jp      SETSTAT
-
-;-----------------------------------------------------------------------------
 ; [36] SETTRAN - Function to return the random record position of a given
 ;                file which has been read in sequential mode up to now.
 ;-----------------------------------------------------------------------------
 SETRAN:
     jp SETRAN           ; FIXME
-
-;-----------------------------------------------------------------------------
-;   This routine select the drive specified in (ACTIVE) and
-; update the login bitmap and bitmap table if this drive was
-; not already active.
-;-----------------------------------------------------------------------------
-LOGINDRV:
-    cp      a,16
-    call    nc,SLCTERR      ; valid drive?
-    ld      hl,(LOGIN)      ; yes, update the login bitmap.
-    ld      c,l
-    ld      b,h
-    call    SETBIT
-    ld      (LOGIN),hl      ; and save.
-    ; jp      BITMAP        ; now update the bitmap.
-    ret
 
 ;-----------------------------------------------------------------------------
 ; [14] SETDSK - Function to set the active disk number.
@@ -708,7 +706,10 @@ SETDSK:
     cp      (hl)
     ret     z
     ld      (hl),a          ; yes it does, log it in.
-    jp      LOGINDRV
+
+    cp      a,4
+    call    nc,SLCTERR      ; valid drive?
+    ret
 
 ;-----------------------------------------------------------------------------
 ;   This is the 'auto disk select' routine. The first byte
@@ -724,7 +725,7 @@ AUTOSEL:
     dec     a               ; adjust for (1=A, 2=B) etc.
     ld      (EPARAM),a      ; and save for the select routine.
     cp      $1E             ; check for 'no change' condition.
-    jp      nc,AUTOSL1      ; yes, don't change.
+    jp      nc,.1           ; yes, don't change.
     ld      a,(ACTIVE)      ; we must change, save currently active
     ld      (OLDDRV),a      ; drive.
     ld      a,(hl)          ; and save first byte of FCB also.
@@ -732,8 +733,7 @@ AUTOSEL:
     and     $E0             ; whats this for (bits 6,7 are used for
     ld      (hl),a          ; something)?
     call    SETDSK          ; select and log in this drive.
-AUTOSL1:
-    ld      a,(USERNO)      ; move user number into FCB.
+.1: ld      a,(USERNO)      ; move user number into FCB.
     ld      hl,(PARAMS)     ; (* upper half of first byte *)
     or      (hl)
     ld      (hl),a
@@ -750,15 +750,12 @@ GETVER:
 ; [13] RSTDSK - Function to reset the disk system.
 ;-----------------------------------------------------------------------------
 RSTDSK:
-    ld      hl,0            ; clear write protect status and log
-    ld      (WRTPRT),hl     ; in bitmap.
-    ld      (LOGIN),hl
     xor     a               ; select drive 'A'.
     ld      (ACTIVE),a
     ld      hl,TBUFF        ; setup default DMA address.
     ld      (USERDMA),hl
     call    DEFDMA
-    jp      LOGINDRV        ; now log in drive 'A'.
+    ret
 
 ;-----------------------------------------------------------------------------
 ; [15] OPENFIL - Function to open a specified file.
@@ -850,10 +847,6 @@ DELFILE:
     xor     a
     jp      SETSTAT
 
-    ; call    AUTOSEL         ;select proper drive.
-    ; call    ERAFILE         ;erase the file.
-    ; jp      STSTATUS        ;set status and return.
-
 .notfound:
     ld      a,$FF
     jp      SETSTAT
@@ -891,9 +884,6 @@ READSEQ:
     ld      a,$FF
     jp      SETSTAT
 
-    ; call    AUTOSEL         ;select proper drive then read.
-    ; jp      RDSEQ
-
 ;-----------------------------------------------------------------------------
 ; [21] WRTSEQ - Function to write the next sequential record.
 ;-----------------------------------------------------------------------------
@@ -903,9 +893,6 @@ WRTSEQ:
     ; FIXME
     ld      a,$FF
     jp      SETSTAT
-
-    ; call    AUTOSEL         ;select proper drive then write.
-    ; jp      WTSEQ
 
 ;-----------------------------------------------------------------------------
 ; [22] FCREATE - Create a file function.
@@ -948,16 +935,12 @@ RENFILE:
     ld      a,$FF
     jp      SETSTAT
 
-    ; call    AUTOSEL         ;select proper drive and then switch
-    ; call    CHGNAMES        ;file names.
-    ; jp      STSTATUS
-
 ;-----------------------------------------------------------------------------
 ; [24] GETLOG - Function to return the login bitmap.
 ;-----------------------------------------------------------------------------
 GETLOG:
-    ld      hl,(LOGIN)
-    jp      GETPRM1
+    ld      hl,$000F
+    jp      _ret_stat_hl
 
 ;-----------------------------------------------------------------------------
 ; [25] GETCRNT - Function to return the current disk assignment.
@@ -978,37 +961,33 @@ PUTDMA:
 ; [27] GETALOC - Function to return the allocation bitmap.
 ;-----------------------------------------------------------------------------
 GETALOC:
-    ld      hl,(ALOCVECT)
-    jp      GETPRM1
+    jp      0
 
 ;-----------------------------------------------------------------------------
 ; [29] GETROV - Function to return the read-only status bitmap.
 ;-----------------------------------------------------------------------------
 GETROV:
-    ld      hl,(WRTPRT)
-    jp      GETPRM1
+    ld      hl,0
+    jp      _ret_stat_hl
 
 ;-----------------------------------------------------------------------------
 ; [30] SETATTR - Function to set the file attributes (read-only, system).
 ;-----------------------------------------------------------------------------
 SETATTR:
-    jr      SETATTR
-
-    ; FIXME
     ld      a,$FF
     jp      SETSTAT
-
-    ; call    AUTOSEL         ; select proper drive then save attributes.
-    ; call    SAVEATTR
-    ; jp      STSTATUS
 
 ;-----------------------------------------------------------------------------
 ; [31] GETPARM - Function to return the address of the disk parameter block
 ;                for the current drive.
 ;-----------------------------------------------------------------------------
 GETPARM:
-    ld      hl,(DISKPB)
-GETPRM1:
+    jp      0
+
+;-----------------------------------------------------------------------------
+; _ret_stat_hl
+;-----------------------------------------------------------------------------
+_ret_stat_hl:
     ld      (STATUS),hl
     ret
 
@@ -1020,10 +999,11 @@ GETPRM1:
 GETUSER:
     ld      a,(EPARAM)          ; get parameter.
     cp      $FF                 ; get user number?
-    jp      nz,SETUSER
+    jr      nz,.set_user
     ld      a,(USERNO)          ; yes, just do it.
     jp      SETSTAT
-SETUSER:
+
+.set_user:
     and     $1F                 ; no, we should set it instead. keep low
     ld      (USERNO),a          ; bits (0-4) only.
     ret
@@ -1056,9 +1036,6 @@ WTRANDOM:
     ld      a,$FF
     jp      SETSTAT
 
-    ; call    AUTOSEL         ;select proper drive and write.
-    ; jp      WRITERAN
-
 ;-----------------------------------------------------------------------------
 ; [35] FILESIZE - Function to compute the size of a random file.
 ;-----------------------------------------------------------------------------
@@ -1068,65 +1045,6 @@ FILESIZE:
     ; FIXME
     ld      a,$FF
     jp      SETSTAT
-
-    ; call  AUTOSEL         ;select proper drive and check file length
-    ; jp      RANSIZE
-
-;-----------------------------------------------------------------------------
-; [37] LOGOFF - This allows a program to log off any drives. On entry,
-;               set (de) to contain a word with bits set for those drives
-;               that are to be logged off. The log-in bitmap and the write
-;               protect bitmap will be updated.
-;               This must be a M/PM special function.
-;-----------------------------------------------------------------------------
-LOGOFF:
-    ld      hl,(PARAMS)     ;get drives to log off.
-    ld      a,l             ;for each bit that is set, we want
-    cpl                     ;to clear that bit in (LOGIN)
-    ld      e,a             ;and (WRTPRT).
-    ld      a,h
-    cpl
-    ld      hl,(LOGIN)      ;reset the login bitmap.
-    and     H
-    ld      d,a
-    ld      a,l
-    and     e
-    ld      e,a
-    ld      hl,(WRTPRT)
-    ex      de,hl
-    ld      (LOGIN),hl      ;and save.
-    ld      a,l             ;now do the write protect bitmap.
-    and     e
-    ld      l,a
-    ld      a,h
-    and     d
-    ld      h,a
-    ld      (WRTPRT),hl     ;and save. all done.
-    ret
-
-;-----------------------------------------------------------------------------
-; Get here to return to the user.
-;-----------------------------------------------------------------------------
-GOBACK:
-    ld      a,(AUTO)        ; was auto select activated?
-    or      a
-    jp      z,GOBACK1
-    ld      hl,(PARAMS)     ; yes, but was a change made?
-    ld      (hl),0          ; (* reset first byte of FCB *)
-    ld      a,(AUTOFLAG)
-    or      a
-    jp      z,GOBACK1
-    ld      (hl),a          ; yes, reset first byte properly.
-    ld      a,(OLDDRV)      ; and get the old drive and select it.
-    ld      (EPARAM),a
-    call    SETDSK
-GOBACK1:
-    ld      hl,(USRSTACK)   ; reset the users stack pointer.
-    ld      sp,hl
-    ld      hl,(STATUS)     ; get return status.
-    ld      a,l             ; force version 1.4 compatability.
-    ld      b,h
-    ret                     ; and go back to user.
 
 ;-----------------------------------------------------------------------------
 ; [40] WTSPECL - This is a special entry to do random i/o.
@@ -1150,50 +1068,6 @@ WTSPECL:
     ; call    POSITN1         ;position the file.
     ; call    Z,WTSEQ1        ;and write (if no errors).
     ; ret
-
-;-----------------------------------------------------------------------------
-;* BDOS data storage pool.
-;-----------------------------------------------------------------------------
-WRTPRT:   defw  0               ;write protect status for all 16 drives.
-LOGIN:    defw  0               ;drive active word (1 bit per drive).
-USERDMA:  defw  $80             ;user's DMA address (defaults to 80h).
-
-;-----------------------------------------------------------------------------
-; Scratch areas from parameter block.
-;-----------------------------------------------------------------------------
-SCRATCH1: defw  0               ;relative position within dir segment for file (0-3).
-
-;-----------------------------------------------------------------------------
-; Disk storage areas from parameter block.
-;-----------------------------------------------------------------------------
-DIRBUF:   defw  0               ;address of directory buffer to use.
-DISKPB:   defw  0               ;contains address of disk parameter block.
-CHKVECT:  defw  0               ;address of check bitmap.
-ALOCVECT: defw  0               ;address of allocation bitmap.
-
-;-----------------------------------------------------------------------------
-; Parameter block returned from the bios.
-;-----------------------------------------------------------------------------
-DIRSIZE:  defw  0               ;directory size.
-FNDSTAT:  defb  0               ;filename found status (0=found first entry).
-EPARAM:   defb  0               ;storage for register (E) on entry to BDOS.
-SAVEFCB:  defw  0               ;save space for address of FCB (for directory searches).
-AUTO:     defb  0               ;if non-zero, then auto select activated.
-OLDDRV:   defb  0               ;on auto select, storage for previous drive.
-AUTOFLAG: defb  0               ;if non-zero, then auto select changed drives.
-FCBPOS:   defb  0               ;relative position within buffer for FCB of file of interest.
-
-;-----------------------------------------------------------------------------
-; Directory entry
-;-----------------------------------------------------------------------------
-_dirent:
-_dirent_date: defw 0
-_dirent_time: defw 0
-_dirent_attr: defb 0
-_dirent_size: defd 0
-_dirent_name: defs 8
-_dirent_ext:  defs 3
-_dirent_end:
 
 ;-----------------------------------------------------------------------------
 ; _read_dirent
