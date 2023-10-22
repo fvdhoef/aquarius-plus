@@ -470,7 +470,7 @@ uint8_t EmuState::ioRead(size_t param, uint16_t addr) {
             (emuState.sysCtrlDisableExt ? (1 << 0) : 0));
 
         case 0xFC: /* printf("Cassette port input (%04x)\n", addr); */ return 0xFF;
-        case 0xFD: return (emuState.videoLine >= 242) ? 0 : 1;
+        case 0xFD: return (emuState.videoLine >= 16 && emuState.videoLine <= 216) ? 1 : 0;
         case 0xFE: /* printf("Clear to send status (%04x)\n", addr); */ return 0xFF;
         case 0xFF: {
             // Keyboard matrix. Selected rows are passed in the upper 8 address lines.
