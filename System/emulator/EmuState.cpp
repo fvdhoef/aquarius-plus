@@ -75,8 +75,6 @@ int EmuState::cpuEmulate() {
         for (int i = 0; i < (int)breakpoints.size(); i++) {
             auto &bp = breakpoints[i];
             if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value && bp.value != lastBpAddress) {
-                printf("Halted!  %d\n", lastBpAddress);
-
                 emuMode       = EmuState::Em_Halted;
                 lastBp        = i;
                 lastBpAddress = bp.value;
