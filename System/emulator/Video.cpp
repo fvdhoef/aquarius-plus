@@ -14,33 +14,40 @@ void Video::drawLine() {
     // Render text
     uint8_t lineText[1024];
     {
+        bool mode80      = (emuState.videoCtrl & VCTRL_80_COLUMNS) != 0;
+        bool tramPage    = (emuState.videoCtrl & VCTRL_TRAM_PAGE) != 0;
+        bool remapBorder = (emuState.videoCtrl & VCTRL_REMAP_BORDER_CHAR) != 0;
+
         unsigned idx = 1024 - 32;
         for (int i = 0; i < VIDEO_WIDTH; i++) {
             // Draw text character
-            unsigned addr   = 0;
-            int      pixidx = i;
+            unsigned addr = 0;
 
             if (vActive && idx < 640) {
                 int row = (line - 16) / 8;
-                if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
+                if (mode80) {
                     int column = (i - 32) / 8;
                     addr       = row * 80 + column;
                 } else {
                     int column = ((i / 2) - 16) / 8;
                     addr       = row * 40 + column;
-                    pixidx /= 2;
                 }
-
-            } else if (emuState.videoCtrl & VCTRL_REMAP_BORDER_CHAR) {
-                addr = (emuState.videoCtrl & VCTRL_80_COLUMNS) ? 0x7FF : 0x3FF;
+            } else {
+                if (remapBorder) {
+                    addr = mode80 ? 0x7FF : 0x3FF;
+                } else {
+                    addr = 0;
+                }
+            }
+            if (!mode80) {
+                addr = (addr & 0x3FF) | (tramPage ? 0x400 : 0);
             }
 
-            uint8_t ch    = emuState.screenRam[addr];
-            uint8_t color = emuState.colorRam[addr];
-
+            uint8_t ch     = emuState.screenRam[addr];
+            uint8_t color  = emuState.colorRam[addr];
             uint8_t charBm = emuState.charRam[ch * 8 + (line & 7)];
 
-            lineText[idx] = (charBm & (1 << (7 - (pixidx & 7)))) ? (color >> 4) : (color & 0xF);
+            lineText[idx] = (charBm & (1 << (7 - ((mode80 ? i : (i / 2)) & 7)))) ? (color >> 4) : (color & 0xF);
             idx           = (idx + 1) & 1023;
         }
     }
