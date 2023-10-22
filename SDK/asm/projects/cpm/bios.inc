@@ -214,12 +214,27 @@ _show_cursor:
     out     (IO_VCTRL),a
     ret
 
+_oldstack: defw 0
+    defs 16
+_tmpstack:
+
 ;-----------------------------------------------------------------------------
 ; CONOUT - Console output
 ;
 ; Write the character in C to the screen.
 ;-----------------------------------------------------------------------------
 _conout:
+    ; We need to set up a temporary stack pointer here, since the current
+    ; stack pointer can be in the bottom 16KB of memory and we are switching
+    ; that out in this routine.
+
+    ; Save stack pointer
+    ld      hl,0
+    add     hl,sp
+    ld      (_oldstack),hl
+    ; Set temp stack pointer
+    ld      sp,_tmpstack
+
     ; Save bank 0 and set to screen memory
     in      a,(IO_BANK0)
     push    a
@@ -257,6 +272,9 @@ _conout:
     pop     a
     out     (IO_BANK0),a
 
+    ; Restore stack point
+    ld      hl,(_oldstack)
+    ld      sp,hl
     ret
 
 .next_line:

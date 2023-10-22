@@ -66,10 +66,10 @@ _dirent_end:
 ;-----------------------------------------------------------------------------
 ; Current path for drive letters A-D
 ;-----------------------------------------------------------------------------
-_path_a: defs 64
-_path_b: defs 64
-_path_c: defs 64
-_path_d: defs 64
+; _path_a: defs 64
+; _path_b: defs 64
+; _path_c: defs 64
+; _path_d: defs 64
 
 ;-----------------------------------------------------------------------------
 ; Open files
@@ -784,6 +784,8 @@ OPENFIL:
 
 ;-----------------------------------------------------------------------------
 ; [16] CLOSEFIL - Function to close a specified file.
+;
+; DE=Address of FCB
 ;-----------------------------------------------------------------------------
 CLOSEFIL:
     jr      CLOSEFIL
@@ -803,7 +805,7 @@ CLOSEFIL:
 ; DE=Address of FCB
 ;-----------------------------------------------------------------------------
 GETFST:
-    ld      (SAVEFCB),de   ; Save FCB
+    ld      (SAVEFCB),de    ; Save FCB
     call    _findfst        ; Open directory & find first entry
     jr      _getnxt_result  ; Continue in result handler of GETNXT
 
