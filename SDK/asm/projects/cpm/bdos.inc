@@ -43,6 +43,8 @@ PARAMS:   defw  0           ; save (de) parameters here on entry.
 EPARAM:   defb  0           ; storage for register (E) on entry to BDOS.
 STATUS:   defw  0           ; status returned from BDOS function.
 
+_dirfcb:  defw  0           ; argument for _findfst/_findnxt
+
 ;-----------------------------------------------------------------------------
 ; Stack area for BDOS calls.
 ;-----------------------------------------------------------------------------
@@ -761,7 +763,7 @@ RSTDSK:
 ; [15] OPENFIL - Function to open a specified file.
 ;-----------------------------------------------------------------------------
 OPENFIL:
-    ld      (SAVEFCB),de    ; Save FCB
+    ld      (_dirfcb),de    ; Save FCB
     call    _findfst
     jr      nz,.notfound
 
@@ -806,6 +808,7 @@ CLOSEFIL:
 ;-----------------------------------------------------------------------------
 GETFST:
     ld      (SAVEFCB),de    ; Save FCB
+    ld      (_dirfcb),de
     call    _findfst        ; Open directory & find first entry
     jr      _getnxt_result  ; Continue in result handler of GETNXT
 
@@ -819,6 +822,8 @@ GETNXT:
     ; call    FINDNXT         ;results will be wrong.
     ; jp      MOVEDIR
 
+    ld      de,(SAVEFCB)
+    ld      (_dirfcb),de
     call    _findnxt
 _getnxt_result:
     jr      nz,.err
@@ -833,7 +838,7 @@ _getnxt_result:
 ; [19] DELFILE - Function to delete a file by name.
 ;-----------------------------------------------------------------------------
 DELFILE:
-    ld      (SAVEFCB),de    ; Save FCB
+    ld      (_dirfcb),de    ; Save FCB
     call    _findfst
     jr      nz,.notfound
 
@@ -1142,7 +1147,7 @@ _read_dirent:
     ret
 
 ;-----------------------------------------------------------------------------
-; Find first directory entry matching SAVEFCB
+; Find first directory entry matching _dirfcb
 ;-----------------------------------------------------------------------------
 _findfst:
     ; Close directory descriptor 0
@@ -1165,7 +1170,7 @@ _findfst:
     jr      _findnxt
 
 ;-----------------------------------------------------------------------------
-; Get next directory entry matching SAVEFCB
+; Get next directory entry matching _dirfcb
 ;-----------------------------------------------------------------------------
 _findnxt:
     ; Read entry
@@ -1173,7 +1178,7 @@ _findnxt:
     ret     nz
 
     ; Check against FCB
-    ld      de,(SAVEFCB)
+    ld      de,(_dirfcb)
     ld      a,(de)
     cp      '?'             ; '?' in user field gives back all entries
     ret     z
