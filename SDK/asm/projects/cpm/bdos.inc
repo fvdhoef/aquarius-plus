@@ -212,20 +212,6 @@ _print_err:
     defb    ' : $'
 
 ;-----------------------------------------------------------------------------
-; Return with error
-;-----------------------------------------------------------------------------
-_ret_err:
-    ld      a,$FF
-    jp      SETSTAT
-
-;-----------------------------------------------------------------------------
-; Return with 0
-;-----------------------------------------------------------------------------
-_ret_0:
-    xor     a
-    jp      SETSTAT
-
-;-----------------------------------------------------------------------------
 ; Get an input character. We will check our 1 character
 ; buffer first. This may be set by the console status routine.
 ;-----------------------------------------------------------------------------
@@ -621,10 +607,24 @@ RTN:
     ret
 
 ;-----------------------------------------------------------------------------
+; Return with 0
+;-----------------------------------------------------------------------------
+_ret_0:
+    xor     a
+    jp      SETSTAT
+
+;-----------------------------------------------------------------------------
 ; Set the status to 1 (read or write error code).
 ;-----------------------------------------------------------------------------
-IOERR1:
+_ret_1:
     ld      a,1
+    jp      SETSTAT
+
+;-----------------------------------------------------------------------------
+; Return with error
+;-----------------------------------------------------------------------------
+_ret_ff:
+    ld      a,$FF
     jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
@@ -778,15 +778,25 @@ RSTDSK:
 ;-----------------------------------------------------------------------------
 OPENFIL:
     ld      (_fcb),de
+
+    ; FCB could be reused, if this one already contains an open FD close it
     call    _close_if_open
 
+    ; Find file in directory
     call    _findfst
-    jr      nz,.notfound
+    jp      nz,_ret_ff
 
     ; Open file
-    call    _openfile
+    ld      a,ESPCMD_OPEN
+    call    esp_cmd
+    ld      a,FO_RDWR           ; Flags (read-only)
+    call    esp_send_byte
+    ld      hl,_dirent_name
+_open_common:
+    call    _send_filename
+    call    esp_get_byte
     bit     7,a
-    jr      nz,.notfound
+    jp      nz,_ret_ff
 
     ; Put file descriptor in FCB
     ld      ix,(_fcb)
@@ -797,12 +807,7 @@ OPENFIL:
     ld      (ix+17),a
 
     ; Return success
-    xor     a
-    jp      SETSTAT
-
-.notfound:
-    ld      a,$FF
-    jp      SETSTAT
+    jp      _ret_0
 
     ; call    CLEARS2         ;clear 's2' byte.
     ; call    AUTOSEL         ;select proper disk.
@@ -816,8 +821,7 @@ OPENFIL:
 CLOSEFIL:
     ld      (_fcb),de
     call    _close_if_open
-    xor     a
-    jp      SETSTAT
+    jp      _ret_0
 
     ; call    AUTOSEL         ;select proper disk.
     ; jp      CLOSEIT         ;and close the file.
@@ -865,7 +869,7 @@ _getnxt_result:
 DELFILE:
     ld      (_fcb),de
     call    _findfst
-    jr      nz,.notfound
+    jp      nz,_ret_ff
 
     ld      a,ESPCMD_DELETE
     call    esp_cmd
@@ -873,15 +877,10 @@ DELFILE:
     call    _send_filename
     call    esp_get_byte
     bit     7,a
-    jr      nz,.notfound
+    jp      nz,_ret_ff
 
     ; Return success
-    xor     a
-    jp      SETSTAT
-
-.notfound:
-    ld      a,$FF
-    jp      SETSTAT
+    jp      _ret_0
 
 ;-----------------------------------------------------------------------------
 ; [20] READSEQ - Function to execute a sequential read of the specified
@@ -893,55 +892,59 @@ READSEQ:
     ld      (_fcb),de
     call    _get_fd
     bit     7,a
-    jr      nz,.err
+    jp      nz,_ret_ff
 
+    ; Read bytes
     ld      hl,(USERDMA)
     ld      de,128
     call    esp_read_bytes
-    jr      nz,.err
+    jp      nz,_ret_ff
     ld      a,d
     or      a,e
-    jr      z,.eof
+    jp      z,_ret_1        ; End of file
 
     ; Pad up to 128 bytes with EOF mark (CTRL-Z/$1A)
     ld      a,$1A
 .1: bit     7,e
-    jr      nz,.done
+    jp      nz,_ret_0
     ld      (hl),a
     inc     hl
     inc     e
     jr      .1
-.done:
-    xor     a
-    jp      SETSTAT
-
-.eof:
-    ld      a,1
-    jp      SETSTAT
-
-.err:
-    ld      a,$FF
-    jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
 ; [21] WRTSEQ - Function to write the next sequential record.
 ;-----------------------------------------------------------------------------
 WRTSEQ:
-    jr      WRTSEQ
+    ; Get file descriptor from FCB
+    ld      de,(PARAMS)
+    ld      (_fcb),de
+    call    _get_fd
+    bit     7,a
+    jp      nz,_ret_ff
 
-    ; FIXME
-    ld      a,$FF
-    jp      SETSTAT
+    ; Write bytes
+    ld      hl,(USERDMA)
+    ld      de,128
+    call    esp_write_bytes
+    jp      nz,_ret_ff
+    jp      _ret_0
 
 ;-----------------------------------------------------------------------------
 ; [22] FCREATE - Create a file function.
 ;-----------------------------------------------------------------------------
 FCREATE:
-    jr      FCREATE
+    ld      (_fcb),de
+    ; FCB could be reused, if this one already contains an open FD close it
+    call    _close_if_open
 
-    ; FIXME
-    ld      a,$FF
-    jp      SETSTAT
+    ld      a,ESPCMD_OPEN
+    call    esp_cmd
+    ld      a,FO_EXCL|FO_TRUNC|FO_CREATE|FO_RDWR    ; Flags (read/write, create, excl)
+    call    esp_send_byte
+    ex      de,hl
+    inc     hl
+    jp      _open_common
 
     ; call    CLEARS2         ;clear the 's2' byte on all creates.
     ; call    AUTOSEL         ;select proper drive and get the next
@@ -964,15 +967,10 @@ RENFILE:
 
     call    esp_get_byte
     bit     7,a
-    jr      nz,.notfound
+    jp      nz,_ret_ff      ; Not found
 
     ; Return success
-    xor     a
-    jp      SETSTAT
-
-.notfound:
-    ld      a,$FF
-    jp      SETSTAT
+    jp      _ret_0
 
 ;-----------------------------------------------------------------------------
 ; [24] GETLOG - Function to return the login bitmap.
@@ -1013,8 +1011,7 @@ GETROV:
 ; [30] SETATTR - Function to set the file attributes (read-only, system).
 ;-----------------------------------------------------------------------------
 SETATTR:
-    ld      a,$FF
-    jp      SETSTAT
+    jp      _ret_ff
 
 ;-----------------------------------------------------------------------------
 ; [31] GETPARM - Function to return the address of the disk parameter block
@@ -1056,7 +1053,7 @@ RDRANDOM:
     ld      (_fcb),de
     call    _get_fd
     bit     7,a
-    jr      nz,.err
+    jp      nz,_ret_ff
 
     ; Get record index from FCB
     ld      ix,(PARAMS)
@@ -1070,29 +1067,31 @@ RDRANDOM:
     ; call  AUTOSEL         ;select proper drive and read.
     ; jp      READRAN
 
-.err:
-    ld      a,$FF
-    jp      SETSTAT
-
 ;-----------------------------------------------------------------------------
 ; [34] WTRANDOM - Function to compute the file size for random files.
 ;-----------------------------------------------------------------------------
 WTRANDOM:
-    jr      WTRANDOM
+    ; Get file descriptor from FCB
+    ld      de,(PARAMS)
+    ld      (_fcb),de
+    call    _get_fd
+    bit     7,a
+    jp      nz,_ret_ff
 
-    ; FIXME
-    ld      a,$FF
-    jp      SETSTAT
+    ; Get record index from FCB
+    ld      ix,(PARAMS)
+    ld      e,(ix+33)
+    ld      d,(ix+34)
+    call    _seek
+
+    ; Perform normal sequential write to write the record
+    jp      WRTSEQ
 
 ;-----------------------------------------------------------------------------
 ; [35] FILESIZE - Function to compute the size of a random file.
 ;-----------------------------------------------------------------------------
 FILESIZE:
     jr      FILESIZE
-
-    ; FIXME
-    ld      a,$FF
-    jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
 ; [40] WTSPECL - This is a special entry to do random i/o.
@@ -1104,10 +1103,6 @@ FILESIZE:
 ;-----------------------------------------------------------------------------
 WTSPECL:
     jr      WTSPECL
-
-    ; FIXME
-    ld      a,$FF
-    jp      SETSTAT
 
     ; call    AUTOSEL         ;select proper drive.
     ; ld      A,2             ;use special write mode.
@@ -1342,21 +1337,6 @@ _get_fd:
     ret
 
 ;-----------------------------------------------------------------------------
-; Open file in _dirent_name
-;-----------------------------------------------------------------------------
-_openfile:
-    ld      a,ESPCMD_OPEN
-    call    esp_cmd
-    ld      a,0             ; Flags (read-only)
-    call    esp_send_byte
-    ld      hl,_dirent_name
-    call    _send_filename
-
-    ; Get result
-    call    esp_get_byte
-    ret
-
-;-----------------------------------------------------------------------------
 ; Seek to record DE (file descriptor in A)
 ;-----------------------------------------------------------------------------
 _seek:
@@ -1443,6 +1423,74 @@ esp_read_bytes:
 
 .done:
     pop     de
+
+    xor     a
+    ret
+
+;-----------------------------------------------------------------------------
+; Send bytes
+; Input:  HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;-----------------------------------------------------------------------------
+esp_send_bytes:
+    push    de
+
+.loop:
+    ; Done sending? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    ld      a, (hl)
+    call    esp_send_byte
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+    ret
+
+;-----------------------------------------------------------------------------
+; Write bytes
+; Input:  A: file descriptor
+;         HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;
+; Clobbered registers: A, HL, DE
+;-----------------------------------------------------------------------------
+esp_write_bytes:
+    ld      b,a
+    ld      a, ESPCMD_WRITE
+    call    esp_cmd
+    ld      a,b
+
+    ; Send file descriptor
+    call    esp_send_byte
+
+    ; Send write size
+    ld      a, e
+    call    esp_send_byte
+    ld      a, d
+    call    esp_send_byte
+
+    ; Send bytes
+    call    esp_send_bytes
+
+    ; Get result
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Get number of bytes actual written
+    call    esp_get_byte
+    ld      e, a
+    call    esp_get_byte
+    ld      d, a
 
     xor     a
     ret
