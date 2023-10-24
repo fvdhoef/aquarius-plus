@@ -34,7 +34,8 @@ module video(
     output reg         vga_hsync,
     output reg         vga_vsync,
     
-    output wire        vga_vblank);
+    // Register $FD value
+    output wire        reg_fd_val);
 
     wire [7:0] vpos;
     wire       vblank;
@@ -166,8 +167,6 @@ module video(
         .vnext(vnext),
         
         .blank(blank));
-
-    assign vga_vblank = vblank;
 
     wire hborder = hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336;
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
@@ -303,7 +302,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // VRAM
     //////////////////////////////////////////////////////////////////////////
-    wire [12:0] vram_addr2;     // = 13'b0;
+    wire [12:0] vram_addr2;
     wire [15:0] vram_rddata2;
 
     vram vram(
@@ -373,6 +372,8 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     reg  [5:0] pixel_colidx;
     wire       active = !vborder && !hborder_rr;
+
+    assign reg_fd_val = !vborder;
 
     always @* begin
         pixel_colidx = 6'b0;

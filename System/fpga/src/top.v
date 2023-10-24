@@ -62,7 +62,7 @@ module top(
     wire        spibm_en;
 
     wire        reset_req;
-    wire        vga_vblank;
+    wire        reg_fd_val;
 
     wire  [7:0] rddata_tram;             // MEM $3000-$37FF
     wire  [7:0] rddata_chram;
@@ -212,7 +212,7 @@ module top(
         if (sel_io_kbbuf)             rddata <= rddata_kbbuf;                                   // IO $FA
         if (sel_io_sysctrl)           rddata <= {5'b0, sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
         if (sel_io_cassette)          rddata <= {7'b0, !cassette_in_r[2]};                      // IO $FC
-        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, !vga_vblank};                            // IO $FD
+        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, reg_fd_val};                             // IO $FD
         if (sel_io_printer)           rddata <= {7'b0, printer_in_r[2]};                        // IO $FE
         if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;                                // IO $FF
     end
@@ -351,7 +351,7 @@ module top(
         .vga_hsync(vga_hsync),
         .vga_vsync(vga_vsync),
         
-        .vga_vblank(vga_vblank));
+        .reg_fd_val(reg_fd_val));
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
