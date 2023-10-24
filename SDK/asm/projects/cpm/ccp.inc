@@ -1229,7 +1229,7 @@ _unkwn8:
     ld      sp,_batch       ; set stack first off.
     call    _movecd         ; move current drive into place (TDRIVE).
     call    _dsksel         ; and reselect it.
-    jp      _cmmnd1         ; back to comand mode.
+    jp      _cmmnd1         ; back to command mode.
 
     ; Get here if some error occured.
 _unkwn9:

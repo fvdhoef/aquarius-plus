@@ -43,7 +43,7 @@ PARAMS:   defw  0           ; save (de) parameters here on entry.
 EPARAM:   defb  0           ; storage for register (E) on entry to BDOS.
 STATUS:   defw  0           ; status returned from BDOS function.
 
-_dirfcb:  defw  0           ; argument for _findfst/_findnxt
+_fcb:     defw  0           ; argument for _findfst/_findnxt
 
 ;-----------------------------------------------------------------------------
 ; Stack area for BDOS calls.
@@ -210,6 +210,20 @@ _print_err:
     defb    'Bdos Err On '
 .msg_drv:
     defb    ' : $'
+
+;-----------------------------------------------------------------------------
+; Return with error
+;-----------------------------------------------------------------------------
+_ret_err:
+    ld      a,$FF
+    jp      SETSTAT
+
+;-----------------------------------------------------------------------------
+; Return with 0
+;-----------------------------------------------------------------------------
+_ret_0:
+    xor     a
+    jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
 ; Get an input character. We will check our 1 character
@@ -763,7 +777,9 @@ RSTDSK:
 ; [15] OPENFIL - Function to open a specified file.
 ;-----------------------------------------------------------------------------
 OPENFIL:
-    ld      (_dirfcb),de    ; Save FCB
+    ld      (_fcb),de
+    call    _close_if_open
+
     call    _findfst
     jr      nz,.notfound
 
@@ -771,6 +787,14 @@ OPENFIL:
     call    _openfile
     bit     7,a
     jr      nz,.notfound
+
+    ; Put file descriptor in FCB
+    ld      ix,(_fcb)
+    ld      (ix+18),a
+    ld      a,'F'
+    ld      (ix+16),a
+    ld      a,'D'
+    ld      (ix+17),a
 
     ; Return success
     xor     a
@@ -790,10 +814,9 @@ OPENFIL:
 ; DE=Address of FCB
 ;-----------------------------------------------------------------------------
 CLOSEFIL:
-    jr      CLOSEFIL
-
-    ; FIXME
-    ld      a,$FF
+    ld      (_fcb),de
+    call    _close_if_open
+    xor     a
     jp      SETSTAT
 
     ; call    AUTOSEL         ;select proper disk.
@@ -808,7 +831,9 @@ CLOSEFIL:
 ;-----------------------------------------------------------------------------
 GETFST:
     ld      (SAVEFCB),de    ; Save FCB
-    ld      (_dirfcb),de
+    ld      (_fcb),de
+    call    _close_if_open
+
     call    _findfst        ; Open directory & find first entry
     jr      _getnxt_result  ; Continue in result handler of GETNXT
 
@@ -823,7 +848,7 @@ GETNXT:
     ; jp      MOVEDIR
 
     ld      de,(SAVEFCB)
-    ld      (_dirfcb),de
+    ld      (_fcb),de
     call    _findnxt
 _getnxt_result:
     jr      nz,.err
@@ -838,7 +863,7 @@ _getnxt_result:
 ; [19] DELFILE - Function to delete a file by name.
 ;-----------------------------------------------------------------------------
 DELFILE:
-    ld      (_dirfcb),de    ; Save FCB
+    ld      (_fcb),de
     call    _findfst
     jr      nz,.notfound
 
@@ -863,6 +888,13 @@ DELFILE:
 ;                record number.
 ;-----------------------------------------------------------------------------
 READSEQ:
+    ; Get file descriptor from FCB
+    ld      de,(PARAMS)
+    ld      (_fcb),de
+    call    _get_fd
+    bit     7,a
+    jr      nz,.err
+
     ld      hl,(USERDMA)
     ld      de,128
     call    esp_read_bytes
@@ -1019,19 +1051,28 @@ GETUSER:
 ; [33] RDRANDOM - Function to read a random record from a file.
 ;-----------------------------------------------------------------------------
 RDRANDOM:
-    ld      hl,(PARAMS)
-    ld      de,33
-    add     hl,de
+    ; Get file descriptor from FCB
+    ld      de,(PARAMS)
+    ld      (_fcb),de
+    call    _get_fd
+    bit     7,a
+    jr      nz,.err
 
-    ld      e,(hl)
-    inc     hl
-    ld      d,(hl)
+    ; Get record index from FCB
+    ld      ix,(PARAMS)
+    ld      e,(ix+33)
+    ld      d,(ix+34)
     call    _seek
 
+    ; Perform normal sequential read to read the record
     jp      READSEQ
 
     ; call  AUTOSEL         ;select proper drive and read.
     ; jp      READRAN
+
+.err:
+    ld      a,$FF
+    jp      SETSTAT
 
 ;-----------------------------------------------------------------------------
 ; [34] WTRANDOM - Function to compute the file size for random files.
@@ -1147,7 +1188,7 @@ _read_dirent:
     ret
 
 ;-----------------------------------------------------------------------------
-; Find first directory entry matching _dirfcb
+; Find first directory entry matching _fcb
 ;-----------------------------------------------------------------------------
 _findfst:
     ; Close directory descriptor 0
@@ -1170,7 +1211,7 @@ _findfst:
     jr      _findnxt
 
 ;-----------------------------------------------------------------------------
-; Get next directory entry matching _dirfcb
+; Get next directory entry matching _fcb
 ;-----------------------------------------------------------------------------
 _findnxt:
     ; Read entry
@@ -1178,7 +1219,7 @@ _findnxt:
     ret     nz
 
     ; Check against FCB
-    ld      de,(_dirfcb)
+    ld      de,(_fcb)
     ld      a,(de)
     cp      '?'             ; '?' in user field gives back all entries
     ret     z
@@ -1257,16 +1298,53 @@ _send_filename:
     ret
 
 ;-----------------------------------------------------------------------------
-; Open file in _dirent_name
+; Check if FCB contains open file descriptor and close it
 ;-----------------------------------------------------------------------------
-_openfile:
-    ; Close file descriptor 0
+_close_if_open:
+    ; Check if FCB already points to file descriptor, if so close it first
+    ld      ix,(_fcb)
+    ld      a,(ix+16)
+    cp      'F'
+    ret     nz
+    ld      a,(ix+17)
+    cp      'D'
+    ret     nz
+
+    ; Close file descriptor
     ld      a,ESPCMD_CLOSE
     call    esp_cmd
-    xor     a
+    ld      a,(ix+18)
     call    esp_send_byte
     call    esp_get_byte
 
+    ; Erase bytes
+    xor     a
+    ld      (ix+16),a
+    ld      (ix+17),a
+    ld      (ix+18),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Get file descriptor from FCB
+;-----------------------------------------------------------------------------
+_get_fd:
+    ld      ix,(_fcb)
+    ld      a,(ix+16)
+    cp      'F'
+    jr      nz,.err
+    ld      a,(ix+17)
+    cp      'D'
+    jr      nz,.err
+    ld      a,(ix+18)
+    ret
+.err:
+    ld      a,$FF
+    ret
+
+;-----------------------------------------------------------------------------
+; Open file in _dirent_name
+;-----------------------------------------------------------------------------
+_openfile:
     ld      a,ESPCMD_OPEN
     call    esp_cmd
     ld      a,0             ; Flags (read-only)
@@ -1279,13 +1357,13 @@ _openfile:
     ret
 
 ;-----------------------------------------------------------------------------
-; Seek to record DE
+; Seek to record DE (file descriptor in A)
 ;-----------------------------------------------------------------------------
 _seek:
+    ld      b,a
     ld      a,ESPCMD_SEEK
     call    esp_cmd
-
-    xor     a
+    ld      a,b
     call    esp_send_byte   ; File descriptor
 
     ; a = (de << 7) & 0xFF
@@ -1315,7 +1393,8 @@ _seek:
 
 ;-----------------------------------------------------------------------------
 ; Read bytes
-; Input:  HL: destination address
+; Input:  A: file descriptor
+;         HL: destination address
 ;         DE: number of bytes to read
 ; Output: HL: next address (start address if no bytes read)
 ;         DE: number of bytes actually read
@@ -1323,11 +1402,12 @@ _seek:
 ; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_read_bytes:
+    ld      b,a
     ld      a,ESPCMD_READ
     call    esp_cmd
+    ld      a,b
 
     ; Send file descriptor
-    xor     a
     call    esp_send_byte
 
     ; Send read size
