@@ -13,7 +13,12 @@ CBASE:
 _inbuff:
     defb    127             ; length of input buffer.
     defb    0               ; current length of contents.
-    defs    128
+    defb    'Copyright'
+    defb    ' 1979 (c) by Digital Research      '
+    defb    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    defb    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    defb    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    defb    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 _inpoint:
     defw    _inbuff+2       ; input line pointer
 _namepnt:
@@ -377,6 +382,23 @@ _delbatch:
     jp      _dsksel
 
 ;-----------------------------------------------------------------------------
+; Check to two strings at (PATTRN1) and (PATTRN2). They must be
+; the same or we halt....
+;-----------------------------------------------------------------------------
+_verify:
+    ld      de,_pattrn1     ; these are the serial number bytes.
+    ld      hl,PATTRN2      ; ditto, but how could they be different?
+    ld      b,6             ; 6 bytes each.
+.1: ld      a,(de)
+    cp      (hl)
+    jp      nz,_halt        ; jump to halt routine.
+    inc     de
+    inc     hl
+    dec     b
+    jp      nz,.1
+    ret
+
+;-----------------------------------------------------------------------------
 ; Print back file name with a '?' to indicate a syntax error.
 ;-----------------------------------------------------------------------------
 _synerr:
@@ -588,10 +610,12 @@ _cmdtbl:
     defb    'DIR ','ERA ','TYPE','SAVE'
     defb    'REN ','USER'
 
-; CP/M command address table.
-_cmdadr:
-    defw    _direct,_erase,_type,_save
-    defw    _rename,_user,_unknown
+;-----------------------------------------------------------------------------
+; The following six bytes must agree with those at (PATTRN2)
+; or cp/m will HALT. Why?
+;-----------------------------------------------------------------------------
+_pattrn1:
+    defb    0,22,0,0,0,0    ; (* serial number bytes *).
 
 ;-----------------------------------------------------------------------------
 ; Search the command table for a match with what has just been entered.
@@ -701,6 +725,18 @@ _cmmnd2:
     ld      l,a
     jp      (hl)            ; now execute it.
 
+; CP/M command address table.
+_cmdadr:
+    defw    _direct,_erase,_type,_save
+    defw    _rename,_user,_unknown
+
+; Halt the system. Reason for this is unknown at present.
+_halt:
+    ld      hl,$76F3        ; 'DI HLT' instructions.
+    ld      (CBASE),hl
+    ld      hl,CBASE
+    jp      (hl)
+
 ;-----------------------------------------------------------------------------
 ; Read error while TYPEing a file.
 ;-----------------------------------------------------------------------------
@@ -767,6 +803,13 @@ _decode3:
     jp      nz,_decode3
     ld      a,b             ; set (A)=the numeric value entered.
     ret
+
+;-----------------------------------------------------------------------------
+; Move 3 bytes from (HL) to (DE).
+; Note that there is only one reference to this at (A2D5h).
+;-----------------------------------------------------------------------------
+_move3:
+    ld      b,3
 
 ;-----------------------------------------------------------------------------
 ; Move (B) bytes from (hl) to (de).
@@ -1115,7 +1158,7 @@ _user:
     cp      16              ; legal user number?
     jp      nc,_synerr
     ld      e,a             ; yes but is there anything else?
-    ld      A,(_fcb+1)
+    ld      a,(_fcb+1)
     cp      ' '
     jp      z,_synerr       ; yes, that is not allowed.
     call    _getsetuc       ; ok, set user code.
@@ -1125,6 +1168,7 @@ _user:
 ; TRANSIENT PROGRAM COMMAND
 ;-----------------------------------------------------------------------------
 _unknown:
+    call    _verify         ; check for valid system (why?).
     ld      a,(_fcb+1)      ; anything to execute?
     cp      ' '
     jp      nz,_unkwn1
@@ -1147,8 +1191,7 @@ _unkwn1:
     call    _dselect        ; select specified drive.
     pop     de
     ld      hl,_comfile     ; set the extension to 'COM'.
-    ld      b,3
-    call    _hl2de
+    call    _move3
     call    _openfcb        ; and open this file.
     jp      z,_unkwn9       ; not present?
 
@@ -1187,17 +1230,17 @@ _unkwn4:
     call    _convert        ; convert second file name.
     pop     hl
     ld      a,(hl)          ; and set the drive for this second file.
-    ld      (_fcb+16),A
+    ld      (_fcb+16),a
     xor     a               ; clear record byte in fcb.
-    ld      (_fcb+32),A
+    ld      (_fcb+32),a
     ld      de,TFCB         ; move it into place at(005Ch).
     ld      hl,_fcb
     ld      b,33
     call    _hl2de
     ld      hl,_inbuff+2    ; now move the remainder of the input
 _unkwn5:
-    ld      A,(hl)          ; line down to (0080h). Look for a non blank.
-    or      A               ; or a null.
+    ld      a,(hl)          ; line down to (0080h). Look for a non blank.
+    or      a               ; or a null.
     jp      z,_unkwn6
     cp      ' '
     jp      z,_unkwn6
@@ -1206,20 +1249,20 @@ _unkwn5:
 
     ; Do the line move now. It ends in a null byte.
 _unkwn6:
-    ld      B,0             ; keep a character count.
+    ld      b,0             ; keep a character count.
     ld      de,TBUFF+1      ; data gets put here.
 _unkwn7:
-    ld      A,(hl)          ; move it now.
-    ld      (de),A
-    or      A
+    ld      a,(hl)          ; move it now.
+    ld      (de),a
+    or      a
     jp      z,_unkwn8
-    inc     B
+    inc     b
     inc     hl
     inc     de
     jp      _unkwn7
 _unkwn8:
     ld      a,b             ; now store the character count.
-    ld      (TBUFF),A
+    ld      (TBUFF),a
     call    _crlf           ; clean up the screen.
     call    _stddma         ; set standard transfer address.
     call    _setcdrv        ; reset current drive.
@@ -1281,3 +1324,6 @@ _rtncode:  defb 0               ; status returned from bdos call.
 _cdrive:   defb 0               ; currently active drive.
 _chgdrv:   defb 0               ; change in drives flag (0=no change).
 _nbytes:   defw 0               ; byte counter used by TYPE.
+
+    ; Room for expansion?
+    defb    0,0,0,0,0,0,0,0,0,0,0,0,0

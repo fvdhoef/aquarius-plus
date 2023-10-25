@@ -11,32 +11,75 @@ CONOUT:     jp  _conout
 LIST:       jp  _list
 PUNCH:      jp  _punch
 READER:     jp  _reader
-HOME:       jp  HOME
-SELDSK:     jp  SELDSK
-SETTRK:     jp  SETTRK
-SETSEC:     jp  SETSEC
+HOME:       jp  _home
+SELDSK:     jp  _seldsk
+SETTRK:     jp  _settrk
+SETSEC:     jp  _setsec
 SETDMA:     jp  _setdma
-READ:       jp  READ
-WRITE:      jp  WRITE
-PRSTAT:     jp  PRSTAT
-SECTRN:     jp  SECTRN
+READ:       jp  _read
+WRITE:      jp  _write
+PRSTAT:     jp  _prstat
+SECTRN:     jp  _sectran
 
 ;-----------------------------------------------------------------------------
 ; Variables used by BIOS
 ;-----------------------------------------------------------------------------
-_dma_addr:  dw 0
-_keyval:    db 0
-_text_addr: dw $3000
-_text_col:  db 0
-_text_row:  db 0
+_dma_addr:  defw 0
+_keyval:    defb 0
+_text_addr: defw $3000
+_text_col:  defb 0
+_text_row:  defb 0
+
+_diskno:    defb 0
+_track:     defb 0
+_sector:    defb 0
+
+;-----------------------------------------------------------------------------
+; Disk parameter header
+;-----------------------------------------------------------------------------
+_dph_disk0:
+    defw    _trans  ; XLT
+    defw    0,0,0   ; Scratch area
+    defw    _dirbuf ; Directory operation buffer
+    defw    _dpb    ; Disk parameter block
+    defw    _chk00  ; 
+    defw    _all00
+
+_trans:
+    defb     1,  7, 13, 19  ;SECTORS  1,  2,  3,  4
+    defb    25,  5, 11, 17  ;SECTORS  5,  6,  7,  6
+    defb    23,  3,  9, 15  ;SECTORS  9, 10, 11, 12
+    defb    21,  2,  8, 14  ;SECTORS 13, 14, 15, 16
+    defb    20, 26,  6, 12  ;SECTORS 17, 18, 19, 20
+    defb    18, 24,  4, 10  ;SECTORS 21, 22, 23, 24
+    defb    16, 22          ;SECTORS 25, 26
+
+;-----------------------------------------------------------------------------
+; Disk parameter block
+;-----------------------------------------------------------------------------
+_dpb:
+    defw    26      ; SPT: total number of sectors per track. 
+    defb    3       ; BSH: data allocation block shift factor, determined by the data block allocation size.
+    defb    7       ; BLM: data allocation block mask ((2^BSH)-1).
+    defb    0       ; EXM: extent mask, determined by the data block allocation size and the number of disk blocks.
+    defw    242     ; DSM: determines the total storage capacity of the disk drive.
+    defw    63      ; DRM: determines the total number of directory entries that can be stored on this drive.
+    defb    192     ; AL0: reserved directory blocks
+    defb    0       ; AL1: reserved directory blocks
+    defw    16      ; CKS: size of the directory check vector
+    defw    2       ; OFF: number of reserved tracks at the beginning of the (logical) disk
+
+_dirbuf:    defs    128     ; Scratch directory area
+_chk00:     defs    16      ; Check vector 0
+_all00:     defs    31      ; Allocation vector 0
 
 ;-----------------------------------------------------------------------------
 ; Initialization values for low storage area ($0000-$0007)
 ;-----------------------------------------------------------------------------
 __low_storage_values:
     jp      WBOOT   ; Jump to BIOS
-    db      0       ; IO byte
-    db      0       ; DSK byte (current default drive)
+    defb    0       ; IO byte
+    defb    0       ; DSK byte (current default drive)
     jp      FBASE   ; Jump to BDOS
 __low_storage_values_end:
 
@@ -70,7 +113,27 @@ _init:
     call    esp_send_byte
     call    esp_get_byte
 
+    ; Open disk image
+    ld      a,ESPCMD_OPEN
+    call    esp_cmd
+    ld      a,FO_RDWR           ; Flags (read-only)
+    call    esp_send_byte
+    ld      hl,_filename
+    call    _esp_send_string
+    call    esp_get_byte
+
     ret
+
+_filename: defb "cpm2-1.dsk",0
+
+; Send string in HL
+_esp_send_string:
+    ld      a,(hl)
+    call    esp_send_byte
+    or      a
+    ret     z
+    inc     hl
+    jr      _esp_send_string
 
 ;-----------------------------------------------------------------------------
 ; Copy CP/M to page 36 so it can be reloaded by _load_cpm.
@@ -377,7 +440,7 @@ _list:
 ; Returns A=0 (not ready) or A=$FF (ready).
 ;-----------------------------------------------------------------------------
 _prstat:
-    ld      a,$FF
+    xor     a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -494,3 +557,243 @@ esp_get_bytes:
     inc     hl
     dec     de
     jr      .loop
+
+
+_home:
+    ld      c,0
+    call    SETTRK
+    ret
+
+_seldsk:
+    ld      hl,0            ; error return code
+    ld      a,c
+    ld      (_diskno),a
+    cp      1  ;4           ; must be between 0-3
+    ret     nc
+    ld      hl, _dph_disk0
+    ret
+
+_settrk:
+    ld      a,c
+    ld      (_track),a
+    ret
+
+_setsec:
+    ld      a,c
+    ld      (_sector),a
+    ret
+
+_sectran:
+    ex      de,hl
+    add     hl,bc
+    ld      l,(hl)
+    ld      h,0
+    ret
+
+_read:
+    call    _seek_disk
+    xor     a
+    ld      hl,(_dma_addr)
+    ld      de,128
+    call    _esp_read_bytes
+    xor     a
+    ret
+
+_write:
+    call    _seek_disk
+    xor     a
+    ld      hl,(_dma_addr)
+    ld      de,128
+    call    _esp_write_bytes
+    xor     a
+    ret
+
+_seek_disk:
+    ld      d,0
+    ld      a,(_track)
+    ld      e,a
+    ld      bc,26
+    call    _mul16
+    ld      d,0
+    ld      a,(_sector)
+    dec     a
+    ld      e,a
+    add     hl,de
+    ex      de,hl
+    xor     a
+    jp      _seek
+
+; This routine performs the operation DEHL=BC*DE
+_mul16:
+    ld hl,0
+    ld a,16
+.1: add hl,hl
+    rl e
+    rl d
+    jp nc,.2
+    add hl,bc
+    jp nc,.2
+    inc de      ; This instruction (with the jump) is like an "ADC DE,0"
+.2: dec a
+    jp nz,.1
+    ret
+
+
+;-----------------------------------------------------------------------------
+; Seek to record DE (file descriptor in A)
+;-----------------------------------------------------------------------------
+_seek:
+    ld      b,a
+    ld      a,ESPCMD_SEEK
+    call    esp_cmd
+    ld      a,b
+    call    esp_send_byte   ; File descriptor
+
+    ; a = (de << 7) & 0xFF
+    ld      a,e
+    rrca
+    and     $80
+    call    esp_send_byte
+
+    ; a = (de >> 1) & 0xFF
+    ld      a,d
+    rra                     ; Shift lowest bit in B into carry
+    ld      a,e
+    rra
+    call    esp_send_byte
+
+    ; a = (de >> 9) & 0xFF
+    ld      a,d
+    rra
+    and     $7F
+    call    esp_send_byte
+
+    xor     a
+    call    esp_send_byte
+
+    call    esp_get_byte
+    ret
+
+;-----------------------------------------------------------------------------
+; Read bytes
+; Input:  A: file descriptor
+;         HL: destination address
+;         DE: number of bytes to read
+; Output: HL: next address (start address if no bytes read)
+;         DE: number of bytes actually read
+;
+; Clobbered registers: A, HL, DE
+;-----------------------------------------------------------------------------
+_esp_read_bytes:
+    ld      b,a
+    ld      a,ESPCMD_READ
+    call    esp_cmd
+    ld      a,b
+
+    ; Send file descriptor
+    call    esp_send_byte
+
+    ; Send read size
+    ld      a,e
+    call    esp_send_byte
+    ld      a,d
+    call    esp_send_byte
+
+    ; Get result
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Get number of bytes actual read
+    call    esp_get_byte
+    ld      e,a
+    call    esp_get_byte
+    ld      d,a
+
+    push    de
+
+.loop:
+    ; Done reading? (DE=0)
+    ld      a,d
+    or      a,e
+    jr      z,.done
+
+    call    esp_get_byte
+    ld      (hl),a
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+
+    xor     a
+    ret
+
+;-----------------------------------------------------------------------------
+; Send bytes
+; Input:  HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;-----------------------------------------------------------------------------
+_esp_send_bytes:
+    push    de
+
+.loop:
+    ; Done sending? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    ld      a, (hl)
+    call    esp_send_byte
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+    ret
+
+;-----------------------------------------------------------------------------
+; Write bytes
+; Input:  A: file descriptor
+;         HL: source address
+;         DE: number of bytes to write
+; Output: HL: next address
+;         DE: number of bytes actually written
+;
+; Clobbered registers: A, HL, DE
+;-----------------------------------------------------------------------------
+_esp_write_bytes:
+    ld      b,a
+    ld      a, ESPCMD_WRITE
+    call    esp_cmd
+    ld      a,b
+
+    ; Send file descriptor
+    call    esp_send_byte
+
+    ; Send write size
+    ld      a, e
+    call    esp_send_byte
+    ld      a, d
+    call    esp_send_byte
+
+    ; Send bytes
+    call    _esp_send_bytes
+
+    ; Get result
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Get number of bytes actual written
+    call    esp_get_byte
+    ld      e, a
+    call    esp_get_byte
+    ld      d, a
+
+    xor     a
+    ret

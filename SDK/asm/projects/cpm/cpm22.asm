@@ -38,8 +38,17 @@ DEL:    equ     $7F             ; rubout
     ; Set origin for CP/M
     org     (MEM - 7) * 1024
 
+    assert $ == $DC00
+
 ccp:
     include "ccp.inc"
+
+    assert $ == $E400
+
+; Note that the following six bytes must match those at
+; (PATTRN1) or cp/m will HALT. Why?
+PATTRN2:    defb    0,22,0,0,0,0    ; (* serial number bytes *).
+
 bdos:
     include "bdos.inc"
 
@@ -48,7 +57,3 @@ bdos:
 
 bios:
     include "bios.inc"
-
-    assert ccp  == $DC00
-    ; assert bdos == $E400
-    ; assert bios == $F200
