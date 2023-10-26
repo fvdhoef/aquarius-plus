@@ -1008,12 +1008,9 @@ void AqUartProtocol::cmdGetCwd() {
     txFifoWrite(0);
     int len = (int)currentPath.size();
 
-    if (len == 0) {
-        txFifoWrite('/');
-    } else {
-        for (int i = 0; i < len; i++) {
-            txFifoWrite(currentPath[i]);
-        }
+    txFifoWrite('/');
+    for (int i = 0; i < len; i++) {
+        txFifoWrite(currentPath[i]);
     }
     txFifoWrite(0);
 }
