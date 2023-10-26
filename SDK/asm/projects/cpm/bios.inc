@@ -20,6 +20,7 @@ READ:       jp  _read
 WRITE:      jp  _write
 PRSTAT:     jp  _prstat
 SECTRN:     jp  _sectran
+SETIMG:     jp  _setimg
 
 ;-----------------------------------------------------------------------------
 ; Variables used by BIOS
@@ -31,28 +32,62 @@ _text_col:  defb 0
 _text_row:  defb 0
 
 _diskno:    defb 0
+_prev_disk: defb 0
 _track:     defb 0
 _sector:    defb 0
+
+;-----------------------------------------------------------------------------
+; Disk image paths
+;-----------------------------------------------------------------------------
+MAX_DISKS:  equ 4
+
+_path_a:    defb    "/cpm2-1.dsk",0
+            defs    64-($-_path_a)
+_path_b:    defb    "/cpm2-2.dsk",0
+            defs    64-($-_path_b)
+_path_c:    defs    64
+_path_d:    defs    64
 
 ;-----------------------------------------------------------------------------
 ; Disk parameter header
 ;-----------------------------------------------------------------------------
 _dph_disk0:
-    defw    _trans  ; XLT
+    defw    _trans  ; Address of XLT
     defw    0,0,0   ; Scratch area
-    defw    _dirbuf ; Directory operation buffer
-    defw    _dpb    ; Disk parameter block
-    defw    _chk00  ; 
-    defw    _all00
+    defw    _dirbuf ; Address of Directory operation buffer
+    defw    _dpb    ; Address of Disk parameter block
+    defw    _chk00  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all00  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+_dph_disk1:
+    defw    _trans  ; Address of XLT
+    defw    0,0,0   ; Scratch area
+    defw    _dirbuf ; Address of Directory operation buffer
+    defw    _dpb    ; Address of Disk parameter block
+    defw    _chk01  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all01  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+_dph_disk2:
+    defw    _trans  ; Address of XLT
+    defw    0,0,0   ; Scratch area
+    defw    _dirbuf ; Address of Directory operation buffer
+    defw    _dpb    ; Address of Disk parameter block
+    defw    _chk02  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all02  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+_dph_disk3:
+    defw    _trans  ; Address of XLT
+    defw    0,0,0   ; Scratch area
+    defw    _dirbuf ; Address of Directory operation buffer
+    defw    _dpb    ; Address of Disk parameter block
+    defw    _chk03  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all03  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
 
 _trans:
-    defb     1,  7, 13, 19  ;SECTORS  1,  2,  3,  4
-    defb    25,  5, 11, 17  ;SECTORS  5,  6,  7,  6
-    defb    23,  3,  9, 15  ;SECTORS  9, 10, 11, 12
-    defb    21,  2,  8, 14  ;SECTORS 13, 14, 15, 16
-    defb    20, 26,  6, 12  ;SECTORS 17, 18, 19, 20
-    defb    18, 24,  4, 10  ;SECTORS 21, 22, 23, 24
-    defb    16, 22          ;SECTORS 25, 26
+    defb     1,  7, 13, 19  ; sectors  1,  2,  3,  4
+    defb    25,  5, 11, 17  ; sectors  5,  6,  7,  6
+    defb    23,  3,  9, 15  ; sectors  9, 10, 11, 12
+    defb    21,  2,  8, 14  ; sectors 13, 14, 15, 16
+    defb    20, 26,  6, 12  ; sectors 17, 18, 19, 20
+    defb    18, 24,  4, 10  ; sectors 21, 22, 23, 24
+    defb    16, 22          ; sectors 25, 26
 
 ;-----------------------------------------------------------------------------
 ; Disk parameter block
@@ -70,18 +105,14 @@ _dpb:
     defw    2       ; OFF: number of reserved tracks at the beginning of the (logical) disk
 
 _dirbuf:    defs    128     ; Scratch directory area
-_chk00:     defs    16      ; Check vector 0
 _all00:     defs    31      ; Allocation vector 0
-
-;-----------------------------------------------------------------------------
-; Initialization values for low storage area ($0000-$0007)
-;-----------------------------------------------------------------------------
-__low_storage_values:
-    jp      WBOOT   ; Jump to BIOS
-    defb    0       ; IO byte
-    defb    0       ; DSK byte (current default drive)
-    jp      FBASE   ; Jump to BDOS
-__low_storage_values_end:
+_all01:     defs    31      ; Allocation vector 1
+_all02:     defs    31      ; Allocation vector 2
+_all03:     defs    31      ; Allocation vector 3
+_chk00:     defs    16      ; Check vector 0
+_chk01:     defs    16      ; Check vector 1
+_chk02:     defs    16      ; Check vector 2
+_chk03:     defs    16      ; Check vector 3
 
 ;-----------------------------------------------------------------------------
 ; Initialize
@@ -90,16 +121,6 @@ _init:
     ; Set video mode to 80-columns mode text with remapped border character
     ld      a,$61
     out     (IO_VCTRL),a
-
-    ; Setup low storage area
-    ld      de,$0
-    ld      hl,__low_storage_values
-    ld      bc,__low_storage_values_end - __low_storage_values
-    ldir
-
-    ; Default dma address is $80
-    ld      bc,$80
-    call    _setdma
 
     ; Close any open descriptor
     ld      a,ESPCMD_CLOSEALL
@@ -111,15 +132,6 @@ _init:
     call    esp_cmd
     ld      a,7
     call    esp_send_byte
-    call    esp_get_byte
-
-    ; Open disk image
-    ld      a,ESPCMD_OPEN
-    call    esp_cmd
-    ld      a,FO_RDWR           ; Flags (read-only)
-    call    esp_send_byte
-    ld      hl,_filename
-    call    _esp_send_string
     call    esp_get_byte
 
     ret
@@ -134,6 +146,44 @@ _esp_send_string:
     ret     z
     inc     hl
     jr      _esp_send_string
+
+;-----------------------------------------------------------------------------
+; Set image filename for given disk
+;
+; C  = disk drive (0-0-(MAX_DISKS-1))
+; HL = zero-terminated string (max 63 characters + 1)
+;-----------------------------------------------------------------------------
+_setimg:
+    ld      a,c
+    ld      (_diskno),a
+    cp      MAX_DISKS       ; must be between 0-(MAX_DISKS-1)
+    ret     nc
+
+    push    hl
+
+    ; Calculate address of filename buffer
+    ld      a,c
+    ld      l,a
+    ld      h,0
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    ld      de,_path_a
+    add     hl,de
+    ex      de,hl
+
+    pop     hl
+
+    ; Copy 63 bytes and zero terminate
+    ld      bc,63
+    ldir
+    xor     a
+    ld      (de),a
+
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Copy CP/M to page 36 so it can be reloaded by _load_cpm.
@@ -179,7 +229,7 @@ _boot:
     call    _init           ; Initialize
     ld      bc,.bootstr     ; Boot message
     call    PRTMESG
-    jr      _go_ccp
+    jr      _go_cpm
 
 .bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
 
@@ -195,10 +245,29 @@ _wboot:
     call    _load_cpm       ; Load CP/M
     call    _init           ; Initialize
 
-_go_ccp:
-    ; Jump to CCP
-    ld      c,0
-    jp      CBASE+3     ; Clear input buffer before starting CCP
+;-----------------------------------------------------------------------------
+; Jump to CPM
+;-----------------------------------------------------------------------------
+_go_cpm:
+    ; Set up warm boot entry point
+    ld      a,$C3
+    ld      (0),a
+    ld      hl,WBOOT
+    ld      (1),hl
+
+    ; Set up BDOS entry point
+    ld      (5),a
+    ld      hl,BDOS
+    ld      (6),hl
+
+    ; Set default DMA address
+    ld      bc,$80
+    call    SETDMA
+
+    ; Get current disk number and jump to CCP
+    ld      a,(4)
+    ld      c,a
+    jp      CCP
 
 ;-----------------------------------------------------------------------------
 ; CONST - Console status
@@ -558,31 +627,117 @@ esp_get_bytes:
     dec     de
     jr      .loop
 
-
+;-----------------------------------------------------------------------------
+; _home
+;-----------------------------------------------------------------------------
 _home:
     ld      c,0
     call    SETTRK
     ret
 
+;-----------------------------------------------------------------------------
+; _seldsk
+;
+; C = disk drive (0:A, 1:B, ..., 15:P)
+;
+; Returns:
+; HL = Address of 16-byte Disk Parameter Header (DPH)
+; On error, HL = $0000
+;-----------------------------------------------------------------------------
 _seldsk:
-    ld      hl,0            ; error return code
+    ; Select disk given by register c
     ld      a,c
     ld      (_diskno),a
-    cp      1  ;4           ; must be between 0-3
-    ret     nc
-    ld      hl, _dph_disk0
+    cp      MAX_DISKS       ; must be between 0-(MAX_DISKS-1)
+    jr      nc,.err
+
+    ; Close any open descriptor
+    ld      a,ESPCMD_CLOSEALL
+    call    esp_cmd
+    call    esp_get_byte
+
+    ; Open disk image
+    ld      a,ESPCMD_OPEN
+    call    esp_cmd
+    ld      a,FO_RDWR           ; Flags (read-only)
+    call    esp_send_byte
+
+    ; Get filename of disk image
+    ld      a,(_diskno)
+    ld      l,a
+    ld      h,0
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    ld      de,_path_a
+    add     hl,de
+    call    _esp_send_string
+    call    esp_get_byte
+    or      a
+    jr      nz,.err
+
+    ; Compute proper disk parameter header address (hl = _dph_disk0 + _diskno * 8)
+    ld      a,(_diskno)
+    ld      l,a
+    ld      h,0
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    ld      de,_dph_disk0
+    add     hl,de
+
+    ; Store current disk number, so we can restore it if a next disk selection fails
+    ld      a,(_diskno)
+    ld      (_prev_disk),a
+
     ret
 
+.err:
+    ; Restore disk number
+    ld      a,(_prev_disk)
+    ld      (4),a
+
+    ; Report error (hl=0)
+    ld      hl,0
+    ret
+
+;-----------------------------------------------------------------------------
+; _settrk
+;
+; BC = track number for subsequent disk accesses on the currently selected
+;      drive. The sector number in BC is the same as the number returned
+;      from the SECTRAN entry point. You can choose to seek the selected
+;      track at this time or delay the seek until the next read or write
+;      actually occurs. Register BC can take on values in the range 0-76
+;      corresponding to valid track numbers for standard floppy disk drives
+;      and 0-65535 for nonstandard disk subsystems.
+;-----------------------------------------------------------------------------
 _settrk:
     ld      a,c
     ld      (_track),a
     ret
 
+;-----------------------------------------------------------------------------
+; _setsec
+;
+; BC = sector number (1-26) for subsequent disk accesses on the currently;
+;      selected drive. The sector number in BC is the same as the number
+;      returned from the SECTRAN entry point. You can choose to send this
+;      information to the controller at this point or delay sector selection
+;      until a read or write operation occurs.
+;-----------------------------------------------------------------------------
 _setsec:
     ld      a,c
     ld      (_sector),a
     ret
 
+;-----------------------------------------------------------------------------
+; _sectran
+;-----------------------------------------------------------------------------
 _sectran:
     ex      de,hl
     add     hl,bc
@@ -590,6 +745,9 @@ _sectran:
     ld      h,0
     ret
 
+;-----------------------------------------------------------------------------
+; _read
+;-----------------------------------------------------------------------------
 _read:
     call    _seek_disk
     xor     a
@@ -599,6 +757,9 @@ _read:
     xor     a
     ret
 
+;-----------------------------------------------------------------------------
+; _write
+;-----------------------------------------------------------------------------
 _write:
     call    _seek_disk
     xor     a
@@ -608,6 +769,9 @@ _write:
     xor     a
     ret
 
+;-----------------------------------------------------------------------------
+; _seek_disk
+;-----------------------------------------------------------------------------
 _seek_disk:
     ld      d,0
     ld      a,(_track)
@@ -623,7 +787,9 @@ _seek_disk:
     xor     a
     jp      _seek
 
+;-----------------------------------------------------------------------------
 ; This routine performs the operation DEHL=BC*DE
+;-----------------------------------------------------------------------------
 _mul16:
     ld hl,0
     ld a,16
@@ -637,7 +803,6 @@ _mul16:
 .2: dec a
     jp nz,.1
     ret
-
 
 ;-----------------------------------------------------------------------------
 ; Seek to record DE (file descriptor in A)
