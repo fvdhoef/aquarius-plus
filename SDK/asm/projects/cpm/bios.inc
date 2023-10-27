@@ -20,7 +20,8 @@ READ:       jp  _read
 WRITE:      jp  _write
 PRSTAT:     jp  _prstat
 SECTRN:     jp  _sectran
-SETIMG:     jp  _setimg
+SETDISK:    jp  _setdisk
+GETDISK:    jp  _getdisk
 
 ;-----------------------------------------------------------------------------
 ; Variables used by BIOS
@@ -31,6 +32,7 @@ _text_addr: defw $3000
 _text_col:  defb 0
 _text_row:  defb 0
 
+_diskfd:    defb 0
 _diskno:    defb 0
 _prev_disk: defb 0
 _track:     defb 0
@@ -138,7 +140,9 @@ _init:
 
 _filename: defb "cpm2-1.dsk",0
 
+;-----------------------------------------------------------------------------
 ; Send string in HL
+;-----------------------------------------------------------------------------
 _esp_send_string:
     ld      a,(hl)
     call    esp_send_byte
@@ -148,18 +152,18 @@ _esp_send_string:
     jr      _esp_send_string
 
 ;-----------------------------------------------------------------------------
-; Set image filename for given disk
+; Get image filename for given disk
 ;
 ; C  = disk drive (0-0-(MAX_DISKS-1))
 ; HL = zero-terminated string (max 63 characters + 1)
 ;-----------------------------------------------------------------------------
-_setimg:
+_getdisk:
+    ; Check disk drive range
+    ld      hl,0
     ld      a,c
     ld      (_diskno),a
     cp      MAX_DISKS       ; must be between 0-(MAX_DISKS-1)
     ret     nc
-
-    push    hl
 
     ; Calculate address of filename buffer
     ld      a,c
@@ -173,16 +177,26 @@ _setimg:
     add     hl,hl
     ld      de,_path_a
     add     hl,de
-    ex      de,hl
+    ret
 
+;-----------------------------------------------------------------------------
+; Set image filename for given disk
+;
+; C  = disk drive (0-0-(MAX_DISKS-1))
+; HL = zero-terminated string (max 63 characters + 1)
+;-----------------------------------------------------------------------------
+_setdisk:
+    push    hl
+    call    _getdisk
+    ex      de,hl
     pop     hl
+    ret     nc
 
     ; Copy 63 bytes and zero terminate
     ld      bc,63
     ldir
     xor     a
     ld      (de),a
-
     ret
 
 ;-----------------------------------------------------------------------------
@@ -651,9 +665,11 @@ _seldsk:
     cp      MAX_DISKS       ; must be between 0-(MAX_DISKS-1)
     jr      nc,.err
 
-    ; Close any open descriptor
-    ld      a,ESPCMD_CLOSEALL
+    ; Close file descriptor
+    ld      a,ESPCMD_CLOSE
     call    esp_cmd
+    ld      a,(_diskfd)
+    call    esp_send_byte
     call    esp_get_byte
 
     ; Open disk image
@@ -678,6 +694,7 @@ _seldsk:
     call    esp_get_byte
     or      a
     jr      nz,.err
+    ld      (_diskfd),a
 
     ; Compute proper disk parameter header address (hl = _dph_disk0 + _diskno * 8)
     ld      a,(_diskno)
@@ -750,7 +767,7 @@ _sectran:
 ;-----------------------------------------------------------------------------
 _read:
     call    _seek_disk
-    xor     a
+    ld      a,(_diskfd)
     ld      hl,(_dma_addr)
     ld      de,128
     call    _esp_read_bytes
@@ -762,7 +779,7 @@ _read:
 ;-----------------------------------------------------------------------------
 _write:
     call    _seek_disk
-    xor     a
+    ld      a,(_diskfd)
     ld      hl,(_dma_addr)
     ld      de,128
     call    _esp_write_bytes
@@ -784,7 +801,7 @@ _seek_disk:
     ld      e,a
     add     hl,de
     ex      de,hl
-    xor     a
+    ld      a,(_diskfd)
     jp      _seek
 
 ;-----------------------------------------------------------------------------
