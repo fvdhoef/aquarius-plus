@@ -47,42 +47,47 @@ _path_a:    defb    "/cpm2-1.dsk",0
             defs    64-($-_path_a)
 _path_b:    defb    "/cpm2-2.dsk",0
             defs    64-($-_path_b)
-_path_c:    defs    64
-_path_d:    defs    64
+_path_c:    defb    "/disk-c.dsk",0
+            defs    64-($-_path_c)
+_path_d:    defb    "/disk.dsk",0
+            defs    64-($-_path_d)
 
 ;-----------------------------------------------------------------------------
 ; Disk parameter header
 ;-----------------------------------------------------------------------------
 _dph_disk0:
-    defw    _trans  ; Address of XLT
-    defw    0,0,0   ; Scratch area
-    defw    _dirbuf ; Address of Directory operation buffer
-    defw    _dpb    ; Address of Disk parameter block
-    defw    _chk00  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
-    defw    _all00  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+    defw    _xlt_skew6  ; Address of XLT
+    defw    0,0,0       ; Scratch area
+    defw    _dirbuf     ; Address of Directory operation buffer
+    defw    _dpb_ibm8in ; Address of Disk parameter block
+    defw    _chk00      ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all00      ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
 _dph_disk1:
-    defw    _trans  ; Address of XLT
-    defw    0,0,0   ; Scratch area
-    defw    _dirbuf ; Address of Directory operation buffer
-    defw    _dpb    ; Address of Disk parameter block
-    defw    _chk01  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
-    defw    _all01  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+    defw    _xlt_skew6  ; Address of XLT
+    defw    0,0,0       ; Scratch area
+    defw    _dirbuf     ; Address of Directory operation buffer
+    defw    _dpb_ibm8in ; Address of Disk parameter block
+    defw    _chk01      ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all01      ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
 _dph_disk2:
-    defw    _trans  ; Address of XLT
-    defw    0,0,0   ; Scratch area
-    defw    _dirbuf ; Address of Directory operation buffer
-    defw    _dpb    ; Address of Disk parameter block
-    defw    _chk02  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
-    defw    _all02  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+    defw    _xlt_skew6  ; Address of XLT
+    defw    0,0,0       ; Scratch area
+    defw    _dirbuf     ; Address of Directory operation buffer
+    defw    _dpb_ibm8in ; Address of Disk parameter block
+    defw    _chk02      ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all02      ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
 _dph_disk3:
-    defw    _trans  ; Address of XLT
-    defw    0,0,0   ; Scratch area
-    defw    _dirbuf ; Address of Directory operation buffer
-    defw    _dpb    ; Address of Disk parameter block
-    defw    _chk03  ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
-    defw    _all03  ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
+    defw    _xlt_skew6  ; Address of XLT
+    defw    0,0,0       ; Scratch area
+    defw    _dirbuf     ; Address of Directory operation buffer
+    defw    _dpb_ibm8in ; Address of Disk parameter block
+    defw    _chk03      ; Address of a scratch pad area used for software check for changed disks. This address is different for each DPH.
+    defw    _all03      ; Address of a scratch pad area used by the BDOS to keep disk storage allocation information. This address is different for each DPH.
 
-_trans:
+;-----------------------------------------------------------------------------
+; Skew of 6 as used by Single Sided 8" floppy format
+;-----------------------------------------------------------------------------
+_xlt_skew6:
     defb     1,  7, 13, 19  ; sectors  1,  2,  3,  4
     defb    25,  5, 11, 17  ; sectors  5,  6,  7,  6
     defb    23,  3,  9, 15  ; sectors  9, 10, 11, 12
@@ -92,9 +97,10 @@ _trans:
     defb    16, 22          ; sectors 25, 26
 
 ;-----------------------------------------------------------------------------
-; Disk parameter block
+; Disk parameter block for original CP/M format
+; (Single Sided 8" floppy, 256256 bytes)
 ;-----------------------------------------------------------------------------
-_dpb:
+_dpb_ibm8in:
     defw    26      ; SPT: total number of sectors per track. 
     defb    3       ; BSH: data allocation block shift factor, determined by the data block allocation size.
     defb    7       ; BLM: data allocation block mask ((2^BSH)-1).
@@ -177,6 +183,7 @@ _getdisk:
     add     hl,hl
     ld      de,_path_a
     add     hl,de
+    scf                     ; Set carry to indicate success
     ret
 
 ;-----------------------------------------------------------------------------
@@ -753,13 +760,28 @@ _setsec:
     ret
 
 ;-----------------------------------------------------------------------------
-; _sectran
+; _sectran   Logical-to-physical sector translation
+;
+; BC = logical sector number
+; DE = translate table address
+;
+; HL = resulting sector number
 ;-----------------------------------------------------------------------------
 _sectran:
+    ld      a,d
+    or      a,e
+    jr      z,.notran
+
     ex      de,hl
     add     hl,bc
     ld      l,(hl)
     ld      h,0
+    ret
+
+.notran:
+    ld      h,b
+    ld      l,c
+    inc     hl
     ret
 
 ;-----------------------------------------------------------------------------
