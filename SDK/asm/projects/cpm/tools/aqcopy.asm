@@ -15,6 +15,17 @@ _fd:    defb 0      ; ESP file
 _idx:   defb 0
 _tmp:   defb 0
 
+_dir_dd:    defb 0
+
+_dirent:
+_dirent_date: defw 0
+_dirent_time: defw 0
+_dirent_attr: defb 0
+_dirent_size: defd 0
+_dirent_name: defs 8
+_dirent_ext:  defs 3
+_dirent_end:
+
 ;-----------------------------------------------------------------------------
 ; Entry point
 ;-----------------------------------------------------------------------------
@@ -63,7 +74,18 @@ _err_create:
     jp      0
 
 .str:
-    defb "Error: Creating file failed.",13,10,0
+    defb " - Error: Creating file failed.",13,10,0
+
+;-----------------------------------------------------------------------------
+; _err_write
+;-----------------------------------------------------------------------------
+_err_write:
+    ld      hl,.str
+    call    _puts
+    jp      0
+
+.str:
+    defb " - Error: Writing file failed.",13,10,0
 
 ;-----------------------------------------------------------------------------
 ; _search_idx
@@ -146,13 +168,20 @@ _copy_from_cpm:
     jr      _copy_from_cpm
 
 ;-----------------------------------------------------------------------------
-; _copy_file_from_cpm
+; _print_fcb_name
 ;-----------------------------------------------------------------------------
-_copy_file_from_cpm:
+_print_fcb_name:
     ; Print entry
     ld      hl,_fcb+1
     ld      c,11
     call    _put_bytes
+    ret
+
+;-----------------------------------------------------------------------------
+; _copy_file_from_cpm
+;-----------------------------------------------------------------------------
+_copy_file_from_cpm:
+    call    _print_fcb_name
 
     ; Open file
     ld      de,_fcb
@@ -203,6 +232,119 @@ _copy_file_from_cpm:
 ; _copy_to_cpm
 ;-----------------------------------------------------------------------------
 _copy_to_cpm:
+    ld      a,ESPCMD_OPENDIR83
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    call    esp_get_byte
+    ld      (_dir_dd),a
+
+    ; Read directory entry
+.1: call    _read_dirent
+    jr      nz,.done
+    ld      a,(_dirent_attr)
+    bit     0,a
+    jr      nz,.1
+
+    ; Match filename against FCB
+    ld      hl,_dirent_name
+    ld      de,$5D
+    ld      c,11
+.2: ld      a,(de)
+    cp      '?'
+    jr      z,.nextchar
+    cp      (hl)
+    jr      nz,.1
+.nextchar:
+    inc     hl
+    inc     de
+    dec     c
+    jr      nz,.2
+
+    ; Clear FCB
+    ld      hl,_fcb
+    ld      bc,36
+    xor     a
+    call    _memset
+
+    ; Copy name into FCB
+    ld      hl,_dirent_name
+    ld      de,_fcb+1
+    ld      bc,11
+    ldir
+
+    call    _copy_file_to_cpm
+
+    jr      .1
+
+.done:
+    ld      a,ESPCMD_CLOSEDIR
+    call    esp_cmd
+    ld      a,(_dir_dd)
+    call    esp_send_byte
+    call    esp_get_byte
+    ret
+
+;-----------------------------------------------------------------------------
+; _copy_file_to_cpm
+;-----------------------------------------------------------------------------
+_copy_file_to_cpm:
+    call    _print_fcb_name
+
+    ; Delete file
+    ld      de,_fcb
+    call    _del_file
+
+    ; Open file
+    ld      a,ESPCMD_OPEN
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    ld      hl,_fcb+1
+    call    _send_filename
+    call    esp_get_byte
+    or      a
+    jp      m,_not_found
+    ld      (_fd),a
+
+    ; Create new file
+    ld      de,_fcb
+    call    _make_file
+    cp      $FF
+    jp      z,_err_create
+
+    ; Read file on ESP
+.1: ld      hl,$80
+    ld      de,$80
+    call    esp_read_bytes
+    ld      a,d
+    or      e
+    jr      z,.done
+
+    ; Write to file on CP/M
+    ld      de,_fcb
+    call    _write_seq
+    or      a
+    jp      nz,_err_write
+    jr      .1
+
+.done:
+    ; Close file
+    ld      de,_fcb
+    call    _close_file
+
+    ; Close file
+    ld      a,ESPCMD_CLOSE
+    call    esp_cmd
+    ld      a,(_fd)
+    call    esp_send_byte
+    call    esp_get_byte
+
+    ; Newline
+    ld      a,13
+    call    _putchar
+    ld      a,10
+    call    _putchar
     ret
 
 ;-----------------------------------------------------------------------------
@@ -278,6 +420,13 @@ _open_file:
     jp      5
 
 ;-----------------------------------------------------------------------------
+; _close_file
+;-----------------------------------------------------------------------------
+_close_file:
+    ld      c,16
+    jp      5
+
+;-----------------------------------------------------------------------------
 ; _search_first
 ;-----------------------------------------------------------------------------
 _search_first:
@@ -292,12 +441,32 @@ _search_next:
     jp      5
 
 ;-----------------------------------------------------------------------------
+; _del_file
+;-----------------------------------------------------------------------------
+_del_file:
+    ld      c,19
+    jp      5
+
+;-----------------------------------------------------------------------------
 ; _read_seq
 ;-----------------------------------------------------------------------------
 _read_seq:
     ld      c,20
     jp      5
 
+;-----------------------------------------------------------------------------
+; _write_seq
+;-----------------------------------------------------------------------------
+_write_seq:
+    ld      c,21
+    jp      5
+
+;-----------------------------------------------------------------------------
+; _make_file
+;-----------------------------------------------------------------------------
+_make_file:
+    ld      c,22
+    jp      5
 
 ;-----------------------------------------------------------------------------
 ; Issue command to ESP
@@ -375,6 +544,61 @@ esp_send_bytes:
     ret
 
 ;-----------------------------------------------------------------------------
+; Read bytes
+; Input:  A: file descriptor
+;         HL: destination address
+;         DE: number of bytes to read
+; Output: HL: next address (start address if no bytes read)
+;         DE: number of bytes actually read
+;
+; Clobbered registers: A, HL, DE
+;-----------------------------------------------------------------------------
+esp_read_bytes:
+    ld      a,ESPCMD_READ
+    call    esp_cmd
+
+    ; Send file descriptor
+    ld      a,(_fd)
+    call    esp_send_byte
+
+    ; Send read size
+    ld      a,e
+    call    esp_send_byte
+    ld      a,d
+    call    esp_send_byte
+
+    ; Get result
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Get number of bytes actual read
+    call    esp_get_byte
+    ld      e,a
+    call    esp_get_byte
+    ld      d,a
+
+    push    de
+
+.loop:
+    ; Done reading? (DE=0)
+    ld      a,d
+    or      a,e
+    jr      z,.done
+
+    call    esp_get_byte
+    ld      (hl),a
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+
+    xor     a
+    ret
+
+;-----------------------------------------------------------------------------
 ; Write bytes
 ; Input:  HL: source address
 ;         DE: number of bytes to write
@@ -448,4 +672,92 @@ _send_filename:
 .zterm:
     xor     a
     call    esp_send_byte
+    ret
+
+;-----------------------------------------------------------------------------
+; Get bytes
+; Input:  HL: destination address
+;         DE: number of bytes to read
+;-----------------------------------------------------------------------------
+esp_get_bytes:
+.loop:
+    ; Done reading? (DE=0)
+    ld      a,d
+    or      a,e
+    ret     z
+
+    call    esp_get_byte
+    ld      (hl),a
+    inc     hl
+    dec     de
+    jr      .loop
+
+;-----------------------------------------------------------------------------
+; _read_dirent
+;-----------------------------------------------------------------------------
+_read_dirent:
+    ld      a,ESPCMD_READDIR
+    call    esp_cmd
+    ld      a,(_dir_dd)
+    call    esp_send_byte
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Read date/time/attribute
+    ld      hl,_dirent
+    ld      de,9
+    call    esp_get_bytes
+
+    ld      hl,_dirent_name
+
+    ; Read filename
+    ld      c,8
+.1: call    esp_get_byte
+    cp      '.'
+    jr      z,.pad2         ; Dot
+    or      a
+    jr      z,.pad1         ; Zero-byte
+    ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.1
+
+    call    esp_get_byte    ; Dot
+    or      a
+    jr      nz,.ext
+
+.pad1:
+    inc     c
+    inc     c
+    inc     c
+    jr      .pad3
+
+    ; Pad filename with spaces
+.pad2:
+    ld      a,' '
+.2: ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.2
+
+    ; Read extension
+.ext:
+    ld      c,3
+.3: call    esp_get_byte
+    or      a
+    jr      z,.pad3         ; Zero-byte
+    ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.3
+    ret
+
+.pad3:
+    ; Pad extension with spaces
+    ld      a,' '
+.4: ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.4
     ret
