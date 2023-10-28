@@ -16,17 +16,17 @@ _entry:
     ; Argument given?
     ld      a,(hl)
     or      a
-    jr      z, .show_path
+    jr      z,.show_path
 
     ; Change directory
-    ld      a, ESPCMD_CHDIR
+    ld      a,ESPCMD_CHDIR
     call    esp_cmd
     call    esp_send_str
     call    esp_get_byte
 
     ; Show new path
 .show_path:
-    ld      a, ESPCMD_GETCWD
+    ld      a,ESPCMD_GETCWD
     call    esp_cmd
     call    esp_get_byte
 .3: call    esp_get_byte

@@ -26,7 +26,7 @@ _count: defb 0
 ; Entry point
 ;-----------------------------------------------------------------------------
 _entry:
-    ld      a, ESPCMD_OPENDIR83
+    ld      a,ESPCMD_OPENDIR83
     call    esp_cmd
 
     ; Get argument, skip spaces
@@ -38,7 +38,7 @@ _entry:
 
     call    _dir_listing
 
-    ld      a, ESPCMD_CLOSEDIR
+    ld      a,ESPCMD_CLOSEDIR
     call    esp_cmd
     ld      a,(_dir_dd)
     call    esp_send_byte
@@ -67,11 +67,11 @@ _dir_listing:
 .1: call    _read_dirent
     ret     nz
 
-    ; Print 'S' at start of line
+    ; Print 'E' at start of line
     ld      a,(_count)
     or      a
-    jr      nz, .6
-    ld      a,'S'
+    jr      nz,.6
+    ld      a,'E'
     call    _putchar
 
     ; Print ':' separator
