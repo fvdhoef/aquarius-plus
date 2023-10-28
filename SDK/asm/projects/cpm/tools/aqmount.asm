@@ -41,6 +41,8 @@ _entry:
     ; Get path
     inc     hl
     ld      a,(hl)
+    or      a
+    jr      z,.unmount
     cp      ' '
     jr      nz,_invalid_argument
     call    _skip_spaces
@@ -102,6 +104,7 @@ _entry:
     jp      nz,_invalid_image
 
     ; Set disk
+.set_disk
     ld      hl,_path
     ld      a,(_disk)
     ld      c,a
@@ -110,6 +113,11 @@ _entry:
 .done:
     call    _print_disks
     ret
+
+.unmount:
+    xor     a
+    ld      (_path),a
+    jr      .set_disk
 
 ;-----------------------------------------------------------------------------
 ; _invalid_argument

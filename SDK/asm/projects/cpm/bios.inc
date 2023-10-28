@@ -43,13 +43,11 @@ _sector:    defb 0
 ;-----------------------------------------------------------------------------
 MAX_DISKS:  equ 4
 
-_path_a:    defb    "/cpm2-1.dsk",0
+_path_a:    defb    "/DISK-A.DSK",0
             defs    64-($-_path_a)
-_path_b:    defb    "/cpm2-2.dsk",0
-            defs    64-($-_path_b)
-_path_c:    defb    "/disk-c.dsk",0
-            defs    64-($-_path_c)
-_path_d:    defb    "/disk.dsk",0
+_path_b:    defs    64
+_path_c:    defs    64
+_path_d:    defb    "/DISK.DSK",0
             defs    64-($-_path_d)
 
 ;-----------------------------------------------------------------------------
