@@ -5,13 +5,21 @@
 ;-----------------------------------------------------------------------------
 ; Variables
 ;-----------------------------------------------------------------------------
-_text_addr: defw $3000
-_text_col:  defb 0
-_text_row:  defb 0
-_saved_col: defb $8F
-_oldstack:  defw 0
-            defs 16
+TEXTBASE        equ $3000 + 80
+COLUMNS         equ 80
+ROWS            equ 24
+
+_text_addr:     defw TEXTBASE
+_column:        defb 0
+_row:           defb 0
+_saved_color:   defb $8F
+_oldstack:      defw 0
+                defs 16
 _tmpstack:
+_in_escape:     defb 0
+
+_loadcur_y:     defb 0
+_loadcur_x:     defb 0
 
 ;-----------------------------------------------------------------------------
 ; Hide cursor
@@ -22,7 +30,7 @@ _hide_cursor:
     out     (IO_VCTRL),a
 
     ld      hl,(_text_addr)
-    ld      a,(_saved_col)
+    ld      a,(_saved_color)
     ld      (hl),a
 
     ld      a,$61
@@ -39,7 +47,7 @@ _show_cursor:
 
     ld      hl,(_text_addr)
     ld      a,(hl)
-    ld      (_saved_col),a
+    ld      (_saved_color),a
 
     ; Set color at cursor position
     ld      a,$F9
@@ -48,6 +56,294 @@ _show_cursor:
     ld      a,$61
     out     (IO_VCTRL),a
     ret
+
+;-----------------------------------------------------------------------------
+; Bell
+;-----------------------------------------------------------------------------
+_bell:
+    ld      bc,70
+.1: ld      a,1
+    out     (IO_CASSETTE),a
+    call    .delay
+    xor     a
+    out     (IO_CASSETTE),a
+    call    .delay
+    dec     bc
+    ld      a,b
+    or      a,c
+    jr      nz,.1
+    ret
+
+.delay:
+    ld      a,192
+.l: dec     a
+    jr      nz,.l
+    ret
+
+;-----------------------------------------------------------------------------
+; Move cursor up
+;-----------------------------------------------------------------------------
+_line_up:
+    ; Cursor to previous line
+    ld      a,(_row)
+    or      a
+    ret     z           ; Already on first line?
+    dec     a
+    ld      (_row),a
+    ld      hl,(_text_addr)
+    ld      bc,COLUMNS
+    ccf
+    sbc     hl,bc
+    ld      (_text_addr),hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Move cursor forward
+;-----------------------------------------------------------------------------
+_fwdspace:
+    inc     hl                  ; Increment text address
+    ld      (_text_addr),hl
+    ld      a,(_column)         ; Increment column
+    inc     a
+    cp      COLUMNS             ; End of line?
+    jr      z,.next_line
+    ld      (_column),a         ; Update column
+    ret
+
+.next_line:
+    xor     a                   ; Column = 0
+    ld      (_column),a
+    ld      a,(_row)            ; Increment row
+    inc     a
+    cp      ROWS-1              ; Scroll?
+    jr      z,.next_line_scroll
+    ld      (_row),a            ; Update column
+    ret
+
+.next_line_scroll:
+    call    _scroll             ; Scroll screen
+    ld      a,ROWS-1            ; Row = ROWS-1
+    ld      (_row),a
+    ld      hl,TEXTBASE + COLUMNS * (ROWS-1)    ; Text addr to lower left corner
+    ld      (_text_addr),hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Clear screen
+;-----------------------------------------------------------------------------
+_clrscr:
+    ld      hl,TEXTBASE
+    ld      bc,COLUMNS*ROWS
+    ld      a,' '
+    call    memset
+    ret
+
+;-----------------------------------------------------------------------------
+; Start escape sequence
+;-----------------------------------------------------------------------------
+_start_escape:
+    ld      a,1
+    ld      (_in_escape),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Escape sequence handling
+;-----------------------------------------------------------------------------
+_escape_sequence:
+    ld      a,(_in_escape)
+    cp      1
+    jr      z,.first
+    cp      2
+    jr      z,.second
+    cp      3
+    jr      z,.third
+.exit_escape:
+    xor     a
+.1: ld      (_in_escape),a
+    ret
+.next:
+    ld      a,(_in_escape)
+    inc     a
+    jr      .1
+
+.first:
+    ld      a,c
+    cp      '='
+    jr      nz,.exit_escape
+    jr      .next
+.second:
+    ld      a,c
+    sub     a,' '
+    ld      (_loadcur_y),a
+    jr      .next
+.third:
+    ld      a,c
+    sub     a,' '
+    ld      (_loadcur_x),a
+    call    _set_cursor
+    jr      .exit_escape
+
+;-----------------------------------------------------------------------------
+; Set cursor
+;-----------------------------------------------------------------------------
+_set_cursor:
+    ; Check Y < ROWS
+    ld      a,(_loadcur_y)
+    cp      ROWS
+    jr      c,.y_ok
+    ld      a,ROWS-1
+.y_ok:
+    ld      (_row),a
+
+    ; Check X < COLUMNS
+    ld      a,(_loadcur_x)
+    cp      COLUMNS
+    jr      c,.x_ok
+    ld      a,COLUMNS-1
+.x_ok:
+    ld      (_column),a
+
+    ; _text_addr = TEXTBASE + _row * COLUMNS + _column
+    assert COLUMNS = 80
+    ld      h,0             ; Row * COLUMNS (assumes 80) (row * 16 + row * 64)
+    ld      a,(_row)
+    ld      l,a
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    add     hl,hl
+    ld      d,h
+    ld      e,l
+    add     hl,hl
+    add     hl,hl
+    add     hl,de
+
+    ld      d,0             ; += _column
+    ld      a,(_column)
+    ld      e,a
+    add     hl,de
+    ld      de,TEXTBASE
+    add     hl,de
+    ld      (_text_addr),hl
+
+    ret
+
+;-----------------------------------------------------------------------------
+; Cursor to upper left corner
+;-----------------------------------------------------------------------------
+_home_cursor:
+    xor     a
+    ld      (_loadcur_y),a
+    ld      (_loadcur_x),a
+    jp      _set_cursor
+
+;-----------------------------------------------------------------------------
+; Backspace
+;-----------------------------------------------------------------------------
+_backspace:
+    ; Backspace
+    ld      a,(_column)
+    or      a                   ; At first column?
+    jr      z,.2
+    dec     a                   ; Decrement column
+.3: ld      (_column),a         ; Update column
+    ld      hl,(_text_addr)     ; Decrement text address
+    dec     hl
+    ld      (_text_addr),hl
+    ret
+.2: ld      a,(_row)
+    or      a                   ; At first row?
+    ret     z
+    dec     a                   ; Decrement row
+    ld      (_row),a
+    ld      a,COLUMNS-1         ; Update column to COLUMNS-1
+    jr      .3
+    ret
+
+;-----------------------------------------------------------------------------
+; Carriage return
+;-----------------------------------------------------------------------------
+_cr:
+    ; Cursor back to start of line
+    ld      hl,(_text_addr)
+    ld      a,(_column)
+    ld      c,a
+    xor     a
+    ld      (_column),a
+    ld      b,a
+    sbc     hl,bc
+    ld      (_text_addr),hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Line feed
+;-----------------------------------------------------------------------------
+_lf:
+    ; Cursor to next line
+    ld      a,(_row)
+    cp      ROWS-1
+    jp      z,_scroll
+    inc     a
+    ld      (_row),a
+    ld      hl,(_text_addr)
+    ld      bc,COLUMNS
+    add     hl,bc
+    ld      (_text_addr),hl
+    ret
+
+;-----------------------------------------------------------------------------
+; Scroll
+;-----------------------------------------------------------------------------
+_scroll:
+    ld      de,TEXTBASE
+    ld      hl,TEXTBASE + COLUMNS
+    ld      bc,COLUMNS * (ROWS-1)
+    ldir
+    ld      hl,TEXTBASE + COLUMNS * (ROWS-1)
+    ld      bc,COLUMNS
+    ld      a,' '
+    call    memset
+    ret
+
+;-----------------------------------------------------------------------------
+; Handle control character
+;-----------------------------------------------------------------------------
+_control:
+    cp      a,7             ; BEL (Bell)?
+    jp      z,_bell
+    cp      a,8             ; BS (Backspace)?
+    jp      z,_backspace
+    cp      a,10            ; LF (Line Feed)?
+    jp      z,_lf
+    cp      a,11            ; VT (Upline)?
+    jp      z,_line_up
+    cp      a,12            ; FF (Forward space)?
+    jp      z,_fwdspace
+    cp      a,13            ; CR (Carriage Return)?
+    jp      z,_cr
+    cp      a,26            ; SUB (Clear Screen)?
+    jp      z,_clrscr
+    cp      a,27            ; ESC (Initiate Load Cursor)?
+    jp      z,_start_escape
+    cp      a,30            ; RS (Home Cursor)?
+    jp      z,_home_cursor
+    ret
+
+;-----------------------------------------------------------------------------
+; Handle the character in C
+;-----------------------------------------------------------------------------
+_handle_char:
+    ld      a,(_in_escape)          ; In escape sequence?
+    or      a
+    jp      nz,_escape_sequence
+    ld      a,c                     ; Control character?
+    cp      32
+    jr      c,_control
+
+    ; Write to text address
+    ld      hl,(_text_addr)
+    ld      (hl),c
+    jp      _fwdspace
 
 ;-----------------------------------------------------------------------------
 ; CONOUT - Console output
@@ -59,135 +355,22 @@ termemu_out:
     ; stack pointer can be in the bottom 16KB of memory and we are switching
     ; that out in this routine.
 
-    ; Save stack pointer
-    ld      hl,0
+    ld      hl,0            ; Save stack pointer
     add     hl,sp
     ld      (_oldstack),hl
-    ; Set temp stack pointer
-    ld      sp,_tmpstack
+    ld      sp,_tmpstack    ; Set temp stack pointer
 
-    ; Save bank 0 and set to screen memory
-    in      a,(IO_BANK0)
+    in      a,(IO_BANK0)    ; Save bank 0
     push    a
-    ld      a,$C0
+    ld      a,$C0           ; Set bank 0 to screen memory
     out     (IO_BANK0),a
 
-    ; Hide cursor
-    call    _hide_cursor
+    call    _hide_cursor    ; Hide cursor
+    call    _handle_char    ; Handle the character
+    call    _show_cursor    ; Show cursor
 
-    ; Write to text address
-    ld      hl,(_text_addr)
-    ld      a,c
-    cp      a,13       ; CR?
-    jr      z,.cr
-    cp      a,10
-    jr      z,.lf      ; LF?
-    cp      a,8
-    jp      z,.bs      ; BS?
-    ld      (hl),a
-
-    ; Increment text address
-    inc     hl
-    ld      (_text_addr),hl
-
-    ld      a,(_text_col)
-    inc     a
-    cp      80
-    jr      z,.next_line
-    ld      (_text_col),a
-
-.done:
-    call    _show_cursor
-
-    ; Restore bank 0
-    pop     a
+    pop     a               ; Restore bank 0
     out     (IO_BANK0),a
-
-    ; Restore stack point
-    ld      hl,(_oldstack)
+    ld      hl,(_oldstack)  ; Restore stack point
     ld      sp,hl
     ret
-
-.next_line:
-    xor     a
-    ld      (_text_col),a
-    ld      a,(_text_row)
-    inc     a
-    cp      25
-    jr      z,.next_line_scroll
-    ld      (_text_row),a
-    jr      .done
-
-.next_line_scroll:
-    call    .do_scroll
-    ld      a,24
-    ld      (_text_row),a
-    ld      hl,$3000 + 80 * 24
-    ld      (_text_addr),hl
-    jr      .done
-
-.cr:
-    ; Cursor back to start of line
-    ld      hl,(_text_addr)
-    ld      a,(_text_col)
-    ld      c,a
-    xor     a
-    ld      (_text_col),a
-    ld      b,a
-    sbc     hl,bc
-    ld      (_text_addr),hl
-    jr      .done
-
-.lf:
-    ; Cursor to next line
-    ld      a,(_text_row)
-    cp      24
-    jr      z,.lf_scroll
-    inc     a
-    ld      (_text_row),a
-
-    ld      hl,(_text_addr)
-    ld      bc,80
-    or      a   ; Clear carry
-    adc     hl,bc
-    ld      (_text_addr),hl
-    jr      .done
-
-.lf_scroll:
-    call    .do_scroll
-    jr      .done
-
-.do_scroll:
-    ld      de,$3000
-    ld      hl,$3000 + 80
-    ld      bc,80 * 24
-    ldir
-    ld      hl,$3000 + 80 * 24
-    ld      bc,80
-    ld      a,' '
-    call    memset
-    ret
-
-.bs:
-    ; Backspace
-    ld      a,(_text_col)
-    or      a                   ; At first column?
-    jr      z,.bs2
-    dec     a                   ; Decrement column
-.bs3:
-    ld      (_text_col),a       ; Update column
-
-    ld      hl,(_text_addr)     ; Decrement text address
-    dec     hl
-    ld      (_text_addr),hl
-.bs_done:
-    jp      .done
-
-.bs2:
-    ld      a,(_text_row)
-    or      a                   ; At first row?
-    jr      z,.bs_done
-    dec     a                   ; Decrement row
-    ld      (_text_row),a
-    ld      a,79                ; Update column to 79
-    jr      .bs3
