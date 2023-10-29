@@ -755,11 +755,11 @@ _esp_send_bytes:
 
 .loop:
     ; Done sending? (DE=0)
-    ld      a, d
-    or      a, e
-    jr      z, .done
+    ld      a,d
+    or      a,e
+    jr      z,.done
 
-    ld      a, (hl)
+    ld      a,(hl)
     call    esp_send_byte
     inc     hl
     dec     de
@@ -781,7 +781,7 @@ _esp_send_bytes:
 ;-----------------------------------------------------------------------------
 _esp_write_bytes:
     ld      b,a
-    ld      a, ESPCMD_WRITE
+    ld      a,ESPCMD_WRITE
     call    esp_cmd
     ld      a,b
 
@@ -789,9 +789,9 @@ _esp_write_bytes:
     call    esp_send_byte
 
     ; Send write size
-    ld      a, e
+    ld      a,e
     call    esp_send_byte
-    ld      a, d
+    ld      a,d
     call    esp_send_byte
 
     ; Send bytes
@@ -804,9 +804,9 @@ _esp_write_bytes:
 
     ; Get number of bytes actual written
     call    esp_get_byte
-    ld      e, a
+    ld      e,a
     call    esp_get_byte
-    ld      d, a
+    ld      d,a
 
     xor     a
     ret

@@ -529,11 +529,11 @@ esp_send_bytes:
 
 .loop:
     ; Done sending? (DE=0)
-    ld      a, d
-    or      a, e
-    jr      z, .done
+    ld      a,d
+    or      a,e
+    jr      z,.done
 
-    ld      a, (hl)
+    ld      a,(hl)
     call    esp_send_byte
     inc     hl
     dec     de
@@ -608,7 +608,7 @@ esp_read_bytes:
 ; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_write_bytes:
-    ld      a, ESPCMD_WRITE
+    ld      a,ESPCMD_WRITE
     call    esp_cmd
 
     ; Send file descriptor
@@ -616,9 +616,9 @@ esp_write_bytes:
     call    esp_send_byte
 
     ; Send write size
-    ld      a, e
+    ld      a,e
     call    esp_send_byte
-    ld      a, d
+    ld      a,d
     call    esp_send_byte
 
     ; Send bytes
@@ -630,9 +630,9 @@ esp_write_bytes:
 
     ; Get number of bytes actual written
     call    esp_get_byte
-    ld      e, a
+    ld      e,a
     call    esp_get_byte
-    ld      d, a
+    ld      d,a
 
     ret
 
