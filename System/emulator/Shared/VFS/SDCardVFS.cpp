@@ -226,7 +226,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
             continue;
 
         result->emplace_back(
-            mode83 ? fno.altname : fno.fname,
+            (mode83 && fno.altname[0] != 0) ? fno.altname : fno.fname,
             fno.fsize, (fno.fattrib & AM_DIR) ? DE_DIR : 0, fno.fdate, fno.ftime);
     }
 
