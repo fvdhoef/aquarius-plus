@@ -14,6 +14,9 @@ cpm_start:
 cpm_end:
 
 main:
+    ; Disable interrupts
+    di
+
     ; Enable turbo mode
     ld      a,$4
     out     (IO_SYSCTRL),a
