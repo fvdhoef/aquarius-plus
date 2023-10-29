@@ -221,6 +221,9 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
         // Skip hidden and system files
         if ((fno.fattrib & (AM_SYS | AM_HID)))
             continue;
+        // Skip files beginning with a space
+        if (fno.fname[0] == '.')
+            continue;
 
         result->emplace_back(
             mode83 ? fno.altname : fno.fname,
