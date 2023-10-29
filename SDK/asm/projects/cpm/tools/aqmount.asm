@@ -61,7 +61,9 @@ _entry:
     ld      (de),a
     inc     de
     jr      .1
-.2:
+.2: ld      a,'/'
+    ld      (de),a
+    inc     de
 
     ; Append argument to path
 .append_path:

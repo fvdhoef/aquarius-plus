@@ -43,12 +43,11 @@ _sector:    defb 0
 ;-----------------------------------------------------------------------------
 MAX_DISKS:  equ 4
 
-_path_a:    defb    "/DISK-A.DSK",0
+_path_a:    defb    "/CPM/DISK-A.DSK",0
             defs    64-($-_path_a)
 _path_b:    defs    64
 _path_c:    defs    64
-_path_d:    defb    "/DISK.DSK",0
-            defs    64-($-_path_d)
+_path_d:    defs    64
 
 ;-----------------------------------------------------------------------------
 ; Disk parameter header

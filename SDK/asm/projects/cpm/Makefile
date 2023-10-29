@@ -14,13 +14,13 @@ else ifeq ($(shell uname -s),Linux)
 	OS = Linux
 endif
 
-OUTFILE = cpmloader.aqx
+OUTFILE = gocpm.aqx
 FILES_TO_COPY = zout/$(OUTFILE)
 
 all:
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n cpm22.asm --oo cim,lst
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n cpmloader.asm --oo cim,lst
-	mv zout/cpmloader.cim zout/cpmloader.aqx
+	mv zout/cpmloader.cim zout/$(OUTFILE)
 
 run_emu: all
 	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)
