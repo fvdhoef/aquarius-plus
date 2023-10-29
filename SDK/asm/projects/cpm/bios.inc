@@ -246,7 +246,7 @@ _boot:
     call    PRTMESG
     jr      _go_cpm
 
-.bootstr: defb "CP/M 2.2 for Aquarius+",13,10,"$"
+.bootstr: defb "CP/M 2.2 for Aquarius+ (v1.0)",13,10,"$"
 
 ;-----------------------------------------------------------------------------
 ; WBOOT - Warm boot - reload command processor
