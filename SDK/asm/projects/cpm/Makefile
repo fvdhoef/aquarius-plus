@@ -1,5 +1,6 @@
 AQPLUS_SDK  ?= ../..
 AQPLUS_HOST ?= aqplus
+AQPLUS_EMU_DISK = $(AQPLUS_SDK)/../EndUser/sdcard
 
 # Detect OS
 ifeq ($(OS),Windows_NT)
@@ -23,10 +24,10 @@ all:
 	mv zout/cpmloader.cim zout/$(OUTFILE)
 
 run_emu: all
-	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)
-	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)"
+	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)/cpm
+	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)/cpm"
 	@echo Starting $(OUTFILE) in emulator
-	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\nrun\"$(OUTFILE)\"\n"
+	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\ncd\"CPM\"\n run\"$(OUTFILE)\"\n"
 
 run_aqp: all
 	@$(foreach NAME,$(FILES_TO_COPY), \
