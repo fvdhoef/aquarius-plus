@@ -300,11 +300,58 @@ _const:
     or      a
     ret     z   ; No key
 
+    call    .remap_char
+    or      a
+    ret     z
+
     ; Save value in _keyval buffer
     ld      (_keyval),a
 
 .haschar:
     ld      a,$FF
+    ret
+
+.remap_char:
+    cp      128
+    ret     c
+
+    cp      $9e     ; left -> CTRL-S
+    jr      nz,.1
+    ld      a,'S'-'@'
+    ret
+.1:
+    cp      $8e     ; right -> CTRL-D
+    jr      nz,.2
+    ld      a,'D'-'@'
+    ret
+.2:
+    cp      $8f     ; up -> CTRL-E
+    jr      nz,.3
+    ld      a,'E'-'@'
+    ret
+.3:
+    cp      $9f     ; down -> CTRL-X
+    jr      nz,.4
+    ld      a,'X'-'@'
+    ret
+.4:
+;     cp      $9b     ; home
+;     jr      nz,.5
+;.5:
+;     cp      $9a     ; end
+;     jr      nz,.6
+;.6:
+    cp      $8a     ; pgup -> CTRL-R
+    jr      nz,.7
+    ld      a,'R'-'@'
+    ret
+.7:
+    cp      $8b     ; pgdn -> CTRL-C
+    jr      nz,.8
+    ld      a,'C'-'@'
+    ret
+.8:
+    xor     a
     ret
 
 ;-----------------------------------------------------------------------------
