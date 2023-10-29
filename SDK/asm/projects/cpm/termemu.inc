@@ -115,7 +115,7 @@ _fwdspace:
     ld      (_column),a
     ld      a,(_row)            ; Increment row
     inc     a
-    cp      ROWS-1              ; Scroll?
+    cp      ROWS                ; Scroll?
     jr      z,.next_line_scroll
     ld      (_row),a            ; Update column
     ret
