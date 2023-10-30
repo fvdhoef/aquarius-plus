@@ -2,6 +2,9 @@ module video(
     input  wire        clk,
     input  wire        reset,
 
+    input  wire        vclk,            // 28.63636MHz (video_mode = 0) or 25.175MHz (video_mode = 1)
+    input  wire        video_mode,
+
     // IO register interface
     input  wire  [3:0] io_addr,
     output reg   [7:0] io_rddata,
@@ -41,7 +44,7 @@ module video(
     wire       vblank;
 
     reg vblank_r;
-    always @(posedge clk) vblank_r <= vblank;
+    always @(posedge vclk) vblank_r <= vblank;
 
     wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
@@ -154,7 +157,8 @@ module video(
     wire       blank;
 
     video_timing video_timing(
-        .clk(clk),
+        .clk(vclk),
+        .mode(video_mode),
 
         .hpos(hpos),
         .hsync(hsync),
@@ -172,18 +176,18 @@ module video(
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
 
     reg [9:0] hpos_r, hpos_rr;
-    always @(posedge clk) hpos_r <= hpos;
-    always @(posedge clk) hpos_rr <= hpos_r;
+    always @(posedge vclk) hpos_r <= hpos;
+    always @(posedge vclk) hpos_rr <= hpos_r;
 
     reg blank_r, hsync_r, vsync_r;
-    always @(posedge clk) blank_r <= blank;
-    always @(posedge clk) hsync_r <= hsync;
-    always @(posedge clk) vsync_r <= vsync;
+    always @(posedge vclk) blank_r <= blank;
+    always @(posedge vclk) hsync_r <= hsync;
+    always @(posedge vclk) vsync_r <= vsync;
 
     reg blank_rr, hsync_rr, vsync_rr;
-    always @(posedge clk) blank_rr <= blank_r;
-    always @(posedge clk) hsync_rr <= hsync_r;
-    always @(posedge clk) vsync_rr <= vsync_r;
+    always @(posedge vclk) blank_rr <= blank_r;
+    always @(posedge vclk) hsync_rr <= hsync_r;
+    always @(posedge vclk) vsync_rr <= vsync_r;
 
     //////////////////////////////////////////////////////////////////////////
     // Character address
@@ -197,7 +201,7 @@ module video(
     wire [10:0] row_addr_next    = row_addr_r + (mode80_r ? 11'd80 : 11'd40);
     wire [10:0] border_char_addr = vctrl_border_remap_r ? (mode80_r ? 11'h7FF : 11'h3FF) : 11'h0;
 
-    always @(posedge(clk))
+    always @(posedge(vclk))
         if (vblank) begin
             mode80_r <= vctrl_80_columns_r;
             row_addr_r <= 11'd0;
@@ -207,7 +211,7 @@ module video(
     wire       next_char = mode80_r ? (hpos[2:0] == 3'd7) : (hpos[3:0] == 4'd15);
     wire [6:0] column = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
 
-    always @(posedge(clk))
+    always @(posedge(vclk))
         if (next_char) begin
             if (vborder || column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41))
                 char_addr_r <= border_char_addr;
@@ -233,7 +237,7 @@ module video(
         .p1_wrdata(tram_wrdata),
         .p1_wren(tram_wren),
 
-        .p2_clk(clk),
+        .p2_clk(vclk),
         .p2_addr(char_addr_r),
         .p2_rddata(textram_rddata));
 
@@ -241,7 +245,7 @@ module video(
     wire [7:0] color_data = textram_rddata[15:8];
 
     reg [7:0] color_data_r;
-    always @(posedge clk) color_data_r <= color_data;
+    always @(posedge vclk) color_data_r <= color_data;
 
     //////////////////////////////////////////////////////////////////////////
     // Character RAM
@@ -250,7 +254,7 @@ module video(
     wire  [7:0] charram_data;
 
     charram charram(
-        .clk(clk),
+        .clk(vclk),
 
         .addr1(chram_addr),
         .rddata1(chram_rddata),
@@ -397,7 +401,7 @@ module video(
     wire [3:0] pal_r, pal_g, pal_b;
 
     palette palette(
-        .clk(clk),
+        .clk(vclk),
 
         .addr(vpalsel_r),
         .rddata(rddata_vpaldata),
@@ -412,7 +416,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Output registers
     //////////////////////////////////////////////////////////////////////////
-    always @(posedge(clk))
+    always @(posedge(vclk))
         if (blank_rr) begin
             vga_r <= 4'b0;
             vga_g <= 4'b0;
@@ -424,7 +428,7 @@ module video(
             vga_b <= pal_b;
         end
 
-    always @(posedge clk) vga_hsync <= hsync_rr;
-    always @(posedge clk) vga_vsync <= vsync_rr;
+    always @(posedge vclk) vga_hsync <= hsync_rr;
+    always @(posedge vclk) vga_vsync <= vsync_rr;
 
 endmodule

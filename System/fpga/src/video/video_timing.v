@@ -1,7 +1,8 @@
-// VGA video timing module - 704x240 visible (910x525 total)
+// VGA video timing module - 704x480 visible (910x525 total)
 
 module video_timing(
-    input  wire        clk,     // 28.63636MHz
+    input  wire        clk,     // 25.175MHz (640x480) / 28.63636MHz (704x480)
+    input  wire        mode,    // (mode 0=704x480, 1=640x480)
 
     output wire [9:0]  hpos,
     output wire        hsync,
@@ -15,12 +16,23 @@ module video_timing(
 
     output wire        blank);
 
+    // Sync mode on end of frame
+    reg mode_r = 0;
+    always @(posedge clk)
+        if (vnext)
+            mode_r <= mode;
+
     //////////////////////////////////////////////////////////////////////////
     // Horizontal timing
     //////////////////////////////////////////////////////////////////////////
-    reg [9:0] hcnt_r = 10'd0;
+    reg  [9:0] hcnt_r = 10'd0;
 
-    wire hcnt_done = (hcnt_r == 10'd909);
+    wire [9:0] hcnt_blank  = mode_r ? 10'd640 : 10'd704;
+    wire [9:0] hcnt_hsync1 = mode_r ? 10'd656 : 10'd746;
+    wire [9:0] hcnt_hsync2 = mode_r ? 10'd752 : 10'd854;
+    wire [9:0] hcnt_last   = mode_r ? 10'd799 : 10'd909;
+
+    wire hcnt_done = (hcnt_r == hcnt_last);
 
     always @(posedge(clk))
         if (hcnt_done)
@@ -29,8 +41,8 @@ module video_timing(
             hcnt_r <= hcnt_r + 10'd1;
 
     assign hpos    = hcnt_r;
-    assign hsync   = !(hcnt_r >= 10'd746 && hcnt_r < 10'd854);
-    assign hblank  = !(hcnt_r < 10'd704);
+    assign hblank  = !(hcnt_r < hcnt_blank);
+    assign hsync   = !(hcnt_r >= hcnt_hsync1 && hcnt_r < hcnt_hsync2);
     assign hlast   = hcnt_done;
 
     //////////////////////////////////////////////////////////////////////////
