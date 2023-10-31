@@ -180,7 +180,7 @@ module video(
         
         .blank(blank));
 
-    wire hborder = video_mode ? 1'b0 : (hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336);
+    wire hborder = video_mode ? blank : (hpos < 10'd32 || hpos >= 10'd672);
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
 
     reg [9:0] hpos_r, hpos_rr;
@@ -216,26 +216,27 @@ module video(
         end else if (next_row)
             row_addr_r <= row_addr_next;
 
-    wire       next_char = mode80_r ? (hpos[2:0] == 3'd7) : (hpos[3:0] == 4'd15);
-    wire [6:0] column = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
+    wire       next_char = mode80_r ? (hpos[2:0] == 3'd0) : (hpos[3:0] == 4'd0);
+    wire [6:0] column    = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
 
-    wire char_hborder = column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41);
+    wire border = vborder || hborder;
+    reg border_r;
+    always @(posedge vclk) border_r <= border;
+
+    wire start_active = border_r && !border;
 
     reg  [10:0] char_addr_next;
     always @* begin
         char_addr_next = char_addr_r;
+        if (border)
+            char_addr_next = border_char_addr;
+        else if (start_active)
+            char_addr_next = row_addr_r;
+        else if (next_char)
+            char_addr_next = char_addr_r + 11'd1;
 
-        if (next_char) begin
-            if (vborder || char_hborder)
-                char_addr_next = border_char_addr;
-            else if (column == (mode80_r ? 7'd3 : 7'd1))
-                char_addr_next = row_addr_r;
-            else
-                char_addr_next = char_addr_r + 11'd1;
-
-            if (!mode80_r)
-                char_addr_next[10] = vctrl_tram_page_r;
-        end
+        if (!mode80_r)
+            char_addr_next[10] = vctrl_tram_page_r;
     end
 
     always @(posedge(vclk)) char_addr_r <= char_addr_next;
@@ -257,7 +258,7 @@ module video(
 
         // Second port - Video access
         .p2_clk(vclk),
-        .p2_addr(char_addr_r),
+        .p2_addr(char_addr_next),
         .p2_rddata(textram_rddata));
 
     wire [7:0] text_data  = textram_rddata[7:0];

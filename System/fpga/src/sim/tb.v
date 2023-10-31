@@ -8,8 +8,8 @@ module tb();
     end
 
     initial begin
-        // #20000000 $finish;
-        #200000 $finish;
+        #2000000 $finish;
+        // #200000 $finish;
     end
 
     // Generate approx. 28.63636MHz sysclk
