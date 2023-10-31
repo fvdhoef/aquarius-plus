@@ -494,6 +494,26 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     kbLayout.repeat       = 0;
     kbLayout.pressCounter = 0;
 
+#ifndef EMULATOR
+    // Special keys
+    {
+        uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
+        if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F12) {
+            MemDump::dumpCartridge();
+            return;
+        } else if (keyDown && scanCode == SCANCODE_PRINTSCREEN) {
+            MemDump::dumpScreen();
+            return;
+        } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F10) {
+            FPGA::instance().aqpSetVideoTimingMode(0);
+            return;
+        } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F11) {
+            FPGA::instance().aqpSetVideoTimingMode(1);
+            return;
+        }
+    }
+#endif
+
     // Hand controller emulation
     if (handController(scanCode, keyDown))
         return;
@@ -616,14 +636,6 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
 #endif
             }
         }
-
-#ifndef EMULATOR
-        else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F12) {
-            MemDump::dumpCartridge();
-        } else if (keyDown && scanCode == SCANCODE_PRINTSCREEN) {
-            MemDump::dumpScreen();
-        }
-#endif
     }
 
     if (ledStatus != kbLayout.leds) {

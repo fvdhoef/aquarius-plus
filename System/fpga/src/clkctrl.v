@@ -6,16 +6,16 @@ module clkctrl(
     input  wire video_mode
 );
 
-    assign vclk = clk_in;
-
 `ifdef __ICARUS__
     assign clk_out = clk_in;
+    assign vclk = clk_in;
 `else
     wire clk0;
-    wire clk2x;
-    assign clk_out = clk2x;
+    wire clk28;
+    assign clk_out = clk28;
 
     // DCM to multiply the 14.31818MHz by 2 to 28.63636MHz
+    wire clk2x;
     DCM_SP #(
         .CLKDV_DIVIDE(2.0),
         .CLKFX_DIVIDE(1),
@@ -45,6 +45,7 @@ module clkctrl(
         .PSINCDEC(1'b0), 
         .RST(1'b0)
     );
+    BUFG bufg_28(.I(clk2x), .O(clk28));
 
     wire clk25;
     wire pllfb;
@@ -89,7 +90,7 @@ module clkctrl(
         .CLKOUT5(),
         .LOCKED(),
         .CLKFBIN(pllfb),
-        .CLKIN(clk2x),
+        .CLKIN(clk28),
         .RST(1'b0)
     );
 
@@ -99,7 +100,7 @@ module clkctrl(
     )
     clksel(
         .O(vclk),
-        .I0(clk2x),
+        .I0(clk28),
         .I1(clk25),
         .S(video_mode)
     );

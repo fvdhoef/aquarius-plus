@@ -328,7 +328,7 @@ module top(
         .clk(clk),
         .reset(reset),
 
-        .vclk(clk),
+        .vclk(vclk),
         .video_mode(video_mode),
 
         .io_addr(ebus_a[3:0]),
