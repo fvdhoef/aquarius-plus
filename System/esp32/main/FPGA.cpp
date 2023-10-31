@@ -19,6 +19,7 @@ enum {
     CMD_IO_WRITE        = 0x24,
     CMD_IO_READ         = 0x25,
     CMD_ROM_WRITE       = 0x30,
+    CMD_SET_VIDMODE     = 0x40,
 };
 
 FPGA::FPGA() {
@@ -310,4 +311,11 @@ void FPGA::aqpSetMemBank(unsigned bank, uint8_t val) {
         aqpWriteIO(IO_BANK0 + bank, val);
         cur_banks[bank] = val;
     }
+}
+
+void FPGA::aqpSetVideoTimingMode(uint8_t mode) {
+    RecursiveMutexLock lock(mutex);
+    aqpSel(true);
+    aqpTx(CMD_SET_VIDMODE, mode);
+    aqpSel(false);
 }

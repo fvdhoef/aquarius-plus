@@ -88,11 +88,15 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
-    wire clk;
+    wire clk, vclk;
+    wire video_mode;
 
     clkctrl clkctrl(
         .clk_in(sysclk),    // 14.31818MHz
-        .clk_out(clk)       // 28.63636MHz
+        .clk_out(clk),      // 28.63636MHz
+
+        .vclk(vclk),
+        .video_mode(video_mode)
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -324,6 +328,9 @@ module top(
         .clk(clk),
         .reset(reset),
 
+        .vclk(vclk),
+        .video_mode(video_mode),
+
         .io_addr(ebus_a[3:0]),
         .io_rddata(rddata_io_video),
         .io_wrdata(wrdata),
@@ -422,7 +429,9 @@ module top(
         .rom_p2_wren(rom_p2_wren),
         
         .kbbuf_data(kbbuf_data),
-        .kbbuf_wren(kbbuf_wren));
+        .kbbuf_wren(kbbuf_wren),
+        
+        .video_mode(video_mode));
 
     assign esp_notify = 1'b0;
 

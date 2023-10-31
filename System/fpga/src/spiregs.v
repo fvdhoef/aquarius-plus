@@ -26,7 +26,9 @@ module spiregs(
     output reg         rom_p2_wren,
     
     output reg   [7:0] kbbuf_data,
-    output reg         kbbuf_wren);
+    output reg         kbbuf_wren,
+    
+    output wire        video_mode);
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave
@@ -108,7 +110,8 @@ module spiregs(
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
         CMD_IO_READ         = 8'h25,
-        CMD_ROM_WRITE       = 8'h30;
+        CMD_ROM_WRITE       = 8'h30,
+        CMD_SET_VIDMODE     = 8'h40;
 
     // 01h: Reset command
     always @(posedge clk) begin
@@ -150,6 +153,15 @@ module spiregs(
             if (cmd_r == CMD_BUS_RELEASE) busreq_r <= 1'b0;
         end
     end
+
+    // 40h: Set video mode
+    reg video_mode_r = 1'b0;
+    always @(posedge clk) begin
+        if (cmd_r == CMD_SET_VIDMODE && msg_end) begin
+            video_mode_r <= data_r[56];
+        end
+    end
+    assign video_mode = video_mode_r;
 
     localparam
         BST_IDLE   = 3'd0,

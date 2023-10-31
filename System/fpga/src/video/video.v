@@ -2,6 +2,9 @@ module video(
     input  wire        clk,
     input  wire        reset,
 
+    input  wire        vclk,            // 28.63636MHz (video_mode = 0) or 25.175MHz (video_mode = 1)
+    input  wire        video_mode,
+
     // IO register interface
     input  wire  [3:0] io_addr,
     output reg   [7:0] io_rddata,
@@ -37,11 +40,16 @@ module video(
     // Register $FD value
     output wire        reg_fd_val);
 
+    // Sync reset to vclk domain
+    wire vclk_reset;
+    reset_sync ressync_vclk(.async_rst_in(reset), .clk(vclk), .reset_out(vclk_reset));
+
+
     wire [7:0] vpos;
     wire       vblank;
 
     reg vblank_r;
-    always @(posedge clk) vblank_r <= vblank;
+    always @(posedge vclk) vblank_r <= vblank;
 
     wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
@@ -64,8 +72,11 @@ module video(
 
     wire irqline_match = (vpos == virqline_r);
     reg irqline_match_r;
-    always @(posedge clk) irqline_match_r <= irqline_match;
-    wire irqline_detect = (!irqline_match_r && irqline_match);
+    always @(posedge vclk) irqline_match_r <= irqline_match;
+
+    wire irq_line, irq_vblank;
+    pulse2pulse p2p_irq_line(  .in_clk(vclk), .in_pulse(!irqline_match_r && irqline_match), .out_clk(clk), .out_pulse(irq_line));
+    pulse2pulse p2p_irq_vblank(.in_clk(vclk), .in_pulse(!vblank_r        && vblank),        .out_clk(clk), .out_pulse(irq_vblank));
 
     assign irq = ({irqstat_line_r, irqstat_vblank_r} & {irqmask_line_r, irqmask_vblank_r}) != 2'b00;
 
@@ -141,8 +152,8 @@ module video(
                 end
             end
 
-            if (!irqline_match_r && irqline_match) irqstat_line_r   <= 1'b1;
-            if (!vblank_r        && vblank)        irqstat_vblank_r <= 1'b1;
+            if (irq_line)   irqstat_line_r   <= 1'b1;
+            if (irq_vblank) irqstat_vblank_r <= 1'b1;
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -154,7 +165,8 @@ module video(
     wire       blank;
 
     video_timing video_timing(
-        .clk(clk),
+        .clk(vclk),
+        .mode(video_mode),
 
         .hpos(hpos),
         .hsync(hsync),
@@ -168,22 +180,22 @@ module video(
         
         .blank(blank));
 
-    wire hborder = hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336;
+    wire hborder = video_mode ? blank : (hpos < 10'd32 || hpos >= 10'd672);
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
 
     reg [9:0] hpos_r, hpos_rr;
-    always @(posedge clk) hpos_r <= hpos;
-    always @(posedge clk) hpos_rr <= hpos_r;
+    always @(posedge vclk) hpos_r <= hpos;
+    always @(posedge vclk) hpos_rr <= hpos_r;
 
     reg blank_r, hsync_r, vsync_r;
-    always @(posedge clk) blank_r <= blank;
-    always @(posedge clk) hsync_r <= hsync;
-    always @(posedge clk) vsync_r <= vsync;
+    always @(posedge vclk) blank_r <= blank;
+    always @(posedge vclk) hsync_r <= hsync;
+    always @(posedge vclk) vsync_r <= vsync;
 
     reg blank_rr, hsync_rr, vsync_rr;
-    always @(posedge clk) blank_rr <= blank_r;
-    always @(posedge clk) hsync_rr <= hsync_r;
-    always @(posedge clk) vsync_rr <= vsync_r;
+    always @(posedge vclk) blank_rr <= blank_r;
+    always @(posedge vclk) hsync_rr <= hsync_r;
+    always @(posedge vclk) vsync_rr <= vsync_r;
 
     //////////////////////////////////////////////////////////////////////////
     // Character address
@@ -197,51 +209,63 @@ module video(
     wire [10:0] row_addr_next    = row_addr_r + (mode80_r ? 11'd80 : 11'd40);
     wire [10:0] border_char_addr = vctrl_border_remap_r ? (mode80_r ? 11'h7FF : 11'h3FF) : 11'h0;
 
-    always @(posedge(clk))
+    always @(posedge(vclk))
         if (vblank) begin
             mode80_r <= vctrl_80_columns_r;
             row_addr_r <= 11'd0;
         end else if (next_row)
             row_addr_r <= row_addr_next;
 
-    wire       next_char = mode80_r ? (hpos[2:0] == 3'd7) : (hpos[3:0] == 4'd15);
-    wire [6:0] column = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
+    wire       next_char = mode80_r ? (hpos[2:0] == 3'd0) : (hpos[3:0] == 4'd0);
+    wire [6:0] column    = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
 
-    always @(posedge(clk))
-        if (next_char) begin
-            if (vborder || column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41))
-                char_addr_r <= border_char_addr;
-            else if (column == (mode80_r ? 7'd3 : 7'd1))
-                char_addr_r <= row_addr_r;
-            else
-                char_addr_r <= char_addr_r + 11'd1;
+    wire border = vborder || hborder;
+    reg border_r;
+    always @(posedge vclk) border_r <= border;
 
-            if (!mode80_r)
-                char_addr_r[10] <= vctrl_tram_page_r;
-        end
+    wire start_active = border_r && !border;
+
+    reg  [10:0] char_addr_next;
+    always @* begin
+        char_addr_next = char_addr_r;
+        if (border)
+            char_addr_next = border_char_addr;
+        else if (start_active)
+            char_addr_next = row_addr_r;
+        else if (next_char)
+            char_addr_next = char_addr_r + 11'd1;
+
+        if (!mode80_r)
+            char_addr_next[10] = vctrl_tram_page_r;
+    end
+
+    always @(posedge(vclk)) char_addr_r <= char_addr_next;
+
 
     //////////////////////////////////////////////////////////////////////////
     // Text RAM
     //////////////////////////////////////////////////////////////////////////
     wire [15:0] textram_rddata;
-    wire [11:0] p1_addr = vctrl_80_columns_r ? {tram_addr[10:0], vctrl_tram_page_r} : {vctrl_tram_page_r, tram_addr[9:0], tram_addr[10]};
+    wire [11:0] tram_p1_addr = vctrl_80_columns_r ? {tram_addr[10:0], vctrl_tram_page_r} : {vctrl_tram_page_r, tram_addr[9:0], tram_addr[10]};
 
     textram textram(
+        // First port - CPU access
         .p1_clk(clk),
-        .p1_addr(p1_addr),
+        .p1_addr(tram_p1_addr),
         .p1_rddata(tram_rddata),
         .p1_wrdata(tram_wrdata),
         .p1_wren(tram_wren),
 
-        .p2_clk(clk),
-        .p2_addr(char_addr_r),
+        // Second port - Video access
+        .p2_clk(vclk),
+        .p2_addr(char_addr_next),
         .p2_rddata(textram_rddata));
 
     wire [7:0] text_data  = textram_rddata[7:0];
     wire [7:0] color_data = textram_rddata[15:8];
 
     reg [7:0] color_data_r;
-    always @(posedge clk) color_data_r <= color_data;
+    always @(posedge vclk) color_data_r <= color_data;
 
     //////////////////////////////////////////////////////////////////////////
     // Character RAM
@@ -250,7 +274,7 @@ module video(
     wire  [7:0] charram_data;
 
     charram charram(
-        .clk(clk),
+        .clk(vclk),
 
         .addr1(chram_addr),
         .rddata1(chram_rddata),
@@ -279,14 +303,15 @@ module video(
     wire        spr_hflip;
 
     sprattr sprattr(
+        // First port - CPU access
         .clk(clk),
         .reset(reset),
-
         .io_addr(io_addr),
         .io_rddata(rddata_sprattr),
         .io_wrdata(io_wrdata),
         .io_wren(io_wren),
 
+        // Second port - Video access
         .spr_sel(spr_sel),
         .spr_x(spr_x),
         .spr_y(spr_y),
@@ -314,7 +339,7 @@ module video(
         .p1_wren(vram_wren),
 
         // Second port - Video access
-        .p2_clk(clk),
+        .p2_clk(vclk),
         .p2_addr(vram_addr2),
         .p2_rddata(vram_rddata2));
 
@@ -324,18 +349,18 @@ module video(
     wire [5:0] linebuf_data;
     reg  [8:0] linebuf_rdidx;
 
-    always @(posedge clk) linebuf_rdidx <= hpos[9:1] - 9'd16;
+    always @(posedge vclk) linebuf_rdidx <= video_mode ? hpos[9:1] : (hpos[9:1] - 9'd16);
 
     reg hborder_r, hborder_rr;
-    always @(posedge clk) hborder_r <= hborder;
-    always @(posedge clk) hborder_rr <= hborder_r;
+    always @(posedge vclk) hborder_r <= hborder;
+    always @(posedge vclk) hborder_rr <= hborder_r;
 
     reg gfx_start_r;
-    always @(posedge clk) gfx_start_r <= vnext;
+    always @(posedge vclk) gfx_start_r <= vnext;
 
     gfx gfx(
-        .clk(clk),
-        .reset(reset),
+        .clk(vclk),
+        .reset(vclk_reset),
 
         // Register values
         .gfx_mode(vctrl_gfx_mode_r),
@@ -398,7 +423,6 @@ module video(
 
     palette palette(
         .clk(clk),
-
         .addr(vpalsel_r),
         .rddata(rddata_vpaldata),
         .wrdata(io_wrdata),
@@ -412,7 +436,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Output registers
     //////////////////////////////////////////////////////////////////////////
-    always @(posedge(clk))
+    always @(posedge(vclk))
         if (blank_rr) begin
             vga_r <= 4'b0;
             vga_g <= 4'b0;
@@ -424,7 +448,7 @@ module video(
             vga_b <= pal_b;
         end
 
-    always @(posedge clk) vga_hsync <= hsync_rr;
-    always @(posedge clk) vga_vsync <= vsync_rr;
+    always @(posedge vclk) vga_hsync <= hsync_rr;
+    always @(posedge vclk) vga_vsync <= vsync_rr;
 
 endmodule

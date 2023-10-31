@@ -33,6 +33,7 @@ public:
     void    aqpSaveMemBanks();
     void    aqpRestoreMemBanks();
     void    aqpSetMemBank(unsigned bank, uint8_t val);
+    void    aqpSetVideoTimingMode(uint8_t mode);
 
 private:
     void fpgaTx(const void *data, size_t length);
