@@ -1,7 +1,6 @@
 module sprattr(
     input  wire        clk,
     input  wire        reset,
-
     input  wire  [3:0] io_addr,   // 4/5/6/7/8/9
     output reg   [7:0] io_rddata,
     input  wire  [7:0] io_wrdata,

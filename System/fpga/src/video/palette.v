@@ -1,6 +1,5 @@
 module palette(
     input  wire        clk,
-
     input  wire  [6:0] addr,
     output wire  [7:0] rddata,
     input  wire  [7:0] wrdata,
