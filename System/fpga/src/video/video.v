@@ -40,14 +40,6 @@ module video(
     // Register $FD value
     output wire        reg_fd_val);
 
-    // Sync IO register interface to vclk domain
-    // reg [3:0] vclk_io_wraddr;
-    // reg [7:0] vclk_io_wrdata;
-    // wire      vclk_io_wren;
-    // always @(posedge clk) if (io_wren) vclk_io_wraddr <= io_addr;
-    // always @(posedge clk) if (io_wren) vclk_io_wrdata <= io_wrdata;
-    // pulse2pulse p2p_wren(.in_clk(clk), .in_pulse(io_wren), .out_clk(vclk), .out_pulse(vclk_io_wren));
-
     // Sync reset to vclk domain
     wire vclk_reset;
     reset_sync ressync_vclk(.async_rst_in(reset), .clk(vclk), .reset_out(vclk_reset));
@@ -188,7 +180,7 @@ module video(
         
         .blank(blank));
 
-    wire hborder = hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336;
+    wire hborder = video_mode ? 1'b0 : (hpos[9:1] < 9'd16 || hpos[9:1] >= 9'd336);
     wire vborder = vpos < 9'd16 || vpos >= 9'd216;
 
     reg [9:0] hpos_r, hpos_rr;
@@ -227,18 +219,27 @@ module video(
     wire       next_char = mode80_r ? (hpos[2:0] == 3'd7) : (hpos[3:0] == 4'd15);
     wire [6:0] column = mode80_r ? hpos[9:3] : {1'b0, hpos[9:4]};
 
-    always @(posedge(vclk))
+    wire char_hborder = column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41);
+
+    reg  [10:0] char_addr_next;
+    always @* begin
+        char_addr_next = char_addr_r;
+
         if (next_char) begin
-            if (vborder || column <= (mode80_r ? 7'd2 : 7'd0) || column >= (mode80_r ? 7'd83 : 7'd41))
-                char_addr_r <= border_char_addr;
+            if (vborder || char_hborder)
+                char_addr_next = border_char_addr;
             else if (column == (mode80_r ? 7'd3 : 7'd1))
-                char_addr_r <= row_addr_r;
+                char_addr_next = row_addr_r;
             else
-                char_addr_r <= char_addr_r + 11'd1;
+                char_addr_next = char_addr_r + 11'd1;
 
             if (!mode80_r)
-                char_addr_r[10] <= vctrl_tram_page_r;
+                char_addr_next[10] = vctrl_tram_page_r;
         end
+    end
+
+    always @(posedge(vclk)) char_addr_r <= char_addr_next;
+
 
     //////////////////////////////////////////////////////////////////////////
     // Text RAM
@@ -400,18 +401,18 @@ module video(
 
     always @* begin
         pixel_colidx = 6'b0;
-        // if (!active) begin
-        //     if (vctrl_text_enable_r)
-        //         pixel_colidx = {2'b0, text_colidx};
+        if (!active) begin
+            if (vctrl_text_enable_r)
+                pixel_colidx = {2'b0, text_colidx};
 
-        // end else begin
+        end else begin
             if (vctrl_text_enable_r && !vctrl_text_priority_r)
                 pixel_colidx = {2'b0, text_colidx};
             if (!vctrl_text_enable_r || vctrl_text_priority_r || linebuf_data[3:0] != 4'd0)
                 pixel_colidx = linebuf_data;
             if (vctrl_text_enable_r && vctrl_text_priority_r && text_colidx != 4'd0)
                 pixel_colidx = {2'b0, text_colidx};
-        // end
+        end
     end
 
     //////////////////////////////////////////////////////////////////////////
