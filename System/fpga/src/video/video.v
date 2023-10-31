@@ -80,8 +80,11 @@ module video(
 
     wire irqline_match = (vpos == virqline_r);
     reg irqline_match_r;
-    always @(posedge clk) irqline_match_r <= irqline_match;
-    wire irqline_detect = (!irqline_match_r && irqline_match);
+    always @(posedge vclk) irqline_match_r <= irqline_match;
+
+    wire irq_line, irq_vblank;
+    pulse2pulse p2p_irq_line(  .in_clk(vclk), .in_pulse(!irqline_match_r && irqline_match), .out_clk(clk), .out_pulse(irq_line));
+    pulse2pulse p2p_irq_vblank(.in_clk(vclk), .in_pulse(!vblank_r        && vblank),        .out_clk(clk), .out_pulse(irq_vblank));
 
     assign irq = ({irqstat_line_r, irqstat_vblank_r} & {irqmask_line_r, irqmask_vblank_r}) != 2'b00;
 
@@ -157,8 +160,8 @@ module video(
                 end
             end
 
-            if (!irqline_match_r && irqline_match) irqstat_line_r   <= 1'b1;
-            if (!vblank_r        && vblank)        irqstat_vblank_r <= 1'b1;
+            if (irq_line)   irqstat_line_r   <= 1'b1;
+            if (irq_vblank) irqstat_vblank_r <= 1'b1;
         end
 
     //////////////////////////////////////////////////////////////////////////
