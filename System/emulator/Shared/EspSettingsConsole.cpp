@@ -342,7 +342,7 @@ void EspSettingsConsole::wifiSet() {
     idx = idxs[idx];
 
     cprintf("Selected:%s\n", ap_info[idx].ssid);
-    char password[65] = {0};
+    char password[64] = {0};
     if (ap_info[idx].authmode != WIFI_AUTH_OPEN) {
         cprintf("Password:");
         creadline(password, sizeof(password), true);
@@ -358,8 +358,8 @@ void EspSettingsConsole::wifiSet() {
             .pmf_cfg     = {.capable = true},
         },
     };
-    snprintf((char *)wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid), (const char *)ap_info[idx].ssid);
-    snprintf((char *)wifi_config.sta.password, sizeof(wifi_config.sta.password), password);
+    snprintf((char *)wifi_config.sta.ssid, sizeof(wifi_config.sta.ssid), "%s", (const char *)ap_info[idx].ssid);
+    snprintf((char *)wifi_config.sta.password, sizeof(wifi_config.sta.password), "%s", password);
 
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
