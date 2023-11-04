@@ -9,6 +9,7 @@ module video(
     output reg   [7:0] io_rddata,
     input  wire  [7:0] io_wrdata,
     input  wire        io_wren,
+    input  wire        io_wrdone,
     input  wire        io_rddone,
     output wire        irq,
 
@@ -35,18 +36,27 @@ module video(
     reg  [7:0] vdp_reg_data_r;
     reg        vdp_reg_wr_r;
 
-    wire       vsync_irq_pend   = 1'b0;
-    wire       line_irq_pend    = 1'b0;
+    wire       vsync_irq_pend;
+    wire       line_irq_pend;
     reg        vsync_irq_pending_r;
     reg        line_irq_pending_r;
+    reg        sprite_overflow_r;
+    reg        sprite_collision_r;
+
+    wire       ctrl_write  = io_wren   &&  io_portsel;
+    wire       data_write  = io_wren   && !io_portsel;
 
     wire       ctrl_rddone = io_rddone &&  io_portsel;
-    wire       ctrl_write  = io_wren   &&  io_portsel;
-    wire       data_rddone = io_rddone &&  io_portsel;
-    wire       data_write  = io_wren   && !io_portsel;
+    wire       data_rddone = io_rddone && !io_portsel;
+    wire       data_wrdone = io_wrdone && !io_portsel;
 
     wire       vram_wren    = data_write && vdp_code_r != 2'd3;
     wire       palette_wren = data_write && vdp_code_r == 2'd3;
+
+    reg        vsync_irq_en_r;
+    reg        line_irq_en_r;
+
+    wire [7:0] vdp_status = {vsync_irq_pending_r, sprite_overflow_r, sprite_collision_r, 5'b0};
 
     always @(posedge clk or posedge reset)
         if (reset) begin
@@ -60,7 +70,11 @@ module video(
 
             vsync_irq_pending_r <= 1'b0;
             line_irq_pending_r  <= 1'b0;
-            
+            sprite_overflow_r   <= 1'b0;
+            sprite_collision_r  <= 1'b0;
+            vsync_irq_en_r      <= 1'b0;
+            line_irq_en_r       <= 1'b0;
+
         end else begin
             vdp_reg_wr_r    <= 1'b0;
 
@@ -76,26 +90,34 @@ module video(
                         
                     end else if (io_wrdata[7:6] == 2'd2) begin
                         // Write VDP register
-                        vdp_reg_idx_r  <= vdp_addr_r[3:0];
-                        vdp_reg_data_r <= io_wrdata;
+                        vdp_reg_idx_r  <= io_wrdata[3:0];
+                        vdp_reg_data_r <= vdp_addr_r[7:0];
                         vdp_reg_wr_r   <= 1'b1;
+
+                        if (io_wrdata[3:0] == 4'd0)
+                            line_irq_en_r <= vdp_addr_r[4];
+                        if (io_wrdata[3:0] == 4'd1)
+                            vsync_irq_en_r <= vdp_addr_r[5];
+
                     end
                 end
 
                 bf_toggle_r <= !bf_toggle_r;
-
-            end else if (data_write) begin
-                bf_toggle_r         <= 1'b0;
-
-
-            end else if (ctrl_rddone) begin
+            end
+            
+            // Reset status after writing control port
+            if (ctrl_rddone) begin
                 bf_toggle_r         <= 1'b0;
                 vsync_irq_pending_r <= 1'b0;
                 line_irq_pending_r  <= 1'b0;
-
-            end else if (data_rddone) begin
-                bf_toggle_r         <= 1'b0;
-                vdp_addr_r          <= vdp_addr_r + 14'd1;
+                sprite_overflow_r   <= 1'b0;
+                sprite_collision_r  <= 1'b0;
+            end
+            
+            // Increment VDP address after access to data port
+            if (data_rddone || data_wrdone) begin
+                bf_toggle_r <= 1'b0;
+                vdp_addr_r  <= vdp_addr_r + 14'd1;
             end
 
             // Latch interrupt pend signals
@@ -104,9 +126,9 @@ module video(
         end
 
     // Generate interrupt signal
-    assign irq = vsync_irq_pending_r || line_irq_pending_r;
+    assign irq = (vsync_irq_pending_r && vsync_irq_en_r) || (line_irq_pending_r && line_irq_en_r);
 
-    always @* io_rddata <= vram_rddata;
+    always @* io_rddata <= io_portsel ? vdp_status : vram_rddata;
 
     //////////////////////////////////////////////////////////////////////////
     // VRAM
@@ -228,6 +250,9 @@ module video(
         
         .blank(blank));
 
+    assign vcnt = vpos;
+    assign hcnt = 8'd0;
+
     wire hborder = hpos < 10'd32 || hpos >= 10'd672;
     wire vborder = vpos <  9'd16 || vpos >=  9'd216;
 
@@ -245,11 +270,17 @@ module video(
     always @(posedge vclk) hsync_rr <= hsync_r;
     always @(posedge vclk) vsync_rr <= vsync_r;
 
+    wire vsync_line = (vpos == 8'd193);
+    reg vsync_line_r;
+    always @(posedge vclk) vsync_line_r <= vsync_line;
+
+    assign vsync_irq_pend = vsync_line && !vsync_line_r;
+    assign line_irq_pend  = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Graphics
     //////////////////////////////////////////////////////////////////////////
-    wire [4:0] linebuf_data = 5'b0;
+    wire [4:0] linebuf_data = 5'd31;
 
     //////////////////////////////////////////////////////////////////////////
     // Palette

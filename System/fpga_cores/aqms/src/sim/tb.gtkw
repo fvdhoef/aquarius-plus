@@ -1,0 +1,178 @@
+[*]
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sat Nov  4 13:30:56 2023
+[*]
+[dumpfile] "tb.vcd"
+[dumpfile_mtime] "Sat Nov  4 13:30:32 2023"
+[dumpfile_size] 10563667
+[savefile] "tb.gtkw"
+[timestart] 0
+[size] 1696 1387
+[pos] 1747 0
+*-25.024525 55675000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[markername] AA
+[markername] BB
+[markername] CC
+[markername] DD
+[markername] EE
+[markername] FF
+[markername] GG
+[markername] HH
+[markername] II
+[markername] JJ
+[markername] KK
+[markername] LL
+[markername] MM
+[markername] NN
+[markername] OO
+[markername] PP
+[markername] QQ
+[markername] RR
+[markername] SS
+[markername] TT
+[markername] UU
+[markername] VV
+[markername] WW
+[markername] XX
+[markername] YY
+[markername] ZZ
+[treeopen] tb.
+[treeopen] tb.top_inst.
+[treeopen] tb.top_inst.video.
+[sst_width] 253
+[signals_width] 251
+[sst_expanded] 1
+[sst_vpaned_height] 431
+@28
+tb.top_inst.clk
+@200
+-Bus
+@28
+tb.top_inst.ebus_reset_n
+tb.top_inst.ebus_phi
+@22
+tb.top_inst.ebus_a[15:0]
+tb.top_inst.ebus_d[7:0]
+@28
+tb.top_inst.ebus_rd_n
+tb.top_inst.ebus_wr_n
+tb.top_inst.ebus_mreq_n
+tb.top_inst.ebus_iorq_n
+tb.top_inst.ebus_int_n
+tb.top_inst.ebus_busreq_n
+tb.top_inst.ebus_busack_n
+@22
+tb.top_inst.ebus_ba[4:0]
+@28
+tb.top_inst.ebus_ram_ce_n
+tb.top_inst.ebus_cart_ce_n
+tb.top_inst.ebus_ram_we_n
+tb.top_inst.bus_read
+tb.top_inst.bus_read_done
+tb.top_inst.bus_write
+tb.top_inst.bus_write_done
+@200
+-VGA
+@22
+tb.top_inst.vga_r[3:0]
+tb.top_inst.vga_g[3:0]
+tb.top_inst.vga_b[3:0]
+@28
+tb.top_inst.vga_hsync
+tb.top_inst.vga_vsync
+tb.top_inst.video.blank
+@200
+-Top
+@28
+tb.top_inst.bus_read
+tb.top_inst.io_video_reading_r
+tb.top_inst.bus_read_done
+tb.top_inst.io_video_rddone
+tb.top_inst.bus_write
+tb.top_inst.io_addr[2:0]
+tb.top_inst.sel_io_vdp_ctrl
+tb.top_inst.sel_io_vdp_data
+@200
+-Video
+@28
+tb.top_inst.video.vclk
+tb.top_inst.video.io_portsel
+@22
+tb.top_inst.video.io_rddata[7:0]
+tb.top_inst.video.io_wrdata[7:0]
+@28
+tb.top_inst.video.io_wren
+@29
+tb.top_inst.video.io_wrdone
+@28
+tb.top_inst.video.io_rddone
+tb.top_inst.video.irq
+@22
+tb.top_inst.video.vcnt[7:0]
+tb.top_inst.video.hcnt[7:0]
+@200
+--- Internal --
+@28
+tb.top_inst.video.vclk_reset
+tb.top_inst.video.irq
+tb.top_inst.video.bf_toggle_r
+tb.top_inst.video.vdp_code_r[1:0]
+@22
+tb.top_inst.video.vdp_addr_r[13:0]
+tb.top_inst.video.vdp_reg_idx_r[3:0]
+tb.top_inst.video.vdp_reg_data_r[7:0]
+@28
+tb.top_inst.video.vdp_reg_wr_r
+tb.top_inst.video.vsync_irq_pend
+tb.top_inst.video.line_irq_pend
+tb.top_inst.video.vsync_irq_pending_r
+tb.top_inst.video.line_irq_pending_r
+tb.top_inst.video.sprite_overflow_r
+tb.top_inst.video.sprite_collision_r
+tb.top_inst.video.ctrl_rddone
+tb.top_inst.video.ctrl_write
+tb.top_inst.video.data_rddone
+tb.top_inst.video.data_wrdone
+tb.top_inst.video.data_write
+tb.top_inst.video.vram_wren
+tb.top_inst.video.palette_wren
+tb.top_inst.video.vsync_irq_en_r
+tb.top_inst.video.line_irq_en_r
+@22
+tb.top_inst.video.vdp_status[7:0]
+@24
+tb.top_inst.video.hpos[9:0]
+tb.top_inst.video.vpos[7:0]
+@28
+tb.top_inst.video.reg0_hline_irq_en_r
+tb.top_inst.video.reg0_hscroll_inhibit_r
+tb.top_inst.video.reg0_left_col_blank_r
+tb.top_inst.video.reg0_sprite_shift_bit_r
+tb.top_inst.video.reg0_vscroll_inhibit_r
+tb.top_inst.video.reg1_screen_en_r
+tb.top_inst.video.reg1_spr_h16_r
+tb.top_inst.video.reg1_spr_mag_r
+tb.top_inst.video.reg1_vblank_irq_en_r
+@22
+tb.top_inst.video.reg2_scrmap_base_r[7:0]
+tb.top_inst.video.reg5_sprattr_base_r[7:0]
+tb.top_inst.video.reg6_sprpat_base_r[7:0]
+tb.top_inst.video.reg7_border_colidx_r[7:0]
+tb.top_inst.video.reg8_hscroll_r[7:0]
+tb.top_inst.video.reg9_vscroll_r[7:0]
+tb.top_inst.video.reg10_rasterirq_line_r[7:0]
+@200
+--- Palette --
+@22
+tb.top_inst.video.palette.addr[4:0]
+tb.top_inst.video.palette.wrdata[7:0]
+@28
+tb.top_inst.video.palette.wren
+@22
+tb.top_inst.video.palette.palidx[4:0]
+@28
+tb.top_inst.video.palette.pal_r[1:0]
+tb.top_inst.video.palette.pal_g[1:0]
+tb.top_inst.video.palette.pal_b[1:0]
+[pattern_trace] 1
+[pattern_trace] 0

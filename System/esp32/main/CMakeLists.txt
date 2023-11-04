@@ -72,7 +72,7 @@ idf_component_register(
         "bt"
 
     EMBED_FILES
-        "../../fpga/top.bit"
+        "../../fpga_cores/aqms/top.bit"
         "../../rom_src/settings/build/settings.aqx"
 
     EMBED_TXTFILES

@@ -140,32 +140,52 @@ module top(
     always @(posedge clk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
     always @(posedge clk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
 
-    wire bus_read      = ebus_rd_n_r[2:1] == 3'b10;
-    wire bus_read_done = ebus_rd_n_r[2:1] == 3'b01;
-    wire bus_write     = ebus_wr_n_r[2:1] == 3'b10;
+    wire bus_read       = ebus_rd_n_r[2:1] == 3'b10;
+    wire bus_read_done  = ebus_rd_n_r[2:1] == 3'b01;
+    wire bus_write      = ebus_wr_n_r[2:1] == 3'b10;
+    wire bus_write_done = ebus_wr_n_r[2:1] == 3'b01;
 
     // Memory space decoding
-    wire sel_mem_tram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
-    wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
-    wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
-    wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
-    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page <= 6'd3 && !sel_mem_sysram;      // Page 0-3
+    wire sel_mem_rom     = !ebus_mreq_n && !ebus_a[15];
     wire sel_mem_ram     = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
 
     // IO space decoding
-    wire io_addr = {ebus_a[7], ebus_a[6], ebus_a[0]};
-    wire sel_io_vcnt     = !ebus_iorq_n && io_addr == 3'b010;
-    wire sel_io_hcnt     = !ebus_iorq_n && io_addr == 3'b011;
-    wire sel_io_vdp_data = !ebus_iorq_n && io_addr == 3'b100;
-    wire sel_io_vdp_ctrl = !ebus_iorq_n && io_addr == 3'b101;
-    wire sel_io_joy1     = !ebus_iorq_n && io_addr == 3'b110;
-    wire sel_io_joy2     = !ebus_iorq_n && io_addr == 3'b111;
+    wire [2:0] io_addr         = {ebus_a[7], ebus_a[6], ebus_a[0]};
+    wire       sel_io_vcnt     = !ebus_iorq_n && io_addr == 3'b010;
+    wire       sel_io_hcnt     = !ebus_iorq_n && io_addr == 3'b011;
+    wire       sel_io_vdp_data = !ebus_iorq_n && io_addr == 3'b100;
+    wire       sel_io_vdp_ctrl = !ebus_iorq_n && io_addr == 3'b101;
+    wire       sel_io_joy1     = !ebus_iorq_n && io_addr == 3'b110;
+    wire       sel_io_joy2     = !ebus_iorq_n && io_addr == 3'b111;
 
     wire sel_internal = 1'b1;
 
     wire ram_wren        = sel_mem_ram && bus_write;
     wire io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
-    wire io_video_rddone = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read_done;
+    wire io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
+
+    // Generate rddone signal for video
+    reg io_video_rddone;
+    reg io_video_reading_r;
+    always @(posedge clk) begin
+        io_video_rddone <= 1'b0;
+        if (io_video_rden) io_video_reading_r <= 1'b1;
+        if (io_video_reading_r && bus_read_done) begin
+            io_video_reading_r <= 1'b0;
+            io_video_rddone <= 1'b1;
+        end
+    end
+
+    // Generate wrdone signal for video
+    reg io_video_wrdone, io_video_writing_r;
+    always @(posedge clk) begin
+        io_video_wrdone <= 1'b0;
+        if (io_video_wren) io_video_writing_r <= 1'b1;
+        if (io_video_writing_r && bus_write_done) begin
+            io_video_writing_r <= 1'b0;
+            io_video_wrdone <= 1'b1;
+        end
+    end
 
     assign ebus_ram_ce_n = 1'b1;
     assign ebus_ram_we_n = 1'b1;
@@ -275,6 +295,7 @@ module top(
         .io_rddata(rddata_io_video),
         .io_wrdata(wrdata),
         .io_wren(io_video_wren),
+        .io_wrdone(io_video_wrdone),
         .io_rddone(io_video_rddone),
         .irq(video_irq),
 
