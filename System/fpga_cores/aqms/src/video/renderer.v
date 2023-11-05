@@ -3,26 +3,26 @@ module renderer(
     input  wire        reset,
 
     // Data interface
-    input  wire  [8:0] render_idx,
+    input  wire  [7:0] render_idx,
     input  wire [31:0] render_data,
     input  wire        render_start,
     input  wire        is_sprite,
     input  wire        hflip,
-    input  wire  [1:0] palette,
+    input  wire        palette,
     input  wire        priority,
     output wire        last_pixel,
     output wire        busy,
 
     // Line buffer interface
-    output wire  [8:0] wridx,
-    output wire  [5:0] wrdata,
+    output wire  [7:0] wridx,
+    output wire  [4:0] wrdata,
     output wire        wren
 );
 
     reg [31:0] render_data_r, render_data_next;
-    reg  [1:0] palette_r,     palette_next;
-    reg  [8:0] wridx_r,       wridx_next;
-    reg  [5:0] wrdata_r,      wrdata_next;
+    reg        palette_r,     palette_next;
+    reg  [7:0] wridx_r,       wridx_next;
+    reg  [4:0] wrdata_r,      wrdata_next;
     reg        wren_r,        wren_next;
     reg  [2:0] datasel_r,     datasel_next;
     reg        busy_r,        busy_next;
@@ -49,8 +49,8 @@ module renderer(
         3'b111: pixel_data = render_data_next[3:0];
     endcase
 
-    wire lab_priority;
-    wire lab_wrdata = priority_r && (wrdata_r[3:0] != 4'd0);
+    wire [1:0] lab_wrdata = {is_sprite, priority_r && (wrdata_r[3:0] != 4'd0)};
+    wire lab_is_sprite, lab_priority;
 
     lineattrbuf lab(
         .clk(clk),
@@ -59,7 +59,7 @@ module renderer(
         .wren1(wren_r),
 
         .idx2(wridx_next),
-        .rddata2(lab_priority));
+        .rddata2({lab_is_sprite, lab_priority}));
 
     always @* begin
         render_data_next = render_data_r;
@@ -88,7 +88,7 @@ module renderer(
         end else if (busy_r) begin
             datasel_next = datasel_r + 3'd1;
             wren_next    = 1'b1;
-            wridx_next   = wridx_r + 9'd1;
+            wridx_next   = wridx_r + 8'd1;
 
             if (datasel_r == 3'd7) begin
                 busy_next = 1'b0;
@@ -99,12 +99,12 @@ module renderer(
             end
         end
 
-        wrdata_next[5:4] = palette_next[1:0];
+        wrdata_next[4]   = palette_next;
         wrdata_next[3:0] = pixel_data;
 
         // Don't render transparent sprite pixels
         if (is_sprite_next) begin
-            if (pixel_data == 4'd0 || (lab_priority && !priority_r))
+            if (pixel_data == 4'd0 || (lab_is_sprite && is_sprite) || (lab_priority && !priority_r))
                 wren_next = 1'b0;
         end
     end
@@ -112,8 +112,8 @@ module renderer(
     always @(posedge clk) begin
         if (reset) begin
             render_data_r <= 32'b0;
-            palette_r     <= 2'b0;
-            wridx_r       <= 9'd511;
+            palette_r     <= 1'b0;
+            wridx_r       <= 8'd0;
             wrdata_r      <= 6'b0;
             wren_r        <= 1'b0;
             datasel_r     <= 2'b0;

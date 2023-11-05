@@ -87,7 +87,7 @@ module video(
 
                     if (io_wrdata[7:6] == 2'd0) begin
                         // Read VDP RAM
-                        
+
                     end else if (io_wrdata[7:6] == 2'd2) begin
                         // Write VDP register
                         vdp_reg_idx_r  <= io_wrdata[3:0];
@@ -104,7 +104,7 @@ module video(
 
                 bf_toggle_r <= !bf_toggle_r;
             end
-            
+
             // Reset status after writing control port
             if (ctrl_rddone) begin
                 bf_toggle_r         <= 1'b0;
@@ -113,7 +113,7 @@ module video(
                 sprite_overflow_r   <= 1'b0;
                 sprite_collision_r  <= 1'b0;
             end
-            
+
             // Increment VDP address after access to data port
             if (data_rddone || data_wrdone) begin
                 bf_toggle_r <= 1'b0;
@@ -164,29 +164,29 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // VDP registers
     //////////////////////////////////////////////////////////////////////////
-    reg       reg0_vscroll_inhibit_r;
-    reg       reg0_hscroll_inhibit_r;
-    reg       reg0_left_col_blank_r;
-    reg       reg0_hline_irq_en_r;
-    reg       reg0_sprite_shift_bit_r;
-    reg       reg1_screen_en_r;
-    reg       reg1_vblank_irq_en_r;
-    reg       reg1_spr_h16_r;
-    reg       reg1_spr_mag_r;
-    reg [7:0] reg2_scrmap_base_r;
-    reg [7:0] reg5_sprattr_base_r;
-    reg [7:0] reg6_sprpat_base_r;
-    reg [7:0] reg7_border_colidx_r;
-    reg [7:0] reg8_hscroll_r;
-    reg [7:0] reg9_vscroll_r;
-    reg [7:0] reg10_rasterirq_line_r;
+    reg       reg0_vscroll_inhibit_r;   // 1: Disable vertical scrolling for columns 24-31
+    reg       reg0_hscroll_inhibit_r;   // 1: Disable horizontal scrolling for rows 0-1
+    reg       reg0_left_col_blank_r;    // 1: Mask column 0 with overscan color from register #7
+    reg       reg0_line_irq_en_r;       // 1: Line interrupt enable
+    reg       reg0_sprite_shift_bit_r;  // 1: Shift sprites left by 8 pixels
+    reg       reg1_screen_en_r;         // 1: Display visible, 0: display blanked.
+    reg       reg1_vblank_irq_en_r;     // 1: Frame interrupt enable.
+    reg       reg1_spr_h16_r;           // Sprites are 1:8x16, 0:8x8
+    reg       reg1_spr_mag_r;           // Sprite pixels are doubled in size
+    reg [7:0] reg2_scrmap_base_r;       // [3:1] = bit [13:11] of Name Table Base Address
+    reg [7:0] reg5_sprattr_base_r;      // [6:1] = bit [13:8] of Sprite Attribute Table Base Address
+    reg [7:0] reg6_sprpat_base_r;       // [2] = bit [13] of Sprite Pattern Generator Base Address
+    reg [3:0] reg7_border_colidx_r;     // [3:0] = Overscan/Backdrop Color
+    reg [7:0] reg8_hscroll_r;           // Background X Scroll
+    reg [7:0] reg9_vscroll_r;           // Background Y Scroll
+    reg [7:0] reg10_rasterirq_line_r;   // Line counter
 
     always @(posedge vclk or posedge vclk_reset)
         if (vclk_reset) begin
             reg0_vscroll_inhibit_r  <= 1'b0;
             reg0_hscroll_inhibit_r  <= 1'b0;
             reg0_left_col_blank_r   <= 1'b0;
-            reg0_hline_irq_en_r     <= 1'b0;
+            reg0_line_irq_en_r      <= 1'b0;
             reg0_sprite_shift_bit_r <= 1'b0;
             reg1_screen_en_r        <= 1'b0;
             reg1_vblank_irq_en_r    <= 1'b0;
@@ -195,7 +195,7 @@ module video(
             reg2_scrmap_base_r      <= 8'b0;
             reg5_sprattr_base_r     <= 8'b0;
             reg6_sprpat_base_r      <= 8'b0;
-            reg7_border_colidx_r    <= 8'b0;
+            reg7_border_colidx_r    <= 4'b0;
             reg8_hscroll_r          <= 8'b0;
             reg9_vscroll_r          <= 8'b0;
             reg10_rasterirq_line_r  <= 8'b0;
@@ -206,7 +206,7 @@ module video(
                     reg0_vscroll_inhibit_r  <= vdp_reg_data_r[7];
                     reg0_hscroll_inhibit_r  <= vdp_reg_data_r[6];
                     reg0_left_col_blank_r   <= vdp_reg_data_r[5];
-                    reg0_hline_irq_en_r     <= vdp_reg_data_r[4];
+                    reg0_line_irq_en_r      <= vdp_reg_data_r[4];
                     reg0_sprite_shift_bit_r <= vdp_reg_data_r[3];
                 end
                 if (vdp_reg_idx_r == 4'd1) begin
@@ -218,7 +218,7 @@ module video(
                 if (vdp_reg_idx_r == 4'd2)  reg2_scrmap_base_r     <= vdp_reg_data_r;
                 if (vdp_reg_idx_r == 4'd5)  reg5_sprattr_base_r    <= vdp_reg_data_r;
                 if (vdp_reg_idx_r == 4'd6)  reg6_sprpat_base_r     <= vdp_reg_data_r;
-                if (vdp_reg_idx_r == 4'd7)  reg7_border_colidx_r   <= vdp_reg_data_r;
+                if (vdp_reg_idx_r == 4'd7)  reg7_border_colidx_r   <= vdp_reg_data_r[3:0];
                 if (vdp_reg_idx_r == 4'd8)  reg8_hscroll_r         <= vdp_reg_data_r;
                 if (vdp_reg_idx_r == 4'd9)  reg9_vscroll_r         <= vdp_reg_data_r;
                 if (vdp_reg_idx_r == 4'd10) reg10_rasterirq_line_r <= vdp_reg_data_r;
@@ -242,12 +242,12 @@ module video(
         .hsync(hsync),
         .hblank(hblank),
         .hlast(hlast),
-        
+
         .vpos(vpos),
         .vsync(vsync),
         .vblank(vblank),
         .vnext(vnext),
-        
+
         .blank(blank));
 
     assign vcnt = vpos;
@@ -280,7 +280,32 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Graphics
     //////////////////////////////////////////////////////////////////////////
-    wire [4:0] linebuf_data = 5'd31;
+    wire [4:0] linebuf_data;
+
+    reg gfx_start_r;
+    always @(posedge vclk) gfx_start_r <= vnext;
+
+    gfx gfx(
+        .clk(vclk),
+        .reset(vclk_reset),
+
+        .hscroll(reg8_hscroll_r),
+        .vscroll(reg9_vscroll_r),
+        .base_nt(reg2_scrmap_base_r[3:1]),
+        .base_sprattr(reg5_sprattr_base_r[6:1]),
+        .base_sprpat(reg6_sprpat_base_r[2]),
+        .bgcol(reg7_border_colidx_r),
+        .spr_h16(reg1_spr_h16_r),
+
+        .vaddr(vram_addr2),
+        .vdata(vram_rddata2),
+
+        .vline(vpos),
+        .start(gfx_start_r),
+
+        .linebuf_rdidx(hpos[8:1]),
+        .linebuf_data(linebuf_data)
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Palette

@@ -289,6 +289,32 @@ module tb();
         iowr(16'hBF, 8'h20); // VDP ctrl port
         iowr(16'hBF, 8'h81);
 
+        iowr(16'hBF, 8'h00);
+        iowr(16'hBF, 8'h06);
+        iowr(16'hBE, 8'hA5);
+        iowr(16'hBE, 8'hA6);
+        iowr(16'hBE, 8'hA6);
+        iowr(16'hBE, 8'hA7);
+        iowr(16'hBE, 8'hA8);
+
+        iowr(16'hBF, 8'h00);
+        iowr(16'hBF, 8'h06);
+        iord(16'hBE);
+        iord(16'hBE);
+        iord(16'hBE);
+        iord(16'hBE);
+        iord(16'hBE);
+
+        memwr(16'hC100, 8'h42);
+        memwr(16'hC110, 8'hDE);
+        memwr(16'hC111, 8'hAD);
+
+        memrd(16'hE100);
+
+        memrd(16'h0100);
+        memrd(16'h7FF0);
+
+
         wait (!bus_int_n);
         @(posedge phi);
         iord(16'hBF);

@@ -3,19 +3,19 @@ module linebuf(
 
     input  wire        linesel,
 
-    input  wire  [8:0] idx1,
+    input  wire  [7:0] idx1,
     output wire  [7:0] rddata1,
     input  wire  [7:0] wrdata1,
     input  wire        wren1,
 
-    input  wire  [8:0] idx2,
-    output wire  [5:0] rddata2);
+    input  wire  [7:0] idx2,
+    output wire  [4:0] rddata2);
 
-    wire [10:0] addr1 = {1'b0,  linesel, idx1};
-    wire [10:0] addr2 = {1'b0, !linesel, idx2};
+    wire [10:0] addr1 = {2'b0,  linesel, idx1};
+    wire [10:0] addr2 = {2'b0, !linesel, idx2};
 
     wire [7:0] lb_rddata2;
-    assign rddata2 = lb_rddata2[5:0];
+    assign rddata2 = lb_rddata2[4:0];
 
     RAMB16_S9_S9 #(
         .INIT_A(9'h000),                // Value of output RAM registers on Port A at startup

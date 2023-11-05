@@ -96,7 +96,7 @@ module top(
         .clk_out(clk),      // 28.63636MHz
 
         .vclk(vclk),        // 25.175MHz
-        .video_mode(1'b0)
+        .video_mode(1'b1)
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -192,7 +192,8 @@ module top(
 
     reg [7:0] rddata;
     always @* begin
-        rddata <= 8'h00;
+        rddata <= 8'hFF;
+
         if (sel_mem_rom)              rddata <= rddata_rom;
         if (sel_mem_ram)              rddata <= rddata_ram;
 
