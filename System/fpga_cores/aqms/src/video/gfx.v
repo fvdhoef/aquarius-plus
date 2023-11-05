@@ -215,7 +215,7 @@ module gfx(
                 end
 
                 ST_SPR2: begin
-                    spr_y_next = spr_idx_r[0] ? vdata[15:8] : vdata[7:0];
+                    spr_y_next = (spr_idx_r[0] ? vdata[15:8] : vdata[7:0]) + 8'd1;
                     vaddr_next = spr_addr_nx;
                     state_next = ST_SPR3;
                 end

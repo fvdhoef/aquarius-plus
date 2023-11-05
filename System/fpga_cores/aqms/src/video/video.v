@@ -255,9 +255,6 @@ module video(
 
         .blank(blank));
 
-    assign vcnt = vpos;
-    assign hcnt = 8'd0;
-
     reg [9:0] hpos_r, hpos_rr;
     always @(posedge vclk) hpos_r  <= hpos;
     always @(posedge vclk) hpos_rr <= hpos_r;
@@ -294,18 +291,23 @@ module video(
     wire [7:0] vline         = vpos - 8'd24;
     wire [8:0] linebuf_rdidx = hpos[9:1] - 9'd32;
     wire       vborder       = vline >= 8'd192;
+    wire       vborder2      = vline < 8'd1 || vline >= 8'd193;
     wire       hborder       = linebuf_rdidx[8];
     assign     vsync_line    = vline == 8'd193;
-    wire       border        = hborder | vborder;
+
+    assign vcnt = vline;
+    assign hcnt = linebuf_rdidx[7:0];
 
     reg gfx_start_r;
     always @(posedge vclk) if (!vborder) gfx_start_r <= vnext;
+
+    wire [7:0] hscroll = (reg0_hscroll_inhibit_r && vline < 8'd16) ? 8'h00 : reg8_hscroll_r;
 
     gfx gfx(
         .clk(vclk),
         .reset(vclk_reset),
 
-        .hscroll(reg8_hscroll_r),
+        .hscroll(hscroll),
         .vscroll(reg9_vscroll_r),
         .base_nt(reg2_scrmap_base_r[3:1]),
         .base_sprattr(reg5_sprattr_base_r[6:1]),
@@ -327,7 +329,7 @@ module video(
     );
 
     reg border_r;
-    always @(posedge vclk) border_r <= border;
+    always @(posedge vclk) border_r <= hborder | vborder2;
 
     wire [4:0] palidx = border_r ? {1'b1, reg7_border_colidx_r} : linebuf_data;
 
@@ -351,7 +353,7 @@ module video(
     // Output registers
     //////////////////////////////////////////////////////////////////////////
     always @(posedge(vclk))
-        if (blank_rr) begin
+        if (blank_rr || !reg1_screen_en_r) begin
             vga_r <= 4'b0;
             vga_g <= 4'b0;
             vga_b <= 4'b0;
