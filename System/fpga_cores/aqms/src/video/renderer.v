@@ -11,6 +11,7 @@ module renderer(
     input  wire        palette,
     input  wire        priority,
     output wire        last_pixel,
+    output reg         spr_collision,
     output wire        busy,
 
     // Line buffer interface
@@ -73,6 +74,7 @@ module renderer(
         is_sprite_next   = is_sprite_r;
         hflip_next       = hflip_r;
         priority_next    = priority_r;
+        spr_collision    = 1'b0;
 
         if (render_start) begin
             render_data_next = render_data;
@@ -102,10 +104,14 @@ module renderer(
         wrdata_next[4]   = palette_next;
         wrdata_next[3:0] = pixel_data;
 
-        // Don't render transparent sprite pixels
         if (is_sprite_next) begin
-            if (pixel_data == 4'd0 || (lab_is_sprite && is_sprite) || (lab_priority && !priority_r))
+            // Don't render transparent sprite pixels
+            if (pixel_data == 4'd0 || lab_is_sprite || (lab_priority && !priority_r))
                 wren_next = 1'b0;
+
+            // Check for collision
+            if (pixel_data != 4'd0 && lab_is_sprite)
+                spr_collision = 1'b1;
         end
     end
 

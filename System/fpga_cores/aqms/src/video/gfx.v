@@ -11,6 +11,10 @@ module gfx(
     input  wire  [3:0] bgcol,
     input  wire        spr_h16,
 
+    // Output signals
+    output reg         spr_overflow,
+    output wire        spr_collision,
+
     // Video RAM interface
     output wire [12:0] vaddr,
     input  wire [15:0] vdata,
@@ -68,6 +72,7 @@ module gfx(
 
     reg   [6:0] spr_idx_r,   spr_idx_next;
     reg   [7:0] spr_y_r,     spr_y_next;
+    reg   [3:0] spr_cnt_r,   spr_cnt_next;
 
     wire  [7:0] line_idx      = vline;
     wire  [7:0] tline         = line_idx + vscroll;
@@ -132,6 +137,7 @@ module gfx(
         .palette(render_palette_r),
         .priority(render_priority_r),
         .last_pixel(render_last_pixel),
+        .spr_collision(spr_collision),
         .busy(render_busy),
 
         // Line buffer interface
@@ -143,29 +149,31 @@ module gfx(
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
     always @* begin
-        col_next         = col_r;
-        vaddr_next       = vaddr_r;
-        state_next       = state_r;
-        nxtstate_next    = nxtstate_r;
-        map_entry_next   = map_entry_r;
-        busy_next        = busy_r;
-        render_idx_next  = render_idx_r;
-        linesel_next     = linesel_r;
-        render_data_next = render_data_r;
-        spr_idx_next     = spr_idx_r;
-        spr_y_next       = spr_y_r;
-
+        col_next              = col_r;
+        vaddr_next            = vaddr_r;
+        state_next            = state_r;
+        nxtstate_next         = nxtstate_r;
+        map_entry_next        = map_entry_r;
+        busy_next             = busy_r;
+        render_idx_next       = render_idx_r;
+        linesel_next          = linesel_r;
+        render_data_next      = render_data_r;
+        spr_idx_next          = spr_idx_r;
+        spr_y_next            = spr_y_r;
+        spr_cnt_next          = spr_cnt_r;
         render_is_sprite_next = render_is_sprite_r;
         render_hflip_next     = render_hflip_r;
         render_palette_next   = render_palette_r;
         render_priority_next  = render_priority_r;
         render_start          = 1'b0;
+        spr_overflow          = 1'b0;
 
         if (start) begin
             busy_next             = 1'b1;
             linesel_next          = !linesel_r;
             render_is_sprite_next = 1'b0;
             spr_idx_next          = 7'd0;
+            spr_cnt_next          = 4'd0;
 
             state_next            = ST_MAP1;
             render_idx_next       = hscroll;
@@ -214,26 +222,34 @@ module gfx(
 
                 ST_SPR3: begin
                     if (spr_y_r == 8'hD0) begin
-                        // Skip remaining sprites
+                        // Terminator detected, skip remaining sprites
                         state_next = ST_DONE;
 
                     end else if (spr_on_line) begin
-                        // Draw sprite
-                        render_idx_next       = vdata[7:0];
-                        render_hflip_next     = 1'b0;
-                        render_palette_next   = 1'b1;
-                        render_priority_next  = 1'b0;
-                        render_is_sprite_next = 1'b1;
-                        vaddr_next            = {base_sprpat, vdata[15:8], spr_line[2:0], 1'b0};
-                        state_next            = ST_PAT1;
-                        nxtstate_next         = ST_SPR1;
+                        if (spr_cnt_r == 4'd8) begin
+                            // Draw a maximum of 8 sprites on a line
+                            state_next   = ST_DONE;
+                            spr_overflow = 1'b1;
+                            
+                        end else begin
+                            // Draw sprite
+                            state_next   = ST_PAT1;
+                            spr_cnt_next = spr_cnt_r + 4'd1;
+                        end
 
                     end else begin
                         // Sprite not on this line, next
                         state_next = ST_SPR1;
                     end
 
-                    spr_idx_next = spr_idx_r + 7'd1;
+                    nxtstate_next         = ST_SPR1;
+                    vaddr_next            = {base_sprpat, vdata[15:8], spr_line[2:0], 1'b0};
+                    render_idx_next       = vdata[7:0];
+                    render_hflip_next     = 1'b0;
+                    render_palette_next   = 1'b1;
+                    render_priority_next  = 1'b0;
+                    render_is_sprite_next = 1'b1;
+                    spr_idx_next          = spr_idx_r + 7'd1;
                 end
 
                 ST_PAT1: begin
@@ -272,6 +288,7 @@ module gfx(
             render_data_r      <= 32'b0;
             spr_idx_r          <= 7'b0;
             spr_y_r            <= 8'b0;
+            spr_cnt_r          <= 4'b0;
             render_is_sprite_r <= 1'b0;
             render_hflip_r     <= 1'b0;
             render_palette_r   <= 2'b0;
@@ -289,6 +306,7 @@ module gfx(
             render_data_r      <= render_data_next;
             spr_idx_r          <= spr_idx_next;
             spr_y_r            <= spr_y_next;
+            spr_cnt_r          <= spr_cnt_next;
             render_is_sprite_r <= render_is_sprite_next;
             render_hflip_r     <= render_hflip_next;
             render_palette_r   <= render_palette_next;

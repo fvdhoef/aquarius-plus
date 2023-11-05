@@ -190,6 +190,8 @@ module top(
     assign ebus_ram_ce_n = 1'b1;
     assign ebus_ram_we_n = 1'b1;
 
+    wire [7:0] joy1;
+
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'hFF;
@@ -201,7 +203,7 @@ module top(
         if (sel_io_hcnt)              rddata <= video_hcnt;
         if (sel_io_vdp_data)          rddata <= rddata_io_video;
         if (sel_io_vdp_ctrl)          rddata <= rddata_io_video;
-        if (sel_io_joy1)              rddata <= 8'hFF;
+        if (sel_io_joy1)              rddata <= joy1;
         if (sel_io_joy2)              rddata <= 8'hFF;
     end
 
@@ -337,6 +339,7 @@ module top(
 
     // Keyboard matrix
     wire [63:0] keys;
+    assign joy1 = {2'b11, keys[45], keys[51], keys[15], keys[22], keys[23], keys[14]};
 
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;

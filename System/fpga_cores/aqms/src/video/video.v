@@ -38,10 +38,13 @@ module video(
 
     wire       vsync_irq_pend;
     wire       line_irq_pend;
+    wire       spr_overflow;
+    wire       spr_collision;
+
     reg        vsync_irq_pending_r;
     reg        line_irq_pending_r;
-    reg        sprite_overflow_r;
-    reg        sprite_collision_r;
+    reg        spr_overflow_r;
+    reg        spr_collision_r;
 
     wire       ctrl_write  = io_wren   &&  io_portsel;
     wire       data_write  = io_wren   && !io_portsel;
@@ -56,7 +59,7 @@ module video(
     reg        vsync_irq_en_r;
     reg        line_irq_en_r;
 
-    wire [7:0] vdp_status = {vsync_irq_pending_r, sprite_overflow_r, sprite_collision_r, 5'b0};
+    wire [7:0] vdp_status = {vsync_irq_pending_r, spr_overflow_r, spr_collision_r, 5'b0};
 
     always @(posedge clk or posedge reset)
         if (reset) begin
@@ -70,8 +73,8 @@ module video(
 
             vsync_irq_pending_r <= 1'b0;
             line_irq_pending_r  <= 1'b0;
-            sprite_overflow_r   <= 1'b0;
-            sprite_collision_r  <= 1'b0;
+            spr_overflow_r      <= 1'b0;
+            spr_collision_r     <= 1'b0;
             vsync_irq_en_r      <= 1'b0;
             line_irq_en_r       <= 1'b0;
 
@@ -110,8 +113,8 @@ module video(
                 bf_toggle_r         <= 1'b0;
                 vsync_irq_pending_r <= 1'b0;
                 line_irq_pending_r  <= 1'b0;
-                sprite_overflow_r   <= 1'b0;
-                sprite_collision_r  <= 1'b0;
+                spr_overflow_r      <= 1'b0;
+                spr_collision_r     <= 1'b0;
             end
 
             // Increment VDP address after access to data port
@@ -123,6 +126,8 @@ module video(
             // Latch interrupt pend signals
             if (vsync_irq_pend) vsync_irq_pending_r <= 1'b1;
             if (line_irq_pend)  line_irq_pending_r  <= 1'b1;
+            if (spr_overflow)   spr_overflow_r      <= 1'b1;
+            if (spr_collision)  spr_collision_r     <= 1'b1;
         end
 
     // Generate interrupt signal
@@ -274,8 +279,15 @@ module video(
     reg vsync_line_r;
     always @(posedge vclk) vsync_line_r <= vsync_line;
 
-    assign vsync_irq_pend = vsync_line && !vsync_line_r;
-    assign line_irq_pend  = 1'b0;
+    wire vid_vsync_irq_pend = vsync_line && !vsync_line_r;
+    wire vid_line_irq_pend  = 1'b0;
+    wire vid_spr_overflow;
+    wire vid_spr_collision;
+
+    pulse2pulse p2p_vsync_irq(     .in_clk(vclk), .in_pulse(vid_vsync_irq_pend), .out_clk(clk), .out_pulse(vsync_irq_pend));
+    pulse2pulse p2p_line_irq(      .in_clk(vclk), .in_pulse(vid_line_irq_pend),  .out_clk(clk), .out_pulse(line_irq_pend));
+    pulse2pulse p2p_spr_overflow(  .in_clk(vclk), .in_pulse(vid_spr_overflow),   .out_clk(clk), .out_pulse(spr_overflow));
+    pulse2pulse p2p_spr_collision( .in_clk(vclk), .in_pulse(vid_spr_collision),  .out_clk(clk), .out_pulse(spr_collision));
 
     //////////////////////////////////////////////////////////////////////////
     // Graphics
@@ -296,6 +308,9 @@ module video(
         .base_sprpat(reg6_sprpat_base_r[2]),
         .bgcol(reg7_border_colidx_r),
         .spr_h16(reg1_spr_h16_r),
+
+        .spr_overflow(vid_spr_overflow),
+        .spr_collision(vid_spr_collision),
 
         .vaddr(vram_addr2),
         .vdata(vram_rddata2),
