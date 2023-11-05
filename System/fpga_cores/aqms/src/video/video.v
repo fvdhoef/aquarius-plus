@@ -258,9 +258,6 @@ module video(
     assign vcnt = vpos;
     assign hcnt = 8'd0;
 
-    wire hborder = hpos < 10'd32 || hpos >= 10'd672;
-    wire vborder = vpos <  9'd16 || vpos >=  9'd216;
-
     reg [9:0] hpos_r, hpos_rr;
     always @(posedge vclk) hpos_r  <= hpos;
     always @(posedge vclk) hpos_rr <= hpos_r;
@@ -275,7 +272,7 @@ module video(
     always @(posedge vclk) hsync_rr <= hsync_r;
     always @(posedge vclk) vsync_rr <= vsync_r;
 
-    wire vsync_line = (vpos == 8'd193);
+    wire vsync_line;
     reg vsync_line_r;
     always @(posedge vclk) vsync_line_r <= vsync_line;
 
@@ -294,8 +291,15 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     wire [4:0] linebuf_data;
 
+    wire [7:0] vline         = vpos - 8'd24;
+    wire [8:0] linebuf_rdidx = hpos[9:1] - 9'd32;
+    wire       vborder       = vline >= 8'd192;
+    wire       hborder       = linebuf_rdidx[8];
+    assign     vsync_line    = vline == 8'd193;
+    wire       border        = hborder | vborder;
+
     reg gfx_start_r;
-    always @(posedge vclk) gfx_start_r <= vnext;
+    always @(posedge vclk) if (!vborder) gfx_start_r <= vnext;
 
     gfx gfx(
         .clk(vclk),
@@ -315,12 +319,17 @@ module video(
         .vaddr(vram_addr2),
         .vdata(vram_rddata2),
 
-        .vline(vpos),
+        .vline(vline),
         .start(gfx_start_r),
 
-        .linebuf_rdidx(hpos[8:1]),
+        .linebuf_rdidx(linebuf_rdidx[7:0]),
         .linebuf_data(linebuf_data)
     );
+
+    reg border_r;
+    always @(posedge vclk) border_r <= border;
+
+    wire [4:0] palidx = border_r ? {1'b1, reg7_border_colidx_r} : linebuf_data;
 
     //////////////////////////////////////////////////////////////////////////
     // Palette
@@ -333,7 +342,7 @@ module video(
         .wrdata(io_wrdata),
         .wren(palette_wren),
 
-        .palidx(linebuf_data),
+        .palidx(palidx),
         .pal_r(pal_r),
         .pal_g(pal_g),
         .pal_b(pal_b));
