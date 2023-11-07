@@ -1,11 +1,90 @@
-IO_VDPDATA  equ 0xBE
-IO_VDPCTRL  equ 0xBF
-IO_JOY1     equ 0xC0
+;-----------------------------------------------------------------------------
+; IO ports
+;-----------------------------------------------------------------------------
+IO_ESPCTRL          equ $10
+IO_ESPDATA          equ $11
+IO_VDPDATA          equ $BE
+IO_VDPCTRL          equ $BF
+IO_JOY1             equ $C0
+IO_JOY2             equ $C1
 
-cursor_x    equ $C000
-cursor_y    equ $C001
+JOY1_UP             equ 0
+JOY1_DOWN           equ 1
+JOY1_LEFT           equ 2
+JOY1_RIGHT          equ 3
+JOY1_A              equ 4
+JOY1_B              equ 5
 
-    org 0
+RAMSEL              equ $FFFC
+BANK0               equ $FFFD
+BANK1               equ $FFFE
+BANK2               equ $FFFF
+
+;-----------------------------------------------------------------------------
+; ESP32 commands
+;-----------------------------------------------------------------------------
+ESPCMD_RESET        equ $01     ; Reset ESP
+ESPCMD_VERSION      equ $02     ; Get version string
+ESPCMD_GETDATETIME  equ $03     ; Get current date/time
+ESPCMD_KEYMODE      equ $08     ; Set keyboard buffer mode
+ESPCMD_GETMOUSE     equ $0C     ; Get mouse state
+ESPCMD_OPEN         equ $10     ; Open / create file
+ESPCMD_CLOSE        equ $11     ; Close open file
+ESPCMD_READ         equ $12     ; Read from file
+ESPCMD_WRITE        equ $13     ; Write to file
+ESPCMD_SEEK         equ $14     ; Move read/write pointer
+ESPCMD_TELL         equ $15     ; Get current read/write
+ESPCMD_OPENDIR      equ $16     ; Open directory
+ESPCMD_CLOSEDIR     equ $17     ; Close open directory
+ESPCMD_READDIR      equ $18     ; Read from directory
+ESPCMD_DELETE       equ $19     ; Remove file or directory
+ESPCMD_RENAME       equ $1A     ; Rename / move file or directory
+ESPCMD_MKDIR        equ $1B     ; Create directory
+ESPCMD_CHDIR        equ $1C     ; Change directory
+ESPCMD_STAT         equ $1D     ; Get file status
+ESPCMD_GETCWD       equ $1E     ; Get current working directory
+ESPCMD_CLOSEALL     equ $1F     ; Close any open file/directory descriptor
+ESPCMD_OPENDIR83    equ $20     ; Open directory in 8.3 mode
+
+ERR_NOT_FOUND       equ -1      ; File / directory not found
+ERR_TOO_MANY_OPEN   equ -2      ; Too many open files / directories
+ERR_PARAM           equ -3      ; Invalid parameter
+ERR_EOF             equ -4      ; End of file / directory
+ERR_EXISTS          equ -5      ; File already exists
+ERR_OTHER           equ -6      ; Other error
+ERR_NO_DISK         equ -7      ; No disk
+ERR_NOT_EMPTY       equ -8      ; Not empty
+
+FO_RDONLY           equ $00     ; Open for reading only
+FO_WRONLY           equ $01     ; Open for writing only
+FO_RDWR             equ $02     ; Open for reading and writing
+FO_ACCMODE          equ $03     ; Mask for above modes
+FO_APPEND           equ $04     ; Append mode
+FO_CREATE           equ $08     ; Create if non-existant
+FO_TRUNC            equ $10     ; Truncate to zero length
+FO_EXCL             equ $20     ; Error if already exists
+
+LINES_PER_PAGE      equ 23
+
+;-----------------------------------------------------------------------------
+; Variables
+;-----------------------------------------------------------------------------
+_cursor_x           equ $C000
+_cursor_y           equ $C001
+_file_page          equ $C002               ; 8-bit
+_selected_entry     equ $C003               ; 8-bit
+_prev_joy           equ $C004
+_joy                equ $C005
+_is_last_page       equ $C006
+_dirent             equ $C007
+_dirent_date        equ _dirent      + 0    ; 16-bit
+_dirent_time        equ _dirent_date + 2    ; 16-bit
+_dirent_attr        equ _dirent_time + 2    ;  8-bit
+_dirent_size        equ _dirent_attr + 1    ; 32-bit
+_dirent_name        equ _dirent_size + 4    ; max 255 bytes
+_dirent_end         equ _dirent_name + 256
+
+    org     0
 
 ;-----------------------------------------------------------------------------
 ; Entry point
@@ -17,8 +96,19 @@ _entry:
 ; Main program
 ;-----------------------------------------------------------------------------
 _main:
-    di                      ; Disable interrupts
-    ld      sp,$E000        ; Set stack pointer
+    ; Disable interrupts
+    di
+
+    ; Set stack pointer
+    ld      sp,$E000
+
+    ; Configure bank registers
+    xor     a
+    ld      (BANK0),a
+
+    ; Indicate reset to ESP
+    ld      a,ESPCMD_RESET
+    call    esp_cmd
 
     ; Clear RAM
     ld      hl,$C000
@@ -29,21 +119,142 @@ _main:
 
     ; Init system
     call    _init
+    ; call    _clear_screen
 
-    call    _clear_screen
+    ; Draw screen
+.redraw:
+    call    _draw_screen
 
-    ld      a,2
-    ld      (cursor_y),a
-    ld      a,10
-    ld      (cursor_x),a
+    ; Process input
+.input:
+    call    _update_joy
+    ld      a,(_joy)
+    bit     JOY1_RIGHT,a
+    jr      nz,.next_page
+    bit     JOY1_LEFT,a
+    jr      nz,.prev_page
+    jr      .input
 
+.next_page:
+    ld      a,(_is_last_page)
+    or      a
+    jr      nz,.input
+    ld      a,(_file_page)
+    inc     a
+    ld      (_file_page),a
+    jr      .redraw
+
+.prev_page:
+    ld      a,(_file_page)
+    or      a
+    jr      z,.input
+    dec     a
+    ld      (_file_page),a
+    jr      .redraw
+
+;-----------------------------------------------------------------------------
+; Update joystick state
+;-----------------------------------------------------------------------------
+_update_joy:
+    in      a,(IO_JOY1)
+    xor     $FF
+    ld      b,a
+
+    ld      a,(_prev_joy)
+    xor     $FF
+    and     b
+    ld      (_joy),a
+
+    ld      a,b
+    ld      (_prev_joy),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Draw screen
+;-----------------------------------------------------------------------------
+_draw_screen:
+    ; Home cursor
+    xor     a
+    ld      (_cursor_y),a
+    ld      (_cursor_x),a
     call    _setaddr
+
+    ; Draw title
     ld      hl,.str
     call    _puts
 
-.1: jr      .1
+    ; Close any open descriptors
+    call    esp_close_all
 
-.str:  defb "Hello world!",10,"Blaat",0
+    ; Draw space
+    call    esp_opendir
+
+    ; Skip LINES_PER_PAGE * _file_page file entries
+    ld      a,(_file_page)
+    ld      b,a
+    inc     b
+.loop2:
+    dec     b
+    jr      z,.skip_done
+    ld      c,LINES_PER_PAGE
+.loop:
+    call    esp_readdir
+    jr      nz,.end_of_dir
+    dec     c
+    jr      nz,.loop
+    jr      .loop2
+.skip_done:
+
+    ; Draw entries
+.next:
+    ld      a,(_cursor_y)
+    cp      24
+    jr      nc,.done2
+    
+    call    esp_readdir
+    jr      nz,.done
+
+    ld      hl,_dirent_name
+.1: ld      a,(hl)
+    inc     hl
+    or      a
+    jr      z,.2
+    call    _putchar
+    ld      a,(_cursor_x)
+    or      a
+    jr      z,.next
+    jr      .1
+.2: call    .pad
+    jr      .next
+
+.done2:
+    call    esp_readdir
+.done:
+    jr      nz,.end_of_dir
+    xor     a
+    ld      (_is_last_page),a
+    jr      .fill_screen
+.end_of_dir:
+    ld      a,1
+    ld      (_is_last_page),a
+    jr      .fill_screen
+
+.fill_screen:
+    ld      a,(_cursor_y)
+    cp      24
+    ret     nc
+    call    .pad
+    jr      .fill_screen
+
+.pad:
+    ld      a,' '
+    call    _putchar
+    ld      a,(_cursor_x)
+    or      a
+    jr      nz,.pad
+    ret
+
+.str:  defb "<<<< Aquarius Master System >>>>",0
 
 ;-----------------------------------------------------------------------------
 ; Initialization
@@ -126,9 +337,9 @@ _clear_screen:
 ; Set addr
 ;-----------------------------------------------------------------------------
 _setaddr:
-    ; cursor_y * 64
+    ; _cursor_y * 64
     ld      h,0
-    ld      a,(cursor_y)
+    ld      a,(_cursor_y)
     ld      l,a
     add     hl,hl
     add     hl,hl
@@ -137,8 +348,8 @@ _setaddr:
     add     hl,hl
     add     hl,hl
 
-    ; += cursor_x * 2
-    ld      a,(cursor_x)
+    ; += _cursor_x * 2
+    ld      a,(_cursor_x)
     add     a,a
     add     a,l
     out     (IO_VDPCTRL),a
@@ -163,22 +374,18 @@ _putchar:
     out     (IO_VDPDATA)
 
     ; Increment cursor X
-    ld      a,(cursor_x)
+    ld      a,(_cursor_x)
     inc     a
-    ld      (cursor_x),a
+    ld      (_cursor_x),a
     cp      32
     ret     c
     xor     a
-    ld      (cursor_x),a
+    ld      (_cursor_x),a
 
     ; Increment cursor Y
-    ld      a,(cursor_y)
+    ld      a,(_cursor_y)
     inc     a
-    ld      (cursor_y),a
-    ; cp      32
-    ; ret     c
-    ; xor     a
-    ; ld      (cursor_y),a
+    ld      (_cursor_y),a
 
     ret
 
@@ -188,10 +395,10 @@ _putchar:
 _newline:
     push    hl
     xor     a
-    ld      (cursor_x),a
-    ld      a,(cursor_y)
+    ld      (_cursor_x),a
+    ld      a,(_cursor_y)
     inc     a
-    ld      (cursor_y),a
+    ld      (_cursor_y),a
     call    _setaddr
     pop     hl
     ret
@@ -206,3 +413,196 @@ _puts:
     call    _putchar
     inc     hl
     jr      _puts
+
+;-----------------------------------------------------------------------------
+; Issue command to ESP
+;-----------------------------------------------------------------------------
+esp_cmd:
+    push    a
+
+    ; Drain RX FIFO
+.drain:
+    in      a,(IO_ESPCTRL)
+    and     a,1
+    jr      z,.done
+    in      a,(IO_ESPDATA)
+    jr      .drain
+.done:
+
+    ; Issue start of command
+    ld      a,$80
+    out     (IO_ESPCTRL),a
+
+    ; Issue command
+    pop     a
+    jp      esp_send_byte
+
+;-----------------------------------------------------------------------------
+; Wait for data from ESP
+;-----------------------------------------------------------------------------
+esp_get_byte:
+.wait:
+    in      a,(IO_ESPCTRL)
+    and     a,1
+    jr      z,.wait
+    in      a,(IO_ESPDATA)
+    ret
+
+;-----------------------------------------------------------------------------
+; Write data to ESP
+;-----------------------------------------------------------------------------
+esp_send_byte:
+    push    a
+
+.wait:
+    in      a,(IO_ESPCTRL)
+    and     a,2
+    jr      nz,.wait
+
+    pop     a
+    out     (IO_ESPDATA),a
+    ret
+
+;-----------------------------------------------------------------------------
+; Send string in HL to ESP
+;-----------------------------------------------------------------------------
+esp_send_str:
+    ld      a,(hl)
+    call    esp_send_byte
+    or      a
+    ret     z
+    inc     hl
+    jr      esp_send_str
+
+;-----------------------------------------------------------------------------
+; Get bytes
+; Input:  HL: destination address
+;         DE: number of bytes to read
+;-----------------------------------------------------------------------------
+esp_get_bytes:
+.loop:
+    ; Done reading? (DE=0)
+    ld      a,d
+    or      a,e
+    ret     z
+
+    call    esp_get_byte
+    ld      (hl),a
+    inc     hl
+    dec     de
+    jr      .loop
+
+;-----------------------------------------------------------------------------
+; Close any open file/directory descriptor
+;
+; Clobbered registers: A
+;-----------------------------------------------------------------------------
+esp_close_all:
+    ld      a,ESPCMD_CLOSEALL
+    call    esp_cmd
+    jp      esp_get_byte
+
+;-----------------------------------------------------------------------------
+; Open directory
+;-----------------------------------------------------------------------------
+esp_opendir:
+    ld      a,ESPCMD_OPENDIR
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    jp      esp_get_byte
+
+;-----------------------------------------------------------------------------
+; Read directory entry
+;-----------------------------------------------------------------------------
+esp_readdir:
+    ld      a,ESPCMD_READDIR
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Read date/time/attribute
+    ld      hl,_dirent
+    ld      de,9
+    call    esp_get_bytes
+
+    ; Read filename
+.1: call    esp_get_byte
+    ld      (hl),a
+    inc     hl
+    or      a
+    ret     z
+    jr      .1
+
+;-----------------------------------------------------------------------------
+; _read_dirent
+;-----------------------------------------------------------------------------
+_read_dirent:
+    ld      a,ESPCMD_READDIR
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    call    esp_get_byte
+    or      a
+    ret     nz
+
+    ; Read date/time/attribute
+    ld      hl,_dirent
+    ld      de,9
+    call    esp_get_bytes
+
+    ld      hl,_dirent_name
+
+    ; Read filename
+    ld      c,8
+.1: call    esp_get_byte
+    cp      '.'
+    jr      z,.pad2         ; Dot
+    or      a
+    jr      z,.pad1         ; Zero-byte
+    ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.1
+
+    call    esp_get_byte    ; Dot
+    or      a
+    jr      nz,.ext
+
+.pad1:
+    inc     c
+    inc     c
+    inc     c
+    jr      .pad3
+
+    ; Pad filename with spaces
+.pad2:
+    ld      a,' '
+.2: ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.2
+
+    ; Read extension
+.ext:
+    ld      c,3
+.3: call    esp_get_byte
+    or      a
+    jr      z,.pad3         ; Zero-byte
+    ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.3
+    ret
+
+.pad3:
+    ; Pad extension with spaces
+    ld      a,' '
+.4: ld      (hl),a
+    inc     hl
+    dec     c
+    jr      nz,.4
+    ret
