@@ -76,7 +76,8 @@ _selected_entry     equ $C003               ; 8-bit
 _prev_joy           equ $C004
 _joy                equ $C005
 _is_last_page       equ $C006
-_dirent             equ $C007
+_page_lines         equ $C007
+_dirent             equ $C008
 _dirent_date        equ _dirent      + 0    ; 16-bit
 _dirent_time        equ _dirent_date + 2    ; 16-bit
 _dirent_attr        equ _dirent_time + 2    ;  8-bit
@@ -131,7 +132,6 @@ _entry:
 
 ;     ; Line interrupt
 ; .line_irq:
-
 
 ; .exit:
 ;     exx
@@ -238,6 +238,7 @@ _prev_page:
     dec     a
     ld      (_file_page),a
     call    _draw_screen
+    call    _update_sprite
     ld      a,1
     or      a
     ret
@@ -253,6 +254,7 @@ _next_page:
     inc     a
     ld      (_file_page),a
     call    _draw_screen
+    call    _update_sprite
     xor     a
     ret
 
@@ -306,6 +308,9 @@ _draw_screen:
     jr      .loop2
 .skip_done:
 
+    xor     a
+    ld      (_page_lines),a
+
     ; Draw entries
 .next:
     ld      a,(_cursor_y)
@@ -314,6 +319,10 @@ _draw_screen:
     
     call    esp_readdir
     jr      nz,.done
+
+    ld      a,(_page_lines)
+    inc     a
+    ld      (_page_lines),a
 
     ld      a,' '
     call    _putchar
@@ -414,6 +423,17 @@ _init:
 ; Update 'cursor' sprite
 ;-----------------------------------------------------------------------------
 _update_sprite:
+    ld      a,(_page_lines)
+    ld      b,a
+    ld      a,(_selected_entry)
+    cp      b
+    jr      c,.ok
+
+    ld      a,b
+    sub     a,1
+    ld      (_selected_entry),a
+
+.ok:
     ; Y
     xor     a
     out     (IO_VDPCTRL),a
