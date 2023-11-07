@@ -64,7 +64,7 @@ FO_CREATE           equ $08     ; Create if non-existant
 FO_TRUNC            equ $10     ; Truncate to zero length
 FO_EXCL             equ $20     ; Error if already exists
 
-LINES_PER_PAGE      equ 23
+LINES_PER_PAGE      equ 22
 
 ;-----------------------------------------------------------------------------
 ; Variables
@@ -90,17 +90,19 @@ _dirent_end         equ _dirent_name + 256
 ; Entry point
 ;-----------------------------------------------------------------------------
 _entry:
-    jp      _main
-
-;-----------------------------------------------------------------------------
-; Main program
-;-----------------------------------------------------------------------------
-_main:
     ; Disable interrupts
     di
+    im      1
 
     ; Set stack pointer
     ld      sp,$E000
+
+    ; Clear RAM
+    ld      hl,$C000
+    ld      de,$C001
+    ld      bc,$1FFF
+    ld      (hl),$00
+    ldir
 
     ; Configure bank registers
     xor     a
@@ -110,20 +112,53 @@ _main:
     ld      a,ESPCMD_RESET
     call    esp_cmd
 
-    ; Clear RAM
-    ld      hl,$C000
-    ld      de,$C001
-    ld      bc,$1FFF
-    ld      (hl),$00
-    ldir
+    jp      _main
 
+;-----------------------------------------------------------------------------
+; Interrupt handler
+;-----------------------------------------------------------------------------
+;     org     $38
+; _irq_handler:
+;     ex      af,af'
+;     exx
+
+;     in      a,(IO_VDPCTRL)
+;     bit     7,a
+;     jr      z,.line_irq
+
+;     ; V-sync interrupt
+;     jr      .exit
+
+;     ; Line interrupt
+; .line_irq:
+
+
+; .exit:
+;     exx
+;     ex      af,af'
+;     ei
+;     reti
+
+;-----------------------------------------------------------------------------
+; Main program
+;-----------------------------------------------------------------------------
+_main:
     ; Init system
     call    _init
-    ; call    _clear_screen
+    call    _clear_screen
+
+    ; Draw title
+    call    _setaddr
+    ld      hl,.str
+    call    _puts
+
+
+    ; Enable interrupts
+    ; ei
 
     ; Draw screen
-.redraw:
     call    _draw_screen
+    call    _update_sprite
 
     ; Process input
 .input:
@@ -133,24 +168,93 @@ _main:
     jr      nz,.next_page
     bit     JOY1_LEFT,a
     jr      nz,.prev_page
+    bit     JOY1_UP,a
+    jr      nz,.prev_entry
+    bit     JOY1_DOWN,a
+    jr      nz,.next_entry
     jr      .input
 
 .next_page:
+    call    _next_page
+    jr      .input
+.prev_page:
+    call    _prev_page
+    jr      .input
+.prev_entry:
+    call    _prev_entry
+    jr      .input
+.next_entry:
+    call    _next_entry
+    jr      .input
+
+
+.str:  defb "<<<< Aquarius Master System >>>>",0
+
+;-----------------------------------------------------------------------------
+; Previous entry
+;-----------------------------------------------------------------------------
+_prev_entry:
+    ld      a,(_selected_entry)
+    or      a
+    jr      z,.prev_page
+    dec     a
+    ld      (_selected_entry),a
+.done:
+    jp      _update_sprite
+
+.prev_page:
+    call    _prev_page
+    ret     z
+    ld      a,LINES_PER_PAGE-1
+    ld      (_selected_entry),a
+    jr      .done
+
+;-----------------------------------------------------------------------------
+; Next entry
+;-----------------------------------------------------------------------------
+_next_entry:
+    ld      a,(_selected_entry)
+    cp      a,LINES_PER_PAGE-1
+    jr      nc,.next_page
+    inc     a
+    ld      (_selected_entry),a
+.done:
+    jp      _update_sprite
+
+.next_page:
+    call    _next_page
+    ret     nz
+    xor     a
+    ld      (_selected_entry),a
+    jr      .done
+
+;-----------------------------------------------------------------------------
+; Go to previous page (result: z = no change, at first page)
+;-----------------------------------------------------------------------------
+_prev_page:
+    ld      a,(_file_page)
+    or      a
+    ret     z
+    dec     a
+    ld      (_file_page),a
+    call    _draw_screen
+    ld      a,1
+    or      a
+    ret
+
+;-----------------------------------------------------------------------------
+; Go to next page (result: nz = no change, at last page)
+;-----------------------------------------------------------------------------
+_next_page:
     ld      a,(_is_last_page)
     or      a
-    jr      nz,.input
+    ret     nz                  ; At last page
     ld      a,(_file_page)
     inc     a
     ld      (_file_page),a
-    jr      .redraw
-
-.prev_page:
-    ld      a,(_file_page)
-    or      a
-    jr      z,.input
-    dec     a
-    ld      (_file_page),a
-    jr      .redraw
+    call    _draw_screen
+    xor     a
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Update joystick state
@@ -174,14 +278,11 @@ _update_joy:
 ;-----------------------------------------------------------------------------
 _draw_screen:
     ; Home cursor
-    xor     a
+    ld      a,2
     ld      (_cursor_y),a
+    xor     a
     ld      (_cursor_x),a
     call    _setaddr
-
-    ; Draw title
-    ld      hl,.str
-    call    _puts
 
     ; Close any open descriptors
     call    esp_close_all
@@ -213,6 +314,9 @@ _draw_screen:
     
     call    esp_readdir
     jr      nz,.done
+
+    ld      a,' '
+    call    _putchar
 
     ld      hl,_dirent_name
 .1: ld      a,(hl)
@@ -253,8 +357,6 @@ _draw_screen:
     or      a
     jr      nz,.pad
     ret
-
-.str:  defb "<<<< Aquarius Master System >>>>",0
 
 ;-----------------------------------------------------------------------------
 ; Initialization
@@ -299,7 +401,7 @@ _init:
     ret
 
 .vdp_settings:
-    defb    $06,$80, $C0,$81, $FF,$82, $FF,$83, $FF,$84, $FF,$85, $FF,$86, $00,$87, $00,$88, $00,$89
+    defb    $06,$80, $C0,$81, $FF,$82, $FF,$83, $FF,$84, $FF,$85, $00,$86, $00,$87, $00,$88, $00,$89
 .vdp_settings_end:
 
 .palette:
@@ -307,6 +409,36 @@ _init:
 .palette_end:
 
     include "font.asm"
+
+;-----------------------------------------------------------------------------
+; Update 'cursor' sprite
+;-----------------------------------------------------------------------------
+_update_sprite:
+    ; Y
+    xor     a
+    out     (IO_VDPCTRL),a
+    ld      a,$40|$3F
+    out     (IO_VDPCTRL),a
+    ld      a,(_selected_entry)
+    add     a,a
+    add     a,a
+    add     a,a
+    add     a,6+8
+    out     (IO_VDPDATA),a
+    ld      a,$D0               ; Terminate sprite list
+    out     (IO_VDPDATA),a
+
+    ; X/Tile
+    ld      a,$80
+    out     (IO_VDPCTRL),a
+    ld      a,$40|$3F
+    out     (IO_VDPCTRL),a
+    xor     a                   ; X
+    out     (IO_VDPDATA),a
+    ld      a,'>'-32            ; Tile index
+    out     (IO_VDPDATA),a
+
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Clear screen
