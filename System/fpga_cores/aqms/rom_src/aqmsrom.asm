@@ -224,6 +224,41 @@ _load_game:
 ; Load file into RAM
 ;-----------------------------------------------------------------------------
 _load_file:
+    call    esp_close_all
+
+    ; Open file in _dirent_name
+    ld      a, ESPCMD_OPEN
+    call    esp_cmd
+    ld      a, FO_RDONLY
+    call    esp_send_byte
+    ld      hl,_dirent_name
+.1: ld      a,(hl)
+    inc     hl
+    call    esp_send_byte
+    or      a
+    jr      nz,.1
+    call    esp_get_byte
+
+    ; Map bank1 to first page
+    xor     a
+    ld      (BANK1),a
+
+.2: ld      hl,$4000
+    ld      de,$4000
+    call    esp_read_bytes
+    ld      a,d
+    cp      a,$40
+    jr      nz,.done
+
+    ld      a,'.'
+    call    _putchar
+
+    ld      a,(BANK1)
+    inc     a
+    ld      (BANK1),a
+    jr      .2
+
+.done:
     ret
 
 ;-----------------------------------------------------------------------------
@@ -793,6 +828,57 @@ esp_readdir:
     jr      .1
 
 ;-----------------------------------------------------------------------------
+; Read bytes
+; Input:  HL: destination address
+;         DE: number of bytes to read
+; Output: HL: next address (start address if no bytes read)
+;         DE: number of bytes actually read
+;
+; Clobbered registers: A, HL, DE
+;-----------------------------------------------------------------------------
+esp_read_bytes:
+    ld      a, ESPCMD_READ
+    call    esp_cmd
+
+    ; Send file descriptor
+    xor     a
+    call    esp_send_byte
+
+    ; Send read size
+    ld      a, e
+    call    esp_send_byte
+    ld      a, d
+    call    esp_send_byte
+
+    ; Get result
+    call    esp_get_byte
+    ; call    esp_get_result
+
+    ; Get number of bytes actual read
+    call    esp_get_byte
+    ld      e, a
+    call    esp_get_byte
+    ld      d, a
+
+    push    de
+
+.loop:
+    ; Done reading? (DE=0)
+    ld      a, d
+    or      a, e
+    jr      z, .done
+
+    call    esp_get_byte
+    ld      (hl), a
+    inc     hl
+    dec     de
+    jr      .loop
+
+.done:
+    pop     de
+    ret
+
+;-----------------------------------------------------------------------------
 ; _read_dirent
 ;-----------------------------------------------------------------------------
 _read_dirent:
@@ -867,6 +953,16 @@ _read_dirent:
 ;-----------------------------------------------------------------------------
 _stub:
     phase   $D000
-.1: jr      .1
+
+    xor     a
+    ld      (BANK0),a
+    inc     a
+    ld      (BANK1),a
+    inc     a
+    ld      (BANK2),a
+    xor     a
+    ld      (RAMSEL),a
+    jp      0
+
     dephase
 _stub_end:
