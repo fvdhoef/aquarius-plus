@@ -1,5 +1,7 @@
 all:
 	zmac --zmac -n --oo cim,lst aqmsrom.asm
+	xxd -i zout/aqmsrom.cim > /Users/frank/Work/emulator_sms/aqmsrom.c
 
 run: all
-	/Users/frank/Work/emulator_sms/build/smsemu -c zout/aqmsrom.cim
+	make -C /Users/frank/Work/emulator_sms
+	/Users/frank/Work/emulator_sms/build/smsemu

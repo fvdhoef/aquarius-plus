@@ -199,6 +199,7 @@ _load_game:
 
     ; Load file into external RAM to emulate ROM
     call    _load_file
+    call    esp_close_all
 
     ; Load stub into RAM and jump to it
     ld      de,$D000
