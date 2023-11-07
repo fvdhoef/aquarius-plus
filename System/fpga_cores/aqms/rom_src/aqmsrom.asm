@@ -145,17 +145,105 @@ _entry:
 _main:
     ; Init system
     call    _init
-    call    _clear_screen
 
-    ; Draw title
+    ; Show game selection menu
+    call    _clear_screen
+    call    _draw_title
+    call    _game_select
+
+    ; Load game
+    call    _hide_sprite
+    call    _clear_screen
+    call    _draw_title
+    call    _load_game
+
+
+
+.1: jr      .1
+
+;-----------------------------------------------------------------------------
+; Load game
+;-----------------------------------------------------------------------------
+_load_game:
+    ; Close any open descriptors and open directory
+    call    esp_close_all
+    call    esp_opendir
+
+    ; Skip LINES_PER_PAGE * _file_page file entries
+    ld      a,(_file_page)
+    ld      b,a
+    inc     b
+.loop2:
+    dec     b
+    jr      z,.skip_done
+    ld      c,LINES_PER_PAGE
+    call    .skip_entries
+    jr      .loop2
+.skip_done:
+
+    ; Skip _selected_entry file entries
+    ld      a,(_selected_entry)
+    ld      c,a
+    call    .skip_entries
+
+    ; Print filename
+    xor     a
+    ld      (_cursor_x),a
+    ld      a,8
+    ld      (_cursor_y),a
+    call    _setaddr
+    ld      hl,.loading_str
+    call    _puts
+    call    esp_readdir
+    call    _draw_filename
+
+    ; Load file into external RAM to emulate ROM
+    call    _load_file
+
+    ; Load stub into RAM and jump to it
+    ld      de,$D000
+    ld      hl,_stub
+    ld      bc,_stub_end - _stub
+    ldir
+    jp      $D000
+
+    ; Skip C entries
+.skip_entries:
+    ld      a,c
+    or      a
+    ret     z
+.loop:
+    call    esp_readdir
+    dec     c
+    ret     z
+    jr      .loop
+
+.loading_str:  defb "Loading:",10,10,0
+
+;-----------------------------------------------------------------------------
+; Load file into RAM
+;-----------------------------------------------------------------------------
+_load_file:
+    ret
+
+;-----------------------------------------------------------------------------
+; Draw title
+;-----------------------------------------------------------------------------
+_draw_title:
+    xor     a
+    ld      (_cursor_x),a
+    ld      (_cursor_y),a
     call    _setaddr
     ld      hl,.str
     call    _puts
+    ret
 
+.str:  defb "<<<< Aquarius Master System >>>>",0
 
-    ; Enable interrupts
-    ; ei
-
+;-----------------------------------------------------------------------------
+; Game selection
+;-----------------------------------------------------------------------------
+_game_select:
     ; Draw screen
     call    _draw_screen
     call    _update_sprite
@@ -172,6 +260,10 @@ _main:
     jr      nz,.prev_entry
     bit     JOY1_DOWN,a
     jr      nz,.next_entry
+    bit     JOY1_A,a
+    ret     nz
+    bit     JOY1_B,a
+    ret     nz
     jr      .input
 
 .next_page:
@@ -186,9 +278,6 @@ _main:
 .next_entry:
     call    _next_entry
     jr      .input
-
-
-.str:  defb "<<<< Aquarius Master System >>>>",0
 
 ;-----------------------------------------------------------------------------
 ; Previous entry
@@ -286,10 +375,8 @@ _draw_screen:
     ld      (_cursor_x),a
     call    _setaddr
 
-    ; Close any open descriptors
+    ; Close any open descriptors and open directory
     call    esp_close_all
-
-    ; Draw space
     call    esp_opendir
 
     ; Skip LINES_PER_PAGE * _file_page file entries
@@ -326,18 +413,7 @@ _draw_screen:
 
     ld      a,' '
     call    _putchar
-
-    ld      hl,_dirent_name
-.1: ld      a,(hl)
-    inc     hl
-    or      a
-    jr      z,.2
-    call    _putchar
-    ld      a,(_cursor_x)
-    or      a
-    jr      z,.next
-    jr      .1
-.2: call    .pad
+    call    _draw_filename
     jr      .next
 
 .done2:
@@ -356,16 +432,31 @@ _draw_screen:
     ld      a,(_cursor_y)
     cp      24
     ret     nc
-    call    .pad
+    call    _pad
     jr      .fill_screen
 
-.pad:
+_pad:
     ld      a,' '
     call    _putchar
     ld      a,(_cursor_x)
     or      a
-    jr      nz,.pad
+    jr      nz,_pad
     ret
+
+;-----------------------------------------------------------------------------
+; Draw and pad filename
+;-----------------------------------------------------------------------------
+_draw_filename:
+    ld      hl,_dirent_name
+.1: ld      a,(hl)
+    inc     hl
+    or      a
+    jp      z,_pad
+    call    _putchar
+    ld      a,(_cursor_x)
+    or      a
+    ret     z
+    jr      .1
 
 ;-----------------------------------------------------------------------------
 ; Initialization
@@ -458,6 +549,18 @@ _update_sprite:
     ld      a,'>'-32            ; Tile index
     out     (IO_VDPDATA),a
 
+    ret
+
+;-----------------------------------------------------------------------------
+; Hide sprites
+;-----------------------------------------------------------------------------
+_hide_sprite:
+    xor     a
+    out     (IO_VDPCTRL),a
+    ld      a,$40|$3F
+    out     (IO_VDPCTRL),a
+    ld      a,$D0               ; Terminate sprite list
+    out     (IO_VDPDATA),a
     ret
 
 ;-----------------------------------------------------------------------------
@@ -758,3 +861,12 @@ _read_dirent:
     dec     c
     jr      nz,.4
     ret
+
+;-----------------------------------------------------------------------------
+; Stub used for starting game
+;-----------------------------------------------------------------------------
+_stub:
+    phase   $D000
+.1: jr      .1
+    dephase
+_stub_end:
