@@ -13,7 +13,7 @@ module top(
     output wire        ebus_int_n,      // Open-drain output
     output wire        ebus_busreq_n,   // Open-drain output
     input  wire        ebus_busack_n,
-    output wire  [4:0] ebus_ba,
+    output reg   [4:0] ebus_ba,
     output wire        ebus_ram_ce_n,   // 512KB RAM
     output wire        ebus_cart_ce_n,  // Cartridge
     output wire        ebus_ram_we_n,
@@ -70,11 +70,6 @@ module top(
 
     wire        reset_req;
 
-    reg   [7:0] reg_bank0_r;             // IO $F0
-    reg   [7:0] reg_bank1_r;             // IO $F1
-    reg   [7:0] reg_bank2_r;             // IO $F2
-    reg   [7:0] reg_bank3_r;             // IO $F3
-
     wire [7:0] rddata_rom;
     wire [7:0] rddata_ram;
     wire [7:0] rddata_espctrl;
@@ -117,19 +112,24 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
+    reg [4:0] reg_bank0_r;
+    reg [4:0] reg_bank1_r;
+    reg [4:0] reg_bank2_r;
+    reg [7:0] reg_ramctrl_r;
+
+    reg startup_mode_r = 1'b1;
 
     // Select banking register based on upper address bits
-    reg [7:0] reg_bank;
-    always @* case (ebus_a[15:14])
-        2'd0: reg_bank = reg_bank0_r;
-        2'd1: reg_bank = reg_bank1_r;
-        2'd2: reg_bank = reg_bank2_r;
-        2'd3: reg_bank = reg_bank3_r;
-    endcase
+    always @* begin
+        ebus_ba = 5'b0;
 
-    wire [5:0] reg_bank_page    = reg_bank[5:0];
-    wire       reg_bank_ro      = reg_bank[7];
-    wire       reg_bank_overlay = reg_bank[6];
+        if (ebus_a[15:14] == 2'b00 && ebus_a >= 16'h400)
+            ebus_ba = reg_bank0_r;
+        else if (ebus_a[15:14] == 2'b01)
+            ebus_ba = reg_bank1_r;
+        else if (ebus_a[15:14] == 2'b10)
+            ebus_ba = reg_bank2_r;
+    end
 
     // Register data from external bus
     reg [7:0] wrdata;
@@ -146,13 +146,18 @@ module top(
     wire bus_write_done = ebus_wr_n_r[2:1] == 3'b01;
 
     // Memory space decoding
-    wire sel_mem_introm = !ebus_mreq_n && !ebus_a[15];
+    wire sel_mem_introm = startup_mode_r && !ebus_mreq_n && ebus_a[15:14] == 2'b00;
     wire sel_mem_intram = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
+
+    wire sel_mem_bank2   = !ebus_mreq_n && ebus_a == 16'hFFFF;
+    wire sel_mem_bank1   = !ebus_mreq_n && ebus_a == 16'hFFFE;
+    wire sel_mem_bank0   = !ebus_mreq_n && ebus_a == 16'hFFFD;
+    wire sel_mem_ramctrl = !ebus_mreq_n && ebus_a == 16'hFFFC;
 
     // IO space decoding
     wire [2:0] io_addr         = {ebus_a[7], ebus_a[6], ebus_a[0]};
-    wire       sel_io_espctrl  = !ebus_iorq_n && ebus_a[7:0] == 8'h10;
-    wire       sel_io_espdata  = !ebus_iorq_n && ebus_a[7:0] == 8'h11;
+    wire       sel_io_espctrl  = startup_mode_r && !ebus_iorq_n && ebus_a[7:0] == 8'h10;
+    wire       sel_io_espdata  = startup_mode_r && !ebus_iorq_n && ebus_a[7:0] == 8'h11;
     wire       sel_8bit        = sel_io_espctrl | sel_io_espdata;
 
     wire       sel_io_vcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b010;
@@ -162,7 +167,12 @@ module top(
     wire       sel_io_joy1     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
     wire       sel_io_joy2     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
 
-    wire sel_internal = 1'b1;
+    wire sel_internal  = !ebus_iorq_n | sel_mem_intram | sel_mem_introm;
+    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && startup_mode_r));
+    wire sel_mem_ram   = allow_sel_mem;
+
+    assign ebus_ram_ce_n = !sel_mem_ram;
+    assign ebus_ram_we_n = !(!ebus_wr_n && sel_mem_ram && startup_mode_r);
 
     wire ram_wren        = sel_mem_intram && bus_write;
     wire io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
@@ -191,9 +201,6 @@ module top(
         end
     end
 
-    assign ebus_ram_ce_n = 1'b1;
-    assign ebus_ram_we_n = 1'b1;
-
     wire [7:0] joy1;
 
     reg [7:0] rddata;
@@ -214,9 +221,28 @@ module top(
     end
 
     wire   ebus_d_en  = !ebus_rd_n && sel_internal;
-    assign ebus_ba    = 4'b0;
     assign ebus_d     = (spibm_en && spibm_wrdata_en) ? spibm_wrdata : (ebus_d_en ? rddata : 8'bZ);
     assign ebus_int_n = video_irq ? 1'b0 : 1'bZ;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            startup_mode_r <= 1'b1;
+
+            reg_bank0_r   <= 5'd0;
+            reg_bank1_r   <= 5'd1;
+            reg_bank2_r   <= 5'd2;
+            reg_ramctrl_r <= 8'd0;
+
+        end else begin
+            if (sel_mem_ramctrl && bus_write) begin
+                startup_mode_r <= 1'b0;
+                reg_ramctrl_r  <= wrdata;
+            end
+            if (sel_mem_bank0 && bus_write) reg_bank0_r <= wrdata[4:0];
+            if (sel_mem_bank1 && bus_write) reg_bank1_r <= wrdata[4:0];
+            if (sel_mem_bank2 && bus_write) reg_bank2_r <= wrdata[4:0];
+        end
+    end
 
     //////////////////////////////////////////////////////////////////////////
     // System ROM
@@ -225,10 +251,10 @@ module top(
 
     rom rom(
         .clk(clk),
-        .addr(ebus_a[14:0]),
+        .addr(ebus_a[12:0]),
         .rddata(rddata_rom),
 
-        .p2_addr(spibm_a[14:0]),
+        .p2_addr(spibm_a[12:0]),
         .p2_wrdata(spibm_wrdata),
         .p2_wren(rom_p2_wren));
 

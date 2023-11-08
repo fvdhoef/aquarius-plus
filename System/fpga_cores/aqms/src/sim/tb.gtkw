@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed Nov  8 14:26:20 2023
+[*] Wed Nov  8 14:53:07 2023
 [*]
 [dumpfile] "tb.vcd"
-[dumpfile_mtime] "Wed Nov  8 14:25:18 2023"
-[dumpfile_size] 12056252
+[dumpfile_mtime] "Wed Nov  8 14:52:44 2023"
+[dumpfile_size] 12058433
 [savefile] "tb.gtkw"
-[timestart] 0
+[timestart] 31230000
 [size] 1696 1387
 [pos] 1747 0
-*-20.024525 1887000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-21.024525 38630000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -50,8 +50,28 @@
 tb.top_inst.clk
 tb.top_inst.ebus_reset_n
 tb.top_inst.ebus_phi
-@22
+@c00022
 tb.top_inst.ebus_a[15:0]
+@28
+(0)tb.top_inst.ebus_a[15:0]
+(1)tb.top_inst.ebus_a[15:0]
+(2)tb.top_inst.ebus_a[15:0]
+(3)tb.top_inst.ebus_a[15:0]
+(4)tb.top_inst.ebus_a[15:0]
+(5)tb.top_inst.ebus_a[15:0]
+(6)tb.top_inst.ebus_a[15:0]
+(7)tb.top_inst.ebus_a[15:0]
+(8)tb.top_inst.ebus_a[15:0]
+(9)tb.top_inst.ebus_a[15:0]
+(10)tb.top_inst.ebus_a[15:0]
+(11)tb.top_inst.ebus_a[15:0]
+(12)tb.top_inst.ebus_a[15:0]
+(13)tb.top_inst.ebus_a[15:0]
+(14)tb.top_inst.ebus_a[15:0]
+(15)tb.top_inst.ebus_a[15:0]
+@1401200
+-group_end
+@22
 tb.top_inst.ebus_d[7:0]
 @28
 tb.top_inst.ebus_rd_n
@@ -77,8 +97,10 @@ tb.top_inst.bus_write_done
 tb.top_inst.sysctrl.ext_reset_cnt_r[3:0]
 @28
 tb.top_inst.sysctrl.reset
-@29
 tb.top_inst.sysctrl.ebus_reset_n
+tb.top_inst.startup_mode_r
+@29
+tb.top_inst.sel_mem_ramctrl
 @c00200
 -VGA
 @800022

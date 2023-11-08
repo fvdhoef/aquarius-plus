@@ -315,9 +315,14 @@ module tb();
         memrd(16'h7FF0);
 
 
+        memwr(16'hFFFC, 8'h00);
+
+
         wait (!bus_int_n);
         @(posedge phi);
         iord(16'hBF);
+
+
 
 
         // iowr(16'hBE, 8'h00); // VDP data port
