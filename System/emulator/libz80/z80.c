@@ -745,6 +745,10 @@ void Z80RESET(Z80Context *ctx) {
 }
 
 void Z80INT(Z80Context *ctx, uint8_t value) {
+    // This wasn't in the original libz80: ignore interrupts when interrupts are disabled
+    if (!ctx->IFF1)
+        return; // Interrupts disabled, ignore interrupt
+
     ctx->int_req    = 1;
     ctx->int_vector = value;
 }

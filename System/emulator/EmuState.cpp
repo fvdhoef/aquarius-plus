@@ -102,6 +102,11 @@ int EmuState::cpuEmulate() {
         }
     }
 
+    // Generate interrupt if needed
+    if ((irqStatus & irqMask) != 0) {
+        Z80INT(&z80ctx, 0xFF);
+    }
+
     z80ctx.tstates = 0;
     Z80Execute(&z80ctx);
     int delta = z80ctx.tstates * 2;
@@ -162,11 +167,6 @@ unsigned EmuState::emulate() {
         }
     }
     keyboardTypeIn();
-
-    // Generate interrupt if needed
-    if ((irqStatus & irqMask) != 0) {
-        Z80INT(&z80ctx, 0xFF);
-    }
 
     // Render audio?
     if (sampleHalfCycles >= HCYCLES_PER_SAMPLE) {
