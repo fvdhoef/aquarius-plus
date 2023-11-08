@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Sun Nov  5 10:34:45 2023
+[*] Wed Nov  8 14:26:20 2023
 [*]
 [dumpfile] "tb.vcd"
-[dumpfile_mtime] "Sun Nov  5 10:34:34 2023"
-[dumpfile_size] 11478556
+[dumpfile_mtime] "Wed Nov  8 14:25:18 2023"
+[dumpfile_size] 12056252
 [savefile] "tb.gtkw"
-[timestart] 51398000
+[timestart] 0
 [size] 1696 1387
 [pos] 1747 0
-*-20.024525 52277000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+*-20.024525 1887000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -44,7 +44,7 @@
 [signals_width] 282
 [sst_expanded] 1
 [sst_vpaned_height] 431
-@c00200
+@800200
 -Bus
 @28
 tb.top_inst.clk
@@ -71,8 +71,14 @@ tb.top_inst.bus_read
 tb.top_inst.bus_read_done
 tb.top_inst.bus_write
 tb.top_inst.bus_write_done
-@1401200
+@1000200
 -Bus
+@24
+tb.top_inst.sysctrl.ext_reset_cnt_r[3:0]
+@28
+tb.top_inst.sysctrl.reset
+@29
+tb.top_inst.sysctrl.ebus_reset_n
 @c00200
 -VGA
 @800022
@@ -141,8 +147,6 @@ tb.top_inst.video.vsync_irq_pend
 tb.top_inst.video.line_irq_pend
 tb.top_inst.video.vsync_irq_pending_r
 tb.top_inst.video.line_irq_pending_r
-tb.top_inst.video.sprite_overflow_r
-tb.top_inst.video.sprite_collision_r
 tb.top_inst.video.ctrl_rddone
 tb.top_inst.video.ctrl_write
 tb.top_inst.video.data_rddone
@@ -255,7 +259,6 @@ tb.top_inst.video.gfx.busy_next
 -
 @24
 tb.top_inst.video.gfx.tline[7:0]
-@25
 tb.top_inst.video.gfx.row[4:0]
 @200
 -

@@ -146,21 +146,25 @@ module top(
     wire bus_write_done = ebus_wr_n_r[2:1] == 3'b01;
 
     // Memory space decoding
-    wire sel_mem_rom     = !ebus_mreq_n && !ebus_a[15];
-    wire sel_mem_ram     = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
+    wire sel_mem_introm = !ebus_mreq_n && !ebus_a[15];
+    wire sel_mem_intram = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
 
     // IO space decoding
     wire [2:0] io_addr         = {ebus_a[7], ebus_a[6], ebus_a[0]};
-    wire       sel_io_vcnt     = !ebus_iorq_n && io_addr == 3'b010;
-    wire       sel_io_hcnt     = !ebus_iorq_n && io_addr == 3'b011;
-    wire       sel_io_vdp_data = !ebus_iorq_n && io_addr == 3'b100;
-    wire       sel_io_vdp_ctrl = !ebus_iorq_n && io_addr == 3'b101;
-    wire       sel_io_joy1     = !ebus_iorq_n && io_addr == 3'b110;
-    wire       sel_io_joy2     = !ebus_iorq_n && io_addr == 3'b111;
+    wire       sel_io_espctrl  = !ebus_iorq_n && ebus_a[7:0] == 8'h10;
+    wire       sel_io_espdata  = !ebus_iorq_n && ebus_a[7:0] == 8'h11;
+    wire       sel_8bit        = sel_io_espctrl | sel_io_espdata;
+
+    wire       sel_io_vcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b010;
+    wire       sel_io_hcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b011;
+    wire       sel_io_vdp_data = !sel_8bit && !ebus_iorq_n && io_addr == 3'b100;
+    wire       sel_io_vdp_ctrl = !sel_8bit && !ebus_iorq_n && io_addr == 3'b101;
+    wire       sel_io_joy1     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
+    wire       sel_io_joy2     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
 
     wire sel_internal = 1'b1;
 
-    wire ram_wren        = sel_mem_ram && bus_write;
+    wire ram_wren        = sel_mem_intram && bus_write;
     wire io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
     wire io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
 
@@ -196,9 +200,11 @@ module top(
     always @* begin
         rddata <= 8'hFF;
 
-        if (sel_mem_rom)              rddata <= rddata_rom;
-        if (sel_mem_ram)              rddata <= rddata_ram;
+        if (sel_mem_introm)           rddata <= rddata_rom;
+        if (sel_mem_intram)           rddata <= rddata_ram;
 
+        if (sel_io_espctrl)           rddata <= rddata_espctrl;
+        if (sel_io_espdata)           rddata <= rddata_espdata;
         if (sel_io_vcnt)              rddata <= video_vcnt;
         if (sel_io_hcnt)              rddata <= video_hcnt;
         if (sel_io_vdp_data)          rddata <= rddata_io_video;
@@ -239,14 +245,12 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
-    wire esp_txvalid = 1'b0;    //sel_io_espdata && bus_write;
-    wire esp_txbreak = 1'b0;    //sel_io_espctrl && bus_write && wrdata[7];
+    wire esp_txvalid = sel_io_espdata && bus_write;
+    wire esp_txbreak = sel_io_espctrl && bus_write && wrdata[7];
     wire esp_txbusy;
 
-    wire sel_io_espctrl = 1'b0;
-
     wire esp_rxfifo_not_empty;
-    wire esp_rxfifo_read = 1'b0;    //sel_io_espdata && bus_read;
+    wire esp_rxfifo_read = sel_io_espdata && bus_read;
     wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
 
     reg [2:0] esp_ctrl_status_r;
