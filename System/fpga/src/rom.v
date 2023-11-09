@@ -8,7 +8,7 @@ module rom(
     input  wire  [7:0] p2_wrdata,
     input  wire        p2_wren);
 
-    reg addr_r;
+    reg [15:0] addr_r;
     always @(posedge clk) addr_r <= addr;
 
     wire [7:0] rddata_00;
@@ -1431,7 +1431,7 @@ module rom(
         .CLKA(clk), .SSRA(1'b0), .ADDRA(   addr[10:0]), .DOA(rddata_19), .DOPA(), .DIA(8'b0),      .DIPA(1'b0), .ENA(1'b1), .WEA(1'b0),
         .CLKB(clk), .SSRB(1'b0), .ADDRB(p2_addr[10:0]), .DOB(),          .DOPB(), .DIB(p2_wrdata), .DIPB(1'b0), .ENB(1'b1), .WEB(p2_wren_19));
 
-    always @* case (addr[15:11])
+    always @* case (addr_r[15:11])
         5'd0: rddata <= rddata_00;
         5'd1: rddata <= rddata_01;
         5'd2: rddata <= rddata_02;
