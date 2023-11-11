@@ -155,16 +155,12 @@ _main:
     call    _hide_sprite
     call    _clear_screen
     call    _draw_title
-    call    _load_game
-
-
-
-.1: jr      .1
+    jp      _load_game
 
 ;-----------------------------------------------------------------------------
-; Load game
+; Put selected entry in _dirent
 ;-----------------------------------------------------------------------------
-_load_game:
+_select_entry:
     ; Close any open descriptors and open directory
     call    esp_close_all
     call    esp_opendir
@@ -186,6 +182,29 @@ _load_game:
     ld      c,a
     call    .skip_entries
 
+    ; Read the directory entry
+    call    esp_readdir
+
+    call    esp_close_all
+    ret
+
+    ; Skip C entries
+.skip_entries:
+    ld      a,c
+    or      a
+    ret     z
+.loop:
+    call    esp_readdir
+    dec     c
+    ret     z
+    jr      .loop
+
+;-----------------------------------------------------------------------------
+; Load game
+;-----------------------------------------------------------------------------
+_load_game:
+    call    _select_entry
+
     ; Print filename
     xor     a
     ld      (_cursor_x),a
@@ -194,7 +213,6 @@ _load_game:
     call    _setaddr
     ld      hl,.loading_str
     call    _puts
-    call    esp_readdir
     call    _draw_filename
 
     ; Load file into external RAM to emulate ROM
@@ -208,17 +226,6 @@ _load_game:
     ldir
     jp      $D000
 
-    ; Skip C entries
-.skip_entries:
-    ld      a,c
-    or      a
-    ret     z
-.loop:
-    call    esp_readdir
-    dec     c
-    ret     z
-    jr      .loop
-
 .loading_str:  defb "Loading:",10,10,0
 
 ;-----------------------------------------------------------------------------
@@ -228,9 +235,9 @@ _load_file:
     call    esp_close_all
 
     ; Open file in _dirent_name
-    ld      a, ESPCMD_OPEN
+    ld      a,ESPCMD_OPEN
     call    esp_cmd
-    ld      a, FO_RDONLY
+    ld      a,FO_RDONLY
     call    esp_send_byte
     ld      hl,_dirent_name
 .1: ld      a,(hl)
@@ -297,9 +304,9 @@ _game_select:
     bit     JOY1_DOWN,a
     jr      nz,.next_entry
     bit     JOY1_A,a
-    ret     nz
+    jr      nz,.dir_up
     bit     JOY1_B,a
-    ret     nz
+    jr      nz,.select
     jr      .input
 
 .next_page:
@@ -314,6 +321,66 @@ _game_select:
 .next_entry:
     call    _next_entry
     jr      .input
+.dir_up:
+    call    _dir_up
+    jr      .input
+.select:
+    call    _select_entry
+    ld      a,(_dirent_attr)
+    bit     0,a
+    ret     z       ; Normal file, load it
+    call    _chdir
+    jr      .input
+
+;-----------------------------------------------------------------------------
+; Change directory
+;-----------------------------------------------------------------------------
+_chdir:
+    ; Directory -> change directory
+    ld      a,ESPCMD_CHDIR
+    call    esp_cmd
+
+    ld      hl,_dirent_name
+.1: ld      a,(hl)
+    inc     hl
+    call    esp_send_byte
+    or      a
+    jr      nz,.1
+    call    esp_get_byte
+
+    ; Reset cursor
+    xor     a
+    ld      (_file_page),a
+    ld      (_selected_entry),a
+
+    ; Update screen
+    call    _draw_screen
+    call    _update_sprite
+    ret
+
+;-----------------------------------------------------------------------------
+; Directory up
+;-----------------------------------------------------------------------------
+_dir_up:
+    ; Directory up
+    ld      a,ESPCMD_CHDIR
+    call    esp_cmd
+    ld      a,'.'
+    call    esp_send_byte
+    call    esp_send_byte
+    xor     a
+    call    esp_send_byte
+    call    esp_get_byte
+
+    ; Reset cursor
+    xor     a
+    ld      (_file_page),a
+    ld      (_selected_entry),a
+
+    ; Update screen
+    call    _draw_screen
+    call    _update_sprite
+    ret
 
 ;-----------------------------------------------------------------------------
 ; Previous entry
@@ -859,7 +926,7 @@ esp_readdir:
 ; Clobbered registers: A, HL, DE
 ;-----------------------------------------------------------------------------
 esp_read_bytes:
-    ld      a, ESPCMD_READ
+    ld      a,ESPCMD_READ
     call    esp_cmd
 
     ; Send file descriptor
@@ -867,9 +934,9 @@ esp_read_bytes:
     call    esp_send_byte
 
     ; Send read size
-    ld      a, e
+    ld      a,e
     call    esp_send_byte
-    ld      a, d
+    ld      a,d
     call    esp_send_byte
 
     ; Get result
@@ -878,20 +945,20 @@ esp_read_bytes:
 
     ; Get number of bytes actual read
     call    esp_get_byte
-    ld      e, a
+    ld      e,a
     call    esp_get_byte
-    ld      d, a
+    ld      d,a
 
     push    de
 
 .loop:
     ; Done reading? (DE=0)
-    ld      a, d
-    or      a, e
-    jr      z, .done
+    ld      a,d
+    or      a,e
+    jr      z,.done
 
     call    esp_get_byte
-    ld      (hl), a
+    ld      (hl),a
     inc     hl
     dec     de
     jr      .loop
