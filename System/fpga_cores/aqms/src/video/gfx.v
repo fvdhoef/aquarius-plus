@@ -150,6 +150,10 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
+    wire [7:0] spr_y    = spr_idx_r[0] ? vdata[15:8] : vdata[7:0];
+    wire [7:0] spr_tile = vdata[15:8];
+    wire [7:0] spr_x    = vdata[7:0];
+
     always @* begin
         hscroll_next          = hscroll_r;
         vscroll_next          = vscroll_r;
@@ -228,13 +232,13 @@ module gfx(
                 end
 
                 ST_SPR2: begin
-                    spr_y_next = (spr_idx_r[0] ? vdata[15:8] : vdata[7:0]) + 8'd1;
+                    spr_y_next = spr_y + 8'd1;
                     vaddr_next = spr_addr_nx;
                     state_next = ST_SPR3;
                 end
 
                 ST_SPR3: begin
-                    if (spr_y_r == 8'hD0) begin
+                    if (spr_y_r == 8'hD1) begin
                         // Terminator detected, skip remaining sprites
                         state_next = ST_DONE;
 
@@ -256,8 +260,14 @@ module gfx(
                     end
 
                     nxtstate_next         = ST_SPR1;
-                    vaddr_next            = {base_sprpat, vdata[15:8], spr_line[2:0], 1'b0};
-                    render_idx_next       = vdata[7:0];
+
+                    vaddr_next[12]        = base_sprpat;
+                    vaddr_next[11:5]      = spr_tile[7:1];
+                    vaddr_next[4]         = spr_h16 ? spr_line[3] : spr_tile[0];
+                    vaddr_next[3:1]       = spr_line[2:0];
+                    vaddr_next[0]         = 1'b0;
+
+                    render_idx_next       = spr_x;
                     render_hflip_next     = 1'b0;
                     render_palette_next   = 1'b1;
                     render_priority_next  = 1'b0;
