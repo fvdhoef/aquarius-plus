@@ -92,7 +92,7 @@ private:
     uint8_t  prevHandCtrl2    = 0xFF;
     uint8_t  handCtrl1        = 0xFF;
     uint8_t  handCtrl2        = 0xFF;
-    uint8_t  ledStatus        = 0xFF;
+    uint8_t  ledStatus        = 0;
 
     bool handController(unsigned scanCode, bool keyDown);
 
