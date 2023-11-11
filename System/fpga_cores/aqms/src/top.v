@@ -80,6 +80,8 @@ module top(
     wire [7:0] video_hcnt;
     wire       video_irq;
 
+    reg startup_mode_r = 1'b1;
+
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
@@ -116,8 +118,6 @@ module top(
     reg [4:0] reg_bank1_r;
     reg [4:0] reg_bank2_r;
     reg [7:0] reg_ramctrl_r;
-
-    reg startup_mode_r = 1'b1;
 
     // Select banking register based on upper address bits
     always @* begin
@@ -167,16 +167,16 @@ module top(
     wire       sel_io_joy1     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
     wire       sel_io_joy2     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
 
-    wire sel_internal  = !ebus_iorq_n | sel_mem_intram | sel_mem_introm;
-    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && startup_mode_r));
-    wire sel_mem_ram   = allow_sel_mem;
+    wire       sel_internal    = !ebus_iorq_n | sel_mem_intram | sel_mem_introm;
+    wire       allow_sel_mem   = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && startup_mode_r));
+    wire       sel_mem_ram     = allow_sel_mem;
 
-    assign ebus_ram_ce_n = !sel_mem_ram;
-    assign ebus_ram_we_n = !(!ebus_wr_n && sel_mem_ram && startup_mode_r);
+    assign     ebus_ram_ce_n   = !sel_mem_ram;
+    assign     ebus_ram_we_n   = !(!ebus_wr_n && sel_mem_ram && startup_mode_r);
 
-    wire ram_wren        = sel_mem_intram && bus_write;
-    wire io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
-    wire io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
+    wire       ram_wren        = sel_mem_intram && bus_write;
+    wire       io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
+    wire       io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
 
     // Generate rddone signal for video
     reg io_video_rddone;

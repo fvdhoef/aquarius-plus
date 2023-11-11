@@ -126,7 +126,7 @@ module spiregs(
         else if (cmd_r == CMD_SET_KEYB_MATRIX && msg_end)
             keys <= data_r;
 
-    // 11h: Set keyboard matrix
+    // 11h: Set hand controller
     always @(posedge clk)
         if (reset)
             {hctrl2, hctrl1} <= 16'hFFFF;
