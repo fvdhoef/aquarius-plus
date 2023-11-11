@@ -50,14 +50,14 @@ module renderer(
         3'b111: pixel_data = render_data_next[3:0];
     endcase
 
-    wire [1:0] lab_wrdata = {is_sprite, priority_r && (wrdata_r[3:0] != 4'd0)};
+    wire [1:0] lab_wrdata = {is_sprite_r, (priority_r && (wrdata[3:0] != 4'd0))};
     wire lab_is_sprite, lab_priority;
 
     lineattrbuf lab(
         .clk(clk),
-        .idx1(wridx_r),
+        .idx1(wridx),
         .wrdata1(lab_wrdata),
-        .wren1(wren_r),
+        .wren1(wren),
 
         .idx2(wridx_next),
         .rddata2({lab_is_sprite, lab_priority}));
@@ -106,7 +106,7 @@ module renderer(
 
         if (is_sprite_next) begin
             // Don't render transparent sprite pixels
-            if (pixel_data == 4'd0 || lab_is_sprite || (lab_priority && !priority_r))
+            if (pixel_data == 4'd0 || lab_is_sprite || lab_priority)
                 wren_next = 1'b0;
 
             // Check for collision

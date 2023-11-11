@@ -188,7 +188,6 @@ module gfx(
 
             busy_next             = 1'b1;
             linesel_next          = !linesel_r;
-            render_is_sprite_next = 1'b0;
             spr_idx_next          = 7'd0;
             spr_cnt_next          = 4'd0;
 
@@ -212,14 +211,18 @@ module gfx(
                 end
 
                 ST_MAP2: begin
-                    map_entry_next       = vdata;
-                    vaddr_next           = pat_addr;
-                    state_next           = ST_PAT1;
-                    nxtstate_next        = ST_MAP1;
-                    col_next             = col_r + 6'd1;
-                    render_hflip_next    = tile_hflip;
-                    render_palette_next  = tile_palette;
-                    render_priority_next = tile_priority;
+                    map_entry_next        = vdata;
+
+                    vaddr_next            = pat_addr;
+
+                    state_next            = ST_PAT1;
+                    nxtstate_next         = ST_MAP1;
+                    col_next              = col_r + 6'd1;
+
+                    render_hflip_next     = tile_hflip;
+                    render_palette_next   = tile_palette;
+                    render_priority_next  = tile_priority;
+                    render_is_sprite_next = 1'b0;
                 end
 
                 ST_SPR1: begin
@@ -272,6 +275,7 @@ module gfx(
                     render_palette_next   = 1'b1;
                     render_priority_next  = 1'b0;
                     render_is_sprite_next = 1'b1;
+
                     spr_idx_next          = spr_idx_r + 7'd1;
                 end
 
