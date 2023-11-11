@@ -237,7 +237,7 @@ module video(
             reg10_rasterirq_line_r  <= 8'b0;
 
         end else begin
-            if (vdp_reg_wr_r) begin
+            if (vdp_reg_wr) begin
                 if (vdp_reg_idx_r == 4'd0) begin
                     reg0_vscroll_inhibit_r  <= vdp_reg_data_r[7];
                     reg0_hscroll_inhibit_r  <= vdp_reg_data_r[6];
