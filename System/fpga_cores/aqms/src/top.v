@@ -372,7 +372,15 @@ module top(
 
     // Keyboard matrix
     wire [63:0] keys;
-    assign joy1 = {2'b11, keys[45], keys[51], keys[15], keys[22], keys[23], keys[14]};
+
+    wire joy1_x     = keys[45] && hctrl1_data[6];
+    wire joy1_z     = keys[51] && hctrl1_data[5];
+    wire joy1_right = keys[15] && hctrl1_data[1];
+    wire joy1_left  = keys[22] && hctrl1_data[3];
+    wire joy1_down  = keys[23] && hctrl1_data[0];
+    wire joy1_up    = keys[14] && hctrl1_data[2];
+
+    assign joy1 = {2'b11, joy1_x, joy1_z, joy1_right, joy1_left, joy1_down, joy1_up};
 
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;
