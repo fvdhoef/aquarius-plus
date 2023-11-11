@@ -344,7 +344,10 @@ module video(
         .linebuf_data(linebuf_data)
     );
 
-    wire [4:0] palidx = border_r ? {1'b1, reg7_border_colidx_r} : linebuf_data;
+    reg reg1_screen_en_rr;
+    always @(posedge (vclk)) if (render_start) reg1_screen_en_rr <= reg1_screen_en_r;
+
+    wire [4:0] palidx = (!reg1_screen_en_rr || border_r) ? {1'b1, reg7_border_colidx_r} : linebuf_data;
 
     //////////////////////////////////////////////////////////////////////////
     // Palette
@@ -366,7 +369,7 @@ module video(
     // Output registers
     //////////////////////////////////////////////////////////////////////////
     always @(posedge(vclk))
-        if (blank_r || !reg1_screen_en_r) begin
+        if (blank_r) begin
             vga_r <= 4'b0;
             vga_g <= 4'b0;
             vga_b <= 4'b0;

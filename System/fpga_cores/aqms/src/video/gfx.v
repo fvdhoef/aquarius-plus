@@ -77,8 +77,8 @@ module gfx(
     reg   [3:0] spr_cnt_r,   spr_cnt_next;
 
     wire  [7:0] line_idx      = line;
-    wire  [7:0] tline         = line_idx + vscroll_r;
-    wire  [4:0] row           = tline[7:3];
+    wire  [8:0] tline         = {1'b0, line_idx} + {1'b0, vscroll_r};
+    wire  [4:0] row           = (tline[8:3] < 6'd28) ? tline[7:3] : (tline[8:3] - 6'd28);  // Handle 28 rows
     wire  [4:0] column        = col_next[4:0];
 
     wire [15:0] map_entry     = map_entry_next;
