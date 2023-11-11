@@ -162,6 +162,7 @@ module top(
 
     wire       sel_io_vcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b010;
     wire       sel_io_hcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b011;
+    wire       sel_io_psg      = !sel_8bit && !ebus_iorq_n && io_addr == 3'b011;
     wire       sel_io_vdp_data = !sel_8bit && !ebus_iorq_n && io_addr == 3'b100;
     wire       sel_io_vdp_ctrl = !sel_8bit && !ebus_iorq_n && io_addr == 3'b101;
     wire       sel_io_joy1     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
@@ -177,6 +178,8 @@ module top(
     wire       ram_wren        = sel_mem_intram && bus_write;
     wire       io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
     wire       io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
+
+    wire       io_psg_wren     = sel_io_psg && bus_write;
 
     // Generate rddone signal for video
     reg io_video_rddone;
@@ -418,11 +421,26 @@ module top(
         .video_mode(video_mode));
 
     //////////////////////////////////////////////////////////////////////////
+    // SN76489 PSG
+    //////////////////////////////////////////////////////////////////////////
+    wire [15:0] psg_sample;
+    
+    psg psg(
+        .clk(clk),
+        .reset(reset),
+
+        .wrdata(wrdata),
+        .wren(io_psg_wren),
+
+        .sample(psg_sample)
+    );
+
+    //////////////////////////////////////////////////////////////////////////
     // PWM DAC
     //////////////////////////////////////////////////////////////////////////
     wire        next_sample = 1'b1;
-    wire [15:0] left_data   = 16'b0;
-    wire [15:0] right_data  = 16'b0;
+    wire [15:0] left_data   = psg_sample;
+    wire [15:0] right_data  = psg_sample;
 
     pwm_dac pwm_dac(
         .rst(reset),
