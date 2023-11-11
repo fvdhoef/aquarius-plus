@@ -483,16 +483,37 @@ _pad:
 ; Draw and pad filename
 ;-----------------------------------------------------------------------------
 _draw_filename:
+    ; Print '[' if directory
+    ld      a,(_dirent_attr)
+    bit     0,a
+    jr      z,.1
+    ld      a,'['
+    call    _putchar
+.1:
+    ; Print file name
     ld      hl,_dirent_name
-.1: ld      a,(hl)
+.2: ld      a,(hl)
     inc     hl
     or      a
-    jp      z,_pad
+    jr      z,.3
     call    _putchar
     ld      a,(_cursor_x)
     or      a
     ret     z
-    jr      .1
+    jr      .2
+.3:
+    ; Print ']' if directory
+    ld      a,(_dirent_attr)
+    bit     0,a
+    jr      z,.4
+    ld      a,']'
+    call    _putchar
+.4:
+    ; Pad if not already on the new line
+    ld      a,(_cursor_x)
+    or      a
+    ret     z
+    jp      _pad
 
 ;-----------------------------------------------------------------------------
 ; Initialization
