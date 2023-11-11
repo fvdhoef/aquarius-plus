@@ -96,7 +96,7 @@ _entry:
     im      1
 
     ; Set stack pointer
-    ld      sp,$E000
+    ld      sp,$DF00
 
     ; Clear RAM
     ld      hl,$C000
