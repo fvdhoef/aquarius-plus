@@ -1,3 +1,34 @@
+// TODO:
+// - Latch scroll-x on end of line
+// - Latch scroll-y on end of frame
+// - Line interrupt
+//
+//
+//
+// NTSC, 256x192
+//
+// | Lines | Description       | 
+// | ----- | ----------------- |
+// |  192  | Active display    |
+// |   24  | Bottom border     |
+// |    3  | Bottom blanking   |
+// |    3  | Vertical blanking |
+// |   13  | Top blanking      |
+// |   27  | Top border        |
+//
+// | Lines | Description       | 
+// | ----- | ----------------- |
+// |   24  | Top border        |
+// |  192  | Active display    |
+// |   24  | Bottom border     |
+// |    3  | Bottom blanking   |
+// |    3  | Vertical blanking |
+// |   16  | Top blanking      |
+//
+// V counter values: 00-DA, D5-FF
+//
+
+
 module video(
     input  wire        clk,
     input  wire        reset,
@@ -233,52 +264,47 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Video timing
     //////////////////////////////////////////////////////////////////////////
+    wire [7:0] hpos;
     wire [7:0] vpos;
-    wire [9:0] hpos;
-    wire       hsync, hblank, hlast;
-    wire       vblank;
-    wire       vsync, vnext;
-    wire       blank;
+    wire [7:0] render_line;
+    wire       render_start;
+    wire       vblank_irq_pulse;
+    wire       hsync, vsync, border, blank;
 
     video_timing video_timing(
         .clk(vclk),
+        .left_col_blank(reg0_left_col_blank_r),
 
         .hpos(hpos),
-        .hsync(hsync),
-        .hblank(hblank),
-        .hlast(hlast),
-
         .vpos(vpos),
-        .vsync(vsync),
-        .vblank(vblank),
-        .vnext(vnext),
 
+        .render_line(render_line),
+        .render_start(render_start),
+        .vblank_irq_pulse(vblank_irq_pulse),
+
+        .hsync(hsync),
+        .vsync(vsync),
+        .border(border),
         .blank(blank));
 
-    reg [9:0] hpos_r, hpos_rr;
-    always @(posedge vclk) hpos_r  <= hpos;
-    always @(posedge vclk) hpos_rr <= hpos_r;
+    assign vcnt = vpos;
+    assign hcnt = hpos;
 
-    reg blank_r, hsync_r, vsync_r;
-    always @(posedge vclk) blank_r <= blank;
-    always @(posedge vclk) hsync_r <= hsync;
-    always @(posedge vclk) vsync_r <= vsync;
+    // Delay signals to compensate for pipeline delays
+    reg hsync_r, vsync_r, border_r, blank_r;
+    always @(posedge vclk) hsync_r  <= hsync;
+    always @(posedge vclk) vsync_r  <= vsync;
+    always @(posedge vclk) border_r <= border;
+    always @(posedge vclk) blank_r  <= blank;
 
-    reg blank_rr, hsync_rr, vsync_rr;
-    always @(posedge vclk) blank_rr <= blank_r;
-    always @(posedge vclk) hsync_rr <= hsync_r;
-    always @(posedge vclk) vsync_rr <= vsync_r;
-
-    wire vsync_line;
-    reg vsync_line_r;
-    always @(posedge vclk) vsync_line_r <= vsync_line;
-
-    wire vid_vsync_irq_pend = vsync_line && !vsync_line_r;
-    wire vid_line_irq_pend  = 1'b0;
+    //////////////////////////////////////////////////////////////////////////
+    // Synchronization of signal from vclk to clk domain
+    //////////////////////////////////////////////////////////////////////////
+    wire vid_line_irq_pend = 1'b0;
     wire vid_spr_overflow;
     wire vid_spr_collision;
 
-    pulse2pulse p2p_vsync_irq(     .in_clk(vclk), .in_pulse(vid_vsync_irq_pend), .out_clk(clk), .out_pulse(vsync_irq_pend));
+    pulse2pulse p2p_vsync_irq(     .in_clk(vclk), .in_pulse(vblank_irq_pulse),   .out_clk(clk), .out_pulse(vsync_irq_pend));
     pulse2pulse p2p_line_irq(      .in_clk(vclk), .in_pulse(vid_line_irq_pend),  .out_clk(clk), .out_pulse(line_irq_pend));
     pulse2pulse p2p_spr_overflow(  .in_clk(vclk), .in_pulse(vid_spr_overflow),   .out_clk(clk), .out_pulse(spr_overflow));
     pulse2pulse p2p_spr_collision( .in_clk(vclk), .in_pulse(vid_spr_collision),  .out_clk(clk), .out_pulse(spr_collision));
@@ -288,48 +314,35 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     wire [4:0] linebuf_data;
 
-    wire [7:0] vline         = vpos - 8'd24;
-    wire [8:0] linebuf_rdidx = hpos[9:1] - 9'd32;
-    wire       vborder       = vline >= 8'd192;
-    wire       vborder2      = vline < 8'd1 || vline >= 8'd193;
-    wire       hborder       = linebuf_rdidx[8];
-    assign     vsync_line    = vline == 8'd193;
-
-    assign vcnt = vline;
-    assign hcnt = linebuf_rdidx[7:0];
-
-    reg gfx_start_r;
-    always @(posedge vclk) if (!vborder) gfx_start_r <= vnext;
-
-    wire [7:0] hscroll = (reg0_hscroll_inhibit_r && vline < 8'd16) ? 8'h00 : reg8_hscroll_r;
-
     gfx gfx(
         .clk(vclk),
         .reset(vclk_reset),
 
-        .hscroll(hscroll),
+        // Register values
+        .hscroll_inhibit(reg0_hscroll_inhibit_r),
+        .hscroll(reg8_hscroll_r),
         .vscroll(reg9_vscroll_r),
         .base_nt(reg2_scrmap_base_r[3:1]),
         .base_sprattr(reg5_sprattr_base_r[6:1]),
         .base_sprpat(reg6_sprpat_base_r[2]),
-        .bgcol(reg7_border_colidx_r),
         .spr_h16(reg1_spr_h16_r),
 
+        // Render parameters
+        .line(render_line),
+        .start(render_start),
+
+        // Output signals
         .spr_overflow(vid_spr_overflow),
         .spr_collision(vid_spr_collision),
 
+        // VRAM interface
         .vaddr(vram_addr2),
         .vdata(vram_rddata2),
 
-        .vline(vline),
-        .start(gfx_start_r),
-
-        .linebuf_rdidx(linebuf_rdidx[7:0]),
+        // Line buffer interface
+        .linebuf_rdidx(hpos),
         .linebuf_data(linebuf_data)
     );
-
-    reg border_r;
-    always @(posedge vclk) border_r <= hborder | vborder2;
 
     wire [4:0] palidx = border_r ? {1'b1, reg7_border_colidx_r} : linebuf_data;
 
@@ -353,7 +366,7 @@ module video(
     // Output registers
     //////////////////////////////////////////////////////////////////////////
     always @(posedge(vclk))
-        if (blank_rr || !reg1_screen_en_r) begin
+        if (blank_r || !reg1_screen_en_r) begin
             vga_r <= 4'b0;
             vga_g <= 4'b0;
             vga_b <= 4'b0;
@@ -364,7 +377,7 @@ module video(
             vga_b <= {pal_b, pal_b};
         end
 
-    always @(posedge vclk) vga_hsync <= hsync_rr;
-    always @(posedge vclk) vga_vsync <= vsync_rr;
+    always @(posedge vclk) vga_hsync <= hsync_r;
+    always @(posedge vclk) vga_vsync <= vsync_r;
 
 endmodule

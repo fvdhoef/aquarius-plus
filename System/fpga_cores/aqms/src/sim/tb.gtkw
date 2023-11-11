@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Wed Nov  8 14:53:07 2023
+[*] Sat Nov 11 08:52:13 2023
 [*]
 [dumpfile] "tb.vcd"
-[dumpfile_mtime] "Wed Nov  8 14:52:44 2023"
-[dumpfile_size] 12058433
+[dumpfile_mtime] "Sat Nov 11 08:51:25 2023"
+[dumpfile_size] 2027781
 [savefile] "tb.gtkw"
-[timestart] 31230000
-[size] 1696 1387
-[pos] 1747 0
-*-21.024525 38630000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[timestart] 10518340000
+[size] 3392 1387
+[pos] 54 0
+*-22.221287 10553549000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -40,11 +40,12 @@
 [treeopen] tb.top_inst.
 [treeopen] tb.top_inst.video.
 [treeopen] tb.top_inst.video.gfx.
+[treeopen] tb.top_inst.video.video_timing.
 [sst_width] 253
-[signals_width] 282
+[signals_width] 243
 [sst_expanded] 1
-[sst_vpaned_height] 431
-@800200
+[sst_vpaned_height] 550
+@c00200
 -Bus
 @28
 tb.top_inst.clk
@@ -91,7 +92,7 @@ tb.top_inst.bus_read
 tb.top_inst.bus_read_done
 tb.top_inst.bus_write
 tb.top_inst.bus_write_done
-@1000200
+@1401200
 -Bus
 @24
 tb.top_inst.sysctrl.ext_reset_cnt_r[3:0]
@@ -99,18 +100,54 @@ tb.top_inst.sysctrl.ext_reset_cnt_r[3:0]
 tb.top_inst.sysctrl.reset
 tb.top_inst.sysctrl.ebus_reset_n
 tb.top_inst.startup_mode_r
-@29
 tb.top_inst.sel_mem_ramctrl
+@800200
+-Video timing
+@24
+tb.top_inst.video.video_timing.hpos[7:0]
+tb.top_inst.video.video_timing.vpos[7:0]
+tb.top_inst.video.video_timing.render_line[7:0]
+@28
+tb.top_inst.video.video_timing.render_start
+@24
+tb.top_inst.video.video_timing.hpos[7:0]
+@29
+tb.top_inst.video.video_timing.vblank_irq_pulse
+@c00024
+tb.top_inst.video.video_timing.hcnt[8:0]
+@28
+(0)tb.top_inst.video.video_timing.hcnt[8:0]
+(1)tb.top_inst.video.video_timing.hcnt[8:0]
+(2)tb.top_inst.video.video_timing.hcnt[8:0]
+(3)tb.top_inst.video.video_timing.hcnt[8:0]
+(4)tb.top_inst.video.video_timing.hcnt[8:0]
+(5)tb.top_inst.video.video_timing.hcnt[8:0]
+(6)tb.top_inst.video.video_timing.hcnt[8:0]
+(7)tb.top_inst.video.video_timing.hcnt[8:0]
+(8)tb.top_inst.video.video_timing.hcnt[8:0]
+@1401200
+-group_end
+@28
+tb.top_inst.video.video_timing.hactive
+tb.top_inst.video.video_timing.hborder
+tb.top_inst.video.video_timing.hblank
+tb.top_inst.video.video_timing.hsync
+tb.top_inst.video.video_timing.hlast
+@24
+tb.top_inst.video.video_timing.vcnt[8:0]
+@28
+tb.top_inst.video.video_timing.vactive
+tb.top_inst.video.video_timing.vborder
+tb.top_inst.video.video_timing.vblank
+tb.top_inst.video.video_timing.vsync
+tb.top_inst.video.video_timing.vlast
+tb.top_inst.video.video_timing.blank
+@1000200
+-Video timing
 @c00200
 -VGA
-@800022
-#{tb.top_inst.video.hpos[6:2]} (3)tb.top_inst.video.hpos[9:0] (4)tb.top_inst.video.hpos[9:0] (5)tb.top_inst.video.hpos[9:0] (6)tb.top_inst.video.hpos[9:0] (7)tb.top_inst.video.hpos[9:0]
-@22
-+{tb.top_inst.video.hpos[6]} (3)tb.top_inst.video.hpos[9:0]
-(4)tb.top_inst.video.hpos[9:0]
-(5)tb.top_inst.video.hpos[9:0]
-(6)tb.top_inst.video.hpos[9:0]
-(7)tb.top_inst.video.hpos[9:0]
+@800200
+-tb.top_inst.video.hpos[6:2]
 @1001200
 -group_end
 @22
@@ -180,9 +217,6 @@ tb.top_inst.video.vsync_irq_en_r
 tb.top_inst.video.line_irq_en_r
 @22
 tb.top_inst.video.vdp_status[7:0]
-@24
-tb.top_inst.video.hpos[9:0]
-tb.top_inst.video.vpos[7:0]
 @28
 tb.top_inst.video.reg0_hscroll_inhibit_r
 tb.top_inst.video.reg0_left_col_blank_r
@@ -230,8 +264,6 @@ tb.top_inst.video.gfx.base_nt[2:0]
 tb.top_inst.video.gfx.base_sprattr[5:0]
 @28
 tb.top_inst.video.gfx.base_sprpat
-@22
-tb.top_inst.video.gfx.bgcol[3:0]
 @200
 -
 @22
@@ -239,8 +271,6 @@ tb.top_inst.video.gfx.vaddr[12:0]
 tb.top_inst.video.gfx.vdata[15:0]
 @200
 -
-@22
-tb.top_inst.video.gfx.vline[7:0]
 @28
 tb.top_inst.video.gfx.start
 @200

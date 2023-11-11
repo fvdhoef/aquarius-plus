@@ -3,13 +3,17 @@ module gfx(
     input  wire        reset,
 
     // Register values
+    input  wire        hscroll_inhibit,
     input  wire  [7:0] hscroll,
     input  wire  [7:0] vscroll,
     input  wire  [2:0] base_nt,         // bit [13:11] of Name Table Base Address
     input  wire  [5:0] base_sprattr,    // bit [13:8] of Sprite Attribute Table Base Address
     input  wire        base_sprpat,     // bit [13] of Sprite Pattern Generator Base Address
-    input  wire  [3:0] bgcol,
     input  wire        spr_h16,
+
+    // Render parameters
+    input  wire  [7:0] line,
+    input  wire        start,
 
     // Output signals
     output reg         spr_overflow,
@@ -18,10 +22,6 @@ module gfx(
     // Video RAM interface
     output wire [12:0] vaddr,
     input  wire [15:0] vdata,
-
-    // Render parameters
-    input  wire  [7:0] vline,
-    input  wire        start,
 
     // Line buffer interface
     input  wire  [7:0] linebuf_rdidx,
@@ -52,7 +52,6 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
     // Data fetching state
     //////////////////////////////////////////////////////////////////////////
-
     localparam
         ST_DONE    = 4'd0,
         ST_MAP1    = 4'd1,
@@ -62,6 +61,9 @@ module gfx(
         ST_SPR3    = 4'd5,
         ST_PAT1    = 4'd7,
         ST_PAT2    = 4'd8;
+
+    reg   [7:0] vscroll_r,   vscroll_next;
+    reg   [7:0] hscroll_r,   hscroll_next;
 
     reg   [5:0] col_r,       col_next;
     reg  [12:0] vaddr_r,     vaddr_next;
@@ -74,8 +76,8 @@ module gfx(
     reg   [7:0] spr_y_r,     spr_y_next;
     reg   [3:0] spr_cnt_r,   spr_cnt_next;
 
-    wire  [7:0] line_idx      = vline;
-    wire  [7:0] tline         = line_idx + vscroll;
+    wire  [7:0] line_idx      = line;
+    wire  [7:0] tline         = line_idx + vscroll_r;
     wire  [4:0] row           = tline[7:3];
     wire  [4:0] column        = col_next[4:0];
 
@@ -149,6 +151,9 @@ module gfx(
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
     always @* begin
+        hscroll_next          = hscroll_r;
+        vscroll_next          = vscroll_r;
+
         col_next              = col_r;
         vaddr_next            = vaddr_r;
         state_next            = state_r;
@@ -169,6 +174,14 @@ module gfx(
         spr_overflow          = 1'b0;
 
         if (start) begin
+            if (hscroll_inhibit && line < 8'd16)
+                hscroll_next      = 8'd0;
+            else
+                hscroll_next      = hscroll;
+
+            if (line == 8'd0)
+                vscroll_next      = vscroll;
+
             busy_next             = 1'b1;
             linesel_next          = !linesel_r;
             render_is_sprite_next = 1'b0;
@@ -176,7 +189,7 @@ module gfx(
             spr_cnt_next          = 4'd0;
 
             state_next            = ST_MAP1;
-            render_idx_next       = hscroll;
+            render_idx_next       = hscroll_next;
             col_next              = 5'd0;
 
         end else if (busy_r) begin
@@ -277,6 +290,9 @@ module gfx(
 
     always @(posedge clk) begin
         if (reset) begin
+            hscroll_r          <= 8'd0;
+            vscroll_r          <= 8'd0;
+
             col_r              <= 6'd0;
             vaddr_r            <= 13'b0;
             state_r            <= ST_DONE;
@@ -295,6 +311,9 @@ module gfx(
             render_priority_r  <= 1'b0;
 
         end else begin
+            hscroll_r          <= hscroll_next;
+            vscroll_r          <= vscroll_next;
+
             col_r              <= col_next;
             vaddr_r            <= vaddr_next;
             state_r            <= state_next;
