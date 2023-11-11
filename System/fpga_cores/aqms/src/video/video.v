@@ -1,9 +1,7 @@
 // TODO:
-// - Latch scroll-x on end of line
-// - Latch scroll-y on end of frame
-// - Line interrupt
-//
-//
+// - V-Scroll inhibit
+// - Sprite shift
+// - Sprite x2 magnify
 //
 // NTSC, 256x192
 //
@@ -16,17 +14,7 @@
 // |   13  | Top blanking      |
 // |   27  | Top border        |
 //
-// | Lines | Description       | 
-// | ----- | ----------------- |
-// |   24  | Top border        |
-// |  192  | Active display    |
-// |   24  | Bottom border     |
-// |    3  | Bottom blanking   |
-// |    3  | Vertical blanking |
-// |   16  | Top blanking      |
-//
 // V counter values: 00-DA, D5-FF
-//
 
 
 module video(
@@ -269,7 +257,7 @@ module video(
     wire [7:0] render_line;
     wire       render_start;
     wire       vblank_irq_pulse;
-    wire       hsync, vsync, border, blank;
+    wire       next_line, hsync, vsync, border, blank;
 
     video_timing video_timing(
         .clk(vclk),
@@ -282,6 +270,7 @@ module video(
         .render_start(render_start),
         .vblank_irq_pulse(vblank_irq_pulse),
 
+        .next_line(next_line),
         .hsync(hsync),
         .vsync(vsync),
         .border(border),
@@ -298,9 +287,32 @@ module video(
     always @(posedge vclk) blank_r  <= blank;
 
     //////////////////////////////////////////////////////////////////////////
+    // Line IRQ 
+    //////////////////////////////////////////////////////////////////////////
+    reg [7:0] lineirq_cnt_r;
+
+    always @(posedge (vclk)) begin
+        vid_line_irq_pend <= 1'b0;
+
+        if (next_line) begin
+            if (vpos <= 8'd192) begin
+                if (lineirq_cnt_r == 8'd0) begin
+                    vid_line_irq_pend <= 1'b1;
+                    lineirq_cnt_r <= reg10_rasterirq_line_r;
+                end else begin
+                    lineirq_cnt_r <= lineirq_cnt_r - 8'd1;
+                end
+
+            end else begin
+                lineirq_cnt_r <= reg10_rasterirq_line_r;
+            end
+        end
+    end
+
+    //////////////////////////////////////////////////////////////////////////
     // Synchronization of signal from vclk to clk domain
     //////////////////////////////////////////////////////////////////////////
-    wire vid_line_irq_pend = 1'b0;
+    reg  vid_line_irq_pend;
     wire vid_spr_overflow;
     wire vid_spr_collision;
 

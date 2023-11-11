@@ -11,6 +11,7 @@ module video_timing(
     output reg        render_start,
     output wire       vblank_irq_pulse,
 
+    output wire       next_line,
     output wire       hsync,
     output wire       vsync,
     output wire       border,
@@ -59,7 +60,9 @@ module video_timing(
     assign vsync   = !(vcnt == 9'd245);
     assign vlast   = vcnt_r == 10'd523;
 
-    assign vblank_irq_pulse = hlast && vcnt_r[0] && vpos == 9'd192;
+    assign next_line = hlast && vcnt_r[0];
+
+    assign vblank_irq_pulse = next_line && vpos == 9'd192;
 
     //////////////////////////////////////////////////////////////////////////
     // Common
@@ -70,8 +73,9 @@ module video_timing(
     always @(posedge (clk)) begin
         render_start <= 1'b0;
 
-        if (hlast && vcnt_r[0] && render_line_next <= 8'd192) begin
-            render_start  <= 1'b1;
+        if (next_line) begin
+            if (render_line_next <= 8'd192)
+                render_start  <= 1'b1;
             render_line_r <= render_line_next;
         end
     end
