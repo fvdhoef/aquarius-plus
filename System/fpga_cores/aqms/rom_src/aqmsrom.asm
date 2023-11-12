@@ -308,7 +308,6 @@ _draw_title:
 _game_select:
     ; Draw screen
     call    _draw_screen
-    call    _update_sprite
 
     ; Process input
 .input:
@@ -374,7 +373,6 @@ _chdir:
 
     ; Update screen
     call    _draw_screen
-    call    _update_sprite
     ret
 
 ;-----------------------------------------------------------------------------
@@ -398,7 +396,6 @@ _dir_up:
 
     ; Update screen
     call    _draw_screen
-    call    _update_sprite
     ret
 
 ;-----------------------------------------------------------------------------
@@ -410,7 +407,6 @@ _prev_entry:
     jr      z,.prev_page
     dec     a
     ld      (_selected_entry),a
-.done:
     jp      _update_sprite
 
 .prev_page:
@@ -418,7 +414,7 @@ _prev_entry:
     ret     z
     ld      a,LINES_PER_PAGE-1
     ld      (_selected_entry),a
-    jr      .done
+    jp      _update_sprite
 
 ;-----------------------------------------------------------------------------
 ; Next entry
@@ -428,8 +424,13 @@ _next_entry:
     cp      a,LINES_PER_PAGE-1
     jr      nc,.next_page
     inc     a
+
+    ld      b,a
+    ld      a,(_page_lines)
+    cp      b
+    ret     c
+    ld      a,b
     ld      (_selected_entry),a
-.done:
     jp      _update_sprite
 
 .next_page:
@@ -437,7 +438,7 @@ _next_entry:
     ret     nz
     xor     a
     ld      (_selected_entry),a
-    jr      .done
+    jp      _update_sprite
 
 ;-----------------------------------------------------------------------------
 ; Go to previous page (result: z = no change, at first page)
@@ -449,7 +450,6 @@ _prev_page:
     dec     a
     ld      (_file_page),a
     call    _draw_screen
-    call    _update_sprite
     ld      a,1
     or      a
     ret
@@ -465,7 +465,6 @@ _next_page:
     inc     a
     ld      (_file_page),a
     call    _draw_screen
-    call    _update_sprite
     xor     a
     ret
 
@@ -555,9 +554,30 @@ _draw_screen:
 .fill_screen:
     ld      a,(_cursor_y)
     cp      24
-    ret     nc
+    jr      nc,.done3
     call    _pad
     jr      .fill_screen
+
+.done3:
+    ld      a,(_page_lines)
+    or      a
+    jr      z,.nofiles
+    call    _update_sprite
+    ret
+
+.nofiles:
+    ; No files found
+    ld      a,4
+    ld      (_cursor_x),a
+    ld      a,8
+    ld      (_cursor_y),a
+    call    _setaddr
+    ld      hl,.nofiles_str
+    call    _puts
+    call    _hide_sprite
+    ret
+
+.nofiles_str:  defb "No .SMS ROM files found",0
 
 _pad:
     ld      a,' '
@@ -990,7 +1010,6 @@ _to_upper:
     ret     nc
     sub     $20
     ret
-
 
 ;-----------------------------------------------------------------------------
 ; Read bytes
