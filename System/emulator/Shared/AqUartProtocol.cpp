@@ -9,6 +9,7 @@
 #    include <driver/uart.h>
 #    include <esp_ota_ops.h>
 #    include <esp_app_format.h>
+#    include "FPGA.h"
 
 static const char *TAG = "AqUartProtocol";
 
@@ -42,6 +43,7 @@ enum {
     ESPCMD_GETCWD      = 0x1E, // Get current working directory
     ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
     ESPCMD_OPENDIR83   = 0x20, // Open directory in 8.3 mode
+    ESPCMD_LOADFPGA    = 0x40, // Load FPGA bitstream
 };
 
 #define ESP_PREFIX "esp:"
@@ -507,6 +509,14 @@ void AqUartProtocol::receivedByte(uint8_t data) {
             case ESPCMD_CLOSEALL: {
                 cmdCloseAll();
                 rxBufIdx = 0;
+                break;
+            }
+            case ESPCMD_LOADFPGA: {
+                // Wait for zero-termination of path
+                if (data == 0) {
+                    cmdLoadFpga((const char *)&rxBuf[1]);
+                    rxBufIdx = 0;
+                }
                 break;
             }
             default: {
@@ -1024,6 +1034,59 @@ void AqUartProtocol::cmdCloseAll() {
     fi.clear();
     di.clear();
 #endif
+}
+
+void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
+    DBGF("LOADFPGA\n");
+
+    VFS *vfs  = nullptr;
+    auto path = resolvePath(pathArg, &vfs);
+    if (!vfs) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    struct stat st;
+    int         result = vfs->stat(path, &st);
+    if (result < 0) {
+        txFifoWrite(result);
+        return;
+    }
+    if ((st.st_mode & S_IFREG) == 0) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    void *buf = malloc(st.st_size);
+    if (buf == nullptr) {
+        printf("Insufficient memory to allocate buffer for bitstream!\n");
+        txFifoWrite(ERR_OTHER);
+        return;
+    }
+
+    int vfs_fd = vfs->open(FO_RDONLY, path);
+    if (vfs_fd < 0) {
+        txFifoWrite(vfs_fd);
+    } else {
+        vfs->read(vfs_fd, st.st_size, buf);
+        vfs->close(vfs_fd);
+        txFifoWrite(0);
+
+        printf("Loading bitstream: %s (%u bytes)\n", pathArg, (unsigned)st.st_size);
+
+#ifndef EMULATOR
+        bool ok = FPGA::instance().loadBitstream(buf, st.st_size);
+        if (!ok) {
+            printf("Failed! Loading default bitstream\n");
+
+            // Restore Aq+ firmware
+            FPGA::instance().loadBitstream(buf, st.st_size);
+        }
+        cmdCloseAll();
+#endif
+    }
+
+    free(buf);
 }
 
 #ifndef EMULATOR

@@ -18,6 +18,7 @@ public:
 
     void init();
     bool loadBitstream(const void *data, size_t length);
+    bool loadDefaultBitstream();
 
     void    aqpReset();
     void    aqpUpdateKeybMatrix(uint64_t keyb_matrix);

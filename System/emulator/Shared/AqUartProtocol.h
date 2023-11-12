@@ -84,6 +84,7 @@ private:
     void cmdStat(const char *pathArg);
     void cmdGetCwd();
     void cmdCloseAll();
+    void cmdLoadFpga(const char *pathArg);
 
 #ifndef EMULATOR
     QueueHandle_t uartQueue;
