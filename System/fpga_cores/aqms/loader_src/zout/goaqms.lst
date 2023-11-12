@@ -1,0 +1,599 @@
+			    include "regs.inc"
+**** /Users/frank/Work/aquarius-plus/SDK/asm/inc/regs.inc ****
+			;-----------------------------------------------------------------------------
+			; regs.inc
+			;
+			; This file contains locations of hardware registers and ROM/RAM locations.
+			;
+			; Locations to the original Aquarius ROM are taken from the dissassembly by
+			; Curtis F Kaylor, which can be found at:
+			; https://github.com/RevCurtisP/Aquarius/blob/main/disassembly/aquarius-rom.lst
+			;
+			;-----------------------------------------------------------------------------
+			
+			;-----------------------------------------------------------------------------
+			; System variables
+			;-----------------------------------------------------------------------------
+    -	3000          	SCREEN      equ $3000   ; Screen Character Matrix
+    -	3400          	COLOR       equ $3400   ; Screen Color Matrix
+    -	3800          	TTYPOS      equ $3800   ; [M80] STORE TERMINAL POSITION HERE
+    -	3801          	CURRAM      equ $3801   ; Position in CHARACTER RAM of cursor
+    -	3803          	USRPOK      equ $3803   ; JP instruction for USR() routine
+    -	3804          	USRADD      equ $3804   ; Address of USR routine
+    -	3806          	HOOK        equ $3806   ; Extended ROM Hook Vector
+    -	3808          	CNTOFL      equ $3808   ; Line Counter. If not 0,
+    -	3809          	LASTFF      equ $3809   ; Last value last output to port #FF
+    -	380A          	CHARC       equ $380A   ; [M80] ISCNTC STORES EATEN CHAR HERE WHEN NOT A ^C
+    -	380B          	RESPTR      equ $380B   ; Pointer to Ctrl-Key Reserved Word
+    -	380D          	CURCHR      equ $380D   ; Character under Cursor
+    -	380E          	LSTX        equ $380E   ; [M64] Matrix Coordinate of Last Key Pressed
+    -	380F          	KCOUNT      equ $380F   ; Keyboard debounce counter
+    -	3810          	FDIVC       equ $3810   ;
+    -	3814          	FDIVB       equ $3814   ;
+    -	3818          	FDIVA       equ $3818   ;
+    -	381B          	FDIVG       equ $381B   ;
+			;               $381E   ; {M80} RND FUNCTION PERTUBATION COUNT
+    -	381F          	RNDCNT      equ $381F   ;
+			;               $3820   ;
+    -	3821          	RNDTAB      equ $3821   ; Unused Random Number TABLE
+			                        ; The exact same table exists in CP/M Basic where it is unused
+    -	3841          	RNDX        equ $3841   ; [M80] LAST RANDOM NUMBER GENERATED, BETWEEN 0 AND 1
+    -	3846          	LPTPOS      equ $3846   ; [M80] POSITION OF LPT PRINT HEAD
+    -	3847          	PRTFLG      equ $3847   ; [M80] WHETHER OUTPUT GOES TO LPT
+    -	3848          	LINLEN      equ $3848   ; Length of a Screen Line
+    -	3849          	CLMLST      equ $3849   ;
+    -	384A          	RUBSW       equ $384A   ; [M80] RUBOUT SWITCH =1 INSIDE THE PROCESSING OF A RUBOUT (INLIN)
+    -	384B          	TOPMEM      equ $384B   ; [M80] TOP LOCATION TO USE FOR THE STACK INITIALLY SET UP BY INIT
+			                        ; [M80] ACCORDING TO MEMORY SIZE TO ALLOW FOR 50 BYTES OF STRING SPACE.
+			                        ; [M80] CHANGED BY A CLEAR COMMAND WITH AN ARGUMENT.
+    -	384D          	CURLIN      equ $384D   ; [M80] CURRENT LINE #
+    -	384F          	TXTTAB      equ $384F   ; [M80] POINTER TO BEGINNING OF TEXT
+			                        ; [M80] DOESN'T CHANGE AFTER BEING SETUP BY INIT.
+    -	3851          	FILNAM      equ $3851   ; File Name for CSAVE and CLOAD
+    -	3857          	FILNAF      equ $3857   ; File Name Read from Cassette
+    -	385D          	INSYNC      equ $385D   ; Contains $FF between read of SYNC and data from tape
+    -	385E          	CLFLAG      equ $385E   ; Flags whether doing CLOAD (0) or CLOAD? ($FF)
+    -	385F          	BUFMIN      equ $385F   ; {M80} START OF BUFFER
+    -	3860          	BUF         equ $3860   ; [M80] TYPE IN STORED HERE. DIRECT STATEMENTS EXECUTE OUT OF HERE.
+			                        ; [M80] REMEMBER "INPUT" SMASHES BUF. MUST BE AT A LOWER ADDRESS THAN DSCTMP
+			                        ; [M80] OR ASSIGNMENT OF STRING VALUES IN DIRECT STATEMENTS WON'T COPY INTO
+			                        ; [M80] STRING SPACE -- WHICH IT MUST ALLOW FOR SINGLE QUOTE IN BIG LINE
+    -	38A9          	ENDBUF      equ $38A9   ; [M80] PLACE TO STOP BIG LINES
+    -	38AA          	DIMFLG      equ $38AA   ; [M80] IN GETTING A POINTER TO A VARIABLE IT IS IMPORTANT TO REMEMBER
+			                        ; [M80] WHETHER IT IS BEING DONE FOR "DIM" OR NOT
+    -	38AB          	VALTYP      equ $38AB   ; [M80] THE TYPE INDICATOR 0=NUMERIC 1=STRING
+    -	38AC          	DORES       equ $38AC   ; [M80] WHETHER CAN OR CAN'T CRUNCH RES'D WORDS TURNED ON WHEN "DATA"
+			                        ; [M80] BEING SCANNED BY CRUNCH SO UNQUOTED STRINGS WON'T BE CRUNCHED.
+    -	38AD          	MEMSIZ      equ $38AD   ; [M80] HIGHEST LOCATION IN MEMORY
+    -	38AF          	TEMPPT      equ $38AF   ; [M80] POINTER AT FIRST FREE TEMP DESCRIPTOR. INITIALIZED TO POINT TO TEMPST
+    -	38B1          	TEMPST      equ $38B1   ; [M80] STORAGE FOR NUMTMP TEMP DESCRIPTORS
+    -	38BD          	DSCTMP      equ $38BD   ; [M80] STRING FUNCTIONS BUILD ANSWER DESCRIPTOR HERE
+    -	38C1          	FRETOP      equ $38C1   ; [M80] TOP OF STRING FREE SPACE
+    -	38C3          	TENP3       equ $38C3   ; [M80] USED MOMENTARILY BY FRMEVL. USED IN EXTENDED BY FOUT AND
+			                        ; [M80] USER DEFINED FUNCTIONS ARRAY VARIABLE HANDLING TEMPORARY
+    -	38C5          	TEMP8       equ $38C5   ; [M80] USED TO STORE THE ADDRESS OF THE END OF STRING ARRAYS IN GARBAGE COLLECTION
+    -	38C7          	ENDFOR      equ $38C7   ; [M80] SAVED TEXT POINTER AT END OF "FOR" STATEMENT
+    -	38C9          	DATLIN      equ $38C9   ; [M80] DATA LINE # -- REMEMBER FOR ERRORS
+    -	38CB          	SUBFLG      equ $38CB   ; [M80] FLAG WHETHER SUBSCRIPTED VARIABLE ALLOWED "FOR" AND USER-DEFINED
+			                        ; [M80] FUNCTION POINTER FETCHING TURN THIS ON BEFORE CALLING PTRGET SO
+			                        ; [M80] ARRAYS WON'T BE DETECTED. STKINI AND PTRGET CLEAR IT.
+    -	38CC          	USFLG       equ $38CC   ; Direct Mode Flag
+    -	38CD          	FLGINP      equ $38CD   ; [M80] FLAGS WHETHER WE ARE DOING "INPUT" OR A READ
+    -	38CE          	SAVTXT      equ $38CE   ; [M80] PLACE WHERE NEWSTT SAVES TEXT POINTER
+    -	38D0          	TENP2       equ $38D0   ; [M80] FORMULA EVALUATOR TEMP MUST BE PRESERVED BY OPERATORS
+			                        ; [M80] USED IN EXTENDED BY FOUT AND USER-DEFINED FUNCTIONS
+    -	38D2          	OLDLIN      equ $38D2   ; [M80] OLD LINE NUMBER (SETUP BY ^C,"STOP" OR "END" IN A PROGRAM)
+    -	38D4          	OLDTXT      equ $38D4   ; [M80] OLD TEXT POINTER
+    -	38D6          	VARTAB      equ $38D6   ; [M80] POINTER TO START OF SIMPLE VARIABLE SPACE. UPDATED WHENEVER
+			                        ; [M80] THE SIZE OF THE PROGRAM CHANGES, SET TO [TXTTAB] BY SCRATCH ("NEW").
+    -	38D8          	ARYTAB      equ $38D8   ; [M80] POINTER TO BEGINNING OF ARRAY TABLE. INCREMENTED BY 6 WHENEVER
+			                        ; [M80] A NEW SIMPLE VARIABLE IS FOUND, AND SET TO [VARTAB] BY CLEARC.
+    -	38DA          	STREND      equ $38DA   ; [M80] END OF STORAGE IN USE. INCREASED WHENEVER A NEW ARRAY
+			                        ; [M80] OR SIMPLE VARIABLE IS ENCOUNTERED SET TO [VARTAB] BY CLEARC.
+    -	38DC          	DATPTR      equ $38DC   ; [M80] POINTER TO DATA. INITIALIZED TO POINT AT THE ZERO IN FRONT OF [TXTTAB]
+			                        ; [M80] BY "DATPTR" WHICH IS CALLED BY CLEARC. UPDATED BY EXECUTION OF A "READ"
+    -	38DE          	VARNAM      equ $38DE
+    -	38E0          	VARPNT      equ $38E0
+			;        $38E2:-$38E3   ; Unused
+    -	38E4          	FACLO       equ $38E4   ; [M80] LOW ORDER OF MANTISSA
+    -	38E5          	FACMO       equ $38E5   ; [M80] MIDDLE ORDER OF MANTISSA
+    -	38E6          	FACHO       equ $38E6   ; [M80] HIGH ORDER OF MANTISSA
+    -	38E7          	FAC         equ $38E7   ; [M80] EXPONENT
+    -	38E8          	FBUFFR      equ $38E8   ; [M80[ BUFFER FOR FOUT
+    -	38F6          	RESHO       equ $38F6   ; [M65] RESULT OF MULTIPLIER AND DIVIDER
+    -	38F7          	RESMO       equ $38F7   ; RESMO and RESLO are loaded into and stored from HL
+    -	38F8          	RESLO       equ $38F8   ;
+    -	38F9          	SAVSTK      equ $38F9   ; [M80] NEWSTT SAVES STACK HERE BEFORE SO THAT ERROR REVERY CAN
+			                        ; [M80] CAN DATPTR THE STACK WHEN AN ERROR OCCURS
+			;               $3900   ; This is always 0
+    -	3901          	BASTXT      equ $3901   ; Start of Basic Program
+			
+			;-----------------------------------------------------------------------------
+			; Variables
+			;-----------------------------------------------------------------------------
+    -	BEFF          	BASIC_RAM_END  equ $BEFF    ; End of BASIC RAM, $BF00-$BFFF is reserved for our extensions
+			
+    -	BF00          	PATHLEN     equ $BF00   ; Length byte
+    -	BF01          	PATHBUF     equ $BF01   ; Path buffer
+    -	BFEC          	TMPBUF      equ $BFEC   ; 16-byte temporary buffer
+    -	BFFC          	BINSTART    equ $BFFC   ; binary file load/save address
+    -	BFFE          	BINLEN      equ $BFFE   ; 16-bit binary file length
+			
+			;-----------------------------------------------------------------------------
+			; System ROM functions
+			;-----------------------------------------------------------------------------
+    -	0153          	INITFF      equ $0153   ; Initialize I/O Port 255
+    -	03C4          	SNERR       equ $03C4   ; Syntax error
+    -	03D6          	MOERR       equ $03D6   ; Missing Operand error
+    -	03DB          	ERROR       equ $03DB   ; Process error code, E = code (offset to 2 char error name)
+    -	03F4          	ERRFN1      equ $03F4
+    -	0402          	READY       equ $0402
+    -	05A8          	RESSRC      equ $05A8
+    -	062C          	NEWSTT      equ $062C
+    -	0682          	FRCINT      equ $0682   ; Convert fp number to 16 bit signed integer in DE
+    -	0697          	FCERR       equ $0697   ; Function call error
+    -	06DB          	RUNC2       equ $06DB
+    -	0972          	FRMNUM      equ $0972   ; Evaluate numeric expression
+    -	0975          	CHKNUM      equ $0975   ; Error if evaluated expression not a number
+    -	0976          	CHKSTR      equ $0976   ; Error if evaluated expression not string
+    -	0985          	FRMEVL      equ $0985   ; Evaluate formula
+    -	0A37          	PARCHK      equ $0A37   ; Evaluate expression in brackets
+    -	0A49          	LABBCK      equ $0A49
+    -	0B36          	SNGFLT      equ $0B36   ; Store variable 8 bit (out: B = value)
+    -	0B54          	GETBYT      equ $0B54   ; Evaluate numeric expression (integer 0-255)
+    -	0BB7          	OMERR       equ $0BB7   ; Out of memory error
+    -	0BBE          	SCRTCH      equ $0BBE
+    -	0BCB          	RUNC        equ $0BCB
+    -	0BCF          	CLEARC      equ $0BCF
+    -	0BE5          	STKINI      equ $0BE5
+    -	0E9D          	STROUT      equ $0E9D   ; Print null-terminated string in HL
+    -	0FF7          	LEN1        equ $0FF7   ; Get string length (in: (FPREG) = string block, out: HL = string block, A = length)
+    -	10D1          	PTRGET      equ $10D1   ; Get variable (out: BC = addr, DE = len)
+    -	19EA          	CRDO        equ $19EA   ; Print CR+LF
+    -	1A40          	WRMCON      equ $1A40
+    -	1D72          	TTYCHR      equ $1D72   ; Print character in A with pause/break at end of page
+    -	1D94          	TTYOUT      equ $1D94   ; Print character in A
+    -	1DE7          	TTYFIS      equ $1DE7   ; Save Column and Position
+    -	1FE1          	JMPINI      equ $1FE1   ; Power Up/Reset Routine: Jumped to from RST 0
+    -	1FF2          	PRNTIT      equ $1FF2   ; Print copyright message and return
+			
+			; Extra variables / functions
+    -	1679          	INT2STR     equ $1679   ; Convert 16 bit integer in HL to text at FPSTR (starts with ' ')
+    -	38E9          	FPSTR       equ $38E9   ; Floating point string
+			
+    -	E010          	XINIT       equ $E010   ; Cartridge entry point
+    -	0089          	RESET       equ $0089
+			
+			;-----------------------------------------------------------------------------
+			; IO registers
+			;-----------------------------------------------------------------------------
+    -	00E0          	IO_VCTRL        equ $E0
+    -	00E1          	IO_VSCRX_L      equ $E1
+    -	00E2          	IO_VSCRX_H      equ $E2
+    -	00E3          	IO_VSCRY        equ $E3
+    -	00E4          	IO_VSPRSEL      equ $E4
+    -	00E5          	IO_VSPRX_L      equ $E5
+    -	00E6          	IO_VSPRX_H      equ $E6
+    -	00E7          	IO_VSPRY        equ $E7
+    -	00E8          	IO_VSPRIDX      equ $E8
+    -	00E9          	IO_VSPRATTR     equ $E9
+    -	00EA          	IO_VPALSEL      equ $EA
+    -	00EB          	IO_VPALDATA     equ $EB
+    -	00EC          	IO_VLINE        equ $EC
+    -	00ED          	IO_VIRQLINE     equ $ED
+    -	00EE          	IO_IRQMASK      equ $EE
+    -	00EF          	IO_IRQSTAT      equ $EF
+    -	00F0          	IO_BANK0        equ $F0
+    -	00F1          	IO_BANK1        equ $F1
+    -	00F2          	IO_BANK2        equ $F2
+    -	00F3          	IO_BANK3        equ $F3
+    -	00F4          	IO_ESPCTRL      equ $F4
+    -	00F5          	IO_ESPDATA      equ $F5
+    -	00F6          	IO_PSG1DATA     equ $F6
+    -	00F7          	IO_PSG1ADDR     equ $F7
+    -	00F8          	IO_PSG2DATA     equ $F8
+    -	00F9          	IO_PSG2ADDR     equ $F9
+    -	00FA          	IO_KEYBUF       equ $FA
+    -	00FB          	IO_SYSCTRL      equ $FB
+    -	00FC          	IO_CASSETTE     equ $FC
+    -	00FD          	IO_CPM          equ $FD     ; Write-only
+    -	00FD          	IO_VSYNC        equ $FD     ; Read-only
+    -	00FE          	IO_PRINTER      equ $FE
+    -	00FF          	IO_SCRAMBLE     equ $FF     ; Write-only
+    -	00FF          	IO_KEYBOARD     equ $FF     ; Read-only
+			
+    -	0001          	VCTRL_TEXT_EN    equ (1<<0)
+    -	0000          	VCTRL_MODE_OFF   equ (0<<1)
+    -	0002          	VCTRL_MODE_TILE  equ (1<<1)
+    -	0004          	VCTRL_MODE_BM    equ (2<<1)
+    -	0008          	VCTRL_SPR_EN     equ (1<<3)
+    -	0010          	VCTRL_TEXT_PRIO  equ (1<<4)
+			
+			;-----------------------------------------------------------------------------
+			; Other definitions
+			;-----------------------------------------------------------------------------
+    -	0000          	BANK0_BASE  equ $0000
+    -	4000          	BANK1_BASE  equ $4000
+    -	8000          	BANK2_BASE  equ $8000
+    -	C000          	BANK3_BASE  equ $C000
+			
+    -	0080          	BANK_READONLY   equ $80     ; Bank readonly
+    -	0040          	BANK_OVERLAY    equ $40     ; RAM overlay
+			
+			;-----------------------------------------------------------------------------
+			; Other definitions
+			;-----------------------------------------------------------------------------
+			SYNCHK macro value
+			    rst     $08
+			    db      'value'
+			endm
+			
+			OUTCHR macro
+			    rst     $18
+			endm
+			
+			;-----------------------------------------------------------------------------
+			; ESP32 commands
+			;-----------------------------------------------------------------------------
+    -	0001          	ESPCMD_RESET        equ $01     ; Reset ESP
+    -	0002          	ESPCMD_VERSION      equ $02     ; Get version string
+    -	0003          	ESPCMD_GETDATETIME  equ $03     ; Get current date/time
+    -	0008          	ESPCMD_KEYMODE      equ $08     ; Set keyboard buffer mode
+    -	000C          	ESPCMD_GETMOUSE     equ $0C     ; Get mouse state
+    -	0010          	ESPCMD_OPEN         equ $10     ; Open / create file
+    -	0011          	ESPCMD_CLOSE        equ $11     ; Close open file
+    -	0012          	ESPCMD_READ         equ $12     ; Read from file
+    -	0013          	ESPCMD_WRITE        equ $13     ; Write to file
+    -	0014          	ESPCMD_SEEK         equ $14     ; Move read/write pointer
+    -	0015          	ESPCMD_TELL         equ $15     ; Get current read/write
+    -	0016          	ESPCMD_OPENDIR      equ $16     ; Open directory
+    -	0017          	ESPCMD_CLOSEDIR     equ $17     ; Close open directory
+    -	0018          	ESPCMD_READDIR      equ $18     ; Read from directory
+    -	0019          	ESPCMD_DELETE       equ $19     ; Remove file or directory
+    -	001A          	ESPCMD_RENAME       equ $1A     ; Rename / move file or directory
+    -	001B          	ESPCMD_MKDIR        equ $1B     ; Create directory
+    -	001C          	ESPCMD_CHDIR        equ $1C     ; Change directory
+    -	001D          	ESPCMD_STAT         equ $1D     ; Get file status
+    -	001E          	ESPCMD_GETCWD       equ $1E     ; Get current working directory
+    -	001F          	ESPCMD_CLOSEALL     equ $1F     ; Close any open file/directory descriptor
+    -	0020          	ESPCMD_OPENDIR83    equ $20     ; Open directory in 8.3 mode
+    -	0040          	ESPCMD_LOADFPGA     equ $40     ; Load FPGA bitstream
+			
+    -	FFFF          	ERR_NOT_FOUND       equ -1      ; File / directory not found
+    -	FFFE          	ERR_TOO_MANY_OPEN   equ -2      ; Too many open files / directories
+    -	FFFD          	ERR_PARAM           equ -3      ; Invalid parameter
+    -	FFFC          	ERR_EOF             equ -4      ; End of file / directory
+    -	FFFB          	ERR_EXISTS          equ -5      ; File already exists
+    -	FFFA          	ERR_OTHER           equ -6      ; Other error
+    -	FFF9          	ERR_NO_DISK         equ -7      ; No disk
+    -	FFF8          	ERR_NOT_EMPTY       equ -8      ; Not empty
+			
+    -	0000          	FO_RDONLY           equ $00     ; Open for reading only
+    -	0001          	FO_WRONLY           equ $01     ; Open for writing only
+    -	0002          	FO_RDWR             equ $02     ; Open for reading and writing
+    -	0003          	FO_ACCMODE          equ $03     ; Mask for above modes
+    -	0004          	FO_APPEND           equ $04     ; Append mode
+    -	0008          	FO_CREATE           equ $08     ; Create if non-existant
+    -	0010          	FO_TRUNC            equ $10     ; Truncate to zero length
+    -	0020          	FO_EXCL             equ $20     ; Error if already exists
+**** goaqms.asm ****
+			
+    -	38E1          		org $38E1
+			
+			    ; Header and BASIC stub
+    -	38E1  FFFFFFFF		defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+              FFFFFFFF
+              FFFFFFFF
+              00
+    -	38EE  4151504C	    defb    "AQPLUS"
+              5553
+    -	38F4  FFFFFFFF		defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+              FFFFFFFF
+              FFFFFFFF
+              00
+    -	3901  0E390A00	    defb    $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
+              DA313436
+              30383A80
+              000000
+   0+10	3910  C31339  	    jp      main
+			
+    -	3913          	main:
+  10+7	3913  3E40    	    ld      a,ESPCMD_LOADFPGA
+  17+17	3915  CD2D39  	    call    esp_cmd
+  34+10	3918  212339  	    ld      hl,.str
+  44+17	391B  CD5439  	    call    esp_send_str
+  61+17	391E  CD4039  	    call    esp_get_byte
+  78+12	3921  18FE    	.1: jr      .1
+			
+    -	3923  61716D73	.str: defb "aqms.core",0
+              2E636F72
+              6500
+			
+			;-----------------------------------------------------------------------------
+			; Issue command to ESP
+			;-----------------------------------------------------------------------------
+    -	392D          	esp_cmd:
+  90+11	392D  F5      	    push    a
+			
+			    ; Drain RX FIFO
+    -	392E          	.drain:
+ 101+11	392E  DBF4    	    in      a,(IO_ESPCTRL)
+ 112+7	3930  E601    	    and     a,1
+ 119+7+5	3932  2804    	    jr      z,.done
+ 126+11	3934  DBF5    	    in      a,(IO_ESPDATA)
+ 137+12	3936  18F6    	    jr      .drain
+    -	3938          	.done:
+			
+			    ; Issue start of command
+ 149+7	3938  3E80    	    ld      a,$80
+ 156+11	393A  D3F4    	    out     (IO_ESPCTRL),a
+			
+			    ; Issue command
+ 167+10	393C  F1      	    pop     a
+ 177+10	393D  C34939  	    jp      esp_send_byte
+			
+			;-----------------------------------------------------------------------------
+			; Wait for data from ESP
+			;-----------------------------------------------------------------------------
+    -	3940          	esp_get_byte:
+    -	3940          	.wait:
+ 187+11	3940  DBF4    	    in      a,(IO_ESPCTRL)
+ 198+7	3942  E601    	    and     a,1
+ 205+7+5	3944  28FA    	    jr      z,.wait
+ 212+11	3946  DBF5    	    in      a,(IO_ESPDATA)
+ 223+10	3948  C9      	    ret
+			
+			;-----------------------------------------------------------------------------
+			; Write data to ESP
+			;-----------------------------------------------------------------------------
+    -	3949          	esp_send_byte:
+ 233+11	3949  F5      	    push    a
+			
+    -	394A          	.wait:
+ 244+11	394A  DBF4    	    in      a,(IO_ESPCTRL)
+ 255+7	394C  E602    	    and     a,2
+ 262+7+5	394E  20FA    	    jr      nz,.wait
+			
+ 269+10	3950  F1      	    pop     a
+ 279+11	3951  D3F5    	    out     (IO_ESPDATA),a
+ 290+10	3953  C9      	    ret
+			
+			;-----------------------------------------------------------------------------
+			; Send string in HL to ESP
+			;-----------------------------------------------------------------------------
+    -	3954          	esp_send_str:
+ 300+7	3954  7E      	    ld      a,(hl)
+ 307+17	3955  CD4939  	    call    esp_send_byte
+ 324+4	3958  B7      	    or      a
+ 328+5+6	3959  C8      	    ret     z
+ 333+6	395A  23      	    inc     hl
+ 339+12	395B  18F7    	    jr      esp_send_str
+
+
+
+Statistics:
+
+     4	passes
+     0	jr promotions
+   211	symbols
+   124	bytes
+
+     0	macro calls
+    61	macro bytes
+     0	invented symbols
+
+
+
+Symbol Table:
+
+.1$1            3921      14625
+.done$2         3938      14648
+.drain$2        392E      14638
+.str$1          3923      14627
+.wait$3         3940      14656
+.wait$4         394A      14666
+ARYTAB         =38D8      14552
+BANK0_BASE     =00        0
+BANK1_BASE     =4000      16384
+BANK2_BASE     =8000      32768
+BANK3_BASE     =C000      49152
+BANK_OVERLAY   =40        64
+BANK_READONLY  =80        128
+BASIC_RAM_END  =BEFF      48895
+BASTXT         =3901      14593
+BINLEN         =BFFE      49150
+BINSTART       =BFFC      49148
+BUF            =3860      14432
+BUFMIN         =385F      14431
+CHARC          =380A      14346
+CHKNUM         = 975      2421
+CHKSTR         = 976      2422
+CLEARC         = BCF      3023
+CLFLAG         =385E      14430
+CLMLST         =3849      14409
+CNTOFL         =3808      14344
+COLOR          =3400      13312
+CRDO           =19EA      6634
+CURCHR         =380D      14349
+CURLIN         =384D      14413
+CURRAM         =3801      14337
+DATLIN         =38C9      14537
+DATPTR         =38DC      14556
+DIMFLG         =38AA      14506
+DORES          =38AC      14508
+DSCTMP         =38BD      14525
+ENDBUF         =38A9      14505
+ENDFOR         =38C7      14535
+ERRFN1         = 3F4      1012
+ERROR          = 3DB      987
+ERR_EOF        =FFFFFFFC  -4
+ERR_EXISTS     =FFFFFFFB  -5
+ERR_NOT_EMPTY  =FFFFFFF8  -8
+ERR_NOT_FOUND  =FFFFFFFF  -1
+ERR_NO_DISK    =FFFFFFF9  -7
+ERR_OTHER      =FFFFFFFA  -6
+ERR_PARAM      =FFFFFFFD  -3
+ERR_TOO_MANY_OPEN=FFFFFFFE  -2
+ESPCMD_CHDIR   =1C        28
+ESPCMD_CLOSE   =11        17
+ESPCMD_CLOSEALL=1F        31
+ESPCMD_CLOSEDIR=17        23
+ESPCMD_DELETE  =19        25
+ESPCMD_GETCWD  =1E        30
+ESPCMD_GETDATETIME=03        3
+ESPCMD_GETMOUSE=0C        12
+ESPCMD_KEYMODE =08        8
+ESPCMD_LOADFPGA=40        64
+ESPCMD_MKDIR   =1B        27
+ESPCMD_OPEN    =10        16
+ESPCMD_OPENDIR =16        22
+ESPCMD_OPENDIR83=20        32
+ESPCMD_READ    =12        18
+ESPCMD_READDIR =18        24
+ESPCMD_RENAME  =1A        26
+ESPCMD_RESET   =01        1
+ESPCMD_SEEK    =14        20
+ESPCMD_STAT    =1D        29
+ESPCMD_TELL    =15        21
+ESPCMD_VERSION =02        2
+ESPCMD_WRITE   =13        19
+FAC            =38E7      14567
+FACHO          =38E6      14566
+FACLO          =38E4      14564
+FACMO          =38E5      14565
+FBUFFR         =38E8      14568
+FCERR          = 697      1687
+FDIVA          =3818      14360
+FDIVB          =3814      14356
+FDIVC          =3810      14352
+FDIVG          =381B      14363
+FILNAF         =3857      14423
+FILNAM         =3851      14417
+FLGINP         =38CD      14541
+FO_ACCMODE     =03        3
+FO_APPEND      =04        4
+FO_CREATE      =08        8
+FO_EXCL        =20        32
+FO_RDONLY      =00        0
+FO_RDWR        =02        2
+FO_TRUNC       =10        16
+FO_WRONLY      =01        1
+FPSTR          =38E9      14569
+FRCINT         = 682      1666
+FRETOP         =38C1      14529
+FRMEVL         = 985      2437
+FRMNUM         = 972      2418
+GETBYT         = B54      2900
+HOOK           =3806      14342
+INITFF         = 153      339
+INSYNC         =385D      14429
+INT2STR        =1679      5753
+IO_BANK0       =F0        240
+IO_BANK1       =F1        241
+IO_BANK2       =F2        242
+IO_BANK3       =F3        243
+IO_CASSETTE    =FC        252
+IO_CPM         =FD        253
+IO_ESPCTRL     =F4        244
+IO_ESPDATA     =F5        245
+IO_IRQMASK     =EE        238
+IO_IRQSTAT     =EF        239
+IO_KEYBOARD    =FF        255
+IO_KEYBUF      =FA        250
+IO_PRINTER     =FE        254
+IO_PSG1ADDR    =F7        247
+IO_PSG1DATA    =F6        246
+IO_PSG2ADDR    =F9        249
+IO_PSG2DATA    =F8        248
+IO_SCRAMBLE    =FF        255
+IO_SYSCTRL     =FB        251
+IO_VCTRL       =E0        224
+IO_VIRQLINE    =ED        237
+IO_VLINE       =EC        236
+IO_VPALDATA    =EB        235
+IO_VPALSEL     =EA        234
+IO_VSCRX_H     =E2        226
+IO_VSCRX_L     =E1        225
+IO_VSCRY       =E3        227
+IO_VSPRATTR    =E9        233
+IO_VSPRIDX     =E8        232
+IO_VSPRSEL     =E4        228
+IO_VSPRX_H     =E6        230
+IO_VSPRX_L     =E5        229
+IO_VSPRY       =E7        231
+IO_VSYNC       =FD        253
+JMPINI         =1FE1      8161
+KCOUNT         =380F      14351
+LABBCK         = A49      2633
+LASTFF         =3809      14345
+LEN1           = FF7      4087
+LINLEN         =3848      14408
+LPTPOS         =3846      14406
+LSTX           =380E      14350
+MEMSIZ         =38AD      14509
+MOERR          = 3D6      982
+NEWSTT         = 62C      1580
+OLDLIN         =38D2      14546
+OLDTXT         =38D4      14548
+OMERR          = BB7      2999
+PARCHK         = A37      2615
+PATHBUF        =BF01      48897
+PATHLEN        =BF00      48896
+PRNTIT         =1FF2      8178
+PRTFLG         =3847      14407
+PTRGET         =10D1      4305
+READY          = 402      1026
+RESET          =89        137
+RESHO          =38F6      14582
+RESLO          =38F8      14584
+RESMO          =38F7      14583
+RESPTR         =380B      14347
+RESSRC         = 5A8      1448
+RNDCNT         =381F      14367
+RNDTAB         =3821      14369
+RNDX           =3841      14401
+RUBSW          =384A      14410
+RUNC           = BCB      3019
+RUNC2          = 6DB      1755
+SAVSTK         =38F9      14585
+SAVTXT         =38CE      14542
+SCREEN         =3000      12288
+SCRTCH         = BBE      3006
+SNERR          = 3C4      964
+SNGFLT         = B36      2870
+STKINI         = BE5      3045
+STREND         =38DA      14554
+STROUT         = E9D      3741
+SUBFLG         =38CB      14539
+TEMP8          =38C5      14533
+TEMPPT         =38AF      14511
+TEMPST         =38B1      14513
+TENP2          =38D0      14544
+TENP3          =38C3      14531
+TMPBUF         =BFEC      49132
+TOPMEM         =384B      14411
+TTYCHR         =1D72      7538
+TTYFIS         =1DE7      7655
+TTYOUT         =1D94      7572
+TTYPOS         =3800      14336
+TXTTAB         =384F      14415
+USFLG          =38CC      14540
+USRADD         =3804      14340
+USRPOK         =3803      14339
+VALTYP         =38AB      14507
+VARNAM         =38DE      14558
+VARPNT         =38E0      14560
+VARTAB         =38D6      14550
+VCTRL_MODE_BM  =04        4
+VCTRL_MODE_OFF =00        0
+VCTRL_MODE_TILE=02        2
+VCTRL_SPR_EN   =08        8
+VCTRL_TEXT_EN  =01        1
+VCTRL_TEXT_PRIO=10        16
+WRMCON         =1A40      6720
+XINIT          =E010      57360
+esp_cmd         392D      14637
+esp_get_byte    3940      14656
+esp_send_byte   3949      14665
+esp_send_str    3954      14676
+main            3913      14611

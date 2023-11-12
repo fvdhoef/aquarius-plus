@@ -65,15 +65,10 @@ static void init() {
     AqUartProtocol::instance().init();
     FileServer::instance().init();
 
-    {
-        auto &fpga = FPGA::instance();
-        fpga.init();
-
-        extern const uint8_t fpga_image_start[] asm("_binary_top_bit_start");
-        extern const uint8_t fpga_image_end[] asm("_binary_top_bit_end");
-
-        fpga.loadBitstream(fpga_image_start, fpga_image_end - fpga_image_start);
-    }
+    // Initialize FPGA
+    auto &fpga = FPGA::instance();
+    fpga.init();
+    fpga.loadDefaultBitstream();
 }
 
 extern "C" void app_main(void);
