@@ -250,11 +250,27 @@ _load_file:
     jr      nz,.1
     call    esp_get_byte
 
+    ; If the image has a 512 byte header, skip it
+    ld      a,(_dirent_size+1)
+    bit     1,a
+    jr      z,.2
+    ld      a,ESPCMD_SEEK
+    call    esp_cmd
+    xor     a
+    call    esp_send_byte
+    call    esp_send_byte
+    ld      a,2
+    call    esp_send_byte
+    xor     a
+    call    esp_send_byte
+    call    esp_send_byte
+    call    esp_get_byte
+.2:
     ; Map bank1 to first page
     xor     a
     ld      (BANK1),a
 
-.2: ld      hl,$4000
+.3: ld      hl,$4000
     ld      de,$4000
     call    esp_read_bytes
     ld      a,d
@@ -267,7 +283,7 @@ _load_file:
     ld      a,(BANK1)
     inc     a
     ld      (BANK1),a
-    jr      .2
+    jr      .3
 
 .done:
     ret
