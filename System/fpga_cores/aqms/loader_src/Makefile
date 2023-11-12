@@ -32,7 +32,7 @@ run_emu: all
 run_aqp: all
 	@$(foreach NAME,$(FILES_TO_COPY), \
 		echo Uploading $(NAME); \
-		curl -T $(NAME) http://$(AQPLUS_HOST)/; \
+		curl -T $(NAME) http://$(AQPLUS_HOST)/cores/aqms/; \
 	)
 	@echo Running $(OUTFILE)
-	@printf '\x1E\nRUN"$(OUTFILE)"\n' | curl --data-binary @- http://$(AQPLUS_HOST)/keyboard
+	@printf '\x1E\n\x1Dcd\"cores/aqms"\nrun"$(OUTFILE)"\n' | curl --data-binary @- http://$(AQPLUS_HOST)/keyboard

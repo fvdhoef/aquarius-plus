@@ -160,13 +160,14 @@ module top(
     wire       sel_io_espdata  = startup_mode_r && !ebus_iorq_n && ebus_a[7:0] == 8'h11;
     wire       sel_8bit        = sel_io_espctrl | sel_io_espdata;
 
+    wire       sel_io_3f       = !sel_8bit && !ebus_iorq_n && io_addr == 3'b001;
     wire       sel_io_vcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b010;
     wire       sel_io_hcnt     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b011;
     wire       sel_io_psg      = !sel_8bit && !ebus_iorq_n && io_addr == 3'b011;
     wire       sel_io_vdp_data = !sel_8bit && !ebus_iorq_n && io_addr == 3'b100;
     wire       sel_io_vdp_ctrl = !sel_8bit && !ebus_iorq_n && io_addr == 3'b101;
-    wire       sel_io_joy1     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
-    wire       sel_io_joy2     = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
+    wire       sel_io_dc       = !sel_8bit && !ebus_iorq_n && io_addr == 3'b110;
+    wire       sel_io_dd       = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
 
     wire       sel_internal    = !ebus_iorq_n | sel_mem_intram | sel_mem_introm;
     wire       allow_sel_mem   = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && startup_mode_r));
@@ -204,23 +205,33 @@ module top(
         end
     end
 
-    wire [7:0] joy1;
+    // Handle region detection at port $3F
+    reg [1:0] region_bits_r;
+    always @(posedge clk or posedge reset) begin
+        if (reset)
+            region_bits_r <= 2'b11;
+        else begin
+            if (sel_io_3f && bus_write) region_bits_r <= {wrdata[7], wrdata[5]};
+        end
+    end
+
+    wire [7:0] port_dc, port_dd;
 
     reg [7:0] rddata;
     always @* begin
         rddata <= 8'hFF;
 
-        if (sel_mem_introm)           rddata <= rddata_rom;
-        if (sel_mem_intram)           rddata <= rddata_ram;
+        if (sel_mem_introm)  rddata <= rddata_rom;
+        if (sel_mem_intram)  rddata <= rddata_ram;
 
-        if (sel_io_espctrl)           rddata <= rddata_espctrl;
-        if (sel_io_espdata)           rddata <= rddata_espdata;
-        if (sel_io_vcnt)              rddata <= video_vcnt;
-        if (sel_io_hcnt)              rddata <= video_hcnt;
-        if (sel_io_vdp_data)          rddata <= rddata_io_video;
-        if (sel_io_vdp_ctrl)          rddata <= rddata_io_video;
-        if (sel_io_joy1)              rddata <= joy1;
-        if (sel_io_joy2)              rddata <= 8'hFF;
+        if (sel_io_espctrl)  rddata <= rddata_espctrl;
+        if (sel_io_espdata)  rddata <= rddata_espdata;
+        if (sel_io_vcnt)     rddata <= video_vcnt;
+        if (sel_io_hcnt)     rddata <= video_hcnt;
+        if (sel_io_vdp_data) rddata <= rddata_io_video;
+        if (sel_io_vdp_ctrl) rddata <= rddata_io_video;
+        if (sel_io_dc)       rddata <= port_dc;
+        if (sel_io_dd)       rddata <= port_dd;
     end
 
     wire   ebus_d_en  = !ebus_rd_n && sel_internal;
@@ -373,14 +384,22 @@ module top(
     // Keyboard matrix
     wire [63:0] keys;
 
-    wire joy1_x     = keys[45] && hctrl1_data[6];
-    wire joy1_z     = keys[51] && hctrl1_data[5];
-    wire joy1_right = keys[15] && hctrl1_data[1];
-    wire joy1_left  = keys[22] && hctrl1_data[3];
-    wire joy1_down  = keys[23] && hctrl1_data[0];
-    wire joy1_up    = keys[14] && hctrl1_data[2];
+    wire joypad_a_tr    = keys[45] && hctrl1_data[5]; // X
+    wire joypad_a_tl    = keys[51] && hctrl1_data[6]; // Z
+    wire joypad_a_right = keys[15] && hctrl1_data[1];
+    wire joypad_a_left  = keys[22] && hctrl1_data[3];
+    wire joypad_a_down  = keys[23] && hctrl1_data[0];
+    wire joypad_a_up    = keys[14] && hctrl1_data[2];
 
-    assign joy1 = {2'b11, joy1_x, joy1_z, joy1_right, joy1_left, joy1_down, joy1_up};
+    wire joypad_b_tr    = hctrl2_data[5];
+    wire joypad_b_tl    = hctrl2_data[6];
+    wire joypad_b_right = hctrl2_data[1];
+    wire joypad_b_left  = hctrl2_data[3];
+    wire joypad_b_down  = hctrl2_data[0];
+    wire joypad_b_up    = hctrl2_data[2];
+
+    assign port_dc = {joypad_b_down, joypad_b_up, joypad_a_tr, joypad_a_tl, joypad_a_right, joypad_a_left, joypad_a_down, joypad_a_up};
+    assign port_dd = {region_bits_r, 2'b11, joypad_b_tr, joypad_b_tl, joypad_b_right, joypad_b_left};
 
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;
