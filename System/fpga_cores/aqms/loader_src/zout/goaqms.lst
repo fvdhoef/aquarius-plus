@@ -299,75 +299,75 @@
 			
     -	3913          	main:
   10+7	3913  3E40    	    ld      a,ESPCMD_LOADFPGA
-  17+17	3915  CD2C39  	    call    esp_cmd
+  17+17	3915  CD2D39  	    call    esp_cmd
   34+10	3918  212339  	    ld      hl,.str
-  44+17	391B  CD5339  	    call    esp_send_str
-  61+17	391E  CD3F39  	    call    esp_get_byte
+  44+17	391B  CD5439  	    call    esp_send_str
+  61+17	391E  CD4039  	    call    esp_get_byte
   78+12	3921  18FE    	.1: jr      .1
 			
-    -	3923  61716D73	.str: defb "aqms.bit",0
-              2E626974
-              00
+    -	3923  61716D73	.str: defb "aqms.core",0
+              2E636F72
+              6500
 			
 			;-----------------------------------------------------------------------------
 			; Issue command to ESP
 			;-----------------------------------------------------------------------------
-    -	392C          	esp_cmd:
-  90+11	392C  F5      	    push    a
+    -	392D          	esp_cmd:
+  90+11	392D  F5      	    push    a
 			
 			    ; Drain RX FIFO
-    -	392D          	.drain:
- 101+11	392D  DBF4    	    in      a,(IO_ESPCTRL)
- 112+7	392F  E601    	    and     a,1
- 119+7+5	3931  2804    	    jr      z,.done
- 126+11	3933  DBF5    	    in      a,(IO_ESPDATA)
- 137+12	3935  18F6    	    jr      .drain
-    -	3937          	.done:
+    -	392E          	.drain:
+ 101+11	392E  DBF4    	    in      a,(IO_ESPCTRL)
+ 112+7	3930  E601    	    and     a,1
+ 119+7+5	3932  2804    	    jr      z,.done
+ 126+11	3934  DBF5    	    in      a,(IO_ESPDATA)
+ 137+12	3936  18F6    	    jr      .drain
+    -	3938          	.done:
 			
 			    ; Issue start of command
- 149+7	3937  3E80    	    ld      a,$80
- 156+11	3939  D3F4    	    out     (IO_ESPCTRL),a
+ 149+7	3938  3E80    	    ld      a,$80
+ 156+11	393A  D3F4    	    out     (IO_ESPCTRL),a
 			
 			    ; Issue command
- 167+10	393B  F1      	    pop     a
- 177+10	393C  C34839  	    jp      esp_send_byte
+ 167+10	393C  F1      	    pop     a
+ 177+10	393D  C34939  	    jp      esp_send_byte
 			
 			;-----------------------------------------------------------------------------
 			; Wait for data from ESP
 			;-----------------------------------------------------------------------------
-    -	393F          	esp_get_byte:
-    -	393F          	.wait:
- 187+11	393F  DBF4    	    in      a,(IO_ESPCTRL)
- 198+7	3941  E601    	    and     a,1
- 205+7+5	3943  28FA    	    jr      z,.wait
- 212+11	3945  DBF5    	    in      a,(IO_ESPDATA)
- 223+10	3947  C9      	    ret
+    -	3940          	esp_get_byte:
+    -	3940          	.wait:
+ 187+11	3940  DBF4    	    in      a,(IO_ESPCTRL)
+ 198+7	3942  E601    	    and     a,1
+ 205+7+5	3944  28FA    	    jr      z,.wait
+ 212+11	3946  DBF5    	    in      a,(IO_ESPDATA)
+ 223+10	3948  C9      	    ret
 			
 			;-----------------------------------------------------------------------------
 			; Write data to ESP
 			;-----------------------------------------------------------------------------
-    -	3948          	esp_send_byte:
- 233+11	3948  F5      	    push    a
+    -	3949          	esp_send_byte:
+ 233+11	3949  F5      	    push    a
 			
-    -	3949          	.wait:
- 244+11	3949  DBF4    	    in      a,(IO_ESPCTRL)
- 255+7	394B  E602    	    and     a,2
- 262+7+5	394D  20FA    	    jr      nz,.wait
+    -	394A          	.wait:
+ 244+11	394A  DBF4    	    in      a,(IO_ESPCTRL)
+ 255+7	394C  E602    	    and     a,2
+ 262+7+5	394E  20FA    	    jr      nz,.wait
 			
- 269+10	394F  F1      	    pop     a
- 279+11	3950  D3F5    	    out     (IO_ESPDATA),a
- 290+10	3952  C9      	    ret
+ 269+10	3950  F1      	    pop     a
+ 279+11	3951  D3F5    	    out     (IO_ESPDATA),a
+ 290+10	3953  C9      	    ret
 			
 			;-----------------------------------------------------------------------------
 			; Send string in HL to ESP
 			;-----------------------------------------------------------------------------
-    -	3953          	esp_send_str:
- 300+7	3953  7E      	    ld      a,(hl)
- 307+17	3954  CD4839  	    call    esp_send_byte
- 324+4	3957  B7      	    or      a
- 328+5+6	3958  C8      	    ret     z
- 333+6	3959  23      	    inc     hl
- 339+12	395A  18F7    	    jr      esp_send_str
+    -	3954          	esp_send_str:
+ 300+7	3954  7E      	    ld      a,(hl)
+ 307+17	3955  CD4939  	    call    esp_send_byte
+ 324+4	3958  B7      	    or      a
+ 328+5+6	3959  C8      	    ret     z
+ 333+6	395A  23      	    inc     hl
+ 339+12	395B  18F7    	    jr      esp_send_str
 
 
 
@@ -376,7 +376,7 @@ Statistics:
      4	passes
      0	jr promotions
    211	symbols
-   123	bytes
+   124	bytes
 
      0	macro calls
     61	macro bytes
@@ -387,11 +387,11 @@ Statistics:
 Symbol Table:
 
 .1$1            3921      14625
-.done$2         3937      14647
-.drain$2        392D      14637
+.done$2         3938      14648
+.drain$2        392E      14638
 .str$1          3923      14627
-.wait$3         393F      14655
-.wait$4         3949      14665
+.wait$3         3940      14656
+.wait$4         394A      14666
 ARYTAB         =38D8      14552
 BANK0_BASE     =00        0
 BANK1_BASE     =4000      16384
@@ -592,8 +592,8 @@ VCTRL_TEXT_EN  =01        1
 VCTRL_TEXT_PRIO=10        16
 WRMCON         =1A40      6720
 XINIT          =E010      57360
-esp_cmd         392C      14636
-esp_get_byte    393F      14655
-esp_send_byte   3948      14664
-esp_send_str    3953      14675
+esp_cmd         392D      14637
+esp_get_byte    3940      14656
+esp_send_byte   3949      14665
+esp_send_str    3954      14676
 main            3913      14611

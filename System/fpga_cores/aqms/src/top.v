@@ -384,15 +384,15 @@ module top(
     // Keyboard matrix
     wire [63:0] keys;
 
-    wire joypad_a_tr    = keys[45] && hctrl1_data[5]; // X
-    wire joypad_a_tl    = keys[51] && hctrl1_data[6]; // Z
+    wire joypad_a_tr    = keys[45] && hctrl1_data[6]; // X
+    wire joypad_a_tl    = keys[51] && hctrl1_data[5]; // Z
     wire joypad_a_right = keys[15] && hctrl1_data[1];
     wire joypad_a_left  = keys[22] && hctrl1_data[3];
     wire joypad_a_down  = keys[23] && hctrl1_data[0];
     wire joypad_a_up    = keys[14] && hctrl1_data[2];
 
-    wire joypad_b_tr    = hctrl2_data[5];
-    wire joypad_b_tl    = hctrl2_data[6];
+    wire joypad_b_tr    = hctrl2_data[6];
+    wire joypad_b_tl    = hctrl2_data[5];
     wire joypad_b_right = hctrl2_data[1];
     wire joypad_b_left  = hctrl2_data[3];
     wire joypad_b_down  = hctrl2_data[0];

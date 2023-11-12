@@ -12,8 +12,8 @@ JOY1_UP             equ 0
 JOY1_DOWN           equ 1
 JOY1_LEFT           equ 2
 JOY1_RIGHT          equ 3
-JOY1_A              equ 4
-JOY1_B              equ 5
+JOY1_TL             equ 4
+JOY1_TR             equ 5
 
 RAMSEL              equ $FFFC
 BANK0               equ $FFFD
@@ -321,9 +321,9 @@ _game_select:
     jr      nz,.prev_entry
     bit     JOY1_DOWN,a
     jr      nz,.next_entry
-    bit     JOY1_A,a
+    bit     JOY1_TL,a
     jr      nz,.dir_up
-    bit     JOY1_B,a
+    bit     JOY1_TR,a
     jr      nz,.select
     jr      .input
 

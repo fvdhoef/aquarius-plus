@@ -16,12 +16,12 @@ else ifeq ($(shell uname -s),Linux)
 endif
 
 OUTFILE = goaqms.aqx
-FILES_TO_COPY = zout/$(OUTFILE) zout/aqms.bit
+FILES_TO_COPY = zout/$(OUTFILE) zout/aqms.core
 
 all:
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n goaqms.asm --oo cim,lst
 	mv zout/goaqms.cim zout/$(OUTFILE)
-	cp ../top.bit zout/aqms.bit
+	cp ../top.bit zout/aqms.core
 
 run_emu: all
 	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)/cores/aqms

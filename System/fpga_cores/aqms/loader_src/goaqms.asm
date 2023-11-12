@@ -17,7 +17,7 @@ main:
     call    esp_get_byte
 .1: jr      .1
 
-.str: defb "aqms.bit",0
+.str: defb "aqms.core",0
 
 ;-----------------------------------------------------------------------------
 ; Issue command to ESP
