@@ -77,7 +77,8 @@ _prev_joy           equ $C004
 _joy                equ $C005
 _is_last_page       equ $C006
 _page_lines         equ $C007
-_dirent             equ $C008
+_dirent_namelen     equ $C008
+_dirent             equ $C009
 _dirent_date        equ _dirent      + 0    ; 16-bit
 _dirent_time        equ _dirent_date + 2    ; 16-bit
 _dirent_attr        equ _dirent_time + 2    ;  8-bit
@@ -194,7 +195,9 @@ _select_entry:
     or      a
     ret     z
 .loop:
+    push    bc
     call    esp_readdir
+    pop     bc
     dec     c
     ret     z
     jr      .loop
@@ -491,7 +494,9 @@ _draw_screen:
     jr      z,.skip_done
     ld      c,LINES_PER_PAGE
 .loop:
+    push    bc
     call    esp_readdir
+    pop     bc
     jr      nz,.end_of_dir
     dec     c
     jr      nz,.loop
@@ -559,11 +564,13 @@ _draw_filename:
 .1:
     ; Print file name
     ld      hl,_dirent_name
+    ld      a,(_dirent_namelen)
+    ld      c,a
 .2: ld      a,(hl)
     inc     hl
-    or      a
-    jr      z,.3
     call    _putchar
+    dec     c
+    jr      z,.3
     ld      a,(_cursor_x)
     or      a
     ret     z
@@ -909,12 +916,65 @@ esp_readdir:
     call    esp_get_bytes
 
     ; Read filename
+    ld      c,0
 .1: call    esp_get_byte
     ld      (hl),a
     inc     hl
     or      a
-    ret     z
+    jr      z,.2
+    inc     c
     jr      .1
+.2: ld      a,c
+    ld      (_dirent_namelen),a
+
+    ; Directory?
+    ld      a,(_dirent_attr)
+    bit     0,a
+    jr      nz,.ok
+
+    ; Regular file
+
+    ; Skip if filename shorter than 5 characters
+    ld      a,(_dirent_namelen)
+    cp      5
+    jr      c,esp_readdir
+
+    ; Check extension to be .sms
+    sub     a,4
+    ld      (_dirent_namelen),a
+    ld      hl,_dirent_name
+    ld      b,0
+    ld      c,a
+    add     hl,bc
+    ex      de,hl
+    ld      hl,.ext
+.cmp:
+    ld      a,(de)
+    call    _to_upper
+    inc     de
+    cp      (hl)
+    inc     hl
+    jr      nz,esp_readdir      ; Skip if mismatch
+    or      a
+    jr      nz,.cmp
+
+.ok:
+    xor     a
+    ret
+
+.ext:   defb ".SMS",0
+
+;-----------------------------------------------------------------------------
+; _to_upper
+;-----------------------------------------------------------------------------
+_to_upper:
+    cp      'a'
+    ret     c
+    cp      'z'+1
+    ret     nc
+    sub     $20
+    ret
+
 
 ;-----------------------------------------------------------------------------
 ; Read bytes
@@ -965,76 +1025,6 @@ esp_read_bytes:
 
 .done:
     pop     de
-    ret
-
-;-----------------------------------------------------------------------------
-; _read_dirent
-;-----------------------------------------------------------------------------
-_read_dirent:
-    ld      a,ESPCMD_READDIR
-    call    esp_cmd
-    xor     a
-    call    esp_send_byte
-    call    esp_get_byte
-    or      a
-    ret     nz
-
-    ; Read date/time/attribute
-    ld      hl,_dirent
-    ld      de,9
-    call    esp_get_bytes
-
-    ld      hl,_dirent_name
-
-    ; Read filename
-    ld      c,8
-.1: call    esp_get_byte
-    cp      '.'
-    jr      z,.pad2         ; Dot
-    or      a
-    jr      z,.pad1         ; Zero-byte
-    ld      (hl),a
-    inc     hl
-    dec     c
-    jr      nz,.1
-
-    call    esp_get_byte    ; Dot
-    or      a
-    jr      nz,.ext
-
-.pad1:
-    inc     c
-    inc     c
-    inc     c
-    jr      .pad3
-
-    ; Pad filename with spaces
-.pad2:
-    ld      a,' '
-.2: ld      (hl),a
-    inc     hl
-    dec     c
-    jr      nz,.2
-
-    ; Read extension
-.ext:
-    ld      c,3
-.3: call    esp_get_byte
-    or      a
-    jr      z,.pad3         ; Zero-byte
-    ld      (hl),a
-    inc     hl
-    dec     c
-    jr      nz,.3
-    ret
-
-.pad3:
-    ; Pad extension with spaces
-    ld      a,' '
-.4: ld      (hl),a
-    inc     hl
-    dec     c
-    jr      nz,.4
     ret
 
 ;-----------------------------------------------------------------------------
