@@ -122,6 +122,7 @@ struct EmuState {
     uint8_t  videoPalSel      = 0;      // $EA   : Palette entry select
     uint16_t videoPalette[64] = {0};    // $EB   : Video palette
     uint16_t videoLine        = 0;      // $EC   : Current line number
+    uint8_t  audioDAC         = 0;      // $EC   : Audio DAC sample
     uint8_t  videoIrqLine     = 0;      // $ED   : Line number at which to generate IRQ
     uint8_t  irqMask          = 0;      // $EE   : Interrupt mask register
     uint8_t  irqStatus        = 0;      // $EF   : Interrupt status register

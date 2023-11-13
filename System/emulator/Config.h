@@ -26,16 +26,14 @@ public:
     std::string sdCardPath;
     std::string asmListingPath;
 
-    int  wndPosX     = SDL_WINDOWPOS_CENTERED;
-    int  wndPosY     = SDL_WINDOWPOS_CENTERED;
-    int  wndWidth    = VIDEO_WIDTH * 2;
-    int  wndHeight   = (VIDEO_HEIGHT * 2) * 2;
-    int  scrScale    = 1;
-    bool enableSound = true;
-    bool enableMouse = true;
-
-    bool handCtrlEmulation = false;
-
+    int  wndPosX             = 0;
+    int  wndPosY             = 0;
+    int  wndWidth            = 0;
+    int  wndHeight           = 0;
+    int  scrScale            = 1;
+    bool enableSound         = true;
+    bool enableMouse         = true;
+    bool handCtrlEmulation   = false;
     bool showScreenWindow    = false;
     bool showMemEdit         = false;
     bool showCpuState        = false;
@@ -44,8 +42,7 @@ public:
     bool showAssemblyListing = false;
     bool showCpuTrace        = false;
     bool showEspInfo         = false;
-
-    int memEditMemSelect = 0;
+    int  memEditMemSelect    = 0;
 
     DisplayScaling displayScaling = DisplayScaling::Linear;
 };

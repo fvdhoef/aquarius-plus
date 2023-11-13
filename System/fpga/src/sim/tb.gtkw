@@ -1,223 +1,23 @@
 [*]
-[*] GTKWave Analyzer v3.3.107 (w)1999-2020 BSI
-[*] Sun Oct  9 10:49:23 2022
+[*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
+[*] Sat Nov  4 11:55:48 2023
 [*]
-[dumpfile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.vcd"
-[dumpfile_mtime] "Sun Oct  9 10:43:33 2022"
-[dumpfile_size] 92974537
-[savefile] "/Users/frank/Work/aquarius-plus/fpga/src/sim/tb.gtkw"
-[timestart] 224160000
-[size] 2501 1387
+[dumpfile] "tb.vcd"
+[dumpfile_mtime] "Sat Nov  4 11:42:23 2023"
+[dumpfile_size] 10553456
+[savefile] "/Users/frank/Work/aquarius-plus/System/fpga/src/sim/tb.gtkw"
+[timestart] 0
+[size] 2352 1387
 [pos] -1 -1
-*-22.880857 263305000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+*-19.000000 -1 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [treeopen] tb.
 [treeopen] tb.top_inst.
-[treeopen] tb.top_inst.esp_uart.
-[treeopen] tb.top_inst.spiregs.
-[treeopen] tb.top_inst.sysctrl.
-[sst_width] 193
-[signals_width] 233
+[sst_width] 253
+[signals_width] 223
 [sst_expanded] 1
-[sst_vpaned_height] 541
+[sst_vpaned_height] 434
 @28
-tb.top_inst.sysclk
-tb.reset_n
-tb.top_inst.reset
-@200
--
-@28
-tb.top_inst.sysclk
-@200
--
----- SPI ---
--
-@28
-tb.top_inst.spiregs.esp_ssel_n
-tb.top_inst.spiregs.esp_sclk
-tb.top_inst.spiregs.esp_mosi
-tb.top_inst.spiregs.esp_miso
-@22
-tb.top_inst.spiregs.txdata_r[7:0]
-@28
-tb.top_inst.spiregs.spislave.txdata_ack
-tb.top_inst.spiregs.spislave.sclk_falling
-@200
--
-@28
-tb.top_inst.spiregs.msg_end
-tb.top_inst.spiregs.msg_start
-@22
-tb.top_inst.spiregs.rxdata[7:0]
-@28
-tb.top_inst.spiregs.rxdata_valid
-@24
-tb.top_inst.spiregs.byte_cnt_r[2:0]
-tb.top_inst.spiregs.bus_state_r[2:0]
-@200
--
-@22
-tb.top_inst.keys[63:0]
-@200
--
-@22
-tb.top_inst.spiregs.cmd_r[7:0]
-@28
-tb.top_inst.spiregs.phi_falling
-tb.top_inst.spiregs.phi_rising
-@200
--
----- BUS ---
-@c00022
-#{ROM_A} (0)tb.top_inst.ebus_ba[4:0] (1)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_ba[4:0] (3)tb.top_inst.ebus_ba[4:0] (4)tb.top_inst.ebus_ba[4:0] (2)tb.top_inst.ebus_a[15:0] (3)tb.top_inst.ebus_a[15:0] (4)tb.top_inst.ebus_a[15:0] (5)tb.top_inst.ebus_a[15:0] (6)tb.top_inst.ebus_a[15:0] (7)tb.top_inst.ebus_a[15:0] (8)tb.top_inst.ebus_a[15:0] (9)tb.top_inst.ebus_a[15:0] (10)tb.top_inst.ebus_a[15:0] (11)tb.top_inst.ebus_a[15:0] (12)tb.top_inst.ebus_a[15:0] (13)tb.top_inst.ebus_a[15:0] (14)tb.top_inst.ebus_a[15:0] (15)tb.top_inst.ebus_a[15:0]
-@28
-(0)tb.top_inst.ebus_ba[4:0]
-(1)tb.top_inst.ebus_ba[4:0]
-(2)tb.top_inst.ebus_ba[4:0]
-(3)tb.top_inst.ebus_ba[4:0]
-(4)tb.top_inst.ebus_ba[4:0]
-(2)tb.top_inst.ebus_a[15:0]
-(3)tb.top_inst.ebus_a[15:0]
-(4)tb.top_inst.ebus_a[15:0]
-(5)tb.top_inst.ebus_a[15:0]
-(6)tb.top_inst.ebus_a[15:0]
-(7)tb.top_inst.ebus_a[15:0]
-(8)tb.top_inst.ebus_a[15:0]
-(9)tb.top_inst.ebus_a[15:0]
-(10)tb.top_inst.ebus_a[15:0]
-(11)tb.top_inst.ebus_a[15:0]
-(12)tb.top_inst.ebus_a[15:0]
-(13)tb.top_inst.ebus_a[15:0]
-(14)tb.top_inst.ebus_a[15:0]
-(15)tb.top_inst.ebus_a[15:0]
-@1401200
--group_end
-@22
-tb.top_inst.ebus_d[7:0]
-@28
-tb.top_inst.ebus_rom_ce_n
-tb.top_inst.ebus_wr_n
-tb.top_inst.ebus_rd_n
-@200
--
-@22
-tb.top_inst.ebus_a[15:0]
-tb.top_inst.ebus_ba[4:0]
-@28
-tb.top_inst.ebus_ram_ce_n
-tb.top_inst.ebus_rom_ce_n
-tb.top_inst.ebus_mreq_n
-tb.top_inst.ebus_iorq_n
-tb.top_inst.ebus_rd_n
-tb.top_inst.ebus_wr_n
-tb.top_inst.ebus_busreq_n
-tb.top_inst.ebus_busack_n
-@200
--
-@24
-tb.top_inst.reg_bank_page[5:0]
-tb.top_inst.reg_bank_ro
-tb.top_inst.reg_bank_overlay
-@200
--
--
-@22
-tb.top_inst.reg_bank0_r[7:0]
-tb.top_inst.reg_bank1_r[7:0]
-tb.top_inst.reg_bank2_r[7:0]
-tb.top_inst.reg_bank3_r[7:0]
-@200
--
-@28
-tb.top_inst.bus_read
-tb.top_inst.bus_write
-@c00022
-tb.top_inst.wrdata[7:0]
-@28
-(0)tb.top_inst.wrdata[7:0]
-(1)tb.top_inst.wrdata[7:0]
-(2)tb.top_inst.wrdata[7:0]
-(3)tb.top_inst.wrdata[7:0]
-(4)tb.top_inst.wrdata[7:0]
-(5)tb.top_inst.wrdata[7:0]
-(6)tb.top_inst.wrdata[7:0]
-(7)tb.top_inst.wrdata[7:0]
-@1401200
--group_end
-@200
--
-@28
-tb.top_inst.sel_mem_vram
-@22
-tb.top_inst.video.vram_addr[10:0]
-tb.top_inst.video.vram_wrdata[7:0]
-tb.top_inst.video.vram_rddata[7:0]
-@28
-tb.top_inst.video.vram_wren
-@200
--
----- ESP UART ---
-@28
-tb.top_inst.esp_tx
-tb.top_inst.esp_rx
-tb.top_inst.esp_cts
-tb.top_inst.esp_rts
-@201
--
-@22
-tb.top_inst.rddata_espctrl[7:0]
-@200
--
-@28
-tb.top_inst.esp_uart.rx_framing_error
-tb.top_inst.esp_uart.rx_break
-tb.top_inst.esp_txbreak
-tb.top_inst.sel_io_espctrl
-tb.top_inst.sel_io_espdata
-@22
-tb.top_inst.esp_uart.esp_uart_tx.tx_data[7:0]
-@28
-tb.top_inst.esp_uart.esp_uart_tx.tx_valid
-tb.top_inst.esp_uart.esp_uart_tx.tx_busy
-tb.top_inst.esp_uart.uart_txd
-@24
-tb.top_inst.esp_uart.esp_uart_tx.bit_cnt_r[3:0]
-@200
--
-@28
-tb.top_inst.esp_uart.esp_uart_rx.uart_rxd
-@22
-tb.top_inst.esp_uart.esp_uart_rx.rx_data[7:0]
-@28
-tb.top_inst.esp_uart.esp_uart_rx.rx_valid
-@22
-tb.top_inst.esp_uart.esp_uart_rx.clk_cnt_r[2:0]
-tb.top_inst.esp_uart.esp_uart_rx.bit_cnt_r[3:0]
-@28
-tb.top_inst.esp_uart.esp_uart_rx.framing_error
-tb.top_inst.esp_uart.esp_uart_rx.break
-tb.top_inst.esp_uart.rxfifo_overflow
-tb.top_inst.esp_uart.esp_uart_tx.tx_break
-@200
--
-@22
-tb.top_inst.esp_uart.rxfifo_data[7:0]
-@200
--
-@22
-tb.top_inst.esp_uart.esp_uart_rxfifo.count[3:0]
-@28
-tb.top_inst.esp_uart.esp_uart_rxfifo.empty
-tb.top_inst.esp_uart.esp_uart_rxfifo.full
-@200
--
-@24
-tb.top_inst.esp_uart.esp_uart_tx.bit_cnt_r[3:0]
-@28
-tb.top_inst.esp_uart.esp_uart_tx.next_bit
-@24
-tb.top_inst.esp_uart.esp_uart_tx.clk_cnt_r[2:0]
-@200
--
+tb.top_inst.clk
 @22
 tb.top_inst.vga_r[3:0]
 tb.top_inst.vga_g[3:0]

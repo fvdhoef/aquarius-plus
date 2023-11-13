@@ -46,19 +46,21 @@ static int getIntValue(cJSON *parent, const std::string &key, int defaultValue) 
 }
 
 void Config::load() {
-    std::ifstream ifs(configPath);
-    if (!ifs.good())
-        return;
+    std::string jsonStr = "{}";
 
-    std::string str((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
-    if (auto root = cJSON_ParseWithLength(str.c_str(), str.size())) {
+    std::ifstream ifs(configPath);
+    if (ifs.good()) {
+        jsonStr = std::string((std::istreambuf_iterator<char>(ifs)), std::istreambuf_iterator<char>());
+    }
+
+    if (auto root = cJSON_ParseWithLength(jsonStr.c_str(), jsonStr.size())) {
         imguiConf      = getStringValue(root, "imguiConfig", "");
         sdCardPath     = getStringValue(root, "sdCardPath", "");
         asmListingPath = getStringValue(root, "asmListingPath", "");
 
-        wndPosX     = getIntValue(root, "wndPosX", VIDEO_WIDTH * 2);
-        wndPosY     = getIntValue(root, "wndPosY", VIDEO_HEIGHT * 2);
-        wndWidth    = getIntValue(root, "wndWidth", VIDEO_WIDTH * 2);
+        wndPosX     = getIntValue(root, "wndPosX", SDL_WINDOWPOS_CENTERED);
+        wndPosY     = getIntValue(root, "wndPosY", SDL_WINDOWPOS_CENTERED);
+        wndWidth    = getIntValue(root, "wndWidth", VIDEO_WIDTH);
         wndHeight   = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
         scrScale    = getIntValue(root, "scrScale", 1);
         enableSound = getBoolValue(root, "enableSound", true);

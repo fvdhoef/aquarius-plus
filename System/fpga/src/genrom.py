@@ -62,7 +62,7 @@ module rom(
     input  wire  [7:0] p2_wrdata,
     input  wire        p2_wren);
 
-    reg addr_r;
+    reg [15:0] addr_r;
     always @(posedge clk) addr_r <= addr;
 """,
     file=f,
@@ -73,7 +73,7 @@ for i in range(ROMSIZE // 2048):
     genram(i, data[i * 2048 : (i + 1) * 2048])
 
 
-print("    always @* case (addr[15:11])", file=f)
+print("    always @* case (addr_r[15:11])", file=f)
 for i in range(ROMSIZE // 2048):
     print(f"        5'd{i}: rddata <= rddata_{i:02};", file=f)
 print("        default: rddata <= 8'hFF;", file=f)
