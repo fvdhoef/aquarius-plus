@@ -77,6 +77,7 @@ module top(
     wire  [7:0] rddata_kbbuf;            // IO $FA
     wire  [7:0] rddata_keyboard;         // IO $FF:R
 
+    reg   [7:0] audio_dac_r;             // IO $EC
     reg   [7:0] reg_bank0_r;             // IO $F0
     reg   [7:0] reg_bank1_r;             // IO $F1
     reg   [7:0] reg_bank2_r;             // IO $F2
@@ -179,6 +180,7 @@ module top(
     wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
     wire sel_io_printer           = !ebus_iorq_n && ebus_a[7:0] == 8'hFE;
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
+    wire sel_io_audio_dac         = !ebus_iorq_n && ebus_a[7:0] == 8'hEC;
 
     wire sel_internal =
         sel_mem_tram | sel_mem_vram | sel_mem_chram | sel_mem_rom |
@@ -233,26 +235,28 @@ module top(
 
     always @(posedge clk or posedge reset)
         if (reset) begin
-            reg_bank0_r          <= {2'b11, 6'd0};
-            reg_bank1_r          <= {2'b00, 6'd33};
-            reg_bank2_r          <= {2'b00, 6'd34};
-            reg_bank3_r          <= {2'b00, 6'd19};
-            sysctrl_dis_regs_r   <= 1'b0;
-            sysctrl_dis_psgs_r   <= 1'b0;
-            sysctrl_turbo_r      <= 1'b0;
-            cassette_out         <= 1'b0;
-            reg_cpm_remap_r      <= 1'b0;
-            printer_out          <= 1'b0;
+            audio_dac_r         <= 8'b0;
+            reg_bank0_r         <= {2'b11, 6'd0};
+            reg_bank1_r         <= {2'b00, 6'd33};
+            reg_bank2_r         <= {2'b00, 6'd34};
+            reg_bank3_r         <= {2'b00, 6'd19};
+            sysctrl_dis_regs_r  <= 1'b0;
+            sysctrl_dis_psgs_r  <= 1'b0;
+            sysctrl_turbo_r     <= 1'b0;
+            cassette_out        <= 1'b0;
+            reg_cpm_remap_r     <= 1'b0;
+            printer_out         <= 1'b0;
 
         end else begin
-            if (sel_io_bank0             && bus_write) reg_bank0_r                              <= wrdata;
-            if (sel_io_bank1             && bus_write) reg_bank1_r                              <= wrdata;
-            if (sel_io_bank2             && bus_write) reg_bank2_r                              <= wrdata;
-            if (sel_io_bank3             && bus_write) reg_bank3_r                              <= wrdata;
-            if (sel_io_sysctrl           && bus_write) {sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[2:0];
-            if (sel_io_cassette          && bus_write) cassette_out                             <= wrdata[0];
-            if (sel_io_vsync_r_cpm_w     && bus_write) reg_cpm_remap_r                          <= wrdata[0];
-            if (sel_io_printer           && bus_write) printer_out                              <= wrdata[0];
+            if (sel_io_audio_dac     && bus_write) audio_dac_r     <= wrdata;
+            if (sel_io_bank0         && bus_write) reg_bank0_r     <= wrdata;
+            if (sel_io_bank1         && bus_write) reg_bank1_r     <= wrdata;
+            if (sel_io_bank2         && bus_write) reg_bank2_r     <= wrdata;
+            if (sel_io_bank3         && bus_write) reg_bank3_r     <= wrdata;
+            if (sel_io_sysctrl       && bus_write) {sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[2:0];
+            if (sel_io_cassette      && bus_write) cassette_out    <= wrdata[0];
+            if (sel_io_vsync_r_cpm_w && bus_write) reg_cpm_remap_r <= wrdata[0];
+            if (sel_io_printer       && bus_write) printer_out     <= wrdata[0];
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -512,12 +516,12 @@ module top(
     wire [13:0] ay8910_l =
         {ay8910_ch_a,   1'b0} + {ay8910_ch_b,   1'b0} + {1'b0, ay8910_ch_c  } +
         {ay8910_2_ch_a, 1'b0} + {ay8910_2_ch_b, 1'b0} + {1'b0, ay8910_2_ch_c} +
-        {1'b0, beep};
+        {audio_dac_r, 3'b0} + {1'b0, beep};
 
     wire [13:0] ay8910_r =
         {1'b0, ay8910_ch_a  } + {ay8910_ch_b,   1'b0} + {ay8910_ch_c,   1'b0} +
         {1'b0, ay8910_2_ch_a} + {ay8910_2_ch_b, 1'b0} + {ay8910_2_ch_c, 1'b0} +
-        {1'b0, beep};
+        {audio_dac_r, 3'b0} + {1'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
