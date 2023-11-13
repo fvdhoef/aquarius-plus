@@ -533,7 +533,7 @@ void EmuState::ioWrite(size_t param, uint16_t addr, uint8_t data) {
                         ((data & 0xF) << 8) | (emuState.videoPalette[emuState.videoPalSel >> 1] & 0xFF);
                 }
                 return;
-            case 0xEC: return;
+            case 0xEC: emuState.audioDAC = data; return;
             case 0xED: emuState.videoIrqLine = data; return;
             case 0xEE: emuState.irqMask = data & 3; return;
             case 0xEF: emuState.irqStatus &= ~data; return;
