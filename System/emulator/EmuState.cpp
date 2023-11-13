@@ -41,6 +41,7 @@ void EmuState::reset() {
     videoSprSel       = 0;
     videoPalSel       = 0;
     videoLine         = 0;
+    audioDAC          = 0;
     videoIrqLine      = 0;
     irqMask           = 0;
     irqStatus         = 0;
@@ -185,6 +186,9 @@ unsigned EmuState::emulate() {
             ay2.render(abc);
             audioLeft += 2 * abc[0] + 2 * abc[1] + 1 * abc[2];
             audioRight += 1 * abc[0] + 2 * abc[1] + 2 * abc[2];
+
+            audioLeft += (audioDAC << 3);
+            audioRight += (audioDAC << 3);
         }
 
         uint16_t beep = soundOutput ? 10000 : 0;
