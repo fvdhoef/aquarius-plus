@@ -62,17 +62,17 @@ enum {
 
 struct editor_data {
     const char *path;
-    uint8_t     dirty;       // Document unsaved?
+    bool        dirty;       // Document unsaved?
     uint8_t    *split_begin; // Begin of split (points to free character)
     uint8_t    *split_end;   // End of split (points to used character)
     uint8_t    *top_p;       // Pointer to first character in view (always <= split_begin)
     int16_t     top_line;    // Line number of first line in view
-    int8_t      top_virtscreen_line;
-    uint8_t     top_is_newline;
+    int16_t     top_virtscreen_line;
+    bool        top_is_newline;
     int16_t     wanted_col;
     int16_t     cursor_line, cursor_col;
-    int8_t      virtscreen_line;
-    int8_t      virtscreen_col;
+    int16_t     virtscreen_line;
+    int16_t     virtscreen_col;
     uint8_t    *selection_split_begin, *selection_split_end;
 };
 
@@ -83,14 +83,14 @@ static uint8_t  text_x;
 static uint8_t  text_y;
 static char     tmpstr[81];
 
-static uint8_t        render_new_line;
-static uint8_t        render_eof;
+static bool           render_new_line;
+static bool           render_eof;
 static uint8_t        render_draw_cursor;
 static const uint8_t *render_tp;
 static int16_t        render_current_line;
 static uint8_t        render_has_selection;
 static uint8_t        render_in_selection;
-static uint8_t        render_status;
+static bool           render_status;
 
 static uint8_t *buf_start;
 static uint8_t *buf_end;
@@ -134,15 +134,11 @@ static void _pad(void) {
     }
 }
 
-static void render_statusbar(const char *str) {
+static void render_statusbar_start(void) {
     text_p     = TEXT_RAM + 24 * 80;
     text_x     = 0;
     text_y     = 24;
     text_color = COLOR_STATUSBAR;
-    while (*str) {
-        _putchar(*(str++));
-    }
-    _pad();
 }
 
 static void render_linenr(void) {
@@ -154,7 +150,7 @@ static void render_linenr(void) {
         _putchar(' ');
         _putchar(' ');
     } else if (render_new_line) {
-        render_new_line = 0;
+        render_new_line = false;
         print_4digits(render_current_line + 1);
     } else {
         _putchar(' ');
@@ -172,7 +168,7 @@ static void render_screen(void) {
     _reset_text();
 
     render_new_line      = data.top_is_newline;
-    render_eof           = 0;
+    render_eof           = false;
     render_draw_cursor   = 0;
     render_tp            = data.top_p;
     render_current_line  = data.top_line;
@@ -197,7 +193,7 @@ static void render_screen(void) {
                     }
                 }
                 if (render_tp >= buf_end) {
-                    render_eof = 1;
+                    render_eof = true;
                     break;
                 } else {
                     text_ch = *(render_tp++);
@@ -233,11 +229,7 @@ static void render_screen(void) {
 
     // Render status bar
     if (render_status) {
-        text_p     = TEXT_RAM + 24 * 80;
-        text_x     = 0;
-        text_y     = 24;
-        text_color = COLOR_STATUSBAR;
-
+        render_statusbar_start();
         _puts("Ln ");
         print_4digits(data.cursor_line + 1);
         _puts(", Col ");
@@ -249,14 +241,6 @@ static void render_screen(void) {
         if (data.dirty)
             _putchar('*');
         _pad();
-
-        // tmpstr[0] = ' ';
-        // tmpstr[1] = 0;
-        // // sprintf(
-        // //     tmpstr, "Ln %d, Col %d   %u bytes free.   %s%c",
-        // //     data.cursor_line + 1, data.cursor_col + 1, bytes_free, data.path, data.dirty ? '*' : ' ');
-
-        // render_statusbar(tmpstr);
     }
 }
 
@@ -294,7 +278,7 @@ static int load_file(const char *path) {
     data.path           = path;
     data.top_p          = buf_start;
     data.top_line       = 0;
-    data.top_is_newline = 1;
+    data.top_is_newline = true;
 
     return 0;
 }
@@ -315,9 +299,9 @@ static void new_empty_file(const char *path) {
     data.split_end      = buf_end;
     data.top_p          = buf_start;
     data.top_line       = 0;
-    data.top_is_newline = 1;
+    data.top_is_newline = true;
     data.path           = path;
-    data.dirty          = 1;
+    data.dirty          = true;
 }
 
 static int push_before_split(uint8_t ch) {
@@ -365,10 +349,10 @@ static int pop_before_split(void) {
 
         if (ch == '\n') {
             data.cursor_line--;
-            data.cursor_col = (data.split_begin - p - 1);
+            data.cursor_col = (data.split_begin - p - 1u);
         }
 
-        data.virtscreen_col = (data.split_begin - p - 1) % CHARS_PER_LINE;
+        data.virtscreen_col = (data.split_begin - p - 1u) % CHARS_PER_LINE;
         data.virtscreen_line--;
     }
 
@@ -419,11 +403,10 @@ static void cursor_end(void) {
 }
 
 static void cursor_next_line(void) {
-    int     i;
     uint8_t newline_found = 0;
 
     // First try to advance 1 display line within current line
-    for (i = 0; i < CHARS_PER_LINE; i++) {
+    for (uint8_t i = 0; i < CHARS_PER_LINE; i++) {
         if (cursor_right() == '\n') {
             newline_found = 1;
             break;
@@ -432,7 +415,7 @@ static void cursor_next_line(void) {
 
     // If newline found advance to wanted column
     if (newline_found) {
-        for (i = 0; i < data.wanted_col; i++) {
+        for (int16_t i = 0; i < data.wanted_col; i++) {
             if (peek_after_split() == '\n') {
                 break;
             }
@@ -442,11 +425,10 @@ static void cursor_next_line(void) {
 }
 
 static void cursor_prev_line(void) {
-    int     i;
     uint8_t newline_found = 0;
 
     // First try to go back 1 display line within current line
-    for (i = 0; i < CHARS_PER_LINE; i++) {
+    for (uint8_t i = 0; i < CHARS_PER_LINE; i++) {
         if (cursor_left() == '\n') {
             newline_found = 1;
             break;
@@ -460,7 +442,7 @@ static void cursor_prev_line(void) {
         }
 
         // Advance to wanted column
-        for (i = 0; i < data.wanted_col; i++) {
+        for (int16_t i = 0; i < data.wanted_col; i++) {
             if (peek_after_split() == '\n') {
                 break;
             }
@@ -470,50 +452,46 @@ static void cursor_prev_line(void) {
 }
 
 static void cursor_page_up(void) {
-    int i;
-    for (i = 0; i < DISPLAY_LINES - 1; i++) {
+    for (uint8_t i = 0; i < DISPLAY_LINES - 1; i++) {
         cursor_prev_line();
     }
 }
 
 static void cursor_page_down(void) {
-    int i;
-    for (i = 0; i < DISPLAY_LINES - 1; i++) {
+    for (uint8_t i = 0; i < DISPLAY_LINES - 1; i++) {
         cursor_next_line();
     }
 }
 
 static void scroll_down(void) {
-    int i = 0;
     data.top_virtscreen_line++;
 
-    for (i = 0; i < CHARS_PER_LINE; i++) {
+    for (uint8_t i = 0; i < CHARS_PER_LINE; i++) {
         if (*(data.top_p++) == '\n') {
-            data.top_is_newline = 1;
+            data.top_is_newline = true;
             data.top_line++;
             return;
         }
     }
-    data.top_is_newline = 0;
+    data.top_is_newline = false;
 }
 
 static void scroll_up(void) {
-    int i = 0;
     data.top_virtscreen_line--;
 
     if (data.top_p[-1] == '\n') {
         data.top_line--;
     }
 
-    for (i = 0; i < CHARS_PER_LINE; i++) {
+    for (uint8_t i = 0; i < CHARS_PER_LINE; i++) {
         data.top_p--;
         if (data.top_p[-1] == '\n') {
-            data.top_is_newline = 1;
+            data.top_is_newline = true;
             // data.top_line--;
             return;
         }
     }
-    data.top_is_newline = 0;
+    data.top_is_newline = false;
 }
 
 static void do_backspace(void) {
@@ -543,12 +521,12 @@ static void do_backspace(void) {
         spaces--;
     } while (spaces % 4 != 0);
 
-    data.dirty = 1;
+    data.dirty = true;
 }
 
 static void do_delete(void) {
     pop_after_split();
-    data.dirty = 1;
+    data.dirty = true;
 }
 
 static void do_tab(void) {
@@ -559,7 +537,7 @@ static void do_tab(void) {
     while (spaces--) {
         push_before_split(' ');
     }
-    data.dirty = 1;
+    data.dirty = true;
 }
 
 static void do_enter(void) {
@@ -579,7 +557,7 @@ static void do_enter(void) {
         push_before_split(' ');
     }
 
-    data.dirty = 1;
+    data.dirty = true;
 }
 
 static void delete_selection(void) {
@@ -588,14 +566,14 @@ static void delete_selection(void) {
     }
 
     if (data.selection_split_begin < data.split_begin) {
-        int num_bytes = data.split_begin - data.selection_split_begin;
+        uint16_t num_bytes = data.split_begin - data.selection_split_begin;
         while (num_bytes--) {
             // Use backspace
             pop_before_split();
         }
 
     } else if (data.selection_split_end > data.split_end) {
-        int num_bytes = data.selection_split_end - data.split_end;
+        uint16_t num_bytes = data.selection_split_end - data.split_end;
         while (num_bytes--) {
             // Use delete
             pop_after_split();
@@ -607,7 +585,7 @@ static void delete_selection(void) {
 }
 
 static int save_selection(void) {
-    int      selected_bytes = 0;
+    uint16_t selected_bytes = 0;
     uint8_t *p              = NULL;
 
     if (data.selection_split_begin == NULL) {
@@ -632,33 +610,28 @@ static int save_selection(void) {
     write(fd, p, selected_bytes);
     close(fd);
 
-    {
-        tmpstr[0] = ' ';
-        tmpstr[1] = 0;
-        // sprintf(tmpstr, "%u bytes copied.", selected_bytes);
-        render_statusbar(tmpstr);
-    }
+    render_statusbar_start();
+    print_5digits(selected_bytes);
+    _puts(" bytes copied.");
+    _pad();
 
     return selected_bytes;
 }
 
 static void paste_clipboard(void) {
-    int     i;
-    uint8_t buf[64];
-
     int8_t fd = open(CLIPBOARD_PATH, FO_RDONLY);
     if (fd < 0)
         return;
 
     while (1) {
-        int16_t result = read(fd, buf, sizeof(buf));
+        int16_t result = read(fd, tmpstr, sizeof(tmpstr));
         if (result <= 0)
             break;
 
-        for (i = 0; i < (int)result; i++)
-            push_before_split(buf[i]);
+        for (int i = 0; i < (int)result; i++)
+            push_before_split(tmpstr[i]);
 
-        data.dirty = 1;
+        data.dirty = true;
     }
     close(fd);
 }
@@ -716,21 +689,24 @@ static void editor(void) {
         new_empty_file(path);
     }
 
-    render_status = 1;
+    render_status = true;
     render_screen();
 
     while (!quit) {
-        uint8_t do_render = 0;
-        render_status     = 1;
-        int scancode;
+        bool do_render = false;
+        render_status  = true;
 
-        while ((scancode = IO_KEYBUF) > 0) {
+        while (1) {
+            uint8_t scancode = IO_KEYBUF;
+            if (scancode == 0)
+                break;
+
             uint8_t keep_selection       = 0;
             uint8_t update_wanted_col    = 1;
-            uint8_t shifted              = (IO_KEYBOARD_COL7 & 0x10) == 0; //(scancode >= 128) && (scancode & KEY_SHIFTED) != 0;
+            uint8_t shifted              = (IO_KEYBOARD_COL7 & 0x10) == 0;
             uint8_t render_has_selection = (data.selection_split_begin != NULL);
-            render_status                = 1;
-            do_render                    = 1;
+            render_status                = true;
+            do_render                    = true;
 
             if (scancode == CH_UP || scancode == CH_DOWN || scancode == CH_CTRL_S || scancode == CH_CTRL_Q) {
                 update_wanted_col = 0;
@@ -738,7 +714,7 @@ static void editor(void) {
 
             if (scancode >= ' ' && scancode < 127) {
                 push_before_split(scancode);
-                data.dirty = 1;
+                data.dirty = true;
 
             } else {
                 uint8_t *prev_split_begin = data.split_begin;
@@ -786,16 +762,18 @@ static void editor(void) {
                             int result = save_file(data.path);
                             if (result != 0) {
                                 // render_statusbar(fatfs_error(result));
-                                render_status = 0;
+                                // render_status = false;
                                 break;
                             }
-                            data.dirty = 0;
+                            data.dirty = false;
                         }
                         break;
 
                     case CH_CTRL_Q:
                         if (data.dirty) {
-                            render_statusbar("Are you sure you want to quit? (Unchanged changes will be lost.)");
+                            render_statusbar_start();
+                            _puts("Are you sure you want to quit? (Unchanged changes will be lost.)");
+                            _pad();
                             while ((scancode = IO_KEYBUF) == 0) {
                             }
                             if (scancode == 'y' || scancode == 'Y') {
@@ -809,14 +787,14 @@ static void editor(void) {
                     case CH_CTRL_C: {
                         if (save_selection()) {
                             keep_selection = 1;
-                            render_status  = 0;
+                            render_status  = false;
                         }
                         break;
                     }
 
                     case CH_CTRL_X: {
                         if (save_selection()) {
-                            render_status = 0;
+                            render_status = false;
                             delete_selection();
                         }
                         break;
