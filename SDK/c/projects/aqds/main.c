@@ -83,6 +83,15 @@ static uint8_t  text_color;
 static uint8_t *text_p;
 static uint8_t  text_x;
 static uint8_t  text_y;
+static char     tmpstr[81];
+
+static uint8_t        render_new_line;
+static uint8_t        render_eof;
+static uint8_t        render_draw_cursor;
+static const uint8_t *render_tp;
+static int16_t        render_current_line;
+static uint8_t        render_has_selection;
+static uint8_t        render_in_selection;
 
 static struct editor_data data;
 
@@ -116,37 +125,27 @@ static void _pad(void) {
 
 static void render_statusbar(const char *str) {
     text_p      = TEXT_RAM + 24 * 80;
-    text_color  = COLOR_STATUSBAR;
+    text_x      = 0;
+    text_y      = 24;
     uint8_t *pe = text_p;
 
+    text_color = COLOR_STATUSBAR;
     while (*str) {
         _putchar(*(str++));
     }
     _pad();
 }
 
-static char tmpstr[81];
-
 static void render_screen(int render_status) {
     _reset_text();
 
-    static uint8_t        render_new_line;
-    static uint8_t        render_eof;
-    static uint8_t        render_draw_cursor;
-    static const uint8_t *render_tp;
-    static int16_t        render_current_line;
-    static int16_t        current_col;
-    static uint8_t        has_selection;
-    static uint8_t        in_selection;
-
-    render_new_line     = data.top_is_newline;
-    render_eof          = 0;
-    render_draw_cursor  = 0;
-    render_tp           = data.top_p;
-    render_current_line = data.top_line;
-    current_col         = 1;
-    has_selection       = data.selection_split_begin != NULL;
-    in_selection        = has_selection && render_tp > data.selection_split_begin;
+    render_new_line      = data.top_is_newline;
+    render_eof           = 0;
+    render_draw_cursor   = 0;
+    render_tp            = data.top_p;
+    render_current_line  = data.top_line;
+    render_has_selection = data.selection_split_begin != NULL;
+    render_in_selection  = render_has_selection && render_tp > data.selection_split_begin;
 
     while (text_y != 24) {
         // Draw line number
@@ -178,8 +177,8 @@ static void render_screen(int render_status) {
             while (text_x) {
                 uint8_t ch;
 
-                if (has_selection && render_tp == data.selection_split_begin || render_tp == data.selection_split_end) {
-                    in_selection = !in_selection;
+                if (render_has_selection && render_tp == data.selection_split_begin || render_tp == data.selection_split_end) {
+                    render_in_selection = !render_in_selection;
                 }
 
                 // Get character
@@ -188,8 +187,8 @@ static void render_screen(int render_status) {
                         render_tp          = data.split_end;
                         render_draw_cursor = 1;
 
-                        if (has_selection) {
-                            in_selection = !in_selection;
+                        if (render_has_selection) {
+                            render_in_selection = !render_in_selection;
                         }
                     }
                     if (render_tp >= data.buf + MAX_FILE_SIZE) {
@@ -202,14 +201,12 @@ static void render_screen(int render_status) {
 
                 if (ch == '\n') {
                     render_current_line++;
-                    current_col = 1;
-
                     render_new_line = 1;
                     break;
                 }
-                text_color = render_draw_cursor ? COLOR_CURSOR : (in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
+                text_color = render_draw_cursor ? COLOR_CURSOR : (render_in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
 
-                if (ch == ' ' && in_selection) {
+                if (ch == ' ' && render_in_selection) {
                     // Draw whitespace with centered-dot character
                     ch         = 0xC6;
                     text_color = render_draw_cursor ? COLOR_WHITESPACE_CURSOR : COLOR_WHITESPACE_SELECTED;
@@ -217,12 +214,11 @@ static void render_screen(int render_status) {
 
                 _putchar(ch);
                 render_draw_cursor = 0;
-                current_col++;
             }
 
             // Draw text
             if (text_x) {
-                text_color = render_draw_cursor ? COLOR_CURSOR : (in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
+                text_color = render_draw_cursor ? COLOR_CURSOR : (render_in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
                 _putchar(' ');
                 render_draw_cursor = 0;
             }
@@ -703,12 +699,12 @@ int main(void) {
         int     scancode;
 
         while ((scancode = IO_KEYBUF) > 0) {
-            uint8_t keep_selection    = 0;
-            uint8_t update_wanted_col = 1;
-            uint8_t shifted           = (IO_KEYBOARD_COL7 & 0x10) == 0; //(scancode >= 128) && (scancode & KEY_SHIFTED) != 0;
-            uint8_t has_selection     = (data.selection_split_begin != NULL);
-            render_status             = 1;
-            do_render                 = 1;
+            uint8_t keep_selection       = 0;
+            uint8_t update_wanted_col    = 1;
+            uint8_t shifted              = (IO_KEYBOARD_COL7 & 0x10) == 0; //(scancode >= 128) && (scancode & KEY_SHIFTED) != 0;
+            uint8_t render_has_selection = (data.selection_split_begin != NULL);
+            render_status                = 1;
+            do_render                    = 1;
 
             if (scancode == CH_UP || scancode == CH_DOWN || scancode == CH_CTRL_S || scancode == CH_CTRL_Q) {
                 update_wanted_col = 0;
@@ -728,21 +724,21 @@ int main(void) {
                         break;
 
                     case CH_BACKSPACE:
-                        if (has_selection)
+                        if (render_has_selection)
                             delete_selection();
                         else
                             do_backspace();
                         break;
 
                     case CH_DELETE:
-                        if (has_selection)
+                        if (render_has_selection)
                             delete_selection();
                         else
                             do_delete();
                         break;
 
                     case CH_TAB:
-                        // if (has_selection) {
+                        // if (render_has_selection) {
                         //     // TODO: indent selection
                         //     keep_selection = 1;
                         // } else {
