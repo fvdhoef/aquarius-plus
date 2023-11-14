@@ -31,6 +31,7 @@ IOREG(0xE9, IO_VSPRATTR);
 IOREG(0xEA, IO_VPALSEL);
 IOREG(0xEB, IO_VPALDATA);
 IOREG(0xEC, IO_VLINE);
+IOREG(0xEC, IO_PCMDAC);
 IOREG(0xED, IO_VIRQLINE);
 IOREG(0xEE, IO_IRQMASK);
 IOREG(0xEF, IO_IRQSTAT);
@@ -44,6 +45,7 @@ IOREG(0xF6, IO_PSG1DATA);
 IOREG(0xF7, IO_PSG1ADDR);
 IOREG(0xF8, IO_PSG2DATA);
 IOREG(0xF9, IO_PSG2ADDR);
+IOREG(0xFA, IO_KEYBUF);
 IOREG(0xFB, IO_SYSCTRL);
 IOREG(0xFC, IO_CASSETTE);
 IOREG(0xFD, IO_CPM);
@@ -63,23 +65,29 @@ IOREG16(0xFDFF, IO_KEYBOARD_COL1);
 IOREG16(0xFEFF, IO_KEYBOARD_COL0);
 
 enum {
-    ESPCMD_RESET    = 0x01, // Reset ESP
-    ESPCMD_OPEN     = 0x10, // Open / create file
-    ESPCMD_CLOSE    = 0x11, // Close open file
-    ESPCMD_READ     = 0x12, // Read from file
-    ESPCMD_WRITE    = 0x13, // Write to file
-    ESPCMD_SEEK     = 0x14, // Move read/write pointer
-    ESPCMD_TELL     = 0x15, // Get current read/write
-    ESPCMD_OPENDIR  = 0x16, // Open directory
-    ESPCMD_CLOSEDIR = 0x17, // Close open directory
-    ESPCMD_READDIR  = 0x18, // Read from directory
-    ESPCMD_DELETE   = 0x19, // Remove file or directory
-    ESPCMD_RENAME   = 0x1A, // Rename / move file or directory
-    ESPCMD_MKDIR    = 0x1B, // Create directory
-    ESPCMD_CHDIR    = 0x1C, // Change directory
-    ESPCMD_STAT     = 0x1D, // Get file status
-    ESPCMD_GETCWD   = 0x1E, // Get current working directory
-    ESPCMD_CLOSEALL = 0x1F, // Close any open file/directory descriptor
+    ESPCMD_RESET       = 0x01, // Reset ESP
+    ESPCMD_VERSION     = 0x02, // Get version string
+    ESPCMD_GETDATETIME = 0x03, // Get current date/time
+    ESPCMD_KEYMODE     = 0x08, // Set keyboard buffer mode
+    ESPCMD_GETMOUSE    = 0x0C, // Get mouse state
+    ESPCMD_OPEN        = 0x10, // Open / create file
+    ESPCMD_CLOSE       = 0x11, // Close open file
+    ESPCMD_READ        = 0x12, // Read from file
+    ESPCMD_WRITE       = 0x13, // Write to file
+    ESPCMD_SEEK        = 0x14, // Move read/write pointer
+    ESPCMD_TELL        = 0x15, // Get current read/write
+    ESPCMD_OPENDIR     = 0x16, // Open directory
+    ESPCMD_CLOSEDIR    = 0x17, // Close open directory
+    ESPCMD_READDIR     = 0x18, // Read from directory
+    ESPCMD_DELETE      = 0x19, // Remove file or directory
+    ESPCMD_RENAME      = 0x1A, // Rename / move file or directory
+    ESPCMD_MKDIR       = 0x1B, // Create directory
+    ESPCMD_CHDIR       = 0x1C, // Change directory
+    ESPCMD_STAT        = 0x1D, // Get file status
+    ESPCMD_GETCWD      = 0x1E, // Get current working directory
+    ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
+    ESPCMD_OPENDIR83   = 0x20, // Open directory in 8.3 filename mode
+    ESPCMD_LOADFPGA    = 0x40, // Load FPGA bitstream
 };
 
 enum {
@@ -91,6 +99,7 @@ enum {
     ERR_OTHER         = -6, // Other error
     ERR_NO_DISK       = -7, // No disk
     ERR_NOT_EMPTY     = -8, // Not empty
+    ERR_WRITE_PROTECT = -9, // Write protected SD-card
 };
 
 enum {
@@ -106,12 +115,16 @@ enum {
 };
 
 enum {
-    VCTRL_TEXT_EN   = (1 << 0),
-    VCTRL_MODE_OFF  = (0 << 1),
-    VCTRL_MODE_TILE = (1 << 1),
-    VCTRL_MODE_BM   = (2 << 1),
-    VCTRL_SPR_EN    = (1 << 3),
-    VCTRL_TEXT_PRIO = (1 << 4),
+    VCTRL_TEXT_EN         = (1U << 0), // Text enable
+    VCTRL_MODE_OFF        = (0U << 1), // Graphics mode: Disabled
+    VCTRL_MODE_TILE       = (1U << 1), // Graphics mode: 64x32 tilemap
+    VCTRL_MODE_BM1BPP     = (2U << 1), // Graphics mode: 320x200 bitmapped (1bpp - fg/bg color selectable per 8x8 pixels)
+    VCTRL_MODE_BM4BPP     = (3U << 1), // Graphics mode: 160x200 bitmapped (4bpp)
+    VCTRL_SPR_EN          = (1U << 3), // Sprites enable
+    VCTRL_TEXT_PRIO       = (1U << 4), // Text priority
+    VCTRL_REMAP_BORDER_CH = (1U << 5), // Remap border character
+    VCTRL_80COLUMNS       = (1U << 6), // 80-columns mode
+    VCTRL_TEXTPAGE2       = (1U << 7), // 2nd text page
 };
 
 // Aquarius keyboard scancodes
