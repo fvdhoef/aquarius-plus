@@ -14,7 +14,7 @@
 #define COLOR_SEPARATOR 0xBF
 #define COLOR_WHITESPACE_SELECTED 0x69
 #define COLOR_WHITESPACE_CURSOR 0x7E
-#define COLOR_TEXT 0x7F
+#define COLOR_TEXT 0x8F
 #define COLOR_TEXT_SELECTED 0x09
 #define COLOR_CURSOR 0x7E
 
@@ -69,139 +69,176 @@ struct editor_data {
     uint8_t    *split_begin;        // Begin of split (points to free character)
     uint8_t    *split_end;          // End of split (points to used character)
     uint8_t    *top_p;              // Pointer to first character in view (always <= split_begin)
-    int         top_line;           // Line number of first line in view
-    int         top_virtscreen_line;
+    int16_t     top_line;           // Line number of first line in view
+    int8_t      top_virtscreen_line;
     uint8_t     top_is_newline;
-    int         wanted_col;
-    int         cursor_line, cursor_col;
-    int         virtscreen_line, virtscreen_col;
+    int16_t     wanted_col;
+    int16_t     cursor_line, cursor_col;
+    int8_t      virtscreen_line;
+    int8_t      virtscreen_col;
     uint8_t    *selection_split_begin, *selection_split_end;
 };
 
+static uint8_t  text_color;
+static uint8_t *text_p;
+static uint8_t  text_x;
+static uint8_t  text_y;
+
 static struct editor_data data;
 
-#define PUTCHAR(ch, col)                                                                      \
-    {                                                                                         \
-        IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;                   \
-        *p       = (ch);                                                                      \
-        IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN; \
-        *(p++)   = (col);                                                                     \
-    }
+static uint8_t _stack[128];
 
-static void render_statusbar(const char *str) {
-    uint8_t       *p  = TEXT_RAM + 24 * 80;
-    uint8_t       *pe = p + 80;
-    const uint8_t *sp = (const uint8_t *)str;
+static void _reset_text(void) {
+    text_x = 0;
+    text_y = 0;
+    text_p = TEXT_RAM;
+}
 
-    while (*sp != '\0') {
-        PUTCHAR(*(sp++), COLOR_STATUSBAR);
-    }
-    while (p < pe) {
-        PUTCHAR(' ', COLOR_STATUSBAR);
+static void _putchar(uint8_t ch) {
+    IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    *text_p     = (ch);
+    IO_VCTRL    = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    *(text_p++) = text_color;
+
+    if (text_x == 79) {
+        text_x = 0;
+        text_y++;
+    } else {
+        text_x++;
     }
 }
 
+static void _pad(void) {
+    while (text_x) {
+        _putchar(' ');
+    }
+}
+
+static void render_statusbar(const char *str) {
+    text_p      = TEXT_RAM + 24 * 80;
+    text_color  = COLOR_STATUSBAR;
+    uint8_t *pe = text_p;
+
+    while (*str) {
+        _putchar(*(str++));
+    }
+    _pad();
+}
+
+static char tmpstr[81];
+
 static void render_screen(int render_status) {
-    int            i, j;
-    uint8_t       *p = TEXT_RAM;
-    uint8_t       *pe;
-    uint8_t        new_line      = data.top_is_newline;
-    uint8_t        eof           = 0;
-    uint8_t        draw_cursor   = 0;
-    const uint8_t *tp            = data.top_p;
-    int            current_line  = data.top_line;
-    int            current_col   = 1;
-    uint8_t        has_selection = data.selection_split_begin != NULL;
-    uint8_t        in_selection  = has_selection && tp > data.selection_split_begin;
+    _reset_text();
 
-    for (j = 0; j < 24; j++) {
-        char linestr[5];
-        pe = p + 80;
+    static uint8_t        render_new_line;
+    static uint8_t        render_eof;
+    static uint8_t        render_draw_cursor;
+    static const uint8_t *render_tp;
+    static int16_t        render_current_line;
+    static int16_t        current_col;
+    static uint8_t        has_selection;
+    static uint8_t        in_selection;
 
+    render_new_line     = data.top_is_newline;
+    render_eof          = 0;
+    render_draw_cursor  = 0;
+    render_tp           = data.top_p;
+    render_current_line = data.top_line;
+    current_col         = 1;
+    has_selection       = data.selection_split_begin != NULL;
+    in_selection        = has_selection && render_tp > data.selection_split_begin;
+
+    while (text_y != 24) {
         // Draw line number
-        if (eof) {
-            sprintf(linestr, "    ");
-        } else if (new_line) {
-            sprintf(linestr, "%4d", current_line + 1);
-            new_line = 0;
+        text_color = COLOR_SIDEBAR;
+        if (render_eof) {
+            _putchar(' ');
+            _putchar(' ');
+            _putchar(' ');
+            _putchar(' ');
+        } else if (render_new_line) {
+            render_new_line = 0;
+
+            sprintf(tmpstr, "%4d", render_current_line + 1);
+            for (uint8_t i = 0; i < 4; i++) {
+                _putchar(tmpstr[i]);
+            }
         } else {
-            sprintf(linestr, " \xC6\xC6 ");
-        }
-        for (i = 0; i < 4; i++) {
-            PUTCHAR(linestr[i], COLOR_SIDEBAR);
+            _putchar(' ');
+            _putchar(0xC6);
+            _putchar(0xC6);
+            _putchar(' ');
         }
 
         // Draw separator
-        PUTCHAR(0xB5, COLOR_SEPARATOR);
-        if (!eof) {
-            while (p < pe && i < 80) {
-                uint8_t ch, color;
+        text_color = COLOR_SEPARATOR;
+        _putchar(0xB5);
 
-                if (has_selection && tp == data.selection_split_begin || tp == data.selection_split_end) {
+        if (!render_eof) {
+            while (text_x) {
+                uint8_t ch;
+
+                if (has_selection && render_tp == data.selection_split_begin || render_tp == data.selection_split_end) {
                     in_selection = !in_selection;
                 }
 
                 // Get character
                 {
-                    if (tp == data.split_begin) {
-                        tp          = data.split_end;
-                        draw_cursor = 1;
+                    if (render_tp == data.split_begin) {
+                        render_tp          = data.split_end;
+                        render_draw_cursor = 1;
 
                         if (has_selection) {
                             in_selection = !in_selection;
                         }
                     }
-                    if (tp >= data.buf + MAX_FILE_SIZE) {
-                        eof = 1;
+                    if (render_tp >= data.buf + MAX_FILE_SIZE) {
+                        render_eof = 1;
                         break;
                     } else {
-                        ch = *(tp++);
+                        ch = *(render_tp++);
                     }
                 }
 
                 if (ch == '\n') {
-                    current_line++;
+                    render_current_line++;
                     current_col = 1;
 
-                    new_line = 1;
+                    render_new_line = 1;
                     break;
                 }
-                color = draw_cursor ? COLOR_CURSOR : (in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
+                text_color = render_draw_cursor ? COLOR_CURSOR : (in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
 
                 if (ch == ' ' && in_selection) {
                     // Draw whitespace with centered-dot character
-                    ch    = 0xC6;
-                    color = draw_cursor ? COLOR_WHITESPACE_CURSOR : COLOR_WHITESPACE_SELECTED;
+                    ch         = 0xC6;
+                    text_color = render_draw_cursor ? COLOR_WHITESPACE_CURSOR : COLOR_WHITESPACE_SELECTED;
                 }
 
-                PUTCHAR(ch, color);
-                draw_cursor = 0;
-                i++;
+                _putchar(ch);
+                render_draw_cursor = 0;
                 current_col++;
             }
 
             // Draw text
-            if (p < pe) {
-                PUTCHAR(' ', draw_cursor ? COLOR_CURSOR : (in_selection ? 0x3F : 0x8F));
-                draw_cursor = 0;
+            if (text_x) {
+                text_color = render_draw_cursor ? COLOR_CURSOR : (in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
+                _putchar(' ');
+                render_draw_cursor = 0;
             }
         }
-        while (p < pe) {
-            PUTCHAR(' ', COLOR_TEXT);
-        }
+        text_color = COLOR_TEXT;
+        _pad();
     }
 
     // Render status bar
     if (render_status) {
-        char     status[81];
         unsigned bytes_free = data.split_end - data.split_begin;
-        char    *sp         = status;
-
         sprintf(
-            status, "Ln %d, Col %d   %u bytes free.   %s%c",
+            tmpstr, "Ln %d, Col %d   %u bytes free.   %s%c",
             data.cursor_line + 1, data.cursor_col + 1, bytes_free, data.path, data.dirty ? '*' : ' ');
 
-        render_statusbar(status);
+        render_statusbar(tmpstr);
     }
 }
 
@@ -249,6 +286,8 @@ static int save_file(const char *path) {
     if (fd < 0)
         return fd;
     write(fd, data.buf, data.split_begin - data.buf);
+    write(fd, data.split_end, data.buf + MAX_FILE_SIZE - data.split_end);
+
     close(fd);
     return 0;
 }
@@ -605,11 +644,45 @@ static void paste_clipboard(void) {
     close(fd);
 }
 
+static inline void esp_send_byte(uint8_t val) {
+    while (IO_ESPCTRL & 2) {
+    }
+    IO_ESPDATA = val;
+}
+
+static inline uint8_t esp_get_byte(void) {
+    while ((IO_ESPCTRL & 1) == 0) {
+    }
+    return IO_ESPDATA;
+}
+
+static inline void esp_cmd(uint8_t cmd) {
+    IO_ESPCTRL = 0x83;
+    esp_send_byte(cmd);
+}
+
 int main(void) {
-    IO_VCTRL   = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    for (int i = 0; i < 128; i++) {
+        _stack[i] = 0xAA;
+    }
+
+    __asm__("ld sp,#(__stack + 128)");
+
+    // IO_VCTRL   = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     IO_SYSCTRL = (1 << 2); // Turbo mode
 
-    int     i, result;
+    esp_send_byte(ESPCMD_KEYMODE);
+    esp_send_byte(7);
+    esp_get_byte();
+
+    // _reset_text();
+    // text_color = COLOR_TEXT;
+    // _putchar('A');
+    // _pad();
+
+    // while (1) {
+    // }
+
     uint8_t quit         = 0;
     uint8_t prev_shifted = 0;
 
@@ -642,23 +715,15 @@ int main(void) {
             }
 
             if (scancode >= ' ' && scancode < 127) {
-                // if (has_selection) {
-                //     delete_selection();
-                // }
-
                 push_before_split(scancode);
                 data.dirty = 1;
+
             } else {
                 uint8_t *prev_split_begin = data.split_begin;
                 uint8_t *prev_split_end   = data.split_end;
 
-                //     if (shifted) {
-                //         scancode &= ~KEY_SHIFTED;
-                //     }
-
                 switch (scancode) {
                     case CH_RETURN:
-                        // delete_selection();
                         do_enter();
                         break;
 
@@ -677,12 +742,12 @@ int main(void) {
                         break;
 
                     case CH_TAB:
-                        if (has_selection) {
-                            // TODO: indent selection
-                            keep_selection = 1;
-                        } else {
-                            do_tab();
-                        }
+                        // if (has_selection) {
+                        //     // TODO: indent selection
+                        //     keep_selection = 1;
+                        // } else {
+                        do_tab();
+                        // }
                         break;
 
                     case CH_RIGHT: cursor_right(); break;
@@ -773,5 +838,10 @@ int main(void) {
         }
     }
 
+    IO_VCTRL   = VCTRL_TEXT_EN;
+    IO_SYSCTRL = 0;
+    __asm__(
+        "ld sp,#0x38A0\n"
+        "jp 0x2003");
     return 0;
 }
