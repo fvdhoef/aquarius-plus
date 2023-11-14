@@ -2,7 +2,7 @@
 
 #define TEXT_RAM ((uint8_t *)0x3000)
 
-#define MAX_FILE_SIZE (10000)
+// #define MAX_FILE_SIZE (10000)
 #define SCRSAVE_PATH "/.editor-scrsave"
 #define CLIPBOARD_PATH "/.editor-clipboard"
 
@@ -62,14 +62,11 @@ enum {
 
 struct editor_data {
     const char *path;
-    uint8_t     dirty;              // Document unsaved?
-    uint8_t     pad;                // !! Keep this before buf !!
-    uint8_t     buf[MAX_FILE_SIZE]; // The document buffer
-    uint8_t     pad2;               // !! Keep this after buf !!
-    uint8_t    *split_begin;        // Begin of split (points to free character)
-    uint8_t    *split_end;          // End of split (points to used character)
-    uint8_t    *top_p;              // Pointer to first character in view (always <= split_begin)
-    int16_t     top_line;           // Line number of first line in view
+    uint8_t     dirty;       // Document unsaved?
+    uint8_t    *split_begin; // Begin of split (points to free character)
+    uint8_t    *split_end;   // End of split (points to used character)
+    uint8_t    *top_p;       // Pointer to first character in view (always <= split_begin)
+    int16_t     top_line;    // Line number of first line in view
     int8_t      top_virtscreen_line;
     uint8_t     top_is_newline;
     int16_t     wanted_col;
@@ -80,6 +77,7 @@ struct editor_data {
 };
 
 static uint8_t  text_color;
+static uint8_t  text_ch;
 static uint8_t *text_p;
 static uint8_t  text_x;
 static uint8_t  text_y;
@@ -92,10 +90,17 @@ static const uint8_t *render_tp;
 static int16_t        render_current_line;
 static uint8_t        render_has_selection;
 static uint8_t        render_in_selection;
+static uint8_t        render_status;
+
+static uint8_t *buf_start;
+static uint8_t *buf_end;
 
 static struct editor_data data;
 
 static uint8_t _stack[128];
+
+void print_5digits(uint16_t val);
+void print_4digits(uint16_t val);
 
 static void _reset_text(void) {
     text_x = 0;
@@ -103,7 +108,7 @@ static void _reset_text(void) {
     text_p = TEXT_RAM;
 }
 
-static void _putchar(uint8_t ch) {
+void _putchar(uint8_t ch) {
     IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     *text_p     = (ch);
     IO_VCTRL    = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
@@ -117,6 +122,12 @@ static void _putchar(uint8_t ch) {
     }
 }
 
+void _puts(const char *s) {
+    while (*s) {
+        _putchar(*(s++));
+    }
+}
+
 static void _pad(void) {
     while (text_x) {
         _putchar(' ');
@@ -124,11 +135,9 @@ static void _pad(void) {
 }
 
 static void render_statusbar(const char *str) {
-    text_p      = TEXT_RAM + 24 * 80;
-    text_x      = 0;
-    text_y      = 24;
-    uint8_t *pe = text_p;
-
+    text_p     = TEXT_RAM + 24 * 80;
+    text_x     = 0;
+    text_y     = 24;
     text_color = COLOR_STATUSBAR;
     while (*str) {
         _putchar(*(str++));
@@ -136,7 +145,30 @@ static void render_statusbar(const char *str) {
     _pad();
 }
 
-static void render_screen(int render_status) {
+static void render_linenr(void) {
+    // Draw line number
+    text_color = COLOR_SIDEBAR;
+    if (render_eof) {
+        _putchar(' ');
+        _putchar(' ');
+        _putchar(' ');
+        _putchar(' ');
+    } else if (render_new_line) {
+        render_new_line = 0;
+        print_4digits(render_current_line + 1);
+    } else {
+        _putchar(' ');
+        _putchar(0xC6);
+        _putchar(0xC6);
+        _putchar(' ');
+    }
+
+    // Draw separator
+    text_color = COLOR_SEPARATOR;
+    _putchar(0xB5);
+}
+
+static void render_screen(void) {
     _reset_text();
 
     render_new_line      = data.top_is_newline;
@@ -148,71 +180,43 @@ static void render_screen(int render_status) {
     render_in_selection  = render_has_selection && render_tp > data.selection_split_begin;
 
     while (text_y != 24) {
-        // Draw line number
-        text_color = COLOR_SIDEBAR;
-        if (render_eof) {
-            _putchar(' ');
-            _putchar(' ');
-            _putchar(' ');
-            _putchar(' ');
-        } else if (render_new_line) {
-            render_new_line = 0;
-
-            sprintf(tmpstr, "%4d", render_current_line + 1);
-            for (uint8_t i = 0; i < 4; i++) {
-                _putchar(tmpstr[i]);
-            }
-        } else {
-            _putchar(' ');
-            _putchar(0xC6);
-            _putchar(0xC6);
-            _putchar(' ');
-        }
-
-        // Draw separator
-        text_color = COLOR_SEPARATOR;
-        _putchar(0xB5);
-
+        render_linenr();
         if (!render_eof) {
             while (text_x) {
-                uint8_t ch;
-
                 if (render_has_selection && render_tp == data.selection_split_begin || render_tp == data.selection_split_end) {
                     render_in_selection = !render_in_selection;
                 }
 
                 // Get character
-                {
-                    if (render_tp == data.split_begin) {
-                        render_tp          = data.split_end;
-                        render_draw_cursor = 1;
+                if (render_tp == data.split_begin) {
+                    render_tp          = data.split_end;
+                    render_draw_cursor = 1;
 
-                        if (render_has_selection) {
-                            render_in_selection = !render_in_selection;
-                        }
-                    }
-                    if (render_tp >= data.buf + MAX_FILE_SIZE) {
-                        render_eof = 1;
-                        break;
-                    } else {
-                        ch = *(render_tp++);
+                    if (render_has_selection) {
+                        render_in_selection = !render_in_selection;
                     }
                 }
+                if (render_tp >= buf_end) {
+                    render_eof = 1;
+                    break;
+                } else {
+                    text_ch = *(render_tp++);
+                }
 
-                if (ch == '\n') {
+                if (text_ch == '\n') {
                     render_current_line++;
                     render_new_line = 1;
                     break;
                 }
                 text_color = render_draw_cursor ? COLOR_CURSOR : (render_in_selection ? COLOR_TEXT_SELECTED : COLOR_TEXT);
 
-                if (ch == ' ' && render_in_selection) {
+                if (text_ch == ' ' && render_in_selection) {
                     // Draw whitespace with centered-dot character
-                    ch         = 0xC6;
+                    text_ch    = 0xC6;
                     text_color = render_draw_cursor ? COLOR_WHITESPACE_CURSOR : COLOR_WHITESPACE_SELECTED;
                 }
 
-                _putchar(ch);
+                _putchar(text_ch);
                 render_draw_cursor = 0;
             }
 
@@ -229,12 +233,30 @@ static void render_screen(int render_status) {
 
     // Render status bar
     if (render_status) {
-        unsigned bytes_free = data.split_end - data.split_begin;
-        sprintf(
-            tmpstr, "Ln %d, Col %d   %u bytes free.   %s%c",
-            data.cursor_line + 1, data.cursor_col + 1, bytes_free, data.path, data.dirty ? '*' : ' ');
+        text_p     = TEXT_RAM + 24 * 80;
+        text_x     = 0;
+        text_y     = 24;
+        text_color = COLOR_STATUSBAR;
 
-        render_statusbar(tmpstr);
+        _puts("Ln ");
+        print_4digits(data.cursor_line + 1);
+        _puts(", Col ");
+        print_4digits(data.cursor_col + 1);
+        _puts("  ");
+        print_5digits(data.split_end - data.split_begin);
+        _puts(" bytes free.   ");
+        _puts(data.path);
+        if (data.dirty)
+            _putchar('*');
+        _pad();
+
+        // tmpstr[0] = ' ';
+        // tmpstr[1] = 0;
+        // // sprintf(
+        // //     tmpstr, "Ln %d, Col %d   %u bytes free.   %s%c",
+        // //     data.cursor_line + 1, data.cursor_col + 1, bytes_free, data.path, data.dirty ? '*' : ' ');
+
+        // render_statusbar(tmpstr);
     }
 }
 
@@ -248,20 +270,20 @@ static int load_file(const char *path) {
         // Directory
         return -1;
     }
-    if (st.size > MAX_FILE_SIZE) {
+    if (st.size > buf_end - buf_start) {
         // printf("File too big! (max %u bytes)\n", MAX_FILE_SIZE);
         return -1;
     }
 
     // Clear load area
-    memset((void *)data.buf, 0, MAX_FILE_SIZE);
+    memset((void *)buf_start, 0, buf_end - buf_start);
 
     int8_t fd = open(path, FO_RDONLY);
     if (fd < 0)
         return fd;
 
-    data.split_begin = data.buf;
-    data.split_end   = data.buf + (MAX_FILE_SIZE - st.size);
+    data.split_begin = buf_start;
+    data.split_end   = buf_end - st.size;
 
     result = read(fd, data.split_end, st.size);
     if (result < 0) {
@@ -270,7 +292,7 @@ static int load_file(const char *path) {
     close(fd);
 
     data.path           = path;
-    data.top_p          = data.buf;
+    data.top_p          = buf_start;
     data.top_line       = 0;
     data.top_is_newline = 1;
 
@@ -281,17 +303,17 @@ static int save_file(const char *path) {
     int8_t fd = open(path, FO_WRONLY | FO_CREATE | FO_TRUNC);
     if (fd < 0)
         return fd;
-    write(fd, data.buf, data.split_begin - data.buf);
-    write(fd, data.split_end, data.buf + MAX_FILE_SIZE - data.split_end);
+    write(fd, buf_start, data.split_begin - buf_start);
+    write(fd, data.split_end, buf_end - data.split_end);
 
     close(fd);
     return 0;
 }
 
 static void new_empty_file(const char *path) {
-    data.split_begin    = data.buf;
-    data.split_end      = data.buf + MAX_FILE_SIZE;
-    data.top_p          = data.buf;
+    data.split_begin    = buf_start;
+    data.split_end      = buf_end;
+    data.top_p          = buf_start;
     data.top_line       = 0;
     data.top_is_newline = 1;
     data.path           = path;
@@ -329,7 +351,7 @@ static int peek_after_split(void) {
 static int pop_before_split(void) {
     uint8_t ch;
 
-    if (data.split_begin <= data.buf) {
+    if (data.split_begin <= buf_start) {
         return -1;
     }
 
@@ -362,7 +384,7 @@ static int push_after_split(uint8_t ch) {
 }
 
 static int pop_after_split(void) {
-    if (data.split_end >= data.buf + MAX_FILE_SIZE) {
+    if (data.split_end >= buf_end) {
         return -1;
     }
     return *(data.split_end++);
@@ -611,9 +633,10 @@ static int save_selection(void) {
     close(fd);
 
     {
-        char str[64];
-        sprintf(str, "%u bytes copied.", selected_bytes);
-        render_statusbar(str);
+        tmpstr[0] = ' ';
+        tmpstr[1] = 0;
+        // sprintf(tmpstr, "%u bytes copied.", selected_bytes);
+        render_statusbar(tmpstr);
     }
 
     return selected_bytes;
@@ -657,12 +680,14 @@ static inline void esp_cmd(uint8_t cmd) {
     esp_send_byte(cmd);
 }
 
-int main(void) {
-    for (int i = 0; i < 128; i++) {
-        _stack[i] = 0xAA;
-    }
+static void editor(void) {
 
-    __asm__("ld sp,#(__stack + 128)");
+    IO_BANK3 = 35;
+
+    buf_start      = getheap();
+    *(buf_start++) = '\n';
+    buf_end        = (uint8_t *)0xFFFF;
+    *buf_end       = '\n';
 
     // IO_VCTRL   = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     IO_SYSCTRL = (1 << 2); // Turbo mode
@@ -682,8 +707,8 @@ int main(void) {
     uint8_t quit         = 0;
     uint8_t prev_shifted = 0;
 
-    data.pad  = '\n';
-    data.pad2 = '\n';
+    // data.pad  = '\n';
+    // data.pad2 = '\n';
 
     const char *path = "Blaat2.txt";
 
@@ -691,12 +716,13 @@ int main(void) {
         new_empty_file(path);
     }
 
-    render_screen(1);
+    render_status = 1;
+    render_screen();
 
     while (!quit) {
-        uint8_t do_render     = 0;
-        uint8_t render_status = 1;
-        int     scancode;
+        uint8_t do_render = 0;
+        render_status     = 1;
+        int scancode;
 
         while ((scancode = IO_KEYBUF) > 0) {
             uint8_t keep_selection       = 0;
@@ -830,7 +856,7 @@ int main(void) {
         }
 
         if (do_render) {
-            render_screen(render_status);
+            render_screen();
         }
     }
 
@@ -839,5 +865,13 @@ int main(void) {
     __asm__(
         "ld sp,#0x38A0\n"
         "jp 0x2003");
+}
+
+int main(void) {
+    for (int i = 0; i < 128; i++) {
+        _stack[i] = 0xAA;
+    }
+    __asm__("ld sp,#(__stack + 128)");
+    editor();
     return 0;
 }
