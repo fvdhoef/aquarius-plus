@@ -254,13 +254,15 @@ static int load_file(const char *path) {
         // Directory
         return -1;
     }
-    if (st.size > buf_end - buf_start) {
+
+    uint16_t max_filesize = buf_end - buf_start;
+    if (st.size > max_filesize) {
         // printf("File too big! (max %u bytes)\n", MAX_FILE_SIZE);
         return -1;
     }
 
     // Clear load area
-    memset((void *)buf_start, 0, buf_end - buf_start);
+    memset((void *)buf_start, 0, max_filesize);
 
     int8_t fd = open(path, FO_RDONLY);
     if (fd < 0)
@@ -269,10 +271,7 @@ static int load_file(const char *path) {
     data.split_begin = buf_start;
     data.split_end   = buf_end - st.size;
 
-    result = read(fd, data.split_end, st.size);
-    if (result < 0) {
-        return result;
-    }
+    read(fd, data.split_end, st.size);
     close(fd);
 
     data.path           = path;
