@@ -29,6 +29,16 @@ main:
     ld      bc,_editor_end - _editor_start
     ldir
 
+    ; Set filename
+    ld      hl,.filename
+    ld      de,$C080
+.1: ld      a,(hl)
+    ld      (de),a
+    inc     hl
+    inc     de
+    or      a
+    jr      nz,.1
+
     ; Start stub
     ld      a,63
     out     (IO_BANK3),a
@@ -38,7 +48,8 @@ main:
     ldir
     jp      $C000
 
-.1: jr      .1
+.filename:  defb "Blaat2.txt",0
+
 
 _stub_start:
     phase   $C000

@@ -10,6 +10,7 @@
 #define DISPLAY_LINES (24)
 
 #define COLOR_STATUSBAR 0x84
+#define COLOR_STATUSBAR_WARNING 0x8E
 #define COLOR_SIDEBAR 0x8B
 #define COLOR_SEPARATOR 0xBF
 #define COLOR_WHITESPACE_SELECTED 0x69
@@ -128,6 +129,14 @@ void _puts(const char *s) {
     }
 }
 
+bool _puts2(const char *s, uint8_t max_len) {
+    while (*s && max_len) {
+        _putchar(*(s++));
+        max_len--;
+    }
+    return *s != NULL;
+}
+
 static void _pad(void) {
     while (text_x) {
         _putchar(' ');
@@ -237,7 +246,9 @@ static void render_screen(void) {
         _puts("  ");
         print_5digits(data.split_end - data.split_begin);
         _puts(" bytes free.   ");
-        _puts(data.path);
+        if (_puts2(data.path, 37)) {
+            _puts("...");
+        }
         if (data.dirty)
             _putchar('*');
         _pad();
@@ -668,7 +679,7 @@ static void editor(void) {
     bool quit         = false;
     bool prev_shifted = false;
 
-    const char *path = "Blaat2.txt";
+    const char *path = (const char *)0x80;
 
     if (load_file(path) < 0) {
         new_empty_file(path);
@@ -757,9 +768,13 @@ static void editor(void) {
                     case CH_CTRL_Q:
                         if (data.dirty) {
                             render_statusbar_start();
+                            text_color = COLOR_STATUSBAR_WARNING;
                             _puts("Are you sure you want to quit? (Unchanged changes will be lost.)");
                             _pad();
-                            while ((scancode = IO_KEYBUF) == 0) {
+                            while (1) {
+                                scancode = IO_KEYBUF;
+                                if (scancode != 0)
+                                    break;
                             }
                             if (scancode == 'y' || scancode == 'Y') {
                                 quit = true;
