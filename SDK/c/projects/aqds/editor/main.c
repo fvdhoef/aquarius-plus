@@ -10,7 +10,7 @@
 #define DISPLAY_LINES (24)
 
 #define COLOR_STATUSBAR 0x84
-#define COLOR_STATUSBAR_WARNING 0x8E
+#define COLOR_STATUSBAR_ATTENTION 0x8E
 #define COLOR_SIDEBAR 0x8B
 #define COLOR_SEPARATOR 0xBF
 #define COLOR_WHITESPACE_SELECTED 0x69
@@ -150,6 +150,31 @@ static void render_statusbar_start(void) {
     text_color = COLOR_STATUSBAR;
 }
 
+static uint8_t statusbar_error(const char *str) {
+    render_statusbar_start();
+    text_color = COLOR_STATUSBAR_ATTENTION;
+    _puts(str);
+    _pad();
+
+    uint8_t scancode;
+    while (1) {
+        scancode = IO_KEYBUF;
+        if (scancode != 0)
+            return scancode;
+    }
+}
+
+static uint8_t statusbar_esp_error(int val) {
+    const char *str;
+    switch (val) {
+        case ERR_NOT_FOUND: str = "Error: File not found"; break;
+        case ERR_NO_DISK: str = "Error: No disk"; break;
+        case ERR_WRITE_PROTECT: str = "Error: Disk write protected"; break;
+        default: str = "Disk I/O error"; break;
+    }
+    return statusbar_error(str);
+}
+
 static void render_linenr(void) {
     // Draw line number
     text_color = COLOR_SIDEBAR;
@@ -255,29 +280,42 @@ static void render_screen(void) {
     }
 }
 
-static int load_file(const char *path) {
+static bool load_file(const char *path) {
     struct stat st;
 
     int16_t result = stat(path, &st);
-    if (result < 0)
-        return result;
+    if (result == ERR_NOT_FOUND)
+        return true;
+    if (result < 0) {
+        statusbar_esp_error(result);
+        return false;
+    }
     if (st.attr & 1) {
         // Directory
-        return -1;
+        statusbar_error("Error: can't edit directory");
+        return false;
     }
 
     uint16_t max_filesize = buf_end - buf_start;
     if (st.size > max_filesize) {
-        // printf("File too big! (max %u bytes)\n", MAX_FILE_SIZE);
-        return -1;
+        statusbar_error("Error: file too big");
+        return false;
     }
+
+    render_statusbar_start();
+    text_color = COLOR_STATUSBAR_ATTENTION;
+    _puts("Loading file: ");
+    _puts2(path, 60);
+    _pad();
 
     // Clear load area
     memset((void *)buf_start, 0, max_filesize);
 
     int8_t fd = open(path, FO_RDONLY);
-    if (fd < 0)
-        return fd;
+    if (fd < 0) {
+        statusbar_esp_error(fd);
+        return false;
+    }
 
     data.split_begin = buf_start;
     data.split_end   = buf_end - st.size;
@@ -290,7 +328,7 @@ static int load_file(const char *path) {
     data.top_line       = 0;
     data.top_is_newline = true;
 
-    return 0;
+    return true;
 }
 
 static int save_file(const char *path) {
@@ -663,14 +701,11 @@ static inline void esp_cmd(uint8_t cmd) {
     esp_send_byte(cmd);
 }
 
-static void editor(void) {
+void main(void) {
     buf_start      = (uint8_t *)0x3800;
     *(buf_start++) = '\n';
     buf_end        = (uint8_t *)0xFFFF;
     *buf_end       = '\n';
-
-    // IO_VCTRL   = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    IO_SYSCTRL = (1 << 2); // Turbo mode
 
     esp_send_byte(ESPCMD_KEYMODE);
     esp_send_byte(7);
@@ -680,13 +715,16 @@ static void editor(void) {
     bool prev_shifted = false;
 
     const char *path = (const char *)0x80;
-
-    if (load_file(path) < 0) {
-        new_empty_file(path);
-    }
+    new_empty_file(path);
 
     render_status = true;
     render_screen();
+
+    if (load_file(path)) {
+        render_screen();
+    } else {
+        quit = true;
+    }
 
     while (!quit) {
         bool do_render = false;
@@ -767,15 +805,7 @@ static void editor(void) {
 
                     case CH_CTRL_Q:
                         if (data.dirty) {
-                            render_statusbar_start();
-                            text_color = COLOR_STATUSBAR_WARNING;
-                            _puts("Are you sure you want to quit? (Unchanged changes will be lost.)");
-                            _pad();
-                            while (1) {
-                                scancode = IO_KEYBUF;
-                                if (scancode != 0)
-                                    break;
-                            }
+                            scancode = statusbar_error("Are you sure you want to quit? (Unchanged changes will be lost.)");
                             if (scancode == 'y' || scancode == 'Y') {
                                 quit = true;
                             }
@@ -843,13 +873,4 @@ static void editor(void) {
     __asm__(
         "ld sp,#0x38A0\n"
         "jp 0x2003");
-}
-
-int main(void) {
-    for (int i = 0; i < 128; i++) {
-        _stack[i] = 0xAA;
-    }
-    __asm__("ld sp,#(__stack + 128)");
-    editor();
-    return 0;
 }

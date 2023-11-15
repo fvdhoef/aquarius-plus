@@ -9,10 +9,6 @@
     defb    $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
     jp      main
 
-_editor_start:
-    incbin  "editor/build/editor.bin"
-_editor_end:
-
 main:
     ; Disable interrupts
     di
@@ -66,3 +62,7 @@ _stub_start:
 
     dephase
 _stub_end:
+
+_editor_start:
+    incbin  "editor/build/editor.bin"
+_editor_end:
