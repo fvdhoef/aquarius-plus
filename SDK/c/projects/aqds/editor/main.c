@@ -653,10 +653,7 @@ static inline void esp_cmd(uint8_t cmd) {
 }
 
 static void editor(void) {
-
-    IO_BANK3 = 35;
-
-    buf_start      = getheap();
+    buf_start      = (uint8_t *)0x3800;
     *(buf_start++) = '\n';
     buf_end        = (uint8_t *)0xFFFF;
     *buf_end       = '\n';
@@ -668,19 +665,8 @@ static void editor(void) {
     esp_send_byte(7);
     esp_get_byte();
 
-    // _reset_text();
-    // text_color = COLOR_TEXT;
-    // _putchar('A');
-    // _pad();
-
-    // while (1) {
-    // }
-
-    uint8_t quit         = 0;
-    uint8_t prev_shifted = 0;
-
-    // data.pad  = '\n';
-    // data.pad2 = '\n';
+    bool quit         = false;
+    bool prev_shifted = false;
 
     const char *path = "Blaat2.txt";
 
@@ -700,15 +686,15 @@ static void editor(void) {
             if (scancode == 0)
                 break;
 
-            uint8_t keep_selection       = 0;
-            uint8_t update_wanted_col    = 1;
-            uint8_t shifted              = (IO_KEYBOARD_COL7 & 0x10) == 0;
-            uint8_t render_has_selection = (data.selection_split_begin != NULL);
-            render_status                = true;
-            do_render                    = true;
+            bool keep_selection       = false;
+            bool update_wanted_col    = true;
+            bool shifted              = (IO_KEYBOARD_COL7 & 0x10) == 0;
+            bool render_has_selection = (data.selection_split_begin != NULL);
+            render_status             = true;
+            do_render                 = true;
 
             if (scancode == CH_UP || scancode == CH_DOWN || scancode == CH_CTRL_S || scancode == CH_CTRL_Q) {
-                update_wanted_col = 0;
+                update_wanted_col = false;
             }
 
             if (scancode >= ' ' && scancode < 127) {
@@ -741,7 +727,7 @@ static void editor(void) {
                     case CH_TAB:
                         // if (render_has_selection) {
                         //     // TODO: indent selection
-                        //     keep_selection = 1;
+                        //     keep_selection = true;
                         // } else {
                         do_tab();
                         // }
@@ -776,16 +762,16 @@ static void editor(void) {
                             while ((scancode = IO_KEYBUF) == 0) {
                             }
                             if (scancode == 'y' || scancode == 'Y') {
-                                quit = 1;
+                                quit = true;
                             }
                         } else {
-                            quit = 1;
+                            quit = true;
                         }
                         break;
 
                     case CH_CTRL_C: {
                         if (save_selection()) {
-                            keep_selection = 1;
+                            keep_selection = true;
                             render_status  = false;
                         }
                         break;
