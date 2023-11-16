@@ -20,6 +20,7 @@ FILES_TO_COPY = zout/$(OUTFILE)
 
 all:
 	make -C editor
+	make -C fileman
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n aqds.asm --oo cim,lst
 	mv zout/aqds.cim zout/$(OUTFILE)
 

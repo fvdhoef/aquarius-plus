@@ -1,14 +1,21 @@
+;-----------------------------------------------------------------------------
+; aqds.asm
+;-----------------------------------------------------------------------------
     include "regs.inc"
 
-    org $38E1
-
-    ; Header and BASIC stub
+;-----------------------------------------------------------------------------
+; Header and BASIC stub
+;-----------------------------------------------------------------------------
+    org     $38E1
     defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
     defb    "AQPLUS"
     defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
     defb    $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
     jp      main
 
+;-----------------------------------------------------------------------------
+; main
+;-----------------------------------------------------------------------------
 main:
     ; Disable interrupts
     di
@@ -17,7 +24,35 @@ main:
     ld      a,$4
     out     (IO_SYSCTRL),a
 
-    ; Relocate editor
+    jp      _go_fileman
+
+
+;-----------------------------------------------------------------------------
+; _go_fileman
+;-----------------------------------------------------------------------------
+_go_fileman:
+    ; Relocate binary
+    ld      a,60
+    out     (IO_BANK3),a
+    ld      hl,_fileman_start
+    ld      de,$C100
+    ld      bc,_fileman_end - _fileman_start
+    ldir
+
+    ; Start stub
+    ld      a,63
+    out     (IO_BANK3),a
+    ld      hl,_jmp_app_stub_start
+    ld      de,$C000
+    ld      bc,_jmp_app_stub_end - _jmp_app_stub_start
+    ldir
+    jp      _jmp_app
+
+;-----------------------------------------------------------------------------
+; _go_editor
+;-----------------------------------------------------------------------------
+_go_editor:
+    ; Relocate binary
     ld      a,60
     out     (IO_BANK3),a
     ld      hl,_editor_start
@@ -47,6 +82,7 @@ main:
 .filename:  defb "Blaat2.txt",0
 
 
+
 _jmp_app_stub_start:
     phase   $C000
 
@@ -66,3 +102,7 @@ _jmp_app_stub_end:
 _editor_start:
     incbin  "editor/build/editor.bin"
 _editor_end:
+
+_fileman_start:
+    incbin  "fileman/build/fileman.bin"
+_fileman_end:
