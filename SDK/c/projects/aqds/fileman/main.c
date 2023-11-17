@@ -1,4 +1,5 @@
 #include <aqplus.h>
+#include <esp.h>
 #include <stdio.h>
 
 #define TEXT_RAM ((uint8_t *)0x3000)
@@ -27,13 +28,19 @@ static uint8_t  text_ch;
 static uint8_t selected_row;
 static uint8_t current_pane;
 
+static char tmpbuf[81];
+
+void print_2digits(uint8_t val);
+void print_4digits(uint16_t val);
+void print_5digits(uint16_t val);
+
 static void _reset_text(void) {
     text_x = 0;
     text_y = 0;
     text_p = TEXT_RAM;
 }
 
-static void _putchar(uint8_t ch) {
+void _putchar(uint8_t ch) {
     IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     *text_p     = (ch);
     IO_VCTRL    = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
@@ -93,7 +100,24 @@ static void _set_color(uint8_t x, uint8_t y, uint8_t width, uint8_t color) {
     }
 }
 
+static uint8_t get_cur_year(void) {
+    esp_cmd(ESPCMD_GETDATETIME);
+    esp_send_byte(0);
+    if (esp_get_byte() == 0) {
+        uint8_t *p = tmpbuf;
+        while (1) {
+            uint8_t val = esp_get_byte();
+            *(p++)      = val;
+            if (val == 0)
+                break;
+        }
+    }
+    return 100 + (tmpbuf[2] - '0') * 10 + (tmpbuf[3] - '0');
+}
+
 static void draw_listing(void) {
+    uint8_t cur_year = get_cur_year();
+
     _putchar(222);
     for (int i = 0; i < 38; i++) {
         _putchar(172);
@@ -104,11 +128,11 @@ static void draw_listing(void) {
     text_color = 0x74;
     _putchar(214);
     text_color = 0xC4;
-    _puts(" Name              ");
+    _puts3("        Name", 20);
     text_color = 0x74;
     _putchar(214);
     text_color = 0xC4;
-    _puts(" Size ");
+    _puts(" Size");
     text_color = 0x74;
     _putchar(214);
     text_color = 0xC4;
@@ -120,22 +144,84 @@ static void draw_listing(void) {
 
     text_color = 0x74;
 
+    int8_t      dd = opendir("");
+    struct stat st;
+    static char filename[128];
+
+    bool eof = false;
+
     for (int j = 0; j < 21; j++) {
+        if (!eof) {
+            int8_t res = readdir(dd, &st, filename, sizeof(filename));
+            if (res == ERR_EOF) {
+                eof = true;
+            }
+        }
+
         _putchar(214);
-        for (int i = 0; i < 19; i++) {
-            _putchar(' ');
+        if (eof) {
+            for (int i = 0; i < 20; i++) {
+                _putchar(' ');
+            }
+        } else {
+            _puts3(filename, 20);
         }
         _putchar(214);
-        for (int i = 0; i < 6; i++) {
-            _putchar(' ');
+        if (eof) {
+            for (int i = 0; i < 5; i++) {
+                _putchar(' ');
+            }
+        } else {
+            if (st.attr & 1) {
+                _puts3("  dir", 5);
+
+            } else {
+                if (st.size < 1024LU) {
+                    uint16_t sz = st.size;
+                    print_4digits(sz);
+                    _putchar('B');
+                } else if (st.size < 1024 * 1024LU) {
+                    uint16_t sz = st.size >> 10;
+                    print_4digits(sz);
+                    _putchar('K');
+                } else {
+                    uint16_t sz = st.size >> 20;
+                    print_4digits(sz);
+                    _putchar('M');
+                }
+            }
         }
+
         _putchar(214);
-        for (int i = 0; i < 11; i++) {
-            _putchar(' ');
+        if (eof) {
+            for (int i = 0; i < 11; i++) {
+                _putchar(' ');
+            }
+        } else {
+            uint8_t year = (*((uint8_t *)&st.date + 1) >> 1) + 80;
+
+            if (cur_year == year) {
+                print_2digits((st.date >> 5) & 15);
+                _putchar('-');
+                print_2digits(*((uint8_t *)&st.date) & 31);
+                _putchar(' ');
+                print_2digits(*((uint8_t *)&st.time + 1) >> 3);
+                _putchar(':');
+                print_2digits((st.time >> 5) & 63);
+            } else {
+                _putchar(' ');
+                print_4digits((*((uint8_t *)&st.date + 1) >> 1) + 1980);
+                _putchar('-');
+                print_2digits((st.date >> 5) & 15);
+                _putchar('-');
+                print_2digits(*((uint8_t *)&st.date) & 31);
+            }
         }
         _putchar(214);
         _skip();
     }
+
+    closedir(dd);
 
     _putchar(207);
     for (int i = 0; i < 38; i++) {
@@ -163,12 +249,12 @@ void draw_fn_bar(void) {
     text_y = 24;
     text_p = TEXT_RAM + (24 * 80);
 
-    for (int j = 0; j < 10; j++) {
-        text_color = 0x70;
+    static const char *f_values = " 1 2 3 4 5 6 7 8 910";
 
-        char buf[6];
-        sprintf(buf, "%2d", j + 1);
-        _puts(buf);
+    for (uint8_t j = 0; j < 10; j++) {
+        text_color = 0x70;
+        _putchar(f_values[j * 2 + 0]);
+        _putchar(f_values[j * 2 + 1]);
 
         text_color = 0x09;
         _puts3(fn_labels[j], 6);
@@ -176,6 +262,10 @@ void draw_fn_bar(void) {
 }
 
 void main(void) {
+    esp_send_byte(ESPCMD_KEYMODE);
+    esp_send_byte(7);
+    esp_get_byte();
+
     _reset_text();
     text_color = 0x74;
 
@@ -205,8 +295,15 @@ void main(void) {
         switch (scancode) {
             case CH_LEFT: new_pane = 0; break;
             case CH_RIGHT: new_pane = 1; break;
-            case CH_DOWN: new_selected_row++; break;
-            case CH_UP: new_selected_row--; break;
+            case CH_DOWN: {
+                new_selected_row++;
+                break;
+            }
+            case CH_UP: {
+                if (new_selected_row > 0)
+                    new_selected_row--;
+                break;
+            }
             default: break;
         }
 

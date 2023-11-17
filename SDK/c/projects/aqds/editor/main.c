@@ -1,4 +1,5 @@
 #include <aqplus.h>
+#include <esp.h>
 
 #define TEXT_RAM ((uint8_t *)0x3000)
 
@@ -682,23 +683,6 @@ static void paste_clipboard(void) {
         data.dirty = true;
     }
     close(fd);
-}
-
-static inline void esp_send_byte(uint8_t val) {
-    while (IO_ESPCTRL & 2) {
-    }
-    IO_ESPDATA = val;
-}
-
-static inline uint8_t esp_get_byte(void) {
-    while ((IO_ESPCTRL & 1) == 0) {
-    }
-    return IO_ESPDATA;
-}
-
-static inline void esp_cmd(uint8_t cmd) {
-    IO_ESPCTRL = 0x83;
-    esp_send_byte(cmd);
 }
 
 void main(void) {
