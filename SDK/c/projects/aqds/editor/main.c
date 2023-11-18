@@ -1,7 +1,7 @@
 #include <aqplus.h>
 #include <esp.h>
 
-#define TEXT_RAM ((uint8_t *)0x3000)
+#define TEXT_RAM ((uint8_t *)0xF000)
 
 // #define MAX_FILE_SIZE (10000)
 #define SCRSAVE_PATH "/.editor-scrsave"
@@ -98,8 +98,6 @@ static uint8_t *buf_start;
 static uint8_t *buf_end;
 
 static struct editor_data data;
-
-static uint8_t _stack[128];
 
 void print_5digits(uint16_t val);
 void print_4digits(uint16_t val);
@@ -328,6 +326,7 @@ static bool load_file(const char *path) {
     data.top_p          = buf_start;
     data.top_line       = 0;
     data.top_is_newline = true;
+    data.dirty          = false;
 
     return true;
 }
@@ -686,9 +685,9 @@ static void paste_clipboard(void) {
 }
 
 void main(void) {
-    buf_start      = (uint8_t *)0x3800;
+    buf_start      = getheap();
     *(buf_start++) = '\n';
-    buf_end        = (uint8_t *)0xFFFF;
+    buf_end        = (uint8_t *)0xEFFF;
     *buf_end       = '\n';
 
     esp_send_byte(ESPCMD_KEYMODE);
@@ -698,7 +697,7 @@ void main(void) {
     bool quit         = false;
     bool prev_shifted = false;
 
-    const char *path = (const char *)0x80;
+    const char *path = (const char *)0xFF00;
     new_empty_file(path);
 
     render_status = true;
@@ -852,9 +851,6 @@ void main(void) {
         }
     }
 
-    IO_VCTRL   = VCTRL_TEXT_EN;
-    IO_SYSCTRL = 0;
-    __asm__(
-        "ld sp,#0x38A0\n"
-        "jp 0x2003");
+    // Go back to file manager
+    __asm__("jp 0xF806");
 }

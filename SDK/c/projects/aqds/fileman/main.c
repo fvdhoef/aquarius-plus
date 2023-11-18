@@ -16,6 +16,18 @@ enum {
     CH_HOME      = 0x9B,
     CH_LEFT      = 0x9E,
     CH_DOWN      = 0x9F,
+    CH_F1        = 0x80,
+    CH_F2        = 0x81,
+    CH_F3        = 0x82,
+    CH_F4        = 0x83,
+    CH_F5        = 0x84,
+    CH_F6        = 0x85,
+    CH_F7        = 0x86,
+    CH_F8        = 0x87,
+    CH_F9        = 0x90,
+    CH_F10       = 0x91,
+    CH_F11       = 0x92,
+    CH_F12       = 0x93,
 };
 
 static uint8_t selected_row;
@@ -226,6 +238,11 @@ void main(void) {
             case CH_UP: {
                 if (new_selected_row > 0)
                     new_selected_row--;
+                break;
+            }
+            case CH_F10: {
+                // Go back to BASIC
+                __asm__("jp 0xF800");
                 break;
             }
             default: break;

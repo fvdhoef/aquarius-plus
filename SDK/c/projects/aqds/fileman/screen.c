@@ -1,6 +1,6 @@
 #include "screen.h"
 
-#define TEXT_RAM ((uint8_t *)0x3000)
+#define TEXT_RAM ((uint8_t *)0xF000)
 
 uint8_t *text_p;
 uint8_t  text_x;

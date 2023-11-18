@@ -16,7 +16,7 @@ else ifeq ($(shell uname -s),Linux)
 endif
 
 OUTFILE = aqds.aqx
-FILES_TO_COPY = zout/$(OUTFILE)
+FILES_TO_COPY = zout/$(OUTFILE) editor/build/editor.bin fileman/build/fileman.bin
 
 all:
 	make -C editor
@@ -25,15 +25,16 @@ all:
 	mv zout/aqds.cim zout/$(OUTFILE)
 
 run_emu: all
-	@echo Copying $(FILES_TO_COPY) to $(AQPLUS_EMU_DISK)
-	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)"
+	@echo Copying files to $(AQPLUS_EMU_DISK)
+	@mkdir -p $(AQPLUS_EMU_DISK)/aqds
+	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)/aqds"
 	@echo Starting $(OUTFILE) in emulator
-	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\nrun\"$(OUTFILE)\"\n"
+	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\nrun\"aqds/$(OUTFILE)\"\n"
 
 run_aqp: all
 	@$(foreach NAME,$(FILES_TO_COPY), \
 		echo Uploading $(NAME); \
-		curl -T $(NAME) http://$(AQPLUS_HOST)/; \
+		curl -T $(NAME) http://$(AQPLUS_HOST)/aqds/; \
 	)
 	@echo Running $(OUTFILE)
 	@printf '\x1E\nRUN"$(OUTFILE)"\n' | curl --data-binary @- http://$(AQPLUS_HOST)/keyboard
