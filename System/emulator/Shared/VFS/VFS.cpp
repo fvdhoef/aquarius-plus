@@ -10,6 +10,9 @@ int VFS::close(int) {
 int VFS::read(int, size_t, void *) {
     return ERR_OTHER;
 }
+int VFS::readline(int, size_t, void *) {
+    return ERR_OTHER;
+}
 int VFS::write(int, size_t, const void *) {
     return ERR_OTHER;
 }

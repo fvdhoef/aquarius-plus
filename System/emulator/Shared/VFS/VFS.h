@@ -58,6 +58,7 @@ public:
     virtual int open(uint8_t flags, const std::string &path);
     virtual int close(int fd);
     virtual int read(int fd, size_t size, void *buf);
+    virtual int readline(int fd, size_t size, void *buf);
     virtual int write(int fd, size_t size, const void *buf);
     virtual int seek(int fd, size_t offset);
     virtual int tell(int fd);

@@ -71,6 +71,7 @@ private:
     void cmdOpen(uint8_t flags, const char *pathArg);
     void cmdClose(uint8_t fd);
     void cmdRead(uint8_t fd, uint16_t size);
+    void cmdReadLine(uint8_t fd, uint16_t size);
     void cmdWrite(uint8_t fd, uint16_t size, const void *data);
     void cmdSeek(uint8_t fd, uint32_t offset);
     void cmdTell(uint8_t fd);

@@ -177,6 +177,23 @@ int SDCardVFS::read(int fd, size_t size, void *buf) {
     return br;
 }
 
+int SDCardVFS::readline(int fd, size_t size, void *buf) {
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+
+    char *p = (char *)buf;
+    p[0]    = 0;
+
+    TCHAR *result = f_gets((TCHAR *)buf, size, state.fds[fd]);
+    if (result == NULL) {
+        if (f_eof(state.fds[fd]))
+            return ERR_EOF;
+        FRESULT res = (FRESULT)f_error(state.fds[fd]);
+        return mapFatFsResult(res);
+    }
+    return 0;
+}
+
 int SDCardVFS::write(int fd, size_t size, const void *buf) {
     if (fd >= MAX_FDS || state.fds[fd] == nullptr)
         return ERR_PARAM;
@@ -558,6 +575,23 @@ int SDCardVFS::read(int fd, size_t size, void *buf) {
     return (result < 0) ? mapErrNoResult() : result;
 }
 
+int SDCardVFS::readline(int fd, size_t size, void *buf) {
+    if (basePath.empty())
+        return ERR_NO_DISK;
+
+    if (fd >= MAX_FDS || state.fds[fd] == nullptr)
+        return ERR_PARAM;
+
+    FILE *f = state.fds[fd];
+    if (fgets((char *)buf, size, f) == NULL) {
+        if (feof(f))
+            return ERR_EOF;
+        errno = ferror(f);
+        return mapErrNoResult();
+    }
+    return 0;
+}
+
 int SDCardVFS::write(int fd, size_t size, const void *buf) {
     if (basePath.empty())
         return ERR_NO_DISK;
@@ -601,7 +635,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
     auto fullPath = getFullPath(path);
 
 #    ifndef _WIN32
-    DIR *dir      = ::opendir(fullPath.c_str());
+    DIR *dir = ::opendir(fullPath.c_str());
     if (dir == nullptr) {
         return nullptr;
     }
@@ -639,7 +673,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
         dee.attr     = (de->d_type == DT_DIR) ? DE_DIR : 0;
 
 #        ifdef __APPLE__
-        time_t t     = st.st_mtimespec.tv_sec;
+        time_t t = st.st_mtimespec.tv_sec;
 #        else
         time_t t = st.st_mtim.tv_sec;
 #        endif
@@ -749,7 +783,7 @@ int SDCardVFS::mkdir(const std::string &path) {
     auto fullPath = getFullPath(path);
 
 #    if _WIN32
-    int  result   = ::mkdir(fullPath.c_str());
+    int result = ::mkdir(fullPath.c_str());
 #    else
     int result = ::mkdir(fullPath.c_str(), 0775);
 #    endif

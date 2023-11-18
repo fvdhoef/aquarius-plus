@@ -700,6 +700,34 @@ void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
     }
 }
 
+void AqUartProtocol::cmdReadLine(uint8_t fd, uint16_t size) {
+    DBGF("READLINE fd: %d  size: %u\n", fd, size);
+
+    if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
+        txFifoWrite(ERR_PARAM);
+        return;
+    }
+
+    int result = fdVfs[fd]->readline(fds[fd], size, rxBuf);
+    if (result < 0) {
+        txFifoWrite(result);
+    } else {
+        txFifoWrite(0);
+
+        const uint8_t *p = rxBuf;
+        while (*p) {
+            if (*p == '\r' || *p == '\n')
+                break;
+            txFifoWrite(*(p++));
+        }
+        txFifoWrite(0);
+
+#ifdef EMULATOR
+        fi[fd].offset = fdVfs[fd]->tell(fds[fd]);
+#endif
+    }
+}
+
 void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
     DBGF("WRITE fd: %d  size: %u\n", fd, size);
 
@@ -992,7 +1020,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
 #ifdef __APPLE__
     time_t t = st.st_mtimespec.tv_sec;
 #elif _WIN32
-    time_t t                  = st.st_mtime;
+    time_t t = st.st_mtime;
 #else
     time_t t = st.st_mtim.tv_sec;
 #endif
