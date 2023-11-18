@@ -1,5 +1,4 @@
 // TODO:
-// - V-Scroll inhibit
 // - Sprite shift
 // - Sprite x2 magnify
 //
