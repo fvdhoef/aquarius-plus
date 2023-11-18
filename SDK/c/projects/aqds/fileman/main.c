@@ -1,8 +1,7 @@
 #include <aqplus.h>
 #include <esp.h>
 #include <stdio.h>
-
-#define TEXT_RAM ((uint8_t *)0x3000)
+#include "screen.h"
 
 enum {
     CH_BACKSPACE = 8,
@@ -19,86 +18,15 @@ enum {
     CH_DOWN      = 0x9F,
 };
 
-static uint8_t *text_p;
-static uint8_t  text_x;
-static uint8_t  text_y;
-static uint8_t  text_color;
-static uint8_t  text_ch;
-
 static uint8_t selected_row;
 static uint8_t current_pane;
 
 static char tmpbuf[81];
 
-void print_2digits(uint8_t val);
-void print_4digits(uint16_t val);
-void print_5digits(uint16_t val);
-
-static void _reset_text(void) {
-    text_x = 0;
-    text_y = 0;
-    text_p = TEXT_RAM;
-}
-
-void _putchar(uint8_t ch) {
-    IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    *text_p     = (ch);
-    IO_VCTRL    = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    *(text_p++) = text_color;
-
-    if (text_x == 79) {
-        text_x = 0;
-        text_y++;
-    } else {
-        text_x++;
-    }
-}
-
-static void _puts(const char *s) {
-    while (*s) {
-        _putchar(*(s++));
-    }
-}
-
-static bool _puts2(const char *s, uint8_t max_len) {
-    while (*s && max_len) {
-        _putchar(*(s++));
-        max_len--;
-    }
-    return *s != NULL;
-}
-
-static void _puts3(const char *s, uint8_t len) {
-    while (*s && len) {
-        _putchar(*(s++));
-        len--;
-    }
-    while (len) {
-        _putchar(' ');
-        len--;
-    }
-}
-
-static void _pad(void) {
-    while (text_x) {
-        _putchar(' ');
-    }
-}
-
-static void _skip(void) {
-    text_p += 40;
-    text_x += 40;
-}
-
-static void _set_color(uint8_t x, uint8_t y, uint8_t width, uint8_t color) {
-    text_x   = x;
-    text_y   = y;
-    text_p   = TEXT_RAM + y * 80 + x;
-    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    while (width--) {
-        *(text_p++) = color;
-    }
-}
+struct pane {
+    char    dir_path[128];
+    uint8_t page;
+};
 
 static uint8_t get_cur_year(void) {
     esp_cmd(ESPCMD_GETDATETIME);
@@ -118,29 +46,29 @@ static uint8_t get_cur_year(void) {
 static void draw_listing(void) {
     uint8_t cur_year = get_cur_year();
 
-    _putchar(222);
+    scr_putchar(222);
     for (int i = 0; i < 38; i++) {
-        _putchar(172);
+        scr_putchar(172);
     }
-    _putchar(206);
-    _skip();
+    scr_putchar(206);
+    scr_skip();
 
     text_color = 0x74;
-    _putchar(214);
+    scr_putchar(214);
     text_color = 0xC4;
-    _puts3("        Name", 20);
+    scr_puts_pad("        Name", 20);
     text_color = 0x74;
-    _putchar(214);
+    scr_putchar(214);
     text_color = 0xC4;
-    _puts(" Size");
+    scr_puts(" Size");
     text_color = 0x74;
-    _putchar(214);
+    scr_putchar(214);
     text_color = 0xC4;
-    _puts(" Date/Time ");
+    scr_puts(" Date/Time ");
     text_color = 0x74;
-    _putchar(214);
+    scr_putchar(214);
 
-    _skip();
+    scr_skip();
 
     text_color = 0x74;
 
@@ -158,77 +86,77 @@ static void draw_listing(void) {
             }
         }
 
-        _putchar(214);
+        scr_putchar(214);
         if (eof) {
             for (int i = 0; i < 20; i++) {
-                _putchar(' ');
+                scr_putchar(' ');
             }
         } else {
-            _puts3(filename, 20);
+            scr_puts_pad(filename, 20);
         }
-        _putchar(214);
+        scr_putchar(214);
         if (eof) {
             for (int i = 0; i < 5; i++) {
-                _putchar(' ');
+                scr_putchar(' ');
             }
         } else {
             if (st.attr & 1) {
-                _puts3("  dir", 5);
+                scr_puts_pad("  dir", 5);
 
             } else {
                 if (st.size < 1024LU) {
                     uint16_t sz = st.size;
                     print_4digits(sz);
-                    _putchar('B');
+                    scr_putchar('B');
                 } else if (st.size < 1024 * 1024LU) {
                     uint16_t sz = st.size >> 10;
                     print_4digits(sz);
-                    _putchar('K');
+                    scr_putchar('K');
                 } else {
                     uint16_t sz = st.size >> 20;
                     print_4digits(sz);
-                    _putchar('M');
+                    scr_putchar('M');
                 }
             }
         }
 
-        _putchar(214);
+        scr_putchar(214);
         if (eof) {
             for (int i = 0; i < 11; i++) {
-                _putchar(' ');
+                scr_putchar(' ');
             }
         } else {
             uint8_t year = (*((uint8_t *)&st.date + 1) >> 1) + 80;
 
             if (cur_year == year) {
                 print_2digits((st.date >> 5) & 15);
-                _putchar('-');
+                scr_putchar('-');
                 print_2digits(*((uint8_t *)&st.date) & 31);
-                _putchar(' ');
+                scr_putchar(' ');
                 print_2digits(*((uint8_t *)&st.time + 1) >> 3);
-                _putchar(':');
+                scr_putchar(':');
                 print_2digits((st.time >> 5) & 63);
             } else {
-                _putchar(' ');
+                scr_putchar(' ');
                 print_4digits((*((uint8_t *)&st.date + 1) >> 1) + 1980);
-                _putchar('-');
+                scr_putchar('-');
                 print_2digits((st.date >> 5) & 15);
-                _putchar('-');
+                scr_putchar('-');
                 print_2digits(*((uint8_t *)&st.date) & 31);
             }
         }
-        _putchar(214);
-        _skip();
+        scr_putchar(214);
+        scr_skip();
     }
 
     closedir(dd);
 
-    _putchar(207);
+    scr_putchar(207);
     for (int i = 0; i < 38; i++) {
-        _putchar(172);
+        scr_putchar(172);
     }
-    _putchar(223);
-    _skip();
+    scr_putchar(223);
+    scr_skip();
 }
 
 static const char *fn_labels[10] = {
@@ -245,19 +173,17 @@ static const char *fn_labels[10] = {
 };
 
 void draw_fn_bar(void) {
-    text_x = 0;
-    text_y = 24;
-    text_p = TEXT_RAM + (24 * 80);
+    scr_to_xy(0, 24);
 
     static const char *f_values = " 1 2 3 4 5 6 7 8 910";
 
     for (uint8_t j = 0; j < 10; j++) {
         text_color = 0x70;
-        _putchar(f_values[j * 2 + 0]);
-        _putchar(f_values[j * 2 + 1]);
+        scr_putchar(f_values[j * 2 + 0]);
+        scr_putchar(f_values[j * 2 + 1]);
 
         text_color = 0x09;
-        _puts3(fn_labels[j], 6);
+        scr_puts_pad(fn_labels[j], 6);
     }
 }
 
@@ -266,23 +192,21 @@ void main(void) {
     esp_send_byte(7);
     esp_get_byte();
 
-    _reset_text();
+    scr_to_xy(0, 0);
     text_color = 0x74;
 
     // 2023-01-01
     // 01-01 12:12
     draw_listing();
 
-    text_x = 40;
-    text_y = 0;
-    text_p = TEXT_RAM + 40;
+    scr_to_xy(40, 0);
     draw_listing();
     draw_fn_bar();
 
     selected_row = 0;
-    // _set_color(1, 4, 38, 0x09);
+    // scr_set_color(1, 4, 38, 0x09);
 
-    _set_color(1, 2 + selected_row, 38, 0x09);
+    scr_set_color(1, 2 + selected_row, 38, 0x09);
 
     while (1) {
         uint8_t scancode = IO_KEYBUF;
@@ -308,10 +232,10 @@ void main(void) {
         }
 
         if (new_selected_row != selected_row || new_pane != current_pane) {
-            _set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
+            scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
             selected_row = new_selected_row;
             current_pane = new_pane;
-            _set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x09);
+            scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x09);
         }
     }
 }

@@ -1,4 +1,4 @@
-    .globl __putchar
+    .globl _scr_putchar
 
     .area   _CODE
 
@@ -43,7 +43,7 @@ _print:
 
     push    hl
     push    bc
-    call    __putchar
+    call    _scr_putchar
     pop     bc
     pop     hl
     ret
@@ -56,7 +56,7 @@ _print:
 
     push    hl
     push    bc
-    call    __putchar
+    call    _scr_putchar
     pop     bc
     pop     hl
     ret
@@ -80,8 +80,8 @@ _print_2digits::
 
     ld      a,c
     add     #'0'-1
-    call    __putchar
+    call    _scr_putchar
     pop     af
     add     #'0'
-    call    __putchar
+    call    _scr_putchar
     ret
