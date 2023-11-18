@@ -30,14 +30,25 @@ enum {
     CH_F12       = 0x93,
 };
 
-static uint8_t selected_row;
-static uint8_t current_pane;
+static uint8_t     selected_row;
+static uint8_t     current_pane;
+static uint8_t     cur_year;
+static struct stat st;
+static char        filename[128];
+static bool        eof;
 
 static char tmpbuf[81];
 
 struct pane {
     char    dir_path[128];
     uint8_t page;
+};
+
+static struct pane left_pane = {
+    .dir_path = "/",
+};
+static struct pane right_pane = {
+    .dir_path = "/roms",
 };
 
 static uint8_t get_cur_year(void) {
@@ -55,13 +66,95 @@ static uint8_t get_cur_year(void) {
     return 100 + (tmpbuf[2] - '0') * 10 + (tmpbuf[3] - '0');
 }
 
-static void draw_listing(void) {
-    uint8_t cur_year = get_cur_year();
+static void scr_put_path(const char *s) {
+    uint8_t len = 35;
+    scr_putchar(172);
+    scr_putchar(' ');
+    while (*s && len) {
+        scr_putchar(*(s++));
+        len--;
+    }
+    scr_putchar(' ');
+    while (len) {
+        scr_putchar(172);
+        len--;
+    }
+}
+
+static void scr_put_spaces(uint8_t count) {
+    while (count--) {
+        scr_putchar(' ');
+    }
+}
+
+static void draw_listing_line(void) {
+    scr_putchar(214);
+    if (eof) {
+        scr_put_spaces(20);
+    } else {
+        scr_puts_pad(filename, 20);
+    }
+    scr_putchar(214);
+    if (eof) {
+        scr_put_spaces(5);
+    } else {
+        if (st.attr & 1) {
+            scr_puts_pad("  dir", 5);
+
+        } else {
+            if (st.size < 1024LU) {
+                uint16_t sz = st.size;
+                print_4digits(sz);
+                scr_putchar('B');
+            } else if (st.size < 1024 * 1024LU) {
+                uint16_t sz = st.size >> 10;
+                print_4digits(sz);
+                scr_putchar('K');
+            } else {
+                uint16_t sz = st.size >> 20;
+                print_4digits(sz);
+                scr_putchar('M');
+            }
+        }
+    }
+
+    scr_putchar(214);
+    if (eof) {
+        scr_put_spaces(11);
+    } else {
+        if (st.date == 0 && st.time == 0) {
+            scr_put_spaces(11);
+        } else {
+            uint8_t year = (*((uint8_t *)&st.date + 1) >> 1) + 80;
+
+            if (cur_year == year) {
+                print_2digits((st.date >> 5) & 15);
+                scr_putchar('-');
+                print_2digits(*((uint8_t *)&st.date) & 31);
+                scr_putchar(' ');
+                print_2digits(*((uint8_t *)&st.time + 1) >> 3);
+                scr_putchar(':');
+                print_2digits((st.time >> 5) & 63);
+            } else {
+                scr_putchar(' ');
+                print_4digits((*((uint8_t *)&st.date + 1) >> 1) + 1980);
+                scr_putchar('-');
+                print_2digits((st.date >> 5) & 15);
+                scr_putchar('-');
+                print_2digits(*((uint8_t *)&st.date) & 31);
+            }
+        }
+    }
+    scr_putchar(214);
+    scr_skip();
+}
+
+static void draw_listing(struct pane *pane) {
+    chdir(pane->dir_path);
+    cur_year = get_cur_year();
 
     scr_putchar(222);
-    for (int i = 0; i < 38; i++) {
-        scr_putchar(172);
-    }
+    scr_put_path(pane->dir_path);
     scr_putchar(206);
     scr_skip();
 
@@ -84,81 +177,25 @@ static void draw_listing(void) {
 
     text_color = 0x74;
 
-    int8_t      dd = opendir("");
-    struct stat st;
-    static char filename[128];
+    eof       = false;
+    int8_t dd = opendir("");
 
-    bool eof = false;
+    filename[0] = '.';
+    filename[1] = '.';
+    filename[2] = 0;
+    st.attr     = 1;
+    st.date     = 0;
+    st.time     = 0;
+    draw_listing_line();
 
-    for (int j = 0; j < 21; j++) {
+    for (int j = 0; j < 20; j++) {
         if (!eof) {
             int8_t res = readdir(dd, &st, filename, sizeof(filename));
             if (res == ERR_EOF) {
                 eof = true;
             }
         }
-
-        scr_putchar(214);
-        if (eof) {
-            for (int i = 0; i < 20; i++) {
-                scr_putchar(' ');
-            }
-        } else {
-            scr_puts_pad(filename, 20);
-        }
-        scr_putchar(214);
-        if (eof) {
-            for (int i = 0; i < 5; i++) {
-                scr_putchar(' ');
-            }
-        } else {
-            if (st.attr & 1) {
-                scr_puts_pad("  dir", 5);
-
-            } else {
-                if (st.size < 1024LU) {
-                    uint16_t sz = st.size;
-                    print_4digits(sz);
-                    scr_putchar('B');
-                } else if (st.size < 1024 * 1024LU) {
-                    uint16_t sz = st.size >> 10;
-                    print_4digits(sz);
-                    scr_putchar('K');
-                } else {
-                    uint16_t sz = st.size >> 20;
-                    print_4digits(sz);
-                    scr_putchar('M');
-                }
-            }
-        }
-
-        scr_putchar(214);
-        if (eof) {
-            for (int i = 0; i < 11; i++) {
-                scr_putchar(' ');
-            }
-        } else {
-            uint8_t year = (*((uint8_t *)&st.date + 1) >> 1) + 80;
-
-            if (cur_year == year) {
-                print_2digits((st.date >> 5) & 15);
-                scr_putchar('-');
-                print_2digits(*((uint8_t *)&st.date) & 31);
-                scr_putchar(' ');
-                print_2digits(*((uint8_t *)&st.time + 1) >> 3);
-                scr_putchar(':');
-                print_2digits((st.time >> 5) & 63);
-            } else {
-                scr_putchar(' ');
-                print_4digits((*((uint8_t *)&st.date + 1) >> 1) + 1980);
-                scr_putchar('-');
-                print_2digits((st.date >> 5) & 15);
-                scr_putchar('-');
-                print_2digits(*((uint8_t *)&st.date) & 31);
-            }
-        }
-        scr_putchar(214);
-        scr_skip();
+        draw_listing_line();
     }
 
     closedir(dd);
@@ -207,12 +244,9 @@ void main(void) {
     scr_to_xy(0, 0);
     text_color = 0x74;
 
-    // 2023-01-01
-    // 01-01 12:12
-    draw_listing();
-
+    draw_listing(&left_pane);
     scr_to_xy(40, 0);
-    draw_listing();
+    draw_listing(&right_pane);
     draw_fn_bar();
 
     selected_row = 0;
