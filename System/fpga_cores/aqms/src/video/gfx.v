@@ -4,6 +4,7 @@ module gfx(
 
     // Register values
     input  wire        hscroll_inhibit,
+    input  wire        vscroll_inhibit,
     input  wire  [7:0] hscroll,
     input  wire  [7:0] vscroll,
     input  wire  [2:0] base_nt,         // bit [13:11] of Name Table Base Address
@@ -76,10 +77,11 @@ module gfx(
     reg   [7:0] spr_y_r,     spr_y_next;
     reg   [3:0] spr_cnt_r,   spr_cnt_next;
 
-    wire  [7:0] line_idx      = line;
-    wire  [8:0] tline         = {1'b0, line_idx} + {1'b0, vscroll_r};
-    wire  [4:0] row           = (tline[8:3] < 6'd28) ? tline[7:3] : (tline[8:3] - 6'd28);  // Handle 28 rows
     wire  [4:0] column        = col_next[4:0];
+    wire  [7:0] vscroll2      = (column [4:3] == 2'b11 && vscroll_inhibit) ? 8'd0 : vscroll_r;
+    wire  [7:0] line_idx      = line;
+    wire  [8:0] tline         = {1'b0, line_idx} + {1'b0, vscroll2};
+    wire  [4:0] row           = (tline[8:3] < 6'd28) ? tline[7:3] : (tline[8:3] - 6'd28);  // Handle 28 rows
 
     wire [15:0] map_entry     = map_entry_next;
     wire  [8:0] tile_idx      = map_entry[8:0];

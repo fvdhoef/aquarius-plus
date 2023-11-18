@@ -332,6 +332,7 @@ module video(
 
         // Register values
         .hscroll_inhibit(reg0_hscroll_inhibit_r),
+        .vscroll_inhibit(reg0_vscroll_inhibit_r),
         .hscroll(reg8_hscroll_r),
         .vscroll(reg9_vscroll_r),
         .base_nt(reg2_scrmap_base_r[3:1]),
