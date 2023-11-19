@@ -42,6 +42,8 @@ static struct stat st;
 static char        filename[128];
 static bool        eof;
 static bool        redraw_listing;
+static bool        redraw_screen;
+static const char  allowed_filename_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-_$%-_@~`!(){}^#&+,;=[]";
 
 static char tmpbuf[81];
 
@@ -77,12 +79,14 @@ static uint8_t get_cur_year(void) {
 static void scr_put_path(const char *s) {
     uint8_t len = 35;
     scr_putchar(172);
-    scr_putchar(' ');
-    while (*s && len) {
-        scr_putchar(*(s++));
-        len--;
+    if (s && *s) {
+        scr_putchar(' ');
+        while (*s && len) {
+            scr_putchar(*(s++));
+            len--;
+        }
+        scr_putchar(' ');
     }
-    scr_putchar(' ');
     while (len) {
         scr_putchar(172);
         len--;
@@ -225,17 +229,123 @@ static void read_selected(void) {
     closedir(dd);
 }
 
+static void draw_window(uint8_t x, uint8_t y, uint8_t w, uint8_t h, const char *title) {
+    text_color = 0x7B;
+    scr_to_xy(x, y);
+    scr_putchar(222);
+    scr_putchar(172);
+    {
+        uint8_t     len = w - 3;
+        const char *s   = title;
+        if (s && *s) {
+            len -= 2;
+            scr_putchar(' ');
+            while (*s && len) {
+                scr_putchar(*(s++));
+                len--;
+            }
+            scr_putchar(' ');
+        }
+        while (len) {
+            scr_putchar(172);
+            len--;
+        }
+    }
+    scr_putchar(206);
+    y++;
+
+    for (int j = 0; j < h - 2; j++) {
+        scr_to_xy(x, y);
+        scr_putchar(214);
+        scr_put_spaces(w - 2);
+        scr_putchar(214);
+        y++;
+    }
+
+    scr_to_xy(x, y);
+    scr_putchar(207);
+    for (int i = 0; i < w - 2; i++) {
+        scr_putchar(172);
+    }
+    scr_putchar(223);
+}
+
+static bool filename_editor(const char *title) {
+    draw_window(10, 6, 60, 5, title);
+
+    uint8_t len    = 0;
+    bool    redraw = true;
+
+    while (1) {
+        if (redraw) {
+            uint8_t i  = 0;
+            text_color = 0x7F;
+            scr_to_xy(12, 8);
+
+            for (i = 0; i < len; i++) {
+                scr_putchar(filename[i]);
+            }
+            text_color = 0x77;
+            scr_putchar(' ');
+            text_color = 0x7F;
+            scr_put_spaces(56 - len - 1);
+        }
+
+        uint8_t scancode = IO_KEYBUF;
+        if (scancode == 0)
+            continue;
+        if (scancode == 3) // CTRL-C/Escape
+            return false;
+        if (scancode == CH_RETURN) {
+            filename[len] = 0;
+            return len > 0;
+        }
+        if (scancode == CH_BACKSPACE) {
+            if (len > 0) {
+                redraw = true;
+                len--;
+            }
+            continue;
+        }
+        if (len >= 55)
+            continue;
+
+        for (int i = 0; i < sizeof(allowed_filename_chars); i++) {
+            if (allowed_filename_chars[i] == scancode) {
+                filename[len++] = scancode;
+                redraw          = true;
+                break;
+            }
+        }
+    }
+}
+
+static bool confirm(const char *title) {
+    draw_window(10, 6, 60, 5, title);
+    scr_to_xy(12, 8);
+    scr_puts("Are you sure? Type Y to confirm.");
+
+    while (1) {
+        uint8_t scancode = IO_KEYBUF;
+        if (scancode == 0)
+            continue;
+        if (scancode == 'y' || scancode == 'Y')
+            return true;
+        return false;
+    }
+}
+
 static const char *fn_labels[10] = {
-    "Run",  // F1
-    "",     //"MkFile", // F2
-    "",     //"View",   // F3
-    "Edit", // F4
-    "",     //"Copy",   // F5
-    "",     //"RenMov", // F6
-    "",     //"MkDir",  // F7
-    "",     //"Delete", // F8
-    "",     // F9
-    "Quit", // F10
+    "Run",    // F1
+    "MkFile", // F2
+    "",       //"View",   // F3
+    "Edit",   // F4
+    "",       //"Copy",   // F5
+    "",       //"RenMov", // F6
+    "MkDir",  // F7
+    "Delete", // F8
+    "",       // F9
+    "Quit",   // F10
 };
 
 void draw_fn_bar(void) {
@@ -251,6 +361,13 @@ void draw_fn_bar(void) {
         text_color = 0x09;
         scr_puts_pad(fn_labels[j], 6);
     }
+}
+
+static void hide_selection(void) {
+    scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
+}
+static void show_selection(void) {
+    scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x09);
 }
 
 void main(void) {
@@ -356,6 +473,19 @@ void main(void) {
                 __asm__("jp 0xF800");
                 break;
             }
+            case CH_F2: {
+                // Make new file
+                hide_selection();
+                *filename = 0;
+                if (filename_editor("Enter name for new file") && *filename != '.') {
+                    int8_t fd = open(filename, FO_WRONLY | FO_CREATE | FO_EXCL);
+                    if (fd >= 0) {
+                        close(fd);
+                    }
+                }
+                redraw_screen = true;
+                break;
+            }
             case CH_F4: {
                 // Open item in editor
                 read_selected();
@@ -368,6 +498,25 @@ void main(void) {
 
                 // Run editor
                 __asm__("jp 0xF803");
+                break;
+            }
+            case CH_F7: {
+                // Make directory
+                hide_selection();
+                *filename = 0;
+                if (filename_editor("Enter name for new directory") && *filename != '.') {
+                    mkdir(filename);
+                }
+                redraw_screen = true;
+                break;
+            }
+            case CH_F8: {
+                // Delete file/directory
+                read_selected();
+                if (confirm((st.attr & DE_ATTR_DIR) ? "Delete directory?" : "Delete file?")) {
+                    delete (filename);
+                }
+                redraw_screen = true;
                 break;
             }
 
@@ -394,7 +543,16 @@ void main(void) {
             default: break;
         }
 
-        bool redraw_selection = redraw_listing;
+        bool redraw_selection = redraw_listing | redraw_screen;
+
+        if (redraw_screen) {
+            redraw_screen  = false;
+            redraw_listing = false;
+            draw_listing(&left_pane);
+            draw_listing(&right_pane);
+            draw_fn_bar();
+        }
+
         if (redraw_listing) {
             redraw_listing = false;
             draw_listing(pane);
@@ -405,10 +563,10 @@ void main(void) {
 
         redraw_selection |= (new_selected_row != selected_row || new_pane != current_pane);
         if (redraw_selection) {
-            scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
+            hide_selection();
             selected_row = new_selected_row;
             current_pane = new_pane;
-            scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x09);
+            show_selection();
         }
     }
 }
