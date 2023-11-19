@@ -59,7 +59,7 @@ static const char *fn_labels[10] = {
     "MkFile", // F2
     "",       //"View",   // F3
     "Edit",   // F4
-    "",       //"Copy",   // F5
+    "Copy",   // F5
     "RenMov", // F6
     "MkDir",  // F7
     "Delete", // F8
@@ -235,6 +235,8 @@ static void read_selected(void) {
 }
 
 static void draw_window(uint8_t x, uint8_t y, uint8_t w, uint8_t h, const char *title) {
+    redraw_screen = true;
+
     text_color = 0x7B;
     scr_to_xy(x, y);
     scr_putchar(222);
@@ -414,12 +416,98 @@ static void cmd_edit(void) {
     __asm__("jp 0xF803");
 }
 
+static int8_t open_with_dir(const char *dir, const char *path, uint8_t flags) {
+    esp_cmd(ESPCMD_OPEN);
+    esp_send_byte(flags);
+    esp_send_bytes(dir, strlen(dir));
+    esp_send_byte('/');
+    esp_send_bytes(path, strlen(path) + 1);
+    return (int8_t)esp_get_byte();
+}
+
+static void cmd_copy(void) {
+    read_selected();
+    if (st.attr & DE_ATTR_DIR)
+        return;
+
+    draw_window(10, 6, 60, 5, "Duplicate / copy file");
+    scr_to_xy(12, 8);
+    scr_puts("Duplicate (D) or Copy (C)?");
+
+    const char *source_dir = current_pane->dir_path;
+    const char *dest_dir   = NULL;
+    strcpy(tmpbuf, filename);
+
+    while (1) {
+        uint8_t scancode = IO_KEYBUF;
+        if (scancode == 0)
+            continue;
+        if (scancode == 'd' || scancode == 'D') {
+            if (!string_editor("Enter new file name", tmpbuf))
+                return;
+            if (strcmp(tmpbuf, filename) == 0)
+                return;
+
+            dest_dir = source_dir;
+            break;
+        }
+        if (scancode == 'c' || scancode == 'C') {
+            if (strcmp(left_pane.dir_path, right_pane.dir_path) == 0) {
+                return;
+            }
+            dest_dir = (current_pane == &left_pane) ? right_pane.dir_path : left_pane.dir_path;
+            break;
+        }
+        return;
+    }
+
+    int8_t fd1 = open_with_dir(source_dir, filename, FO_RDONLY);
+    if (fd1 < 0)
+        return;
+    int8_t fd2 = open_with_dir(dest_dir, tmpbuf, FO_WRONLY | FO_CREATE | FO_EXCL);
+    if (fd2 == ERR_EXISTS) {
+        if (confirm("Overwrite existing file?")) {
+            fd2 = open_with_dir(dest_dir, tmpbuf, FO_WRONLY | FO_CREATE | FO_TRUNC);
+        }
+    }
+    if (fd2 < 0) {
+        close(fd1);
+        return;
+    }
+
+    // Copy file
+    uint16_t percentage = 0;
+    draw_window(10, 6, 60, 5, "Copying file");
+    scr_to_xy(12, 8);
+    print_4digits(percentage);
+    scr_putchar('%');
+
+    void    *tmpbuf     = (void *)0x8000;
+    uint16_t bufsize    = 16384;
+    uint32_t total_read = 0;
+
+    while (1) {
+        int16_t bytes_read = read(fd1, tmpbuf, bufsize);
+        if (bytes_read <= 0)
+            break;
+        write(fd2, tmpbuf, bytes_read);
+
+        total_read += bytes_read;
+
+        percentage = (total_read * 100ULL) / st.size;
+
+        scr_to_xy(12, 8);
+        print_4digits(percentage);
+    }
+
+    close(fd1);
+    close(fd2);
+}
+
 static void cmd_renmov(void) {
     read_selected();
     if (strcmp(filename, "..") == 0)
         return;
-
-    redraw_screen = true;
 
     draw_window(10, 6, 60, 5, "Rename / move file");
     scr_to_xy(12, 8);
@@ -441,8 +529,8 @@ static void cmd_renmov(void) {
                 return;
             }
 
-            const char *source_dir = (current_pane == &left_pane) ? left_pane.dir_path : right_pane.dir_path;
-            const char *dest_dir   = (current_pane != &left_pane) ? left_pane.dir_path : right_pane.dir_path;
+            const char *source_dir = current_pane->dir_path;
+            const char *dest_dir   = (current_pane == &left_pane) ? right_pane.dir_path : left_pane.dir_path;
 
             uint8_t source_dir_len = strlen(source_dir);
             uint8_t dest_dir_len   = strlen(dest_dir);
@@ -561,6 +649,7 @@ void main(void) {
             case CH_F1: cmd_run(); break;
             case CH_F2: cmd_mkfile(); break;
             case CH_F4: cmd_edit(); break;
+            case CH_F5: cmd_copy(); break;
             case CH_F6: cmd_renmov(); break;
             case CH_F7: cmd_mkdir(); break;
             case CH_F8: cmd_delete(); break;
