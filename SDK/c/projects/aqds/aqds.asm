@@ -126,7 +126,7 @@ _bank3:     defb    0
 _sysctrl:   defb    0
 _irqmask:   defb    0
 
-_typetext:  defb " ",13,0
+_typetext:  defs    256
 
 ;-----------------------------------------------------------------------------
 ; ret_basic
@@ -323,6 +323,12 @@ _go_basic:
     out     (IO_BANK1),a
     inc     a
     out     (IO_BANK2),a
+
+    ; Copy PGM_PATH into typetext buffer
+    ld      hl,PGM_PATH
+    ld      de,_typetext
+    ld      bc,256
+    ldir
 
     ; Jump to return-to-BASIC routine
     jp      ret_basic

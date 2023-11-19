@@ -37,4 +37,4 @@ run_aqp: all
 		curl -T $(NAME) http://$(AQPLUS_HOST)/aqds/; \
 	)
 	@echo Running $(OUTFILE)
-	@printf '\x1E\nRUN"$(OUTFILE)"\n' | curl --data-binary @- http://$(AQPLUS_HOST)/keyboard
+	@printf '\x1E\n\x1DRUN"aqds/$(OUTFILE)"\n' | curl --data-binary @- http://$(AQPLUS_HOST)/keyboard

@@ -30,26 +30,33 @@ enum {
     CH_F12       = 0x93,
 };
 
+#define ENTRIES_PER_PAGE (21)
+
+static char *const pgm_binary   = (char *)0xFE80;
+static char *const pgm_argument = (char *)0xFF00;
+
 static uint8_t     selected_row;
 static uint8_t     current_pane;
 static uint8_t     cur_year;
 static struct stat st;
 static char        filename[128];
 static bool        eof;
+static bool        redraw_listing;
 
 static char tmpbuf[81];
 
 struct pane {
-    char     dir_path[128];
-    uint16_t dir_offset;
-    uint8_t  num_items;
+    char    dir_path[128];
+    uint8_t page;
+    uint8_t num_items;
+    bool    is_end_of_dir;
 };
 
 static struct pane left_pane = {
     .dir_path = "/",
 };
 static struct pane right_pane = {
-    .dir_path = "/music/songs1",
+    .dir_path = "/",
 };
 
 static uint8_t get_cur_year(void) {
@@ -100,7 +107,7 @@ static void draw_listing_line(struct pane *pane) {
     if (eof) {
         scr_put_spaces(5);
     } else {
-        if (st.attr & 1) {
+        if (st.attr & DE_ATTR_DIR) {
             scr_puts_pad("  dir", 5);
 
         } else {
@@ -152,6 +159,9 @@ static void draw_listing_line(struct pane *pane) {
 }
 
 static void draw_listing(struct pane *pane) {
+    text_color = 0x74;
+    scr_to_xy(pane == &left_pane ? 0 : 40, 0);
+
     pane->num_items = 0;
     chdir(pane->dir_path);
     cur_year = get_cur_year();
@@ -181,9 +191,11 @@ static void draw_listing(struct pane *pane) {
     text_color = 0x74;
 
     eof       = false;
-    int8_t dd = opendirext("", DE_FLAG_DOTDOT, pane->dir_offset);
+    int8_t dd = opendirext("", DE_FLAG_DOTDOT, (uint16_t)pane->page * ENTRIES_PER_PAGE);
+    if (dd < 0)
+        eof = true;
 
-    for (int j = 0; j < 21; j++) {
+    for (int j = 0; j < ENTRIES_PER_PAGE; j++) {
         if (!eof) {
             int8_t res = readdir(dd, &st, filename, sizeof(filename));
             if (res == ERR_EOF) {
@@ -192,6 +204,8 @@ static void draw_listing(struct pane *pane) {
         }
         draw_listing_line(pane);
     }
+    int8_t res          = readdir(dd, &st, filename, sizeof(filename));
+    pane->is_end_of_dir = (res == ERR_EOF);
 
     closedir(dd);
 
@@ -203,17 +217,25 @@ static void draw_listing(struct pane *pane) {
     scr_skip();
 }
 
+static void read_selected(void) {
+    struct pane *pane = current_pane ? &right_pane : &left_pane;
+    chdir(pane->dir_path);
+    int8_t dd  = opendirext("", DE_FLAG_DOTDOT, (uint16_t)pane->page * ENTRIES_PER_PAGE + selected_row);
+    int8_t res = readdir(dd, &st, filename, sizeof(filename));
+    closedir(dd);
+}
+
 static const char *fn_labels[10] = {
-    "Run",    // F1
-    "MkFile", // F2
-    "View",   // F3
-    "Edit",   // F4
-    "Copy",   // F5
-    "RenMov", // F6
-    "MkDir",  // F7
-    "Delete", // F8
-    "",       // F9
-    "Quit",   // F10
+    "Run",  // F1
+    "",     //"MkFile", // F2
+    "",     //"View",   // F3
+    "Edit", // F4
+    "",     //"Copy",   // F5
+    "",     //"RenMov", // F6
+    "",     //"MkDir",  // F7
+    "",     //"Delete", // F8
+    "",     // F9
+    "Quit", // F10
 };
 
 void draw_fn_bar(void) {
@@ -236,11 +258,9 @@ void main(void) {
     esp_send_byte(7);
     esp_get_byte();
 
-    scr_to_xy(0, 0);
-    text_color = 0x74;
+    getcwd(left_pane.dir_path, sizeof(left_pane.dir_path));
 
     draw_listing(&left_pane);
-    scr_to_xy(40, 0);
     draw_listing(&right_pane);
     draw_fn_bar();
 
@@ -254,34 +274,137 @@ void main(void) {
         if (scancode == 0)
             continue;
 
-        uint8_t new_selected_row = selected_row;
-        uint8_t new_pane         = current_pane;
+        uint8_t      new_selected_row = selected_row;
+        uint8_t      new_pane         = current_pane;
+        struct pane *pane             = new_pane ? &right_pane : &left_pane;
 
         switch (scancode) {
-            case CH_LEFT: new_pane = 0; break;
-            case CH_RIGHT: new_pane = 1; break;
+            case CH_LEFT: {
+                new_pane = 0;
+                pane     = &left_pane;
+                break;
+            }
+            case CH_RIGHT: {
+                new_pane = 1;
+                pane     = &right_pane;
+                break;
+            }
             case CH_DOWN: {
-                new_selected_row++;
+                if (new_selected_row == pane->num_items - 1) {
+                    if (!pane->is_end_of_dir) {
+                        pane->page++;
+                        new_selected_row = 0;
+                        redraw_listing   = true;
+                    }
+                } else {
+                    new_selected_row++;
+                }
                 break;
             }
             case CH_UP: {
-                if (new_selected_row > 0)
+                if (new_selected_row == 0) {
+                    if (pane->page > 0) {
+                        pane->page--;
+                        new_selected_row = ENTRIES_PER_PAGE - 1;
+                        redraw_listing   = true;
+                    }
+                } else {
                     new_selected_row--;
+                }
                 break;
             }
-            case CH_F10: {
+            case CH_PGDN: {
+                if (!pane->is_end_of_dir) {
+                    pane->page++;
+                    redraw_listing = true;
+                } else {
+                    new_selected_row = pane->num_items - 1;
+                }
+                break;
+            }
+            case CH_PGUP: {
+                if (pane->page > 0) {
+                    pane->page--;
+                    redraw_listing = true;
+                } else {
+                    new_selected_row = 0;
+                }
+                break;
+            }
+            case CH_F1: {
+                // RUN selected item
+                read_selected();
+                if (st.attr & DE_ATTR_DIR)
+                    break;
+
+                char       *p       = pgm_binary;
+                const char *runcmd  = " RUN \"";
+                const char *runcmd2 = "\"\r";
+
+                uint8_t sl = strlen(runcmd);
+                memcpy(p, runcmd, sl);
+                p += sl;
+
+                sl = strlen(filename);
+                memcpy(p, filename, sl);
+                p += sl;
+
+                sl = strlen(runcmd2) + 1;
+                memcpy(p, runcmd2, sl);
+
                 // Go back to BASIC
                 __asm__("jp 0xF800");
                 break;
             }
+            case CH_F4: {
+                // Open item in editor
+                read_selected();
+                if (st.attr & DE_ATTR_DIR)
+                    break;
+
+                const char *pgm = "/aqds/editor.bin";
+                memcpy(pgm_binary, pgm, strlen(pgm) + 1);
+                memcpy(pgm_argument, filename, 128);
+
+                // Run editor
+                __asm__("jp 0xF803");
+                break;
+            }
+
+            case CH_F10: {
+                chdir(pane->dir_path);
+                *pgm_binary = 0;
+
+                // Go back to BASIC
+                __asm__("jp 0xF800");
+                break;
+            }
+            case CH_RETURN: {
+                read_selected();
+                if (st.attr & DE_ATTR_DIR) {
+                    chdir(filename);
+                    getcwd(pane->dir_path, sizeof(pane->dir_path));
+                    pane->page       = 0;
+                    new_selected_row = 0;
+                    redraw_listing   = true;
+                }
+                break;
+            }
+
             default: break;
         }
 
-        struct pane *pane = new_pane ? &right_pane : &left_pane;
+        bool redraw_selection = redraw_listing;
+        if (redraw_listing) {
+            redraw_listing = false;
+            draw_listing(pane);
+        }
+
         if (new_selected_row >= pane->num_items)
             new_selected_row = pane->num_items - 1;
 
-        if (new_selected_row != selected_row || new_pane != current_pane) {
+        redraw_selection |= (new_selected_row != selected_row || new_pane != current_pane);
+        if (redraw_selection) {
             scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
             selected_row = new_selected_row;
             current_pane = new_pane;
