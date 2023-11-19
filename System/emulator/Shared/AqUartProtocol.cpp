@@ -43,6 +43,8 @@ enum {
     ESPCMD_GETCWD      = 0x1E, // Get current working directory
     ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
     ESPCMD_OPENDIR83   = 0x20, // Open directory in 8.3 mode
+    ESPCMD_READLINE    = 0x21, // Read line from file
+    ESPCMD_OPENDIREXT  = 0x22, // Open directory with extended options
     ESPCMD_LOADFPGA    = 0x40, // Load FPGA bitstream
 };
 
@@ -509,6 +511,15 @@ void AqUartProtocol::receivedByte(uint8_t data) {
             case ESPCMD_CLOSEALL: {
                 cmdCloseAll();
                 rxBufIdx = 0;
+                break;
+            }
+            case ESPCMD_READLINE: {
+                if (rxBufIdx == 4) {
+                    uint8_t  fd   = rxBuf[1];
+                    uint16_t size = rxBuf[2] | (rxBuf[3] << 8);
+                    cmdReadLine(fd, size);
+                    rxBufIdx = 0;
+                }
                 break;
             }
             case ESPCMD_LOADFPGA: {

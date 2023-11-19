@@ -87,6 +87,8 @@ enum {
     ESPCMD_GETCWD      = 0x1E, // Get current working directory
     ESPCMD_CLOSEALL    = 0x1F, // Close any open file/directory descriptor
     ESPCMD_OPENDIR83   = 0x20, // Open directory in 8.3 filename mode
+    ESPCMD_READLINE    = 0x21, // Read line from file
+    ESPCMD_OPENDIREXT  = 0x22, // Open directory with extended options
     ESPCMD_LOADFPGA    = 0x40, // Load FPGA bitstream
 };
 
