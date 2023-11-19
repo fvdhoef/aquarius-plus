@@ -3,6 +3,8 @@
 ;-----------------------------------------------------------------------------
     include "regs.inc"
 
+; Put the text you want typed into a zero-filled string in memory, The put the start address of that string minus 1 into $380B-380C
+
 PAGE_LAUNCHSTATE    equ 40
 PGM_PATH            equ $FE80
 PGM_ARG             equ $FF00
@@ -124,6 +126,8 @@ _bank3:     defb    0
 _sysctrl:   defb    0
 _irqmask:   defb    0
 
+_typetext:  defb " ",13,0
+
 ;-----------------------------------------------------------------------------
 ; ret_basic
 ;-----------------------------------------------------------------------------
@@ -186,6 +190,9 @@ ret_basic:
   
     ; Restore stack pointer
     ld      sp,(_stackp)
+
+    ld      hl,_typetext-1
+    ld      ($380B),hl
 
     ; Restore registers
     pop     hl
@@ -253,16 +260,18 @@ _os_entry:
     ld      bc,$F000-1
     ldir
 
-    ; Load initial program
-    ld      hl,.initial_program
-    ld      de,PGM_PATH
-    ld      bc,.initial_program_end - .initial_program
-    ldir
-    ld      hl,.initial_program_arg
-    ld      de,PGM_ARG
-    ld      bc,.initial_program_arg_end - .initial_program_arg
-    ldir
-    jp      _run_program
+    jp      _go_fileman
+
+    ; ; Load initial program
+    ; ld      hl,.initial_program
+    ; ld      de,PGM_PATH
+    ; ld      bc,.initial_program_end - .initial_program
+    ; ldir
+    ; ld      hl,.initial_program_arg
+    ; ld      de,PGM_ARG
+    ; ld      bc,.initial_program_arg_end - .initial_program_arg
+    ; ldir
+    ; jp      _run_program
 
 .initial_program:   defb "/aqds/editor.bin",0
 .initial_program_end:

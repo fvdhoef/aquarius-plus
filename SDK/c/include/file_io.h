@@ -4,6 +4,17 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+enum {
+    DE_FLAG_ALWAYS_DIRS = 0x01, // Always return directories even if they don't match the wildcard
+    DE_FLAG_HIDDEN      = 0x02, // Return hidden files (with system/hidden attribute or starting with a dot)
+    DE_FLAG_DOTDOT      = 0x04, // Include a '..' entry if this is not the root directory
+    DE_FLAG_MODE83      = 0x08, // Return entries in 8.3 mode
+};
+
+enum {
+    DE_ATTR_DIR = (1 << 0),
+};
+
 struct stat {
     uint16_t date;
     uint16_t time;
@@ -19,6 +30,7 @@ int16_t write(int8_t fd, const void *buf, uint16_t length);
 int8_t  seek(int8_t fd, uint32_t offset);
 int32_t tell(int8_t fd);
 int8_t  opendir(const char *path);
+int8_t  opendirext(const char *path, uint8_t flags, uint16_t skip_cnt);
 int8_t  closedir(int8_t dd);
 int8_t  readdir(int8_t dd, struct stat *st, char *fn, uint8_t fn_buflen);
 int8_t delete(const char *path);

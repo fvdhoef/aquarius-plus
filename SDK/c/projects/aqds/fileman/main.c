@@ -40,15 +40,16 @@ static bool        eof;
 static char tmpbuf[81];
 
 struct pane {
-    char    dir_path[128];
-    uint8_t page;
+    char     dir_path[128];
+    uint16_t dir_offset;
+    uint8_t  num_items;
 };
 
 static struct pane left_pane = {
     .dir_path = "/",
 };
 static struct pane right_pane = {
-    .dir_path = "/roms",
+    .dir_path = "/music/songs1",
 };
 
 static uint8_t get_cur_year(void) {
@@ -87,11 +88,12 @@ static void scr_put_spaces(uint8_t count) {
     }
 }
 
-static void draw_listing_line(void) {
+static void draw_listing_line(struct pane *pane) {
     scr_putchar(214);
     if (eof) {
         scr_put_spaces(20);
     } else {
+        pane->num_items++;
         scr_puts_pad(filename, 20);
     }
     scr_putchar(214);
@@ -150,6 +152,7 @@ static void draw_listing_line(void) {
 }
 
 static void draw_listing(struct pane *pane) {
+    pane->num_items = 0;
     chdir(pane->dir_path);
     cur_year = get_cur_year();
 
@@ -178,24 +181,16 @@ static void draw_listing(struct pane *pane) {
     text_color = 0x74;
 
     eof       = false;
-    int8_t dd = opendir("");
+    int8_t dd = opendirext("", DE_FLAG_DOTDOT, pane->dir_offset);
 
-    filename[0] = '.';
-    filename[1] = '.';
-    filename[2] = 0;
-    st.attr     = 1;
-    st.date     = 0;
-    st.time     = 0;
-    draw_listing_line();
-
-    for (int j = 0; j < 20; j++) {
+    for (int j = 0; j < 21; j++) {
         if (!eof) {
             int8_t res = readdir(dd, &st, filename, sizeof(filename));
             if (res == ERR_EOF) {
                 eof = true;
             }
         }
-        draw_listing_line();
+        draw_listing_line(pane);
     }
 
     closedir(dd);
@@ -281,6 +276,10 @@ void main(void) {
             }
             default: break;
         }
+
+        struct pane *pane = new_pane ? &right_pane : &left_pane;
+        if (new_selected_row >= pane->num_items)
+            new_selected_row = pane->num_items - 1;
 
         if (new_selected_row != selected_row || new_pane != current_pane) {
             scr_set_color(current_pane ? 41 : 1, 2 + selected_row, 38, 0x74);
