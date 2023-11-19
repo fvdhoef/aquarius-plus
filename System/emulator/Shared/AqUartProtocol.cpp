@@ -423,7 +423,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     const char *pathArg = (const char *)&rxBuf[1];
-                    cmdOpenDir(pathArg);
+                    cmdOpenDirExt(pathArg, 0, 0);
                     rxBufIdx = 0;
                 }
                 break;
@@ -432,7 +432,17 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 // Wait for zero-termination of path
                 if (data == 0) {
                     const char *pathArg = (const char *)&rxBuf[1];
-                    cmdOpenDir(pathArg, true);
+                    cmdOpenDirExt(pathArg, DE_FLAG_MODE83, 0);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
+            case ESPCMD_OPENDIREXT: {
+                if (data == 0 && rxBufIdx >= 5) {
+                    uint8_t     flags      = rxBuf[1];
+                    uint16_t    skip_count = rxBuf[2] | (rxBuf[3] << 8);
+                    const char *pathArg    = (const char *)&rxBuf[4];
+                    cmdOpenDirExt(pathArg, flags, skip_count);
                     rxBufIdx = 0;
                 }
                 break;
@@ -835,7 +845,7 @@ static bool wildcardMatch(const std::string &text, const std::string &pattern) {
     return (textPos == (int)text.size() && patternPos == (int)pattern.size());
 }
 
-void AqUartProtocol::cmdOpenDir(const char *pathArg, bool mode83) {
+void AqUartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t skip_count) {
     DBGF("OPENDIR: '%s'\n", pathArg);
 
     // Find free directory descriptor
@@ -861,13 +871,19 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg, bool mode83) {
         return;
     }
 
-    auto deCtx = vfs->direnum(path, mode83);
+    auto deCtx = vfs->direnum(path, flags);
     if (!deCtx) {
         txFifoWrite(ERR_NOT_FOUND);
     } else {
+        if (!path.empty() && (flags & DE_FLAG_DOTDOT) != 0) {
+            deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
+        }
+
         if (!wildCard.empty()) {
             deCtx->erase(
                 std::remove_if(deCtx->begin(), deCtx->end(), [&](DirEnumEntry &de) {
+                    if ((de.attr & DE_ATTR_DIR) != 0 && (flags & DE_FLAG_ALWAYS_DIRS))
+                        return false;
                     return !wildcardMatch(de.filename, wildCard);
                 }),
                 deCtx->end());
@@ -875,14 +891,14 @@ void AqUartProtocol::cmdOpenDir(const char *pathArg, bool mode83) {
 
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top
-            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
-                return (a.attr & DE_DIR) != 0;
+            if ((a.attr & DE_ATTR_DIR) != (b.attr & DE_ATTR_DIR)) {
+                return (a.attr & DE_ATTR_DIR) != 0;
             }
             return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
         });
 
         deCtxs[dd] = deCtx;
-        deIdx[dd]  = 0;
+        deIdx[dd]  = skip_count;
         txFifoWrite(dd);
 
 #ifdef EMULATOR
@@ -1044,7 +1060,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
     txFifoWrite((fat_date >> 8) & 0xFF);
     txFifoWrite((fat_time >> 0) & 0xFF);
     txFifoWrite((fat_time >> 8) & 0xFF);
-    txFifoWrite((st.st_mode & S_IFDIR) != 0 ? DE_DIR : 0);
+    txFifoWrite((st.st_mode & S_IFDIR) != 0 ? DE_ATTR_DIR : 0);
     txFifoWrite((st.st_size >> 0) & 0xFF);
     txFifoWrite((st.st_size >> 8) & 0xFF);
     txFifoWrite((st.st_size >> 16) & 0xFF);

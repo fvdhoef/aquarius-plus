@@ -32,7 +32,7 @@ public:
     int tell(int fd) override;
 
     // Directory operations
-    DirEnumCtx direnum(const std::string &path, bool mode83 = false) override;
+    DirEnumCtx direnum(const std::string &path, uint8_t flags) override;
 
     // Filesystem operations
     int delete_(const std::string &path) override;

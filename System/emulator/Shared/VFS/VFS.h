@@ -27,7 +27,14 @@ enum {
 };
 
 enum {
-    DE_DIR = (1 << 0),
+    DE_FLAG_ALWAYS_DIRS = 0x01, // Always return directories even if they don't match the wildcard
+    DE_FLAG_HIDDEN      = 0x02, // Return hidden files (with system/hidden attribute or starting with a dot)
+    DE_FLAG_DOTDOT      = 0x04, // Include a '..' entry if this is not the root directory
+    DE_FLAG_MODE83      = 0x08, // Return entries in 8.3 mode
+};
+
+enum {
+    DE_ATTR_DIR = (1 << 0),
 };
 
 struct DirEnumEntry {
@@ -64,7 +71,7 @@ public:
     virtual int tell(int fd);
 
     // Directory operations
-    virtual DirEnumCtx direnum(const std::string &path, bool mode83 = false);
+    virtual DirEnumCtx direnum(const std::string &path, uint8_t flags);
 
     // Filesystem operations
     virtual int delete_(const std::string &path);

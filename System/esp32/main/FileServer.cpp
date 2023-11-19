@@ -255,15 +255,15 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
     propfind_st(req, tmp.get(), &st);
 
     if (S_ISDIR(st.st_mode) && depth[0] != '0') {
-        auto deCtx = vfs.direnum(uriPath);
+        auto deCtx = vfs.direnum(uriPath, 0);
         if (!deCtx)
             return serverError(req);
-        deCtx->push_back(DirEnumEntry("..", 0, DE_DIR, 0, 0));
+        deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
 
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top
-            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
-                return (a.attr & DE_DIR) != 0;
+            if ((a.attr & DE_ATTR_DIR) != (b.attr & DE_ATTR_DIR)) {
+                return (a.attr & DE_ATTR_DIR) != 0;
             }
             return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
         });
@@ -273,7 +273,7 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
 
             memset(&st, 0, sizeof(st));
             st.st_size = de.size;
-            st.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | ((de.attr & DE_DIR) != 0 ? S_IFDIR : S_IFREG);
+            st.st_mode = S_IRWXU | S_IRWXG | S_IRWXO | ((de.attr & DE_ATTR_DIR) != 0 ? S_IFDIR : S_IFREG);
 
             fat_date_t fdate = {.as_int = de.fdate};
             fat_time_t ftime = {.as_int = de.ftime};
@@ -323,15 +323,15 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
         return mapResult(req, result);
 
     if (S_ISDIR(st.st_mode)) {
-        auto deCtx = vfs.direnum(uriPath);
+        auto deCtx = vfs.direnum(uriPath, 0);
         if (!deCtx)
             return serverError(req);
-        deCtx->push_back(DirEnumEntry("..", 0, DE_DIR, 0, 0));
+        deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
 
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
             // Sort directories at the top
-            if ((a.attr & DE_DIR) != (b.attr & DE_DIR)) {
-                return (a.attr & DE_DIR) != 0;
+            if ((a.attr & DE_ATTR_DIR) != (b.attr & DE_ATTR_DIR)) {
+                return (a.attr & DE_ATTR_DIR) != 0;
             }
             return strcasecmp(a.filename.c_str(), b.filename.c_str()) < 0;
         });
@@ -349,7 +349,7 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
             snprintf(tmp.get(), tmpSize, "<tr><td><a href=\"%s\">%s</href></td>", urlEncode(uriPath + de.filename).c_str(), de.filename.c_str());
             httpd_resp_sendstr_chunk(req, tmp.get());
 
-            if (de.attr & DE_DIR) {
+            if (de.attr & DE_ATTR_DIR) {
                 snprintf(tmp.get(), tmpSize, "<td align=\"right\">Directory</td></tr>");
             } else {
                 snprintf(tmp.get(), tmpSize, "<td align=\"right\">%lu</td></tr>", de.size);

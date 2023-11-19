@@ -219,7 +219,9 @@ int SDCardVFS::tell(int fd) {
     return f_tell(state.fds[fd]);
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
+DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
+    bool mode83 = (flags & DE_FLAG_MODE83) != 0;
+
     DIR dir;
     if (f_opendir(&dir, path.c_str()) != F_OK) {
         return nullptr;
@@ -235,16 +237,19 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
             break;
         }
 
-        // Skip hidden and system files
-        if ((fno.fattrib & (AM_SYS | AM_HID)))
-            continue;
-        // Skip files beginning with a space
-        if (fno.fname[0] == '.')
-            continue;
+        if ((flags & DE_FLAG_HIDDEN) == 0) {
+            // Skip hidden and system files
+            if ((fno.fattrib & (AM_SYS | AM_HID)))
+                continue;
+
+            // Skip files beginning with a space
+            if (fno.fname[0] == '.')
+                continue;
+        }
 
         result->emplace_back(
             (mode83 && fno.altname[0] != 0) ? fno.altname : fno.fname,
-            fno.fsize, (fno.fattrib & AM_DIR) ? DE_DIR : 0, fno.fdate, fno.ftime);
+            fno.fsize, (fno.fattrib & AM_DIR) ? DE_ATTR_DIR : 0, fno.fdate, fno.ftime);
     }
 
     // Close directory
@@ -628,9 +633,12 @@ int SDCardVFS::tell(int fd) {
     return (result < 0) ? mapErrNoResult() : result;
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
+DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
     if (basePath.empty())
         return nullptr;
+
+    bool mode83     = (flags & DE_FLAG_MODE83) != 0;
+    bool showHidden = (flags & DE_FLAG_HIDDEN) != 0;
 
     auto fullPath = getFullPath(path);
 
@@ -670,7 +678,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
         // Return file entry
         dee.filename = de->d_name;
         dee.size     = (de->d_type == DT_DIR) ? 0 : st.st_size;
-        dee.attr     = (de->d_type == DT_DIR) ? DE_DIR : 0;
+        dee.attr     = (de->d_type == DT_DIR) ? DE_ATTR_DIR : 0;
 
 #        ifdef __APPLE__
         time_t t = st.st_mtimespec.tv_sec;
@@ -692,7 +700,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
         // Return file entry
         dee.filename = fileinfo.name;
         dee.size     = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
-        dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_DIR : 0;
+        dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_ATTR_DIR : 0;
         time_t t     = fileinfo.time_write;
 #    endif
 
@@ -701,7 +709,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, bool mode83) {
         dee.fdate     = ((tm->tm_year + 1900 - 1980) << 9) | ((tm->tm_mon + 1) << 5) | tm->tm_mday;
 
         // Skip files starting with a dot
-        if (dee.filename.size() == 0 || dee.filename[0] == '.')
+        if (dee.filename.size() == 0 || dee.filename == "." || dee.filename == ".." || (dee.filename[0] == '.' && !showHidden))
             continue;
 
         if (mode83) {
