@@ -5,22 +5,78 @@ with open("opcodes.lst") as f:
 
 total = 0
 
+opcodes = set()
+
 for line in lines:
     opcode_bytes = line[0:11].strip()
     opcode_text = line[11:].strip()
+    opcodes.add(opcode_text.split(" ")[0])
 
-    total += len(opcode_bytes) / 2
-    total += len(opcode_text)
+directives = sorted(
+    [
+        a.upper()
+        for a in [
+            "include",
+            "org",
+            "defb",
+            "defw",
+            "defs",
+        ]
+    ]
+)
 
-    # if len(opcode_bytes) == 2:
+opcodes = sorted(list(opcodes))
 
-        # bla.append(opcode_bytes)
-        # bla.append(opcode_text)
+with open("../tokens.h", "wt") as f:
+    print("#ifndef _TOKENS_H", file=f)
+    print("#define _TOKENS_H", file=f)
+    print(file=f)
+    print("#include <stdint.h>", file=f)
+    print(file=f)
+    print("extern const uint8_t *keywords[];", file=f)
+    print("extern const uint8_t num_keywords[];", file=f)
+    print(file=f)
+    print("enum {", file=f)
+    print("    TOK_UNKNOWN = 0,", file=f)
+    print(file=f)
+    print("    // Directives", file=f)
+    for val in directives:
+        print(f"    TOK_{val.upper()},", file=f)
+    print(file=f)
+    print("    // Instructions", file=f)
+    for val in opcodes:
+        print(f"    TOK_{val.upper()},", file=f)
+    print("};", file=f)
+    print(file=f)
+    print("#endif", file=f)
 
+keywords = sorted(directives + opcodes)
 
-        # print(f'{{"{opcode_text}", 0x{opcode_bytes}}},')
-        # print(f"{opcode_bytes} {opcode_text}")
+with open("../tokens.c", "wt") as f:
+    print('#include "tokens.h"', file=f)
+    print(file=f)
+    print("// clang-format off", file=f)
 
-        # print(f'{"{opcode_text}", opcode_bytes}')
+    for i in range(2, 8):
+        print(f"static const uint8_t keywords{i}[] = {{", file=f)
+        for keyword in keywords:
+            if len(keyword) != i:
+                continue
 
-print(total)
+            chars = [f"'{ch}'," for ch in keyword.lower()]
+            chars.append(f"TOK_{keyword.upper()},")
+
+            print("    " + "".join(chars), file=f)
+
+        print("};", file=f)
+
+    print("// clang-format on", file=f)
+    print(file=f)
+    print("const uint8_t *keywords[] = {", file=f)
+    for i in range(2, 8):
+        print(f"    keywords{i},", file=f)
+    print("};", file=f)
+    print("const uint8_t num_keywords[] = {", file=f)
+    for i in range(2, 8):
+        print(f"    sizeof(keywords{i}) / {i+1},", file=f)
+    print("};", file=f)

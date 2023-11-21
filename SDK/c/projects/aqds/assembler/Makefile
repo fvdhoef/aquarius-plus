@@ -1,3 +1,3 @@
 
 all:
-	gcc -Wall -Wextra -o assembler main.c
+	gcc -Wall -Wextra -o assembler main.c tokens.c
