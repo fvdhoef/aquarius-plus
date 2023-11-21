@@ -118,7 +118,7 @@ NimBLEScan::~NimBLEScan() {
                 advertisedDevice->setPeriodicInterval(disc.periodic_adv_itvl);
 #    endif
                 pScan->m_scanResults.m_advertisedDevicesVector.push_back(advertisedDevice);
-                NIMBLE_LOGI(LOG_TAG, "New advertiser: %s", advertisedAddress.toString().c_str());
+                // NIMBLE_LOGI(LOG_TAG, "New advertiser: %s", advertisedAddress.toString().c_str());
             } else if (advertisedDevice != nullptr) {
                 NIMBLE_LOGI(LOG_TAG, "Updated advertiser: %s", advertisedAddress.toString().c_str());
             } else {

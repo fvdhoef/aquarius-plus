@@ -31,6 +31,7 @@ static void init() {
     }
 
     // Initialize timezone, keyboard layout
+    uint8_t video_timing_mode = 0;
     {
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
@@ -48,6 +49,10 @@ static void init() {
             uint8_t mouseDiv = 0;
             if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
                 AqUartProtocol::instance().setMouseSensitivityDiv(mouseDiv);
+            }
+
+            if (nvs_get_u8(h, "videoTiming", &video_timing_mode) != ESP_OK) {
+                video_timing_mode = 0;
             }
             nvs_close(h);
         }
@@ -69,6 +74,8 @@ static void init() {
     auto &fpga = FPGA::instance();
     fpga.init();
     fpga.loadDefaultBitstream();
+
+    fpga.aqpSetVideoTimingMode(video_timing_mode);
 }
 
 extern "C" void app_main(void);

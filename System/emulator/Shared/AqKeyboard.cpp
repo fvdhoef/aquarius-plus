@@ -10,6 +10,7 @@
 #    include <esp_system.h>
 #    include "USBHost.h"
 #    include "MemDump.h"
+#    include <nvs_flash.h>
 #endif
 
 #ifndef EMULATOR
@@ -506,9 +507,28 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
             return;
         } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F10) {
             FPGA::instance().aqpSetVideoTimingMode(0);
+
+            nvs_handle_t h;
+            if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                if (nvs_set_u8(h, "videoTiming", 0) == ESP_OK) {
+                    nvs_commit(h);
+                }
+                nvs_close(h);
+            }
+
             return;
+
         } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F11) {
             FPGA::instance().aqpSetVideoTimingMode(1);
+
+            nvs_handle_t h;
+            if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                if (nvs_set_u8(h, "videoTiming", 1) == ESP_OK) {
+                    nvs_commit(h);
+                }
+                nvs_close(h);
+            }
+
             return;
         }
     }
