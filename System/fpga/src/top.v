@@ -516,12 +516,12 @@ module top(
     wire [13:0] mix_l =
         {ay8910_ch_a,   1'b0} + {ay8910_ch_b,   1'b0} + {1'b0, ay8910_ch_c  } +
         {ay8910_2_ch_a, 1'b0} + {ay8910_2_ch_b, 1'b0} + {1'b0, ay8910_2_ch_c} +
-        {audio_dac_r,   3'b0} + {1'b0, beep};
+        {audio_dac_r,   4'b0} + {1'b0, beep};
 
     wire [13:0] mix_r =
         {1'b0, ay8910_ch_a  } + {ay8910_ch_b,   1'b0} + {ay8910_ch_c,   1'b0} +
         {1'b0, ay8910_2_ch_a} + {ay8910_2_ch_b, 1'b0} + {ay8910_2_ch_c, 1'b0} +
-        {audio_dac_r,   3'b0} + {1'b0, beep};
+        {audio_dac_r,   4'b0} + {1'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
