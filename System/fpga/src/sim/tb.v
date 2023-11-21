@@ -8,8 +8,8 @@ module tb();
     end
 
     initial begin
-        #2000000 $finish;
-        // #200000 $finish;
+        // #2000000 $finish;
+        #200000 $finish;
     end
 
     // Generate approx. 28.63636MHz sysclk
@@ -303,6 +303,9 @@ module tb();
 
         iord(16'h00FA);
 
+        // iowr(16'hEC, 8'd255);
+        iowr(16'hEC, 8'd128);
+        // iowr(16'hEC, 8'd0);
 
         // iowr(16'hE0, 8'd06);
 

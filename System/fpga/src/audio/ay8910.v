@@ -10,9 +10,9 @@ module ay8910(
     input  wire [7:0] ioa_in_data,
     input  wire [7:0] iob_in_data,
 
-    output reg  [9:0] ch_a,
-    output reg  [9:0] ch_b,
-    output reg  [9:0] ch_c);
+    output wire [9:0] ch_a,
+    output wire [9:0] ch_b,
+    output wire [9:0] ch_c);
 
     //////////////////////////////////////////////////////////////////////////
     // Bus register interface
@@ -250,64 +250,71 @@ module ay8910(
     wire [3:0] b_volume = b_val ? (b_volume_r[4] ? envelope_volume_r : b_volume_r[3:0]) : 4'd0;
     wire [3:0] c_volume = c_val ? (c_volume_r[4] ? envelope_volume_r : c_volume_r[3:0]) : 4'd0;
 
+    reg [9:0] ch_a_r = 10'd0;
     always @(posedge clk)
         if (tick) case (a_volume)
-            4'h0: ch_a <= 0;
-            4'h1: ch_a <= 6;
-            4'h2: ch_a <= 9;
-            4'h3: ch_a <= 13;
-            4'h4: ch_a <= 19;
-            4'h5: ch_a <= 27;
-            4'h6: ch_a <= 39;
-            4'h7: ch_a <= 56;
-            4'h8: ch_a <= 80;
-            4'h9: ch_a <= 116;
-            4'hA: ch_a <= 166;
-            4'hB: ch_a <= 239;
-            4'hC: ch_a <= 344;
-            4'hD: ch_a <= 495;
-            4'hE: ch_a <= 712;
-            4'hF: ch_a <= 1023;
+            4'h0: ch_a_r <= 0;
+            4'h1: ch_a_r <= 6;
+            4'h2: ch_a_r <= 9;
+            4'h3: ch_a_r <= 13;
+            4'h4: ch_a_r <= 19;
+            4'h5: ch_a_r <= 27;
+            4'h6: ch_a_r <= 39;
+            4'h7: ch_a_r <= 56;
+            4'h8: ch_a_r <= 80;
+            4'h9: ch_a_r <= 116;
+            4'hA: ch_a_r <= 166;
+            4'hB: ch_a_r <= 239;
+            4'hC: ch_a_r <= 344;
+            4'hD: ch_a_r <= 495;
+            4'hE: ch_a_r <= 712;
+            4'hF: ch_a_r <= 1023;
         endcase
 
+    reg [9:0] ch_b_r = 10'd0;
     always @(posedge clk)
         if (tick) case (b_volume)
-            4'h0: ch_b <= 0;
-            4'h1: ch_b <= 6;
-            4'h2: ch_b <= 9;
-            4'h3: ch_b <= 13;
-            4'h4: ch_b <= 19;
-            4'h5: ch_b <= 27;
-            4'h6: ch_b <= 39;
-            4'h7: ch_b <= 56;
-            4'h8: ch_b <= 80;
-            4'h9: ch_b <= 116;
-            4'hA: ch_b <= 166;
-            4'hB: ch_b <= 239;
-            4'hC: ch_b <= 344;
-            4'hD: ch_b <= 495;
-            4'hE: ch_b <= 712;
-            4'hF: ch_b <= 1023;
+            4'h0: ch_b_r <= 0;
+            4'h1: ch_b_r <= 6;
+            4'h2: ch_b_r <= 9;
+            4'h3: ch_b_r <= 13;
+            4'h4: ch_b_r <= 19;
+            4'h5: ch_b_r <= 27;
+            4'h6: ch_b_r <= 39;
+            4'h7: ch_b_r <= 56;
+            4'h8: ch_b_r <= 80;
+            4'h9: ch_b_r <= 116;
+            4'hA: ch_b_r <= 166;
+            4'hB: ch_b_r <= 239;
+            4'hC: ch_b_r <= 344;
+            4'hD: ch_b_r <= 495;
+            4'hE: ch_b_r <= 712;
+            4'hF: ch_b_r <= 1023;
         endcase
 
+    reg [9:0] ch_c_r = 10'd0;
     always @(posedge clk)
         if (tick) case (c_volume)
-            4'h0: ch_c <= 0;
-            4'h1: ch_c <= 6;
-            4'h2: ch_c <= 9;
-            4'h3: ch_c <= 13;
-            4'h4: ch_c <= 19;
-            4'h5: ch_c <= 27;
-            4'h6: ch_c <= 39;
-            4'h7: ch_c <= 56;
-            4'h8: ch_c <= 80;
-            4'h9: ch_c <= 116;
-            4'hA: ch_c <= 166;
-            4'hB: ch_c <= 239;
-            4'hC: ch_c <= 344;
-            4'hD: ch_c <= 495;
-            4'hE: ch_c <= 712;
-            4'hF: ch_c <= 1023;
+            4'h0: ch_c_r <= 0;
+            4'h1: ch_c_r <= 6;
+            4'h2: ch_c_r <= 9;
+            4'h3: ch_c_r <= 13;
+            4'h4: ch_c_r <= 19;
+            4'h5: ch_c_r <= 27;
+            4'h6: ch_c_r <= 39;
+            4'h7: ch_c_r <= 56;
+            4'h8: ch_c_r <= 80;
+            4'h9: ch_c_r <= 116;
+            4'hA: ch_c_r <= 166;
+            4'hB: ch_c_r <= 239;
+            4'hC: ch_c_r <= 344;
+            4'hD: ch_c_r <= 495;
+            4'hE: ch_c_r <= 712;
+            4'hF: ch_c_r <= 1023;
         endcase
+
+    assign ch_a = ch_a_r;
+    assign ch_b = ch_b_r;
+    assign ch_c = ch_c_r;
 
 endmodule

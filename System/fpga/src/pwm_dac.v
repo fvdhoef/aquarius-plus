@@ -11,8 +11,8 @@ module pwm_dac(
     output reg         audio_l,
     output reg         audio_r);
 
-    reg [15:0] left_sample_r;
-    reg [15:0] right_sample_r;
+    reg [15:0] left_sample_r  = 16'd0;
+    reg [15:0] right_sample_r = 16'd0;
 
     always @(posedge clk) begin
         if (next_sample) begin

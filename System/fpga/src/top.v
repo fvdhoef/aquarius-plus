@@ -166,6 +166,7 @@ module top(
 
     // IO space decoding
     wire sel_io_video             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:4] == 4'hE;
+    wire sel_io_audio_dac         = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hEC;
     wire sel_io_bank0             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
     wire sel_io_bank1             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
     wire sel_io_bank2             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
@@ -180,7 +181,6 @@ module top(
     wire sel_io_vsync_r_cpm_w     = !ebus_iorq_n && ebus_a[7:0] == 8'hFD;
     wire sel_io_printer           = !ebus_iorq_n && ebus_a[7:0] == 8'hFE;
     wire sel_io_keyb_r_scramble_w = !ebus_iorq_n && ebus_a[7:0] == 8'hFF;
-    wire sel_io_audio_dac         = !ebus_iorq_n && ebus_a[7:0] == 8'hEC;
 
     wire sel_internal =
         sel_mem_tram | sel_mem_vram | sel_mem_chram | sel_mem_rom |
@@ -513,22 +513,22 @@ module top(
         .ch_c(ay8910_2_ch_c));
 
     // Create stereo mix of output channels and system beep (cassette output)
-    wire [13:0] ay8910_l =
+    wire [13:0] mix_l =
         {ay8910_ch_a,   1'b0} + {ay8910_ch_b,   1'b0} + {1'b0, ay8910_ch_c  } +
         {ay8910_2_ch_a, 1'b0} + {ay8910_2_ch_b, 1'b0} + {1'b0, ay8910_2_ch_c} +
-        {audio_dac_r, 3'b0} + {1'b0, beep};
+        {audio_dac_r,   3'b0} + {1'b0, beep};
 
-    wire [13:0] ay8910_r =
+    wire [13:0] mix_r =
         {1'b0, ay8910_ch_a  } + {ay8910_ch_b,   1'b0} + {ay8910_ch_c,   1'b0} +
         {1'b0, ay8910_2_ch_a} + {ay8910_2_ch_b, 1'b0} + {ay8910_2_ch_c, 1'b0} +
-        {audio_dac_r, 3'b0} + {1'b0, beep};
+        {audio_dac_r,   3'b0} + {1'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
     //////////////////////////////////////////////////////////////////////////
     wire        next_sample = 1'b1;
-    wire [15:0] left_data   = {ay8910_l, 2'b0};
-    wire [15:0] right_data  = {ay8910_r, 2'b0};
+    wire [15:0] left_data   = {mix_l, 2'b0};
+    wire [15:0] right_data  = {mix_r, 2'b0};
 
     pwm_dac pwm_dac(
         .rst(reset),
