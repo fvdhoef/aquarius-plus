@@ -2,16 +2,32 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include "tokens.h"
 
-static int         linenr = 0;
-static char        linebuf[256];
-static const char *label;
-static const char *keyword;
-static char       *p;
+static uint8_t fake_heap[40000];
 
-static void error(void) {
-    printf("Error in line %d!\n", linenr);
+#define MAX_FILE_DEPTH 8
+
+struct file_ctx {
+    uint16_t linenr;
+    char     path[30];
+};
+
+static struct file_ctx file_ctxs[MAX_FILE_DEPTH];
+static uint8_t         file_ctx_idx;
+struct file_ctx       *cur_file_ctx;
+static char            linebuf[256];
+static const char     *label;
+static const char     *keyword;
+static const char     *string;
+static char           *p;
+static uint8_t        *heap;
+
+static void error(char *str) {
+    if (str == NULL)
+        str = "Unknown";
+    printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
     exit(1);
 }
 
@@ -58,8 +74,28 @@ static void parse_keyword(void) {
         keyword = NULL;
     else if (*p != 0) {
         if (*p > ' ')
-            error();
+            error("Syntax error");
         *(p++) = 0;
+    }
+}
+
+static void parse_string(void) {
+    string = NULL;
+    skip_whitespace();
+    uint8_t ch = *(p++);
+    if (ch != '"')
+        error("Expected '\"'");
+    string = p;
+
+    while (1) {
+        ch = *p;
+        if (ch == '"') {
+            *(p++) = 0;
+            break;
+        }
+        if (ch < ' ' && ch != '\t')
+            error("Invalid string");
+        p++;
     }
 }
 
@@ -86,12 +122,32 @@ static uint8_t tokenize_keyword(const char *keyword) {
     return TOK_UNKNOWN;
 }
 
-int main(void) {
+void parse_file(const char *path) {
+    FILE *f = fopen(path, "r");
+
+    if (cur_file_ctx != NULL) {
+        file_ctx_idx++;
+        if (file_ctx_idx >= MAX_FILE_DEPTH) {
+            error("Max file depth reached");
+        }
+    }
+    cur_file_ctx         = &file_ctxs[file_ctx_idx];
+    cur_file_ctx->linenr = 0;
+    {
+        char *p = cur_file_ctx->path;
+        for (uint8_t i = 0; i < sizeof(cur_file_ctx->path) - 1; i++) {
+            char ch = path[i];
+            if (ch == 0)
+                break;
+            *(p++) = ch;
+        }
+        *p = 0;
+    }
+
     // FILE *f = fopen("testdata/regs.inc", "r");
-    FILE *f = fopen("testdata/goaqms.asm", "r");
 
     while (1) {
-        linenr++;
+        cur_file_ctx->linenr++;
         if (fgets(linebuf, 256, f) == NULL)
             break;
 
@@ -113,15 +169,43 @@ int main(void) {
 
             printf("[Keyword: '%s' token:%u]", keyword, token);
             if (token == TOK_UNKNOWN)
-                error();
+                error("Syntax error");
+
+            if (token == TOK_INCLUDE) {
+                parse_string();
+                skip_whitespace();
+                if (*p != 0)
+                    error("Syntax error");
+
+                printf("\nInclude file: '%s'\n", string);
+                parse_file(string);
+                printf("----------------------\n");
+                continue;
+            }
+
         } else {
             if (*p != 0)
-                error();
+                error("Syntax error");
         }
 
         skip_whitespace();
         if (*p)
             printf("'%s'", p);
     }
+
+    fclose(f);
+
+    if (file_ctx_idx == 0) {
+        cur_file_ctx = NULL;
+    } else {
+        cur_file_ctx = &file_ctxs[--file_ctx_idx];
+    }
+}
+
+int main(void) {
+    heap = fake_heap;
+    chdir("testdata");
+    parse_file("goaqms.asm");
+
     return 0;
 }

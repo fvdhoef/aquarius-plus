@@ -26,6 +26,8 @@ static const uint8_t keywords3[] = {
     'c','p','l',TOK_CPL,
     'd','a','a',TOK_DAA,
     'd','e','c',TOK_DEC,
+    'e','n','d',TOK_END,
+    'e','q','u',TOK_EQU,
     'e','x','x',TOK_EXX,
     'i','n','c',TOK_INC,
     'i','n','d',TOK_IND,
@@ -80,10 +82,13 @@ static const uint8_t keywords4[] = {
     'r','r','c','a',TOK_RRCA,
 };
 static const uint8_t keywords5[] = {
+    'p','h','a','s','e',TOK_PHASE,
 };
 static const uint8_t keywords6[] = {
+    'i','n','c','b','i','n',TOK_INCBIN,
 };
 static const uint8_t keywords7[] = {
+    'd','e','p','h','a','s','e',TOK_DEPHASE,
     'i','n','c','l','u','d','e',TOK_INCLUDE,
 };
 // clang-format on

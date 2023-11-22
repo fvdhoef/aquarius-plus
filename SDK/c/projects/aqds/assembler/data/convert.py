@@ -16,11 +16,16 @@ directives = sorted(
     [
         a.upper()
         for a in [
+            "defb",
+            "defs",
+            "defw",
+            "dephase",
+            "end",
+            "equ",
+            "incbin",
             "include",
             "org",
-            "defb",
-            "defw",
-            "defs",
+            "phase",
         ]
     ]
 )

@@ -13,8 +13,13 @@ enum {
     TOK_DEFB,
     TOK_DEFS,
     TOK_DEFW,
+    TOK_DEPHASE,
+    TOK_END,
+    TOK_EQU,
+    TOK_INCBIN,
     TOK_INCLUDE,
     TOK_ORG,
+    TOK_PHASE,
 
     // Instructions
     TOK_ADC,
