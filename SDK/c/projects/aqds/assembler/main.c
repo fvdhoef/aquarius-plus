@@ -2,6 +2,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdbool.h>
 #include <unistd.h>
 #include "tokens.h"
 
@@ -56,15 +57,18 @@ static void parse_label(void) {
         *(p++) = 0;
 }
 
+static uint8_t to_lower(uint8_t ch) {
+    if (ch >= 'A' && ch <= 'Z')
+        ch += 'a' - 'A';
+    return ch;
+}
+
 static void parse_keyword(void) {
     skip_whitespace();
     keyword = p;
 
     while (1) {
-        uint8_t ch = *p;
-        if (ch >= 'A' && ch <= 'Z')
-            ch += 'a' - 'A';
-
+        uint8_t ch = to_lower(*p);
         if (ch < 'a' || ch > 'z')
             break;
         p++;
@@ -120,6 +124,187 @@ static uint8_t tokenize_keyword(const char *keyword) {
         } // else move left
     }
     return TOK_UNKNOWN;
+}
+
+static bool is_decimal(uint8_t ch) {
+    return ch >= '0' && ch <= '9';
+}
+
+static bool is_hexadecimal(uint8_t ch) {
+    return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f');
+}
+
+static uint16_t parse_expression(void);
+
+static uint16_t parse_primary_expr(void) {
+    skip_whitespace();
+
+    uint8_t  ch    = *p;
+    uint16_t value = 0;
+
+    if (ch == '$') {
+        // Hexadecimal value
+        p++;
+        ch = to_lower(*p);
+        if (!is_hexadecimal(ch))
+            error("Syntax error");
+
+        while (is_hexadecimal(ch)) {
+            value <<= 4;
+            if (ch >= '0' && ch <= '9')
+                value += ch - '0';
+            else
+                value += ch - 'a' + 10;
+
+            p++;
+            ch = to_lower(*p);
+        }
+
+    } else if (is_decimal(ch)) {
+        // Decimal value
+        while (is_decimal(ch)) {
+            value *= 10;
+            if (ch >= '0' && ch <= '9')
+                value += ch - '0';
+
+            p++;
+            ch = to_lower(*p);
+        }
+
+    } else if (ch == '(') {
+        p++;
+        value = parse_expression();
+        skip_whitespace();
+        if (*(p++) != ')')
+            error("Expected right parenthesis");
+
+    } else {
+        error("Expected primary expression");
+    }
+    return value;
+}
+
+// clang-format off
+static uint16_t parse_unary_expr(void) {
+    skip_whitespace();
+    if      (p[0] == '-') { p++; return -parse_unary_expr(); }
+    else if (p[0] == '+') { p++; return  parse_unary_expr(); }
+    else if (p[0] == '~') { p++; return ~parse_unary_expr(); }
+    else                  {      return  parse_primary_expr(); }
+}
+
+static uint16_t parse_mult_expr(void) {
+    uint16_t val = parse_unary_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '*') { p++; val *= parse_unary_expr(); }
+        else if (p[0] == '/') { p++; val /= parse_unary_expr(); }
+        else if (p[0] == '%') { p++; val %= parse_unary_expr(); }
+        else                  { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_add_expr(void) {
+    uint16_t val = parse_mult_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '+') { p++; val += parse_mult_expr(); }
+        else if (p[0] == '-') { p++; val -= parse_mult_expr(); }
+        else                  { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_shift_expr(void) {
+    uint16_t val = parse_add_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '<' && p[1] == '<') { p += 2; val <<= parse_add_expr(); }
+        else if (p[0] == '>' && p[1] == '>') { p += 2; val >>= parse_add_expr(); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_rel_expr(void) {
+    uint16_t val = parse_shift_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '<' && p[1] != '<') { p++;  val = (val <  parse_shift_expr()); }
+        else if (p[0] == '>' && p[1] != '>') { p++;  val = (val >  parse_shift_expr()); }
+        else if (p[0] == '<' && p[1] == '=') { p+=2; val = (val <= parse_shift_expr()); }
+        else if (p[0] == '>' && p[1] == '=') { p+=2; val = (val >= parse_shift_expr()); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_eq_expr(void) {
+    uint16_t val = parse_rel_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '=' && p[1] == '=') { p+=2; val = (val == parse_rel_expr()); }
+        else if (p[0] == '!' && p[1] == '=') { p+=2; val = (val != parse_rel_expr()); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_and_expr(void) {
+    uint16_t val = parse_eq_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '&' && p[1] != '&') { p++; val &= parse_eq_expr(); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_xor_expr(void) {
+    uint16_t val = parse_and_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '^') { p++; val ^= parse_and_expr(); }
+        else                  { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_or_expr(void) {
+    uint16_t val = parse_xor_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '|' && p[1] != '|') { p++; val ^= parse_xor_expr(); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_logical_and_expr(void) {
+    uint16_t val = parse_or_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '&' && p[1] == '&') { p++; val = val && parse_or_expr(); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+static uint16_t parse_logical_or_expr(void) {
+    uint16_t val = parse_logical_and_expr();
+    while (1) {
+        skip_whitespace();
+        if      (p[0] == '|' && p[1] == '|') { p++; val = val || parse_logical_and_expr(); }
+        else                                 { break; }
+    }
+    return val;
+}
+
+// clang-format on
+
+static uint16_t parse_expression(void) {
+    return parse_logical_or_expr();
 }
 
 void parse_file(const char *path) {
@@ -181,6 +366,21 @@ void parse_file(const char *path) {
                 parse_file(string);
                 printf("----------------------\n");
                 continue;
+            } else if (token == TOK_EQU) {
+                if (label == NULL) {
+                    error("Equ without label");
+                }
+                uint16_t val = parse_expression();
+                printf("[equ %s = $%04x]\n", label, val);
+
+                skip_whitespace();
+                if (*p != 0)
+                    error("Syntax error");
+            } else if (token == TOK_ORG) {
+                uint16_t addr = parse_expression();
+                printf("[Org addr: $%04x]\n", addr);
+            } else {
+                error("Syntax error");
             }
 
         } else {
