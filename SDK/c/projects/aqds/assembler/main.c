@@ -1,6 +1,7 @@
 #include "common.h"
 #include "tokens.h"
 #include "expr.h"
+#include "symbols.h"
 
 static uint8_t fake_heap[40000];
 
@@ -20,6 +21,8 @@ static const char     *keyword;
 static const char     *string;
 char                  *cur_p;
 static uint8_t        *heap;
+static uint8_t         pass     = 0;
+static uint16_t        cur_addr = 0;
 
 void error(char *str) {
     if (str == NULL)
@@ -160,47 +163,59 @@ void parse_file(const char *path) {
         if (ch != ' ' && ch != '\t')
             parse_label();
 
-        if (label) {
-            printf("[Label: '%s']", label);
-        }
+        // Check for keyword
         parse_keyword();
+        uint8_t token = TOK_UNKNOWN;
         if (keyword) {
-            uint8_t token = tokenize_keyword(keyword);
+            token = tokenize_keyword(keyword);
+        }
 
-            printf("[Keyword: '%s' token:%u]", keyword, token);
-            if (token == TOK_UNKNOWN)
-                error("Syntax error");
-
-            if (token == TOK_INCLUDE) {
-                parse_string();
-                skip_whitespace();
-                if (*cur_p != 0)
-                    error("Syntax error");
-
-                printf("\nInclude file: '%s'\n", string);
-                parse_file(string);
-                printf("----------------------\n");
-                continue;
-            } else if (token == TOK_EQU) {
-                if (label == NULL) {
-                    error("Equ without label");
-                }
-                uint16_t val = parse_expression();
-                printf("[equ %s = $%04x]\n", label, val);
-
-                skip_whitespace();
-                if (*cur_p != 0)
-                    error("Syntax error");
-            } else if (token == TOK_ORG) {
-                uint16_t addr = parse_expression();
-                printf("[Org addr: $%04x]\n", addr);
-            } else {
-                error("Syntax error");
+        if (token == TOK_EQU) {
+            if (!label) {
+                error("Equ without label");
             }
+            symbol_add(label, 0, parse_expression());
 
-        } else {
+            skip_whitespace();
             if (*cur_p != 0)
                 error("Syntax error");
+
+            continue;
+        }
+        if (label)
+            symbol_add(label, 0, cur_addr);
+        if (*cur_p == 0)
+            continue;
+
+        // printf("[Keyword: '%s' token:%u]", keyword, token);
+        if (token == TOK_UNKNOWN)
+            error("Syntax error");
+
+        if (token == TOK_INCLUDE) {
+            parse_string();
+            skip_whitespace();
+            if (*cur_p != 0)
+                error("Syntax error");
+
+            printf("\nInclude file: '%s'\n", string);
+            parse_file(string);
+            printf("----------------------\n");
+            continue;
+
+        } else if (token == TOK_ORG) {
+            uint16_t addr = parse_expression();
+            if (addr < cur_addr) {
+                error("Org value < cur addr");
+            } else {
+                cur_addr = addr;
+                // TODO: emit padding
+            }
+
+            printf("[Org addr: $%04x]\n", addr);
+
+        } else {
+            printf("[Keyword: '%s' token:%u]", keyword, token);
+            error("Syntax error");
         }
 
         skip_whitespace();
