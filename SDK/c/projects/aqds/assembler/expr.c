@@ -1,4 +1,5 @@
 #include "expr.h"
+#include "symbols.h"
 
 static bool is_decimal(uint8_t ch) {
     return ch >= '0' && ch <= '9';
@@ -51,7 +52,19 @@ static uint16_t parse_primary_expr(void) {
             error("Expected right parenthesis");
 
     } else {
-        error("Expected primary expression");
+        const char *symbol = cur_p;
+
+        while (ch == '_' || ch == '.' ||
+               (ch >= '0' && ch <= '9') ||
+               (ch >= 'a' && ch <= 'z') ||
+               (ch >= 'A' && ch <= 'Z')) {
+            ch = *(++cur_p);
+        }
+
+        if (symbol == cur_p)
+            error("Expected primary expression");
+        else
+            return symbol_get(symbol, cur_p - symbol);
     }
     return value;
 }
