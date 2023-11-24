@@ -42,15 +42,24 @@ with open("../tokens.h", "wt") as f:
     print("extern const uint8_t num_keywords[];", file=f)
     print(file=f)
     print("enum {", file=f)
-    print("    TOK_UNKNOWN = 0,", file=f)
+
+    idx = 0
+    print(f"    TOK_UNKNOWN = {idx},", file=f)
+    idx += 1
     print(file=f)
     print("    // Directives", file=f)
+    print(f"    TOK_DIR_FIRST = {idx},", file=f)
     for val in directives:
-        print(f"    TOK_{val.upper()},", file=f)
+        print(f"    TOK_{val.upper()} = {idx},", file=f)
+        idx += 1
+    print(f"    TOK_DIR_LAST = {idx-1},", file=f)
     print(file=f)
     print("    // Instructions", file=f)
+    print(f"    TOK_INSTR_FIRST = {idx},", file=f)
     for val in opcodes:
-        print(f"    TOK_{val.upper()},", file=f)
+        print(f"    TOK_{val.upper()} = {idx},", file=f)
+        idx += 1
+    print(f"    TOK_INSTR_LAST = {idx-1},", file=f)
     print("};", file=f)
     print(file=f)
     print("#endif", file=f)

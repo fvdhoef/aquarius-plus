@@ -24,10 +24,40 @@ static uint8_t        *heap;
 static uint8_t         pass     = 0;
 static uint16_t        cur_addr = 0;
 
+typedef void handler_t(void);
+
+static void handler_unknown(void);
+static void handler_defb(void);
+static void handler_defs(void);
+static void handler_defw(void);
+static void handler_dephase(void);
+static void handler_end(void);
+static void handler_equ(void);
+static void handler_incbin(void);
+static void handler_include(void);
+static void handler_org(void);
+static void handler_phase(void);
+
+static handler_t *directive_handlers[] = {
+    handler_unknown,
+    handler_defb,
+    handler_defs,
+    handler_defw,
+    handler_dephase,
+    handler_end,
+    handler_equ,
+    handler_incbin,
+    handler_include,
+    handler_org,
+    handler_phase,
+};
+
+static void parse_file(const char *path);
+
 void error(char *str) {
     if (str == NULL)
         str = "Unknown";
-    printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
+    printf("\n%s:%u Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, cur_addr, str);
     exit(1);
 }
 
@@ -125,7 +155,85 @@ static uint8_t tokenize_keyword(const char *keyword) {
     return TOK_UNKNOWN;
 }
 
-void parse_file(const char *path) {
+static void emit_byte(uint16_t val) {
+    if ((val & 0xFF00) != 0)
+        error("Invalid byte value");
+
+    printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
+    cur_addr++;
+}
+
+void handler_unknown(void) {
+    error("Syntax error");
+}
+void handler_defb(void) {
+    skip_whitespace();
+
+    while (1) {
+        if (cur_p[0] == '"') {
+            // String constant
+            parse_string();
+            while (*string) {
+                emit_byte(*(string++));
+            }
+        } else {
+            emit_byte(parse_expression(true));
+        }
+
+        skip_whitespace();
+        if (cur_p[0] == 0)
+            break;
+        if (cur_p[0] != ',')
+            error("Syntax error: expected comma");
+        cur_p++;
+    }
+}
+void handler_defs(void) {
+    error("Not implemented");
+}
+void handler_defw(void) {
+    error("Not implemented");
+}
+void handler_dephase(void) {
+    error("Not implemented");
+}
+void handler_end(void) {
+    error("Not implemented");
+}
+void handler_equ(void) {
+    if (!label)
+        error("Equ without label");
+    symbol_add(label, 0, parse_expression(false));
+}
+void handler_incbin(void) {
+    error("Not implemented");
+}
+void handler_include(void) {
+    parse_string();
+    skip_whitespace();
+    if (*cur_p != 0)
+        error("Syntax error");
+
+    printf("\nInclude file: '%s'\n", string);
+    parse_file(string);
+    printf("----------------------\n");
+}
+void handler_org(void) {
+    uint16_t addr = parse_expression(false);
+    if (addr < cur_addr) {
+        error("Org value < cur addr");
+    } else {
+        cur_addr = addr;
+        // TODO: emit padding
+    }
+
+    printf("[Org addr: $%04x]\n", addr);
+}
+void handler_phase(void) {
+    error("Not implemented");
+}
+
+static void parse_file(const char *path) {
     FILE *f = fopen(path, "r");
 
     if (cur_file_ctx != NULL) {
@@ -169,58 +277,28 @@ void parse_file(const char *path) {
         if (keyword) {
             token = tokenize_keyword(keyword);
         }
-
         if (token == TOK_EQU) {
-            if (!label) {
-                error("Equ without label");
-            }
-            symbol_add(label, 0, parse_expression());
-
-            skip_whitespace();
-            if (*cur_p != 0)
-                error("Syntax error");
-
-            continue;
+            directive_handlers[token]();
+            goto done;
         }
         if (label)
             symbol_add(label, 0, cur_addr);
-        if (*cur_p == 0)
+        if (!keyword && *cur_p == 0)
             continue;
 
-        // printf("[Keyword: '%s' token:%u]", keyword, token);
-        if (token == TOK_UNKNOWN)
-            error("Syntax error");
-
-        if (token == TOK_INCLUDE) {
-            parse_string();
-            skip_whitespace();
-            if (*cur_p != 0)
-                error("Syntax error");
-
-            printf("\nInclude file: '%s'\n", string);
-            parse_file(string);
-            printf("----------------------\n");
-            continue;
-
-        } else if (token == TOK_ORG) {
-            uint16_t addr = parse_expression();
-            if (addr < cur_addr) {
-                error("Org value < cur addr");
-            } else {
-                cur_addr = addr;
-                // TODO: emit padding
-            }
-
-            printf("[Org addr: $%04x]\n", addr);
-
-        } else {
+        if (token <= TOK_DIR_LAST)
+            directive_handlers[token]();
+        else {
             printf("[Keyword: '%s' token:%u]", keyword, token);
-            error("Syntax error");
+            error("Unimplemented token");
         }
+        if (token == TOK_INCLUDE)
+            continue;
 
+    done:
         skip_whitespace();
-        if (*cur_p)
-            printf("'%s'", cur_p);
+        if (*cur_p != 0)
+            error("Syntax error: expected end-of-line");
     }
 
     fclose(f);

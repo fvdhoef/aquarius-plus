@@ -3,6 +3,6 @@
 
 #include "common.h"
 
-uint16_t parse_expression(void);
+uint16_t parse_expression(bool allow_undefined_symbol);
 
 #endif

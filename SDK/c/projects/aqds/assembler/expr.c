@@ -1,6 +1,8 @@
 #include "expr.h"
 #include "symbols.h"
 
+static bool _allow_undefined_symbol;
+
 static bool is_decimal(uint8_t ch) {
     return ch >= '0' && ch <= '9';
 }
@@ -46,10 +48,18 @@ static uint16_t parse_primary_expr(void) {
 
     } else if (ch == '(') {
         cur_p++;
-        value = parse_expression();
+        value = parse_expression(_allow_undefined_symbol);
         skip_whitespace();
         if (*(cur_p++) != ')')
             error("Expected right parenthesis");
+
+    } else if (ch == '\'') {
+        cur_p++;
+        if (cur_p[0] == 0 || cur_p[1] != '\'')
+            error("Invalid character constant");
+
+        value = cur_p[0];
+        cur_p += 2;
 
     } else {
         const char *symbol = cur_p;
@@ -64,7 +74,7 @@ static uint16_t parse_primary_expr(void) {
         if (symbol == cur_p)
             error("Expected primary expression");
         else
-            return symbol_get(symbol, cur_p - symbol);
+            return symbol_get(symbol, cur_p - symbol, _allow_undefined_symbol);
     }
     return value;
 }
@@ -188,6 +198,7 @@ static uint16_t parse_logical_or_expr(void) {
 
 // clang-format on
 
-uint16_t parse_expression(void) {
+uint16_t parse_expression(bool allow_undefined_symbol) {
+    _allow_undefined_symbol = allow_undefined_symbol;
     return parse_logical_or_expr();
 }

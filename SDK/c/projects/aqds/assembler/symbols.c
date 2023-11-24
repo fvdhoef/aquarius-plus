@@ -60,9 +60,13 @@ void symbol_add(const char *str, size_t len, uint16_t value) {
     printf("[Add symbol %.*s = $%04x  hash: %u]\n", (int)name_len, str, value, hash_idx);
 }
 
-uint16_t symbol_get(const char *str, size_t len) {
+uint16_t symbol_get(const char *str, size_t len, bool allow_undefined) {
     hash(str, len);
-    if (!cur_entry)
-        error("Symbol not found");
+    if (!cur_entry) {
+        if (allow_undefined)
+            return 0;
+        else
+            error("Symbol not found");
+    }
     return cur_entry->value;
 }
