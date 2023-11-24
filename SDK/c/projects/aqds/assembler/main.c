@@ -558,48 +558,54 @@ static char *parse_argument(void) {
 }
 
 enum {
-    ARGTYPE_NONE,
-    ARGTYPE_IMM,
-    ARGTYPE_IMM_IND,
+    ARGTYPE_NONE = 0,
+    ARGTYPE_REG  = 0x40,
+    ARGTYPE_IND  = 0x80,
+    ARGTYPE_COND = 0xC0,
 
-    ARGTYPE_REG_A,
-    ARGTYPE_REG_B,
-    ARGTYPE_REG_C,
-    ARGTYPE_REG_C_IND,
-    ARGTYPE_REG_D,
-    ARGTYPE_REG_E,
-    ARGTYPE_REG_H,
-    ARGTYPE_REG_L,
-    ARGTYPE_REG_IXL,
-    ARGTYPE_REG_IXH,
-    ARGTYPE_REG_IYL,
-    ARGTYPE_REG_IYH,
-    ARGTYPE_REG_F,
-    ARGTYPE_REG_I,
-    ARGTYPE_REG_R,
-    ARGTYPE_REG_AF,
-    ARGTYPE_REG_BC,
-    ARGTYPE_REG_DE,
-    ARGTYPE_REG_HL,
-    ARGTYPE_REG_IX,
-    ARGTYPE_REG_IY,
-    ARGTYPE_REG_SP,
-    ARGTYPE_REG_BC_IND,
-    ARGTYPE_REG_DE_IND,
-    ARGTYPE_REG_HL_IND,
-    ARGTYPE_REG_IX_IND,
-    ARGTYPE_REG_IX_IND_OFFS,
-    ARGTYPE_REG_IY_IND,
-    ARGTYPE_REG_IY_IND_OFFS,
-    ARGTYPE_REG_SP_IND,
-    ARGTYPE_COND_NZ,
-    ARGTYPE_COND_Z,
-    ARGTYPE_COND_NC,
-    ARGTYPE_COND_C,
-    ARGTYPE_COND_PO,
-    ARGTYPE_COND_PE,
-    ARGTYPE_COND_P,
-    ARGTYPE_COND_M,
+    ARGTYPE_IMM     = 0x01,
+    ARGTYPE_IMM_IND = ARGTYPE_IND | ARGTYPE_IMM,
+
+    ARGTYPE_REG_A   = ARGTYPE_REG | 0,
+    ARGTYPE_REG_B   = ARGTYPE_REG | 1,
+    ARGTYPE_REG_C   = ARGTYPE_REG | 2,
+    ARGTYPE_REG_D   = ARGTYPE_REG | 3,
+    ARGTYPE_REG_E   = ARGTYPE_REG | 4,
+    ARGTYPE_REG_H   = ARGTYPE_REG | 5,
+    ARGTYPE_REG_L   = ARGTYPE_REG | 6,
+    ARGTYPE_REG_IXH = ARGTYPE_REG | 7,
+    ARGTYPE_REG_IXL = ARGTYPE_REG | 8,
+    ARGTYPE_REG_IYH = ARGTYPE_REG | 9,
+    ARGTYPE_REG_IYL = ARGTYPE_REG | 10,
+    ARGTYPE_REG_F   = ARGTYPE_REG | 11,
+    ARGTYPE_REG_I   = ARGTYPE_REG | 12,
+    ARGTYPE_REG_R   = ARGTYPE_REG | 13,
+    ARGTYPE_REG_AF  = ARGTYPE_REG | 14,
+    ARGTYPE_REG_BC  = ARGTYPE_REG | 15,
+    ARGTYPE_REG_DE  = ARGTYPE_REG | 16,
+    ARGTYPE_REG_HL  = ARGTYPE_REG | 17,
+    ARGTYPE_REG_IX  = ARGTYPE_REG | 18,
+    ARGTYPE_REG_IY  = ARGTYPE_REG | 19,
+    ARGTYPE_REG_SP  = ARGTYPE_REG | 20,
+
+    ARGTYPE_REG_C_IND       = ARGTYPE_IND | ARGTYPE_REG_C,
+    ARGTYPE_REG_BC_IND      = ARGTYPE_IND | ARGTYPE_REG_BC,
+    ARGTYPE_REG_DE_IND      = ARGTYPE_IND | ARGTYPE_REG_DE,
+    ARGTYPE_REG_HL_IND      = ARGTYPE_IND | ARGTYPE_REG_HL,
+    ARGTYPE_REG_IX_IND      = ARGTYPE_IND | ARGTYPE_REG_IX,
+    ARGTYPE_REG_IX_IND_OFFS = ARGTYPE_IND | ARGTYPE_REG_IX,
+    ARGTYPE_REG_IY_IND      = ARGTYPE_IND | ARGTYPE_REG_IY,
+    ARGTYPE_REG_IY_IND_OFFS = ARGTYPE_IND | ARGTYPE_REG_IY,
+    ARGTYPE_REG_SP_IND      = ARGTYPE_IND | ARGTYPE_REG_SP,
+
+    ARGTYPE_COND_NZ = ARGTYPE_COND | 0,
+    ARGTYPE_COND_Z  = ARGTYPE_COND | 1,
+    ARGTYPE_COND_NC = ARGTYPE_COND | 2,
+    ARGTYPE_COND_C  = ARGTYPE_COND | 3,
+    ARGTYPE_COND_PO = ARGTYPE_COND | 4,
+    ARGTYPE_COND_PE = ARGTYPE_COND | 5,
+    ARGTYPE_COND_P  = ARGTYPE_COND | 6,
+    ARGTYPE_COND_M  = ARGTYPE_COND | 7,
 };
 
 struct reg {
@@ -609,33 +615,39 @@ struct reg {
 };
 
 static const struct reg regs[] = {
+    {"a", ARGTYPE_REG_A, 7},
     {"b", ARGTYPE_REG_B, 0},
     {"c", ARGTYPE_REG_C, 1},
     {"d", ARGTYPE_REG_D, 2},
     {"e", ARGTYPE_REG_E, 3},
     {"h", ARGTYPE_REG_H, 4},
     {"l", ARGTYPE_REG_L, 5},
-    {"a", ARGTYPE_REG_A, 7},
-    {"f", ARGTYPE_REG_F, 6},
     {"ixh", ARGTYPE_REG_IXH, 4},
     {"ixl", ARGTYPE_REG_IXL, 5},
     {"iyh", ARGTYPE_REG_IYH, 4},
     {"iyl", ARGTYPE_REG_IYL, 5},
+    {"f", ARGTYPE_REG_F, 6},
+    {"i", ARGTYPE_REG_I, -1},
+    {"r", ARGTYPE_REG_R, -1},
+    {"af", ARGTYPE_REG_AF, 3},
     {"bc", ARGTYPE_REG_BC, 0},
     {"de", ARGTYPE_REG_DE, 1},
     {"hl", ARGTYPE_REG_HL, 2},
-    {"af", ARGTYPE_REG_AF, 3},
     {"ix", ARGTYPE_REG_IX, 2},
     {"iy", ARGTYPE_REG_IY, 2},
     {"sp", ARGTYPE_REG_SP, 3},
-    {"(c)", ARGTYPE_REG_C, 7},
-    {"(hl)", ARGTYPE_REG_HL_IND, 6},
+    {"(c)", ARGTYPE_REG_C_IND, 7},
     {"(bc)", ARGTYPE_REG_BC_IND, 0},
     {"(de)", ARGTYPE_REG_DE_IND, 1},
+    {"(hl)", ARGTYPE_REG_HL_IND, 6},
     {"(ix)", ARGTYPE_REG_IX_IND, 2},
+    {"(ix+", ARGTYPE_REG_IX_IND_OFFS, -1},
     {"(iy)", ARGTYPE_REG_IY_IND, 2},
+    {"(iy+", ARGTYPE_REG_IY_IND_OFFS, -1},
     {"(sp)", ARGTYPE_REG_SP_IND, 3},
+};
 
+static const struct reg conditions[] = {
     {"nz", ARGTYPE_COND_NZ, 0},
     {"z", ARGTYPE_COND_Z, 1},
     {"nc", ARGTYPE_COND_NC, 2},
@@ -710,8 +722,6 @@ static void parse_file(const char *path) {
         *p = 0;
     }
 
-    // FILE *f = fopen("testdata/regs.inc", "r");
-
     while (1) {
         cur_file_ctx->linenr++;
         if (fgets(linebuf, 256, f) == NULL)
@@ -750,44 +760,28 @@ static void parse_file(const char *path) {
                 continue;
 
         } else {
+            const uint8_t *info    = opcode_info[token - TOK_OPCODE_FIRST];
+            uint8_t        opdesc  = *info;
+            uint8_t        argtype = opdesc & ARGTYPE_MASK;
+            uint8_t        prefix  = opdesc & PREFIX_MASK;
+            if (argtype == 0)
+                error("Unimplemented opcode");
+
             const char *arg1 = parse_argument();
             const char *arg2 = parse_argument();
             if (*cur_p != 0)
                 error("Syntax error: expected end-of-line");
+            if (argtype == ARGTYPE_NONE && (arg1 || arg2))
+                error("Syntax error");
 
             uint8_t  arg_type1  = get_argtype(arg1);
             uint16_t arg_value1 = arg_value;
             uint8_t  arg_type2  = get_argtype(arg2);
             uint16_t arg_value2 = arg_value;
 
-            const uint8_t *info = opcode_info[token - TOK_OPCODE_FIRST];
-
             printf("opcode:%s, arg1:%s (type:%u, value:%u), arg2:%s (type:%u, value:%u)\n", keyword, arg1, arg_type1, arg_value1, arg2, arg_type2, arg_value2);
 
 #if 0
-            error("Blaat!\n");
-
-            // Remove spaces and comments from rest of line
-            {
-                const char *ps = cur_p;
-                char       *pd = cur_p;
-                while (ps[0] && ps[0] != ';' && ps[0] != '\r' && ps[0] != '\n') {
-                    if (ps[0] <= ' ') {
-                        ps++;
-                        continue;
-                    }
-                    // Copy character constants as is
-                    if (ps[0] == '\'') {
-                        if (ps[1] == 0 || ps[2] != '\'')
-                            error("Syntax error");
-                        *(pd++) = *(ps++);
-                        *(pd++) = *(ps++);
-                    }
-                    *(pd++) = *(ps++);
-                }
-                *pd = 0;
-            }
-
             printf("Remaining: '%s'\n", cur_p);
 
             printf("[Keyword: '%s' token:%u]", keyword, token);
