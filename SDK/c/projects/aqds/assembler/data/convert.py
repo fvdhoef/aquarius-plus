@@ -54,12 +54,12 @@ with open("../tokens.h", "wt") as f:
         idx += 1
     print(f"    TOK_DIR_LAST = {idx-1},", file=f)
     print(file=f)
-    print("    // Instructions", file=f)
-    print(f"    TOK_INSTR_FIRST = {idx},", file=f)
+    print("    // Opcodes", file=f)
+    print(f"    TOK_OPCODE_FIRST = {idx},", file=f)
     for val in opcodes:
         print(f"    TOK_{val.upper()} = {idx},", file=f)
         idx += 1
-    print(f"    TOK_INSTR_LAST = {idx-1},", file=f)
+    print(f"    TOK_OPCODE_LAST = {idx-1},", file=f)
     print("};", file=f)
     print(file=f)
     print("#endif", file=f)

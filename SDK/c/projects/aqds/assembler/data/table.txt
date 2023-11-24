@@ -1,0 +1,379 @@
+rs[2:0]/rd[5:3]:
+0 B
+1 C
+2 D
+3 E
+4 H
+5 L
+6 (HL)
+7 A
+
+rf[5:3]:
+0 B
+1 C
+2 D
+3 E
+4 H
+5 L
+6 F
+7 A
+
+rq[5:3]:
+0 B
+1 C
+2 D
+3 E
+4 H
+5 L
+7 A
+
+rx:
+0 B
+1 C
+2 D
+3 E
+4 IXh
+5 IXl
+7 A
+
+ry[2:0]:
+0 B
+1 C
+2 D
+3 E
+4 IYh
+5 IYl
+7 A
+
+pp[5:4]:
+0 BC
+1 DE
+2 IX
+3 SP
+
+qq[5:4]:
+0 BC
+1 DE
+2 HL
+3 AF
+
+rr[5:4]:
+0 BC
+1 DE
+2 IY
+3 SP
+
+ss[5:4]:
+0 BC
+1 DE
+2 HL
+3 SP
+
+c[5:3]:
+0 NZ
+1 Z
+2 NC
+3 C
+4 PO
+5 PE
+6 P
+7 M
+
+t[5:3]:
+0 $00
+1 $08
+2 $10
+3 $18
+4 $20
+5 $28
+6 $30
+7 $38
+
+b[5:3]: 0-7
+
+ADC A,(IX+d)    DD8E d      xx
+ADC A,(IY+d)    FD8E d      xx
+ADC A,IXh       DD8C        xx
+ADC A,IXl       DD8D        xx
+ADC A,IYh       FD8C        xx
+ADC A,IYl       FD8D        xx
+ADC A,n         CE n        xx  -
+ADC A,rs        88          xx  -
+ADC HL,ss       ED4A        xx  -
+
+ADD A,(IX+d)    DD86 d      xx
+ADD A,(IY+d)    FD86 d      xx
+ADD A,IXh       DD84        xx
+ADD A,IXl       DD85        xx
+ADD A,IYh       FD84        xx
+ADD A,IYl       FD85        xx
+ADD A,n         C6 n        xx  -
+ADD A,rs        80          xx  -
+ADD HL,ss       09          xx  -
+ADD IX,pp       DD09        xx  -
+ADD IY,rr       FD09        xx  -
+
+AND (IX+d)      DDA6 d      xx
+AND (IY+d)      FDA6 d      xx
+AND IXh         DDA4        xx
+AND IXl         DDA5        xx
+AND IYh         FDA4        xx
+AND IYl         FDA5        xx
+AND n           E6 n        xx  -
+AND rs          A0          xx  -
+
+BIT b,(IX+d)    DDCB d 46   xx  -
+BIT b,(IY+d)    FDCB d 46   xx  -
+BIT b,rs        CB40        xx  -
+
+CALL (nn)       CD nn       xx  -
+CALL c,(nn)     C4 nn       xx  -
+
+CP (IX+d)       DDBE d      xx
+CP (IY+d)       FDBE d      xx
+CP IXh          DDBC        xx
+CP IXl          DDBD        xx
+CP IYh          FDBC        xx
+CP IYl          FDBD        xx
+CP n            FE n        xx  -
+CP rs           B8          xx  -
+
+DEC (IX+d)      DD35 d      xx
+DEC (IY+d)      FD35 d      xx
+DEC IX          DD2B        xx
+DEC IXh         DD25        xx
+DEC IXl         DD2D        xx
+DEC IY          FD2B        xx
+DEC IYh         FD25        xx
+DEC IYl         FD2D        xx
+DEC rd          05          xx  -
+DEC ss          0B          xx  -
+
+DJNZ (PC+e)     10 e        xx
+
+EX (SP),HL      E3          xx
+EX (SP),IX      DDE3        xx
+EX (SP),IY      FDE3        xx
+EX AF,AF'       08          xx  -
+EX DE,HL        EB          xx
+
+IM 0            ED46        xx
+IM 1            ED56        xx
+IM 2            ED5E        xx
+IN A,(n)        DB n        xx  -
+IN rf,(C)       ED40        xx  -
+INC (IX+d)      DD34 d      xx
+INC (IY+d)      FD34 d      xx
+INC IX          DD23        xx
+INC IXh         DD24        xx
+INC IXl         DD2C        xx
+INC IY          FD23        xx
+INC IYh         FD24        xx
+INC IYl         FD2C        xx
+INC rd          04          xx  -
+INC ss          03          xx  -
+JP (HL)         E9          xx
+JP (IX)         DDE9        xx
+JP (IY)         FDE9        xx
+JP (nn)         C3 nn       xx  -
+JP c,(nn)       C2 nn       xx  -
+JR (PC+e)       18 e        xx
+JR C,(PC+e)     38 e        xx
+JR NC,(PC+e)    30 e        xx
+JR NZ,(PC+e)    20 e        xx
+JR Z,(PC+e)     28 e        xx
+LD (BC),A       02          xx  -
+LD (DE),A       12          xx  -
+LD (IX+d),n     DD36 d n    xx
+LD (IX+d),rq    DD70 d      xx  -
+LD (IY+d),n     FD36 d n    xx
+LD (IY+d),rq    FD70 d      xx  -
+LD (nn),A       32 nn       xx
+LD (nn),HL      22 nn       xx
+LD (nn),IX      DD22 nn     xx
+LD (nn),IY      FD22 nn     xx
+LD (nn),ss      ED43 nn     xx  -
+LD A,(BC)       0A          xx  -
+LD A,(DE)       1A          xx  -
+LD A,(IX+d)     DD7E d      xx
+LD A,(IY+d)     FD7E d      xx
+LD A,(nn)       3A nn       xx
+LD A,I          ED57        xx
+LD A,IXh        DD7C        xx
+LD A,IXl        DD7D        xx
+LD A,IYh        FD7C        xx
+LD A,IYl        FD7D        xx
+LD A,R          ED5F        xx
+LD B,(IX+d)     DD46 d      xx
+LD B,(IY+d)     FD46 d      xx
+LD B,IXh        DD44        xx
+LD B,IXl        DD45        xx
+LD B,IYh        FD44        xx
+LD B,IYl        FD45        xx
+LD C,(IX+d)     DD4E d      xx
+LD C,(IY+d)     FD4E d      xx
+LD C,IXh        DD4C        xx
+LD C,IXl        DD4D        xx
+LD C,IYh        FD4C        xx
+LD C,IYl        FD4D        xx
+LD D,(IX+d)     DD56 d      xx
+LD D,(IY+d)     FD56 d      xx
+LD D,IXh        DD54        xx
+LD D,IXl        DD55        xx
+LD D,IYh        FD54        xx
+LD D,IYl        FD55        xx
+LD E,(IX+d)     DD5E d      xx
+LD E,(IY+d)     FD5E d      xx
+LD E,IXh        DD5C        xx
+LD E,IXl        DD5D        xx
+LD E,IYh        FD5C        xx
+LD E,IYl        FD5D        xx
+LD H,(IX+d)     DD66 d      xx
+LD H,(IY+d)     FD66 d      xx
+LD HL,(nn)      2A nn       xx
+LD I,A          ED47        xx
+LD IX,(nn)      DD2A nn     xx
+LD IX,nn        DD21 nn     xx
+LD IXh,A        DD67        xx
+LD IXh,B        DD60        xx
+LD IXh,C        DD61        xx
+LD IXh,D        DD62        xx
+LD IXh,E        DD63        xx
+LD IXh,IXh      DD64        xx
+LD IXh,IXl      DD65        xx
+LD IXh,n        DD26 n      xx
+LD IXl,A        DD6F        xx
+LD IXl,B        DD68        xx
+LD IXl,C        DD69        xx
+LD IXl,D        DD6A        xx
+LD IXl,E        DD6B        xx
+LD IXl,IXh      DD6C        xx
+LD IXl,IXl      DD6D        xx
+LD IXl,n        DD2E n      xx
+LD IY,(nn)      FD2A nn     xx
+LD IY,nn        FD21 nn     xx
+LD IYh,n        FD26 n      xx
+LD IYh,ry       FD60        xx  -
+LD IYl,n        FD2E n      xx
+LD IYl,ry       FD68        xx  -
+LD L,(IX+d)     DD6E d      xx
+LD L,(IY+d)     FD6E d      xx
+LD R,A          ED4F        xx
+LD rd,n         06 n        xx  -
+LD rd,rs        40          xx  -  (rd==rs==(hl) not allowed -> halt)
+LD SP,HL        F9          xx
+LD SP,IX        DDF9        xx
+LD SP,IY        FDF9        xx
+LD ss,(nn)      ED4B nn     xx  -
+LD ss,nn        01 nn       xx  -
+OR (IX+d)       DDB6 d      xx
+OR (IY+d)       FDB6 d      xx
+OR IXh          DDB4        xx
+OR IXl          DDB5        xx
+OR IYh          FDB4        xx
+OR IYl          FDB5        xx
+OR n            F6 n        xx  -
+OR rs           B0          xx  -
+OUT (C),0       ED71        xx
+OUT (C),rq      ED41        xx  -
+OUT (n),A       D3 n        xx  -
+POP IX          DDE1        xx
+POP IY          FDE1        xx
+POP qq          C1          xx  -
+PUSH IX         DDE5        xx
+PUSH IY         FDE5        xx
+PUSH qq         C5          xx  -
+RES b,(IX+d)    DDCB d 86   xx  -
+RES b,(IY+d)    FDCB d 86   xx  -
+RES b,rs        CB80        xx  -
+RET c           C0          xx  -
+RL (IX+d)       DDCB d 16   xx
+RL (IY+d)       FDCB d 16   xx
+RL rs           CB10        xx  -
+RLC (IX+d)      DDCB d 06   xx
+RLC (IY+d)      FDCB d 06   xx
+RLC rs          CB00        xx  -
+RR (IX+d)       DDCB d 1E   xx
+RR (IY+d)       FDCB d 1E   xx
+RR rs           CB18        xx  -
+RRC (IX+d)      DDCB d 0E   xx
+RRC (IY+d)      FDCB d 0E   xx
+RRC rs          CB08        xx  -
+RST t           C7          xx  -
+SBC A,(IX+d)    DD9E d      xx
+SBC A,(IY+d)    FD9E d      xx
+SBC A,IXh       DD9C        xx
+SBC A,IXl       DD9D        xx
+SBC A,IYh       FD9C        xx
+SBC A,IYl       FD9D        xx
+SBC A,n         DE n        xx  -
+SBC A,rs        98          xx  -
+SBC HL,ss       ED42        xx  -
+SET b,(IX+d)    DDCB d C6   xx  -
+SET b,(IY+d)    FDCB d C6   xx  -
+SET b,rs        CBC0        xx  -
+SLA (IX+d)      DDCB d 26   xx
+SLA (IY+d)      FDCB d 26   xx
+SLA rs          CB20        xx  -
+SLL (IX+d)      DDCB d 36   xx
+SLL (IY+d)      FDCB d 36   xx
+SLL rs          CB30        xx  -
+SRA (IX+d)      DDCB d 2E   xx
+SRA (IY+d)      FDCB d 2E   xx
+SRA rs          CB28        xx  -
+SRL (IX+d)      DDCB d 3E   xx
+SRL (IY+d)      FDCB d 3E   xx
+SRL rs          CB38        xx  -
+SUB A,(IX+d)    DD96 d      xx
+SUB A,(IY+d)    FD96 d      xx
+SUB A,IXh       DD94        xx
+SUB A,IXl       DD95        xx
+SUB A,IYh       FD94        xx
+SUB A,IYl       FD95        xx
+SUB A,n         D6 n        xx  -
+SUB A,rs        90          xx  -
+XOR (IX+d)      DDAE d      xx
+XOR (IY+d)      FDAE d      xx
+XOR IXh         DDAC        xx
+XOR IXl         DDAD        xx
+XOR IYh         FDAC        xx
+XOR IYl         FDAD        xx
+XOR n           EE n        xx  -
+XOR rs          A8          xx  -
+
+
+done:
+CCF             3F          xx
+CPD             EDA9        xx
+CPDR            EDB9        xx
+CPI             EDA1        xx
+CPIR            EDB1        xx
+CPL             2F          xx
+DAA             27          xx
+DI              F3          xx  -
+EI              FB          xx  -
+EXX             D9          xx  -
+IND             EDAA        xx
+INDR            EDBA        xx
+INI             EDA2        xx
+INIR            EDB2        xx
+LDD             EDA8        xx
+LDDR            EDB8        xx
+LDI             EDA0        xx
+LDIR            EDB0        xx
+NEG             ED44        xx
+NOP             00          xx  -
+OTDR            EDBB        xx
+OTIR            EDB3        xx
+OUTD            EDAB        xx
+OUTI            EDA3        xx
+RET             C9          xx  -
+RETI            ED4D        xx
+RETN            ED45        xx
+RLA             17          xx  -
+RLCA            07          xx  -
+RLD             ED6F        xx
+RRA             1F          xx  -
+RRCA            0F          xx  -
+RRD             ED67        xx
+SCF             37          xx  -
