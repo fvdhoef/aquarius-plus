@@ -26,6 +26,9 @@ enum {
     OD_AT_DE,             // 16-bit register de
     OD_AT_HL,             // 16-bit register hl
     OD_AT_SP,             // 16-bit register sp
+    OD_AT_AF,             // 16-bit register af
+    OD_AT_AF_ALT,         // 16-bit register af'
+    OD_AT_C_IND,          //  8-bit register (c)
     OD_AT_BC_IND,         // 16-bit register (bc)
     OD_AT_DE_IND,         // 16-bit register (de)
     OD_AT_HL_IND,         // 16-bit register (hl)

@@ -34,6 +34,9 @@ enum {
     OT_NONE,
     OT_8BIT,
     OT_16BIT,
+
+    OT_PREFIX_DD = (1 << 6),
+    OT_PREFIX_FD = (2 << 6),
 };
 
 typedef void handler_t(void);
@@ -295,9 +298,7 @@ static char *parse_argument(void) {
         }
 
         // Copy character constants as is
-        if (ps[0] == '\'') {
-            if (ps[1] == 0 || ps[2] != '\'')
-                error("Syntax error");
+        if (ps[0] == '\'' && ps[1] != 0 && ps[2] == '\'') {
             *(pd++) = *(ps++);
             *(pd++) = *(ps++);
         }
@@ -309,29 +310,56 @@ static char *parse_argument(void) {
     return result;
 }
 
-static const char *regs8_all[]        = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
+static const char *regs8_all[]      = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
+static const char *regs8_bcdehlfa[] = {"b", "c", "d", "e", "h", "l", "f", "a"};
+static const char *regs8_ixhl[]     = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
+static const char *regs8_iyhl[]     = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
+
 static const char *regs_bc_de_hl_sp[] = {"bc", "de", "hl", "sp"};
 static const char *regs_bc_de_hl_af[] = {"bc", "de", "hl", "af"};
+static const char *regs_bc_de_ix_sp[] = {"bc", "de", "ix", "sp"};
+static const char *regs_bc_de_iy_sp[] = {"bc", "de", "iy", "sp"};
 static const char *cond_all[]         = {"nz", "z", "nc", "c", "po", "pe", "p", "m"};
 
 static bool match_argtype(const char *arg, uint8_t arg_type) {
-    printf("match_argtype(\"%s\", %d)\n", arg, arg_type);
+    printf("    - match_argtype(\"%s\", %d)\n", arg, arg_type);
+    if (arg[0] == 0 && arg_type != OD_AT_NONE)
+        return false;
 
     switch (arg_type) {
         case OD_AT_NONE: return (*arg == 0);
         case OD_AT_IMM_0: error("OD_AT_IMM_0");
-        case OD_AT_53_IMM: error("OD_AT_53_IMM");
-        case OD_AT_43_IMODE: error("OD_AT_43_IMODE");
+        case OD_AT_53_IMM:
+            cur_p     = (char *)arg;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != 0)
+                goto err;
+            if (arg_value > 7)
+                error("Value out of range!");
+            cur_opcode |= arg_value << 3;
+            return true;
+
+        case OD_AT_43_IMODE:
+            cur_p     = (char *)arg;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != 0)
+                goto err;
+            if (arg_value > 2)
+                error("Value out of range!");
+            if (arg_value > 0)
+                arg_value += 1;
+            cur_opcode |= arg_value << 3;
+            return true;
+
         case OD_AT_53_RST: error("OD_AT_53_RST");
         case OD_AT_IMM8:
             cur_p     = (char *)arg;
             arg_value = parse_expression(pass == 0);
             if (cur_p[0] != 0)
                 goto err;
-            if (arg_value >> 8) {
-                error("Value too large!");
-            }
-            cur_outtype = OT_8BIT;
+            if (arg_value >> 8)
+                error("Value out of range!");
+            cur_outtype |= OT_8BIT;
             return true;
         case OD_AT_IMM8_IND:
             if (arg[0] != '(')
@@ -344,14 +372,14 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             if (arg_value >> 8) {
                 error("Value too large!");
             }
-            cur_outtype = OT_8BIT;
+            cur_outtype |= OT_8BIT;
             return true;
         case OD_AT_IMM16:
             cur_p     = (char *)arg;
             arg_value = parse_expression(pass == 0);
             if (cur_p[0] != 0)
                 goto err;
-            cur_outtype = OT_16BIT;
+            cur_outtype |= OT_16BIT;
             return true;
         case OD_AT_IMM16_IND: error("OD_AT_IMM16_IND");
         case OD_AT_REL_ADDR:
@@ -359,8 +387,8 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             arg_value = parse_expression(pass == 0);
             if (cur_p[0] != 0)
                 goto err;
-            arg_value   = 0; // FIXME!!!
-            cur_outtype = OT_8BIT;
+            arg_value = 0; // FIXME!!!
+            cur_outtype |= OT_8BIT;
             return true;
         case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
         case OD_AT_R: return to_lower(arg[0]) == 'r' && arg[1] == 0;
@@ -368,6 +396,9 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
         case OD_AT_DE: return strcasecmp(arg, "de") == 0;
         case OD_AT_HL: return strcasecmp(arg, "hl") == 0;
         case OD_AT_SP: return strcasecmp(arg, "sp") == 0;
+        case OD_AT_AF: return strcasecmp(arg, "af") == 0;
+        case OD_AT_AF_ALT: return strcasecmp(arg, "af'") == 0;
+        case OD_AT_C_IND: return strcasecmp(arg, "(c)") == 0;
         case OD_AT_BC_IND: return strcasecmp(arg, "(bc)") == 0;
         case OD_AT_DE_IND: return strcasecmp(arg, "(de)") == 0;
         case OD_AT_HL_IND: return strcasecmp(arg, "(hl)") == 0;
@@ -388,7 +419,14 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 }
             }
             return false;
-        case OD_AT_53_BCDEHLFA: error("OD_AT_53_BCDEHLFA");
+        case OD_AT_53_BCDEHLFA:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, regs8_bcdehlfa[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    return true;
+                }
+            }
+            return false;
         case OD_AT_53_BCDEHLA: error("OD_AT_53_BCDEHLA");
         case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
         case OD_AT_53_COND:
@@ -426,20 +464,115 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 }
             }
             return false;
-        case OD_AT_IX: return strcasecmp(arg, "ix") == 0;
-        case OD_AT_IX_IND: return strcasecmp(arg, "(ix)") == 0;
-        case OD_AT_IX_IND_OFFS: error("OD_AT_IX_IND_OFFS");
-        case OD_AT_20_IXHL: error("OD_AT_20_IXHL");
-        case OD_AT_53_IXHL: error("OD_AT_53_IXHL");
+        case OD_AT_IX:
+            if (strcasecmp(arg, "ix") == 0) {
+                cur_outtype |= OT_PREFIX_DD;
+                return true;
+            }
+            return false;
+
+        case OD_AT_IX_IND:
+            if (strcasecmp(arg, "(ix)") == 0) {
+                cur_outtype |= OT_PREFIX_DD;
+                return true;
+            }
+            return false;
+        case OD_AT_IX_IND_OFFS:
+            if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
+                return false;
+            cur_p     = (char *)arg + 1;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != ')' && cur_p[1] != 0)
+                goto err;
+            cur_p++;
+            cur_outtype |= OT_PREFIX_DD | OT_8BIT;
+            return true;
+
+        case OD_AT_20_IXHL:
+            for (int i = 4; i <= 5; i++) {
+                if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    cur_opcode |= i;
+                    cur_outtype |= OT_PREFIX_DD;
+                    return true;
+                }
+            }
+            return false;
+
+        case OD_AT_53_IXHL:
+            for (int i = 4; i <= 5; i++) {
+                if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    cur_outtype |= OT_PREFIX_DD;
+                    return true;
+                }
+            }
+            return false;
+
         case OD_AT_20_IXHL_ALL: error("OD_AT_20_IXHL_ALL");
-        case OD_AT_54_BC_DE_IY_SP: error("OD_AT_54_BC_DE_IY_SP");
-        case OD_AT_IY: return strcasecmp(arg, "iy") == 0;
-        case OD_AT_IY_IND: return strcasecmp(arg, "(iy)") == 0;
-        case OD_AT_IY_IND_OFFS: error("OD_AT_IY_IND_OFFS");
-        case OD_AT_20_IYHL: error("OD_AT_20_IYHL");
-        case OD_AT_53_IYHL: error("OD_AT_53_IYHL");
+        case OD_AT_54_BC_DE_IY_SP:
+            for (int i = 0; i < 4; i++) {
+                if (strcasecmp(arg, regs_bc_de_iy_sp[i]) == 0) {
+                    cur_opcode |= i << 4;
+                    cur_outtype |= OT_PREFIX_FD;
+                    return true;
+                }
+            }
+            return false;
+
+        case OD_AT_IY:
+            if (strcasecmp(arg, "iy") == 0) {
+                cur_outtype |= OT_PREFIX_FD;
+                return true;
+            }
+            return false;
+
+        case OD_AT_IY_IND:
+            if (strcasecmp(arg, "(iy)") == 0) {
+                cur_outtype |= OT_PREFIX_FD;
+                return true;
+            }
+            return false;
+        case OD_AT_IY_IND_OFFS:
+            if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
+                return false;
+            cur_p     = (char *)arg + 1;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != ')' && cur_p[1] != 0)
+                goto err;
+            cur_p++;
+            cur_outtype |= OT_PREFIX_FD | OT_8BIT;
+            return true;
+
+        case OD_AT_20_IYHL:
+            for (int i = 4; i <= 5; i++) {
+                if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    cur_opcode |= i;
+                    cur_outtype |= OT_PREFIX_FD;
+                    return true;
+                }
+            }
+            return false;
+
+        case OD_AT_53_IYHL:
+            for (int i = 4; i <= 5; i++) {
+                if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    cur_outtype |= OT_PREFIX_FD;
+                    return true;
+                }
+            }
+            return false;
+
         case OD_AT_20_IYHL_ALL: error("OD_AT_20_IYHL_ALL");
-        case OD_AT_54_BC_DE_IX_SP: error("OD_AT_54_BC_DE_IX_SP");
+        case OD_AT_54_BC_DE_IX_SP:
+            for (int i = 0; i < 4; i++) {
+                if (strcasecmp(arg, regs_bc_de_ix_sp[i]) == 0) {
+                    cur_opcode |= i << 4;
+                    cur_outtype |= OT_PREFIX_DD;
+                    return true;
+                }
+            }
+            return false;
 
         default: return false;
     }
@@ -517,7 +650,7 @@ static void parse_file(const char *path) {
 
             bool done = false;
 
-            printf("keyword: %s '%s','%s'\n", keyword, arg1, arg2);
+            printf("- %s:%u: %s %s%s%s\n", cur_file_ctx->path, cur_file_ctx->linenr, keyword, arg1, arg2[0] ? "," : "", arg2);
 
             while (info_next) {
                 const uint8_t *info = info_next;
@@ -530,19 +663,34 @@ static void parse_file(const char *path) {
                     error("Unimplemented opcode");
 
                 cur_outtype = OT_NONE;
-                printf("- arg1:%2u arg2:%2u prefix:%u opcode:$%02X\n", arg1_type, arg2_type, prefix_type, cur_opcode);
+                printf("  - arg1:%2u arg2:%2u prefix:%u opcode:$%02X\n", arg1_type, arg2_type, prefix_type, cur_opcode);
 
                 if (!match_argtype(arg1, arg1_type) || !match_argtype(arg2, arg2_type))
                     continue;
 
-                switch (cur_outtype) {
+                switch (cur_outtype & 0xC0) {
+                    case OT_PREFIX_DD: emit_byte(0xDD); break;
+                    case OT_PREFIX_FD: emit_byte(0xFD); break;
+                    default: break;
+                }
+                switch (prefix_type) {
+                    case OD_PREFIX_CB: emit_byte(0xCB); break;
+                    case OD_PREFIX_ED: emit_byte(0xED); break;
+                    default: break;
+                }
+                switch (cur_outtype & 0x3F) {
                     case OT_NONE:
                         emit_byte(cur_opcode);
                         break;
 
                     case OT_8BIT:
-                        emit_byte(cur_opcode);
-                        emit_byte(arg_value);
+                        if (prefix_type == OD_PREFIX_CB) {
+                            emit_byte(arg_value);
+                            emit_byte(cur_opcode);
+                        } else {
+                            emit_byte(cur_opcode);
+                            emit_byte(arg_value);
+                        }
                         break;
 
                     case OT_16BIT:
@@ -555,75 +703,11 @@ static void parse_file(const char *path) {
                         error("Invalid outtype");
                 }
                 done = true;
+                break;
             }
-
             if (!done) {
                 error("Syntax error");
             }
-
-#if 0
-            printf("Remaining: '%s'\n", cur_p);
-
-            printf("[Keyword: '%s' token:%u]", keyword, token);
-
-            const uint8_t *info = opcode_info[token - TOK_OPCODE_FIRST];
-
-            uint8_t opdesc = *info;
-            if (opdesc == 0)
-                error("Unimplemented opcode");
-
-            printf("opdesc: %02X\n", opdesc);
-
-            uint8_t argtype = opdesc & ARGTYPE_MASK;
-            uint8_t prefix  = opdesc & PREFIX_MASK;
-
-            uint16_t value = 0;
-            if (argtype != ARG_NONE) {
-                parse_argument();
-
-                // ch  = to_lower(cur_p[0]);
-                // ch2 = to_lower(cur_p[1]);
-
-                // if (ch == 'a') {
-                // } else if (ch == 'b') {
-                // } else if (ch == 'b') {
-                // }
-
-                // if (cur_p[0] == 'a')
-            }
-
-            // switch (argtype) {
-            //     case ARG_NONE: break;
-            //     case ARG_IMM16: value = parse_expression(pass == 0); break;
-            //     default: error("Unimplemented argument type");
-            // }
-
-            switch (prefix) {
-                case PREFIX_NONE: emit_byte(info[1]); break;
-                case PREFIX_ED:
-                    emit_byte(0xED);
-                    emit_byte(info[1]);
-                    break;
-                default: error("Unimplemented prefix");
-            }
-
-            switch (argtype) {
-                case ARG_NONE: break;
-                case ARG_IMM8:
-                    emit_byte(value & 0xFF);
-                    emit_byte(value >> 8);
-                    break;
-
-                case ARG_IMM16:
-                    emit_byte(value & 0xFF);
-                    emit_byte(value >> 8);
-                    break;
-            }
-
-            // struct opcode_info *info = &opcode_info[token - TOK_OPCODE_FIRST];
-
-            // printf("param1: %04x  param2: %04x\n", info->param1, info->param2);
-#endif
         }
     }
 
@@ -642,7 +726,8 @@ int main(void) {
 
     cur_scope = 0;
     pass      = 0;
-    parse_file("goaqms.asm");
+    // parse_file("goaqms.asm");
+    parse_file("all_opcodes.asm");
 
     return 0;
 }

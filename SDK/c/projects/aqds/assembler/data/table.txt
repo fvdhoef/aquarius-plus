@@ -1,53 +1,65 @@
-
+ADC A,rs        88          xx  -
 ADC A,(IX+d)    DD8E d      xx  -
 ADC A,(IY+d)    FD8E d      xx  -
 ADC A,rixhl     DD8C        xx  -
 ADC A,riyhl     FD8C        xx  -
 ADC A,n         CE n        xx  -
-ADC A,rs        88          xx  -
 ADC HL,ss       ED4A        xx  -
 
+ADD A,rs        80          xx  -
 ADD A,(IX+d)    DD86 d      xx  -
 ADD A,(IY+d)    FD86 d      xx  -
 ADD A,rixhl     DD84        xx  -
 ADD A,riyhl     FD84        xx  -
 ADD A,n         C6 n        xx  -
-ADD A,rs        80          xx  -
 ADD HL,ss       09          xx  -
 ADD IX,pp       DD09        xx  -
 ADD IY,rr       FD09        xx  -
 
+AND rs          A0          xx  -
 AND (IX+d)      DDA6 d      xx  -
 AND (IY+d)      FDA6 d      xx  -
 AND rixhl       DDA4        xx  -
 AND riyhl       FDA4        xx  -
 AND n           E6 n        xx  -
-AND rs          A0          xx  -
 
+BIT b,rs        CB40        xx  -
 BIT b,(IX+d)    DDCB d 46   xx  -
 BIT b,(IY+d)    FDCB d 46   xx  -
-BIT b,rs        CB40        xx  -
 
 CALL nn         CD nn       xx  -
 CALL c,nn       C4 nn       xx  -
 
+CCF             3F          xx  -
+
+CP rs           B8          xx  -
 CP (IX+d)       DDBE d      xx  -
 CP (IY+d)       FDBE d      xx  -
 CP rixhl        DDBC        xx  -
 CP riyhl        FDBC        xx  -
 CP n            FE n        xx  -
-CP rs           B8          xx  -
 
+CPD             EDA9        xx  -
+CPDR            EDB9        xx  -
+CPI             EDA1        xx  -
+CPIR            EDB1        xx  -
+CPL             2F          xx  -
+DAA             27          xx  -
+
+DEC rd          05          xx  -
 DEC (IX+d)      DD35 d      xx  -
 DEC (IY+d)      FD35 d      xx  -
 DEC IX          DD2B        xx  -
 DEC rixhl       DD25        xx  -
 DEC IY          FD2B        xx  -
 DEC riyhl       FD25        xx  -
-DEC rd          05          xx  -
 DEC ss          0B          xx  -
 
+DI              F3          xx  -
+
 DJNZ e          10 e        xx  -
+
+EI              FB          xx  -
 
 EX (SP),HL      E3          xx  -
 EX (SP),IX      DDE3        xx  -
@@ -55,24 +67,37 @@ EX (SP),IY      FDE3        xx  -
 EX AF,AF'       08          xx  -
 EX DE,HL        EB          xx  -
 
+EXX             D9          xx  -
+
+HALT            76          xx  -
+
 IM i            ED46        xx  -
 IN A,(n)        DB n        xx  -
 IN rf,(C)       ED40        xx  -
+
+INC rd          04          xx  -
 INC (IX+d)      DD34 d      xx  -
 INC (IY+d)      FD34 d      xx  -
+INC ss          03          xx  -
 INC IX          DD23        xx  -
 INC IY          FD23        xx  -
-INC rd          04          xx  -
 INC rixhl       DD24        xx  -
 INC riyhl       FD24        xx  -
-INC ss          03          xx  -
+
+IND             EDAA        xx  -
+INDR            EDBA        xx  -
+INI             EDA2        xx  -
+INIR            EDB2        xx  -
+
 JP (HL)         E9          xx  -
 JP (IX)         DDE9        xx  -
 JP (IY)         FDE9        xx  -
 JP c,nn         C2 nn       xx  -
+
 JP nn           C3 nn       xx  -
 JR cs,e         20 e        xx  -
 JR e            18 e        xx  -
+
 LD (BC),A       02          xx  -
 LD (DE),A       12          xx  -
 LD (IX+d),n     DD36 d n    xx  -
@@ -179,20 +204,6 @@ XOR riyhl       FDAC        xx  -
 XOR rs          A8          xx  -
 
 done:
-CCF             3F          xx  -
-CPD             EDA9        xx  -
-CPDR            EDB9        xx  -
-CPI             EDA1        xx  -
-CPIR            EDB1        xx  -
-CPL             2F          xx  -
-DAA             27          xx  -
-DI              F3          xx  -
-EI              FB          xx  -
-EXX             D9          xx  -
-IND             EDAA        xx  -
-INDR            EDBA        xx  -
-INI             EDA2        xx  -
-INIR            EDB2        xx  -
 LDD             EDA8        xx  -
 LDDR            EDB8        xx  -
 LDI             EDA0        xx  -
