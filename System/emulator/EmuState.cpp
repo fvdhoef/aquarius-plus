@@ -252,16 +252,6 @@ void EmuState::keyboardTypeIn() {
     if (emuState.kbBufCnt < 16 && !typeInStr.empty()) {
         char ch = typeInStr.front();
         typeInStr.erase(typeInStr.begin());
-        if (ch == '\\') {
-            if (typeInStr.size() == 0)
-                return;
-
-            ch = typeInStr.front();
-            typeInStr.erase(typeInStr.begin());
-            if (ch == 'n') {
-                ch = '\n';
-            }
-        }
         AqKeyboard::instance().pressKey(ch);
     }
 }
