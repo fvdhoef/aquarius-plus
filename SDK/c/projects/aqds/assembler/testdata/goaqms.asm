@@ -23,12 +23,12 @@ main:
 ; Issue command to ESP
 ;-----------------------------------------------------------------------------
 esp_cmd:
-    push    a
+    push    af
 
     ; Drain RX FIFO
 .drain:
     in      a,(IO_ESPCTRL)
-    and     a,1
+    and     1
     jr      z,.done
     in      a,(IO_ESPDATA)
     jr      .drain
@@ -39,7 +39,7 @@ esp_cmd:
     out     (IO_ESPCTRL),a
 
     ; Issue command
-    pop     a
+    pop     af
     jp      esp_send_byte
 
 ;-----------------------------------------------------------------------------
@@ -48,7 +48,7 @@ esp_cmd:
 esp_get_byte:
 .wait:
     in      a,(IO_ESPCTRL)
-    and     a,1
+    and     a
     jr      z,.wait
     in      a,(IO_ESPDATA)
     ret
@@ -57,14 +57,14 @@ esp_get_byte:
 ; Write data to ESP
 ;-----------------------------------------------------------------------------
 esp_send_byte:
-    push    a
+    push    af
 
 .wait:
     in      a,(IO_ESPCTRL)
-    and     a,2
+    and     2
     jr      nz,.wait
 
-    pop     a
+    pop     af
     out     (IO_ESPDATA),a
     ret
 

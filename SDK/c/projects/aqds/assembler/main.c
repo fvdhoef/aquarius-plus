@@ -25,6 +25,17 @@ static uint8_t        *heap;
 static uint8_t         pass     = 0;
 static uint16_t        cur_addr = 0;
 
+uint16_t        cur_scope   = 0;
+static uint8_t  cur_opcode  = 0;
+static uint8_t  cur_outtype = 0;
+static uint16_t arg_value;
+
+enum {
+    OT_NONE,
+    OT_8BIT,
+    OT_16BIT,
+};
+
 typedef void handler_t(void);
 
 static void handler_unknown(void);
@@ -298,147 +309,144 @@ static char *parse_argument(void) {
     return result;
 }
 
-enum {
-    ARGTYPE_NONE = 0,
-    ARGTYPE_REG  = 0x40,
-    ARGTYPE_IND  = 0x80,
-    ARGTYPE_COND = 0xC0,
+static const char *regs8_all[]        = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
+static const char *regs_bc_de_hl_sp[] = {"bc", "de", "hl", "sp"};
+static const char *regs_bc_de_hl_af[] = {"bc", "de", "hl", "af"};
+static const char *cond_all[]         = {"nz", "z", "nc", "c", "po", "pe", "p", "m"};
 
-    ARGTYPE_IMM     = 0x01,
-    ARGTYPE_IMM_IND = ARGTYPE_IND | ARGTYPE_IMM,
+static bool match_argtype(const char *arg, uint8_t arg_type) {
+    printf("match_argtype(\"%s\", %d)\n", arg, arg_type);
 
-    ARGTYPE_REG_A   = ARGTYPE_REG | 0,
-    ARGTYPE_REG_B   = ARGTYPE_REG | 1,
-    ARGTYPE_REG_C   = ARGTYPE_REG | 2,
-    ARGTYPE_REG_D   = ARGTYPE_REG | 3,
-    ARGTYPE_REG_E   = ARGTYPE_REG | 4,
-    ARGTYPE_REG_H   = ARGTYPE_REG | 5,
-    ARGTYPE_REG_L   = ARGTYPE_REG | 6,
-    ARGTYPE_REG_IXH = ARGTYPE_REG | 7,
-    ARGTYPE_REG_IXL = ARGTYPE_REG | 8,
-    ARGTYPE_REG_IYH = ARGTYPE_REG | 9,
-    ARGTYPE_REG_IYL = ARGTYPE_REG | 10,
-    ARGTYPE_REG_F   = ARGTYPE_REG | 11,
-    ARGTYPE_REG_I   = ARGTYPE_REG | 12,
-    ARGTYPE_REG_R   = ARGTYPE_REG | 13,
-    ARGTYPE_REG_AF  = ARGTYPE_REG | 14,
-    ARGTYPE_REG_BC  = ARGTYPE_REG | 15,
-    ARGTYPE_REG_DE  = ARGTYPE_REG | 16,
-    ARGTYPE_REG_HL  = ARGTYPE_REG | 17,
-    ARGTYPE_REG_IX  = ARGTYPE_REG | 18,
-    ARGTYPE_REG_IY  = ARGTYPE_REG | 19,
-    ARGTYPE_REG_SP  = ARGTYPE_REG | 20,
-
-    ARGTYPE_REG_C_IND       = ARGTYPE_IND | ARGTYPE_REG_C,
-    ARGTYPE_REG_BC_IND      = ARGTYPE_IND | ARGTYPE_REG_BC,
-    ARGTYPE_REG_DE_IND      = ARGTYPE_IND | ARGTYPE_REG_DE,
-    ARGTYPE_REG_HL_IND      = ARGTYPE_IND | ARGTYPE_REG_HL,
-    ARGTYPE_REG_IX_IND      = ARGTYPE_IND | ARGTYPE_REG_IX,
-    ARGTYPE_REG_IX_IND_OFFS = ARGTYPE_IND | ARGTYPE_REG_IX,
-    ARGTYPE_REG_IY_IND      = ARGTYPE_IND | ARGTYPE_REG_IY,
-    ARGTYPE_REG_IY_IND_OFFS = ARGTYPE_IND | ARGTYPE_REG_IY,
-    ARGTYPE_REG_SP_IND      = ARGTYPE_IND | ARGTYPE_REG_SP,
-
-    ARGTYPE_COND_NZ = ARGTYPE_COND | 0,
-    ARGTYPE_COND_Z  = ARGTYPE_COND | 1,
-    ARGTYPE_COND_NC = ARGTYPE_COND | 2,
-    ARGTYPE_COND_C  = ARGTYPE_COND | 3,
-    ARGTYPE_COND_PO = ARGTYPE_COND | 4,
-    ARGTYPE_COND_PE = ARGTYPE_COND | 5,
-    ARGTYPE_COND_P  = ARGTYPE_COND | 6,
-    ARGTYPE_COND_M  = ARGTYPE_COND | 7,
-};
-
-struct reg {
-    char    name[5];
-    uint8_t argtype;
-    uint8_t value;
-};
-
-static const struct reg regs[] = {
-    {"a", ARGTYPE_REG_A, 7},
-    {"b", ARGTYPE_REG_B, 0},
-    {"c", ARGTYPE_REG_C, 1},
-    {"d", ARGTYPE_REG_D, 2},
-    {"e", ARGTYPE_REG_E, 3},
-    {"h", ARGTYPE_REG_H, 4},
-    {"l", ARGTYPE_REG_L, 5},
-    {"ixh", ARGTYPE_REG_IXH, 4},
-    {"ixl", ARGTYPE_REG_IXL, 5},
-    {"iyh", ARGTYPE_REG_IYH, 4},
-    {"iyl", ARGTYPE_REG_IYL, 5},
-    {"f", ARGTYPE_REG_F, 6},
-    {"i", ARGTYPE_REG_I, -1},
-    {"r", ARGTYPE_REG_R, -1},
-    {"af", ARGTYPE_REG_AF, 3},
-    {"bc", ARGTYPE_REG_BC, 0},
-    {"de", ARGTYPE_REG_DE, 1},
-    {"hl", ARGTYPE_REG_HL, 2},
-    {"ix", ARGTYPE_REG_IX, 2},
-    {"iy", ARGTYPE_REG_IY, 2},
-    {"sp", ARGTYPE_REG_SP, 3},
-    {"(c)", ARGTYPE_REG_C_IND, 7},
-    {"(bc)", ARGTYPE_REG_BC_IND, 0},
-    {"(de)", ARGTYPE_REG_DE_IND, 1},
-    {"(hl)", ARGTYPE_REG_HL_IND, 6},
-    {"(ix)", ARGTYPE_REG_IX_IND, 2},
-    {"(ix+", ARGTYPE_REG_IX_IND_OFFS, -1},
-    {"(iy)", ARGTYPE_REG_IY_IND, 2},
-    {"(iy+", ARGTYPE_REG_IY_IND_OFFS, -1},
-    {"(sp)", ARGTYPE_REG_SP_IND, 3},
-};
-
-static const struct reg conditions[] = {
-    {"nz", ARGTYPE_COND_NZ, 0},
-    {"z", ARGTYPE_COND_Z, 1},
-    {"nc", ARGTYPE_COND_NC, 2},
-    {"c", ARGTYPE_COND_C, 3},
-    {"po", ARGTYPE_COND_PO, 4},
-    {"pe", ARGTYPE_COND_PE, 5},
-    {"p", ARGTYPE_COND_P, 6},
-    {"m", ARGTYPE_COND_M, 7},
-};
-
-static uint16_t arg_value;
-
-static uint8_t get_argtype(const char *arg) {
-    arg_value = 0;
-    if (!arg[0])
-        return ARGTYPE_NONE;
-
-    if (arg[0] == '(') {
-        if (arg[1] == 'i') {
-            if (arg[2] == 'x' || arg[2] == 'y') {
-                if (arg[3] == ')')
-                    // Indirect IX/IY
-                    return arg[2] == 'x' ? ARGTYPE_REG_IX_IND : ARGTYPE_REG_IY_IND;
-                if (arg[3] == '+') {
-                    // Indirect IX/IY with offset
-                    cur_p     = (char *)(arg + 3);
-                    arg_value = parse_expression(pass == 0);
-                    if (*cur_p != ')')
-                        goto err;
-                    return arg[2] == 'x' ? ARGTYPE_REG_IX_IND_OFFS : ARGTYPE_REG_IY_IND_OFFS;
+    switch (arg_type) {
+        case OD_AT_NONE: return (*arg == 0);
+        case OD_AT_IMM_0: error("OD_AT_IMM_0");
+        case OD_AT_53_IMM: error("OD_AT_53_IMM");
+        case OD_AT_43_IMODE: error("OD_AT_43_IMODE");
+        case OD_AT_53_RST: error("OD_AT_53_RST");
+        case OD_AT_IMM8:
+            cur_p     = (char *)arg;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != 0)
+                goto err;
+            if (arg_value >> 8) {
+                error("Value too large!");
+            }
+            cur_outtype = OT_8BIT;
+            return true;
+        case OD_AT_IMM8_IND:
+            if (arg[0] != '(')
+                return false;
+            cur_p     = (char *)arg + 1;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != ')' && cur_p[1] != 0)
+                goto err;
+            cur_p++;
+            if (arg_value >> 8) {
+                error("Value too large!");
+            }
+            cur_outtype = OT_8BIT;
+            return true;
+        case OD_AT_IMM16:
+            cur_p     = (char *)arg;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != 0)
+                goto err;
+            cur_outtype = OT_16BIT;
+            return true;
+        case OD_AT_IMM16_IND: error("OD_AT_IMM16_IND");
+        case OD_AT_REL_ADDR:
+            cur_p     = (char *)arg;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != 0)
+                goto err;
+            arg_value   = 0; // FIXME!!!
+            cur_outtype = OT_8BIT;
+            return true;
+        case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
+        case OD_AT_R: return to_lower(arg[0]) == 'r' && arg[1] == 0;
+        case OD_AT_I: return to_lower(arg[0]) == 'i' && arg[1] == 0;
+        case OD_AT_DE: return strcasecmp(arg, "de") == 0;
+        case OD_AT_HL: return strcasecmp(arg, "hl") == 0;
+        case OD_AT_SP: return strcasecmp(arg, "sp") == 0;
+        case OD_AT_BC_IND: return strcasecmp(arg, "(bc)") == 0;
+        case OD_AT_DE_IND: return strcasecmp(arg, "(de)") == 0;
+        case OD_AT_HL_IND: return strcasecmp(arg, "(hl)") == 0;
+        case OD_AT_SP_IND: return strcasecmp(arg, "(sp)") == 0;
+        case OD_AT_20_REG_ALL:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    cur_opcode |= i;
+                    return true;
                 }
             }
-        }
+            return false;
+        case OD_AT_53_REG_ALL:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    return true;
+                }
+            }
+            return false;
+        case OD_AT_53_BCDEHLFA: error("OD_AT_53_BCDEHLFA");
+        case OD_AT_53_BCDEHLA: error("OD_AT_53_BCDEHLA");
+        case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
+        case OD_AT_53_COND:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, cond_all[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    return true;
+                }
+            }
+            return false;
 
-        cur_p     = (char *)(arg + 1);
-        arg_value = parse_expression(pass == 0);
-        if (cur_p[0] != ')' || cur_p[1] != 0)
-            goto err;
-        return ARGTYPE_IMM_IND;
+        case OD_AT_43_COND:
+            for (int i = 0; i < 4; i++) {
+                if (strcasecmp(arg, cond_all[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    return true;
+                }
+            }
+            return false;
+
+        case OD_AT_54_BC_DE_HL_AF:
+            for (int i = 0; i < 4; i++) {
+                if (strcasecmp(arg, regs_bc_de_hl_af[i]) == 0) {
+                    printf("--------------- %d\n", i);
+                    cur_opcode |= i << 4;
+                    return true;
+                }
+            }
+            return false;
+        case OD_AT_54_BC_DE_HL_SP:
+            for (int i = 0; i < 4; i++) {
+                if (strcasecmp(arg, regs_bc_de_hl_sp[i]) == 0) {
+                    cur_opcode |= i << 4;
+                    return true;
+                }
+            }
+            return false;
+        case OD_AT_IX: return strcasecmp(arg, "ix") == 0;
+        case OD_AT_IX_IND: return strcasecmp(arg, "(ix)") == 0;
+        case OD_AT_IX_IND_OFFS: error("OD_AT_IX_IND_OFFS");
+        case OD_AT_20_IXHL: error("OD_AT_20_IXHL");
+        case OD_AT_53_IXHL: error("OD_AT_53_IXHL");
+        case OD_AT_20_IXHL_ALL: error("OD_AT_20_IXHL_ALL");
+        case OD_AT_54_BC_DE_IY_SP: error("OD_AT_54_BC_DE_IY_SP");
+        case OD_AT_IY: return strcasecmp(arg, "iy") == 0;
+        case OD_AT_IY_IND: return strcasecmp(arg, "(iy)") == 0;
+        case OD_AT_IY_IND_OFFS: error("OD_AT_IY_IND_OFFS");
+        case OD_AT_20_IYHL: error("OD_AT_20_IYHL");
+        case OD_AT_53_IYHL: error("OD_AT_53_IYHL");
+        case OD_AT_20_IYHL_ALL: error("OD_AT_20_IYHL_ALL");
+        case OD_AT_54_BC_DE_IX_SP: error("OD_AT_54_BC_DE_IX_SP");
+
+        default: return false;
     }
-
-    cur_p     = (char *)arg;
-    arg_value = parse_expression(pass == 0);
-    if (cur_p[0] != 0)
-        goto err;
-    return ARGTYPE_IMM;
 
 err:
     error("Syntax error");
-    return ARGTYPE_NONE;
+    return false;
 }
 
 static void parse_file(const char *path) {
@@ -501,26 +509,57 @@ static void parse_file(const char *path) {
                 continue;
 
         } else {
-            const uint8_t *info    = opcode_info[token - TOK_OPCODE_FIRST];
-            uint8_t        opdesc  = *info;
-            uint8_t        argtype = opdesc & ARGTYPE_MASK;
-            uint8_t        prefix  = opdesc & PREFIX_MASK;
-            if (argtype == 0)
-                error("Unimplemented opcode");
-
-            const char *arg1 = parse_argument();
-            const char *arg2 = parse_argument();
+            const uint8_t *info_next = opcode_info[token - TOK_OPCODE_FIRST];
+            const char    *arg1      = parse_argument();
+            const char    *arg2      = parse_argument();
             if (*cur_p != 0)
                 error("Syntax error: expected end-of-line");
-            if (argtype == ARGTYPE_NONE && (arg1 || arg2))
+
+            bool done = false;
+
+            printf("keyword: %s '%s','%s'\n", keyword, arg1, arg2);
+
+            while (info_next) {
+                const uint8_t *info = info_next;
+                info_next           = (info[0] & 0x80) ? (info + 3) : NULL;
+                uint8_t arg1_type   = info[0] & 0x3F;
+                uint8_t arg2_type   = info[1] & 0x3F;
+                uint8_t prefix_type = info[1] >> 6;
+                cur_opcode          = info[2];
+                if (arg1_type == 0x3F)
+                    error("Unimplemented opcode");
+
+                cur_outtype = OT_NONE;
+                printf("- arg1:%2u arg2:%2u prefix:%u opcode:$%02X\n", arg1_type, arg2_type, prefix_type, cur_opcode);
+
+                if (!match_argtype(arg1, arg1_type) || !match_argtype(arg2, arg2_type))
+                    continue;
+
+                switch (cur_outtype) {
+                    case OT_NONE:
+                        emit_byte(cur_opcode);
+                        break;
+
+                    case OT_8BIT:
+                        emit_byte(cur_opcode);
+                        emit_byte(arg_value);
+                        break;
+
+                    case OT_16BIT:
+                        emit_byte(cur_opcode);
+                        emit_byte(arg_value & 0xFF);
+                        emit_byte(arg_value >> 8);
+                        break;
+
+                    default:
+                        error("Invalid outtype");
+                }
+                done = true;
+            }
+
+            if (!done) {
                 error("Syntax error");
-
-            uint8_t  arg_type1  = get_argtype(arg1);
-            uint16_t arg_value1 = arg_value;
-            uint8_t  arg_type2  = get_argtype(arg2);
-            uint16_t arg_value2 = arg_value;
-
-            printf("opcode:%s, arg1:%s (type:%u, value:%u), arg2:%s (type:%u, value:%u)\n", keyword, arg1, arg_type1, arg_value1, arg2, arg_type2, arg_value2);
+            }
 
 #if 0
             printf("Remaining: '%s'\n", cur_p);
@@ -600,6 +639,9 @@ static void parse_file(const char *path) {
 int main(void) {
     heap = fake_heap;
     chdir("testdata");
+
+    cur_scope = 0;
+    pass      = 0;
     parse_file("goaqms.asm");
 
     return 0;

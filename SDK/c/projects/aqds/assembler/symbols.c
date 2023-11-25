@@ -3,6 +3,7 @@
 struct entry {
     struct entry *next;
     uint16_t      value;
+    uint16_t      scope;
     uint8_t       name_len;
     char          name[];
 };
@@ -12,7 +13,7 @@ static uint8_t       name_len;
 static uint8_t       hash_idx;
 static struct entry *cur_entry;
 
-static void hash(const char *str, uint8_t len) {
+static void hash(const char *str, uint8_t len, bool check_scope) {
     hash_idx      = 0;
     name_len      = len;
     cur_entry     = NULL;
@@ -32,7 +33,8 @@ static void hash(const char *str, uint8_t len) {
 
     cur_entry = hash_table[hash_idx];
     while (cur_entry) {
-        if (cur_entry->name_len == name_len && memcmp(cur_entry->name, str, name_len) == 0)
+        if (cur_entry->name_len == name_len && memcmp(cur_entry->name, str, name_len) == 0 &&
+            (!check_scope || cur_entry->scope == cur_scope))
             return;
         cur_entry = cur_entry->next;
     }
@@ -43,16 +45,20 @@ struct entry *alloc_entry(void) {
 }
 
 void symbol_add(const char *str, size_t len, uint16_t value) {
-    hash(str, len);
+    hash(str, len, str[0] == '.');
     if (cur_entry) {
         if (cur_entry->value == value)
             return;
         error("Symbol already exists");
     }
 
+    if (str[0] != '.')
+        cur_scope++;
+
     struct entry *new_entry = alloc_entry();
     new_entry->next         = hash_table[hash_idx];
     new_entry->value        = value;
+    new_entry->scope        = cur_scope;
     new_entry->name_len     = name_len;
     memcpy(new_entry->name, str, name_len);
     hash_table[hash_idx] = new_entry;
@@ -61,7 +67,7 @@ void symbol_add(const char *str, size_t len, uint16_t value) {
 }
 
 uint16_t symbol_get(const char *str, size_t len, bool allow_undefined) {
-    hash(str, len);
+    hash(str, len, str[0] == '.');
     if (!cur_entry) {
         if (allow_undefined)
             return 0;

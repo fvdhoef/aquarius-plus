@@ -3,38 +3,29 @@
 // Opcode descriptor:
 //
 //    7     6     5     4     3     2     1     0
-// +-----+-----------------+-----------------------+
-// |More |   Prefix type   |     Argument type     |
-// +-----+-----------------+-----------------------+
+// +-----------+-----------------------------------+
+// |More |     |          Argument 1 type          |    First descriptor byte
+// +-----+-----+-----------------------------------+
+// |Prefix type|          Argument 2 type          |    Second descriptor byte
+// +-----------+-----------------------------------+
 //
 //    More:
 //      0: Last entry
 //      1: More entries following
 //
 //    Prefix type:
-//      0: Instruction not implemented
-//      1: None
-//      2: CB
-//      3: DDCB     // Always (IX+d)
-//      4: FDCB     // Always (IY+d)
-//      5: DD
-//      6: ED
-//      7: FD
+//      0: None
+//      1: CB
+//      2: ED
+//      3: Second descriptor byte following (prefix type in second byte)
+//
+//      If argument has IX -> extra prefix of DD
+//      If argument has IY -> extra prefix of FD
 //
 //    Argument type:
-//      0: No arguments (implicit last entry)
+//      0: No arguments
 //      1: 8-bit direct
 //      2: 16-bit direct
-//      F: Argument descriptor following
-//
-//    Num args: 0/1/2
-//
-// Argument descriptor:
-//
-//    7     6     5     4     3     2     1     0
-// +-----------------------+-----------------------+
-// |    Argument 1 type    |    Argument 2 type    |
-// +-----------------------+-----------------------+
 //
 //    Argument type:
 //      0: None
@@ -103,75 +94,108 @@
 //     40: Encoded interrupt mode (i) in [4:3]  0:IM0 2:IM1 3:IM2
 //
 
-static const uint8_t opinf_adc[]  = {0};
-static const uint8_t opinf_add[]  = {0};
-static const uint8_t opinf_and[]  = {0};
-static const uint8_t opinf_bit[]  = {0};
-static const uint8_t opinf_call[] = {0};
-static const uint8_t opinf_cp[]   = {0};
-static const uint8_t opinf_dec[]  = {0};
-static const uint8_t opinf_djnz[] = {0};
-static const uint8_t opinf_ex[]   = {0};
-static const uint8_t opinf_im[]   = {0};
-static const uint8_t opinf_in[]   = {0};
-static const uint8_t opinf_inc[]  = {0};
-static const uint8_t opinf_jp[]   = {PREFIX_NONE | ARG_IMM16, 0xC3};
-static const uint8_t opinf_jr[]   = {0};
-static const uint8_t opinf_ld[]   = {0};
-static const uint8_t opinf_or[]   = {0};
-static const uint8_t opinf_out[]  = {0};
-static const uint8_t opinf_pop[]  = {0};
-static const uint8_t opinf_push[] = {0};
-static const uint8_t opinf_res[]  = {0};
-static const uint8_t opinf_rl[]   = {0};
-static const uint8_t opinf_rlc[]  = {0};
-static const uint8_t opinf_rr[]   = {0};
-static const uint8_t opinf_rrc[]  = {0};
-static const uint8_t opinf_rst[]  = {0};
-static const uint8_t opinf_sbc[]  = {0};
-static const uint8_t opinf_set[]  = {0};
-static const uint8_t opinf_sla[]  = {0};
-static const uint8_t opinf_sll[]  = {0};
-static const uint8_t opinf_sra[]  = {0};
-static const uint8_t opinf_srl[]  = {0};
-static const uint8_t opinf_sub[]  = {0};
-static const uint8_t opinf_xor[]  = {0};
+#define DESC(more, prefix, arg1, arg2, opcode) (((more) << 7) | (arg1)), (((prefix) << 6) | (arg2)), (opcode)
 
-static const uint8_t opinf_ccf[]  = {PREFIX_NONE | ARG_NONE, 0x3F};
-static const uint8_t opinf_cpd[]  = {PREFIX_ED | ARG_NONE, 0xA9};
-static const uint8_t opinf_cpdr[] = {PREFIX_ED | ARG_NONE, 0xB9};
-static const uint8_t opinf_cpi[]  = {PREFIX_ED | ARG_NONE, 0xA1};
-static const uint8_t opinf_cpir[] = {PREFIX_ED | ARG_NONE, 0xB1};
-static const uint8_t opinf_cpl[]  = {PREFIX_NONE | ARG_NONE, 0x2F};
-static const uint8_t opinf_daa[]  = {PREFIX_NONE | ARG_NONE, 0x27};
-static const uint8_t opinf_di[]   = {PREFIX_NONE | ARG_NONE, 0xF3};
-static const uint8_t opinf_ei[]   = {PREFIX_NONE | ARG_NONE, 0xFB};
-static const uint8_t opinf_exx[]  = {PREFIX_NONE | ARG_NONE, 0xD9};
-static const uint8_t opinf_halt[] = {PREFIX_NONE | ARG_NONE, 0x76};
-static const uint8_t opinf_ind[]  = {PREFIX_ED | ARG_NONE, 0xAA};
-static const uint8_t opinf_indr[] = {PREFIX_ED | ARG_NONE, 0xBA};
-static const uint8_t opinf_ini[]  = {PREFIX_ED | ARG_NONE, 0xA2};
-static const uint8_t opinf_inir[] = {PREFIX_ED | ARG_NONE, 0xB2};
-static const uint8_t opinf_ldd[]  = {PREFIX_ED | ARG_NONE, 0xA8};
-static const uint8_t opinf_lddr[] = {PREFIX_ED | ARG_NONE, 0xB8};
-static const uint8_t opinf_ldi[]  = {PREFIX_ED | ARG_NONE, 0xA0};
-static const uint8_t opinf_ldir[] = {PREFIX_ED | ARG_NONE, 0xB0};
-static const uint8_t opinf_neg[]  = {PREFIX_ED | ARG_NONE, 0x44};
-static const uint8_t opinf_nop[]  = {PREFIX_NONE | ARG_NONE, 0x00};
-static const uint8_t opinf_otdr[] = {PREFIX_ED | ARG_NONE, 0xBB};
-static const uint8_t opinf_otir[] = {PREFIX_ED | ARG_NONE, 0xB3};
-static const uint8_t opinf_outd[] = {PREFIX_ED | ARG_NONE, 0xAB};
-static const uint8_t opinf_outi[] = {PREFIX_ED | ARG_NONE, 0xA3};
-static const uint8_t opinf_ret[]  = {PREFIX_NONE | ARG_NONE, 0xC9};
-static const uint8_t opinf_reti[] = {PREFIX_NONE | ARG_NONE, 0xED, 0x4D};
-static const uint8_t opinf_retn[] = {PREFIX_NONE | ARG_NONE, 0xED, 0x45};
-static const uint8_t opinf_rla[]  = {PREFIX_NONE | ARG_NONE, 0x17};
-static const uint8_t opinf_rlca[] = {PREFIX_NONE | ARG_NONE, 0x07};
-static const uint8_t opinf_rld[]  = {PREFIX_ED | ARG_NONE, 0x6F};
-static const uint8_t opinf_rra[]  = {PREFIX_NONE | ARG_NONE, 0x1F};
-static const uint8_t opinf_rrca[] = {PREFIX_NONE | ARG_NONE, 0x0F};
-static const uint8_t opinf_rrd[]  = {PREFIX_ED | ARG_NONE, 0x67};
-static const uint8_t opinf_scf[]  = {PREFIX_NONE | ARG_NONE, 0x37};
+static const uint8_t opinf_adc[] = {0x3F};
+static const uint8_t opinf_add[] = {0x3F};
+static const uint8_t opinf_and[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_IMM8, OD_AT_NONE, 0x06), // AND n
+};
+static const uint8_t opinf_bit[]  = {0x3F};
+static const uint8_t opinf_call[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_IMM16, OD_AT_NONE, 0xCD), // CALL nn
+};
+static const uint8_t opinf_cp[]   = {0x3F};
+static const uint8_t opinf_dec[]  = {0x3F};
+static const uint8_t opinf_djnz[] = {0x3F};
+static const uint8_t opinf_ex[]   = {0x3F};
+static const uint8_t opinf_im[]   = {0x3F};
+static const uint8_t opinf_in[]   = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM8_IND, 0xDB), // IN A,(n)
+};
+static const uint8_t opinf_inc[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_NONE, 0x03), // INC ss
+};
+static const uint8_t opinf_jp[] = {
+    DESC(1, OD_PREFIX_NONE, OD_AT_HL_IND, OD_AT_NONE, 0xE9),   // JP (HL)
+    DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND, OD_AT_NONE, 0xE9),   // JP (IX)
+    DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND, OD_AT_NONE, 0xE9),   // JP (IY)
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_COND, OD_AT_IMM16, 0xC2), // JP cc,nn
+    DESC(0, OD_PREFIX_NONE, OD_AT_IMM16, OD_AT_NONE, 0xC3),    // JP nn
+};
+static const uint8_t opinf_jr[] = {
+    DESC(1, OD_PREFIX_NONE, OD_AT_43_COND, OD_AT_REL_ADDR, 0x20), // JR cs,e
+    DESC(0, OD_PREFIX_NONE, OD_AT_REL_ADDR, OD_AT_NONE, 0x18),    // JR e
+};
+static const uint8_t opinf_ld[] = {
+    DESC(1, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_IMM16, 0x01), // LD dd,nn
+    DESC(0, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_IMM8, 0x06),      // LD r,n
+};
+static const uint8_t opinf_or[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xB0), // OR r
+};
+static const uint8_t opinf_out[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_IMM8_IND, OD_AT_A, 0xD3), // OUT (n),A
+};
+static const uint8_t opinf_pop[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_AF, OD_AT_NONE, 0xC1), // POP qq
+};
+static const uint8_t opinf_push[] = {
+    DESC(0, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_AF, OD_AT_NONE, 0xC5), // PUSH qq
+};
+static const uint8_t opinf_res[] = {0x3F};
+static const uint8_t opinf_rl[]  = {0x3F};
+static const uint8_t opinf_rlc[] = {0x3F};
+static const uint8_t opinf_rr[]  = {0x3F};
+static const uint8_t opinf_rrc[] = {0x3F};
+static const uint8_t opinf_rst[] = {0x3F};
+static const uint8_t opinf_sbc[] = {0x3F};
+static const uint8_t opinf_set[] = {0x3F};
+static const uint8_t opinf_sla[] = {0x3F};
+static const uint8_t opinf_sll[] = {0x3F};
+static const uint8_t opinf_sra[] = {0x3F};
+static const uint8_t opinf_srl[] = {0x3F};
+static const uint8_t opinf_sub[] = {0x3F};
+static const uint8_t opinf_xor[] = {0x3F};
+
+static const uint8_t opinf_ccf[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x3F)};
+static const uint8_t opinf_cpd[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA9)};
+static const uint8_t opinf_cpdr[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB9)};
+static const uint8_t opinf_cpi[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA1)};
+static const uint8_t opinf_cpir[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB1)};
+static const uint8_t opinf_cpl[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x2F)};
+static const uint8_t opinf_daa[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x27)};
+static const uint8_t opinf_di[]   = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xF3)};
+static const uint8_t opinf_ei[]   = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xFB)};
+static const uint8_t opinf_exx[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xD9)};
+static const uint8_t opinf_halt[] = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x76)};
+static const uint8_t opinf_ind[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xAA)};
+static const uint8_t opinf_indr[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xBA)};
+static const uint8_t opinf_ini[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA2)};
+static const uint8_t opinf_inir[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB2)};
+static const uint8_t opinf_ldd[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA8)};
+static const uint8_t opinf_lddr[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB8)};
+static const uint8_t opinf_ldi[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA0)};
+static const uint8_t opinf_ldir[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB0)};
+static const uint8_t opinf_neg[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x44)};
+static const uint8_t opinf_nop[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x00)};
+static const uint8_t opinf_otdr[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xBB)};
+static const uint8_t opinf_otir[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xB3)};
+static const uint8_t opinf_outd[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xAB)};
+static const uint8_t opinf_outi[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xA3)};
+static const uint8_t opinf_ret[]  = {
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_COND, OD_AT_NONE, 0xC0), // RET cc
+    DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xC9)     // RET
+};
+static const uint8_t opinf_reti[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x4D)};
+static const uint8_t opinf_retn[] = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x45)};
+static const uint8_t opinf_rla[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x17)};
+static const uint8_t opinf_rlca[] = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x07)};
+static const uint8_t opinf_rld[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x6F)};
+static const uint8_t opinf_rra[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x1F)};
+static const uint8_t opinf_rrca[] = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x0F)};
+static const uint8_t opinf_rrd[]  = {DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x67)};
+static const uint8_t opinf_scf[]  = {DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x37)};
 
 const uint8_t *opcode_info[TOK_OPCODE_LAST - TOK_OPCODE_FIRST + 1] = {
     opinf_adc,

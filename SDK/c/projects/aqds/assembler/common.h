@@ -12,6 +12,7 @@ void    error(char *str);
 void    skip_whitespace(void);
 uint8_t to_lower(uint8_t ch);
 
-extern char *cur_p;
+extern char    *cur_p;
+extern uint16_t cur_scope;
 
 #endif
