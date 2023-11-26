@@ -13,6 +13,10 @@ struct file_ctx {
     char     path[30];
 };
 
+static FILE *f_list;
+static char  list_line[256];
+static char *list_p;
+
 static struct file_ctx file_ctxs[MAX_FILE_DEPTH];
 static uint8_t         file_ctx_idx;
 struct file_ctx       *cur_file_ctx;
@@ -187,6 +191,8 @@ static void emit_byte(uint16_t val) {
     if ((val & 0xFF00) != 0)
         error("Invalid byte value");
 
+    list_p += sprintf(list_p, "%02X", val);
+
     printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
     cur_addr++;
 }
@@ -314,7 +320,6 @@ static char *parse_argument(void) {
 
 static const char *regs8_all[]      = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
 static const char *regs8_bcdehlfa[] = {"b", "c", "d", "e", "h", "l", "f", "a"};
-static const char *regs8_bcdehla[]  = {"b", "c", "d", "e", "h", "l", "", "a"};
 static const char *regs8_ixhl[]     = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
 static const char *regs8_iyhl[]     = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
 
@@ -329,283 +334,342 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
     if (arg[0] == 0 && arg_type != OD_AT_NONE)
         return false;
 
-    switch (arg_type) {
-        case OD_AT_NONE: return (*arg == 0);
-        case OD_AT_IMM_0: error("OD_AT_IMM_0");
-        case OD_AT_53_IMM:
-            cur_p     = (char *)arg;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != 0)
-                goto err;
-            if (arg_value > 7)
-                error("Value out of range!");
-            cur_opcode |= arg_value << 3;
-            return true;
+    if (arg[0] == '(') {
+        // Indirect access
 
-        case OD_AT_43_IMODE:
-            cur_p     = (char *)arg;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != 0)
-                goto err;
-            if (arg_value > 2)
-                error("Value out of range!");
-            if (arg_value > 0)
-                arg_value += 1;
-            cur_opcode |= arg_value << 3;
-            return true;
-
-        case OD_AT_53_RST: error("OD_AT_53_RST");
-        case OD_AT_IMM8:
-            cur_p     = (char *)arg;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != 0)
-                goto err;
-            if (arg_value >> 8)
-                error("Value out of range!");
-            cur_outtype |= OT_8BIT;
-            return true;
-        case OD_AT_IMM8_IND:
-            if (arg[0] != '(')
+        switch (arg_type) {
+            case OD_AT_IMM8_IND:
+                if (arg[0] != '(')
+                    return false;
+                cur_p     = (char *)arg + 1;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != ')' && cur_p[1] != 0)
+                    goto err;
+                cur_p++;
+                if (arg_value >> 8) {
+                    error("Value too large!");
+                }
+                cur_outtype |= OT_8BIT;
+                return true;
+            case OD_AT_IMM16_IND:
+                if (arg[0] != '(')
+                    return false;
+                cur_p     = (char *)arg + 1;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != ')' && cur_p[1] != 0)
+                    goto err;
+                cur_p++;
+                cur_outtype |= OT_16BIT;
+                return true;
+            case OD_AT_C_IND: return strcasecmp(arg, "(c)") == 0;
+            case OD_AT_BC_IND: return strcasecmp(arg, "(bc)") == 0;
+            case OD_AT_DE_IND: return strcasecmp(arg, "(de)") == 0;
+            case OD_AT_HL_IND: return strcasecmp(arg, "(hl)") == 0;
+            case OD_AT_SP_IND: return strcasecmp(arg, "(sp)") == 0;
+            case OD_AT_20_REG_ALL:
+                if (strcasecmp(arg, "(hl)") == 0) {
+                    cur_opcode |= 6;
+                    return true;
+                }
                 return false;
-            cur_p     = (char *)arg + 1;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != ')' && cur_p[1] != 0)
-                goto err;
-            cur_p++;
-            if (arg_value >> 8) {
-                error("Value too large!");
-            }
-            cur_outtype |= OT_8BIT;
-            return true;
-        case OD_AT_IMM16:
-            cur_p     = (char *)arg;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != 0)
-                goto err;
-            cur_outtype |= OT_16BIT;
-            return true;
-        case OD_AT_IMM16_IND:
-            if (arg[0] != '(')
+            case OD_AT_53_REG_ALL:
+                if (strcasecmp(arg, "(hl)") == 0) {
+                    cur_opcode |= 6 << 3;
+                    return true;
+                }
                 return false;
-            cur_p     = (char *)arg + 1;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != ')' && cur_p[1] != 0)
-                goto err;
-            cur_p++;
-            cur_outtype |= OT_16BIT;
-            return true;
-        case OD_AT_REL_ADDR:
-            cur_p     = (char *)arg;
-            arg_value = parse_expression(pass == 0);
-            if (cur_p[0] != 0)
-                goto err;
-            arg_value = 0; // FIXME!!!
-            cur_outtype |= OT_8BIT;
-            return true;
-        case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
-        case OD_AT_R: return to_lower(arg[0]) == 'r' && arg[1] == 0;
-        case OD_AT_I: return to_lower(arg[0]) == 'i' && arg[1] == 0;
-        case OD_AT_DE: return strcasecmp(arg, "de") == 0;
-        case OD_AT_HL: return strcasecmp(arg, "hl") == 0;
-        case OD_AT_SP: return strcasecmp(arg, "sp") == 0;
-        case OD_AT_AF: return strcasecmp(arg, "af") == 0;
-        case OD_AT_AF_ALT: return strcasecmp(arg, "af'") == 0;
-        case OD_AT_C_IND: return strcasecmp(arg, "(c)") == 0;
-        case OD_AT_BC_IND: return strcasecmp(arg, "(bc)") == 0;
-        case OD_AT_DE_IND: return strcasecmp(arg, "(de)") == 0;
-        case OD_AT_HL_IND: return strcasecmp(arg, "(hl)") == 0;
-        case OD_AT_SP_IND: return strcasecmp(arg, "(sp)") == 0;
-        case OD_AT_20_REG_ALL:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, regs8_all[i]) == 0) {
-                    cur_opcode |= i;
+            case OD_AT_IX_IND:
+                if (strcasecmp(arg, "(ix)") == 0) {
+                    cur_outtype |= OT_PREFIX_DD;
                     return true;
                 }
-            }
-            return false;
-        case OD_AT_20_BCDEHLA:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, regs8_bcdehla[i]) == 0) {
-                    cur_opcode |= i;
-                    return true;
-                }
-            }
-            return false;
-        case OD_AT_53_REG_ALL:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, regs8_all[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    return true;
-                }
-            }
-            return false;
-        case OD_AT_53_BCDEHLFA:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, regs8_bcdehlfa[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    return true;
-                }
-            }
-            return false;
-        case OD_AT_53_BCDEHLA:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, regs8_bcdehla[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    return true;
-                }
-            }
-            return false;
-
-        case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
-        case OD_AT_53_COND:
-            for (int i = 0; i < 8; i++) {
-                if (strcasecmp(arg, cond_all[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    return true;
-                }
-            }
-            return false;
-
-        case OD_AT_43_COND:
-            for (int i = 0; i < 4; i++) {
-                if (strcasecmp(arg, cond_all[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    return true;
-                }
-            }
-            return false;
-
-        case OD_AT_54_BC_DE_HL_AF:
-            for (int i = 0; i < 4; i++) {
-                if (strcasecmp(arg, regs_bc_de_hl_af[i]) == 0) {
-                    printf("--------------- %d\n", i);
-                    cur_opcode |= i << 4;
-                    return true;
-                }
-            }
-            return false;
-        case OD_AT_54_BC_DE_HL_SP:
-            for (int i = 0; i < 4; i++) {
-                if (strcasecmp(arg, regs_bc_de_hl_sp[i]) == 0) {
-                    cur_opcode |= i << 4;
-                    return true;
-                }
-            }
-            return false;
-        case OD_AT_IX:
-            if (strcasecmp(arg, "ix") == 0) {
-                cur_outtype |= OT_PREFIX_DD;
+                return false;
+            case OD_AT_IX_IND_OFFS: {
+                if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
+                    return false;
+                cur_p          = (char *)arg + 1;
+                uint16_t value = parse_expression(pass == 0);
+                if (cur_p[0] != ')' && cur_p[1] != 0)
+                    goto err;
+                d_value = value;
+                cur_p++;
+                cur_outtype |= OT_PREFIX_DD | OT_D;
                 return true;
             }
-            return false;
-
-        case OD_AT_IX_IND:
-            if (strcasecmp(arg, "(ix)") == 0) {
-                cur_outtype |= OT_PREFIX_DD;
+            case OD_AT_IY_IND:
+                if (strcasecmp(arg, "(iy)") == 0) {
+                    cur_outtype |= OT_PREFIX_FD;
+                    return true;
+                }
+                return false;
+            case OD_AT_IY_IND_OFFS: {
+                if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
+                    return false;
+                cur_p          = (char *)arg + 1;
+                uint16_t value = parse_expression(pass == 0);
+                if (cur_p[0] != ')' && cur_p[1] != 0)
+                    goto err;
+                d_value = value;
+                cur_p++;
+                cur_outtype |= OT_PREFIX_FD | OT_D;
                 return true;
             }
-            return false;
-        case OD_AT_IX_IND_OFFS: {
-            if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
-                return false;
-            cur_p          = (char *)arg + 1;
-            uint16_t value = parse_expression(pass == 0);
-            if (cur_p[0] != ')' && cur_p[1] != 0)
-                goto err;
-            d_value = value;
-            cur_p++;
-            cur_outtype |= OT_PREFIX_DD | OT_D;
-            return true;
+            default: return false;
         }
 
-        case OD_AT_20_IXHL:
-            for (int i = 4; i <= 5; i++) {
-                if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
-                    cur_opcode |= i;
-                    cur_outtype |= OT_PREFIX_DD;
-                    return true;
-                }
-            }
-            return false;
+    } else {
 
-        case OD_AT_53_IXHL:
-            for (int i = 4; i <= 5; i++) {
-                if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    cur_outtype |= OT_PREFIX_DD;
-                    return true;
-                }
-            }
-            return false;
-
-        case OD_AT_20_IXHL_ALL: error("OD_AT_20_IXHL_ALL");
-        case OD_AT_54_BC_DE_IY_SP:
-            for (int i = 0; i < 4; i++) {
-                if (strcasecmp(arg, regs_bc_de_iy_sp[i]) == 0) {
-                    cur_opcode |= i << 4;
-                    cur_outtype |= OT_PREFIX_FD;
-                    return true;
-                }
-            }
-            return false;
-
-        case OD_AT_IY:
-            if (strcasecmp(arg, "iy") == 0) {
-                cur_outtype |= OT_PREFIX_FD;
+        switch (arg_type) {
+            case OD_AT_NONE: return (*arg == 0);
+            case OD_AT_IMM_0: error("OD_AT_IMM_0");
+            case OD_AT_53_IMM:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                if (arg_value > 7)
+                    error("Value out of range!");
+                cur_opcode |= arg_value << 3;
                 return true;
-            }
-            return false;
 
-        case OD_AT_IY_IND:
-            if (strcasecmp(arg, "(iy)") == 0) {
-                cur_outtype |= OT_PREFIX_FD;
+            case OD_AT_43_IMODE:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                if (arg_value > 2)
+                    error("Value out of range!");
+                if (arg_value > 0)
+                    arg_value += 1;
+                cur_opcode |= arg_value << 3;
                 return true;
-            }
-            return false;
-        case OD_AT_IY_IND_OFFS: {
-            if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
+
+            case OD_AT_53_RST: error("OD_AT_53_RST");
+            case OD_AT_IMM8:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                if (arg_value >> 8)
+                    error("Value out of range!");
+                cur_outtype |= OT_8BIT;
+                return true;
+            case OD_AT_IMM16:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                cur_outtype |= OT_16BIT;
+                return true;
+            case OD_AT_REL_ADDR:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                arg_value = 0; // FIXME!!!
+                cur_outtype |= OT_8BIT;
+                return true;
+            case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
+            case OD_AT_R: return to_lower(arg[0]) == 'r' && arg[1] == 0;
+            case OD_AT_I: return to_lower(arg[0]) == 'i' && arg[1] == 0;
+            case OD_AT_DE: return strcasecmp(arg, "de") == 0;
+            case OD_AT_HL: return strcasecmp(arg, "hl") == 0;
+            case OD_AT_SP: return strcasecmp(arg, "sp") == 0;
+            case OD_AT_AF: return strcasecmp(arg, "af") == 0;
+            case OD_AT_AF_ALT: return strcasecmp(arg, "af'") == 0;
+            case OD_AT_20_REG_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                        cur_opcode |= i;
+                        return true;
+                    }
+                }
                 return false;
-            cur_p          = (char *)arg + 1;
-            uint16_t value = parse_expression(pass == 0);
-            if (cur_p[0] != ')' && cur_p[1] != 0)
-                goto err;
-            d_value = value;
-            cur_p++;
-            cur_outtype |= OT_PREFIX_FD | OT_D;
-            return true;
-        }
-        case OD_AT_20_IYHL:
-            for (int i = 4; i <= 5; i++) {
-                if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
-                    cur_opcode |= i;
-                    cur_outtype |= OT_PREFIX_FD;
-                    return true;
+            case OD_AT_20_BCDEHLA:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                        cur_opcode |= i;
+                        return true;
+                    }
                 }
-            }
-            return false;
-
-        case OD_AT_53_IYHL:
-            for (int i = 4; i <= 5; i++) {
-                if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
-                    cur_opcode |= i << 3;
-                    cur_outtype |= OT_PREFIX_FD;
-                    return true;
+                return false;
+            case OD_AT_53_REG_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        return true;
+                    }
                 }
-            }
-            return false;
+                return false;
+            case OD_AT_53_BCDEHLFA:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_bcdehlfa[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        return true;
+                    }
+                }
+                return false;
+            case OD_AT_53_BCDEHLA:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        return true;
+                    }
+                }
+                return false;
 
-        case OD_AT_20_IYHL_ALL: error("OD_AT_20_IYHL_ALL");
-        case OD_AT_54_BC_DE_IX_SP:
-            for (int i = 0; i < 4; i++) {
-                if (strcasecmp(arg, regs_bc_de_ix_sp[i]) == 0) {
-                    cur_opcode |= i << 4;
+            case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
+            case OD_AT_53_COND:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, cond_all[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_43_COND:
+                for (int i = 0; i < 4; i++) {
+                    if (strcasecmp(arg, cond_all[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_54_BC_DE_HL_AF:
+                for (int i = 0; i < 4; i++) {
+                    if (strcasecmp(arg, regs_bc_de_hl_af[i]) == 0) {
+                        printf("--------------- %d\n", i);
+                        cur_opcode |= i << 4;
+                        return true;
+                    }
+                }
+                return false;
+            case OD_AT_54_BC_DE_HL_SP:
+                for (int i = 0; i < 4; i++) {
+                    if (strcasecmp(arg, regs_bc_de_hl_sp[i]) == 0) {
+                        cur_opcode |= i << 4;
+                        return true;
+                    }
+                }
+                return false;
+            case OD_AT_IX:
+                if (strcasecmp(arg, "ix") == 0) {
                     cur_outtype |= OT_PREFIX_DD;
                     return true;
                 }
-            }
-            return false;
+                return false;
 
-        default: return false;
+            case OD_AT_20_IXHL:
+                for (int i = 4; i <= 5; i++) {
+                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                        cur_opcode |= i;
+                        cur_outtype |= OT_PREFIX_DD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_53_IXHL:
+                for (int i = 4; i <= 5; i++) {
+                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        cur_outtype |= OT_PREFIX_DD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_20_IXHL_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                        cur_opcode |= i;
+                        cur_outtype |= OT_PREFIX_DD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_53_IXHL_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        cur_outtype |= OT_PREFIX_DD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_54_BC_DE_IY_SP:
+                for (int i = 0; i < 4; i++) {
+                    if (strcasecmp(arg, regs_bc_de_iy_sp[i]) == 0) {
+                        cur_opcode |= i << 4;
+                        cur_outtype |= OT_PREFIX_FD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_IY:
+                if (strcasecmp(arg, "iy") == 0) {
+                    cur_outtype |= OT_PREFIX_FD;
+                    return true;
+                }
+                return false;
+
+            case OD_AT_20_IYHL:
+                for (int i = 4; i <= 5; i++) {
+                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                        cur_opcode |= i;
+                        cur_outtype |= OT_PREFIX_FD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_53_IYHL:
+                for (int i = 4; i <= 5; i++) {
+                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        cur_outtype |= OT_PREFIX_FD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_20_IYHL_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                        cur_opcode |= i;
+                        cur_outtype |= OT_PREFIX_FD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_53_IYHL_ALL:
+                for (int i = 0; i < 8; i++) {
+                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                        cur_opcode |= i << 3;
+                        cur_outtype |= OT_PREFIX_FD;
+                        return true;
+                    }
+                }
+                return false;
+
+            case OD_AT_54_BC_DE_IX_SP:
+                for (int i = 0; i < 4; i++) {
+                    if (strcasecmp(arg, regs_bc_de_ix_sp[i]) == 0) {
+                        cur_opcode |= i << 4;
+                        cur_outtype |= OT_PREFIX_DD;
+                        return true;
+                    }
+                }
+                return false;
+
+            default: return false;
+        }
     }
 
 err:
@@ -636,6 +700,9 @@ static void parse_file(const char *path) {
     }
 
     while (1) {
+        list_p  = list_line;
+        *list_p = 0;
+
         cur_file_ctx->linenr++;
         if (fgets(linebuf, 256, f) == NULL)
             break;
@@ -680,6 +747,8 @@ static void parse_file(const char *path) {
                 error("Syntax error: expected end-of-line");
 
             bool done = false;
+
+            list_p += sprintf(list_p, "%04X  ", cur_addr);
 
             printf("- %s:%u: %s %s%s%s\n", cur_file_ctx->path, cur_file_ctx->linenr, keyword, arg1, arg2[0] ? "," : "", arg2);
 
@@ -734,7 +803,17 @@ static void parse_file(const char *path) {
             if (!done) {
                 error("Syntax error");
             }
+
+            while (list_p - list_line < 14) {
+                *(list_p++) = ' ';
+            }
+            *(list_p++) = '\t';
+            list_p += sprintf(list_p, "    %s%s%s%s%s", keyword, arg1[0] ? " " : "", arg1, arg2[0] ? "," : "", arg2);
         }
+
+        *(list_p++) = '\n';
+        *list_p     = 0;
+        fputs(list_line, f_list);
     }
 
     fclose(f);
@@ -750,10 +829,14 @@ int main(void) {
     heap = fake_heap;
     chdir("testdata");
 
+    f_list = fopen("listing.txt", "wt");
+
     cur_scope = 0;
     pass      = 0;
     // parse_file("goaqms.asm");
     parse_file("all_opcodes.asm");
+
+    fclose(f_list);
 
     return 0;
 }

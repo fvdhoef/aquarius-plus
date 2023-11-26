@@ -49,6 +49,7 @@ enum {
     OD_AT_20_IXHL,        //  8-bit register encoded in 2:0 - 4:ixh,5:ixl
     OD_AT_53_IXHL,        //  8-bit register encoded in 5:3 - 4:ixh,5:ixl
     OD_AT_20_IXHL_ALL,    //  8-bit register encoded in 2:0 - 0:b,1:c,2:d,3:e,4:ixh,5:ixl,7:a
+    OD_AT_53_IXHL_ALL,    //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:ixh,5:ixl,7:a
     OD_AT_54_BC_DE_IY_SP, // 16-bit register encoded in 5:4 - 0:bc,1:de,2:ix,3:sp
     OD_AT_IY,             // 16-bit register iy
     OD_AT_IY_IND,         // 16-bit register (iy)
@@ -56,6 +57,7 @@ enum {
     OD_AT_20_IYHL,        //  8-bit register encoded in 2:0 - 4:iyh,5:iyl
     OD_AT_53_IYHL,        //  8-bit register encoded in 5:3 - 4:iyh,5:iyl
     OD_AT_20_IYHL_ALL,    //  8-bit register encoded in 2:0 - 0:b,1:c,2:d,3:e,4:iyh,5:iyl,7:a
+    OD_AT_53_IYHL_ALL,    //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:iyh,5:iyl,7:a
     OD_AT_54_BC_DE_IX_SP, // 16-bit register encoded in 5:4 - 0:bc,1:de,2:iy,3:sp
 };
 
