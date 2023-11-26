@@ -94,10 +94,6 @@ static handler_t *directive_handlers[] = {
 
 static void parse_file(const char *path);
 
-#ifdef __SDCC
-void exit(int status);
-#endif
-
 void exit_program(void) {
 #ifdef __SDCC
     puts("\nPress enter to quit.\n");
@@ -106,8 +102,12 @@ void exit_program(void) {
         if (scancode == '\r')
             break;
     }
-#endif
+
+    // Go back to file manager
+    __asm__("jp 0xF806");
+#else
     exit(1);
+#endif
 }
 
 void error(const char *str) {

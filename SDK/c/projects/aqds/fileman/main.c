@@ -57,7 +57,7 @@ static char            tmpbuf[128];
 static const char *fn_labels[10] = {
     "Run",    // F1
     "MkFile", // F2
-    "",       //"View",   // F3
+    "Compil", //"View",   // F3
     "Edit",   // F4
     "Copy",   // F5
     "RenMov", // F6
@@ -417,6 +417,20 @@ static void cmd_edit(void) {
     __asm__("jp 0xF803");
 }
 
+static void cmd_assemble(void) {
+    // Open item in editor
+    read_selected();
+    if (st.attr & DE_ATTR_DIR)
+        return;
+
+    const char *pgm = "/aqds/assembler.bin";
+    memcpy(pgm_binary, pgm, strlen(pgm) + 1);
+    memcpy(pgm_argument, filename, 128);
+
+    // Run editor
+    __asm__("jp 0xF803");
+}
+
 static int8_t open_with_dir(const char *dir, const char *path, uint8_t flags) {
     esp_cmd(ESPCMD_OPEN);
     esp_send_byte(flags);
@@ -584,6 +598,8 @@ void main(void) {
     esp_send_byte(7);
     esp_get_byte();
 
+    scr_init();
+
     esp_getcwd(left_pane.dir_path, sizeof(left_pane.dir_path));
 
     draw_listing(&left_pane);
@@ -650,6 +666,7 @@ void main(void) {
             }
             case CH_F1: cmd_run(); break;
             case CH_F2: cmd_mkfile(); break;
+            case CH_F3: cmd_assemble(); break;
             case CH_F4: cmd_edit(); break;
             case CH_F5: cmd_copy(); break;
             case CH_F6: cmd_renmov(); break;

@@ -12,6 +12,7 @@ void print_2digits(uint8_t val);
 void print_4digits(uint16_t val);
 void print_5digits(uint16_t val);
 
+void scr_init(void);
 void scr_putchar(uint8_t ch);
 void scr_puts(const char *s);
 bool scr_puts_clip(const char *s, uint8_t max_len);

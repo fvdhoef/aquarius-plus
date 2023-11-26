@@ -4,7 +4,9 @@
 
 void scr_init(void) {
     IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    memset(TEXT_RAM, 0x74, 2048);
+    memset(TEXT_RAM, 0x74, 2047);
+    *(TEXT_RAM + 2047) = 0;
+
     IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     memset(TEXT_RAM, ' ', 2048);
 }

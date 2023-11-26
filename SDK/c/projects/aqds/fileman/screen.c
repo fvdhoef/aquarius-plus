@@ -8,6 +8,11 @@ uint8_t  text_y;
 uint8_t  text_color;
 uint8_t  text_ch;
 
+void scr_init(void) {
+    IO_VCTRL           = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    *(TEXT_RAM + 2047) = 0;
+}
+
 void scr_putchar(uint8_t ch) {
     IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
     *text_p     = (ch);
