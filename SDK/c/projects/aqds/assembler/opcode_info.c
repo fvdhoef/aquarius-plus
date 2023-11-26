@@ -23,7 +23,7 @@
 //      If argument has IY -> extra prefix of FD
 //
 
-#define DESC(more, prefix, arg1, arg2, opcode) (((more) << 7) | (arg1)), (((prefix) << 6) | (arg2)), (opcode)
+#define DESC(more, prefix, arg1, arg2, opcode) (((unsigned)(more) << 7) | (arg1)), (((unsigned)(prefix) << 6) | (arg2)), (opcode)
 
 static const uint8_t opinf_adc[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_REG_ALL, 0x88),    // ADC A,r
@@ -44,7 +44,6 @@ static const uint8_t opinf_add[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_HL, OD_AT_54_BC_DE_HL_SP, 0x09), // ADD HL,ss
     DESC(1, OD_PREFIX_NONE, OD_AT_IX, OD_AT_54_BC_DE_IX_SP, 0x09), // ADD IX,pp
     DESC(0, OD_PREFIX_NONE, OD_AT_IY, OD_AT_54_BC_DE_IY_SP, 0x09), // ADD IY,rr
-
 };
 static const uint8_t opinf_and[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xA0),  // AND r

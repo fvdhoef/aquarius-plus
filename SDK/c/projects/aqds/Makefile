@@ -16,11 +16,12 @@ else ifeq ($(shell uname -s),Linux)
 endif
 
 OUTFILE = aqds.aqx
-FILES_TO_COPY = zout/$(OUTFILE) editor/build/editor.bin fileman/build/fileman.bin
+FILES_TO_COPY = zout/$(OUTFILE) editor/build/editor.bin fileman/build/fileman.bin assembler/build/assembler.bin
 
 all:
 	make -C editor
 	make -C fileman
+	make -C assembler
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n aqds.asm --oo cim,lst
 	mv zout/aqds.cim zout/$(OUTFILE)
 

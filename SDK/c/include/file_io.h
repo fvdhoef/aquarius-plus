@@ -25,8 +25,8 @@ struct esp_stat {
 int8_t  esp_open(const char *path, uint8_t flags);
 int8_t  esp_close(int8_t fd);
 int16_t esp_read(int8_t fd, void *buf, uint16_t length);
+int16_t esp_readline(int8_t fd, void *buf, uint16_t max_length);
 int16_t esp_write(int8_t fd, const void *buf, uint16_t length);
-
 int8_t  esp_seek(int8_t fd, uint32_t offset);
 int32_t esp_tell(int8_t fd);
 int8_t  esp_opendir(const char *path);

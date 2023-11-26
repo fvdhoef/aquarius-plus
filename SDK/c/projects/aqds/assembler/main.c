@@ -4,6 +4,10 @@
 #include "symbols.h"
 #include "opcode_info.h"
 
+#ifdef __SDCC
+#include "screen.h"
+#endif
+
 #define MAX_FILE_DEPTH 8
 
 struct file_ctx {
@@ -90,12 +94,46 @@ static handler_t *directive_handlers[] = {
 
 static void parse_file(const char *path);
 
-void error(char *str) {
-    if (str == NULL)
-        str = "Unknown";
-    printf("\n%s:%u (pass %u) Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, cur_pass + 1, cur_addr, str);
+#ifdef __SDCC
+void exit(int status);
+#endif
+
+void exit_program(void) {
+#ifdef __SDCC
+    puts("\nPress enter to quit.\n");
+    while (1) {
+        uint8_t scancode = IO_KEYBUF;
+        if (scancode == '\r')
+            break;
+    }
+#endif
     exit(1);
 }
+
+void error(const char *str) {
+    if (str == NULL)
+        str = "Unknown";
+    printf("\n%s:%u Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, cur_addr, str);
+    exit_program();
+}
+
+#ifdef __SDCC
+void *malloc(size_t size) {
+    static uint8_t *endp;
+    if (endp == NULL) {
+        endp = getheap();
+    }
+
+    uint16_t remaining = (uint8_t *)0xF000 - endp;
+    if (size > remaining) {
+        error("Out of memory!");
+    }
+
+    uint8_t *result = endp;
+    endp += size;
+    return result;
+}
+#endif
 
 void syntax_error(void) {
     error("Syntax error");
@@ -104,17 +142,18 @@ void syntax_error(void) {
 void check_esp_result(int16_t result) {
     if (result < 0) {
         switch (result) {
-            case ERR_NOT_FOUND: error("File / directory not found"); break;
-            case ERR_TOO_MANY_OPEN: error("Too many open files / directories"); break;
-            case ERR_PARAM: error("Invalid parameter"); break;
-            case ERR_EOF: error("End of file / directory"); break;
-            case ERR_EXISTS: error("File already exists"); break;
+            case ERR_NOT_FOUND: puts("File / directory not found"); break;
+            case ERR_TOO_MANY_OPEN: puts("Too many open files / directories"); break;
+            case ERR_PARAM: puts("Invalid parameter"); break;
+            case ERR_EOF: puts("End of file / directory"); break;
+            case ERR_EXISTS: puts("File already exists"); break;
             default:
-            case ERR_OTHER: error("Other error"); break;
-            case ERR_NO_DISK: error("No disk"); break;
-            case ERR_NOT_EMPTY: error("Not empty"); break;
-            case ERR_WRITE_PROTECT: error("Write protected SD-card"); break;
+            case ERR_OTHER: puts("Other puts"); break;
+            case ERR_NO_DISK: puts("No disk"); break;
+            case ERR_NOT_EMPTY: puts("Not empty"); break;
+            case ERR_WRITE_PROTECT: puts("Write protected SD-card"); break;
         }
+        exit_program();
     }
 }
 
@@ -321,9 +360,8 @@ static void handler_include(void) {
     if (*cur_p != 0)
         syntax_error();
 
-    // printf("\nInclude file: '%s'\n", string);
+    printf("  - Processing include file: '%s'\n", string);
     parse_file(string);
-    // printf("----------------------\n");
 }
 static void handler_org(void) {
     uint16_t addr = parse_expression(false);
@@ -378,7 +416,17 @@ static char *parse_argument(void) {
     return result;
 }
 
-static bool match_argtype(const char *arg, uint8_t arg_type) {
+static bool compare_str(const char *s1, const char *s2) {
+    while (to_lower(*s1) == *s2) {
+        if (*s1 == 0)
+            return true;
+        s1++;
+        s2++;
+    }
+    return false;
+}
+
+static bool match_argtype(char *arg, uint8_t arg_type) {
     // printf("    - match_argtype(\"%s\", %d)\n", arg, arg_type);
     if (arg[0] == 0 && arg_type != OD_AT_NONE)
         return false;
@@ -410,25 +458,25 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 cur_p++;
                 cur_outtype |= OT_16BIT;
                 return true;
-            case OD_AT_C_IND: return strcasecmp(arg, "(c)") == 0;
-            case OD_AT_BC_IND: return strcasecmp(arg, "(bc)") == 0;
-            case OD_AT_DE_IND: return strcasecmp(arg, "(de)") == 0;
-            case OD_AT_HL_IND: return strcasecmp(arg, "(hl)") == 0;
-            case OD_AT_SP_IND: return strcasecmp(arg, "(sp)") == 0;
+            case OD_AT_C_IND: return compare_str(arg, "(c)");
+            case OD_AT_BC_IND: return compare_str(arg, "(bc)");
+            case OD_AT_DE_IND: return compare_str(arg, "(de)");
+            case OD_AT_HL_IND: return compare_str(arg, "(hl)");
+            case OD_AT_SP_IND: return compare_str(arg, "(sp)");
             case OD_AT_20_REG_ALL:
-                if (strcasecmp(arg, "(hl)") == 0) {
+                if (compare_str(arg, "(hl)")) {
                     cur_opcode |= 6;
                     return true;
                 }
                 return false;
             case OD_AT_53_REG_ALL:
-                if (strcasecmp(arg, "(hl)") == 0) {
+                if (compare_str(arg, "(hl)")) {
                     cur_opcode |= 6 << 3;
                     return true;
                 }
                 return false;
             case OD_AT_IX_IND:
-                if (strcasecmp(arg, "(ix)") == 0) {
+                if (compare_str(arg, "(ix)")) {
                     cur_outtype |= OT_PREFIX_DD;
                     return true;
                 }
@@ -446,7 +494,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return true;
             }
             case OD_AT_IY_IND:
-                if (strcasecmp(arg, "(iy)") == 0) {
+                if (compare_str(arg, "(iy)")) {
                     cur_outtype |= OT_PREFIX_FD;
                     return true;
                 }
@@ -542,14 +590,14 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
             case OD_AT_R: return to_lower(arg[0]) == 'r' && arg[1] == 0;
             case OD_AT_I: return to_lower(arg[0]) == 'i' && arg[1] == 0;
-            case OD_AT_DE: return strcasecmp(arg, "de") == 0;
-            case OD_AT_HL: return strcasecmp(arg, "hl") == 0;
-            case OD_AT_SP: return strcasecmp(arg, "sp") == 0;
-            case OD_AT_AF: return strcasecmp(arg, "af") == 0;
-            case OD_AT_AF_ALT: return strcasecmp(arg, "af'") == 0;
+            case OD_AT_DE: return compare_str(arg, "de");
+            case OD_AT_HL: return compare_str(arg, "hl");
+            case OD_AT_SP: return compare_str(arg, "sp");
+            case OD_AT_AF: return compare_str(arg, "af");
+            case OD_AT_AF_ALT: return compare_str(arg, "af'");
             case OD_AT_20_REG_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    if (compare_str(arg, regs8_all[i])) {
                         cur_opcode |= i;
                         return true;
                     }
@@ -557,7 +605,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
             case OD_AT_20_BCDEHLA:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    if (compare_str(arg, regs8_all[i])) {
                         cur_opcode |= i;
                         return true;
                     }
@@ -565,7 +613,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
             case OD_AT_53_REG_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    if (compare_str(arg, regs8_all[i])) {
                         cur_opcode |= i << 3;
                         return true;
                     }
@@ -573,7 +621,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
             case OD_AT_53_BCDEHLFA:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_bcdehlfa[i]) == 0) {
+                    if (compare_str(arg, regs8_bcdehlfa[i])) {
                         cur_opcode |= i << 3;
                         return true;
                     }
@@ -581,7 +629,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
             case OD_AT_53_BCDEHLA:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_all[i]) == 0) {
+                    if (compare_str(arg, regs8_all[i])) {
                         cur_opcode |= i << 3;
                         return true;
                     }
@@ -590,7 +638,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_COND:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, cond_all[i]) == 0) {
+                    if (compare_str(arg, cond_all[i])) {
                         cur_opcode |= i << 3;
                         return true;
                     }
@@ -599,7 +647,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_43_COND:
                 for (int i = 0; i < 4; i++) {
-                    if (strcasecmp(arg, cond_all[i]) == 0) {
+                    if (compare_str(arg, cond_all[i])) {
                         cur_opcode |= i << 3;
                         return true;
                     }
@@ -608,7 +656,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_54_BC_DE_HL_AF:
                 for (int i = 0; i < 4; i++) {
-                    if (strcasecmp(arg, regs_bc_de_hl_af[i]) == 0) {
+                    if (compare_str(arg, regs_bc_de_hl_af[i])) {
                         cur_opcode |= i << 4;
                         return true;
                     }
@@ -616,14 +664,14 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
             case OD_AT_54_BC_DE_HL_SP:
                 for (int i = 0; i < 4; i++) {
-                    if (strcasecmp(arg, regs_bc_de_hl_sp[i]) == 0) {
+                    if (compare_str(arg, regs_bc_de_hl_sp[i])) {
                         cur_opcode |= i << 4;
                         return true;
                     }
                 }
                 return false;
             case OD_AT_IX:
-                if (strcasecmp(arg, "ix") == 0) {
+                if (compare_str(arg, "ix")) {
                     cur_outtype |= OT_PREFIX_DD;
                     return true;
                 }
@@ -631,7 +679,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_20_IXHL:
                 for (int i = 4; i <= 5; i++) {
-                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    if (compare_str(arg, regs8_ixhl[i])) {
                         cur_opcode |= i;
                         cur_outtype |= OT_PREFIX_DD;
                         return true;
@@ -641,7 +689,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_IXHL:
                 for (int i = 4; i <= 5; i++) {
-                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    if (compare_str(arg, regs8_ixhl[i])) {
                         cur_opcode |= i << 3;
                         cur_outtype |= OT_PREFIX_DD;
                         return true;
@@ -651,7 +699,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_20_IXHL_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    if (compare_str(arg, regs8_ixhl[i])) {
                         cur_opcode |= i;
                         cur_outtype |= OT_PREFIX_DD;
                         return true;
@@ -661,7 +709,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_IXHL_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_ixhl[i]) == 0) {
+                    if (compare_str(arg, regs8_ixhl[i])) {
                         cur_opcode |= i << 3;
                         cur_outtype |= OT_PREFIX_DD;
                         return true;
@@ -671,7 +719,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_54_BC_DE_IY_SP:
                 for (int i = 0; i < 4; i++) {
-                    if (strcasecmp(arg, regs_bc_de_iy_sp[i]) == 0) {
+                    if (compare_str(arg, regs_bc_de_iy_sp[i])) {
                         cur_opcode |= i << 4;
                         cur_outtype |= OT_PREFIX_FD;
                         return true;
@@ -680,7 +728,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return false;
 
             case OD_AT_IY:
-                if (strcasecmp(arg, "iy") == 0) {
+                if (compare_str(arg, "iy")) {
                     cur_outtype |= OT_PREFIX_FD;
                     return true;
                 }
@@ -688,7 +736,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_20_IYHL:
                 for (int i = 4; i <= 5; i++) {
-                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    if (compare_str(arg, regs8_iyhl[i])) {
                         cur_opcode |= i;
                         cur_outtype |= OT_PREFIX_FD;
                         return true;
@@ -698,7 +746,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_IYHL:
                 for (int i = 4; i <= 5; i++) {
-                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    if (compare_str(arg, regs8_iyhl[i])) {
                         cur_opcode |= i << 3;
                         cur_outtype |= OT_PREFIX_FD;
                         return true;
@@ -708,7 +756,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_20_IYHL_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    if (compare_str(arg, regs8_iyhl[i])) {
                         cur_opcode |= i;
                         cur_outtype |= OT_PREFIX_FD;
                         return true;
@@ -718,7 +766,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_IYHL_ALL:
                 for (int i = 0; i < 8; i++) {
-                    if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
+                    if (compare_str(arg, regs8_iyhl[i])) {
                         cur_opcode |= i << 3;
                         cur_outtype |= OT_PREFIX_FD;
                         return true;
@@ -728,7 +776,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_54_BC_DE_IX_SP:
                 for (int i = 0; i < 4; i++) {
-                    if (strcasecmp(arg, regs_bc_de_ix_sp[i]) == 0) {
+                    if (compare_str(arg, regs_bc_de_ix_sp[i])) {
                         cur_opcode |= i << 4;
                         cur_outtype |= OT_PREFIX_DD;
                         return true;
@@ -813,8 +861,8 @@ static void parse_file(const char *path) {
 
         } else {
             const uint8_t *info_next = opcode_info[token - TOK_OPCODE_FIRST];
-            const char    *arg1      = parse_argument();
-            const char    *arg2      = parse_argument();
+            char          *arg1      = parse_argument();
+            char          *arg2      = parse_argument();
             expect_end_of_line();
 
             bool done = false;
@@ -903,19 +951,35 @@ static void parse_file(const char *path) {
 }
 
 int main(void) {
+#ifdef __SDCC
+    scr_init();
+#endif
+
+#ifndef __SDCC
+    // const char *path = "goaqms.asm";
+    const char *path = "all_opcodes.asm";
+#else
+    const char *path = (const char *)0xFF00;
+#endif
+
+    puts("Aquarius+ Development Studio - Z80 Assembler V1.0 by Frank van den Hoef\n");
+    printf("Assembling %s\n", path);
+
+#ifndef __SDCC
     chdir("testdata");
+#else
+    esp_chdir("/testdata");
+#endif
 
 #ifdef ENABLE_LISTING
     f_list = fopen("listing.txt", "wt");
 #endif
     fd_out = esp_open("result.bin", FO_CREATE | FO_TRUNC | FO_WRONLY);
-
-    const char *filename = "goaqms.asm";
-
     for (cur_pass = 0; cur_pass < 2; cur_pass++) {
+        printf("- Pass %d\n", cur_pass + 1);
         cur_addr  = 0;
         cur_scope = 0;
-        parse_file(filename);
+        parse_file(path);
     }
 
 #ifdef ENABLE_LISTING
@@ -925,5 +989,8 @@ int main(void) {
     write_outbuf();
     esp_close(fd_out);
 
+    puts("Done!\n");
+
+    exit_program();
     return 0;
 }

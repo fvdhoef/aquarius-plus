@@ -3,9 +3,12 @@
 
 #include "aqplus.h"
 #include <stdbool.h>
-#include <unistd.h>
 
-void error(char *str);
+#ifndef __SDCC
+#include <unistd.h>
+#endif
+
+void error(const char *str);
 void syntax_error(void);
 
 void    skip_whitespace(void);
