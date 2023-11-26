@@ -15,31 +15,31 @@ enum {
     DE_ATTR_DIR = (1 << 0),
 };
 
-struct stat {
+struct esp_stat {
     uint16_t date;
     uint16_t time;
     uint8_t  attr;
     uint32_t size;
 };
 
-int8_t  open(const char *path, uint8_t flags);
-int8_t  close(int8_t fd);
-int16_t read(int8_t fd, void *buf, uint16_t length);
-int16_t write(int8_t fd, const void *buf, uint16_t length);
+int8_t  esp_open(const char *path, uint8_t flags);
+int8_t  esp_close(int8_t fd);
+int16_t esp_read(int8_t fd, void *buf, uint16_t length);
+int16_t esp_write(int8_t fd, const void *buf, uint16_t length);
 
-int8_t  seek(int8_t fd, uint32_t offset);
-int32_t tell(int8_t fd);
-int8_t  opendir(const char *path);
-int8_t  opendirext(const char *path, uint8_t flags, uint16_t skip_cnt);
-int8_t  closedir(int8_t dd);
-int8_t  readdir(int8_t dd, struct stat *st, char *fn, uint8_t fn_buflen);
-int8_t delete(const char *path);
-int8_t rename(const char *path_old, const char *path_new);
-int8_t mkdir(const char *path);
-int8_t chdir(const char *path);
-int8_t stat(const char *path, struct stat *st);
-int8_t getcwd(char *cwd, uint8_t cwd_buflen);
-int8_t closeall(void);
+int8_t  esp_seek(int8_t fd, uint32_t offset);
+int32_t esp_tell(int8_t fd);
+int8_t  esp_opendir(const char *path);
+int8_t  esp_opendirext(const char *path, uint8_t flags, uint16_t skip_cnt);
+int8_t  esp_closedir(int8_t dd);
+int8_t  esp_readdir(int8_t dd, struct esp_stat *st, char *fn, uint8_t fn_buflen);
+int8_t  esp_delete(const char *path);
+int8_t  esp_rename(const char *path_old, const char *path_new);
+int8_t  esp_mkdir(const char *path);
+int8_t  esp_chdir(const char *path);
+int8_t  esp_stat(const char *path, struct esp_stat *st);
+int8_t  esp_getcwd(char *cwd, uint8_t cwd_buflen);
+int8_t  esp_closeall(void);
 
 bool load_binary(const char *path, void *addr, uint16_t max_length);
 

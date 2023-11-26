@@ -14,19 +14,19 @@ Revision History -
 #include <aqplus.h>
 
 // Here we're defining our "global" program variables, used in many of the functions/methods below.
-static struct stat st;                       // This custom data structure is used to hold the STATUS of the ESP32 SD device
-static uint8_t     filename[64];             // This array of unsigned 8-bit integers stores the characters of the filename for the current song
-static uint8_t    *tram = (uint8_t *)0x3000; // This is a pointer to the RAM location for the CHARRAM, referenced by offset from the starting point
-static uint8_t    *cram = (uint8_t *)0x3400; // This is a pointer to the RAM location for the COLRAM, referenced by offset from the starting point
-static uint8_t    *tp;                       // This is a pointer to the current position for the CHARRAM
-static uint8_t    *cp;                       // This is a pointer to the current position for the COLRAM
-static uint8_t     col;                      // This is an unsigned 8-bit integer that stores the currently used COLOR
-static int         fileidx[36];              // This array of integers stores up to 36 song names in the current drive path, referenced by keys 0-9 and A-Z
+static struct esp_stat st;                       // This custom data structure is used to hold the STATUS of the ESP32 SD device
+static uint8_t         filename[64];             // This array of unsigned 8-bit integers stores the characters of the filename for the current song
+static uint8_t        *tram = (uint8_t *)0x3000; // This is a pointer to the RAM location for the CHARRAM, referenced by offset from the starting point
+static uint8_t        *cram = (uint8_t *)0x3400; // This is a pointer to the RAM location for the COLRAM, referenced by offset from the starting point
+static uint8_t        *tp;                       // This is a pointer to the current position for the CHARRAM
+static uint8_t        *cp;                       // This is a pointer to the current position for the COLRAM
+static uint8_t         col;                      // This is an unsigned 8-bit integer that stores the currently used COLOR
+static int             fileidx[36];              // This array of integers stores up to 36 song names in the current drive path, referenced by keys 0-9 and A-Z
 
 // This function draws characters to the screen
-static void draw_str(const char *str) {      // Take the stream of char values indicated by the pointer value passed in...
-    while (*str) {                           // ...if it's not zero...
-        *(tp++) = *(str++);                  // ...write it to the current CHARRAM position, then increment both the position and the next char pointers
+static void draw_str(const char *str) { // Take the stream of char values indicated by the pointer value passed in...
+    while (*str) {                      // ...if it's not zero...
+        *(tp++) = *(str++);             // ...write it to the current CHARRAM position, then increment both the position and the next char pointers
     }
 }
 
@@ -44,33 +44,33 @@ static void draw_window(const char *path) { // Take the pathname as a series of 
     col            = 0x60;                  // Set the color to BG = BLACK, FG = CYAN.
     uint8_t border = 0x60;                  // Set the border to BG = BLACK, FG = CYAN.
 
-    *(tp++) = ' ';                          // Put a SPACE char into the text position and increment. This also sets the BORDER character.
-    *(tp++) = '<';                          // Put a < char into the text position and increment.
-    draw_str(path);                         // Insert the path name using the draw_str function.
-    *(tp++) = '>';                          // Put a > char into the text position and increment.
+    *(tp++) = ' ';  // Put a SPACE char into the text position and increment. This also sets the BORDER character.
+    *(tp++) = '<';  // Put a < char into the text position and increment.
+    draw_str(path); // Insert the path name using the draw_str function.
+    *(tp++) = '>';  // Put a > char into the text position and increment.
 
-    while (tp < tram + 40) {                // Start in a loop to fill the rest of the row with SPACES...
-        *(tp++) = ' ';                      // ...set the current position CHAR to SPACE...
-    }                                       // ...and loop until it's the end of the top line of CHARS.
+    while (tp < tram + 40) { // Start in a loop to fill the rest of the row with SPACES...
+        *(tp++) = ' ';       // ...set the current position CHAR to SPACE...
+    }                        // ...and loop until it's the end of the top line of CHARS.
 
-    while (cp < cram + 40) {                // Now do a similar loop for the color of the top line...
-        *(cp++) = col;                      // ...filling it with CYAN on BLACK (set above)...
-    }                                       // ...and also loop until it's the end of the top line of COLOR.
+    while (cp < cram + 40) { // Now do a similar loop for the color of the top line...
+        *(cp++) = col;       // ...filling it with CYAN on BLACK (set above)...
+    }                        // ...and also loop until it's the end of the top line of COLOR.
 
-    tp = tram + 40;                         // Reset the text position to the start of the second row.
-    cp = cram + 40;                         // Reset the color position to the start of the second row.
+    tp = tram + 40; // Reset the text position to the start of the second row.
+    cp = cram + 40; // Reset the color position to the start of the second row.
 
-    col     = 0x70;                         // Set the color to BG = BLACK, FG = WHITE
-    *(tp++) = 0xDE;                         // Set the CHAR at the current text position to the UPPER LEFT corner character (222)
-    *(cp++) = border;                       // Set this CHAR to the border color (CYAN on BLACK).
+    col     = 0x70;   // Set the color to BG = BLACK, FG = WHITE
+    *(tp++) = 0xDE;   // Set the CHAR at the current text position to the UPPER LEFT corner character (222)
+    *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
 
-    for (uint8_t i = 0; i < 38; i++) {      // Run a loop to draw the horizontal line across the top of the screen.
-        *(tp++) = 0xAC;                     // Set the CHAR at the current text position to the HORIZONTAL line character (172)
-        *(cp++) = border;                   // Set this CHAR to the border color (CYAN on BLACK).
+    for (uint8_t i = 0; i < 38; i++) { // Run a loop to draw the horizontal line across the top of the screen.
+        *(tp++) = 0xAC;                // Set the CHAR at the current text position to the HORIZONTAL line character (172)
+        *(cp++) = border;              // Set this CHAR to the border color (CYAN on BLACK).
     }
 
-    *(tp++) = 0xCE;                        // Set the CHAR at the current text position to the UPPER RIGHT corner character (206)
-    *(cp++) = border;                      // Set this CHAR to the border color (CYAN on BLACK).
+    *(tp++) = 0xCE;   // Set the CHAR at the current text position to the UPPER RIGHT corner character (206)
+    *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
 
     for (uint8_t j = 0; j < 22; j++) {     // Run a loop to draw the side vertical lines down the screen.
         *(tp++) = 0xD6;                    // Set the CHAR at the current text position to the VERTICAL line character (214).
@@ -79,28 +79,28 @@ static void draw_window(const char *path) { // Take the pathname as a series of 
             *(tp++) = ' ';                 // ...set the CHAR to be a space, and increment to the next text position...
             *(cp++) = col;                 // ...and set the COLOR to be CYAN on BLACK.
         }
-        *(tp++) = 0xD6;                    // Set the CHAR at the current text position to the VERTICAL line character (214).
-        *(cp++) = border;                  // Set this CHAR to the border color (CYAN on BLACK).
+        *(tp++) = 0xD6;   // Set the CHAR at the current text position to the VERTICAL line character (214).
+        *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
     }
 
-    *(tp++) = 0xCF;                        // Set the CHAR at the current text position to the LOWER LEFT corner character (207)
-    *(cp++) = border;                      // Set this CHAR to the border color (CYAN on BLACK).
+    *(tp++) = 0xCF;   // Set the CHAR at the current text position to the LOWER LEFT corner character (207)
+    *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
 
-    for (uint8_t i = 0; i < 38; i++) {     // Run a loop to draw the horizontal line across the bottom of the screen.
-        *(tp++) = 0xAC;                    // Set the CHAR at the current text position to the HORIZONTAL line character (172)
-        *(cp++) = border;                  // Set this CHAR to the border color (CYAN on BLACK).
+    for (uint8_t i = 0; i < 38; i++) { // Run a loop to draw the horizontal line across the bottom of the screen.
+        *(tp++) = 0xAC;                // Set the CHAR at the current text position to the HORIZONTAL line character (172)
+        *(cp++) = border;              // Set this CHAR to the border color (CYAN on BLACK).
     }
 
-    *(tp++) = 0xDF;                        // Set the CHAR at the current text position to the LOWER RIGHT corner character (223)
-    *(cp++) = border;                      // Set this CHAR to the border color (CYAN on BLACK).
+    *(tp++) = 0xDF;   // Set the CHAR at the current text position to the LOWER RIGHT corner character (223)
+    *(cp++) = border; // Set this CHAR to the border color (CYAN on BLACK).
 }
 
 // This method reads the list of PT3 files in the current path and creates a list of those files (up to 36 max) on screen.
 static void scandir(void) {
-    getcwd(filename, sizeof(filename));    //
-    draw_window(filename);                 // Redraw a blank window with the current path at the top
+    esp_getcwd(filename, sizeof(filename)); //
+    draw_window(filename);                  // Redraw a blank window with the current path at the top
 
-    for (int i = 0; i < 36; i++) {         // Initialize the fileidx array values to -1
+    for (int i = 0; i < 36; i++) { // Initialize the fileidx array values to -1
         fileidx[i] = -1;
     }
 
@@ -110,8 +110,8 @@ static void scandir(void) {
     uint8_t idx  = 0;
     int     fidx = -1;
 
-    int8_t dd = opendir(".");
-    while (readdir(dd, &st, filename, sizeof(filename)) == 0) {
+    int8_t dd = esp_opendir(".");
+    while (esp_readdir(dd, &st, filename, sizeof(filename)) == 0) {
         fidx++;
         if (filename[0] == '.')
             continue;
@@ -167,19 +167,19 @@ static void scandir(void) {
         if (idx == 36)
             break;
     }
-    closedir(dd);
+    esp_closedir(dd);
 
     tp = tram + 23 * 40 + 2;
     draw_str("0-Z = select file    RTN = dir up");
 }
 
 static void getfile(int idx) {
-    int8_t dd = opendir(".");
+    int8_t dd = esp_opendir(".");
     while (idx >= 0) {
-        readdir(dd, &st, filename, sizeof(filename));
+        esp_readdir(dd, &st, filename, sizeof(filename));
         idx--;
     }
-    closedir(dd);
+    esp_closedir(dd);
 }
 
 static uint8_t playsong(void) {
@@ -273,7 +273,7 @@ int main(void) {
             }
 
             if (ch == '\r') {
-                chdir("..");
+                esp_chdir("..");
                 break;
             }
 
@@ -289,7 +289,7 @@ int main(void) {
                 getfile(fileidx[idx]);
                 // puts(filename);
                 if (st.attr & 1) {
-                    chdir(filename);
+                    esp_chdir(filename);
                 } else {
                     while (playsong() == KEY_SPACE) {
                         idx++;

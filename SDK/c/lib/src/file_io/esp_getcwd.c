@@ -2,7 +2,7 @@
 #include "esp.h"
 #include <stddef.h>
 
-int8_t getcwd(char *cwd, uint8_t cwd_buflen) {
+int8_t esp_getcwd(char *cwd, uint8_t cwd_buflen) {
     if (cwd == NULL || cwd_buflen < 1)
         return ERR_PARAM;
 

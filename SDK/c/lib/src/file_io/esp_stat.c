@@ -2,7 +2,7 @@
 #include "esp.h"
 #include <string.h>
 
-int8_t stat(const char *path, struct stat *st) {
+int8_t esp_stat(const char *path, struct esp_stat *st) {
     esp_cmd(ESPCMD_STAT);
     uint16_t len = strlen(path) + 1;
     esp_send_bytes(path, len);

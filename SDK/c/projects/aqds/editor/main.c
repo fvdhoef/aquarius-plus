@@ -4,21 +4,21 @@
 #define TEXT_RAM ((uint8_t *)0xF000)
 
 // #define MAX_FILE_SIZE (10000)
-#define SCRSAVE_PATH "/.editor-scrsave"
+#define SCRSAVE_PATH   "/.editor-scrsave"
 #define CLIPBOARD_PATH "/.editor-clipboard"
 
 #define CHARS_PER_LINE (75)
-#define DISPLAY_LINES (24)
+#define DISPLAY_LINES  (24)
 
-#define COLOR_STATUSBAR 0x84
+#define COLOR_STATUSBAR           0x84
 #define COLOR_STATUSBAR_ATTENTION 0x8E
-#define COLOR_SIDEBAR 0x8B
-#define COLOR_SEPARATOR 0xBF
+#define COLOR_SIDEBAR             0x8B
+#define COLOR_SEPARATOR           0xBF
 #define COLOR_WHITESPACE_SELECTED 0x69
-#define COLOR_WHITESPACE_CURSOR 0x7E
-#define COLOR_TEXT 0x8F
-#define COLOR_TEXT_SELECTED 0x09
-#define COLOR_CURSOR 0x7E
+#define COLOR_WHITESPACE_CURSOR   0x7E
+#define COLOR_TEXT                0x8F
+#define COLOR_TEXT_SELECTED       0x09
+#define COLOR_CURSOR              0x7E
 
 enum {
     CH_CTRL_A = 1,
@@ -280,9 +280,9 @@ static void render_screen(void) {
 }
 
 static bool load_file(const char *path) {
-    struct stat st;
+    struct esp_stat st;
 
-    int16_t result = stat(path, &st);
+    int16_t result = esp_stat(path, &st);
     if (result == ERR_NOT_FOUND)
         return true;
     if (result < 0) {
@@ -310,7 +310,7 @@ static bool load_file(const char *path) {
     // Clear load area
     memset((void *)buf_start, 0, max_filesize);
 
-    int8_t fd = open(path, FO_RDONLY);
+    int8_t fd = esp_open(path, FO_RDONLY);
     if (fd < 0) {
         statusbar_esp_error(fd);
         return false;
@@ -319,8 +319,8 @@ static bool load_file(const char *path) {
     data.split_begin = buf_start;
     data.split_end   = buf_end - st.size;
 
-    read(fd, data.split_end, st.size);
-    close(fd);
+    esp_read(fd, data.split_end, st.size);
+    esp_close(fd);
 
     data.path           = path;
     data.top_p          = buf_start;
@@ -332,13 +332,13 @@ static bool load_file(const char *path) {
 }
 
 static int save_file(const char *path) {
-    int8_t fd = open(path, FO_WRONLY | FO_CREATE | FO_TRUNC);
+    int8_t fd = esp_open(path, FO_WRONLY | FO_CREATE | FO_TRUNC);
     if (fd < 0)
         return fd;
-    write(fd, buf_start, data.split_begin - buf_start);
-    write(fd, data.split_end, buf_end - data.split_end);
+    esp_write(fd, buf_start, data.split_begin - buf_start);
+    esp_write(fd, data.split_end, buf_end - data.split_end);
 
-    close(fd);
+    esp_close(fd);
     return 0;
 }
 
@@ -652,11 +652,11 @@ static int save_selection(void) {
     if (selected_bytes == 0)
         return 0;
 
-    int8_t fd = open(CLIPBOARD_PATH, FO_WRONLY | FO_CREATE | FO_TRUNC);
+    int8_t fd = esp_open(CLIPBOARD_PATH, FO_WRONLY | FO_CREATE | FO_TRUNC);
     if (fd < 0)
         return 0;
-    write(fd, p, selected_bytes);
-    close(fd);
+    esp_write(fd, p, selected_bytes);
+    esp_close(fd);
 
     render_statusbar_start();
     print_5digits(selected_bytes);
@@ -667,12 +667,12 @@ static int save_selection(void) {
 }
 
 static void paste_clipboard(void) {
-    int8_t fd = open(CLIPBOARD_PATH, FO_RDONLY);
+    int8_t fd = esp_open(CLIPBOARD_PATH, FO_RDONLY);
     if (fd < 0)
         return;
 
     while (1) {
-        int16_t result = read(fd, tmpstr, sizeof(tmpstr));
+        int16_t result = esp_read(fd, tmpstr, sizeof(tmpstr));
         if (result <= 0)
             break;
 
@@ -681,7 +681,7 @@ static void paste_clipboard(void) {
 
         data.dirty = true;
     }
-    close(fd);
+    esp_close(fd);
 }
 
 void main(void) {

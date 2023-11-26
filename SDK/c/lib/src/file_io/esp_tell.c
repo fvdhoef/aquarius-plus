@@ -1,7 +1,7 @@
 #include "file_io.h"
 #include "esp.h"
 
-int32_t tell(int8_t fd) {
+int32_t esp_tell(int8_t fd) {
     esp_cmd(ESPCMD_TELL);
     esp_send_byte(fd);
 

@@ -39,20 +39,20 @@ struct pane {
     bool    is_end_of_dir;
 };
 
-static char *const  pgm_binary   = (char *)0xFE80;
-static char *const  pgm_argument = (char *)0xFF00;
-static struct pane  left_pane    = {.dir_path = "/"};
-static struct pane  right_pane   = {.dir_path = "/"};
-static struct pane *current_pane = &left_pane;
-static uint8_t      selected_row;
-static uint8_t      cur_year;
-static struct stat  st;
-static char         filename[128];
-static bool         eof;
-static bool         redraw_listing;
-static bool         redraw_screen;
-static const char   allowed_filename_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-_$%-_@~`!(){}^#&+,;=[]";
-static char         tmpbuf[128];
+static char *const     pgm_binary   = (char *)0xFE80;
+static char *const     pgm_argument = (char *)0xFF00;
+static struct pane     left_pane    = {.dir_path = "/"};
+static struct pane     right_pane   = {.dir_path = "/"};
+static struct pane    *current_pane = &left_pane;
+static uint8_t         selected_row;
+static uint8_t         cur_year;
+static struct esp_stat st;
+static char            filename[128];
+static bool            eof;
+static bool            redraw_listing;
+static bool            redraw_screen;
+static const char      allowed_filename_chars[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789.-_$%-_@~`!(){}^#&+,;=[]";
+static char            tmpbuf[128];
 
 static const char *fn_labels[10] = {
     "Run",    // F1
@@ -173,7 +173,7 @@ static void draw_listing(struct pane *pane) {
     scr_to_xy(pane == &left_pane ? 0 : 40, 0);
 
     pane->num_items = 0;
-    chdir(pane->dir_path);
+    esp_chdir(pane->dir_path);
     cur_year = get_cur_year();
 
     scr_putchar(222);
@@ -201,23 +201,23 @@ static void draw_listing(struct pane *pane) {
     text_color = 0x74;
 
     eof       = false;
-    int8_t dd = opendirext("", DE_FLAG_DOTDOT, (uint16_t)pane->page * ENTRIES_PER_PAGE);
+    int8_t dd = esp_opendirext("", DE_FLAG_DOTDOT, (uint16_t)pane->page * ENTRIES_PER_PAGE);
     if (dd < 0)
         eof = true;
 
     for (int j = 0; j < ENTRIES_PER_PAGE; j++) {
         if (!eof) {
-            int8_t res = readdir(dd, &st, filename, sizeof(filename));
+            int8_t res = esp_readdir(dd, &st, filename, sizeof(filename));
             if (res == ERR_EOF) {
                 eof = true;
             }
         }
         draw_listing_line(pane);
     }
-    int8_t res          = readdir(dd, &st, filename, sizeof(filename));
+    int8_t res          = esp_readdir(dd, &st, filename, sizeof(filename));
     pane->is_end_of_dir = (res == ERR_EOF);
 
-    closedir(dd);
+    esp_closedir(dd);
 
     scr_putchar(207);
     for (int i = 0; i < 38; i++) {
@@ -228,10 +228,10 @@ static void draw_listing(struct pane *pane) {
 }
 
 static void read_selected(void) {
-    chdir(current_pane->dir_path);
-    int8_t dd  = opendirext("", DE_FLAG_DOTDOT, (uint16_t)current_pane->page * ENTRIES_PER_PAGE + selected_row);
-    int8_t res = readdir(dd, &st, filename, sizeof(filename));
-    closedir(dd);
+    esp_chdir(current_pane->dir_path);
+    int8_t dd  = esp_opendirext("", DE_FLAG_DOTDOT, (uint16_t)current_pane->page * ENTRIES_PER_PAGE + selected_row);
+    int8_t res = esp_readdir(dd, &st, filename, sizeof(filename));
+    esp_closedir(dd);
 }
 
 static void draw_window(uint8_t x, uint8_t y, uint8_t w, uint8_t h, const char *title) {
@@ -394,10 +394,10 @@ static void cmd_mkfile(void) {
     hide_selection(current_pane, selected_row);
     *filename = 0;
     if (string_editor("Enter name for new file", filename) && *filename != '.') {
-        chdir(current_pane->dir_path);
-        int8_t fd = open(filename, FO_WRONLY | FO_CREATE | FO_EXCL);
+        esp_chdir(current_pane->dir_path);
+        int8_t fd = esp_open(filename, FO_WRONLY | FO_CREATE | FO_EXCL);
         if (fd >= 0) {
-            close(fd);
+            esp_close(fd);
         }
     }
     redraw_screen = true;
@@ -472,7 +472,7 @@ static void cmd_copy(void) {
         }
     }
     if (fd2 < 0) {
-        close(fd1);
+        esp_close(fd1);
         return;
     }
 
@@ -488,10 +488,10 @@ static void cmd_copy(void) {
     uint32_t total_read = 0;
 
     while (1) {
-        int16_t bytes_read = read(fd1, tmpbuf, bufsize);
+        int16_t bytes_read = esp_read(fd1, tmpbuf, bufsize);
         if (bytes_read <= 0)
             break;
-        write(fd2, tmpbuf, bytes_read);
+        esp_write(fd2, tmpbuf, bytes_read);
 
         total_read += bytes_read;
 
@@ -501,8 +501,8 @@ static void cmd_copy(void) {
         print_4digits(percentage);
     }
 
-    close(fd1);
-    close(fd2);
+    esp_close(fd1);
+    esp_close(fd2);
 }
 
 static void cmd_renmov(void) {
@@ -521,7 +521,7 @@ static void cmd_renmov(void) {
         if (scancode == 'r' || scancode == 'R') {
             strcpy(tmpbuf, filename);
             if (string_editor("Enter new file name", tmpbuf)) {
-                rename(filename, tmpbuf);
+                esp_rename(filename, tmpbuf);
             }
             return;
         }
@@ -556,8 +556,8 @@ static void cmd_mkdir(void) {
     hide_selection(current_pane, selected_row);
     *filename = 0;
     if (string_editor("Enter name for new directory", filename) && *filename != '.') {
-        chdir(current_pane->dir_path);
-        mkdir(filename);
+        esp_chdir(current_pane->dir_path);
+        esp_mkdir(filename);
     }
     redraw_screen = true;
 }
@@ -566,13 +566,13 @@ static void cmd_delete(void) {
     // Delete file/directory
     read_selected();
     if (confirm((st.attr & DE_ATTR_DIR) ? "Delete directory?" : "Delete file?")) {
-        delete (filename);
+        esp_delete(filename);
     }
     redraw_screen = true;
 }
 
 static void cmd_quit(void) {
-    chdir(current_pane->dir_path);
+    esp_chdir(current_pane->dir_path);
     *pgm_binary = 0;
 
     // Go back to BASIC
@@ -584,7 +584,7 @@ void main(void) {
     esp_send_byte(7);
     esp_get_byte();
 
-    getcwd(left_pane.dir_path, sizeof(left_pane.dir_path));
+    esp_getcwd(left_pane.dir_path, sizeof(left_pane.dir_path));
 
     draw_listing(&left_pane);
     draw_listing(&right_pane);
@@ -659,8 +659,8 @@ void main(void) {
             case CH_RETURN: {
                 read_selected();
                 if (st.attr & DE_ATTR_DIR) {
-                    chdir(filename);
-                    getcwd(current_pane->dir_path, sizeof(current_pane->dir_path));
+                    esp_chdir(filename);
+                    esp_getcwd(current_pane->dir_path, sizeof(current_pane->dir_path));
                     current_pane->page = 0;
                     selected_row       = 0;
                     redraw_listing     = true;

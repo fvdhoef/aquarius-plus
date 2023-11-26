@@ -2,7 +2,7 @@
 #include "esp.h"
 #include <string.h>
 
-int8_t rename(const char *path_old, const char *path_new) {
+int8_t esp_rename(const char *path_old, const char *path_new) {
     esp_cmd(ESPCMD_RENAME);
     uint16_t len = strlen(path_old) + 1;
     esp_send_bytes(path_old, len);

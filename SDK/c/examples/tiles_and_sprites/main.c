@@ -65,13 +65,13 @@ static bool init(void) {
 
     // Load in tile data and palette
     puts("Loading tile data...\n");
-    int8_t fd = open("tiledata.bin", FO_RDONLY);
+    int8_t fd = esp_open("tiledata.bin", FO_RDONLY);
     if (fd < 0) {
         return false;
     }
-    read(fd, (void *)0xC000, 0x4000);
-    read(fd, palette, 32);
-    close(fd);
+    esp_read(fd, (void *)0xC000, 0x4000);
+    esp_read(fd, palette, 32);
+    esp_close(fd);
 
     // Set palette
     for (uint8_t i = 0; i < 32; i++) {

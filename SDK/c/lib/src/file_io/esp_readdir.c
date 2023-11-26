@@ -2,7 +2,7 @@
 #include "esp.h"
 #include <stddef.h>
 
-int8_t readdir(int8_t dd, struct stat *st, char *fn, uint8_t fn_buflen) {
+int8_t esp_readdir(int8_t dd, struct esp_stat *st, char *fn, uint8_t fn_buflen) {
     if (fn == NULL || fn_buflen < 1)
         return ERR_PARAM;
 

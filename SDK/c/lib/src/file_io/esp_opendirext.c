@@ -2,7 +2,7 @@
 #include "esp.h"
 #include <string.h>
 
-int8_t opendirext(const char *path, uint8_t flags, uint16_t skip_cnt) {
+int8_t esp_opendirext(const char *path, uint8_t flags, uint16_t skip_cnt) {
     esp_cmd(ESPCMD_OPENDIREXT);
     esp_send_byte(flags);
     esp_send_byte(skip_cnt & 0xFF);
