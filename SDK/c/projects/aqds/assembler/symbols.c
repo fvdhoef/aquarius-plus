@@ -48,6 +48,9 @@ void symbol_add(const char *str, size_t len, uint16_t value) {
     if (str[0] != '.')
         cur_scope++;
 
+    if (cur_pass > 0)
+        return;
+
     hash(str, len, str[0] == '.');
     if (cur_entry) {
         if (cur_entry->value == value)

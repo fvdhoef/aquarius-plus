@@ -27,7 +27,7 @@ static const char     *keyword;
 static const char     *string;
 char                  *cur_p;
 static uint8_t        *heap;
-static uint8_t         pass     = 0;
+uint8_t                cur_pass = 0;
 static uint16_t        cur_addr = 0;
 
 uint16_t        cur_scope   = 0;
@@ -79,7 +79,7 @@ static void parse_file(const char *path);
 void error(char *str) {
     if (str == NULL)
         str = "Unknown";
-    printf("\n%s:%u (pass %u) Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, pass + 1, cur_addr, str);
+    printf("\n%s:%u (pass %u) Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, cur_pass + 1, cur_addr, str);
     exit(1);
 }
 
@@ -207,7 +207,7 @@ static void emit_byte(uint16_t val) {
     if ((val & 0xFF00) != 0)
         error("Invalid byte value");
 
-    if (pass == 1) {
+    if (cur_pass == 1) {
         list_p += sprintf(list_p, "%02X", val);
 
         fwrite(&val, 1, 1, f_out);
@@ -231,7 +231,7 @@ static void handler_defb(void) {
                 emit_byte(*(string++));
             }
         } else {
-            emit_byte(parse_expression(pass == 0));
+            emit_byte(parse_expression(cur_pass == 0));
         }
 
         skip_whitespace();
@@ -244,7 +244,7 @@ static void handler_defw(void) {
     skip_whitespace();
 
     while (1) {
-        uint16_t val = parse_expression(pass == 0);
+        uint16_t val = parse_expression(cur_pass == 0);
         emit_byte(val & 0xFF);
         emit_byte(val >> 8);
 
@@ -334,11 +334,10 @@ static char *parse_argument(void) {
     return result;
 }
 
-static const char *regs8_all[]      = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
-static const char *regs8_bcdehlfa[] = {"b", "c", "d", "e", "h", "l", "f", "a"};
-static const char *regs8_ixhl[]     = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
-static const char *regs8_iyhl[]     = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
-
+static const char *regs8_all[]        = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
+static const char *regs8_bcdehlfa[]   = {"b", "c", "d", "e", "h", "l", "f", "a"};
+static const char *regs8_ixhl[]       = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
+static const char *regs8_iyhl[]       = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
 static const char *regs_bc_de_hl_sp[] = {"bc", "de", "hl", "sp"};
 static const char *regs_bc_de_hl_af[] = {"bc", "de", "hl", "af"};
 static const char *regs_bc_de_ix_sp[] = {"bc", "de", "ix", "sp"};
@@ -358,7 +357,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 if (arg[0] != '(')
                     return false;
                 cur_p     = (char *)arg + 1;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
                 cur_p++;
@@ -371,7 +370,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 if (arg[0] != '(')
                     return false;
                 cur_p     = (char *)arg + 1;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
                 cur_p++;
@@ -404,7 +403,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
                     return false;
                 cur_p          = (char *)arg + 4;
-                uint16_t value = parse_expression(pass == 0);
+                uint16_t value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
                 d_value = value;
@@ -422,7 +421,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
                     return false;
                 cur_p          = (char *)arg + 4;
-                uint16_t value = parse_expression(pass == 0);
+                uint16_t value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
                 d_value = value;
@@ -440,7 +439,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             case OD_AT_IMM_0: return (arg[0] == '0' && arg[1] == 0);
             case OD_AT_53_IMM:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
                 if (arg_value > 7)
@@ -450,7 +449,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_43_IMODE:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
                 if (arg_value > 2)
@@ -462,7 +461,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_53_RST:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
                 if (arg_value < 7) {
@@ -476,7 +475,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
             case OD_AT_IMM8:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
                 if (arg_value >> 8)
@@ -485,18 +484,18 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return true;
             case OD_AT_IMM16:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
                 cur_outtype |= OT_16BIT;
                 return true;
             case OD_AT_REL_ADDR:
                 cur_p     = (char *)arg;
-                arg_value = parse_expression(pass == 0);
+                arg_value = parse_expression(cur_pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
 
-                if (pass == 0) {
+                if (cur_pass == 0) {
                     arg_value = 0;
                 } else {
                     int16_t val = arg_value - (cur_addr + 2);
@@ -867,7 +866,7 @@ int main(void) {
 
     const char *filename = "goaqms.asm";
 
-    for (pass = 0; pass < 2; pass++) {
+    for (cur_pass = 0; cur_pass < 2; cur_pass++) {
         cur_addr  = 0;
         cur_scope = 0;
         parse_file(filename);
