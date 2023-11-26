@@ -27,19 +27,19 @@
 
 static const uint8_t opinf_adc[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_REG_ALL, 0x88),    // ADC A,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x88),       // ADC A,IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x88),       // ADC A,IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IX_IND_OFFS, 0x8E),   // ADC A,(IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IY_IND_OFFS, 0x8E),   // ADC A,(IY+d)
-    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x8C),       // ADC A,IXh/IXl
-    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x8C),       // ADC A,IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM8, 0xCE),          // ADC A,n
     DESC(0, OD_PREFIX_ED, OD_AT_HL, OD_AT_54_BC_DE_HL_SP, 0x4A), // ADC HL,ss
 };
 static const uint8_t opinf_add[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_REG_ALL, 0x80),      // ADD A,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x80),         // ADD A,IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x80),         // ADD A,IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IX_IND_OFFS, 0x86),     // ADD A,(IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IY_IND_OFFS, 0x86),     // ADD A,(IY+d)
-    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x84),         // ADD A,IXh/IXl
-    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x84),         // ADD A,IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM8, 0xC6),            // ADD A,n
     DESC(1, OD_PREFIX_NONE, OD_AT_HL, OD_AT_54_BC_DE_HL_SP, 0x09), // ADD HL,ss
     DESC(1, OD_PREFIX_NONE, OD_AT_IX, OD_AT_54_BC_DE_IX_SP, 0x09), // ADD IX,pp
@@ -48,10 +48,10 @@ static const uint8_t opinf_add[] = {
 };
 static const uint8_t opinf_and[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xA0),  // AND r
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xA0),     // AND IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xA0),     // AND IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0xA6), // AND (IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0xA6), // AND (IY+d)
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xA4),     // AND IXh/IXl
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xA4),     // AND IYh/IYl
     DESC(0, OD_PREFIX_NONE, OD_AT_IMM8, OD_AT_NONE, 0x06),        // AND n
 };
 static const uint8_t opinf_bit[] = {
@@ -68,10 +68,10 @@ static const uint8_t opinf_ccf[] = {
 };
 static const uint8_t opinf_cp[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xB8),  // CP r
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xB8),     // CP IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xB8),     // CP IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0xBE), // CP (IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0xBE), // CP (IY+d)
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xBC),     // CP IXh/IXl
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xBC),     // CP IYh/IYl
     DESC(0, OD_PREFIX_NONE, OD_AT_IMM8, OD_AT_NONE, 0xFE),        // CP n
 };
 static const uint8_t opinf_cpd[] = {
@@ -94,13 +94,13 @@ static const uint8_t opinf_daa[] = {
 };
 static const uint8_t opinf_dec[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_NONE, 0x05),     // DEC r
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IXHL, OD_AT_NONE, 0x05),        // DEC IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IYHL, OD_AT_NONE, 0x05),        // DEC IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x35),    // DEC (IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x35),    // DEC (IY+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_NONE, 0x0B), // DEC ss
     DESC(1, OD_PREFIX_NONE, OD_AT_IX, OD_AT_NONE, 0x2B),             // DEC IX
-    DESC(1, OD_PREFIX_NONE, OD_AT_IY, OD_AT_NONE, 0x2B),             // DEC IY
-    DESC(1, OD_PREFIX_NONE, OD_AT_53_IXHL, OD_AT_NONE, 0x25),        // DEC IXh/IXl
-    DESC(0, OD_PREFIX_NONE, OD_AT_53_IYHL, OD_AT_NONE, 0x25),        // DEC IYh/IYl
+    DESC(0, OD_PREFIX_NONE, OD_AT_IY, OD_AT_NONE, 0x2B),             // DEC IY
 };
 static const uint8_t opinf_di[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xF3), // DI
@@ -133,14 +133,13 @@ static const uint8_t opinf_in[] = {
 };
 static const uint8_t opinf_inc[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_NONE, 0x04),     // INC r
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IXHL, OD_AT_NONE, 0x04),        // INC IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IYHL, OD_AT_NONE, 0x04),        // INC IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x34),    // INC (IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x34),    // INC (IY+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_NONE, 0x03), // INC ss
     DESC(1, OD_PREFIX_NONE, OD_AT_IX, OD_AT_NONE, 0x23),             // INC IX
-    DESC(1, OD_PREFIX_NONE, OD_AT_IY, OD_AT_NONE, 0x23),             // INC IY
-    DESC(1, OD_PREFIX_NONE, OD_AT_53_IXHL, OD_AT_NONE, 0x24),        // INC IXh/IXl
-    DESC(0, OD_PREFIX_NONE, OD_AT_53_IYHL, OD_AT_NONE, 0x24),        // INC IYh/IYl
-    DESC(0, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_NONE, 0x03), // INC ss
+    DESC(0, OD_PREFIX_NONE, OD_AT_IY, OD_AT_NONE, 0x23),             // INC IY
 };
 static const uint8_t opinf_ind[] = {
     DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0xAA), // IND
@@ -223,10 +222,10 @@ static const uint8_t opinf_nop[] = {
 };
 static const uint8_t opinf_or[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xB0),  // OR r
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xB0),     // OR IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xB0),     // OR IYh/IYl
     DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0xB6), // OR (IX+d)
     DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0xB6), // OR (IY+d)
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xB4),     // OR IXh/IXl
-    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xB4),     // OR IYh/IYl
     DESC(0, OD_PREFIX_NONE, OD_AT_IMM8, OD_AT_NONE, 0xF6),        // OR n
 };
 static const uint8_t opinf_otdr[] = {
@@ -256,7 +255,11 @@ static const uint8_t opinf_push[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_IY, OD_AT_NONE, 0xE5),             // PUSH IY
     DESC(0, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_AF, OD_AT_NONE, 0xC5), // PUSH qq
 };
-static const uint8_t opinf_res[] = {0x3F};
+static const uint8_t opinf_res[] = {
+    DESC(1, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_20_REG_ALL, 0x80),  // RES b,r
+    DESC(1, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_IX_IND_OFFS, 0x86), // RES b,(IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_IY_IND_OFFS, 0x86), // RES b,(IY+d)
+};
 static const uint8_t opinf_ret[] = {
     DESC(1, OD_PREFIX_NONE, OD_AT_53_COND, OD_AT_NONE, 0xC0), // RET cc
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0xC9)     // RET
@@ -268,13 +271,17 @@ static const uint8_t opinf_retn[] = {
     DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x45), // RETN
 };
 static const uint8_t opinf_rl[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x10),  // RL r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x16), // RL (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x16), // RL (IY+d)
 };
 static const uint8_t opinf_rla[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x17), // RLA
 };
 static const uint8_t opinf_rlc[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x00),  // RLC r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x06), // RLC (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x06), // RLC (IY+d)
 };
 static const uint8_t opinf_rlca[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x07), // RLCA
@@ -283,13 +290,17 @@ static const uint8_t opinf_rld[] = {
     DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x6F), // RLD
 };
 static const uint8_t opinf_rr[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x18),  // RR r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x1E), // RR (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x1E), // RR (IY+d)
 };
 static const uint8_t opinf_rra[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x1F), // RRA
 };
 static const uint8_t opinf_rrc[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x08),  // RRC r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x0E), // RRC (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x0E), // RRC (IY+d)
 };
 static const uint8_t opinf_rrca[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x0F), // RRCA
@@ -298,34 +309,60 @@ static const uint8_t opinf_rrd[] = {
     DESC(0, OD_PREFIX_ED, OD_AT_NONE, OD_AT_NONE, 0x67), // RRD
 };
 static const uint8_t opinf_rst[] = {
-    0x3F,
+    DESC(0, OD_PREFIX_NONE, OD_AT_53_RST, OD_AT_NONE, 0xC7), // RST p
 };
 static const uint8_t opinf_sbc[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_REG_ALL, 0x98),    // SBC A,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x98),       // SBC A,IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x98),       // SBC A,IYh/IYl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IX_IND_OFFS, 0x9E),   // SBC A,(IX+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IY_IND_OFFS, 0x9E),   // SBC A,(IY+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM8, 0xDE),          // SBC A,n
+    DESC(0, OD_PREFIX_ED, OD_AT_HL, OD_AT_54_BC_DE_HL_SP, 0x42), // SBC HL,ss
 };
 static const uint8_t opinf_scf[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_NONE, OD_AT_NONE, 0x37), // SCF
 };
 static const uint8_t opinf_set[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_20_REG_ALL, 0xC0),  // SET b,r
+    DESC(1, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_IX_IND_OFFS, 0xC6), // SET b,(IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_53_IMM, OD_AT_IY_IND_OFFS, 0xC6), // SET b,(IY+d)
 };
 static const uint8_t opinf_sla[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x20),  // SLA r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x26), // SLA (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x26), // SLA (IY+d)
 };
 static const uint8_t opinf_sll[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x30),  // SLL r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x36), // SLL (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x36), // SLL (IY+d)
 };
 static const uint8_t opinf_sra[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x28),  // SRA r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x2E), // SRA (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x2E), // SRA (IY+d)
 };
 static const uint8_t opinf_srl[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_CB, OD_AT_20_REG_ALL, OD_AT_NONE, 0x38),  // SRL r
+    DESC(1, OD_PREFIX_CB, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0x3E), // SRL (IX+d)
+    DESC(0, OD_PREFIX_CB, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0x3E), // SRL (IY+d)
 };
 static const uint8_t opinf_sub[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_REG_ALL, 0x90),  // SUB A,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IXHL, 0x90),     // SUB A,IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_20_IYHL, 0x90),     // SUB A,IYh/IYl
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IX_IND_OFFS, 0x96), // SUB A,(IX+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IY_IND_OFFS, 0x96), // SUB A,(IY+d)
+    DESC(0, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM8, 0xD6),        // SUB A,n
 };
 static const uint8_t opinf_xor[] = {
-    0x3F,
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xA8),  // XOR r
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IXHL, OD_AT_NONE, 0xA8),     // XOR IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_20_IYHL, OD_AT_NONE, 0xA8),     // XOR IYh/IYl
+    DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_NONE, 0xAE), // XOR (IX+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_NONE, 0xAE), // XOR (IY+d)
+    DESC(0, OD_PREFIX_NONE, OD_AT_IMM8, OD_AT_NONE, 0xEE),        // XOR n
 };
 
 const uint8_t *opcode_info[TOK_OPCODE_LAST - TOK_OPCODE_FIRST + 1] = {

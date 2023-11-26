@@ -622,14 +622,14 @@
     RRC L
     RRCA
     RRD
-    RST 0H
-    RST 10H
-    RST 18H
-    RST 20H
-    RST 28H
-    RST 30H
-    RST 38H
-    RST 8H
+    RST $0
+    RST $8
+    RST $10
+    RST $18
+    RST $20
+    RST $28
+    RST $30
+    RST $38
     SBC A,(HL)
     SBC A,(IX+$5A)
     SBC A,(IY+$5A)

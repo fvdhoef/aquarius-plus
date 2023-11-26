@@ -444,7 +444,20 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 cur_opcode |= arg_value << 3;
                 return true;
 
-            case OD_AT_53_RST: error("OD_AT_53_RST");
+            case OD_AT_53_RST:
+                cur_p     = (char *)arg;
+                arg_value = parse_expression(pass == 0);
+                if (cur_p[0] != 0)
+                    goto err;
+                if (arg_value < 7) {
+                    cur_opcode |= arg_value << 3;
+                } else if ((arg_value & ~0x38) == 0) {
+                    cur_opcode |= arg_value;
+                } else {
+                    return false;
+                }
+                return true;
+
             case OD_AT_IMM8:
                 cur_p     = (char *)arg;
                 arg_value = parse_expression(pass == 0);
