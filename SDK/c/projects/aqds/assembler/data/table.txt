@@ -136,21 +136,38 @@ LD SP,IX        DDF9        xx  -
 LD SP,IY        FDF9        xx  -
 LD ss,(nn)      ED4B nn     xx  -
 LD ss,nn        01 nn       xx  -
+
+LDD             EDA8        xx  -
+LDDR            EDB8        xx  -
+LDI             EDA0        xx  -
+LDIR            EDB0        xx  -
+NEG             ED44        xx  -
+NOP             00          xx  -
+
 OR (IX+d)       DDB6 d      xx  -
 OR (IY+d)       FDB6 d      xx  -
 OR n            F6 n        xx  -
 OR rixhl        DDB4        xx  -
 OR riyhl        FDB4        xx  -
 OR rs           B0          xx  -
+
 OUT (C),0       ED71        xx  -
 OUT (C),rq      ED41        xx  -
 OUT (n),A       D3 n        xx  -
+
+OTDR            EDBB        xx  -
+OTIR            EDB3        xx  -
+OUTD            EDAB        xx  -
+OUTI            EDA3        xx  -
+
 POP IX          DDE1        xx  -
 POP IY          FDE1        xx  -
 POP qq          C1          xx  -
+
 PUSH IX         DDE5        xx  -
 PUSH IY         FDE5        xx  -
 PUSH qq         C5          xx  -
+
 RES b,(IX+d)    DDCB d 86   xx  -
 RES b,(IY+d)    FDCB d 86   xx  -
 RES b,rs        CB80        xx  -
@@ -204,16 +221,6 @@ XOR riyhl       FDAC        xx  -
 XOR rs          A8          xx  -
 
 done:
-LDD             EDA8        xx  -
-LDDR            EDB8        xx  -
-LDI             EDA0        xx  -
-LDIR            EDB0        xx  -
-NEG             ED44        xx  -
-NOP             00          xx  -
-OTDR            EDBB        xx  -
-OTIR            EDB3        xx  -
-OUTD            EDAB        xx  -
-OUTI            EDA3        xx  -
 RET             C9          xx  -
 RETI            ED4D        xx  -
 RETN            ED45        xx  -

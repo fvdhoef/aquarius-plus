@@ -421,7 +421,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
 
         switch (arg_type) {
             case OD_AT_NONE: return (*arg == 0);
-            case OD_AT_IMM_0: error("OD_AT_IMM_0");
+            case OD_AT_IMM_0: return (arg[0] == '0' && arg[1] == 0);
             case OD_AT_53_IMM:
                 cur_p     = (char *)arg;
                 arg_value = parse_expression(pass == 0);
@@ -540,7 +540,6 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             case OD_AT_54_BC_DE_HL_AF:
                 for (int i = 0; i < 4; i++) {
                     if (strcasecmp(arg, regs_bc_de_hl_af[i]) == 0) {
-                        printf("--------------- %d\n", i);
                         cur_opcode |= i << 4;
                         return true;
                     }
