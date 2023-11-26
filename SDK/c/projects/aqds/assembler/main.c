@@ -27,14 +27,13 @@ static const char     *keyword;
 static const char     *string;
 char                  *cur_p;
 static uint8_t        *heap;
-uint8_t                cur_pass = 0;
-static uint16_t        cur_addr = 0;
-
-uint16_t        cur_scope   = 0;
-static uint8_t  cur_opcode  = 0;
-static uint8_t  cur_outtype = 0;
-static uint16_t arg_value;
-static uint8_t  d_value;
+uint8_t                cur_pass    = 0;
+static uint16_t        cur_addr    = 0;
+uint16_t               cur_scope   = 0;
+static uint8_t         cur_opcode  = 0;
+static uint8_t         cur_outtype = 0;
+static uint16_t        arg_value;
+static uint8_t         d_value;
 
 enum {
     OT_NONE,
