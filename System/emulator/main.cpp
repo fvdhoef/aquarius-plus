@@ -71,7 +71,19 @@ int main(int argc, char *argv[]) {
 #endif
                 break;
             }
-            case 't': typeInStr = optarg; break;
+            case 't': {
+                const char *p = optarg;
+                while (*p) {
+                    if (p[0] == '\\' && p[1] == 'n') {
+                        typeInStr.push_back('\n');
+                        p += 2;
+                    } else {
+                        typeInStr.push_back(p[0]);
+                        p++;
+                    }
+                }
+                break;
+            }
             default: paramsOk = false; break;
         }
     }
