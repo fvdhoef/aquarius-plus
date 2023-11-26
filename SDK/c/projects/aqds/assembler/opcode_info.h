@@ -34,6 +34,7 @@ enum {
     OD_AT_HL_IND,         // 16-bit register (hl)
     OD_AT_SP_IND,         // 16-bit register (sp)
     OD_AT_20_REG_ALL,     //  8-bit register encoded in 2:0 - 0:b,1:c,2:d,3:e,4:h,5:l,6:(hl),7:a
+    OD_AT_20_BCDEHLA,     //  8-bit register encoded in 2:0 - 0:b,1:c,2:d,3:e,4:h,5:l,7:a
     OD_AT_53_REG_ALL,     //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,6:(hl),7:a
     OD_AT_53_BCDEHLFA,    //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,6:f,7:a
     OD_AT_53_BCDEHLA,     //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,7:a

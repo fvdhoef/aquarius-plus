@@ -1,8 +1,8 @@
     org $1000
 
     ADC A,(HL)
-    ADC A,(IX+$42)
-    ADC A,(IY+$42)
+    ADC A,(IX+$5A)
+    ADC A,(IY+$5A)
     ADC A,A
     ADC A,B
     ADC A,C
@@ -20,8 +20,8 @@
     ADC HL,HL
     ADC HL,SP
     ADD A,(HL)
-    ADD A,(IX+$42)
-    ADD A,(IY+$42)
+    ADD A,(IX+$5A)
+    ADD A,(IY+$5A)
     ADD A,A
     ADD A,B
     ADD A,C
@@ -47,8 +47,8 @@
     ADD IY,IY
     ADD IY,SP
     AND (HL)
-    AND (IX+$42)
-    AND (IY+$42)
+    AND (IX+$5A)
+    AND (IY+$5A)
     AND A
     AND B
     AND C
@@ -62,8 +62,8 @@
     AND L
     AND $42
     BIT 0,(HL)
-    BIT 0,(IX+$42)
-    BIT 0,(IY+$42)
+    BIT 0,(IX+$5A)
+    BIT 0,(IY+$5A)
     BIT 0,A
     BIT 0,B
     BIT 0,C
@@ -72,8 +72,8 @@
     BIT 0,H
     BIT 0,L
     BIT 1,(HL)
-    BIT 1,(IX+$42)
-    BIT 1,(IY+$42)
+    BIT 1,(IX+$5A)
+    BIT 1,(IY+$5A)
     BIT 1,A
     BIT 1,B
     BIT 1,C
@@ -82,8 +82,8 @@
     BIT 1,H
     BIT 1,L
     BIT 2,(HL)
-    BIT 2,(IX+$42)
-    BIT 2,(IY+$42)
+    BIT 2,(IX+$5A)
+    BIT 2,(IY+$5A)
     BIT 2,A
     BIT 2,B
     BIT 2,C
@@ -92,8 +92,8 @@
     BIT 2,H
     BIT 2,L
     BIT 3,(HL)
-    BIT 3,(IX+$42)
-    BIT 3,(IY+$42)
+    BIT 3,(IX+$5A)
+    BIT 3,(IY+$5A)
     BIT 3,A
     BIT 3,B
     BIT 3,C
@@ -102,8 +102,8 @@
     BIT 3,H
     BIT 3,L
     BIT 4,(HL)
-    BIT 4,(IX+$42)
-    BIT 4,(IY+$42)
+    BIT 4,(IX+$5A)
+    BIT 4,(IY+$5A)
     BIT 4,A
     BIT 4,B
     BIT 4,C
@@ -112,8 +112,8 @@
     BIT 4,H
     BIT 4,L
     BIT 5,(HL)
-    BIT 5,(IX+$42)
-    BIT 5,(IY+$42)
+    BIT 5,(IX+$5A)
+    BIT 5,(IY+$5A)
     BIT 5,A
     BIT 5,B
     BIT 5,C
@@ -122,8 +122,8 @@
     BIT 5,H
     BIT 5,L
     BIT 6,(HL)
-    BIT 6,(IX+$42)
-    BIT 6,(IY+$42)
+    BIT 6,(IX+$5A)
+    BIT 6,(IY+$5A)
     BIT 6,A
     BIT 6,B
     BIT 6,C
@@ -132,8 +132,8 @@
     BIT 6,H
     BIT 6,L
     BIT 7,(HL)
-    BIT 7,(IX+$42)
-    BIT 7,(IY+$42)
+    BIT 7,(IX+$5A)
+    BIT 7,(IY+$5A)
     BIT 7,A
     BIT 7,B
     BIT 7,C
@@ -141,19 +141,19 @@
     BIT 7,E
     BIT 7,H
     BIT 7,L
-    CALL nn
-    CALL C,nn
-    CALL M,nn
-    CALL NC,nn
-    CALL NZ,nn
-    CALL P,nn
-    CALL PE,nn
-    CALL PO,nn
-    CALL Z,nn
+    CALL $1234
+    CALL C,$1234
+    CALL M,$1234
+    CALL NC,$1234
+    CALL NZ,$1234
+    CALL P,$1234
+    CALL PE,$1234
+    CALL PO,$1234
+    CALL Z,$1234
     CCF
     CP (HL)
-    CP (IX+$42)
-    CP (IY+$42)
+    CP (IX+$5A)
+    CP (IY+$5A)
     CP A
     CP B
     CP C
@@ -173,8 +173,8 @@
     CPL
     DAA
     DEC (HL)
-    DEC (IX+$42)
-    DEC (IY+$42)
+    DEC (IX+$5A)
+    DEC (IY+$5A)
     DEC A
     DEC B
     DEC BC
@@ -215,8 +215,8 @@
     IN H,(C)
     IN L,(C)
     INC (HL)
-    INC (IX+$42)
-    INC (IY+$42)
+    INC (IX+$5A)
+    INC (IY+$5A)
     INC A
     INC B
     INC BC
@@ -241,15 +241,15 @@
     JP (HL)
     JP (IX)
     JP (IY)
-    JP nn
-    JP C,nn
-    JP M,nn
-    JP NC,nn
-    JP NZ,nn
-    JP P,nn
-    JP PE,nn
-    JP PO,nn
-    JP Z,nn
+    JP $1234
+    JP C,$1234
+    JP M,$1234
+    JP NC,$1234
+    JP NZ,$1234
+    JP P,$1234
+    JP PE,$1234
+    JP PO,$1234
+    JP Z,$1234
 .2: JR .2
 .3: JR C,.3
 .4: JR NC,.4
@@ -265,35 +265,35 @@
     LD (HL),H
     LD (HL),L
     LD (HL),$42
-    LD (IX+$42),A
-    LD (IX+$42),B
-    LD (IX+$42),C
-    LD (IX+$42),D
-    LD (IX+$42),E
-    LD (IX+$42),H
-    LD (IX+$42),L
-    LD (IX+$42),$42
-    LD (IY+$42),A
-    LD (IY+$42),B
-    LD (IY+$42),C
-    LD (IY+$42),D
-    LD (IY+$42),E
-    LD (IY+$42),H
-    LD (IY+$42),L
-    LD (IY+$42),$42
-    LD (nn),A
-    LD (nn),BC
-    LD (nn),DE
-    LD (nn),HL
-    LD (nn),IX
-    LD (nn),IY
-    LD (nn),SP
+    LD (IX+$5A),A
+    LD (IX+$5A),B
+    LD (IX+$5A),C
+    LD (IX+$5A),D
+    LD (IX+$5A),E
+    LD (IX+$5A),H
+    LD (IX+$5A),L
+    LD (IX+$5A),$42
+    LD (IY+$5A),A
+    LD (IY+$5A),B
+    LD (IY+$5A),C
+    LD (IY+$5A),D
+    LD (IY+$5A),E
+    LD (IY+$5A),H
+    LD (IY+$5A),L
+    LD (IY+$5A),$42
+    LD ($1234),A
+    LD ($1234),BC
+    LD ($1234),DE
+    LD ($1234),HL
+    LD ($1234),IX
+    LD ($1234),IY
+    LD ($1234),SP
     LD A,(BC)
     LD A,(DE)
     LD A,(HL)
-    LD A,(IX+$42)
-    LD A,(IY+$42)
-    LD A,(nn)
+    LD A,(IX+$5A)
+    LD A,(IY+$5A)
+    LD A,($1234)
     LD A,A
     LD A,B
     LD A,C
@@ -309,8 +309,8 @@
     LD A,$42
     LD A,R
     LD B,(HL)
-    LD B,(IX+$42)
-    LD B,(IY+$42)
+    LD B,(IX+$5A)
+    LD B,(IY+$5A)
     LD B,A
     LD B,B
     LD B,C
@@ -323,11 +323,11 @@
     LD B,IYl
     LD B,L
     LD B,$42
-    LD BC,(nn)
-    LD BC,nn
+    LD BC,($1234)
+    LD BC,$1234
     LD C,(HL)
-    LD C,(IX+$42)
-    LD C,(IY+$42)
+    LD C,(IX+$5A)
+    LD C,(IY+$5A)
     LD C,A
     LD C,B
     LD C,C
@@ -341,8 +341,8 @@
     LD C,L
     LD C,$42
     LD D,(HL)
-    LD D,(IX+$42)
-    LD D,(IY+$42)
+    LD D,(IX+$5A)
+    LD D,(IY+$5A)
     LD D,A
     LD D,B
     LD D,C
@@ -355,11 +355,11 @@
     LD D,IYl
     LD D,L
     LD D,$42
-    LD DE,(nn)
-    LD DE,nn
+    LD DE,($1234)
+    LD DE,$1234
     LD E,(HL)
-    LD E,(IX+$42)
-    LD E,(IY+$42)
+    LD E,(IX+$5A)
+    LD E,(IY+$5A)
     LD E,A
     LD E,B
     LD E,C
@@ -373,8 +373,8 @@
     LD E,L
     LD E,$42
     LD H,(HL)
-    LD H,(IX+$42)
-    LD H,(IY+$42)
+    LD H,(IX+$5A)
+    LD H,(IY+$5A)
     LD H,A
     LD H,B
     LD H,C
@@ -383,11 +383,11 @@
     LD H,H
     LD H,L
     LD H,$42
-    LD HL,(nn)
-    LD HL,nn
+    LD HL,($1234)
+    LD HL,$1234
     LD I,A
-    LD IX,(nn)
-    LD IX,nn
+    LD IX,($1234)
+    LD IX,$1234
     LD IXh,A
     LD IXh,B
     LD IXh,C
@@ -404,8 +404,8 @@
     LD IXl,IXh
     LD IXl,IXl
     LD IXl,$42
-    LD IY,(nn)
-    LD IY,nn
+    LD IY,($1234)
+    LD IY,$1234
     LD IYh,A
     LD IYh,B
     LD IYh,C
@@ -423,8 +423,8 @@
     LD IYl,IYl
     LD IYl,$42
     LD L,(HL)
-    LD L,(IX+$42)
-    LD L,(IY+$42)
+    LD L,(IX+$5A)
+    LD L,(IY+$5A)
     LD L,A
     LD L,B
     LD L,C
@@ -434,11 +434,11 @@
     LD L,L
     LD L,$42
     LD R,A
-    LD SP,(nn)
+    LD SP,($1234)
     LD SP,HL
     LD SP,IX
     LD SP,IY
-    LD SP,nn
+    LD SP,$1234
     LDD
     LDDR
     LDI
@@ -446,8 +446,8 @@
     NEG
     NOP
     OR (HL)
-    OR (IX+$42)
-    OR (IY+$42)
+    OR (IX+$5A)
+    OR (IY+$5A)
     OR A
     OR B
     OR C
@@ -486,8 +486,8 @@
     PUSH IX
     PUSH IY
     RES 0,(HL)
-    RES 0,(IX+$42)
-    RES 0,(IY+$42)
+    RES 0,(IX+$5A)
+    RES 0,(IY+$5A)
     RES 0,A
     RES 0,B
     RES 0,C
@@ -496,8 +496,8 @@
     RES 0,H
     RES 0,L
     RES 1,(HL)
-    RES 1,(IX+$42)
-    RES 1,(IY+$42)
+    RES 1,(IX+$5A)
+    RES 1,(IY+$5A)
     RES 1,A
     RES 1,B
     RES 1,C
@@ -506,8 +506,8 @@
     RES 1,H
     RES 1,L
     RES 2,(HL)
-    RES 2,(IX+$42)
-    RES 2,(IY+$42)
+    RES 2,(IX+$5A)
+    RES 2,(IY+$5A)
     RES 2,A
     RES 2,B
     RES 2,C
@@ -516,8 +516,8 @@
     RES 2,H
     RES 2,L
     RES 3,(HL)
-    RES 3,(IX+$42)
-    RES 3,(IY+$42)
+    RES 3,(IX+$5A)
+    RES 3,(IY+$5A)
     RES 3,A
     RES 3,B
     RES 3,C
@@ -526,8 +526,8 @@
     RES 3,H
     RES 3,L
     RES 4,(HL)
-    RES 4,(IX+$42)
-    RES 4,(IY+$42)
+    RES 4,(IX+$5A)
+    RES 4,(IY+$5A)
     RES 4,A
     RES 4,B
     RES 4,C
@@ -536,8 +536,8 @@
     RES 4,H
     RES 4,L
     RES 5,(HL)
-    RES 5,(IX+$42)
-    RES 5,(IY+$42)
+    RES 5,(IX+$5A)
+    RES 5,(IY+$5A)
     RES 5,A
     RES 5,B
     RES 5,C
@@ -546,8 +546,8 @@
     RES 5,H
     RES 5,L
     RES 6,(HL)
-    RES 6,(IX+$42)
-    RES 6,(IY+$42)
+    RES 6,(IX+$5A)
+    RES 6,(IY+$5A)
     RES 6,A
     RES 6,B
     RES 6,C
@@ -556,8 +556,8 @@
     RES 6,H
     RES 6,L
     RES 7,(HL)
-    RES 7,(IX+$42)
-    RES 7,(IY+$42)
+    RES 7,(IX+$5A)
+    RES 7,(IY+$5A)
     RES 7,A
     RES 7,B
     RES 7,C
@@ -577,8 +577,8 @@
     RETI
     RETN
     RL (HL)
-    RL (IX+$42)
-    RL (IY+$42)
+    RL (IX+$5A)
+    RL (IY+$5A)
     RL A
     RL B
     RL C
@@ -588,8 +588,8 @@
     RL L
     RLA
     RLC (HL)
-    RLC (IX+$42)
-    RLC (IY+$42)
+    RLC (IX+$5A)
+    RLC (IY+$5A)
     RLC A
     RLC B
     RLC C
@@ -600,8 +600,8 @@
     RLCA
     RLD
     RR (HL)
-    RR (IX+$42)
-    RR (IY+$42)
+    RR (IX+$5A)
+    RR (IY+$5A)
     RR A
     RR B
     RR C
@@ -611,8 +611,8 @@
     RR L
     RRA
     RRC (HL)
-    RRC (IX+$42)
-    RRC (IY+$42)
+    RRC (IX+$5A)
+    RRC (IY+$5A)
     RRC A
     RRC B
     RRC C
@@ -631,8 +631,8 @@
     RST 38H
     RST 8H
     SBC A,(HL)
-    SBC A,(IX+$42)
-    SBC A,(IY+$42)
+    SBC A,(IX+$5A)
+    SBC A,(IY+$5A)
     SBC A,A
     SBC A,B
     SBC A,C
@@ -651,8 +651,8 @@
     SBC HL,SP
     SCF
     SET 0,(HL)
-    SET 0,(IX+$42)
-    SET 0,(IY+$42)
+    SET 0,(IX+$5A)
+    SET 0,(IY+$5A)
     SET 0,A
     SET 0,B
     SET 0,C
@@ -661,8 +661,8 @@
     SET 0,H
     SET 0,L
     SET 1,(HL)
-    SET 1,(IX+$42)
-    SET 1,(IY+$42)
+    SET 1,(IX+$5A)
+    SET 1,(IY+$5A)
     SET 1,A
     SET 1,B
     SET 1,C
@@ -671,8 +671,8 @@
     SET 1,H
     SET 1,L
     SET 2,(HL)
-    SET 2,(IX+$42)
-    SET 2,(IY+$42)
+    SET 2,(IX+$5A)
+    SET 2,(IY+$5A)
     SET 2,A
     SET 2,B
     SET 2,C
@@ -681,8 +681,8 @@
     SET 2,H
     SET 2,L
     SET 3,(HL)
-    SET 3,(IX+$42)
-    SET 3,(IY+$42)
+    SET 3,(IX+$5A)
+    SET 3,(IY+$5A)
     SET 3,A
     SET 3,B
     SET 3,C
@@ -691,8 +691,8 @@
     SET 3,H
     SET 3,L
     SET 4,(HL)
-    SET 4,(IX+$42)
-    SET 4,(IY+$42)
+    SET 4,(IX+$5A)
+    SET 4,(IY+$5A)
     SET 4,A
     SET 4,B
     SET 4,C
@@ -701,8 +701,8 @@
     SET 4,H
     SET 4,L
     SET 5,(HL)
-    SET 5,(IX+$42)
-    SET 5,(IY+$42)
+    SET 5,(IX+$5A)
+    SET 5,(IY+$5A)
     SET 5,A
     SET 5,B
     SET 5,C
@@ -711,8 +711,8 @@
     SET 5,H
     SET 5,L
     SET 6,(HL)
-    SET 6,(IX+$42)
-    SET 6,(IY+$42)
+    SET 6,(IX+$5A)
+    SET 6,(IY+$5A)
     SET 6,A
     SET 6,B
     SET 6,C
@@ -721,8 +721,8 @@
     SET 6,H
     SET 6,L
     SET 7,(HL)
-    SET 7,(IX+$42)
-    SET 7,(IY+$42)
+    SET 7,(IX+$5A)
+    SET 7,(IY+$5A)
     SET 7,A
     SET 7,B
     SET 7,C
@@ -731,8 +731,8 @@
     SET 7,H
     SET 7,L
     SLA (HL)
-    SLA (IX+$42)
-    SLA (IY+$42)
+    SLA (IX+$5A)
+    SLA (IY+$5A)
     SLA A
     SLA B
     SLA C
@@ -741,8 +741,8 @@
     SLA H
     SLA L
     SLL (HL)
-    SLL (IX+$42)
-    SLL (IY+$42)
+    SLL (IX+$5A)
+    SLL (IY+$5A)
     SLL A
     SLL B
     SLL C
@@ -751,8 +751,8 @@
     SLL H
     SLL L
     SRA (HL)
-    SRA (IX+$42)
-    SRA (IY+$42)
+    SRA (IX+$5A)
+    SRA (IY+$5A)
     SRA A
     SRA B
     SRA C
@@ -761,8 +761,8 @@
     SRA H
     SRA L
     SRL (HL)
-    SRL (IX+$42)
-    SRL (IY+$42)
+    SRL (IX+$5A)
+    SRL (IY+$5A)
     SRL A
     SRL B
     SRL C
@@ -771,8 +771,8 @@
     SRL H
     SRL L
     SUB A,(HL)
-    SUB A,(IX+$42)
-    SUB A,(IY+$42)
+    SUB A,(IX+$5A)
+    SUB A,(IY+$5A)
     SUB A,A
     SUB A,B
     SUB A,C
@@ -786,8 +786,8 @@
     SUB A,L
     SUB A,$42
     XOR (HL)
-    XOR (IX+$42)
-    XOR (IY+$42)
+    XOR (IX+$5A)
+    XOR (IY+$5A)
     XOR A
     XOR B
     XOR C
@@ -800,5 +800,3 @@
     XOR IYl
     XOR L
     XOR $42
-
-nn:

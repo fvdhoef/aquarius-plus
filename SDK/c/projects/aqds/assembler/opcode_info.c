@@ -193,8 +193,33 @@ static const uint8_t opinf_jr[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_REL_ADDR, OD_AT_NONE, 0x18),    // JR e
 };
 static const uint8_t opinf_ld[] = {
-    DESC(1, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_IMM16, 0x01), // LD dd,nn
-    DESC(0, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_IMM8, 0x06),      // LD r,n
+    DESC(1, OD_PREFIX_NONE, OD_AT_BC_IND, OD_AT_A, 0x02),               // LD (BC),A
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_BC_IND, 0x0A),               // LD A,(BC)
+    DESC(1, OD_PREFIX_NONE, OD_AT_DE_IND, OD_AT_A, 0x12),               // LD (DE),A
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_DE_IND, 0x1A),               // LD A,(DE)
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_20_REG_ALL, 0x40),  // LD r,r'
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_20_IXHL, 0x40),     // LD r,IXh/IXl
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_20_IYHL, 0x40),     // LD r,IYh/IYl
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IXHL, OD_AT_20_REG_ALL, 0x40),     // LD IXh/IXl,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_IYHL, OD_AT_20_REG_ALL, 0x40),     // LD IYh/IYl,r
+    DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_20_BCDEHLA, 0x70), // LD (IX+d),r
+    DESC(1, OD_PREFIX_NONE, OD_AT_IX_IND_OFFS, OD_AT_IMM8, 0x36),       // LD (IX+d),n
+    DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_20_BCDEHLA, 0x70), // LD (IY+d),r
+    DESC(1, OD_PREFIX_NONE, OD_AT_IY_IND_OFFS, OD_AT_IMM8, 0x36),       // LD (IY+d),n
+    DESC(1, OD_PREFIX_NONE, OD_AT_IMM16_IND, OD_AT_A, 0x32),            // LD (nn),A
+    DESC(1, OD_PREFIX_NONE, OD_AT_IMM16_IND, OD_AT_HL, 0x22),           // LD (nn),HL
+    DESC(1, OD_PREFIX_NONE, OD_AT_IMM16_IND, OD_AT_IX, 0x22),           // LD (nn),IX
+    DESC(1, OD_PREFIX_NONE, OD_AT_IMM16_IND, OD_AT_IY, 0x22),           // LD (nn),IY
+    DESC(1, OD_PREFIX_ED, OD_AT_IMM16_IND, OD_AT_54_BC_DE_HL_SP, 0x43), // LD (nn),HL
+    DESC(1, OD_PREFIX_ED, OD_AT_I, OD_AT_A, 0x47),                      // LD I,A
+    DESC(1, OD_PREFIX_ED, OD_AT_R, OD_AT_A, 0x4F),                      // LD R,A
+    DESC(1, OD_PREFIX_ED, OD_AT_A, OD_AT_I, 0x57),                      // LD A,I
+    DESC(1, OD_PREFIX_ED, OD_AT_A, OD_AT_R, 0x5F),                      // LD A,R
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_BCDEHLA, OD_AT_IX_IND_OFFS, 0x46), // LD r,(IX+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_53_BCDEHLA, OD_AT_IY_IND_OFFS, 0x46), // LD r,(IY+d)
+    DESC(1, OD_PREFIX_NONE, OD_AT_A, OD_AT_IMM16_IND, 0x3A),            // LD A,(nn)
+    DESC(1, OD_PREFIX_NONE, OD_AT_54_BC_DE_HL_SP, OD_AT_IMM16, 0x01),   // LD dd,nn
+    DESC(0, OD_PREFIX_NONE, OD_AT_53_REG_ALL, OD_AT_IMM8, 0x06),        // LD r,n
 };
 static const uint8_t opinf_or[] = {
     DESC(0, OD_PREFIX_NONE, OD_AT_20_REG_ALL, OD_AT_NONE, 0xB0), // OR r

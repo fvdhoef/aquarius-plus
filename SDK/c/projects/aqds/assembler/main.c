@@ -29,12 +29,14 @@ uint16_t        cur_scope   = 0;
 static uint8_t  cur_opcode  = 0;
 static uint8_t  cur_outtype = 0;
 static uint16_t arg_value;
+static uint8_t  d_value;
 
 enum {
     OT_NONE,
     OT_8BIT,
     OT_16BIT,
 
+    OT_D         = (1 << 5),
     OT_PREFIX_DD = (1 << 6),
     OT_PREFIX_FD = (2 << 6),
 };
@@ -312,6 +314,7 @@ static char *parse_argument(void) {
 
 static const char *regs8_all[]      = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
 static const char *regs8_bcdehlfa[] = {"b", "c", "d", "e", "h", "l", "f", "a"};
+static const char *regs8_bcdehla[]  = {"b", "c", "d", "e", "h", "l", "", "a"};
 static const char *regs8_ixhl[]     = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
 static const char *regs8_iyhl[]     = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
 
@@ -381,7 +384,16 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 goto err;
             cur_outtype |= OT_16BIT;
             return true;
-        case OD_AT_IMM16_IND: error("OD_AT_IMM16_IND");
+        case OD_AT_IMM16_IND:
+            if (arg[0] != '(')
+                return false;
+            cur_p     = (char *)arg + 1;
+            arg_value = parse_expression(pass == 0);
+            if (cur_p[0] != ')' && cur_p[1] != 0)
+                goto err;
+            cur_p++;
+            cur_outtype |= OT_16BIT;
+            return true;
         case OD_AT_REL_ADDR:
             cur_p     = (char *)arg;
             arg_value = parse_expression(pass == 0);
@@ -411,6 +423,14 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 }
             }
             return false;
+        case OD_AT_20_BCDEHLA:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, regs8_bcdehla[i]) == 0) {
+                    cur_opcode |= i;
+                    return true;
+                }
+            }
+            return false;
         case OD_AT_53_REG_ALL:
             for (int i = 0; i < 8; i++) {
                 if (strcasecmp(arg, regs8_all[i]) == 0) {
@@ -427,7 +447,15 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 }
             }
             return false;
-        case OD_AT_53_BCDEHLA: error("OD_AT_53_BCDEHLA");
+        case OD_AT_53_BCDEHLA:
+            for (int i = 0; i < 8; i++) {
+                if (strcasecmp(arg, regs8_bcdehla[i]) == 0) {
+                    cur_opcode |= i << 3;
+                    return true;
+                }
+            }
+            return false;
+
         case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
         case OD_AT_53_COND:
             for (int i = 0; i < 8; i++) {
@@ -477,16 +505,18 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return true;
             }
             return false;
-        case OD_AT_IX_IND_OFFS:
+        case OD_AT_IX_IND_OFFS: {
             if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
                 return false;
-            cur_p     = (char *)arg + 1;
-            arg_value = parse_expression(pass == 0);
+            cur_p          = (char *)arg + 1;
+            uint16_t value = parse_expression(pass == 0);
             if (cur_p[0] != ')' && cur_p[1] != 0)
                 goto err;
+            d_value = value;
             cur_p++;
-            cur_outtype |= OT_PREFIX_DD | OT_8BIT;
+            cur_outtype |= OT_PREFIX_DD | OT_D;
             return true;
+        }
 
         case OD_AT_20_IXHL:
             for (int i = 4; i <= 5; i++) {
@@ -532,17 +562,18 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 return true;
             }
             return false;
-        case OD_AT_IY_IND_OFFS:
+        case OD_AT_IY_IND_OFFS: {
             if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
                 return false;
-            cur_p     = (char *)arg + 1;
-            arg_value = parse_expression(pass == 0);
+            cur_p          = (char *)arg + 1;
+            uint16_t value = parse_expression(pass == 0);
             if (cur_p[0] != ')' && cur_p[1] != 0)
                 goto err;
+            d_value = value;
             cur_p++;
-            cur_outtype |= OT_PREFIX_FD | OT_8BIT;
+            cur_outtype |= OT_PREFIX_FD | OT_D;
             return true;
-
+        }
         case OD_AT_20_IYHL:
             for (int i = 4; i <= 5; i++) {
                 if (strcasecmp(arg, regs8_iyhl[i]) == 0) {
@@ -678,30 +709,25 @@ static void parse_file(const char *path) {
                     case OD_PREFIX_ED: emit_byte(0xED); break;
                     default: break;
                 }
-                switch (cur_outtype & 0x3F) {
-                    case OT_NONE:
-                        emit_byte(cur_opcode);
-                        break;
-
-                    case OT_8BIT:
-                        if (prefix_type == OD_PREFIX_CB) {
-                            emit_byte(arg_value);
-                            emit_byte(cur_opcode);
-                        } else {
-                            emit_byte(cur_opcode);
-                            emit_byte(arg_value);
-                        }
-                        break;
-
-                    case OT_16BIT:
-                        emit_byte(cur_opcode);
-                        emit_byte(arg_value & 0xFF);
-                        emit_byte(arg_value >> 8);
-                        break;
-
-                    default:
-                        error("Invalid outtype");
+                if (prefix_type == OD_PREFIX_CB && (cur_outtype & OT_D)) {
+                    emit_byte(d_value);
+                    emit_byte(cur_opcode);
+                } else {
+                    emit_byte(cur_opcode);
+                    if (cur_outtype & OT_D) {
+                        emit_byte(d_value);
+                    }
+                    switch (cur_outtype & 0x1F) {
+                        case OT_NONE: break;
+                        case OT_8BIT: emit_byte(arg_value); break;
+                        case OT_16BIT:
+                            emit_byte(arg_value & 0xFF);
+                            emit_byte(arg_value >> 8);
+                            break;
+                        default: error("Invalid outtype");
+                    }
                 }
+
                 done = true;
                 break;
             }
