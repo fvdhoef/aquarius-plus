@@ -1,10 +1,7 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#include <stdio.h>
-#include <stdint.h>
-#include <stdlib.h>
-#include <string.h>
+#include "aqplus.h"
 #include <stdbool.h>
 #include <unistd.h>
 

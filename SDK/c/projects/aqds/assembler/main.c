@@ -4,8 +4,6 @@
 #include "symbols.h"
 #include "opcode_info.h"
 
-static uint8_t fake_heap[40000];
-
 #define MAX_FILE_DEPTH 8
 
 struct file_ctx {
@@ -13,11 +11,29 @@ struct file_ctx {
     char     path[30];
 };
 
+enum {
+    OT_NONE,
+    OT_8BIT,
+    OT_16BIT,
+    OT_D         = (1 << 5),
+    OT_PREFIX_DD = (1 << 6),
+    OT_PREFIX_FD = (2 << 6),
+};
+
+#if 0 // ndef __SDCC
+#define ENABLE_LISTING
+#endif
+
+#ifdef ENABLE_LISTING
 static FILE *f_list;
-static FILE *f_out;
 static char  list_line[256];
 static char *list_p;
+#endif
 
+static int8_t          fd_out = -1;
+static uint8_t         outbuf[128];
+static uint8_t        *outbuf_p   = outbuf;
+static uint8_t         outbuf_idx = 0;
 static struct file_ctx file_ctxs[MAX_FILE_DEPTH];
 static uint8_t         file_ctx_idx;
 struct file_ctx       *cur_file_ctx;
@@ -26,7 +42,6 @@ static const char     *label;
 static const char     *keyword;
 static const char     *string;
 char                  *cur_p;
-static uint8_t        *heap;
 uint8_t                cur_pass    = 0;
 static uint16_t        cur_addr    = 0;
 uint16_t               cur_scope   = 0;
@@ -35,15 +50,15 @@ static uint8_t         cur_outtype = 0;
 static uint16_t        arg_value;
 static uint8_t         d_value;
 
-enum {
-    OT_NONE,
-    OT_8BIT,
-    OT_16BIT,
-
-    OT_D         = (1 << 5),
-    OT_PREFIX_DD = (1 << 6),
-    OT_PREFIX_FD = (2 << 6),
-};
+static const char *regs8_all[]        = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
+static const char *regs8_bcdehlfa[]   = {"b", "c", "d", "e", "h", "l", "f", "a"};
+static const char *regs8_ixhl[]       = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
+static const char *regs8_iyhl[]       = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
+static const char *regs_bc_de_hl_sp[] = {"bc", "de", "hl", "sp"};
+static const char *regs_bc_de_hl_af[] = {"bc", "de", "hl", "af"};
+static const char *regs_bc_de_ix_sp[] = {"bc", "de", "ix", "sp"};
+static const char *regs_bc_de_iy_sp[] = {"bc", "de", "iy", "sp"};
+static const char *cond_all[]         = {"nz", "z", "nc", "c", "po", "pe", "p", "m"};
 
 typedef void handler_t(void);
 
@@ -84,6 +99,23 @@ void error(char *str) {
 
 void syntax_error(void) {
     error("Syntax error");
+}
+
+void check_esp_result(int16_t result) {
+    if (result < 0) {
+        switch (result) {
+            case ERR_NOT_FOUND: error("File / directory not found"); break;
+            case ERR_TOO_MANY_OPEN: error("Too many open files / directories"); break;
+            case ERR_PARAM: error("Invalid parameter"); break;
+            case ERR_EOF: error("End of file / directory"); break;
+            case ERR_EXISTS: error("File already exists"); break;
+            default:
+            case ERR_OTHER: error("Other error"); break;
+            case ERR_NO_DISK: error("No disk"); break;
+            case ERR_NOT_EMPTY: error("Not empty"); break;
+            case ERR_WRITE_PROTECT: error("Write protected SD-card"); break;
+        }
+    }
 }
 
 void expect_comma(void) {
@@ -202,14 +234,27 @@ static uint8_t tokenize_keyword(const char *keyword) {
     return TOK_UNKNOWN;
 }
 
+static void write_outbuf(void) {
+    if (fd_out >= 0 && outbuf_idx > 0) {
+        esp_write(fd_out, outbuf, outbuf_idx);
+    }
+    outbuf_idx = 0;
+    outbuf_p   = outbuf;
+}
+
 static void emit_byte(uint16_t val) {
     if ((val & 0xFF00) != 0)
         error("Invalid byte value");
 
     if (cur_pass == 1) {
+#ifdef ENABLE_LISTING
         list_p += sprintf(list_p, "%02X", val);
+#endif
 
-        fwrite(&val, 1, 1, f_out);
+        *(outbuf_p++) = val;
+        if (++outbuf_idx == sizeof(outbuf)) {
+            write_outbuf();
+        }
     }
 
     // printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
@@ -276,9 +321,9 @@ static void handler_include(void) {
     if (*cur_p != 0)
         syntax_error();
 
-    printf("\nInclude file: '%s'\n", string);
+    // printf("\nInclude file: '%s'\n", string);
     parse_file(string);
-    printf("----------------------\n");
+    // printf("----------------------\n");
 }
 static void handler_org(void) {
     uint16_t addr = parse_expression(false);
@@ -294,7 +339,7 @@ static void handler_org(void) {
             }
         }
     }
-    printf("[Org addr: $%04x]\n", addr);
+    // printf("[Org addr: $%04x]\n", addr);
 }
 static void handler_phase(void) {
     error("Not implemented");
@@ -332,16 +377,6 @@ static char *parse_argument(void) {
 
     return result;
 }
-
-static const char *regs8_all[]        = {"b", "c", "d", "e", "h", "l", "(hl)", "a"};
-static const char *regs8_bcdehlfa[]   = {"b", "c", "d", "e", "h", "l", "f", "a"};
-static const char *regs8_ixhl[]       = {"b", "c", "d", "e", "ixh", "ixl", "", "a"};
-static const char *regs8_iyhl[]       = {"b", "c", "d", "e", "iyh", "iyl", "", "a"};
-static const char *regs_bc_de_hl_sp[] = {"bc", "de", "hl", "sp"};
-static const char *regs_bc_de_hl_af[] = {"bc", "de", "hl", "af"};
-static const char *regs_bc_de_ix_sp[] = {"bc", "de", "ix", "sp"};
-static const char *regs_bc_de_iy_sp[] = {"bc", "de", "iy", "sp"};
-static const char *cond_all[]         = {"nz", "z", "nc", "c", "po", "pe", "p", "m"};
 
 static bool match_argtype(const char *arg, uint8_t arg_type) {
     // printf("    - match_argtype(\"%s\", %d)\n", arg, arg_type);
@@ -711,7 +746,8 @@ err:
 }
 
 static void parse_file(const char *path) {
-    FILE *f = fopen(path, "r");
+    int8_t fd = esp_open(path, FO_RDONLY);
+    check_esp_result(fd);
 
     if (cur_file_ctx != NULL) {
         file_ctx_idx++;
@@ -733,18 +769,22 @@ static void parse_file(const char *path) {
     }
 
     while (1) {
+#ifdef ENABLE_LISTING
         list_p  = list_line;
         *list_p = 0;
+#endif
 
         cur_file_ctx->linenr++;
-        if (fgets(linebuf, 256, f) == NULL)
+        int linelen = esp_readline(fd, linebuf, 256);
+        if (linelen == ERR_EOF)
             break;
+        check_esp_result(linelen);
 
         label      = NULL;
         keyword    = NULL;
         cur_p      = linebuf;
         uint8_t ch = *cur_p;
-        if (ch == ';' || ch == '\r' || ch == '\n')
+        if (ch == 0 || ch == ';' || ch == '\r' || ch == '\n')
             continue;
         if (ch != ' ' && ch != '\t')
             parse_label();
@@ -779,7 +819,9 @@ static void parse_file(const char *path) {
 
             bool done = false;
 
+#ifdef ENABLE_LISTING
             list_p += sprintf(list_p, "%04X  ", cur_addr);
+#endif
 
             // printf("- %s:%u: %s %s%s%s\n", cur_file_ctx->path, cur_file_ctx->linenr, keyword, arg1, arg2[0] ? "," : "", arg2);
 
@@ -835,19 +877,23 @@ static void parse_file(const char *path) {
                 syntax_error();
             }
 
+#ifdef ENABLE_LISTING
             while (list_p - list_line < 14) {
                 *(list_p++) = ' ';
             }
             *(list_p++) = '\t';
             list_p += sprintf(list_p, "    %s%s%s%s%s", keyword, arg1[0] ? " " : "", arg1, arg2[0] ? "," : "", arg2);
+#endif
         }
 
+#ifdef ENABLE_LISTING
         *(list_p++) = '\n';
         *list_p     = 0;
         fputs(list_line, f_list);
+#endif
     }
 
-    fclose(f);
+    esp_close(fd);
 
     if (file_ctx_idx == 0) {
         cur_file_ctx = NULL;
@@ -857,11 +903,12 @@ static void parse_file(const char *path) {
 }
 
 int main(void) {
-    heap = fake_heap;
     chdir("testdata");
 
+#ifdef ENABLE_LISTING
     f_list = fopen("listing.txt", "wt");
-    f_out  = fopen("result.bin", "wb");
+#endif
+    fd_out = esp_open("result.bin", FO_CREATE | FO_TRUNC | FO_WRONLY);
 
     const char *filename = "goaqms.asm";
 
@@ -871,8 +918,12 @@ int main(void) {
         parse_file(filename);
     }
 
+#ifdef ENABLE_LISTING
     fclose(f_list);
-    fclose(f_out);
+#endif
+
+    write_outbuf();
+    esp_close(fd_out);
 
     return 0;
 }

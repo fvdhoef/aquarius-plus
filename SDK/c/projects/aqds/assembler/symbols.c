@@ -66,7 +66,9 @@ void symbol_add(const char *str, size_t len, uint16_t value) {
     memcpy(new_entry->name, str, name_len);
     hash_table[hash_idx] = new_entry;
 
+#if 0
     printf("[Add symbol %.*s = $%04x  hash: %u]\n", (int)name_len, str, value, hash_idx);
+#endif
 }
 
 uint16_t symbol_get(const char *str, size_t len, bool allow_undefined) {
@@ -75,7 +77,9 @@ uint16_t symbol_get(const char *str, size_t len, bool allow_undefined) {
         if (allow_undefined)
             return 0;
         else {
+#if 0
             printf("'%s'\n", str);
+#endif
             error("Symbol not found");
         }
     }
