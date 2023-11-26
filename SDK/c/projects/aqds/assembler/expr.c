@@ -22,7 +22,7 @@ static uint16_t parse_primary_expr(void) {
         cur_p++;
         ch = to_lower(*cur_p);
         if (!is_hexadecimal(ch))
-            error("Syntax error");
+            syntax_error();
 
         while (is_hexadecimal(ch)) {
             value <<= 4;

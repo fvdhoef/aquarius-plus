@@ -38,7 +38,6 @@ enum {
     OD_AT_53_REG_ALL,     //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,6:(hl),7:a
     OD_AT_53_BCDEHLFA,    //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,6:f,7:a
     OD_AT_53_BCDEHLA,     //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,4:h,5:l,7:a
-    OD_AT_53_BCDEA,       //  8-bit register encoded in 5:3 - 0:b,1:c,2:d,3:e,7:a
     OD_AT_53_COND,        // condition       encoded in 5:3 - 0:nz,1:z,2:nc,3:c,4:po,5:pe,6:p,7:m
     OD_AT_43_COND,        // condition       encoded in 4:3 - 0:nz,1:z,2:nc,3:c
     OD_AT_54_BC_DE_HL_AF, // 16-bit register encoded in 5:4 - 0:bc,1:de,2:hl,3:af

@@ -8,7 +8,9 @@
 #include <stdbool.h>
 #include <unistd.h>
 
-void    error(char *str);
+void error(char *str);
+void syntax_error(void);
+
 void    skip_whitespace(void);
 uint8_t to_lower(uint8_t ch);
 

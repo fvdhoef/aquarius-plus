@@ -82,6 +82,21 @@ void error(char *str) {
     exit(1);
 }
 
+void syntax_error(void) {
+    error("Syntax error");
+}
+
+void expect_comma(void) {
+    if (cur_p[0] != ',')
+        error("Expected comma");
+    cur_p++;
+}
+
+void expect_end_of_line(void) {
+    if (cur_p[0] != 0)
+        error("Expected end of line");
+}
+
 void skip_whitespace(void) {
     while (1) {
         uint8_t ch = *cur_p;
@@ -128,7 +143,7 @@ static void parse_keyword(void) {
         keyword = NULL;
     else if (*cur_p != 0) {
         if (*cur_p > ' ')
-            error("Syntax error");
+            syntax_error();
         *(cur_p++) = 0;
     }
 }
@@ -198,7 +213,7 @@ static void emit_byte(uint16_t val) {
 }
 
 static void handler_unknown(void) {
-    error("Syntax error");
+    syntax_error();
 }
 static void handler_defb(void) {
     skip_whitespace();
@@ -217,9 +232,7 @@ static void handler_defb(void) {
         skip_whitespace();
         if (cur_p[0] == 0)
             break;
-        if (cur_p[0] != ',')
-            error("Syntax error: expected comma");
-        cur_p++;
+        expect_comma();
     }
 }
 static void handler_defw(void) {
@@ -233,9 +246,7 @@ static void handler_defw(void) {
         skip_whitespace();
         if (cur_p[0] == 0)
             break;
-        if (cur_p[0] != ',')
-            error("Syntax error: expected comma");
-        cur_p++;
+        expect_comma();
     }
 }
 static void handler_defs(void) {
@@ -259,7 +270,7 @@ static void handler_include(void) {
     parse_string();
     skip_whitespace();
     if (*cur_p != 0)
-        error("Syntax error");
+        syntax_error();
 
     printf("\nInclude file: '%s'\n", string);
     parse_file(string);
@@ -531,7 +542,6 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 }
                 return false;
 
-            case OD_AT_53_BCDEA: error("OD_AT_53_BCDEA");
             case OD_AT_53_COND:
                 for (int i = 0; i < 8; i++) {
                     if (strcasecmp(arg, cond_all[i]) == 0) {
@@ -685,7 +695,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
     }
 
 err:
-    error("Syntax error");
+    syntax_error();
     return false;
 }
 
@@ -737,8 +747,7 @@ static void parse_file(const char *path) {
         if (token == TOK_EQU) {
             directive_handlers[token]();
             skip_whitespace();
-            if (*cur_p != 0)
-                error("Syntax error: expected end-of-line");
+            expect_end_of_line();
             continue;
         }
         if (label)
@@ -755,8 +764,7 @@ static void parse_file(const char *path) {
             const uint8_t *info_next = opcode_info[token - TOK_OPCODE_FIRST];
             const char    *arg1      = parse_argument();
             const char    *arg2      = parse_argument();
-            if (*cur_p != 0)
-                error("Syntax error: expected end-of-line");
+            expect_end_of_line();
 
             bool done = false;
 
@@ -813,7 +821,7 @@ static void parse_file(const char *path) {
                 break;
             }
             if (!done) {
-                error("Syntax error");
+                syntax_error();
             }
 
             while (list_p - list_line < 14) {
