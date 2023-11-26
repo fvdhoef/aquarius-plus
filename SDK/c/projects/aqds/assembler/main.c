@@ -14,6 +14,7 @@ struct file_ctx {
 };
 
 static FILE *f_list;
+static FILE *f_out;
 static char  list_line[256];
 static char *list_p;
 
@@ -78,7 +79,7 @@ static void parse_file(const char *path);
 void error(char *str) {
     if (str == NULL)
         str = "Unknown";
-    printf("\n%s:%u Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, cur_addr, str);
+    printf("\n%s:%u (pass %u) Error (addr: $%04X): %s\n", cur_file_ctx->path, cur_file_ctx->linenr, pass + 1, cur_addr, str);
     exit(1);
 }
 
@@ -206,9 +207,13 @@ static void emit_byte(uint16_t val) {
     if ((val & 0xFF00) != 0)
         error("Invalid byte value");
 
-    list_p += sprintf(list_p, "%02X", val);
+    if (pass == 1) {
+        list_p += sprintf(list_p, "%02X", val);
 
-    printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
+        fwrite(&val, 1, 1, f_out);
+    }
+
+    // printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
     cur_addr++;
 }
 
@@ -341,7 +346,7 @@ static const char *regs_bc_de_iy_sp[] = {"bc", "de", "iy", "sp"};
 static const char *cond_all[]         = {"nz", "z", "nc", "c", "po", "pe", "p", "m"};
 
 static bool match_argtype(const char *arg, uint8_t arg_type) {
-    printf("    - match_argtype(\"%s\", %d)\n", arg, arg_type);
+    // printf("    - match_argtype(\"%s\", %d)\n", arg, arg_type);
     if (arg[0] == 0 && arg_type != OD_AT_NONE)
         return false;
 
@@ -398,7 +403,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             case OD_AT_IX_IND_OFFS: {
                 if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
                     return false;
-                cur_p          = (char *)arg + 1;
+                cur_p          = (char *)arg + 4;
                 uint16_t value = parse_expression(pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
@@ -416,7 +421,7 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
             case OD_AT_IY_IND_OFFS: {
                 if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
                     return false;
-                cur_p          = (char *)arg + 1;
+                cur_p          = (char *)arg + 4;
                 uint16_t value = parse_expression(pass == 0);
                 if (cur_p[0] != ')' && cur_p[1] != 0)
                     goto err;
@@ -490,7 +495,15 @@ static bool match_argtype(const char *arg, uint8_t arg_type) {
                 arg_value = parse_expression(pass == 0);
                 if (cur_p[0] != 0)
                     goto err;
-                arg_value = 0; // FIXME!!!
+
+                if (pass == 0) {
+                    arg_value = 0;
+                } else {
+                    int16_t val = arg_value - (cur_addr + 2);
+                    if (val < -128 || val > 127)
+                        error("Value out of range!");
+                    arg_value = val & 0xFF;
+                }
                 cur_outtype |= OT_8BIT;
                 return true;
             case OD_AT_A: return to_lower(arg[0]) == 'a' && arg[1] == 0;
@@ -770,7 +783,7 @@ static void parse_file(const char *path) {
 
             list_p += sprintf(list_p, "%04X  ", cur_addr);
 
-            printf("- %s:%u: %s %s%s%s\n", cur_file_ctx->path, cur_file_ctx->linenr, keyword, arg1, arg2[0] ? "," : "", arg2);
+            // printf("- %s:%u: %s %s%s%s\n", cur_file_ctx->path, cur_file_ctx->linenr, keyword, arg1, arg2[0] ? "," : "", arg2);
 
             while (info_next) {
                 const uint8_t *info = info_next;
@@ -783,7 +796,7 @@ static void parse_file(const char *path) {
                     error("Unimplemented opcode");
 
                 cur_outtype = OT_NONE;
-                printf("  - arg1:%2u arg2:%2u prefix:%u opcode:$%02X\n", arg1_type, arg2_type, prefix_type, cur_opcode);
+                // printf("  - arg1:%2u arg2:%2u prefix:%u opcode:$%02X\n", arg1_type, arg2_type, prefix_type, cur_opcode);
 
                 if (!match_argtype(arg1, arg1_type) || !match_argtype(arg2, arg2_type))
                     continue;
@@ -850,13 +863,18 @@ int main(void) {
     chdir("testdata");
 
     f_list = fopen("listing.txt", "wt");
+    f_out  = fopen("result.bin", "wb");
 
-    cur_scope = 0;
-    pass      = 0;
-    // parse_file("goaqms.asm");
-    parse_file("all_opcodes.asm");
+    const char *filename = "goaqms.asm";
+
+    for (pass = 0; pass < 2; pass++) {
+        cur_addr  = 0;
+        cur_scope = 0;
+        parse_file(filename);
+    }
 
     fclose(f_list);
+    fclose(f_out);
 
     return 0;
 }

@@ -45,15 +45,15 @@ struct entry *alloc_entry(void) {
 }
 
 void symbol_add(const char *str, size_t len, uint16_t value) {
+    if (str[0] != '.')
+        cur_scope++;
+
     hash(str, len, str[0] == '.');
     if (cur_entry) {
         if (cur_entry->value == value)
             return;
         error("Symbol already exists");
     }
-
-    if (str[0] != '.')
-        cur_scope++;
 
     struct entry *new_entry = alloc_entry();
     new_entry->next         = hash_table[hash_idx];
@@ -71,8 +71,10 @@ uint16_t symbol_get(const char *str, size_t len, bool allow_undefined) {
     if (!cur_entry) {
         if (allow_undefined)
             return 0;
-        else
+        else {
+            printf("'%s'\n", str);
             error("Symbol not found");
+        }
     }
     return cur_entry->value;
 }
