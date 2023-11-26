@@ -394,6 +394,7 @@ static void cmd_mkfile(void) {
     hide_selection(current_pane, selected_row);
     *filename = 0;
     if (string_editor("Enter name for new file", filename) && *filename != '.') {
+        chdir(current_pane->dir_path);
         int8_t fd = open(filename, FO_WRONLY | FO_CREATE | FO_EXCL);
         if (fd >= 0) {
             close(fd);
@@ -555,6 +556,7 @@ static void cmd_mkdir(void) {
     hide_selection(current_pane, selected_row);
     *filename = 0;
     if (string_editor("Enter name for new directory", filename) && *filename != '.') {
+        chdir(current_pane->dir_path);
         mkdir(filename);
     }
     redraw_screen = true;
