@@ -44,6 +44,8 @@ uint16_t               cur_scope  = 0;
 uint8_t                cur_opcode = 0;
 uint8_t                d_value;
 static bool            stop_parsing;
+static uint16_t        phase_offset;
+static bool            phase_enabled = false;
 
 typedef void handler_t(void);
 
@@ -51,13 +53,13 @@ static void handler_unknown(void);
 static void handler_defb(void);
 static void handler_defs(void);
 static void handler_defw(void);
-static void handler_dephase(void);
 static void handler_end(void);
 static void handler_equ(void);
 static void handler_incbin(void);
 static void handler_include(void);
 static void handler_org(void);
 static void handler_phase(void);
+static void handler_dephase(void);
 
 static handler_t *directive_handlers[] = {
     handler_unknown,
@@ -149,6 +151,7 @@ void expect_comma(void) {
 }
 
 void expect_end_of_line(void) {
+    skip_whitespace();
     if (cur_p[0] != 0)
         error("Expected end of line");
 }
@@ -329,19 +332,18 @@ static void handler_defs(void) {
     }
 }
 static void handler_end(void) {
+    expect_end_of_line();
     stop_parsing = true;
 }
 static void handler_equ(void) {
     if (!label)
         error("Equ without label");
     symbol_add(label, 0, parse_expression(false));
+    expect_end_of_line();
 }
 static void handler_incbin(void) {
     parse_string();
-    skip_whitespace();
-    if (*cur_p != 0)
-        syntax_error();
-
+    expect_end_of_line();
     printf("  - Processing binary file: '%s'\n", string);
 
     int8_t fd = esp_open(string, FO_RDONLY);
@@ -361,15 +363,15 @@ static void handler_incbin(void) {
 }
 static void handler_include(void) {
     parse_string();
-    skip_whitespace();
-    if (*cur_p != 0)
-        syntax_error();
+    expect_end_of_line();
 
     printf("  - Processing include file: '%s'\n", string);
     parse_file(string);
 }
 static void handler_org(void) {
     uint16_t addr = parse_expression(false);
+    expect_end_of_line();
+
     if (addr < cur_addr) {
         error("Org value < cur addr");
     } else {
@@ -385,10 +387,23 @@ static void handler_org(void) {
     // printf("[Org addr: $%04x]\n", addr);
 }
 static void handler_phase(void) {
-    error("Not implemented");
+    if (phase_enabled)
+        error("Already in phase");
+
+    uint16_t addr = parse_expression(false);
+    expect_end_of_line();
+
+    phase_enabled = true;
+    phase_offset  = cur_addr - addr;
+    cur_addr      = addr;
 }
 static void handler_dephase(void) {
-    error("Not implemented");
+    expect_end_of_line();
+    if (!phase_enabled)
+        error("Dephase outside phase");
+
+    phase_enabled = false;
+    phase_offset  = cur_addr + phase_offset;
 }
 
 static char *parse_argument(void) {
@@ -475,8 +490,6 @@ static void parse_file(const char *path) {
         }
         if (token == TOK_EQU) {
             directive_handlers[token]();
-            skip_whitespace();
-            expect_end_of_line();
             continue;
         }
         if (label)
