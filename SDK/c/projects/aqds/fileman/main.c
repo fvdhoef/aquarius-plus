@@ -57,7 +57,7 @@ static char            tmpbuf[128];
 static const char *fn_labels[10] = {
     "Run",    // F1
     "MkFile", // F2
-    "Compil", //"View",   // F3
+    "",       //"View",   // F3
     "Edit",   // F4
     "Copy",   // F5
     "RenMov", // F6
@@ -364,11 +364,58 @@ static void show_selection(void) {
     scr_set_color(current_pane == &right_pane ? 41 : 1, 2 + selected_row, 38, 0x09);
 }
 
+static const char *get_extension(const char *fn) {
+    int         len = strlen(fn);
+    const char *p   = fn + len;
+
+    // Find start of extension
+    while (p != fn) {
+        p--;
+        if (*p == '/' || *p == '\\' || *p == '.')
+            break;
+    }
+    if (*p != '.')
+        return NULL;
+    return p + 1;
+}
+
+static uint8_t to_lower(uint8_t ch) {
+    if (ch >= 'A' && ch <= 'Z')
+        ch += 'a' - 'A';
+    return ch;
+}
+
+static bool compare_str(const char *s1, const char *s2) {
+    while (to_lower(*s1) == to_lower(*s2)) {
+        if (*s1 == 0)
+            return true;
+        s1++;
+        s2++;
+    }
+    return false;
+}
+
+static void assemble_file(void) {
+    const char *pgm = "/aqds/assembler.bin";
+    memcpy(pgm_binary, pgm, strlen(pgm) + 1);
+    memcpy(pgm_argument, filename, 128);
+    __asm__("jp 0xF803");
+}
+
 static void cmd_run(void) {
     // RUN selected item
     read_selected();
     if (st.attr & DE_ATTR_DIR)
         return;
+
+    // Get extension
+    const char *ext = get_extension(filename);
+    if (ext) {
+        if (compare_str(ext, "asm")) {
+            assemble_file();
+            return;
+        }
+    }
 
     char       *p       = pgm_binary;
     const char *runcmd  = " RUN \"";
@@ -410,20 +457,6 @@ static void cmd_edit(void) {
         return;
 
     const char *pgm = "/aqds/editor.bin";
-    memcpy(pgm_binary, pgm, strlen(pgm) + 1);
-    memcpy(pgm_argument, filename, 128);
-
-    // Run editor
-    __asm__("jp 0xF803");
-}
-
-static void cmd_assemble(void) {
-    // Open item in editor
-    read_selected();
-    if (st.attr & DE_ATTR_DIR)
-        return;
-
-    const char *pgm = "/aqds/assembler.bin";
     memcpy(pgm_binary, pgm, strlen(pgm) + 1);
     memcpy(pgm_argument, filename, 128);
 
@@ -666,7 +699,6 @@ void main(void) {
             }
             case CH_F1: cmd_run(); break;
             case CH_F2: cmd_mkfile(); break;
-            case CH_F3: cmd_assemble(); break;
             case CH_F4: cmd_edit(); break;
             case CH_F5: cmd_copy(); break;
             case CH_F6: cmd_renmov(); break;
