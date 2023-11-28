@@ -374,10 +374,12 @@ static void handler_defw(void) {
 }
 static void handler_defs(void) {
     list_write_addr(cur_addr);
-    uint16_t length = parse_expression(false);
+    uint16_t length    = parse_expression(false);
+    list_disable_bytes = true;
     while (length--) {
         emit_byte(0);
     }
+    list_disable_bytes = false;
 }
 static void handler_end(void) {
     expect_end_of_line();
@@ -778,7 +780,7 @@ int main(
     determine_basename(path);
 
     // Output header
-    puts("Aquarius+ Development Studio - Z80 Assembler V1.0 by Frank van den Hoef\n");
+    puts("Aquarius+ Development Studio - Z80 Assembler V1.1 by Frank van den Hoef\n");
     printf("Assembling %s\n", path);
 
     // Change directory
