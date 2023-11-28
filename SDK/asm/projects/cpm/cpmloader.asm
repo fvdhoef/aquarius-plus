@@ -1,11 +1,11 @@
     include "regs.inc"
 
-	org $38E1
+    org $38E1
 
     ; Header and BASIC stub
-	defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+    defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
     defb    "AQPLUS"
-	defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
+    defb    $FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$FF,$00
     defb    $0E,$39,$0A,$00,$DA,"14608",':',$80,$00,$00,$00
     jp      main
 

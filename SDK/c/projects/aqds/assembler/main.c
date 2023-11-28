@@ -23,6 +23,7 @@ static int8_t          fd_list = -1;
 static char            list_line[16 + 257];
 static uint8_t         list_byte;
 static bool            list_print_text;
+static bool            list_disable_bytes;
 static uint8_t         outbuf[128];
 static uint8_t        *outbuf_p   = outbuf;
 static uint8_t         outbuf_idx = 0;
@@ -58,19 +59,24 @@ static void handler_include(void);
 static void handler_org(void);
 static void handler_phase(void);
 static void handler_dephase(void);
+static void handler_assert(void);
 
 static handler_t *directive_handlers[TOK_DIR_LAST + 1] = {
-    handler_unknown,
-    handler_defb,
-    handler_defs,
-    handler_defw,
-    handler_dephase,
-    handler_end,
-    handler_equ,
-    handler_incbin,
-    handler_include,
-    handler_org,
-    handler_phase,
+    handler_unknown, // TOK_UNKNOWN
+    handler_assert,  // TOK_ASSERT
+    handler_defb,    // TOK_DB
+    handler_defb,    // TOK_DEFB
+    handler_defs,    // TOK_DEFS
+    handler_defw,    // TOK_DEFW
+    handler_dephase, // TOK_DEPHASE
+    handler_defs,    // TOK_DS
+    handler_defw,    // TOK_DW
+    handler_end,     // TOK_END
+    handler_equ,     // TOK_EQU
+    handler_incbin,  // TOK_INCBIN
+    handler_include, // TOK_INCLUDE
+    handler_org,     // TOK_ORG
+    handler_phase,   // TOK_PHASE
 };
 
 static void parse_file(const char *path);
@@ -209,13 +215,16 @@ static void parse_string(void) {
     string = NULL;
     skip_whitespace();
     uint8_t ch = *(cur_p++);
-    if (ch != '"')
-        error("Expected '\"'");
+    if (ch != '"' && ch != '\'')
+        error("Expected \" or '");
+
+    uint8_t term_ch = ch;
+
     string = cur_p;
 
     while (1) {
         ch = *cur_p;
-        if (ch == '"') {
+        if (ch == term_ch) {
             *(cur_p++) = 0;
             break;
         }
@@ -269,10 +278,7 @@ static void write_outbuf(void) {
 }
 
 static void list_output_line(void) {
-    if (cur_pass != 1)
-        return;
-
-    if (!list_line[0])
+    if (fd_list < 0 || !list_line[0])
         return;
 
     // Terminate list line with newline
@@ -296,7 +302,7 @@ static void write_hex(char *p, uint8_t val) {
 }
 
 static void list_write_addr(uint16_t val) {
-    if (cur_pass != 1)
+    if (fd_list < 0)
         return;
 
     write_hex(list_line + 0, val >> 8);
@@ -307,7 +313,7 @@ static void emit_byte(uint16_t val) {
     if ((val & 0xFF00) != 0)
         error("Invalid byte value");
 
-    if (fd_list >= 0) {
+    if (fd_list >= 0 && !list_disable_bytes) {
         if (list_line[0] == 0) {
             memset(list_line, ' ', 6);
             memset(list_line + 6, 0, 10);
@@ -317,14 +323,13 @@ static void emit_byte(uint16_t val) {
         if (++list_byte == 4) {
             list_output_line();
         }
-
+    }
+    if (fd_out >= 0) {
         *(outbuf_p++) = val;
         if (++outbuf_idx == sizeof(outbuf)) {
             write_outbuf();
         }
     }
-
-    // printf("[$%04X:$%02X (%c)]\n", cur_addr, val, (val >= ' ' && val <= '~') ? val : '.');
     cur_addr++;
 }
 
@@ -336,7 +341,7 @@ static void handler_defb(void) {
     skip_whitespace();
 
     while (1) {
-        if (cur_p[0] == '"') {
+        if (cur_p[0] == '"' || cur_p[0] == '\'') {
             // String constant
             parse_string();
             while (*string) {
@@ -394,6 +399,7 @@ static void handler_incbin(void) {
 
     int8_t fd = esp_open(string, FO_RDONLY);
     check_esp_result(fd);
+    list_disable_bytes = true;
     while (1) {
         // Use line buffer as temporary buffer
         int16_t result = esp_read(fd, linebuf, sizeof(linebuf));
@@ -406,6 +412,17 @@ static void handler_incbin(void) {
         }
     }
     esp_close(fd);
+    list_disable_bytes = false;
+
+    linebuf[0] = 0;
+    cur_p      = linebuf;
+}
+static void handler_assert(void) {
+    uint16_t value = parse_expression(false);
+    expect_end_of_line();
+
+    if (!value)
+        error("Assertion failed!\n");
 }
 
 static void list_path(const char *path) {
@@ -774,28 +791,28 @@ int main(
 #endif
     }
 
-    // Create output directory
-    printf("- Creating output directory: out\n");
-#ifndef __SDCC
-    mkdir("out", 0777);
-#else
-    esp_mkdir("out");
-#endif
-
-    // Open output binary
-    sprintf(linebuf, "out/%s.aqx", basename);
-    printf("- Opening output binary: %s\n", linebuf);
-    fd_out = esp_open(linebuf, FO_CREATE | FO_TRUNC | FO_WRONLY);
-    check_esp_result(fd_out);
-
     // Perform the two assembly passes
     for (cur_pass = 0; cur_pass < 2; cur_pass++) {
         printf("- Assembly pass %d\n", cur_pass + 1);
 
-        // Open listing
         if (cur_pass == 1) {
+            // Create output directory
+            printf("  - Creating output directory: out\n");
+#ifndef __SDCC
+            mkdir("out", 0777);
+#else
+            esp_mkdir("out");
+#endif
+
+            // Open output binary
+            sprintf(linebuf, "out/%s.aqx", basename);
+            printf("  - Creating output binary: %s\n", linebuf);
+            fd_out = esp_open(linebuf, FO_CREATE | FO_TRUNC | FO_WRONLY);
+            check_esp_result(fd_out);
+
+            // Open listing
             sprintf(linebuf, "out/%s.lst", basename);
-            printf("  - Opening listing: %s\n", linebuf);
+            printf("  - Creating listing: %s\n", linebuf);
             fd_list = esp_open(linebuf, FO_CREATE | FO_TRUNC | FO_WRONLY);
             check_esp_result(fd_list);
         }
@@ -806,8 +823,10 @@ int main(
     }
 
     // Write any left over part to output binary and close it
-    write_outbuf();
-    esp_close(fd_out);
+    if (fd_out >= 0) {
+        write_outbuf();
+        esp_close(fd_out);
+    }
 
     // Close listing file
     if (fd_list >= 0)

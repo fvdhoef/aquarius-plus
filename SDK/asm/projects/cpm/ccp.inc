@@ -773,7 +773,7 @@ _decode1:
     cp      ' '             ; a space terminates the numeral.
     jp      z,_decode3
     inc     hl
-    SUB     '0'             ; make binary from ascii.
+    sub     '0'             ; make binary from ascii.
     cp      10              ; legal digit?
     jp      nc,_synerr
     ld      d,a             ; yes, save it in (D).
@@ -999,7 +999,7 @@ _type:
     jp      z,_type5        ; not there?
     call    _crlf           ; ok, start a new line on the screen.
     ld      hl,_nbytes      ; initialize byte counter.
-    ld      (hl),0FFH       ; set to read first sector.
+    ld      (hl),$FF        ; set to read first sector.
 _type1:
     ld      hl,_nbytes
     ld      a,(hl)          ; have we written the entire sector?

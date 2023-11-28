@@ -1521,7 +1521,7 @@ ERAFILE:
     ret     z               ; nope, we must be done.
     call    CHKROFL         ; is file read only?
     call    FCB2HL          ; nope, get address of fcb and
-    ld      (hl),0E5H       ; set first byte to 'empty'.
+    ld      (hl),$E5        ; set first byte to 'empty'.
     ld      c,0             ; clear the space from the bit map.
     call    SETFILE
     call    DIRWRITE        ; now write the directory sector back out.

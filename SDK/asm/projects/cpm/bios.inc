@@ -272,7 +272,7 @@ _go_cpm:
 
     ; Set up BDOS entry point
     ld      (5),a
-    ld      hl,BDOS
+    ld      hl,bdos
     ld      (6),hl
 
     ; Set default DMA address
@@ -282,7 +282,7 @@ _go_cpm:
     ; Get current disk number and jump to CCP
     ld      a,(4)
     ld      c,a
-    jp      CCP
+    jp      ccp
 
 ;-----------------------------------------------------------------------------
 ; CONST - Console status

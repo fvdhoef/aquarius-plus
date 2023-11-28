@@ -3,7 +3,10 @@
 // clang-format off
 static const uint8_t keywords2[] = {
     'c','p',TOK_CP,
+    'd','b',TOK_DB,
     'd','i',TOK_DI,
+    'd','s',TOK_DS,
+    'd','w',TOK_DW,
     'e','i',TOK_EI,
     'e','x',TOK_EX,
     'i','m',TOK_IM,
@@ -85,6 +88,7 @@ static const uint8_t keywords5[] = {
     'p','h','a','s','e',TOK_PHASE,
 };
 static const uint8_t keywords6[] = {
+    'a','s','s','e','r','t',TOK_ASSERT,
     'i','n','c','b','i','n',TOK_INCBIN,
 };
 static const uint8_t keywords7[] = {
