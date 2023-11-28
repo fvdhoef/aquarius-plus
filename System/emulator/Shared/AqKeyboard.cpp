@@ -633,6 +633,15 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
             keybMatrix |= (1ULL << KEY_GUI);
         else
             keybMatrix &= ~(1ULL << KEY_GUI);
+
+        // Handle ESCAPE as if CTRL-C is pressed
+        if (scanCode == SCANCODE_ESCAPE) {
+            if (keyDown) {
+                keybMatrix |= (1ULL << KEY_C) | (1ULL << KEY_CTRL);
+            } else {
+                keybMatrix &= ~((1ULL << KEY_C) | (1ULL << KEY_CTRL));
+            }
+        }
     }
 
     // Special keys

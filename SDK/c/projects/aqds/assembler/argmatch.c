@@ -80,14 +80,20 @@ static bool match_ix_ind(char *arg) {
     return false;
 }
 static bool match_ix_ind_offs(char *arg) {
-    if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x' || arg[3] != '+')
+    if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'x')
         return false;
-    cur_p          = (char *)arg + 4;
-    uint16_t value = parse_expression(cur_pass == 0);
+
+    int16_t val = 0;
+    if (arg[3] != ')') {
+        cur_p = (char *)arg + 3;
+        val   = parse_expression(cur_pass == 0);
+    }
     if (cur_p[0] != ')' && cur_p[1] != 0)
         syntax_error();
+    if (val < -128 || val > 127)
+        range_error();
 
-    d_value = value;
+    d_value = val;
     cur_p++;
     cur_outtype |= OT_PREFIX_DD | OT_D;
     return true;
@@ -100,14 +106,20 @@ static bool match_iy_ind(char *arg) {
     return false;
 }
 static bool match_iy_ind_offs(char *arg) {
-    if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y' || arg[3] != '+')
+    if (arg[0] != '(' || to_lower(arg[1]) != 'i' || to_lower(arg[2]) != 'y')
         return false;
-    cur_p          = (char *)arg + 4;
-    uint16_t value = parse_expression(cur_pass == 0);
+
+    int16_t val = 0;
+    if (arg[3] != ')') {
+        cur_p = (char *)arg + 3;
+        val   = parse_expression(cur_pass == 0);
+    }
     if (cur_p[0] != ')' && cur_p[1] != 0)
         syntax_error();
+    if (val < -128 || val > 127)
+        range_error();
 
-    d_value = value;
+    d_value = val;
     cur_p++;
     cur_outtype |= OT_PREFIX_FD | OT_D;
     return true;

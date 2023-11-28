@@ -30,7 +30,7 @@ run_emu: all
 	@mkdir -p $(AQPLUS_EMU_DISK)/aqds
 	@cp $(FILES_TO_COPY) "$(AQPLUS_EMU_DISK)/aqds"
 	@echo Starting $(OUTFILE) in emulator
-	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\nrun\"aqds/$(OUTFILE)\"\n"
+	@$(AQPLUS_EMU) -u "$(AQPLUS_EMU_DISK)" -t "\n  run\"aqds/$(OUTFILE)\"\n"
 
 run_aqp: all
 	@$(foreach NAME,$(FILES_TO_COPY), \
