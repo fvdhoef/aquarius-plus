@@ -57,7 +57,7 @@ static char            tmpbuf[128];
 static const char *fn_labels[10] = {
     "Run",    // F1
     "MkFile", // F2
-    // "View",   // F3
+    "",       // "View",   // F3
     "Edit",   // F4
     "Copy",   // F5
     "RenMov", // F6
