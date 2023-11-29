@@ -1,9 +1,9 @@
-100 REM Tile Test (Arcade Gauntlet Level 1)
+100 REM Tile Test (Arcade Gauntlet Levels 1-3)
 110 SET SPRITE * CLEAR:CLS:AD$="gauntlet/":
 115 LOAD CHRSET AD$+"gaunt.chr":USE CHRSET 2
 120 PRINT:PRINT "Gauntlet tilemap demo":PRINT
-130 PRINT:PRINT "Requires plusBASIC v0.12q"
-140 PRINT "and Aquarius+ System V0.17d"
+130 PRINT:PRINT "Requires plusBASIC v0.19f"
+140 PRINT "and Aquarius+ System V0.22d"
 170 PRINT:INPUT "Level (1-3)";L$
 210 N$="gauntlet/level"+L$
 220 LOAD N$+".pal",$3860
@@ -50,6 +50,8 @@
 380 POKE SS+920," Q to quit"
 400 TX=0:TY=0
 405 SET TILEMAP OFFSET TX,TY
+406 LOAD AD$+"welcome.saq",@40,0
+407 PLAY SAMPLE @40,0
 410 _LOOP:IF M THEN K=INKEY:GOTO 420
 415 K=GETKEY
 420 IF K=81 OR K=113 THEN SCREEN RESET:CLS:USE CHRSET 0:END
