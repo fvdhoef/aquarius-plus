@@ -91,9 +91,11 @@ static uint16_t parse_unary_expr(void) {
     if      (cur_p[0] == '-') { cur_p++; return -parse_unary_expr(); }
     else if (cur_p[0] == '+') { cur_p++; return  parse_unary_expr(); }
     else if (cur_p[0] == '~') { cur_p++; return ~parse_unary_expr(); }
+    else if (cur_p[0] == '<') { cur_p++; return  parse_unary_expr() & 0xFF; }
+    else if (cur_p[0] == '>') { cur_p++; return  parse_unary_expr() >> 8; }
     else if (cur_p[0] == 'l' && cur_p[1] == 'o' && cur_p[2] == 'w' &&                    !is_alpha(cur_p[3])) { cur_p += 3; return parse_unary_expr() & 0xFF; }
     else if (cur_p[0] == 'h' && cur_p[1] == 'i' && cur_p[2] == 'g' && cur_p[3] == 'h' && !is_alpha(cur_p[4])) { cur_p += 4; return parse_unary_expr() >> 8; }
-    else                      {      return  parse_primary_expr(); }
+    else                      {          return  parse_primary_expr(); }
 }
 
 static uint16_t parse_mult_expr(void) {
