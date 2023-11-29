@@ -1,5 +1,6 @@
 #include <aqplus.h>
 #include <esp.h>
+#include <string.h>
 
 #define TEXT_RAM ((uint8_t *)0xF000)
 
@@ -101,6 +102,30 @@ static struct editor_data data;
 
 void print_5digits(uint16_t val);
 void print_4digits(uint16_t val);
+
+static int16_t esp_read_eol_conv(int8_t fd, void *buf, uint16_t length) {
+    esp_cmd(ESPCMD_READ);
+    esp_send_byte(fd);
+    esp_send_byte(length & 0xFF);
+    esp_send_byte(length >> 8);
+    int16_t result = (int8_t)esp_get_byte();
+    if (result < 0) {
+        return result;
+    }
+    result = esp_get_byte();
+    result |= esp_get_byte() << 8;
+
+    // Read while ignoring CR characters
+    uint16_t count = result;
+    uint8_t *p     = buf;
+    while (count--) {
+        uint8_t ch = esp_get_byte();
+        if (ch == '\r')
+            continue;
+        *(p++) = ch;
+    }
+    return p - (uint8_t *)buf;
+}
 
 static void _reset_text(void) {
     text_x = 0;
@@ -319,8 +344,16 @@ static bool load_file(const char *path) {
     data.split_begin = buf_start;
     data.split_end   = buf_end - st.size;
 
-    esp_read(fd, data.split_end, st.size);
+    uint16_t bytes_read = esp_read_eol_conv(fd, data.split_end, st.size);
     esp_close(fd);
+
+    // If EOL conversion has taken place, the actual numbers of bytes read
+    // will be lower. We need to move the data in that case.
+    if (bytes_read != st.size) {
+        const uint8_t *p = data.split_end;
+        data.split_end   = buf_end - bytes_read;
+        memmove(data.split_end, p, bytes_read);
+    }
 
     data.path           = path;
     data.top_p          = buf_start;
@@ -672,7 +705,7 @@ static void paste_clipboard(void) {
         return;
 
     while (1) {
-        int16_t result = esp_read(fd, tmpstr, sizeof(tmpstr));
+        int16_t result = esp_read_eol_conv(fd, tmpstr, sizeof(tmpstr));
         if (result <= 0)
             break;
 
