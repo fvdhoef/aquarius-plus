@@ -97,7 +97,8 @@ typedef enum {
     OP_NONE,
     OP_BYTE,
     OP_OFFSET,
-    OP_WORD
+    OP_WORD,
+    OP_OFFS_IMM,
 } Z80OperandType;
 
 typedef void (*Z80OpcodeFunc)(Z80Context *ctx);
@@ -697,13 +698,19 @@ void Z80Debug(Z80Context *ctx, char *dump, char *decode) {
                 size++;
             else
                 size += 2;
-            if (entries[opcode].operand_type != OP_WORD) {
+
+            int parm2 = 0;
+            if (entries[opcode].operand_type == OP_OFFS_IMM) {
+                parm2 = parm >> 8;
+                parm &= 0xFF;
+
+            } else if (entries[opcode].operand_type != OP_WORD) {
                 parm &= 0xFF;
                 size--;
             }
 
             if (decode)
-                sprintf(decode, fmt, parm);
+                sprintf(decode, fmt, parm, parm2);
 
             PC += offset;
             break;
