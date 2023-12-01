@@ -19,6 +19,7 @@ private:
     esp_err_t postSysRom(httpd_req_t *);
     esp_err_t handleDelete(httpd_req_t *);
     esp_err_t handleGet(httpd_req_t *);
+    esp_err_t handleHead(httpd_req_t *);
     esp_err_t handlePut(httpd_req_t *);
     esp_err_t handleCopy(httpd_req_t *);
     esp_err_t handleMkCol(httpd_req_t *);

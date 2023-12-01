@@ -85,7 +85,7 @@ void FileServer::init() {
     }
 
     httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
-    config.max_uri_handlers = 10;
+    config.max_uri_handlers = 11;
     config.uri_match_fn     = httpd_uri_match_wildcard;
 
     ESP_LOGI(TAG, "Starting HTTP Server on port: '%d'", config.server_port);
@@ -98,6 +98,7 @@ void FileServer::init() {
     registerHandler("/sysrom", HTTP_POST, [&](httpd_req_t *req) { return postSysRom(req); });
     registerHandler("/*", HTTP_DELETE, [&](httpd_req_t *req) { return handleDelete(req); });
     registerHandler("/*", HTTP_GET, [&](httpd_req_t *req) { return handleGet(req); });
+    registerHandler("/*", HTTP_HEAD, [&](httpd_req_t *req) { return handleHead(req); });
     registerHandler("/*", HTTP_PUT, [&](httpd_req_t *req) { return handlePut(req); });
     registerHandler("/*", HTTP_COPY, [&](httpd_req_t *req) { return handleCopy(req); });
     registerHandler("/*", HTTP_MKCOL, [&](httpd_req_t *req) { return handleMkCol(req); });
@@ -381,6 +382,10 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
         }
     }
     return ESP_OK;
+}
+
+esp_err_t FileServer::handleHead(httpd_req_t *req) {
+    return resp204(req);
 }
 
 esp_err_t FileServer::handlePut(httpd_req_t *req) {
