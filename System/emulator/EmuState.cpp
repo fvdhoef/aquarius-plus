@@ -88,13 +88,16 @@ int EmuState::cpuEmulate() {
         }
 
         if (haltAfterRet >= 0) {
-            z80ctx.tstates = 0;
-            char tmp[20];
-            Z80Debug(&z80ctx, nullptr, tmp);
+            uint8_t opcode = emuState.memRead(emuState.z80ctx.PC);
+            if (opcode == 0xCD ||          // CALL nn
+                (opcode & 0xC7) == 0xC4) { // CALL c,nn
 
-            if (strncmp(tmp, "CALL", 4) == 0) {
                 haltAfterRet++;
-            } else if (strcmp(tmp, "RET") == 0) {
+
+            } else if (
+                opcode == 0xC9 ||          // RET
+                (opcode & 0xC7) == 0xC7) { // RET cc
+
                 haltAfterRet--;
 
                 if (haltAfterRet < 0) {
