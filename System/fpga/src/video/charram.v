@@ -1,11 +1,11 @@
 module charram(
-    input  wire        clk,
-
+    input  wire        clk1,
     input  wire [10:0] addr1,
     output wire  [7:0] rddata1,
     input  wire  [7:0] wrdata1,
     input  wire        wren1,
 
+    input  wire        clk2,
     input  wire [10:0] addr2,
     output wire  [7:0] rddata2);
 
@@ -86,7 +86,7 @@ module charram(
     )
     
     RAMB16_S9_S9_inst(
-        .CLKA(clk),
+        .CLKA(clk1),
         .SSRA(1'b0),
         .ADDRA(addr1),
         .DOA(rddata1),
@@ -96,7 +96,7 @@ module charram(
         .ENA(1'b1),
         .WEA(wren1),
 
-        .CLKB(clk),
+        .CLKB(clk2),
         .SSRB(1'b0),
         .ADDRB(addr2),
         .DOB(rddata2),

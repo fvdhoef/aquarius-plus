@@ -274,13 +274,13 @@ module video(
     wire  [7:0] charram_data;
 
     charram charram(
-        .clk(vclk),
-
+        .clk1(clk),
         .addr1(chram_addr),
         .rddata1(chram_rddata),
         .wrdata1(chram_wrdata),
         .wren1(chram_wren),
 
+        .clk2(vclk),
         .addr2(charram_addr),
         .rddata2(charram_data));
 
