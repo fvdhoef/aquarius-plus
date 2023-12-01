@@ -109,6 +109,7 @@ void UI::mainLoop() {
     bool done = false;
     while (!done) {
         SDL_Event event;
+        bool      do_emulate = false;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             switch (event.type) {
@@ -149,7 +150,7 @@ void UI::mainLoop() {
                 }
 
                 // Called everytime an audio buffer is done playing
-                case SDL_USEREVENT: emulate(); break;
+                case SDL_USEREVENT: do_emulate = true; break;
 
                 default:
                     if (event.type == SDL_QUIT)
@@ -158,6 +159,11 @@ void UI::mainLoop() {
                         done = true;
                     break;
             }
+        }
+
+        if (do_emulate) {
+            do_emulate = false;
+            emulate();
         }
 
         if (io.WantSaveIniSettings) {
