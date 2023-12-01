@@ -698,17 +698,17 @@ void UI::wndCpuState(bool *p_open) {
 
             uint8_t data[8];
             for (int i = 0; i < 8; i++)
-                data[i] = emuState.memRead(0, val + i);
+                data[i] = emuState.memRead(val + i);
             ImGui::Text(
                 "%02X %02X %02X %02X %02X %02X %02X %02X",
-                emuState.memRead(0, val + 0),
-                emuState.memRead(0, val + 1),
-                emuState.memRead(0, val + 2),
-                emuState.memRead(0, val + 3),
-                emuState.memRead(0, val + 4),
-                emuState.memRead(0, val + 5),
-                emuState.memRead(0, val + 6),
-                emuState.memRead(0, val + 7));
+                emuState.memRead(val + 0),
+                emuState.memRead(val + 1),
+                emuState.memRead(val + 2),
+                emuState.memRead(val + 3),
+                emuState.memRead(val + 4),
+                emuState.memRead(val + 5),
+                emuState.memRead(val + 6),
+                emuState.memRead(val + 7));
 
             ImGui::TableNextColumn();
             std::string str;
@@ -898,11 +898,11 @@ void UI::wndBreakpoints(bool *p_open) {
 
 static ImU8 z80memRead(const ImU8 *data, size_t off) {
     (void)data;
-    return emuState.memRead(0, (uint16_t)off);
+    return emuState.memRead((uint16_t)off);
 }
 static void z80memWrite(ImU8 *data, size_t off, ImU8 d) {
     (void)data;
-    emuState.memWrite(0, (uint16_t)off, d);
+    emuState.memWrite((uint16_t)off, d);
 }
 
 void UI::wndMemEdit(bool *p_open) {

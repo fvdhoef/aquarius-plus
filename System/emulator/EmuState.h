@@ -24,6 +24,9 @@ enum EmulateResultFlags {
     ERF_NEW_AUDIO_SAMPLE = (1 << 1),
 };
 
+struct EmuState;
+extern EmuState emuState;
+
 struct EmuState {
     EmuState();
     void reset();
@@ -31,10 +34,27 @@ struct EmuState {
     bool loadCartridgeROM(const std::string &path);
     void keyboardTypeIn();
 
-    static uint8_t memRead(size_t param, uint16_t addr);
-    static void    memWrite(size_t param, uint16_t addr, uint8_t data);
-    static uint8_t ioRead(size_t param, uint16_t addr);
-    static void    ioWrite(size_t param, uint16_t addr, uint8_t data);
+    static uint8_t _memRead(size_t param, uint16_t addr) {
+        (void)param;
+        return emuState.memRead(addr, true);
+    }
+    static void _memWrite(size_t param, uint16_t addr, uint8_t data) {
+        (void)param;
+        return emuState.memWrite(addr, data, true);
+    }
+    static uint8_t _ioRead(size_t param, uint16_t addr) {
+        (void)param;
+        return emuState.ioRead(addr, true);
+    }
+    static void _ioWrite(size_t param, uint16_t addr, uint8_t data) {
+        (void)param;
+        return emuState.ioWrite(addr, data, true);
+    }
+
+    uint8_t memRead(uint16_t addr, bool triggerBp = false);
+    void    memWrite(uint16_t addr, uint8_t data, bool triggerBp = false);
+    uint8_t ioRead(uint16_t addr, bool triggerBp = false);
+    void    ioWrite(uint16_t addr, uint8_t data, bool triggerBp = false);
 
     unsigned emulate();
     int      cpuEmulate();
@@ -147,5 +167,3 @@ struct EmuState {
     uint8_t videoRam[16 * 1024];   // Video RAM
     uint8_t charRam[2048];         // Character RAM
 };
-
-extern EmuState emuState;
