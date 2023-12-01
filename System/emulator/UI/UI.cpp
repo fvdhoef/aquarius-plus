@@ -619,35 +619,39 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::SameLine();
 
         if (ImGui::Button("Step Over")) {
-            char tmp1[64];
-            char tmp2[64];
-            emuState.z80ctx.tstates = 0;
-            Z80Debug(&emuState.z80ctx, tmp1, tmp2);
+            int tmpBreakpoint = -1;
 
-            unsigned instLen = (unsigned)strlen(tmp1) / 3;
-            bool     doStepOver =
-                (strncmp(tmp2, "CALL ", 5) == 0 ||
-                 strncmp(tmp2, "RST ", 4) == 0 ||
-                 strcmp(tmp2, "CPDR") == 0 ||
-                 strcmp(tmp2, "CPIR") == 0 ||
-                 strcmp(tmp2, "INDR") == 0 ||
-                 strcmp(tmp2, "INIR") == 0 ||
-                 strcmp(tmp2, "LDDR") == 0 ||
-                 strcmp(tmp2, "LDIR") == 0 ||
-                 strcmp(tmp2, "OTDR") == 0 ||
-                 strcmp(tmp2, "OTIR") == 0);
+            uint8_t opcode = emuState.memRead(emuState.z80ctx.PC);
+            if (opcode == 0xCD ||          // CALL nn
+                (opcode & 0xC7) == 0xC4) { // CALL c,nn
 
-            if (doStepOver) {
-                emuState.tmpBreakpoint = emuState.z80ctx.PC + instLen;
+                tmpBreakpoint = emuState.z80ctx.PC + 3;
 
-                if (strncmp(tmp2, "RST 8H", 6) == 0 ||
-                    strncmp(tmp2, "RST 30H", 7) == 0) {
+            } else if ((opcode & 0xC7) == 0xC7) { // RST
+                tmpBreakpoint = emuState.z80ctx.PC + 1;
+                if ((opcode & 0x38) == 0x08 ||
+                    (opcode & 0x38) == 0x30) {
 
                     // Skip one extra byte on RST 08H/30H, since on the Aq these
                     // system calls absorb the byte following this instruction.
-                    emuState.tmpBreakpoint++;
+                    tmpBreakpoint++;
                 }
 
+            } else if (opcode == 0xED) {
+                opcode = emuState.memRead(emuState.z80ctx.PC + 1);
+                if (opcode == 0xB9 || // CPDR
+                    opcode == 0xB1 || // CPIR
+                    opcode == 0xBA || // INDR
+                    opcode == 0xB2 || // INIR
+                    opcode == 0xB8 || // LDDR
+                    opcode == 0xB0 || // LDIR
+                    opcode == 0xBB || // OTDR
+                    opcode == 0xB3) { // OTIR
+                }
+                tmpBreakpoint = emuState.z80ctx.PC + 2;
+            }
+            emuState.tmpBreakpoint = tmpBreakpoint;
+            if (tmpBreakpoint >= 0) {
                 emuState.emuMode = EmuState::Em_Running;
             } else {
                 emuState.emuMode = EmuState::Em_Step;
