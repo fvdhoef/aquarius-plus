@@ -66,42 +66,45 @@ void EmuState::reset() {
 }
 
 int EmuState::cpuEmulate() {
-    if (tmpBreakpoint == z80ctx.PC) {
-        tmpBreakpoint = -1;
-        emuMode       = EmuState::Em_Halted;
-        return 0;
-    }
+    bool haltAfterThis = false;
 
-    if (enableBreakpoints) {
-        for (int i = 0; i < (int)breakpoints.size(); i++) {
-            auto &bp = breakpoints[i];
-            if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value && bp.value != lastBpAddress) {
-                emuMode       = EmuState::Em_Halted;
-                lastBp        = i;
-                lastBpAddress = bp.value;
-                return 0;
+    if (enableDebugger) {
+        if (tmpBreakpoint == z80ctx.PC) {
+            tmpBreakpoint = -1;
+            emuMode       = EmuState::Em_Halted;
+            return 0;
+        }
+
+        if (enableBreakpoints) {
+            for (int i = 0; i < (int)breakpoints.size(); i++) {
+                auto &bp = breakpoints[i];
+                if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value && bp.value != lastBpAddress) {
+                    emuMode       = EmuState::Em_Halted;
+                    lastBp        = i;
+                    lastBpAddress = bp.value;
+                    return 0;
+                }
+            }
+        }
+
+        if (haltAfterRet >= 0) {
+            z80ctx.tstates = 0;
+            char tmp[20];
+            Z80Debug(&z80ctx, nullptr, tmp);
+
+            if (strncmp(tmp, "CALL", 4) == 0) {
+                haltAfterRet++;
+            } else if (strcmp(tmp, "RET") == 0) {
+                haltAfterRet--;
+
+                if (haltAfterRet < 0) {
+                    haltAfterThis = true;
+                    haltAfterRet  = -1;
+                }
             }
         }
     }
     lastBp = -1;
-
-    bool haltAfterThis = false;
-    if (haltAfterRet >= 0) {
-        z80ctx.tstates = 0;
-        char tmp[20];
-        Z80Debug(&z80ctx, nullptr, tmp);
-
-        if (strncmp(tmp, "CALL", 4) == 0) {
-            haltAfterRet++;
-        } else if (strcmp(tmp, "RET") == 0) {
-            haltAfterRet--;
-
-            if (haltAfterRet < 0) {
-                haltAfterThis = true;
-                haltAfterRet  = -1;
-            }
-        }
-    }
 
     // Generate interrupt if needed
     if ((irqStatus & irqMask) != 0) {
@@ -112,24 +115,26 @@ int EmuState::cpuEmulate() {
     Z80Execute(&z80ctx);
     int delta = z80ctx.tstates * 2;
 
-    if (traceEnable && (!z80ctx.halted || !prevHalted)) {
-        cpuTrace.emplace_back();
-        auto &entry = cpuTrace.back();
-        entry.pc    = z80ctx.PC;
-        entry.r1    = z80ctx.R1;
-        entry.r2    = z80ctx.R2;
+    if (enableDebugger) {
+        if (traceEnable && (!z80ctx.halted || !prevHalted)) {
+            cpuTrace.emplace_back();
+            auto &entry = cpuTrace.back();
+            entry.pc    = z80ctx.PC;
+            entry.r1    = z80ctx.R1;
+            entry.r2    = z80ctx.R2;
 
-        z80ctx.tstates = 0;
-        Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
+            z80ctx.tstates = 0;
+            Z80Debug(&z80ctx, entry.bytes, entry.instrStr);
 
-        while ((int)cpuTrace.size() > traceDepth) {
-            cpuTrace.pop_front();
+            while ((int)cpuTrace.size() > traceDepth) {
+                cpuTrace.pop_front();
+            }
         }
-    }
-    prevHalted = z80ctx.halted;
+        prevHalted = z80ctx.halted;
 
-    if (haltAfterThis) {
-        emuMode = EmuState::Em_Halted;
+        if (haltAfterThis) {
+            emuMode = EmuState::Em_Halted;
+        }
     }
     return delta;
 }

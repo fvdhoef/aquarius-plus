@@ -30,11 +30,9 @@ public:
     int  wndPosY             = 0;
     int  wndWidth            = 0;
     int  wndHeight           = 0;
-    int  scrScale            = 1;
     bool enableSound         = true;
     bool enableMouse         = true;
     bool handCtrlEmulation   = false;
-    bool showScreenWindow    = false;
     bool showMemEdit         = false;
     bool showCpuState        = false;
     bool showIoRegsWindow    = false;

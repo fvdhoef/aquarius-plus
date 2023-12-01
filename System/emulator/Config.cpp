@@ -58,13 +58,13 @@ void Config::load() {
         sdCardPath     = getStringValue(root, "sdCardPath", "");
         asmListingPath = getStringValue(root, "asmListingPath", "");
 
-        wndPosX     = getIntValue(root, "wndPosX", SDL_WINDOWPOS_CENTERED);
-        wndPosY     = getIntValue(root, "wndPosY", SDL_WINDOWPOS_CENTERED);
-        wndWidth    = getIntValue(root, "wndWidth", VIDEO_WIDTH);
-        wndHeight   = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
-        scrScale    = getIntValue(root, "scrScale", 1);
-        enableSound = getBoolValue(root, "enableSound", true);
-        enableMouse = getBoolValue(root, "enableMouse", true);
+        wndPosX                 = getIntValue(root, "wndPosX", SDL_WINDOWPOS_CENTERED);
+        wndPosY                 = getIntValue(root, "wndPosY", SDL_WINDOWPOS_CENTERED);
+        wndWidth                = getIntValue(root, "wndWidth", VIDEO_WIDTH);
+        wndHeight               = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
+        enableSound             = getBoolValue(root, "enableSound", true);
+        enableMouse             = getBoolValue(root, "enableMouse", true);
+        emuState.enableDebugger = getBoolValue(root, "enableDebugger", false);
 
         displayScaling = (DisplayScaling)getIntValue(root, "displayScaling", (int)DisplayScaling::Linear);
 
@@ -72,7 +72,7 @@ void Config::load() {
 
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
 
-        showScreenWindow    = getBoolValue(root, "showScreenWindow", false);
+        // showScreenWindow    = getBoolValue(root, "showScreenWindow", false);
         showMemEdit         = getBoolValue(root, "showMemEdit", false);
         showCpuState        = getBoolValue(root, "showCpuState", false);
         showIoRegsWindow    = getBoolValue(root, "showIoRegsWindow", false);
@@ -124,9 +124,9 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "wndPosY", wndPosY);
     cJSON_AddNumberToObject(root, "wndWidth", wndWidth);
     cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
-    cJSON_AddNumberToObject(root, "scrScale", scrScale);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
     cJSON_AddBoolToObject(root, "enableMouse", enableMouse);
+    cJSON_AddBoolToObject(root, "enableDebugger", emuState.enableDebugger);
 
     cJSON_AddNumberToObject(root, "displayScaling", (int)displayScaling);
 
@@ -134,7 +134,7 @@ void Config::save() {
 
     cJSON_AddBoolToObject(root, "handCtrlEmulation", handCtrlEmulation);
 
-    cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
+    // cJSON_AddBoolToObject(root, "showScreenWindow", showScreenWindow);
     cJSON_AddBoolToObject(root, "showMemEdit", showMemEdit);
     cJSON_AddBoolToObject(root, "showCpuState", showCpuState);
     cJSON_AddBoolToObject(root, "showIoRegsWindow", showIoRegsWindow);

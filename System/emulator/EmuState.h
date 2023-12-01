@@ -13,11 +13,11 @@
 // 51.2us + 1.5us + 4.7us + 6.2us = 63.6 us
 // 366 active pixels
 
-#define HCYCLES_PER_LINE (455)
+#define HCYCLES_PER_LINE   (455)
 #define HCYCLES_PER_SAMPLE (162)
 
 #define BANK_READONLY (1 << 7)
-#define BANK_MAP_RAM (1 << 6)
+#define BANK_MAP_RAM  (1 << 6)
 
 enum EmulateResultFlags {
     ERF_RENDER_SCREEN    = (1 << 0),
@@ -41,7 +41,8 @@ struct EmuState {
     unsigned audioLeft  = 0;
     unsigned audioRight = 0;
 
-    // Breakpoints
+    // Debugger
+    bool enableDebugger    = false;
     bool enableBreakpoints = false;
 
     struct Breakpoint {

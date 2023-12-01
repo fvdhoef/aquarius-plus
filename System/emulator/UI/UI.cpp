@@ -72,6 +72,7 @@ void UI::start(
     ImGui::CreateContext();
     ImGuiIO &io    = ImGui::GetIO();
     io.IniFilename = nullptr; // imguiIniFileName.c_str();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
     ImGui::StyleColorsDark();
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
@@ -176,6 +177,7 @@ void UI::mainLoop() {
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
         // Safe-guard for misbehaving video drivers that don't lock on v-sync
         auto ticks = SDL_GetTicks64();
@@ -259,45 +261,47 @@ void UI::mainLoop() {
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Debug")) {
-                ImGui::MenuItem("Screen in window", "", &config.showScreenWindow);
-                ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
-                ImGui::MenuItem("CPU state", "", &config.showCpuState);
-                ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
-                ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
-                ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
-                ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
-                ImGui::MenuItem("ESP info", "", &config.showEspInfo);
-                ImGui::Separator();
+                ImGui::MenuItem("Enable debugger", "", &emuState.enableDebugger);
+                if (emuState.enableDebugger) {
+                    ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
+                    ImGui::MenuItem("CPU state", "", &config.showCpuState);
+                    ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
+                    ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
+                    ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
+                    ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
+                    ImGui::MenuItem("ESP info", "", &config.showEspInfo);
+                    ImGui::Separator();
 
-                if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
-                    memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
-                    memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
-                    memset(emuState.mainRam, 0, sizeof(emuState.mainRam));
-                    memset(emuState.videoRam, 0, sizeof(emuState.videoRam));
-                    memset(emuState.charRam, 0, sizeof(emuState.charRam));
-                    emuState.reset();
-                }
-                if (ImGui::MenuItem("Clear memory (0xA5) & reset Aquarius+", "")) {
-                    memset(emuState.screenRam, 0xA5, sizeof(emuState.screenRam));
-                    memset(emuState.colorRam, 0xA5, sizeof(emuState.colorRam));
-                    memset(emuState.mainRam, 0xA5, sizeof(emuState.mainRam));
-                    memset(emuState.videoRam, 0xA5, sizeof(emuState.videoRam));
-                    memset(emuState.charRam, 0xA5, sizeof(emuState.charRam));
-                    emuState.reset();
-                }
+                    if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
+                        memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
+                        memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
+                        memset(emuState.mainRam, 0, sizeof(emuState.mainRam));
+                        memset(emuState.videoRam, 0, sizeof(emuState.videoRam));
+                        memset(emuState.charRam, 0, sizeof(emuState.charRam));
+                        emuState.reset();
+                    }
+                    if (ImGui::MenuItem("Clear memory (0xA5) & reset Aquarius+", "")) {
+                        memset(emuState.screenRam, 0xA5, sizeof(emuState.screenRam));
+                        memset(emuState.colorRam, 0xA5, sizeof(emuState.colorRam));
+                        memset(emuState.mainRam, 0xA5, sizeof(emuState.mainRam));
+                        memset(emuState.videoRam, 0xA5, sizeof(emuState.videoRam));
+                        memset(emuState.charRam, 0xA5, sizeof(emuState.charRam));
+                        emuState.reset();
+                    }
 
-                ImGui::Separator();
-                {
-                    if (ImGui::MenuItem("Emulation speed 1x", "", emuState.emulationSpeed == 1))
-                        emuState.emulationSpeed = 1;
-                    if (ImGui::MenuItem("Emulation speed 2x", "", emuState.emulationSpeed == 2))
-                        emuState.emulationSpeed = 2;
-                    if (ImGui::MenuItem("Emulation speed 4x", "", emuState.emulationSpeed == 4))
-                        emuState.emulationSpeed = 4;
-                    if (ImGui::MenuItem("Emulation speed 8x", "", emuState.emulationSpeed == 8))
-                        emuState.emulationSpeed = 8;
-                    if (ImGui::MenuItem("Emulation speed 16x", "", emuState.emulationSpeed == 16))
-                        emuState.emulationSpeed = 16;
+                    ImGui::Separator();
+                    {
+                        if (ImGui::MenuItem("Emulation speed 1x", "", emuState.emulationSpeed == 1))
+                            emuState.emulationSpeed = 1;
+                        if (ImGui::MenuItem("Emulation speed 2x", "", emuState.emulationSpeed == 2))
+                            emuState.emulationSpeed = 2;
+                        if (ImGui::MenuItem("Emulation speed 4x", "", emuState.emulationSpeed == 4))
+                            emuState.emulationSpeed = 4;
+                        if (ImGui::MenuItem("Emulation speed 8x", "", emuState.emulationSpeed == 8))
+                            emuState.emulationSpeed = 8;
+                        if (ImGui::MenuItem("Emulation speed 16x", "", emuState.emulationSpeed == 16))
+                            emuState.emulationSpeed = 16;
+                    }
                 }
                 ImGui::EndMenu();
             }
@@ -318,25 +322,28 @@ void UI::mainLoop() {
             config.showCpuState = true;
         }
 
-        if (config.showScreenWindow) {
-            wndScreen(&config.showScreenWindow);
+        if (emuState.enableDebugger) {
+            wndScreen(&emuState.enableDebugger);
         } else {
             allowTyping = true;
         }
-        if (config.showMemEdit)
-            wndMemEdit(&config.showMemEdit);
-        if (config.showCpuState)
-            wndCpuState(&config.showCpuState);
-        if (config.showIoRegsWindow)
-            wndIoRegs(&config.showIoRegsWindow);
-        if (config.showBreakpoints)
-            wndBreakpoints(&config.showBreakpoints);
-        if (config.showAssemblyListing)
-            wndAssemblyListing(&config.showAssemblyListing);
-        if (config.showCpuTrace)
-            wndCpuTrace(&config.showCpuTrace);
-        if (config.showEspInfo)
-            wndEspInfo(&config.showEspInfo);
+
+        if (emuState.enableDebugger) {
+            if (config.showMemEdit)
+                wndMemEdit(&config.showMemEdit);
+            if (config.showCpuState)
+                wndCpuState(&config.showCpuState);
+            if (config.showIoRegsWindow)
+                wndIoRegs(&config.showIoRegsWindow);
+            if (config.showBreakpoints)
+                wndBreakpoints(&config.showBreakpoints);
+            if (config.showAssemblyListing)
+                wndAssemblyListing(&config.showAssemblyListing);
+            if (config.showCpuTrace)
+                wndCpuTrace(&config.showCpuTrace);
+            if (config.showEspInfo)
+                wndEspInfo(&config.showEspInfo);
+        }
         if (showAppAbout)
             wndAbout(&showAppAbout);
         if (showDemoWindow)
@@ -351,7 +358,7 @@ void UI::mainLoop() {
         if (emuState.mouseHideTimeout < 0)
             emuState.mouseHideTimeout = 0;
 
-        if (!config.showScreenWindow) {
+        if (!emuState.enableDebugger) {
             auto dst = renderTexture((int)menuBarSize.y);
 
             if (!io.WantCaptureMouse) {
@@ -418,27 +425,10 @@ void UI::renderScreen() {
     SDL_UnlockTexture(texture);
 }
 
-SDL_Rect UI::renderTexture(int menuHeight) {
+SDL_Rect UI::calcRenderPos(int w, int h, int menuHeight) {
     auto &config = Config::instance();
 
-    SDL_Rect dst;
-    dst.x = 0;
-    dst.y = 0;
-    dst.w = 0;
-    dst.h = 0;
-
-    float rsx, rsy;
-    SDL_RenderGetScale(renderer, &rsx, &rsy);
-    auto  drawData = ImGui::GetDrawData();
-    float scaleX   = (rsx == 1.0f) ? drawData->FramebufferScale.x : 1.0f;
-    float scaleY   = (rsy == 1.0f) ? drawData->FramebufferScale.y : 1.0f;
-    int   w        = (int)(drawData->DisplaySize.x * scaleX);
-    int   h        = (int)(drawData->DisplaySize.y * scaleY) - menuHeight;
-    if (w <= 0 || h <= 0)
-        return dst;
-
     int sw, sh;
-
     if (config.displayScaling == DisplayScaling::Integer && w >= VIDEO_WIDTH && h >= VIDEO_HEIGHT * 2) {
         // Retain aspect ratio
         int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
@@ -470,12 +460,29 @@ SDL_Rect UI::renderTexture(int menuHeight) {
         SDL_SetTextureScaleMode(texture, config.displayScaling == DisplayScaling::NearestNeighbor ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
     }
 
+    SDL_Rect dst;
     dst.w = (int)sw;
     dst.h = (int)sh;
     dst.x = (w - dst.w) / 2;
     dst.y = menuHeight + (h - dst.h) / 2;
-    SDL_RenderCopy(renderer, texture, NULL, &dst);
+    return dst;
+}
 
+SDL_Rect UI::renderTexture(int menuHeight) {
+    SDL_Rect dst = {.x = 0, .y = 0, .w = 0, .h = 0};
+
+    float rsx, rsy;
+    SDL_RenderGetScale(renderer, &rsx, &rsy);
+    auto  drawData = ImGui::GetDrawData();
+    float scaleX   = (rsx == 1.0f) ? drawData->FramebufferScale.x : 1.0f;
+    float scaleY   = (rsy == 1.0f) ? drawData->FramebufferScale.y : 1.0f;
+    int   w        = (int)(drawData->DisplaySize.x * scaleX);
+    int   h        = (int)(drawData->DisplaySize.y * scaleY) - menuHeight;
+    if (w <= 0 || h <= 0)
+        return dst;
+
+    dst = calcRenderPos(w, h, menuHeight);
+    SDL_RenderCopy(renderer, texture, NULL, &dst);
     return dst;
 }
 
@@ -484,6 +491,10 @@ void UI::emulate() {
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
     // second.
     auto &config = Config::instance();
+    if (!emuState.enableDebugger) {
+        // Always run when not debugging
+        emuState.emuMode = EmuState::Em_Running;
+    }
 
     // Get a buffer from audio subsystem.
     auto abuf = Audio::instance().getBuffer();
@@ -507,8 +518,9 @@ void UI::emulate() {
         dbgUpdateScreen = true;
 
         // Increase emulation speed while pasting text
-        int emuSpeed = emuState.typeInStr.empty() ? emuState.emulationSpeed : 16;
-        emuSpeed     = emuState.emulationSpeed;
+        int emuSpeed = emuState.enableDebugger ? emuState.emulationSpeed : 1;
+        if (!emuState.typeInStr.empty())
+            emuSpeed = 16;
 
         // Render each audio sample
         for (int aidx = 0; aidx < SAMPLES_PER_BUFFER * emuSpeed; aidx++) {
@@ -525,7 +537,7 @@ void UI::emulate() {
             if (emuState.emuMode != EmuState::Em_Running)
                 break;
 
-            if (config.enableSound && emuState.emulationSpeed == 1) {
+            if (config.enableSound && emuSpeed == 1) {
                 float al = emuState.audioLeft / 65535.0f;
                 float ar = emuState.audioRight / 65535.0f;
                 float l  = dcBlockLeft.filter(al);
@@ -568,7 +580,7 @@ void UI::emulate() {
 }
 
 void UI::wndAbout(bool *p_open) {
-    if (ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize)) {
+    if (ImGui::Begin("About Aquarius+ emulator", p_open, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoDocking)) {
         extern const char *versionStr;
         ImGui::Text("Aquarius+ emulator version: %s", versionStr);
         ImGui::Separator();
@@ -767,76 +779,57 @@ void UI::wndCpuState(bool *p_open) {
 }
 
 void UI::wndScreen(bool *p_open) {
-    // ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
-    bool open = ImGui::Begin("Screen", p_open, ImGuiWindowFlags_AlwaysAutoResize);
-    // ImGui::PopStyleVar();
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+    bool open = ImGui::Begin("Screen", p_open, ImGuiWindowFlags_None);
+    ImGui::PopStyleVar();
 
     if (open) {
-        auto &config = Config::instance();
+        if (texture) {
+            ImVec2 canvas_p0 = ImGui::GetCursorScreenPos();
+            ImVec2 canvas_sz = ImGui::GetContentRegionAvail();
+            ImGui::InvisibleButton("##imgbtn", canvas_sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
 
-        if (open) {
-            static int e = 0;
-            if (e <= 0) {
-                e = config.scrScale;
-                e = std::min(std::max(config.scrScale, 1), 4);
+            auto dst = calcRenderPos((int)canvas_sz.x, (int)canvas_sz.y, 0);
+
+            const ImVec2 p0(canvas_p0.x + dst.x, canvas_p0.y + dst.y);
+            const ImVec2 p1(canvas_p0.x + dst.x + dst.w, canvas_p0.y + dst.y + dst.h);
+
+            ImDrawList *draw_list = ImGui::GetWindowDrawList();
+            draw_list->AddImage(texture, p0, p1, {0, 0}, {1, 1});
+
+            ImGuiIO &io  = ImGui::GetIO();
+            auto     pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH / 2, VIDEO_HEIGHT) - ImVec2(16, 16);
+
+            int mx = std::max(0, std::min((int)pos.x, 319));
+            int my = std::max(0, std::min((int)pos.y, 199));
+
+            uint8_t buttonMask =
+                (io.MouseDown[0] ? 1 : 0) |
+                (io.MouseDown[1] ? 2 : 0) |
+                (io.MouseDown[2] ? 4 : 0);
+
+            static bool dragging = false;
+            bool        update   = false;
+
+            if (ImGui::IsItemActive()) {
+                dragging = true;
+                update   = true;
+            } else if (dragging) {
+                update   = true;
+                dragging = false;
             }
-
-            ImGui::RadioButton("1x", &e, 1);
-            ImGui::SameLine();
-            ImGui::RadioButton("2x", &e, 2);
-            ImGui::SameLine();
-            ImGui::RadioButton("3x", &e, 3);
-            ImGui::SameLine();
-            ImGui::RadioButton("4x", &e, 4);
-            // ImGui::SameLine();
-            // ImGui::Text("%3d %3d %d\n", emuState.mouseX, emuState.mouseY, emuState.mouseButtons);
-
-            config.scrScale = e;
-
-            if (texture) {
-                ImGuiIO &io = ImGui::GetIO();
-
-                auto sz = ImVec2((float)(VIDEO_WIDTH * e), (float)(VIDEO_HEIGHT * 2 * e));
-                ImGui::InvisibleButton("##imgbtn", sz, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
-                const ImVec2 p0  = ImGui::GetItemRectMin();
-                const ImVec2 p1  = ImGui::GetItemRectMax();
-                auto         pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH / 2, VIDEO_HEIGHT) - ImVec2(16, 16);
-
-                int mx = std::max(0, std::min((int)pos.x, 319));
-                int my = std::max(0, std::min((int)pos.y, 199));
-
-                uint8_t buttonMask =
-                    (io.MouseDown[0] ? 1 : 0) |
-                    (io.MouseDown[1] ? 2 : 0) |
-                    (io.MouseDown[2] ? 4 : 0);
-
-                static bool dragging = false;
-                bool        update   = false;
-
-                if (ImGui::IsItemActive()) {
-                    dragging = true;
-                    update   = true;
-                } else if (dragging) {
-                    update   = true;
-                    dragging = false;
-                }
-                if (ImGui::IsItemHovered()) {
-                    update = true;
-                    if (emuState.mouseHideTimeout > 0)
-                        ImGui::SetMouseCursor(ImGuiMouseCursor_None);
-                }
-                if (update) {
-                    emuState.mouseX       = mx;
-                    emuState.mouseY       = my;
-                    emuState.mouseButtons = buttonMask;
-                }
-
-                ImDrawList *draw_list = ImGui::GetWindowDrawList();
-                SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
-                draw_list->AddImage(texture, p0, p1, {0, 0}, {1, 1});
+            if (ImGui::IsItemHovered()) {
+                update = true;
+                if (emuState.mouseHideTimeout > 0)
+                    ImGui::SetMouseCursor(ImGuiMouseCursor_None);
             }
-            allowTyping = ImGui::IsWindowFocused();
+            if (update) {
+                emuState.mouseX       = mx;
+                emuState.mouseY       = my;
+                emuState.mouseButtons = buttonMask;
+            }
         }
+        allowTyping = ImGui::IsWindowFocused();
     }
     ImGui::End();
 }

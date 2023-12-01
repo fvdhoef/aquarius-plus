@@ -22,6 +22,7 @@ private:
 
     void     renderScreen();
     SDL_Rect renderTexture(int menuHeight);
+    SDL_Rect calcRenderPos(int w, int h, int menuHeight);
     void     emulate();
 
     void wndAbout(bool *p_open);
