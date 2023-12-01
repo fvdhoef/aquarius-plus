@@ -2,19 +2,19 @@
 #include "AqKeyboard.h"
 #include "AqUartProtocol.h"
 #ifndef EMULATOR
-#    include <esp_ota_ops.h>
-#    include <esp_app_format.h>
-#    include <esp_wifi.h>
-#    include "WiFi.h"
-#    include "SDCardVFS.h"
-#    include <esp_ota_ops.h>
-#    include <esp_https_ota.h>
-#    include <nvs_flash.h>
+#include <esp_ota_ops.h>
+#include <esp_app_format.h>
+#include <esp_wifi.h>
+#include "WiFi.h"
+#include "SDCardVFS.h"
+#include <esp_ota_ops.h>
+#include <esp_https_ota.h>
+#include <nvs_flash.h>
 
 static const char *TAG = "settings";
 
-#    define MAX_SCAN_AP (20)
-#    define UPDATEFILE_NAME "aquarius-plus.bin"
+#define MAX_SCAN_AP     (20)
+#define UPDATEFILE_NAME "aquarius-plus.bin"
 #endif
 
 EspSettingsConsole::EspSettingsConsole() {
@@ -118,6 +118,8 @@ void EspSettingsConsole::consoleTask() {
             wifiSet();
         else if (strcasecmp(line, "wifi") == 0)
             wifiStatus();
+        else if (strcasecmp(line, "hostname") == 0)
+            wifiSetHostname();
         else if (strcasecmp(line, "date") == 0)
             showDate();
         else if (strcasecmp(line, "tz") == 0)
@@ -221,6 +223,7 @@ void EspSettingsConsole::showHelp() {
     cprintf("help     |this help\n");
     cprintf("wifi     |show WiFi status\n");
     cprintf("wifi set |set WiFi network\n");
+    cprintf("hostname |set WiFi hostname\n");
     cprintf("date     |show current time/date\n");
     cprintf("tz       |show current time zone\n");
     cprintf("tz set   |set time zone\n");
@@ -364,6 +367,40 @@ void EspSettingsConsole::wifiSet() {
     ESP_ERROR_CHECK(esp_wifi_stop());
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
+#else
+    cprintf("Not available on emulator\n");
+#endif
+}
+
+void EspSettingsConsole::wifiSetHostname() {
+#ifndef EMULATOR
+    const char *cur_hostname;
+    if (esp_netif_get_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &cur_hostname) == ESP_OK) {
+        if (cur_hostname && *cur_hostname)
+            cprintf("Current hostname:%s\n", cur_hostname);
+    }
+
+    char hostname[32] = {0};
+
+    cprintf("New hostname:");
+    creadline(hostname, sizeof(hostname), false);
+    if (new_session)
+        return;
+
+    if (strlen(hostname) != 0) {
+        cprintf("Saving new hostname.\nThe new hostname will be used after\nthe system has been restarted.\n");
+        // Save hostname to flash
+        {
+            nvs_handle_t h;
+            if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                if (nvs_set_str(h, "hostname", hostname) == ESP_OK) {
+                    nvs_commit(h);
+                }
+                nvs_close(h);
+            }
+        }
+    }
+
 #else
     cprintf("Not available on emulator\n");
 #endif

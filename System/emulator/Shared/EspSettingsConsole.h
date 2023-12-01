@@ -45,6 +45,7 @@ private:
     void showHelp();
     void wifiStatus();
     void wifiSet();
+    void wifiSetHostname();
     void showDate();
     void timeZoneShow();
     void timeZoneSet();
