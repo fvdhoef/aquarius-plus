@@ -677,7 +677,12 @@ void UI::wndCpuState(bool *p_open) {
             char tmp1[64];
             char tmp2[64];
             emuState.z80ctx.tstates = 0;
+
+            bool prevEnableBp          = emuState.enableBreakpoints;
+            emuState.enableBreakpoints = false;
             Z80Debug(&emuState.z80ctx, tmp1, tmp2);
+            emuState.enableBreakpoints = prevEnableBp;
+
             ImGui::Text("         %-12s %s", tmp1, tmp2);
         }
         ImGui::Separator();
