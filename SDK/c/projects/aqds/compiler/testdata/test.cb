@@ -1,0 +1,19 @@
+
+#include "inc.h"
+
+// Hello there
+
+/* Multi line
+         comment */
+
+#asm
+label:
+    jr      label
+#endasm
+
+0x4387
+1234
+
+main(    ) {
+
+}
