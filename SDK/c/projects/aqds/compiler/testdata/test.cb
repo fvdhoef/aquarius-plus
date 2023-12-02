@@ -22,7 +22,8 @@ label:
 // '\\'123
 // "Hello world!"
 
-int a;
+int a = 80;
+char b = 'A';
 
 dinges() {
 //    return 6;

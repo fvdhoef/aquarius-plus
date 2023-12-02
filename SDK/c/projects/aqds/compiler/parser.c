@@ -81,15 +81,28 @@ void parse(void) {
             expect(TOK_IDENTIFIER);
             printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
 
-            if (type == TOK_CHAR) {
-                sprintf(tmpbuf, "_%s: defb 0\n", tok_strval);
-                output_puts(tmpbuf, 0);
-            } else if (type == TOK_INT) {
-                sprintf(tmpbuf, "_%s: defw 0\n", tok_strval);
-                output_puts(tmpbuf, 0);
+            sprintf(tmpbuf, "_%s:\n", tok_strval);
+            output_puts(tmpbuf, 0);
+            ack_token();
+
+            int value = 0;
+
+            token = get_token();
+            if (token == '=') {
+                ack_token();
+                struct expr_node *node = parse_expression();
+                if (!node || node->op != TOK_CONSTANT)
+                    syntax_error();
+                value = node->left_val;
             }
 
-            ack_token();
+            if (type == TOK_CHAR) {
+                sprintf(tmpbuf, "    defb %d\n", value);
+            } else {
+                sprintf(tmpbuf, "    defw %d\n", value);
+            }
+            output_puts(tmpbuf, 0);
+
             expect_ack(';');
 
         } else {
