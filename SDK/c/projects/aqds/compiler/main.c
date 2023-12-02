@@ -1,5 +1,6 @@
 #include "common.h"
 #include "tokenizer.h"
+#include "parser.h"
 
 #ifdef __SDCC
 #include "screen.h"
@@ -8,24 +9,6 @@
 #endif
 
 int8_t fd_out = -1;
-
-void parse(void) {
-    while (1) {
-        int token = get_token();
-        if (token == TOK_EOF)
-            break;
-
-        if (token == TOK_IDENTIFIER) {
-            printf("  - Identifier: %s\n", tok_strval);
-        } else if (token == TOK_CONSTANT) {
-            printf("  - Constant: %d\n", tok_value);
-        } else if (token == TOK_STRING_LITERAL) {
-            printf("  - String literal: %s\n", tok_strval);
-        } else {
-            printf("  - Token: %d %c\n", token, token > ' ' ? token : ' ');
-        }
-    }
-}
 
 int main(
 #ifdef __SDCC

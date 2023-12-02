@@ -21,6 +21,7 @@ extern const char      *filename_cb;
 
 void error(const char *str);
 void syntax_error(void);
+void eof_error(void);
 void exit_program(void);
 void check_esp_result(int16_t result);
 void determine_basename(const char *path);

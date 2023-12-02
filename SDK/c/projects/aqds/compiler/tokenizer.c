@@ -1,20 +1,28 @@
 #include "tokenizer.h"
 
-char linebuf[256];
-int  tok_value;
-char tok_strval[256];
+char           linebuf[256];
+int            tok_value;
+char           tok_strval[256];
+static uint8_t cur_token;
 
 static char *cur_p;
 
 void error(const char *str) {
     if (str == NULL)
         str = "Unknown";
-    printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
+    if (cur_file_ctx)
+        printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
+    else
+        printf("\nError: %s\n", str);
     exit_program();
 }
 
 void syntax_error(void) {
     error("Syntax error");
+}
+
+void eof_error(void) {
+    error("Unexpected end-of-file");
 }
 
 static void skip_whitespace(void) {
@@ -40,23 +48,30 @@ static void expect_eol(void) {
         error("Expected end-of-line");
 }
 
-static bool readline(void) {
-    int linelen = esp_readline(cur_file_ctx->fd, linebuf, sizeof(linebuf) - 1);
+static bool readline(bool output) {
+    linebuf[0] = ';';
+    linebuf[1] = ' ';
+
+    int linelen = esp_readline(cur_file_ctx->fd, linebuf + 2, sizeof(linebuf) - 3);
     if (linelen == ERR_EOF)
         return false;
     check_esp_result(linelen);
 
-    linebuf[linelen]     = '\n';
-    linebuf[linelen + 1] = 0;
+    linebuf[2 + linelen]     = '\n';
+    linebuf[2 + linelen + 1] = 0;
 
     cur_file_ctx->linenr++;
-    cur_p = linebuf;
+    cur_p = linebuf + 2;
+
+    if (output)
+        esp_write(fd_out, linebuf, 2 + linelen + 1);
+
     return true;
 }
 
 static bool nextline(void) {
     while (1) {
-        if (!readline()) {
+        if (!readline(true)) {
             if (pop_file())
                 return false;
             continue;
@@ -91,18 +106,19 @@ static bool nextline(void) {
             expect_eol();
 
             while (1) {
-                if (!readline())
+                if (!readline(false))
                     error("Expected #endasm");
 
                 skip_whitespace();
                 if (strncmp(cur_p, "#endasm", 7) == 0) {
                     cur_p += 7;
                     expect_eol();
+                    esp_write(fd_out, linebuf, strlen(linebuf));
                     break;
                 }
 
                 // Write line verbatim to output
-                esp_write(fd_out, linebuf, strlen(linebuf));
+                esp_write(fd_out, linebuf + 2, strlen(linebuf + 2));
             }
 
         } else if (cur_p && cur_p[0] != 0) {
@@ -143,7 +159,10 @@ uint8_t esq_seq(void) {
     return value;
 }
 
-uint8_t get_token(void) {
+static uint8_t _get_token(void) {
+    if (!cur_file_ctx)
+        return TOK_EOF;
+
     while (1) {
         skip_whitespace();
         if (!cur_p || cur_p[0] == 0) {
@@ -275,4 +294,14 @@ uint8_t get_token(void) {
             return *(cur_p++);
         }
     }
+}
+
+void ack_token(void) {
+    cur_token = 0;
+}
+
+uint8_t get_token(void) {
+    if (cur_token == 0)
+        cur_token = _get_token();
+    return cur_token;
 }
