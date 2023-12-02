@@ -1,5 +1,6 @@
 #include "parser.h"
 #include "tokenizer.h"
+#include "expr.h"
 
 static void expect_ack(uint8_t token) {
     if (get_token() != token)
@@ -10,12 +11,6 @@ static void expect_ack(uint8_t token) {
 static void expect(uint8_t token) {
     if (get_token() != token)
         syntax_error();
-}
-
-static void parse_expression(void) {
-    int token = get_token();
-    printf("token: %d\n", token);
-    ack_token();
 }
 
 static void parse_compound(void) {
