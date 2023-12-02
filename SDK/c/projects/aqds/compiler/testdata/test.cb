@@ -16,6 +16,8 @@ label:
 '\\'123
 "Hello world!"
 
+int
+
 main(    ) {
 
 }

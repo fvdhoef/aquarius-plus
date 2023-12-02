@@ -254,8 +254,25 @@ uint8_t get_token(void) {
                 error("Identifier too long!");
             }
             *p = 0;
+
+            // clang-format off
+            if (strcmp(tok_strval, "break") == 0) return TOK_BREAK;
+            if (strcmp(tok_strval, "char") == 0) return TOK_CHAR;
+            if (strcmp(tok_strval, "continue") == 0) return TOK_CONTINUE;
+            if (strcmp(tok_strval, "else") == 0) return TOK_ELSE;
+            if (strcmp(tok_strval, "goto") == 0) return TOK_GOTO;
+            if (strcmp(tok_strval, "if") == 0) return TOK_IF;
+            if (strcmp(tok_strval, "int") == 0) return TOK_INT;
+            if (strcmp(tok_strval, "return") == 0) return TOK_RETURN;
+            if (strcmp(tok_strval, "while") == 0) return TOK_WHILE;
+            // clang-format on
+
             return TOK_IDENTIFIER;
         }
-        return *(cur_p++);
+
+        // Other token
+        else {
+            return *(cur_p++);
+        }
     }
 }
