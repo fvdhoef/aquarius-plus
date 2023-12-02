@@ -38,6 +38,9 @@ static void parse_compound(void) {
                 expect_ack(')');
                 expect_ack(';');
 
+                sprintf(tmpbuf, "    call    _%s\n", tok_strval);
+                output_puts(tmpbuf, 0);
+
             } else if (token == '=') {
                 ack_token();
                 printf("Variable assignment: %s\n", tok_strval);

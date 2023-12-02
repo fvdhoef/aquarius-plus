@@ -63,9 +63,15 @@ static bool readline(bool output) {
     cur_file_ctx->linenr++;
     cur_p = linebuf + 2;
 
-    if (output)
-        output_puts(linebuf, 2 + linelen + 1);
-
+    if (output) {
+        if (linelen == 0) {
+            linebuf[0] = '\n';
+            linebuf[1] = 0;
+            output_puts(linebuf, 1);
+        } else {
+            output_puts(linebuf, 2 + linelen + 1);
+        }
+    }
     return true;
 }
 
