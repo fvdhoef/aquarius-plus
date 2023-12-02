@@ -46,7 +46,7 @@ char                  *cur_p;
 static char            basename[32];
 static const char     *filename_cb;
 static int             tok_value;
-static char            tok_ident[32];
+static char            tok_strval[256];
 
 static void parse_file(const char *path);
 
@@ -114,6 +114,7 @@ static void expect(uint8_t ch) {
         printf("\n%s:%u Error: expected %c\n", cur_file_ctx->path, cur_file_ctx->linenr, ch);
         exit_program();
     }
+    cur_p++;
 }
 
 static void expect_eol(void) {
@@ -147,7 +148,6 @@ static bool nextline(void) {
         cur_p += 8;
         skip_whitespace();
         expect('"');
-        cur_p++;
 
         const char *path = cur_p;
         while (1) {
@@ -197,6 +197,25 @@ bool is_decimal(uint8_t ch) {
 
 bool is_hexadecimal(uint8_t ch) {
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+}
+
+uint8_t esq_seq(void) {
+    expect('\\');
+
+    uint8_t value = 0;
+
+    // clang-format off
+    if      (cur_p[0] == 'n')  value = '\n';
+    else if (cur_p[0] == 'r')  value = '\r';
+    else if (cur_p[0] == 'b')  value = '\b';
+    else if (cur_p[0] == '\\') value = '\\';
+    else if (cur_p[0] == '\'') value = '\'';
+    else if (cur_p[0] == '\"') value = '\"';
+    else                       error("Invalid escape sequence");
+    // clang-format on
+    cur_p++;
+
+    return value;
 }
 
 uint8_t get_token(void) {
@@ -266,18 +285,41 @@ uint8_t get_token(void) {
         }
         // Character constant?
         else if (cur_p[0] == '\'') {
-            error("unimplemented");
+            cur_p++;
+            if (cur_p[0] == '\\') {
+                tok_value = esq_seq();
+            } else if (cur_p[0] < ' ' && cur_p[0] != '\t') {
+                error("Invalid character");
+            } else {
+                tok_value = *(cur_p++);
+            }
+            expect('\'');
             return TOK_CONSTANT;
         }
         // String literal?
         else if (cur_p[0] == '\"') {
-            error("unimplemented");
+            cur_p++;
+            char *p = tok_strval;
+            while (1) {
+                if (cur_p[0] == 0)
+                    error("Unexpected end-of-line");
+                if (cur_p[0] == '"') {
+                    cur_p++;
+                    break;
+                }
+                if (cur_p[0] == '\\') {
+                    *(p++) = esq_seq();
+                } else {
+                    *(p++) = *(cur_p++);
+                }
+            }
+            *p = 0;
             return TOK_STRING_LITERAL;
         }
         // Identifier?
         else if (cur_p[0] == '_' || is_alpha(cur_p[0])) {
-            char *p = tok_ident;
-            for (int i = 0; i < (int)sizeof(tok_ident) - 1; i++) {
+            char *p = tok_strval;
+            for (int i = 0; i < (int)sizeof(tok_strval) - 1; i++) {
                 if (cur_p[0] == '_' || is_alpha(cur_p[0]) || is_decimal(cur_p[0])) {
                     *(p++) = *(cur_p++);
                 } else {
@@ -290,11 +332,7 @@ uint8_t get_token(void) {
             *p = 0;
             return TOK_IDENTIFIER;
         }
-
         return *(cur_p++);
-
-        // printf("%s", cur_p);
-        // cur_p = NULL;
     }
 }
 
@@ -334,11 +372,11 @@ static void parse_file(const char *path) {
             break;
 
         if (token == TOK_IDENTIFIER) {
-            printf("  - Identifier: %s\n", tok_ident);
+            printf("  - Identifier: %s\n", tok_strval);
         } else if (token == TOK_CONSTANT) {
             printf("  - Constant: %d\n", tok_value);
         } else if (token == TOK_STRING_LITERAL) {
-            printf("  - String literal\n");
+            printf("  - String literal: %s\n", tok_strval);
         } else {
             printf("  - Token: %d %c\n", token, token > ' ' ? token : ' ');
         }
