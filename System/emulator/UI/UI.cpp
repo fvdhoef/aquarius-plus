@@ -469,7 +469,11 @@ SDL_Rect UI::calcRenderPos(int w, int h, int menuHeight) {
 }
 
 SDL_Rect UI::renderTexture(int menuHeight) {
-    SDL_Rect dst = {.x = 0, .y = 0, .w = 0, .h = 0};
+    SDL_Rect dst;
+    dst.x = 0;
+    dst.y = 0;
+    dst.w = 0;
+    dst.h = 0;
 
     float rsx, rsy;
     SDL_RenderGetScale(renderer, &rsx, &rsy);

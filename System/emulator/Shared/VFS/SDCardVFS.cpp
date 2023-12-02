@@ -588,7 +588,7 @@ int SDCardVFS::readline(int fd, size_t size, void *buf) {
         return ERR_PARAM;
 
     FILE *f = state.fds[fd];
-    if (fgets((char *)buf, size, f) == NULL) {
+    if (fgets((char *)buf, (int)size, f) == NULL) {
         if (feof(f))
             return ERR_EOF;
         errno = ferror(f);
