@@ -1,0 +1,143 @@
+#include "common.h"
+#include "tokenizer.h"
+
+#define MAX_FILE_DEPTH 8
+static struct file_ctx file_ctxs[MAX_FILE_DEPTH];
+static uint8_t         file_ctx_idx;
+struct file_ctx       *cur_file_ctx;
+
+char        basename[32];
+const char *filename_cb;
+
+void exit_program(void) {
+#ifdef __SDCC
+    puts("\nPress enter to quit.\n");
+    while (1) {
+        uint8_t scancode = IO_KEYBUF;
+        if (scancode == '\r')
+            break;
+    }
+
+    // Go back to file manager
+    __asm__("jp 0xF806");
+#else
+    exit(1);
+#endif
+}
+
+void check_esp_result(int16_t result) {
+    if (result < 0) {
+        if (cur_file_ctx)
+            printf("\n%s:%u Error: ", cur_file_ctx->path, cur_file_ctx->linenr);
+        else
+            printf("\nError: ");
+
+        switch (result) {
+            case ERR_NOT_FOUND: puts("File / directory not found"); break;
+            case ERR_TOO_MANY_OPEN: puts("Too many open files / directories"); break;
+            case ERR_PARAM: puts("Invalid parameter"); break;
+            case ERR_EOF: puts("End of file / directory"); break;
+            case ERR_EXISTS: puts("File already exists"); break;
+            default:
+            case ERR_OTHER: puts("Other puts"); break;
+            case ERR_NO_DISK: puts("No disk"); break;
+            case ERR_NOT_EMPTY: puts("Not empty"); break;
+            case ERR_WRITE_PROTECT: puts("Write protected SD-card"); break;
+        }
+        exit_program();
+    }
+}
+
+void determine_basename(const char *path) {
+    filename_cb             = NULL;
+    int         len         = strlen(path);
+    const char *p           = path + len;
+    const char *base_startp = NULL;
+    const char *base_endp   = NULL;
+
+    // Find start of extension
+    while (p != path) {
+        p--;
+        if (*p == '/' || *p == '\\' || *p == '.')
+            break;
+    }
+    if (p == path) {
+        // No extension, no directories
+        base_startp = path;
+        base_endp   = path + len;
+    } else if (*p == '/' || *p == '\\') {
+        // No extension, has directories
+        base_startp = p + 1;
+        base_endp   = path + len;
+    } else if (*p == '.') {
+        base_endp = p;
+        while (p != path) {
+            p--;
+            if (*p == '/' || *p == '\\') {
+                base_startp = p + 1;
+                break;
+            }
+        }
+        if (!base_startp) {
+            base_startp = path;
+        }
+    }
+
+    filename_cb = base_startp;
+    p           = base_startp;
+    char *pd    = basename;
+    for (int i = 0; i < (int)sizeof(basename) - 1; i++) {
+        if (p < base_endp) {
+            *(pd++) = *(p++);
+        }
+    }
+    *pd = 0;
+
+    p  = path;
+    pd = linebuf;
+    while (p < base_startp) {
+        *(pd++) = *(p++);
+    }
+    *pd = 0;
+}
+
+void push_file(const char *path) {
+    // Open file and check for success
+    int8_t fd = esp_open(path, FO_RDONLY);
+    check_esp_result(fd);
+
+    // Keep track of file context for error reporting (line number and file path)
+    {
+        if (cur_file_ctx != NULL) {
+            file_ctx_idx++;
+            if (file_ctx_idx >= MAX_FILE_DEPTH) {
+                error("Max file depth reached");
+            }
+        }
+        cur_file_ctx         = &file_ctxs[file_ctx_idx];
+        cur_file_ctx->linenr = 0;
+        cur_file_ctx->fd     = fd;
+
+        // Copy path into file context
+        char *p = cur_file_ctx->path;
+        for (uint8_t i = 0; i < sizeof(cur_file_ctx->path) - 1; i++) {
+            char ch = path[i];
+            if (ch == 0)
+                break;
+            *(p++) = ch;
+        }
+        *p = 0;
+    }
+}
+
+void pop_file(void) {
+    // Close file
+    esp_close(cur_file_ctx->fd);
+
+    // Pop file context
+    if (file_ctx_idx == 0) {
+        cur_file_ctx = NULL;
+    } else {
+        cur_file_ctx = &file_ctxs[--file_ctx_idx];
+    }
+}
