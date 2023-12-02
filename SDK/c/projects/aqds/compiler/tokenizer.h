@@ -31,6 +31,5 @@ void    ack_token(void);
 
 extern int  tok_value;
 extern char tok_strval[256];
-extern char linebuf[256];
 
 #endif

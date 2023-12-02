@@ -15,9 +15,9 @@ struct file_ctx {
 };
 
 extern struct file_ctx *cur_file_ctx;
-extern int8_t           fd_out;
 extern char             basename[32];
 extern const char      *filename_cb;
+extern char             tmpbuf[256];
 
 void error(const char *str);
 void syntax_error(void);
@@ -25,6 +25,8 @@ void eof_error(void);
 void exit_program(void);
 void check_esp_result(int16_t result);
 void determine_basename(const char *path);
+
+void output_puts(const char *str, int len);
 
 void push_file(const char *path);
 bool pop_file(void);

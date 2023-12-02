@@ -68,14 +68,28 @@ void parse(void) {
 
             printf("  - Function: %s\n", tok_strval);
 
+            sprintf(tmpbuf, "_%s:\n", tok_strval);
+            output_puts(tmpbuf, 0);
+
             expect('{');
             parse_compound();
+
+            output_puts(".func_exit:\n", 0);
+            output_puts("    ret\n", 0);
 
         } else if (token == TOK_CHAR || token == TOK_INT) {
             uint8_t type = token;
             ack_token();
             expect(TOK_IDENTIFIER);
             printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
+
+            if (type == TOK_CHAR) {
+                sprintf(tmpbuf, "_%s: defb 0\n", tok_strval);
+                output_puts(tmpbuf, 0);
+            } else if (type == TOK_INT) {
+                sprintf(tmpbuf, "_%s: defw 0\n", tok_strval);
+                output_puts(tmpbuf, 0);
+            }
 
             ack_token();
             expect_ack(';');

@@ -8,6 +8,7 @@ struct file_ctx       *cur_file_ctx;
 
 char        basename[32];
 const char *filename_cb;
+char        tmpbuf[256];
 
 void exit_program(void) {
 #ifdef __SDCC
@@ -94,7 +95,7 @@ void determine_basename(const char *path) {
     *pd = 0;
 
     p  = path;
-    pd = linebuf;
+    pd = tmpbuf;
     while (p < base_startp) {
         *(pd++) = *(p++);
     }

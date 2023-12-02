@@ -1,6 +1,6 @@
 #include "tokenizer.h"
 
-char           linebuf[256];
+static char    linebuf[256];
 int            tok_value;
 char           tok_strval[256];
 static uint8_t cur_token;
@@ -64,7 +64,7 @@ static bool readline(bool output) {
     cur_p = linebuf + 2;
 
     if (output)
-        esp_write(fd_out, linebuf, 2 + linelen + 1);
+        output_puts(linebuf, 2 + linelen + 1);
 
     return true;
 }
@@ -113,12 +113,12 @@ static bool nextline(void) {
                 if (strncmp(cur_p, "#endasm", 7) == 0) {
                     cur_p += 7;
                     expect_eol();
-                    esp_write(fd_out, linebuf, strlen(linebuf));
+                    output_puts(linebuf, 0);
                     break;
                 }
 
                 // Write line verbatim to output
-                esp_write(fd_out, linebuf + 2, strlen(linebuf + 2));
+                output_puts(linebuf + 2, 0);
             }
 
         } else if (cur_p && cur_p[0] != 0) {

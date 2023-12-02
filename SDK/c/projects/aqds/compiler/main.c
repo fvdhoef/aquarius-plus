@@ -8,7 +8,13 @@
 #include <sys/stat.h>
 #endif
 
-int8_t fd_out = -1;
+static int8_t fd_out = -1;
+
+void output_puts(const char *str, int len) {
+    if (len <= 0)
+        len = strlen(str);
+    esp_write(fd_out, str, len);
+}
 
 int main(
 #ifdef __SDCC
@@ -37,19 +43,19 @@ int main(
     path = (const char *)0xFF00;
 #endif
 
-    // Determine base name (filename without extension) and path of assembler file (temporarily stored in linebuf)
+    // Determine base name (filename without extension) and path of assembler file (temporarily stored in tmpbuf)
     determine_basename(path);
 
     // Output header
     printf("Compiling %s\n", path);
 
     // Change directory
-    if (*linebuf) {
-        printf("- Changing directory to: %s\n", linebuf);
+    if (*tmpbuf) {
+        printf("- Changing directory to: %s\n", tmpbuf);
 #ifndef __SDCC
-        chdir(linebuf);
+        chdir(tmpbuf);
 #else
-        esp_chdir(linebuf);
+        esp_chdir(tmpbuf);
 #endif
     }
 
@@ -62,9 +68,9 @@ int main(
 #endif
 
     // Open assembly output
-    sprintf(linebuf, "out/%s.asm", basename);
-    printf("- Creating assembly output: %s\n", linebuf);
-    fd_out = esp_open(linebuf, FO_CREATE | FO_TRUNC | FO_WRONLY);
+    sprintf(tmpbuf, "out/%s.asm", basename);
+    printf("- Creating assembly output: %s\n", tmpbuf);
+    fd_out = esp_open(tmpbuf, FO_CREATE | FO_TRUNC | FO_WRONLY);
     check_esp_result(fd_out);
 
     // Parse source code
