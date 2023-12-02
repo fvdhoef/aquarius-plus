@@ -9,10 +9,7 @@
 
 int8_t fd_out = -1;
 
-void parse_file(const char *path) {
-    printf("- Parsing %s\n", path);
-    push_file(path);
-
+void parse(void) {
     while (1) {
         int token = get_token();
         if (token == TOK_EOF)
@@ -28,9 +25,6 @@ void parse_file(const char *path) {
             printf("  - Token: %d %c\n", token, token > ' ' ? token : ' ');
         }
     }
-
-    printf("- Parsing %s done\n", cur_file_ctx->path);
-    pop_file();
 }
 
 int main(
@@ -91,7 +85,8 @@ int main(
     check_esp_result(fd_out);
 
     // Parse source code
-    parse_file(filename_cb);
+    push_file(filename_cb);
+    parse();
 
     // Close files
     esp_close(fd_out);

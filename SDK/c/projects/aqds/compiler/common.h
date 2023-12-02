@@ -23,10 +23,9 @@ void error(const char *str);
 void syntax_error(void);
 void exit_program(void);
 void check_esp_result(int16_t result);
-void parse_file(const char *path);
 void determine_basename(const char *path);
 
 void push_file(const char *path);
-void pop_file(void);
+bool pop_file(void);
 
 #endif

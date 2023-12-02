@@ -102,6 +102,8 @@ void determine_basename(const char *path) {
 }
 
 void push_file(const char *path) {
+    printf("- Opening %s\n", path);
+
     // Open file and check for success
     int8_t fd = esp_open(path, FO_RDONLY);
     check_esp_result(fd);
@@ -130,14 +132,17 @@ void push_file(const char *path) {
     }
 }
 
-void pop_file(void) {
+bool pop_file(void) {
     // Close file
+    printf("- Closing %s\n", cur_file_ctx->path);
     esp_close(cur_file_ctx->fd);
 
     // Pop file context
     if (file_ctx_idx == 0) {
         cur_file_ctx = NULL;
+        return true;
     } else {
         cur_file_ctx = &file_ctxs[--file_ctx_idx];
     }
+    return false;
 }

@@ -55,50 +55,58 @@ static bool readline(void) {
 }
 
 static bool nextline(void) {
-    if (!readline())
-        return false;
-
-    skip_whitespace();
-
-    // Check for directives
-    if (strncmp(cur_p, "#include", 8) == 0) {
-        cur_p += 8;
-        skip_whitespace();
-        expect('"');
-
-        const char *path = cur_p;
-        while (1) {
-            uint8_t ch = *cur_p;
-            if (ch == '"') {
-                *(cur_p++) = 0;
-                break;
-            }
-            if (ch < ' ' && ch != '\t')
-                error("Invalid string");
-            cur_p++;
+    while (1) {
+        if (!readline()) {
+            if (pop_file())
+                return false;
+            continue;
         }
-        expect_eol();
 
-        // Process include file
-        parse_file(path);
+        skip_whitespace();
 
-    } else if (strncmp(cur_p, "#asm", 4) == 0) {
-        cur_p += 4;
-        expect_eol();
-
-        while (1) {
-            if (!readline())
-                error("Expected #endasm");
-
+        // Check for directives
+        if (strncmp(cur_p, "#include", 8) == 0) {
+            cur_p += 8;
             skip_whitespace();
-            if (strncmp(cur_p, "#endasm", 7) == 0) {
-                cur_p += 7;
-                expect_eol();
-                break;
+            expect('"');
+
+            const char *path = cur_p;
+            while (1) {
+                uint8_t ch = *cur_p;
+                if (ch == '"') {
+                    *(cur_p++) = 0;
+                    break;
+                }
+                if (ch < ' ' && ch != '\t')
+                    error("Invalid string");
+                cur_p++;
+            }
+            expect_eol();
+
+            // Process include file
+            push_file(path);
+
+        } else if (strncmp(cur_p, "#asm", 4) == 0) {
+            cur_p += 4;
+            expect_eol();
+
+            while (1) {
+                if (!readline())
+                    error("Expected #endasm");
+
+                skip_whitespace();
+                if (strncmp(cur_p, "#endasm", 7) == 0) {
+                    cur_p += 7;
+                    expect_eol();
+                    break;
+                }
+
+                // Write line verbatim to output
+                esp_write(fd_out, linebuf, strlen(linebuf));
             }
 
-            // Write line verbatim to output
-            esp_write(fd_out, linebuf, strlen(linebuf));
+        } else if (cur_p && cur_p[0] != 0) {
+            break;
         }
     }
     return true;
@@ -138,10 +146,9 @@ uint8_t esq_seq(void) {
 uint8_t get_token(void) {
     while (1) {
         skip_whitespace();
-        while (!cur_p || cur_p[0] == 0) {
+        if (!cur_p || cur_p[0] == 0) {
             if (!nextline())
                 return TOK_EOF;
-            skip_whitespace();
         }
 
         // Multi-line comment?
