@@ -199,6 +199,8 @@ static uint8_t _get_token(void) {
         else if (cur_p[0] == '<' && cur_p[1] == '=') { cur_p += 2; return TOK_OP_LE; }
         else if (cur_p[0] == '<' && cur_p[1] == '<') { cur_p += 2; return TOK_OP_SHL; }
         else if (cur_p[0] == '>' && cur_p[1] == '>') { cur_p += 2; return TOK_OP_SHR; }
+        else if (cur_p[0] == '&' && cur_p[1] == '&') { cur_p += 2; return TOK_OP_AND; }
+        else if (cur_p[0] == '|' && cur_p[1] == '|') { cur_p += 2; return TOK_OP_OR; }
         // clang-format on
 
         // Hexadecimal constant?

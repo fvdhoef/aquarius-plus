@@ -31,5 +31,5 @@ dinges() {
 
 main(    ) {
     dinges();
-    a = 5;
+    a = 5 + (2 * 3);
 }

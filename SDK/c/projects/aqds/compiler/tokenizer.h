@@ -24,6 +24,8 @@ enum {
     TOK_OP_LE,    // <=
     TOK_OP_SHL,   // <<
     TOK_OP_SHR,   // >>
+    TOK_OP_AND,   // &&
+    TOK_OP_OR,    // ||
 };
 
 uint8_t get_token(void);
