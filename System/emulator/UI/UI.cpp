@@ -107,6 +107,8 @@ void UI::mainLoop() {
 
     bool escapePressed = false;
 
+    int tooSlow = 0;
+
     bool done = false;
     while (!done) {
         SDL_Event event;
@@ -161,9 +163,19 @@ void UI::mainLoop() {
         // Emulate
         {
             int bufsToRender = Audio::instance().bufsToRender();
-            if (bufsToRender >= NUM_AUDIO_BUFS || io.DeltaTime > 0.033f) {
-                if (emuState.emulationSpeed > 1)
+            if (bufsToRender == 0)
+                continue;
+
+            if (io.DeltaTime > 0.050f) {
+                tooSlow++;
+            } else {
+                tooSlow = 0;
+            }
+            if (tooSlow >= 4) {
+                tooSlow = 0;
+                if (emuState.emulationSpeed > 1) {
                     emuState.emulationSpeed--;
+                }
             }
             for (int i = 0; i < bufsToRender; i++) {
                 emulate();
