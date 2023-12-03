@@ -7,12 +7,9 @@ struct expr_node {
     uint8_t op;
     union {
         struct expr_node *left_node;
-        int16_t           left_val;
+        int16_t           val;
     };
-    union {
-        struct expr_node *right_node;
-        int16_t           right_val;
-    };
+    struct expr_node *right_node;
 };
 
 struct expr_node *parse_expression(void);

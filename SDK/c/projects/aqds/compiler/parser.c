@@ -93,7 +93,7 @@ void parse(void) {
                 struct expr_node *node = parse_expression();
                 if (!node || node->op != TOK_CONSTANT)
                     syntax_error();
-                value = node->left_val;
+                value = node->val;
             }
 
             if (type == TOK_CHAR) {

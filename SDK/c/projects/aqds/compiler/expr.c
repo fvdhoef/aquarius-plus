@@ -28,8 +28,8 @@ static struct expr_node *parse_primary_expr(void) {
 
     uint8_t token = get_token();
     if (token == TOK_CONSTANT) {
-        node           = alloc_node(TOK_CONSTANT, NULL, NULL);
-        node->left_val = tok_value;
+        node      = alloc_node(TOK_CONSTANT, NULL, NULL);
+        node->val = tok_value;
         ack_token();
     } else if (token == '(') {
         ack_token();
@@ -46,9 +46,16 @@ static struct expr_node *parse_primary_expr(void) {
 
 static struct expr_node *parse_unary_expr(void) {
     uint8_t token = get_token();
-    if (token == '-' || token == '+' || token == '~') {
+    if (token == '-') {
         ack_token();
-        return alloc_node(token, parse_unary_expr(), NULL);
+        return alloc_node(TOK_OP_NEGATE, parse_unary_expr(), NULL);
+    }
+    if (token == '+') {
+        return parse_unary_expr();
+    }
+    if (token == '~') {
+        ack_token();
+        return alloc_node('~', parse_unary_expr(), NULL);
     }
     return parse_primary_expr();
 }
@@ -197,11 +204,78 @@ static struct expr_node *_parse_expression(void) {
     return parse_logical_or_expr();
 }
 
+static void simplify_expr(struct expr_node *node) {
+    if (node->op == TOK_CONSTANT)
+        return;
+
+    if (node->left_node && node->left_node->op != TOK_CONSTANT) {
+        simplify_expr(node->left_node);
+    }
+    if (node->right_node && node->right_node->op != TOK_CONSTANT) {
+        simplify_expr(node->right_node);
+    }
+    if (node->op == TOK_OP_NEGATE && node->left_node->op == TOK_CONSTANT) {
+        node->op  = TOK_CONSTANT;
+        node->val = -node->left_node->val;
+
+    } else if (node->op == '~' && node->left_node->op == TOK_CONSTANT) {
+        node->op  = TOK_CONSTANT;
+        node->val = ~node->left_node->val;
+
+    } else if (
+        node->left_node && node->left_node->op == TOK_CONSTANT &&
+        node->right_node && node->right_node->op == TOK_CONSTANT) {
+
+        int lv = node->left_node->val;
+        int rv = node->right_node->val;
+
+        // clang-format off
+        switch (node->op) {
+            case '*':        node->op = TOK_CONSTANT; node->val = lv *  rv; break;
+            case '/':        node->op = TOK_CONSTANT; node->val = lv /  rv; break;
+            case '%':        node->op = TOK_CONSTANT; node->val = lv %  rv; break;
+            case '+':        node->op = TOK_CONSTANT; node->val = lv +  rv; break;
+            case '-':        node->op = TOK_CONSTANT; node->val = lv -  rv; break;
+            case TOK_OP_SHL: node->op = TOK_CONSTANT; node->val = lv << rv; break;
+            case TOK_OP_SHR: node->op = TOK_CONSTANT; node->val = lv >> rv; break;
+            case TOK_OP_LE:  node->op = TOK_CONSTANT; node->val = lv <= rv ? 1 : 0; break;
+            case TOK_OP_GE:  node->op = TOK_CONSTANT; node->val = lv >= rv ? 1 : 0; break;
+            case '<':        node->op = TOK_CONSTANT; node->val = lv <  rv ? 1 : 0; break;
+            case '>':        node->op = TOK_CONSTANT; node->val = lv >  rv ? 1 : 0; break;
+            case TOK_OP_EQ:  node->op = TOK_CONSTANT; node->val = lv == rv ? 1 : 0; break;
+            case TOK_OP_NE:  node->op = TOK_CONSTANT; node->val = lv != rv ? 1 : 0; break;
+            case '&':        node->op = TOK_CONSTANT; node->val = lv &  rv; break;
+            case '^':        node->op = TOK_CONSTANT; node->val = lv ^  rv; break;
+            case '|':        node->op = TOK_CONSTANT; node->val = lv |  rv; break;
+            case TOK_OP_AND: node->op = TOK_CONSTANT; node->val = lv && rv; break;
+            case TOK_OP_OR:  node->op = TOK_CONSTANT; node->val = lv || rv; break;
+        }
+        // clang-format on
+    }
+}
+
+static void dump_expr(struct expr_node *node, int depth) {
+    for (int i = 0; i < depth; i++) {
+        printf(" ");
+    }
+    if (node->op == TOK_CONSTANT) {
+        printf("- val: %d\n", node->val);
+    } else {
+        printf("- %d %c\n", node->op, node->op >= ' ' ? node->op : ' ');
+        if (node->left_node)
+            dump_expr(node->left_node, depth + 2);
+        if (node->right_node)
+            dump_expr(node->right_node, depth + 2);
+    }
+}
+
 struct expr_node *parse_expression(void) {
     reset_nodes();
 
     struct expr_node *node = NULL;
     node                   = _parse_expression();
+    simplify_expr(node);
+    dump_expr(node, 0);
 
     return node;
 }
