@@ -82,7 +82,7 @@ void parse(void) {
             expect(TOK_IDENTIFIER);
             printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
 
-            uint8_t symtype = token == TOK_CHAR ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
+            uint8_t symtype = SYMTYPE_GLOBAL | ((token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
             symbol_add(symtype, tok_strval, 0);
 
             sprintf(tmpbuf, "_%s:\n", tok_strval);

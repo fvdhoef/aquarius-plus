@@ -41,7 +41,8 @@ static struct expr_node *parse_primary_expr(void) {
             node      = alloc_node(TOK_CONSTANT, NULL, NULL);
             node->val = sym->value;
         } else {
-            syntax_error();
+            node      = alloc_node(TOK_IDENTIFIER, NULL, NULL);
+            node->sym = sym;
         }
 
     } else if (token == '(') {
@@ -218,7 +219,7 @@ static struct expr_node *_parse_expression(void) {
 }
 
 static void simplify_expr(struct expr_node *node) {
-    if (node->op == TOK_CONSTANT)
+    if (node->op == TOK_CONSTANT || node->op == TOK_IDENTIFIER)
         return;
 
     if (node->left_node && node->left_node->op != TOK_CONSTANT) {
@@ -273,8 +274,14 @@ static void dump_expr(struct expr_node *node, int depth) {
     }
     if (node->op == TOK_CONSTANT) {
         printf("- val: %d\n", node->val);
+    } else if (node->op == TOK_IDENTIFIER) {
+        printf("- identifier: %s\n", node->sym->name);
     } else {
-        printf("- %d %c\n", node->op, node->op >= ' ' ? node->op : ' ');
+        if (node->op > ' ') {
+            printf("- '%c'\n", node->op);
+        } else {
+            printf("- %d\n", node->op);
+        }
         if (node->left_node)
             dump_expr(node->left_node, depth + 2);
         if (node->right_node)

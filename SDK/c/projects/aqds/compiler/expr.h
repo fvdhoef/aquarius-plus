@@ -3,10 +3,13 @@
 
 #include "common.h"
 
+struct symbol;
+
 struct expr_node {
     uint8_t op;
     union {
         struct expr_node *left_node;
+        struct symbol    *sym;
         int16_t           val;
     };
     struct expr_node *right_node;
