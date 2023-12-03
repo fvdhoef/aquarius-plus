@@ -5,6 +5,7 @@
 
 enum {
     TOK_EOF,
+    TOK_EOL, // only returned if crossline_disable == true
     TOK_IDENTIFIER,
     TOK_CONSTANT,
     TOK_STRING_LITERAL,

@@ -1,5 +1,6 @@
 #include "expr.h"
 #include "tokenizer.h"
+#include "symbols.h"
 
 #define MAX_NODES (64)
 
@@ -31,6 +32,18 @@ static struct expr_node *parse_primary_expr(void) {
         node      = alloc_node(TOK_CONSTANT, NULL, NULL);
         node->val = tok_value;
         ack_token();
+
+    } else if (token == TOK_IDENTIFIER) {
+        struct symbol *sym = symbol_get(tok_strval, 0, false);
+        ack_token();
+
+        if (sym->type == SYMTYPE_DEFINE) {
+            node      = alloc_node(TOK_CONSTANT, NULL, NULL);
+            node->val = sym->value;
+        } else {
+            syntax_error();
+        }
+
     } else if (token == '(') {
         ack_token();
         node = _parse_expression();

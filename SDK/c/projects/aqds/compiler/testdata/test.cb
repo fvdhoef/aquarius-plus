@@ -7,6 +7,8 @@ main:
 
 #include "inc.h"
 
+//#define MAX_LEN2 (16 + 1)
+
 // Hello there
 
 /* Multi line
@@ -22,14 +24,17 @@ label:
 // '\\'123
 // "Hello world!"
 
-int a = 80;
+#define BLA     (16 + 1)
+#define MAX_LEN (16 + BLA)
+
+int a = MAX_LEN;
 char b = 'A';
 
 dinges() {
 //    return 6;
 }
 
-main(    ) {
+main() {
     dinges();
     a = 5 + (2 * 3);
 }

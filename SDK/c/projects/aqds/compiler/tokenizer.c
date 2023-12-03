@@ -6,6 +6,7 @@ static char    linebuf[256];
 int            tok_value;
 char           tok_strval[256];
 static uint8_t cur_token;
+static bool    crossline_disable;
 
 static char *cur_p;
 
@@ -159,13 +160,16 @@ static bool nextline(void) {
 
             cur_p += len;
             skip_whitespace();
+            crossline_disable      = true;
             struct expr_node *node = parse_expression();
+            crossline_disable      = false;
+            if (cur_token != TOK_EOL)
+                syntax_error();
+            ack_token();
+
             if (!node || node->op != TOK_CONSTANT)
                 syntax_error();
             sym_def->value = node->val;
-
-            if (cur_token)
-                break;
 
         } else if (cur_p && cur_p[0] != 0) {
             break;
@@ -200,6 +204,8 @@ static uint8_t _get_token(void) {
     while (1) {
         skip_whitespace();
         if (!cur_p || cur_p[0] == 0) {
+            if (crossline_disable)
+                return TOK_EOL;
             if (!nextline())
                 return TOK_EOF;
             if (cur_token)
