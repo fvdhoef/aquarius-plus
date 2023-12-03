@@ -2,9 +2,11 @@
 
 #include "Common.h"
 #include <SDL.h>
+#include <mutex>
 
 #define SAMPLES_PER_BUFFER (735)
-#define SAMPLERATE (44100)
+#define SAMPLERATE         (44100)
+#define NUM_AUDIO_BUFS     (8)
 
 class Audio {
     Audio();
@@ -17,6 +19,7 @@ public:
     void     close();
     int16_t *getBuffer();
     void     putBuffer(int16_t *buf);
+    int      bufsToRender();
 
 private:
     static void _audioCallback(void *userData, uint8_t *stream, int len);
@@ -27,6 +30,7 @@ private:
     int               rdIdx    = 0;
     int               wrIdx    = 0;
     volatile int      bufCnt   = 0;
+    std::mutex        mutex;
 };
 
 class DCBlock {
