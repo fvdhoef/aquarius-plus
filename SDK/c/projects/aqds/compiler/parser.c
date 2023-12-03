@@ -36,45 +36,125 @@ static void emit(char *fmt, ...) {
 
 static void emit_binary(struct expr_node *node) {
     emit_expr(node->left_node);
-    emit("ex      de,hl");
+    emit("push    hl");
     emit_expr(node->right_node);
+    emit("ex      de,hl");
+    emit("pop     hl");
 }
 
 static void emit_expr(struct expr_node *node) {
-    switch (node->op) {
-        case TOK_CONSTANT: {
-            emit("ld      hl,%d", node->val);
-            break;
+    if (node->op == TOK_CONSTANT) {
+        emit("ld      hl,%d", node->val);
+
+    } else if (node->op == TOK_IDENTIFIER) {
+        struct symbol *sym = node->sym;
+        if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+            emit("ld      a,(_%s)", sym->name);
+            emit("ld      h,0");
+            emit("ld      l,a");
+
+        } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+            emit("ld      hl,(_%s)", sym->name);
+
+        } else {
+            printf("Unimplemented identifier symbol type in expression!\n");
+            syntax_error();
         }
-        case TOK_IDENTIFIER: {
-            struct symbol *sym = node->sym;
-            if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-                emit("ld      a,(_%s)", sym->name);
-                emit("ld      h,0");
-                emit("ld      l,a");
-
-            } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                emit("ld      hl,(_%s)", sym->name);
-
-            } else {
-                printf("Unimplemented identifier symbol type in expression!\n");
-                syntax_error();
+    } else {
+        switch (node->op) {
+            case TOK_CONSTANT: {
+                emit("ld      hl,%d", node->val);
+                break;
             }
+            case TOK_IDENTIFIER: {
+                struct symbol *sym = node->sym;
+                if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                    emit("ld      a,(_%s)", sym->name);
+                    emit("ld      h,0");
+                    emit("ld      l,a");
 
-            break;
-        }
-        case '+':
-            emit_binary(node);
-            emit("add     hl,de");
-            break;
-        case '-':
-            emit_binary(node);
+                } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                    emit("ld      hl,(_%s)", sym->name);
+
+                } else {
+                    printf("Unimplemented identifier symbol type in expression!\n");
+                    syntax_error();
+                }
+
+                break;
+            }
+                // clang-format off
+        case TOK_OP_NEG:
+            emit_expr(node->left_node);
+            emit("ex      de,hl");
+            emit("ld      hl,0");
             emit("or      a");
             emit("sbc     hl,de");
             break;
-        default:
-            printf("Error: %d (%c)!\n", node->op, node->op);
+
+        case '~':
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("xor     $FF");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("xor     $FF");
+            emit("ld      l,a");
             break;
+
+        case '*':        emit_binary(node); emit("call    __multsi"); break;
+        case '/':        emit_binary(node); emit("call    __divsi"); break;
+        case '%':        emit_binary(node); emit("call    __modsi"); break;
+        case '+':        emit_binary(node); emit("add     hl,de");  break;
+        case '-':        emit_binary(node); emit("or      a"); emit("sbc     hl,de"); break;
+        case TOK_OP_SHL: emit_binary(node); emit("call    __shl"); break;
+        case TOK_OP_SHR: emit_binary(node); emit("call    __shr"); break;
+
+        // case TOK_OP_LE:
+        // case TOK_OP_GE:
+        // case '<':
+        // case '>':
+        // case TOK_OP_EQ:
+        // case TOK_OP_NE:
+
+        case '&':   // hl & de
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("and     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("and     e");
+            emit("ld      l,a");
+            break;
+
+        case '^':   // hl ^ de
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("xor     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("xor     e");
+            emit("ld      l,a");
+            break;
+
+        case '|':   // hl | de
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("or      d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("or      e");
+            emit("ld      l,a");
+            break;
+
+        // case TOK_OP_AND:
+        // case TOK_OP_OR:
+
+                // clang-format on
+            default:
+                printf("Error: %d (%c)!\n", node->op, node->op);
+                break;
+        }
     }
 }
 

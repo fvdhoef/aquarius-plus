@@ -62,7 +62,7 @@ static struct expr_node *parse_unary_expr(void) {
     uint8_t token = get_token();
     if (token == '-') {
         ack_token();
-        return alloc_node(TOK_OP_NEGATE, parse_unary_expr(), NULL);
+        return alloc_node(TOK_OP_NEG, parse_unary_expr(), NULL);
     }
     if (token == '+') {
         return parse_unary_expr();
@@ -228,7 +228,7 @@ static void simplify_expr(struct expr_node *node) {
     if (node->right_node && node->right_node->op != TOK_CONSTANT) {
         simplify_expr(node->right_node);
     }
-    if (node->op == TOK_OP_NEGATE && node->left_node->op == TOK_CONSTANT) {
+    if (node->op == TOK_OP_NEG && node->left_node->op == TOK_CONSTANT) {
         node->op  = TOK_CONSTANT;
         node->val = -node->left_node->val;
 

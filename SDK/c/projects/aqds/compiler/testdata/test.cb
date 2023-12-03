@@ -36,5 +36,5 @@ dinges() {
 
 main() {
     dinges();
-    a = b + (2 * 3);
+    a = (b + (2 * -a)) & 1;
 }
