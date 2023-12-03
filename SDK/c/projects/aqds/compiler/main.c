@@ -1,6 +1,7 @@
 #include "common.h"
 #include "tokenizer.h"
 #include "parser.h"
+#include "symbols.h"
 
 #ifdef __SDCC
 #include "screen.h"
@@ -79,6 +80,8 @@ int main(
 
     // Close files
     esp_close(fd_out);
+
+    symbol_dump_all();
 
     // We're done, exit the program
     puts("Done!\n");

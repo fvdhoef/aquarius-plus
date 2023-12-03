@@ -1,6 +1,7 @@
 #include "parser.h"
 #include "tokenizer.h"
 #include "expr.h"
+#include "symbols.h"
 
 static void expect_ack(uint8_t token) {
     if (get_token() != token)
@@ -80,6 +81,9 @@ void parse(void) {
             ack_token();
             expect(TOK_IDENTIFIER);
             printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
+
+            uint8_t symtype = token == TOK_CHAR ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
+            symbol_add(symtype, tok_strval, 0);
 
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);

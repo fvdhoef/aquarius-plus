@@ -26,6 +26,24 @@ void exit_program(void) {
 #endif
 }
 
+#ifdef __SDCC
+void *malloc(size_t size) {
+    static uint8_t *endp;
+    if (endp == NULL) {
+        endp = getheap();
+    }
+
+    uint16_t remaining = (uint8_t *)0xF000 - endp;
+    if (size > remaining) {
+        error("Out of memory!");
+    }
+
+    uint8_t *result = endp;
+    endp += size;
+    return result;
+}
+#endif
+
 void check_esp_result(int16_t result) {
     if (result < 0) {
         if (cur_file_ctx)

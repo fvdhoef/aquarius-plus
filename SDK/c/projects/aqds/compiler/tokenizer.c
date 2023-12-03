@@ -1,4 +1,6 @@
 #include "tokenizer.h"
+#include "expr.h"
+#include "symbols.h"
 
 static char    linebuf[256];
 int            tok_value;
@@ -6,6 +8,18 @@ char           tok_strval[256];
 static uint8_t cur_token;
 
 static char *cur_p;
+
+static bool is_alpha(uint8_t ch) {
+    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
+}
+
+static bool is_decimal(uint8_t ch) {
+    return (ch >= '0' && ch <= '9');
+}
+
+static bool is_hexadecimal(uint8_t ch) {
+    return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
+}
 
 void error(const char *str) {
     if (str == NULL)
@@ -127,23 +141,37 @@ static bool nextline(void) {
                 output_puts(linebuf + 2, 0);
             }
 
+        } else if (strncmp(cur_p, "#define", 7) == 0) {
+            cur_p += 7;
+            if (cur_p[0] != ' ' && cur_p[0] != '\t')
+                syntax_error();
+            skip_whitespace();
+
+            if (cur_p[0] != '_' && !is_alpha(cur_p[0]))
+                syntax_error();
+
+            char *p = cur_p;
+            while (p[0] == '_' || is_alpha(p[0]) || is_decimal(p[0])) {
+                p++;
+            }
+            uint8_t        len     = p - cur_p;
+            struct symbol *sym_def = symbol_add(SYMTYPE_DEFINE, cur_p, len);
+
+            cur_p += len;
+            skip_whitespace();
+            struct expr_node *node = parse_expression();
+            if (!node || node->op != TOK_CONSTANT)
+                syntax_error();
+            sym_def->value = node->val;
+
+            if (cur_token)
+                break;
+
         } else if (cur_p && cur_p[0] != 0) {
             break;
         }
     }
     return true;
-}
-
-bool is_alpha(uint8_t ch) {
-    return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z');
-}
-
-bool is_decimal(uint8_t ch) {
-    return (ch >= '0' && ch <= '9');
-}
-
-bool is_hexadecimal(uint8_t ch) {
-    return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
 }
 
 uint8_t esq_seq(void) {
@@ -174,6 +202,8 @@ static uint8_t _get_token(void) {
         if (!cur_p || cur_p[0] == 0) {
             if (!nextline())
                 return TOK_EOF;
+            if (cur_token)
+                return cur_token;
         }
 
         // Multi-line comment?
