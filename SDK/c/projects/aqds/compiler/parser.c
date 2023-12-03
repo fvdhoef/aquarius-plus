@@ -2,6 +2,9 @@
 #include "tokenizer.h"
 #include "expr.h"
 #include "symbols.h"
+#include <stdarg.h>
+
+static void emit_expr(struct expr_node *node);
 
 static void expect_ack(uint8_t token) {
     if (get_token() != token)
@@ -14,7 +17,65 @@ static void expect(uint8_t token) {
         syntax_error();
 }
 
+static void emit(char *fmt, ...) {
+    tmpbuf[0] = ' ';
+    tmpbuf[1] = ' ';
+    tmpbuf[2] = ' ';
+    tmpbuf[3] = ' ';
+
+    va_list ap;
+    va_start(ap, fmt);
+    int len = vsprintf(tmpbuf + 4, fmt, ap);
+    va_end(ap);
+
+    tmpbuf[4 + len]     = '\n';
+    tmpbuf[4 + len + 1] = 0;
+
+    output_puts(tmpbuf, 4 + len + 1);
+}
+
+static void emit_binary(struct expr_node *node) {
+    emit_expr(node->left_node);
+    emit("ex      de,hl");
+    emit_expr(node->right_node);
+}
+
 static void emit_expr(struct expr_node *node) {
+    switch (node->op) {
+        case TOK_CONSTANT: {
+            emit("ld      hl,%d", node->val);
+            break;
+        }
+        case TOK_IDENTIFIER: {
+            struct symbol *sym = node->sym;
+            if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                emit("ld      a,(_%s)", sym->name);
+                emit("ld      h,0");
+                emit("ld      l,a");
+
+            } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                emit("ld      hl,(_%s)", sym->name);
+
+            } else {
+                printf("Unimplemented identifier symbol type in expression!\n");
+                syntax_error();
+            }
+
+            break;
+        }
+        case '+':
+            emit_binary(node);
+            emit("add     hl,de");
+            break;
+        case '-':
+            emit_binary(node);
+            emit("or      a");
+            emit("sbc     hl,de");
+            break;
+        default:
+            printf("Error: %d (%c)!\n", node->op, node->op);
+            break;
+    }
 }
 
 static void parse_compound(void) {
@@ -36,16 +97,29 @@ static void parse_compound(void) {
                 printf("Function call: %s\n", tok_strval);
                 expect_ack(')');
                 expect_ack(';');
-
-                sprintf(tmpbuf, "    call    _%s\n", tok_strval);
-                output_puts(tmpbuf, 0);
+                emit("call    _%s", tok_strval);
 
             } else if (token == '=') {
                 ack_token();
+
+                struct symbol *sym = symbol_get(tok_strval, 0, false);
+
                 printf("Variable assignment: %s\n", tok_strval);
 
                 struct expr_node *node = parse_expression();
                 emit_expr(node);
+
+                if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                    emit("ld      a,l");
+                    emit("ld      (_%s),a", sym->name);
+
+                } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                    emit("ld      (_%s),hl", sym->name);
+
+                } else {
+                    printf("Unimplemented identifier symbol type in expression!\n");
+                    syntax_error();
+                }
 
                 expect_ack(';');
 
