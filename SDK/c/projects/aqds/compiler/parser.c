@@ -14,6 +14,9 @@ static void expect(uint8_t token) {
         syntax_error();
 }
 
+static void emit_expr(struct expr_node *node) {
+}
+
 static void parse_compound(void) {
     expect_ack('{');
 
@@ -40,7 +43,10 @@ static void parse_compound(void) {
             } else if (token == '=') {
                 ack_token();
                 printf("Variable assignment: %s\n", tok_strval);
-                parse_expression();
+
+                struct expr_node *node = parse_expression();
+                emit_expr(node);
+
                 expect_ack(';');
 
             } else {
