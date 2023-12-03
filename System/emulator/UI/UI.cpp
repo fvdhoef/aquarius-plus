@@ -107,10 +107,11 @@ void UI::mainLoop() {
 
     bool escapePressed = false;
 
+    int tooSlow = 0;
+
     bool done = false;
     while (!done) {
         SDL_Event event;
-        bool      do_emulate = false;
         while (SDL_PollEvent(&event)) {
             ImGui_ImplSDL2_ProcessEvent(&event);
             switch (event.type) {
@@ -150,9 +151,6 @@ void UI::mainLoop() {
                     break;
                 }
 
-                // Called everytime an audio buffer is done playing
-                case SDL_USEREVENT: do_emulate = true; break;
-
                 default:
                     if (event.type == SDL_QUIT)
                         done = true;
@@ -162,9 +160,26 @@ void UI::mainLoop() {
             }
         }
 
-        if (do_emulate) {
-            do_emulate = false;
-            emulate();
+        // Emulate
+        {
+            int bufsToRender = Audio::instance().bufsToRender();
+            if (bufsToRender == 0)
+                continue;
+
+            if (io.DeltaTime > 0.050f) {
+                tooSlow++;
+            } else {
+                tooSlow = 0;
+            }
+            if (tooSlow >= 4) {
+                tooSlow = 0;
+                if (emuState.emulationSpeed > 1) {
+                    emuState.emulationSpeed--;
+                }
+            }
+            for (int i = 0; i < bufsToRender; i++) {
+                emulate();
+            }
         }
 
         if (io.WantSaveIniSettings) {
@@ -290,18 +305,9 @@ void UI::mainLoop() {
                     }
 
                     ImGui::Separator();
-                    {
-                        if (ImGui::MenuItem("Emulation speed 1x", "", emuState.emulationSpeed == 1))
-                            emuState.emulationSpeed = 1;
-                        if (ImGui::MenuItem("Emulation speed 2x", "", emuState.emulationSpeed == 2))
-                            emuState.emulationSpeed = 2;
-                        if (ImGui::MenuItem("Emulation speed 4x", "", emuState.emulationSpeed == 4))
-                            emuState.emulationSpeed = 4;
-                        if (ImGui::MenuItem("Emulation speed 8x", "", emuState.emulationSpeed == 8))
-                            emuState.emulationSpeed = 8;
-                        if (ImGui::MenuItem("Emulation speed 16x", "", emuState.emulationSpeed == 16))
-                            emuState.emulationSpeed = 16;
-                    }
+                    ImGui::Text("Emulation speed");
+                    ImGui::SameLine();
+                    ImGui::SliderInt("##speed", &emuState.emulationSpeed, 1, 20);
                 }
                 ImGui::EndMenu();
             }

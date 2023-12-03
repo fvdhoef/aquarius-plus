@@ -1,7 +1,5 @@
 #include "Audio.h"
 
-#define NUM_BUFS (8)
-
 Audio::Audio() {
 }
 
@@ -16,12 +14,12 @@ void Audio::init() {
     }
 
     // Allocate audio buffers
-    buffers = (int16_t **)malloc(NUM_BUFS * sizeof(*buffers));
+    buffers = (int16_t **)malloc(NUM_AUDIO_BUFS * sizeof(*buffers));
     if (buffers == NULL) {
         fprintf(stderr, "Error allocating audio buffers\n");
         exit(1);
     }
-    for (int i = 0; i < NUM_BUFS; i++) {
+    for (int i = 0; i < NUM_AUDIO_BUFS; i++) {
         buffers[i] = (int16_t *)malloc(2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
         if (buffers[i] == NULL) {
             fprintf(stderr, "Error allocating audio buffers\n");
@@ -53,21 +51,16 @@ void Audio::_audioCallback(void *userData, uint8_t *stream, int len) {
 }
 
 void Audio::audioCallback(uint8_t *stream, int len) {
-    assert(len == 2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
+    std::lock_guard<std::mutex> lock(mutex);
 
-    SDL_Event event;
-    memset(&event, 0, sizeof(event));
-    event.type      = SDL_USEREVENT;
-    event.user.type = SDL_USEREVENT;
-    event.user.code = 0;
-    SDL_PushEvent(&event);
+    assert(len == 2 * SAMPLES_PER_BUFFER * sizeof(buffers[0][0]));
 
     if (bufCnt <= 0) {
         memset(stream, 0, len);
 
     } else {
         memcpy(stream, buffers[rdIdx++], len);
-        if (rdIdx == NUM_BUFS)
+        if (rdIdx == NUM_AUDIO_BUFS)
             rdIdx = 0;
         bufCnt--;
     }
@@ -87,7 +80,7 @@ void Audio::close() {
 
     // Free audio buffers
     if (buffers != NULL) {
-        for (int i = 0; i < NUM_BUFS; i++) {
+        for (int i = 0; i < NUM_AUDIO_BUFS; i++) {
             if (buffers[i] != NULL) {
                 free(buffers[i]);
                 buffers[i] = NULL;
@@ -99,23 +92,32 @@ void Audio::close() {
 }
 
 int16_t *Audio::getBuffer(void) {
-    if (bufCnt == NUM_BUFS) {
+    std::lock_guard<std::mutex> lock(mutex);
+
+    if (bufCnt == NUM_AUDIO_BUFS) {
         return NULL;
     }
 
     // printf("audio_get_buffer %d %d\n", wrIdx, bufCnt);
 
-    assert(bufCnt < NUM_BUFS);
+    assert(bufCnt < NUM_AUDIO_BUFS);
     return buffers[wrIdx];
 }
 
 void Audio::putBuffer(int16_t *buf) {
-    assert(bufCnt < NUM_BUFS);
+    std::lock_guard<std::mutex> lock(mutex);
+
+    assert(bufCnt < NUM_AUDIO_BUFS);
 
     // printf("audio_put_buffer %d %d\n", wrIdx, bufCnt);
 
     buffers[wrIdx++] = buf;
-    if (wrIdx == NUM_BUFS)
+    if (wrIdx == NUM_AUDIO_BUFS)
         wrIdx = 0;
     bufCnt++;
+}
+
+int Audio::bufsToRender() {
+    std::lock_guard<std::mutex> lock(mutex);
+    return NUM_AUDIO_BUFS - bufCnt;
 }
