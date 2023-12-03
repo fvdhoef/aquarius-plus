@@ -4,6 +4,8 @@
 #include "symbols.h"
 #include <stdarg.h>
 
+static uint16_t lbl_idx;
+
 static void emit_expr(struct expr_node *node);
 
 static void expect_ack(uint8_t token) {
@@ -40,6 +42,55 @@ static void emit_binary(struct expr_node *node) {
     emit_expr(node->right_node);
     emit("ex      de,hl");
     emit("pop     hl");
+}
+
+static void emit_local_lbl(int idx) {
+    int len = sprintf(tmpbuf, ".%d:\n", idx);
+    output_puts(tmpbuf, len);
+}
+
+static int gen_local_lbl(void) {
+    return lbl_idx++;
+}
+
+static void emit_bitwise_and(struct expr_node *node) {
+    emit_binary(node);
+    emit("ld      a,h");
+    emit("and     d");
+    emit("ld      h,a");
+    emit("ld      a,l");
+    emit("and     e");
+    emit("ld      l,a");
+}
+
+static void emit_bitwise_xor(struct expr_node *node) {
+    emit_binary(node);
+    emit("ld      a,h");
+    emit("xor     d");
+    emit("ld      h,a");
+    emit("ld      a,l");
+    emit("xor     e");
+    emit("ld      l,a");
+}
+
+static void emit_bitwise_or(struct expr_node *node) {
+    emit_binary(node);
+    emit("ld      a,h");
+    emit("or      d");
+    emit("ld      h,a");
+    emit("ld      a,l");
+    emit("or      e");
+    emit("ld      l,a");
+}
+
+static void emit_cast_boolean(void) {
+    int lbl = gen_local_lbl();
+    emit("ld      a,h");
+    emit("or      l");
+    emit("ld      hl,0");
+    emit("jr      z,.%d", lbl);
+    emit("inc     l");
+    emit_local_lbl(lbl);
 }
 
 static void emit_expr(struct expr_node *node) {
@@ -117,38 +168,19 @@ static void emit_expr(struct expr_node *node) {
         // case TOK_OP_EQ:
         // case TOK_OP_NE:
 
-        case '&':   // hl & de
-            emit_binary(node);
-            emit("ld      a,h");
-            emit("and     d");
-            emit("ld      h,a");
-            emit("ld      a,l");
-            emit("and     e");
-            emit("ld      l,a");
+        case '&': emit_bitwise_and(node); break;
+        case '^': emit_bitwise_xor(node); break;
+        case '|': emit_bitwise_or(node); break;
+
+        case TOK_OP_AND:
+            emit_bitwise_and(node);
+            emit_cast_boolean();
             break;
 
-        case '^':   // hl ^ de
-            emit_binary(node);
-            emit("ld      a,h");
-            emit("xor     d");
-            emit("ld      h,a");
-            emit("ld      a,l");
-            emit("xor     e");
-            emit("ld      l,a");
+        case TOK_OP_OR:
+            emit_bitwise_or(node);
+            emit_cast_boolean();
             break;
-
-        case '|':   // hl | de
-            emit_binary(node);
-            emit("ld      a,h");
-            emit("or      d");
-            emit("ld      h,a");
-            emit("ld      a,l");
-            emit("or      e");
-            emit("ld      l,a");
-            break;
-
-        // case TOK_OP_AND:
-        // case TOK_OP_OR:
 
                 // clang-format on
             default:
