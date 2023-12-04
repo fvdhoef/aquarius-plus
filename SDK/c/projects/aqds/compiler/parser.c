@@ -6,6 +6,15 @@
 
 static uint16_t lbl_idx;
 
+static uint16_t flags;
+
+// Flags to indicate which helper functions to generate
+#define FLAGS_USES_MULTSI (1 << 0)
+#define FLAGS_USES_DIVSI  (1 << 1)
+#define FLAGS_USES_MODSI  (1 << 2)
+#define FLAGS_USES_SHL    (1 << 3)
+#define FLAGS_USES_SHR    (1 << 4)
+
 static void emit_expr(struct expr_node *node);
 
 static void expect_ack(uint8_t token) {
@@ -45,7 +54,15 @@ static void emit_binary(struct expr_node *node) {
 }
 
 static void emit_local_lbl(int idx) {
-    int len = sprintf(tmpbuf, ".%d:\n", idx);
+    int len = sprintf(tmpbuf, "__l%d:\n", idx);
+    output_puts(tmpbuf, len);
+}
+
+static void emit_lbl(const char *str) {
+    sprintf(tmpbuf, "_%s:\n", tok_strval);
+    output_puts(tmpbuf, 0);
+
+    int len = sprintf(tmpbuf, "__l%d:\n", idx);
     output_puts(tmpbuf, len);
 }
 
@@ -53,42 +70,12 @@ static int gen_local_lbl(void) {
     return lbl_idx++;
 }
 
-static void emit_bitwise_and(struct expr_node *node) {
-    emit_binary(node);
-    emit("ld      a,h");
-    emit("and     d");
-    emit("ld      h,a");
-    emit("ld      a,l");
-    emit("and     e");
-    emit("ld      l,a");
-}
-
-static void emit_bitwise_xor(struct expr_node *node) {
-    emit_binary(node);
-    emit("ld      a,h");
-    emit("xor     d");
-    emit("ld      h,a");
-    emit("ld      a,l");
-    emit("xor     e");
-    emit("ld      l,a");
-}
-
-static void emit_bitwise_or(struct expr_node *node) {
-    emit_binary(node);
-    emit("ld      a,h");
-    emit("or      d");
-    emit("ld      h,a");
-    emit("ld      a,l");
-    emit("or      e");
-    emit("ld      l,a");
-}
-
 static void emit_cast_boolean(void) {
     int lbl = gen_local_lbl();
     emit("ld      a,h");
     emit("or      l");
     emit("ld      hl,0");
-    emit("jr      z,.%d", lbl);
+    emit("jr      z,__l%d", lbl);
     emit("inc     l");
     emit_local_lbl(lbl);
 }
@@ -153,13 +140,46 @@ static void emit_expr(struct expr_node *node) {
             emit("ld      l,a");
             break;
 
-        case '*':        emit_binary(node); emit("call    __multsi"); break;
-        case '/':        emit_binary(node); emit("call    __divsi"); break;
-        case '%':        emit_binary(node); emit("call    __modsi"); break;
-        case '+':        emit_binary(node); emit("add     hl,de");  break;
-        case '-':        emit_binary(node); emit("or      a"); emit("sbc     hl,de"); break;
-        case TOK_OP_SHL: emit_binary(node); emit("call    __shl"); break;
-        case TOK_OP_SHR: emit_binary(node); emit("call    __shr"); break;
+        case '*':
+            emit_binary(node);
+            emit("call    __multsi");
+            flags |= FLAGS_USES_MULTSI;
+            break;
+
+        case '/':
+            emit_binary(node);
+            emit("call    __divsi");
+            flags |= FLAGS_USES_DIVSI;
+            break;
+
+        case '%':
+            emit_binary(node);
+            emit("call    __modsi");
+            flags |= FLAGS_USES_MODSI;
+            break;
+
+        case '+':
+            emit_binary(node);
+            emit("add     hl,de");
+            break;
+
+        case '-':
+            emit_binary(node);
+            emit("or      a");
+            emit("sbc     hl,de");
+            break;
+
+        case TOK_OP_SHL:
+            emit_binary(node);
+            emit("call    __shl");
+            flags |= FLAGS_USES_SHL;
+            break;
+
+        case TOK_OP_SHR:
+            emit_binary(node);
+            emit("call    __shr");
+            flags |= FLAGS_USES_SHR;
+            break;
 
         // case TOK_OP_LE:
         // case TOK_OP_GE:
@@ -168,19 +188,73 @@ static void emit_expr(struct expr_node *node) {
         // case TOK_OP_EQ:
         // case TOK_OP_NE:
 
-        case '&': emit_bitwise_and(node); break;
-        case '^': emit_bitwise_xor(node); break;
-        case '|': emit_bitwise_or(node); break;
-
-        case TOK_OP_AND:
-            emit_bitwise_and(node);
-            emit_cast_boolean();
+        case '&':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("and     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("and     e");
+            emit("ld      l,a");
             break;
 
-        case TOK_OP_OR:
-            emit_bitwise_or(node);
-            emit_cast_boolean();
+        case '^':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("xor     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("xor     e");
+            emit("ld      l,a");
             break;
+
+        case '|':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("or      d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("or      e");
+            emit("ld      l,a");
+            break;
+
+        case TOK_OP_AND: {
+            // Boolean-AND operation with short circuit
+            int lbl1 = gen_local_lbl();
+            int lbl2 = gen_local_lbl();
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("or      a,l");
+            emit("jr      z,__l%d", lbl1);
+            emit_expr(node->right_node);
+            emit("ld      a,h");
+            emit("or      a,l");
+            emit_local_lbl(lbl1);
+            emit("ld      hl,0");
+            emit("jr      z,__l%d", lbl2);
+            emit("inc     l");
+            emit_local_lbl(lbl2);
+            break;
+        }
+
+        case TOK_OP_OR: {
+            // Boolean-OR operation with short circuit
+            int lbl1 = gen_local_lbl();
+            int lbl2 = gen_local_lbl();
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("or      a,l");
+            emit("jr      nz,__l%d", lbl1);
+            emit_expr(node->right_node);
+            emit("ld      a,h");
+            emit("or      a,l");
+            emit_local_lbl(lbl1);
+            emit("ld      hl,1");
+            emit("jr      nz,__l%d", lbl2);
+            emit("dec     l");
+            emit_local_lbl(lbl2);
+            break;
+        }
 
                 // clang-format on
             default:
@@ -304,5 +378,16 @@ void parse(void) {
         } else {
             syntax_error();
         }
+    }
+
+    if (flags & FLAGS_USES_MULTSI) {
+    }
+    if (flags & FLAGS_USES_DIVSI) {
+    }
+    if (flags & FLAGS_USES_MODSI) {
+    }
+    if (flags & FLAGS_USES_SHL) {
+    }
+    if (flags & FLAGS_USES_SHR) {
     }
 }
