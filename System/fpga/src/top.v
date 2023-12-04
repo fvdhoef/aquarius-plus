@@ -369,10 +369,18 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire [7:0] spi_hctrl1, spi_hctrl2;
 
-    wire [7:0] hctrl1 = hc1[7:0];
-    wire [7:0] hctrl2 = hc2[7:0];
+    wire [7:0] hc1_out_data;
+    wire       hc1_oe;
+    wire [7:0] hc2_out_data;
+    wire       hc2_oe;
+
+    assign hc1[7:0] = hc1_oe ? hc1_out_data : 8'bZ;
+    assign hc2[7:0] = hc2_oe ? hc2_out_data : 8'bZ;
     assign hc1[8] = 1'b0;
     assign hc2[8] = 1'b0;
+
+    wire [7:0] hctrl1 = hc1[7:0];
+    wire [7:0] hctrl2 = hc2[7:0];
 
     // Synchronize inputs
     reg [7:0] hctrl1_r, hctrl1_rr;
@@ -490,7 +498,12 @@ module top(
         .rddata(rddata_ay8910),
 
         .ioa_in_data(hctrl1_data),
+        .ioa_out_data(hc1_out_data),
+        .ioa_oe(hc1_oe),
+
         .iob_in_data(hctrl2_data),
+        .iob_out_data(hc2_out_data),
+        .iob_oe(hc2_oe),
 
         .ch_a(ay8910_ch_a),
         .ch_b(ay8910_ch_b),

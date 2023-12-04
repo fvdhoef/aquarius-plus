@@ -8,7 +8,12 @@ module ay8910(
     output reg  [7:0] rddata,
 
     input  wire [7:0] ioa_in_data,
+    output wire [7:0] ioa_out_data,
+    output wire       ioa_oe,
+
     input  wire [7:0] iob_in_data,
+    output wire [7:0] iob_out_data,
+    output wire       iob_oe,
 
     output wire [9:0] ch_a,
     output wire [9:0] ch_b,
@@ -32,6 +37,11 @@ module ay8910(
     reg [15:0] envelope_period_r;
     reg        envelope_hold_r, envelope_alternate_r, envelope_attack_r, envelope_continue_r;
     reg  [7:0] ioa_out_data_r, iob_out_data_r;
+
+    assign ioa_out_data = ioa_out_data_r;
+    assign ioa_oe       = ioa_out_r;
+    assign iob_out_data = iob_out_data_r;
+    assign iob_oe       = iob_out_r;
 
     wire eashape_wr = wren && !a0 && reg_addr_r == 4'hD;
 
