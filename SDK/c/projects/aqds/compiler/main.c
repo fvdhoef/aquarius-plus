@@ -85,6 +85,6 @@ int main(
 
     // We're done, exit the program
     puts("Done!\n");
-    exit_program();
+    exit_program(false);
     return 0;
 }

@@ -1,5 +1,6 @@
 #asm
-    include "/sdk/asm/inc/basic_stub.inc"
+;    include "/sdk/asm/inc/basic_stub.inc"
+    include "../../../../../../../EndUser/sdcard/sdk/asm/inc/basic_stub.inc"
 main:
     jp      _main
 #endasm

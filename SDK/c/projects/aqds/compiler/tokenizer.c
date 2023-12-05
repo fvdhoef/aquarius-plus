@@ -29,7 +29,7 @@ void error(const char *str) {
         printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
     else
         printf("\nError: %s\n", str);
-    exit_program();
+    exit_program(true);
 }
 
 void syntax_error(void) {
@@ -52,7 +52,7 @@ static void skip_whitespace(void) {
 static void expect(uint8_t ch) {
     if (cur_p[0] != ch) {
         printf("\n%s:%u Error: expected %c\n", cur_file_ctx->path, cur_file_ctx->linenr, ch);
-        exit_program();
+        exit_program(true);
     }
     cur_p++;
 }

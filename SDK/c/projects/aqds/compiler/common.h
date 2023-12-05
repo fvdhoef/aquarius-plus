@@ -22,7 +22,7 @@ extern char             tmpbuf[256];
 void error(const char *str);
 void syntax_error(void);
 void eof_error(void);
-void exit_program(void);
+void exit_program(bool error);
 void check_esp_result(int16_t result);
 void determine_basename(const char *path);
 
