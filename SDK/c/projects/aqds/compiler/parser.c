@@ -367,21 +367,26 @@ void parse(void) {
     if (flags & FLAGS_USES_MULTSI) {
         emit_lbl("_multsi");
         emit("; To be implemented");
+        emit("ret");
     }
     if (flags & FLAGS_USES_DIVSI) {
         emit_lbl("_divsi");
         emit("; To be implemented");
+        emit("ret");
     }
     if (flags & FLAGS_USES_MODSI) {
         emit_lbl("_modsi");
         emit("; To be implemented");
+        emit("ret");
     }
     if (flags & FLAGS_USES_SHL) {
         emit_lbl("_shl");
         emit("; To be implemented");
+        emit("ret");
     }
     if (flags & FLAGS_USES_SHR) {
         emit_lbl("_shr");
         emit("; To be implemented");
+        emit("ret");
     }
 }

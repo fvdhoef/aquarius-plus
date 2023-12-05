@@ -836,6 +836,8 @@ int main(
 
     // We're done, exit the program
     puts("Done!\n");
+#ifdef __SDCC
     exit_program();
+#endif
     return 0;
 }

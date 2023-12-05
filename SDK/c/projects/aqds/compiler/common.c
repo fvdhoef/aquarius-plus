@@ -10,7 +10,7 @@ char        basename[32];
 const char *filename_cb;
 char        tmpbuf[256];
 
-void exit_program(bool error) {
+void exit_program(void) {
 #ifdef __SDCC
     puts("\nPress enter to quit.\n");
     while (1) {
@@ -22,7 +22,7 @@ void exit_program(bool error) {
     // Go back to file manager
     __asm__("jp 0xF806");
 #else
-    exit(error ? 1 : 0);
+    exit(1);
 #endif
 }
 
@@ -63,7 +63,7 @@ void check_esp_result(int16_t result) {
             case ERR_NOT_EMPTY: puts("Not empty"); break;
             case ERR_WRITE_PROTECT: puts("Write protected SD-card"); break;
         }
-        exit_program(true);
+        exit_program();
     }
 }
 
