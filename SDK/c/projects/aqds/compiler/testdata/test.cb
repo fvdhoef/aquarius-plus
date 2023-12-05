@@ -38,4 +38,5 @@ main() {
 //    dinges();
     a = (b + (2 * -a)) & 1;
     a = (a && b) || 5;
+    a = dinges();
 }

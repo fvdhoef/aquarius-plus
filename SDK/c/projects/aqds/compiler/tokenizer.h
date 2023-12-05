@@ -9,6 +9,7 @@ enum {
     TOK_IDENTIFIER,
     TOK_CONSTANT,
     TOK_STRING_LITERAL,
+    TOK_FUNC_CALL,
 
     TOK_BREAK,    // break
     TOK_CHAR,     // char

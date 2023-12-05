@@ -78,205 +78,191 @@ static void emit_cast_boolean(void) {
 }
 
 static void emit_expr(struct expr_node *node) {
-    if (node->op == TOK_CONSTANT) {
-        emit("ld      hl,%d", node->val);
+    switch (node->op) {
+        case TOK_CONSTANT: {
+            emit("ld      hl,%d", node->val);
+            break;
+        }
 
-    } else if (node->op == TOK_IDENTIFIER) {
-        struct symbol *sym = node->sym;
-        if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-            emit("ld      a,(_%s)", sym->name);
-            emit("ld      h,0");
+        case TOK_IDENTIFIER: {
+            struct symbol *sym = node->sym;
+            if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                emit("ld      a,(_%s)", sym->name);
+                emit("ld      h,0");
+                emit("ld      l,a");
+
+            } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                emit("ld      hl,(_%s)", sym->name);
+
+            } else {
+                printf("Unimplemented identifier symbol type in expression!\n");
+                syntax_error();
+            }
+            break;
+        }
+
+        case '=': {
+            if (node->left_node->op != TOK_IDENTIFIER)
+                error("Expected identifier");
+
+            emit_expr(node->right_node);
+            if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                emit("ld      a,l");
+                emit("ld      (_%s),a", node->left_node->sym->name);
+
+            } else if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                emit("ld      (_%s),hl", node->left_node->sym->name);
+
+            } else {
+                printf("Unimplemented identifier symbol type in expression!\n");
+                syntax_error();
+            }
+            break;
+        }
+
+        case TOK_OP_NEG:
+            emit_expr(node->left_node);
+            emit("ex      de,hl");
+            emit("ld      hl,0");
+            emit("or      a");
+            emit("sbc     hl,de");
+            break;
+
+        case '~':
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("xor     $FF");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("xor     $FF");
             emit("ld      l,a");
+            break;
 
-        } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-            emit("ld      hl,(_%s)", sym->name);
+        case '*':
+            emit_binary(node);
+            emit("call    __multsi");
+            flags |= FLAGS_USES_MULTSI;
+            break;
 
-        } else {
-            printf("Unimplemented identifier symbol type in expression!\n");
+        case '/':
+            emit_binary(node);
+            emit("call    __divsi");
+            flags |= FLAGS_USES_DIVSI;
+            break;
+
+        case '%':
+            emit_binary(node);
+            emit("call    __modsi");
+            flags |= FLAGS_USES_MODSI;
+            break;
+
+        case '+':
+            emit_binary(node);
+            emit("add     hl,de");
+            break;
+
+        case '-':
+            emit_binary(node);
+            emit("or      a");
+            emit("sbc     hl,de");
+            break;
+
+        case TOK_OP_SHL:
+            emit_binary(node);
+            emit("call    __shl");
+            flags |= FLAGS_USES_SHL;
+            break;
+
+        case TOK_OP_SHR:
+            emit_binary(node);
+            emit("call    __shr");
+            flags |= FLAGS_USES_SHR;
+            break;
+
+            // case TOK_OP_LE:
+            // case TOK_OP_GE:
+            // case '<':
+            // case '>':
+            // case TOK_OP_EQ:
+            // case TOK_OP_NE:
+
+        case '&':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("and     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("and     e");
+            emit("ld      l,a");
+            break;
+
+        case '^':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("xor     d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("xor     e");
+            emit("ld      l,a");
+            break;
+
+        case '|':
+            emit_binary(node);
+            emit("ld      a,h");
+            emit("or      d");
+            emit("ld      h,a");
+            emit("ld      a,l");
+            emit("or      e");
+            emit("ld      l,a");
+            break;
+
+        case TOK_OP_AND: {
+            // Boolean-AND operation with short circuit
+            int lbl1 = gen_local_lbl();
+            int lbl2 = gen_local_lbl();
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit("jr      z,__l%d", lbl1);
+            emit_expr(node->right_node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit_local_lbl(lbl1);
+            emit("ld      hl,0");
+            emit("jr      z,__l%d", lbl2);
+            emit("inc     l");
+            emit_local_lbl(lbl2);
+            break;
+        }
+
+        case TOK_OP_OR: {
+            // Boolean-OR operation with short circuit
+            int lbl1 = gen_local_lbl();
+            int lbl2 = gen_local_lbl();
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit("jr      nz,__l%d", lbl1);
+            emit_expr(node->right_node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit_local_lbl(lbl1);
+            emit("ld      hl,1");
+            emit("jr      nz,__l%d", lbl2);
+            emit("dec     l");
+            emit_local_lbl(lbl2);
+            break;
+        }
+
+        case TOK_FUNC_CALL: {
+            emit("call    _%s", node->left_node->sym->name);
+            break;
+        }
+
+        default:
+            printf("Error: %d (%c)!\n", node->op, node->op);
             syntax_error();
-        }
-
-    } else {
-        switch (node->op) {
-            case TOK_CONSTANT: {
-                emit("ld      hl,%d", node->val);
-                break;
-            }
-
-            case TOK_IDENTIFIER: {
-                struct symbol *sym = node->sym;
-                if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-                    emit("ld      a,(_%s)", sym->name);
-                    emit("ld      h,0");
-                    emit("ld      l,a");
-
-                } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                    emit("ld      hl,(_%s)", sym->name);
-
-                } else {
-                    printf("Unimplemented identifier symbol type in expression!\n");
-                    syntax_error();
-                }
-                break;
-            }
-
-            case '=': {
-                if (node->left_node->op != TOK_IDENTIFIER)
-                    error("Expected identifier");
-
-                emit_expr(node->right_node);
-                if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-                    emit("ld      a,l");
-                    emit("ld      (_%s),a", node->left_node->sym->name);
-
-                } else if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                    emit("ld      (_%s),hl", node->left_node->sym->name);
-
-                } else {
-                    printf("Unimplemented identifier symbol type in expression!\n");
-                    syntax_error();
-                }
-                break;
-            }
-
-            case TOK_OP_NEG:
-                emit_expr(node->left_node);
-                emit("ex      de,hl");
-                emit("ld      hl,0");
-                emit("or      a");
-                emit("sbc     hl,de");
-                break;
-
-            case '~':
-                emit_expr(node->left_node);
-                emit("ld      a,h");
-                emit("xor     $FF");
-                emit("ld      h,a");
-                emit("ld      a,l");
-                emit("xor     $FF");
-                emit("ld      l,a");
-                break;
-
-            case '*':
-                emit_binary(node);
-                emit("call    __multsi");
-                flags |= FLAGS_USES_MULTSI;
-                break;
-
-            case '/':
-                emit_binary(node);
-                emit("call    __divsi");
-                flags |= FLAGS_USES_DIVSI;
-                break;
-
-            case '%':
-                emit_binary(node);
-                emit("call    __modsi");
-                flags |= FLAGS_USES_MODSI;
-                break;
-
-            case '+':
-                emit_binary(node);
-                emit("add     hl,de");
-                break;
-
-            case '-':
-                emit_binary(node);
-                emit("or      a");
-                emit("sbc     hl,de");
-                break;
-
-            case TOK_OP_SHL:
-                emit_binary(node);
-                emit("call    __shl");
-                flags |= FLAGS_USES_SHL;
-                break;
-
-            case TOK_OP_SHR:
-                emit_binary(node);
-                emit("call    __shr");
-                flags |= FLAGS_USES_SHR;
-                break;
-
-                // case TOK_OP_LE:
-                // case TOK_OP_GE:
-                // case '<':
-                // case '>':
-                // case TOK_OP_EQ:
-                // case TOK_OP_NE:
-
-            case '&':
-                emit_binary(node);
-                emit("ld      a,h");
-                emit("and     d");
-                emit("ld      h,a");
-                emit("ld      a,l");
-                emit("and     e");
-                emit("ld      l,a");
-                break;
-
-            case '^':
-                emit_binary(node);
-                emit("ld      a,h");
-                emit("xor     d");
-                emit("ld      h,a");
-                emit("ld      a,l");
-                emit("xor     e");
-                emit("ld      l,a");
-                break;
-
-            case '|':
-                emit_binary(node);
-                emit("ld      a,h");
-                emit("or      d");
-                emit("ld      h,a");
-                emit("ld      a,l");
-                emit("or      e");
-                emit("ld      l,a");
-                break;
-
-            case TOK_OP_AND: {
-                // Boolean-AND operation with short circuit
-                int lbl1 = gen_local_lbl();
-                int lbl2 = gen_local_lbl();
-                emit_expr(node->left_node);
-                emit("ld      a,h");
-                emit("or      l");
-                emit("jr      z,__l%d", lbl1);
-                emit_expr(node->right_node);
-                emit("ld      a,h");
-                emit("or      l");
-                emit_local_lbl(lbl1);
-                emit("ld      hl,0");
-                emit("jr      z,__l%d", lbl2);
-                emit("inc     l");
-                emit_local_lbl(lbl2);
-                break;
-            }
-
-            case TOK_OP_OR: {
-                // Boolean-OR operation with short circuit
-                int lbl1 = gen_local_lbl();
-                int lbl2 = gen_local_lbl();
-                emit_expr(node->left_node);
-                emit("ld      a,h");
-                emit("or      l");
-                emit("jr      nz,__l%d", lbl1);
-                emit_expr(node->right_node);
-                emit("ld      a,h");
-                emit("or      l");
-                emit_local_lbl(lbl1);
-                emit("ld      hl,1");
-                emit("jr      nz,__l%d", lbl2);
-                emit("dec     l");
-                emit_local_lbl(lbl2);
-                break;
-            }
-
-            default:
-                printf("Error: %d (%c)!\n", node->op, node->op);
-                break;
-        }
+            break;
     }
 }
 
@@ -294,16 +280,6 @@ static void parse_compound(void) {
         struct expr_node *node = parse_expression();
         emit_expr(node);
         expect_ack(';');
-
-        // } else if (token == TOK_IDENTIFIER) {
-        //     token = get_token();
-        //     if (token == '(') {
-        //         ack_token();
-        //         printf("Function call: %s\n", tok_strval);
-        //         expect_ack(')');
-        //         expect_ack(';');
-        //         emit("call    _%s", tok_strval);
-        // }
     }
 }
 
@@ -317,6 +293,7 @@ void parse(void) {
         if (token == TOK_IDENTIFIER) {
             // Function definition
             expect_ack('(');
+            symbol_add(SYMTYPE_FUNC, tok_strval, 0);
             expect_ack(')');
 
             printf("  - Function: %s\n", tok_strval);
