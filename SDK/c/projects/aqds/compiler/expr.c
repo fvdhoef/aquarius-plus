@@ -214,8 +214,22 @@ static struct expr_node *parse_logical_or_expr(void) {
     return result;
 }
 
+static struct expr_node *parse_assign_expr(void) {
+    struct expr_node *result = parse_logical_or_expr();
+    while (1) {
+        uint8_t token = get_token();
+        if (token == '=') {
+            ack_token();
+            result = alloc_node(token, result, parse_assign_expr());
+        } else {
+            break;
+        }
+    }
+    return result;
+}
+
 static struct expr_node *_parse_expression(void) {
-    return parse_logical_or_expr();
+    return parse_assign_expr();
 }
 
 static void simplify_expr(struct expr_node *node) {
