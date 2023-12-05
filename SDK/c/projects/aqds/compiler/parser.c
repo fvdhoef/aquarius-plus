@@ -5,8 +5,8 @@
 #include <stdarg.h>
 
 static uint16_t lbl_idx;
-
 static uint16_t flags;
+static uint8_t  arg_count;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI (1 << 0)
@@ -254,8 +254,28 @@ static void emit_expr(struct expr_node *node) {
             break;
         }
 
+        case TOK_FUNC_ARG: {
+            // Argument should be pushed in reversed order
+            if (node->right_node)
+                emit_expr(node->right_node);
+            emit_expr(node->left_node);
+            emit("push    hl");
+            arg_count++;
+            break;
+        }
+
         case TOK_FUNC_CALL: {
+            arg_count = 0;
+            if (node->right_node)
+                emit_expr(node->right_node);
+
             emit("call    _%s", node->left_node->sym->name);
+            if (arg_count) {
+                // Clean up stack
+                emit("ld      ix,%d", arg_count * 2);
+                emit("add     ix,sp");
+                emit("ld      sp,ix");
+            }
             break;
         }
 

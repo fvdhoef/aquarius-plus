@@ -66,17 +66,31 @@ static struct expr_node *parse_postfix_expr(void) {
             if (token == '(') {
                 ack_token();
                 result = alloc_node(TOK_FUNC_CALL, result, NULL);
-
-                token = get_token();
+                token  = get_token();
                 if (token == ')') {
                     ack_token();
                 } else {
-                    syntax_error();
+
+                    struct expr_node **list_next = &result->right_node;
+                    while (1) {
+                        *list_next = alloc_node(TOK_FUNC_ARG, _parse_expression(), NULL);
+                        list_next  = &(*list_next)->right_node;
+
+                        token = get_token();
+                        if (token == ')') {
+                            ack_token();
+                            break;
+                        }
+                        if (token == ',') {
+                            ack_token();
+                        } else {
+                            error("Expected comma");
+                        }
+                    }
                 }
             }
         }
     }
-
     return result;
 }
 

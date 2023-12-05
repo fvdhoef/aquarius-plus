@@ -10,6 +10,7 @@ enum {
     TOK_CONSTANT,
     TOK_STRING_LITERAL,
     TOK_FUNC_CALL,
+    TOK_FUNC_ARG,
 
     TOK_BREAK,    // break
     TOK_CHAR,     // char
