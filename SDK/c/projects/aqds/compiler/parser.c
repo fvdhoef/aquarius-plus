@@ -54,7 +54,7 @@ static void emit_binary(struct expr_node *node) {
 }
 
 static void emit_local_lbl(int idx) {
-    int len = sprintf(tmpbuf, "__l%d:\n", idx);
+    int len = sprintf(tmpbuf, ".l%d:\n", idx);
     output_puts(tmpbuf, len);
 }
 
@@ -72,7 +72,7 @@ static void emit_cast_boolean(void) {
     emit("ld      a,h");
     emit("or      l");
     emit("ld      hl,0");
-    emit("jr      z,__l%d", lbl);
+    emit("jr      z,.l%d", lbl);
     emit("inc     l");
     emit_local_lbl(lbl);
 }
@@ -223,13 +223,13 @@ static void emit_expr(struct expr_node *node) {
             emit_expr(node->left_node);
             emit("ld      a,h");
             emit("or      l");
-            emit("jr      z,__l%d", lbl1);
+            emit("jr      z,.l%d", lbl1);
             emit_expr(node->right_node);
             emit("ld      a,h");
             emit("or      l");
             emit_local_lbl(lbl1);
             emit("ld      hl,0");
-            emit("jr      z,__l%d", lbl2);
+            emit("jr      z,.l%d", lbl2);
             emit("inc     l");
             emit_local_lbl(lbl2);
             break;
@@ -242,13 +242,13 @@ static void emit_expr(struct expr_node *node) {
             emit_expr(node->left_node);
             emit("ld      a,h");
             emit("or      l");
-            emit("jr      nz,__l%d", lbl1);
+            emit("jr      nz,.l%d", lbl1);
             emit_expr(node->right_node);
             emit("ld      a,h");
             emit("or      l");
             emit_local_lbl(lbl1);
             emit("ld      hl,1");
-            emit("jr      nz,__l%d", lbl2);
+            emit("jr      nz,.l%d", lbl2);
             emit("dec     l");
             emit_local_lbl(lbl2);
             break;
@@ -269,12 +269,12 @@ static void emit_expr(struct expr_node *node) {
             if (node->right_node)
                 emit_expr(node->right_node);
 
+            uint8_t count = arg_count;
+
             emit("call    _%s", node->left_node->sym->name);
-            if (arg_count) {
+            while (count--) {
                 // Clean up stack
-                emit("ld      ix,%d", arg_count * 2);
-                emit("add     ix,sp");
-                emit("ld      sp,ix");
+                emit("pop     af");
             }
             break;
         }
@@ -318,12 +318,17 @@ void parse(void) {
 
             printf("  - Function: %s\n", tok_strval);
             emit_lbl(tok_strval);
+            emit("push    ix");
+            emit("ld      ix,0");
+            emit("add     ix,sp");
 
             expect('{');
             parse_compound();
 
-            output_puts(".func_exit:\n", 0);
-            output_puts("    ret\n", 0);
+            output_puts(".return:\n", 0);
+            emit("ld      sp,ix");
+            emit("pop     ix");
+            emit("ret");
 
         } else if (token == TOK_CHAR || token == TOK_INT) {
             uint8_t type = token;
