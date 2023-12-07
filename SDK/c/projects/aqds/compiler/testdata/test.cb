@@ -31,8 +31,8 @@ label:
 int a = MAX_LEN;
 char b = 'A';
 
-dinges() {
-//    return 6;
+dinges(int x, int y, char z) {
+    return 6;
 }
 
 main() {

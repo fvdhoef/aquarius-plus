@@ -295,11 +295,23 @@ static void parse_compound(void) {
             // End of compound statement
             ack_token();
             break;
-        }
 
-        struct expr_node *node = parse_expression();
-        emit_expr(node);
-        expect_ack(';');
+        } else if (token == TOK_RETURN) {
+            ack_token();
+            printf("Return!\n");
+            token = get_token();
+            if (token != ';') {
+                struct expr_node *node = parse_expression();
+                emit_expr(node);
+            }
+            emit("jp      .return");
+            expect_ack(';');
+
+        } else {
+            struct expr_node *node = parse_expression();
+            emit_expr(node);
+            expect_ack(';');
+        }
     }
 }
 
@@ -308,16 +320,37 @@ void parse(void) {
         int token = get_token();
         if (token == TOK_EOF)
             break;
-        ack_token();
 
         if (token == TOK_IDENTIFIER) {
+            ack_token();
+
             // Function definition
             expect_ack('(');
+            printf("- Function: %s\n", tok_strval);
             symbol_add(SYMTYPE_FUNC, tok_strval, 0);
-            expect_ack(')');
-
-            printf("  - Function: %s\n", tok_strval);
             emit_lbl(tok_strval);
+            while (1) {
+                token = get_token();
+                if (token == TOK_CHAR || token == TOK_INT) {
+                    uint8_t type = token;
+                    ack_token();
+                    expect(TOK_IDENTIFIER);
+                    printf("  - Argument: %s  (type: %d)\n", tok_strval, type);
+                    ack_token();
+                }
+
+                token = get_token();
+                if (token == ')') {
+                    ack_token();
+                    break;
+                }
+                if (token == ',') {
+                    ack_token();
+                } else {
+                    error("Expected comma");
+                }
+            }
+
             emit("push    ix");
             emit("ld      ix,0");
             emit("add     ix,sp");
