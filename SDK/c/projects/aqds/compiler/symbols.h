@@ -15,7 +15,7 @@ struct symbol {
     struct symbol *prev;
     uint8_t        scope_idx;
     uint8_t        type;
-    uint16_t       value;
+    int16_t        value;
     uint8_t        name_len; // Excluding zero-termination
     char           name[];
 };

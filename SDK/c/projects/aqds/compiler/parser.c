@@ -103,8 +103,18 @@ static void emit_expr(struct expr_node *node) {
                 }
 
             } else {
-                printf("Unimplemented local symbol type in expression!\n");
-                syntax_error();
+                if (sym->type == SYMTYPE_VAR_CHAR) {
+                    emit("ld      h,0");
+                    emit("ld      l,(ix+%d)", sym->value);
+
+                } else if (sym->type == SYMTYPE_VAR_INT) {
+                    emit("ld      l,(ix+%d)", sym->value);
+                    emit("ld      h,(ix+%d)", sym->value + 1);
+
+                } else {
+                    printf("Unimplemented local symbol type in expression!\n");
+                    syntax_error();
+                }
             }
             break;
         }
@@ -345,6 +355,8 @@ void parse(void) {
 
             symbol_push_scope();
 
+            int offset = 2;
+
             while (1) {
                 token = get_token();
                 if (token == TOK_CHAR || token == TOK_INT) {
@@ -353,8 +365,10 @@ void parse(void) {
                     expect(TOK_IDENTIFIER);
                     printf("  - Argument: %s  (type: %d)\n", tok_strval, type);
 
-                    uint8_t symtype = (token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
-                    symbol_add(symtype, tok_strval, 0);
+                    uint8_t        symtype = (token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
+                    struct symbol *sym     = symbol_add(symtype, tok_strval, 0);
+                    sym->value             = offset;
+                    offset += 2;
 
                     ack_token();
                 }
