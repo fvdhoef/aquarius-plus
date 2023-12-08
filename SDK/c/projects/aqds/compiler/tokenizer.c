@@ -248,7 +248,7 @@ static uint8_t _get_token(void) {
                 syntax_error();
 
             while (1) {
-                uint8_t ch = *(cur_p++);
+                uint8_t ch = *cur_p;
                 if (ch >= '0' && ch <= '9') {
                     tok_value = (tok_value << 4) | (ch - '0');
                 } else if (ch >= 'a' && ch <= 'f') {
@@ -258,6 +258,7 @@ static uint8_t _get_token(void) {
                 } else {
                     break;
                 }
+                cur_p++;
             }
             return TOK_CONSTANT;
         }

@@ -345,7 +345,7 @@ struct expr_node *parse_expression(void) {
     struct expr_node *node = NULL;
     node                   = _parse_expression();
     simplify_expr(node);
-    dump_expr(node, 0);
+    // dump_expr(node, 0);
 
     return node;
 }

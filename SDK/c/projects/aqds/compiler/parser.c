@@ -369,6 +369,7 @@ void parse(void) {
         if (token == TOK_EOF)
             break;
 
+        // Function definition?
         if (token == TOK_IDENTIFIER) {
             ack_token();
 
@@ -426,14 +427,26 @@ void parse(void) {
 
             symbol_pop_scope();
 
-        } else if (token == TOK_CHAR || token == TOK_INT) {
+        }
+
+        // Variable definition?
+        else if (token == TOK_CHAR || token == TOK_INT) {
             uint8_t type = token;
             ack_token();
-            expect(TOK_IDENTIFIER);
-            printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
+            uint8_t symtype = SYMTYPE_GLOBAL | ((type == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
 
-            uint8_t symtype = SYMTYPE_GLOBAL | ((token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
-            symbol_add(symtype, tok_strval, 0);
+            token = get_token();
+
+            // Pointer?
+            if (token == '*') {
+                ack_token();
+                symtype |= SYMTYPE_PTR;
+            }
+
+            expect(TOK_IDENTIFIER);
+            printf("  - Variable: %s  (symtype: $%02X)\n", tok_strval, symtype);
+
+            struct symbol *sym = symbol_add(symtype, tok_strval, 0);
 
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);
@@ -450,16 +463,19 @@ void parse(void) {
                 value = node->val;
             }
 
-            if (type == TOK_CHAR) {
-                sprintf(tmpbuf, "    defb %d\n", value);
-            } else {
+            if ((symtype & SYMTYPE_PTR) || type == TOK_INT) {
                 sprintf(tmpbuf, "    defw %d\n", value);
+            } else {
+                sprintf(tmpbuf, "    defb %d\n", value);
             }
             output_puts(tmpbuf, 0);
 
             expect_ack(';');
 
-        } else {
+        }
+
+        // Syntax error
+        else {
             syntax_error();
         }
     }
