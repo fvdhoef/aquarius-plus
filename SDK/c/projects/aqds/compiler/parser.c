@@ -67,6 +67,7 @@ static int gen_local_lbl(void) {
     return lbl_idx++;
 }
 
+#if 0
 static void emit_cast_boolean(void) {
     int lbl = gen_local_lbl();
     emit("ld      a,h");
@@ -76,6 +77,7 @@ static void emit_cast_boolean(void) {
     emit("inc     l");
     emit_local_lbl(lbl);
 }
+#endif
 
 static void emit_expr(struct expr_node *node) {
     switch (node->op) {
@@ -86,16 +88,22 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
-            if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-                emit("ld      a,(_%s)", sym->name);
-                emit("ld      h,0");
-                emit("ld      l,a");
+            if (sym->type & SYMTYPE_GLOBAL) {
+                if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                    emit("ld      a,(_%s)", sym->name);
+                    emit("ld      h,0");
+                    emit("ld      l,a");
 
-            } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                emit("ld      hl,(_%s)", sym->name);
+                } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
+                    emit("ld      hl,(_%s)", sym->name);
+
+                } else {
+                    printf("Unimplemented global symbol type in expression!\n");
+                    syntax_error();
+                }
 
             } else {
-                printf("Unimplemented identifier symbol type in expression!\n");
+                printf("Unimplemented local symbol type in expression!\n");
                 syntax_error();
             }
             break;
@@ -286,7 +294,9 @@ static void emit_expr(struct expr_node *node) {
     }
 }
 
-static void parse_compound(void) {
+static void parse_compound(bool new_scope) {
+    if (new_scope)
+        symbol_push_scope();
     expect_ack('{');
 
     while (1) {
@@ -313,6 +323,9 @@ static void parse_compound(void) {
             expect_ack(';');
         }
     }
+
+    if (new_scope)
+        symbol_pop_scope();
 }
 
 void parse(void) {
@@ -329,6 +342,9 @@ void parse(void) {
             printf("- Function: %s\n", tok_strval);
             symbol_add(SYMTYPE_FUNC, tok_strval, 0);
             emit_lbl(tok_strval);
+
+            symbol_push_scope();
+
             while (1) {
                 token = get_token();
                 if (token == TOK_CHAR || token == TOK_INT) {
@@ -336,6 +352,10 @@ void parse(void) {
                     ack_token();
                     expect(TOK_IDENTIFIER);
                     printf("  - Argument: %s  (type: %d)\n", tok_strval, type);
+
+                    uint8_t symtype = (token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
+                    symbol_add(symtype, tok_strval, 0);
+
                     ack_token();
                 }
 
@@ -356,12 +376,14 @@ void parse(void) {
             emit("add     ix,sp");
 
             expect('{');
-            parse_compound();
+            parse_compound(false);
 
             output_puts(".return:\n", 0);
             emit("ld      sp,ix");
             emit("pop     ix");
             emit("ret");
+
+            symbol_pop_scope();
 
         } else if (token == TOK_CHAR || token == TOK_INT) {
             uint8_t type = token;

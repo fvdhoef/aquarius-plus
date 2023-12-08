@@ -32,7 +32,7 @@ int a = MAX_LEN;
 char b = 'A';
 
 dinges(int x, int y, char z) {
-    return 6;
+    return x+y+z;
 }
 
 main() {

@@ -12,12 +12,16 @@
 #define SYMTYPE_ARRAY    (1 << 7) // Array
 
 struct symbol {
-    struct symbol *next;
+    struct symbol *prev;
+    uint8_t        scope_idx;
     uint8_t        type;
     uint16_t       value;
     uint8_t        name_len; // Excluding zero-termination
     char           name[];
 };
+
+void symbol_push_scope(void);
+void symbol_pop_scope(void);
 
 struct symbol *symbol_get(const char *name, uint8_t name_len, bool allow_undefined);
 struct symbol *symbol_add(uint8_t type, const char *name, uint8_t name_len);
