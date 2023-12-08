@@ -7,6 +7,7 @@
 static uint16_t lbl_idx;
 static uint16_t flags;
 static uint8_t  arg_count;
+static int      cur_ix_offset;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI (1 << 0)
@@ -316,6 +317,30 @@ static void parse_compound(bool new_scope) {
             ack_token();
             break;
 
+        } else if (token == TOK_CHAR || token == TOK_INT) {
+            uint8_t type = token;
+            ack_token();
+            expect(TOK_IDENTIFIER);
+            printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
+
+            cur_ix_offset -= 2;
+
+            uint8_t        symtype = ((token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
+            struct symbol *sym     = symbol_add(symtype, tok_strval, 0);
+            sym->value             = cur_ix_offset;
+            ack_token();
+
+            token = get_token();
+            if (token == '=') {
+                ack_token();
+                struct expr_node *node = parse_expression();
+                emit_expr(node);
+                emit("push    hl");
+            } else {
+                emit("push    af");
+            }
+            expect_ack(';');
+
         } else if (token == TOK_RETURN) {
             ack_token();
             printf("Return!\n");
@@ -390,6 +415,8 @@ void parse(void) {
             emit("add     ix,sp");
 
             expect('{');
+
+            cur_ix_offset = 0;
             parse_compound(false);
 
             output_puts(".return:\n", 0);
