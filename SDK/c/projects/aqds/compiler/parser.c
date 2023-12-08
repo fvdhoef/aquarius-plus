@@ -355,7 +355,7 @@ void parse(void) {
 
             symbol_push_scope();
 
-            int offset = 2;
+            int offset = 4; // Return address and pushed IX
 
             while (1) {
                 token = get_token();
