@@ -69,18 +69,6 @@ static int gen_local_lbl(void) {
     return lbl_idx++;
 }
 
-#if 0
-static void emit_cast_boolean(void) {
-    int lbl = gen_local_lbl();
-    emit("ld      a,h");
-    emit("or      l");
-    emit("ld      hl,0");
-    emit("jr      z,.l%d", lbl);
-    emit("inc     l");
-    emit_local_lbl(lbl);
-}
-#endif
-
 static void emit_expr(struct expr_node *node) {
     cur_type = 0;
 

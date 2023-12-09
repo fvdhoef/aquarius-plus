@@ -117,6 +117,10 @@ static struct expr_node *parse_unary_expr(void) {
         ack_token();
         return alloc_node('~', parse_unary_expr(), NULL);
     }
+    if (token == '!') {
+        ack_token();
+        return alloc_node('!', parse_unary_expr(), NULL);
+    }
     if (token == '*') {
         ack_token();
         return alloc_node(TOK_DEREF, parse_unary_expr(), NULL);
@@ -303,6 +307,10 @@ static void simplify_expr(struct expr_node *node) {
     } else if (node->op == '~' && node->left_node->op == TOK_CONSTANT) {
         node->op  = TOK_CONSTANT;
         node->val = ~node->left_node->val;
+
+    } else if (node->op == '!' && node->left_node->op == TOK_CONSTANT) {
+        node->op  = TOK_CONSTANT;
+        node->val = !node->left_node->val;
 
     } else if (
         node->left_node && node->left_node->op == TOK_CONSTANT &&
