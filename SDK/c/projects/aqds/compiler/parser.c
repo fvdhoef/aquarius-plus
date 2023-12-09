@@ -346,6 +346,93 @@ static void emit_expr(struct expr_node *node) {
     }
 }
 
+static void parse_compound(bool new_scope, int lbl_continue, int lbl_break);
+
+static void parse_statement(int lbl_continue, int lbl_break) {
+    int token = get_token();
+    if (token == '{') {
+        parse_compound(true, lbl_continue, lbl_break);
+
+    } else if (token == TOK_IF) {
+        ack_token();
+        expect_ack('(');
+        struct expr_node *node = parse_expression();
+        expect_ack(')');
+        emit_expr(node);
+        emit("ld      a,h");
+        emit("or      l");
+        int lbl1 = gen_local_lbl();
+        emit("jp      z,.l%d", lbl1);
+        parse_statement(lbl_continue, lbl_break);
+
+        bool has_else = false;
+        if (get_token() == TOK_ELSE) {
+            ack_token();
+            has_else = true;
+        }
+
+        if (has_else) {
+            int lbl2 = gen_local_lbl();
+            emit("jp      .l%d", lbl2);
+            emit_local_lbl(lbl1);
+            parse_statement(lbl_continue, lbl_break);
+            emit_local_lbl(lbl2);
+        } else {
+            emit_local_lbl(lbl1);
+        }
+
+    } else if (token == TOK_WHILE) {
+        ack_token();
+        expect_ack('(');
+        struct expr_node *node = parse_expression();
+        expect_ack(')');
+
+        int lbl1 = gen_local_lbl();
+        int lbl2 = gen_local_lbl();
+        emit_local_lbl(lbl1);
+
+        emit_expr(node);
+        emit("ld      a,h");
+        emit("or      l");
+        emit("jp      z,.l%d", lbl2);
+
+        parse_statement(lbl1, lbl2);
+        emit_local_lbl(lbl2);
+
+    } else if (token == TOK_CONTINUE) {
+        ack_token();
+        if (lbl_continue < 0) {
+            error("Continue outside loop");
+        }
+        emit("jp      .l%d", lbl_continue);
+        expect_ack(';');
+
+    } else if (token == TOK_BREAK) {
+        ack_token();
+        if (lbl_break < 0) {
+            error("Break outside loop");
+        }
+        emit("jp      .l%d", lbl_break);
+        expect_ack(';');
+
+    } else if (token == TOK_RETURN) {
+        ack_token();
+        printf("Return!\n");
+        token = get_token();
+        if (token != ';') {
+            struct expr_node *node = parse_expression();
+            emit_expr(node);
+        }
+        emit("jp      .return");
+        expect_ack(';');
+
+    } else {
+        struct expr_node *node = parse_expression();
+        emit_expr(node);
+        expect_ack(';');
+    }
+}
+
 static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
     if (new_scope)
         symbol_push_scope();
@@ -382,86 +469,10 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             }
             expect_ack(';');
 
-        } else if (token == TOK_IF) {
-            ack_token();
-            expect_ack('(');
-            struct expr_node *node = parse_expression();
-            expect_ack(')');
-            emit_expr(node);
-            emit("ld      a,h");
-            emit("or      l");
-            int lbl1 = gen_local_lbl();
-            emit("jp      z,.l%d", lbl1);
-            parse_compound(true, lbl_continue, lbl_break);
-
-            bool has_else = false;
-            if (get_token() == TOK_ELSE) {
-                ack_token();
-                has_else = true;
-            }
-
-            if (has_else) {
-                int lbl2 = gen_local_lbl();
-                emit("jp      .l%d", lbl2);
-                emit_local_lbl(lbl1);
-                parse_compound(true, lbl_continue, lbl_break);
-                emit_local_lbl(lbl2);
-            } else {
-                emit_local_lbl(lbl1);
-            }
-
-        } else if (token == TOK_WHILE) {
-            ack_token();
-            expect_ack('(');
-            struct expr_node *node = parse_expression();
-            expect_ack(')');
-
-            int lbl1 = gen_local_lbl();
-            int lbl2 = gen_local_lbl();
-            emit_local_lbl(lbl1);
-
-            emit_expr(node);
-            emit("ld      a,h");
-            emit("or      l");
-            emit("jp      z,.l%d", lbl2);
-
-            parse_compound(true, lbl1, lbl2);
-            emit_local_lbl(lbl2);
-
-        } else if (token == TOK_CONTINUE) {
-            ack_token();
-            if (lbl_continue < 0) {
-                error("Continue outside loop");
-            }
-            emit("jp      .l%d", lbl_continue);
-            expect_ack(';');
-
-        } else if (token == TOK_BREAK) {
-            ack_token();
-            if (lbl_break < 0) {
-                error("Break outside loop");
-            }
-            emit("jp      .l%d", lbl_break);
-            expect_ack(';');
-
-        } else if (token == TOK_RETURN) {
-            ack_token();
-            printf("Return!\n");
-            token = get_token();
-            if (token != ';') {
-                struct expr_node *node = parse_expression();
-                emit_expr(node);
-            }
-            emit("jp      .return");
-            expect_ack(';');
-
         } else {
-            struct expr_node *node = parse_expression();
-            emit_expr(node);
-            expect_ack(';');
+            parse_statement(lbl_continue, lbl_break);
         }
     }
-
     if (new_scope)
         symbol_pop_scope();
 }

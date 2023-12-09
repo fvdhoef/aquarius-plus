@@ -8,11 +8,14 @@ char *screen = 0x3001;
 char *screen2 = 0x3003;
 
 main() {
-    if (0) {
+    if (0) 
         *screen = 'A';
-    } else {
+    else
         *screen = 'B';
-    }
+
+    while (1)
+        if (1)
+            continue;
 
     while (1) {
         *screen = 'A';
