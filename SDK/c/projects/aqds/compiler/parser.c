@@ -8,6 +8,7 @@ static uint16_t lbl_idx;
 static uint16_t flags;
 static uint8_t  arg_count;
 static int      cur_ix_offset;
+static uint8_t  cur_type;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI (1 << 0)
@@ -81,6 +82,8 @@ static void emit_cast_boolean(void) {
 #endif
 
 static void emit_expr(struct expr_node *node) {
+    cur_type = 0;
+
     switch (node->op) {
         case TOK_CONSTANT: {
             emit("ld      hl,%d", node->val);
@@ -89,15 +92,14 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
+            cur_type           = sym->type;
             if (sym->type & SYMTYPE_GLOBAL) {
-                if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
+                if ((sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_INT || (sym->type & SYMTYPE_PTR)) {
+                    emit("ld      hl,(_%s)", sym->name);
+                } else if ((sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
                     emit("ld      a,(_%s)", sym->name);
                     emit("ld      h,0");
                     emit("ld      l,a");
-
-                } else if (sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                    emit("ld      hl,(_%s)", sym->name);
-
                 } else {
                     printf("Unimplemented global symbol type in expression!\n");
                     syntax_error();
@@ -121,20 +123,59 @@ static void emit_expr(struct expr_node *node) {
         }
 
         case '=': {
-            if (node->left_node->op != TOK_IDENTIFIER)
-                error("Expected identifier");
-
             emit_expr(node->right_node);
-            if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_CHAR)) {
-                emit("ld      a,l");
-                emit("ld      (_%s),a", node->left_node->sym->name);
 
-            } else if (node->left_node->sym->type == (SYMTYPE_GLOBAL | SYMTYPE_VAR_INT)) {
-                emit("ld      (_%s),hl", node->left_node->sym->name);
+            if (node->left_node->op == TOK_IDENTIFIER) {
+                if (node->left_node->sym->type & SYMTYPE_GLOBAL) {
+                    if ((node->left_node->sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_INT || (node->left_node->sym->type & SYMTYPE_PTR)) {
+                        emit("ld      (_%s),hl", node->left_node->sym->name);
+
+                    } else if ((node->left_node->sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
+                        emit("ld      a,l");
+                        emit("ld      (_%s),a", node->left_node->sym->name);
+
+                    } else {
+                        printf("Unimplemented identifier symbol type in expression!\n");
+                        syntax_error();
+                    }
+
+                } else {
+                    printf("Unimplemented identifier symbol type in LHS assignment!\n");
+                    syntax_error();
+                }
 
             } else {
-                printf("Unimplemented identifier symbol type in expression!\n");
-                syntax_error();
+                emit("push    hl");
+
+                if (node->left_node->op == TOK_DEREF) {
+                    emit_expr(node->left_node->left_node);
+
+                    if (cur_type & SYMTYPE_PTR) {
+                        printf("type: %02x\n", cur_type);
+
+                        if ((cur_type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
+                            emit("pop     de");
+                            emit("ld      (hl),e");
+                            emit("ex      de,hl");
+
+                        } else if ((cur_type & SYMTYPE_MASK) == SYMTYPE_VAR_INT) {
+                            emit("pop     de");
+                            emit("ld      (hl),e");
+                            emit("inc     hl");
+                            emit("ld      (hl),d");
+                            emit("ex      de,hl");
+
+                        } else {
+                            error("Unimplemented assignment");
+                        }
+
+                    } else {
+                        error("Deref non-pointer type");
+                    }
+
+                } else {
+                    error("Unimplemented assignment");
+                }
             }
             break;
         }
@@ -299,7 +340,7 @@ static void emit_expr(struct expr_node *node) {
         }
 
         default:
-            printf("Error: %d (%c)!\n", node->op, node->op);
+            printf("Error: op %d (%c)!\n", node->op, node->op > ' ' ? node->op : '?');
             syntax_error();
             break;
     }

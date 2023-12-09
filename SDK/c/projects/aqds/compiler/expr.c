@@ -61,8 +61,10 @@ static struct expr_node *parse_primary_expr(void) {
 static struct expr_node *parse_postfix_expr(void) {
     struct expr_node *result = parse_primary_expr();
     if (result->op == TOK_IDENTIFIER) {
+        uint8_t token = get_token();
+
+        // Function call?
         if (result->sym->type == SYMTYPE_FUNC) {
-            uint8_t token = get_token();
             if (token == '(') {
                 ack_token();
                 result = alloc_node(TOK_FUNC_CALL, result, NULL);
@@ -90,6 +92,14 @@ static struct expr_node *parse_postfix_expr(void) {
                 }
             }
         }
+
+        // Indexing?
+        else if (token == '[') {
+            ack_token();
+            result = alloc_node(TOK_INDEX, result, _parse_expression());
+            if (get_token() != ']')
+                syntax_error();
+        }
     }
     return result;
 }
@@ -106,6 +116,14 @@ static struct expr_node *parse_unary_expr(void) {
     if (token == '~') {
         ack_token();
         return alloc_node('~', parse_unary_expr(), NULL);
+    }
+    if (token == '*') {
+        ack_token();
+        return alloc_node(TOK_DEREF, parse_unary_expr(), NULL);
+    }
+    if (token == '&') {
+        ack_token();
+        return alloc_node(TOK_ADDR_OF, parse_unary_expr(), NULL);
     }
     return parse_postfix_expr();
 }
@@ -345,7 +363,7 @@ struct expr_node *parse_expression(void) {
     struct expr_node *node = NULL;
     node                   = _parse_expression();
     simplify_expr(node);
-    // dump_expr(node, 0);
+    dump_expr(node, 0);
 
     return node;
 }

@@ -4,11 +4,12 @@ main:
     jp      _main
 #endasm
 
-char *b = 0x3000;
+char *screen = 0x3001;
+char *screen2 = 0x3003;
 
 main() {
-//    dinges();
-//    a = (b + (2 * -a)) & 1;
-//    a = (a && b) || 5;
-//    a = dinges(1,2,3);
+    *screen = 'A';
+//    *(screen + 1) = 'B';
+//    screen = screen + 1;
+//    *screen = 'B';
 }

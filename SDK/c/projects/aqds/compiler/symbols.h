@@ -7,6 +7,7 @@
 #define SYMTYPE_FUNC     (1 << 0) // Function
 #define SYMTYPE_VAR_CHAR (2 << 0) // Character variable
 #define SYMTYPE_VAR_INT  (3 << 0) // Integer variable
+#define SYMTYPE_MASK     (3 << 0)
 #define SYMTYPE_GLOBAL   (1 << 5) // Global variable
 #define SYMTYPE_PTR      (1 << 6) // Pointer
 #define SYMTYPE_ARRAY    (1 << 7) // Array
