@@ -382,6 +382,34 @@ static void parse_compound(bool new_scope) {
             }
             expect_ack(';');
 
+        } else if (token == TOK_IF) {
+            ack_token();
+            expect_ack('(');
+            struct expr_node *node = parse_expression();
+            expect_ack(')');
+            emit_expr(node);
+            emit("ld      a,h");
+            emit("or      l");
+            int lbl1 = gen_local_lbl();
+            emit("jp      z,.l%d", lbl1);
+            parse_compound(true);
+
+            bool has_else = false;
+            if (get_token() == TOK_ELSE) {
+                ack_token();
+                has_else = true;
+            }
+
+            if (has_else) {
+                int lbl2 = gen_local_lbl();
+                emit("jp      .l%d", lbl2);
+                emit_local_lbl(lbl1);
+                parse_compound(true);
+                emit_local_lbl(lbl2);
+            } else {
+                emit_local_lbl(lbl1);
+            }
+
         } else if (token == TOK_RETURN) {
             ack_token();
             printf("Return!\n");

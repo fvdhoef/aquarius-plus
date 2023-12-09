@@ -8,7 +8,12 @@ char *screen = 0x3001;
 char *screen2 = 0x3003;
 
 main() {
-    *screen = 'A';
+    if (0) {
+        *screen = 'A';
+    } else {
+        *screen = 'B';
+    }
+
 //    *(screen + 1) = 'B';
 //    screen = screen + 1;
 //    *screen = 'B';
