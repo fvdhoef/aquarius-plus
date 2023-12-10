@@ -34,10 +34,10 @@ static struct expr_node *parse_primary_expr(void) {
         ack_token();
 
     } else if (token == TOK_IDENTIFIER) {
-        struct symbol *sym = symbol_get(tok_strval, 0, false);
+        struct symbol *sym = symbol_find(tok_strval, 0, false);
         ack_token();
 
-        if (sym->type == SYMTYPE_DEFINE) {
+        if (sym->storage == SYM_STORAGE_CONSTANT) {
             node      = alloc_node(TOK_CONSTANT, NULL, NULL);
             node->val = sym->value;
         } else {
@@ -64,7 +64,7 @@ static struct expr_node *parse_postfix_expr(void) {
         uint8_t token = get_token();
 
         // Function call?
-        if (result->sym->type == SYMTYPE_FUNC) {
+        if (result->sym->symtype == SYM_SYMTYPE_FUNC) {
             if (token == '(') {
                 ack_token();
                 result = alloc_node(TOK_FUNC_CALL, result, NULL);

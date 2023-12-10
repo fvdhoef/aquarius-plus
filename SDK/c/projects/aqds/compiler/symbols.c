@@ -8,8 +8,7 @@ static uint8_t fake_heap[0x8000];
 
 static struct symbol *scope[MAX_SCOPE_DEPTH];
 static uint8_t        scope_idx;
-static struct symbol *sym_first;
-static struct symbol *sym_last;
+static struct symbol *sym_start;
 
 #ifndef __SDCC
 void *getheap(void) {
@@ -28,7 +27,7 @@ void symbol_push_scope(void) {
     if (scope_idx >= MAX_SCOPE_DEPTH) {
         error("Scope nesting too deep!");
     }
-    scope[scope_idx] = sym_last;
+    scope[scope_idx] = sym_start;
     scope_idx++;
 }
 
@@ -37,23 +36,20 @@ void symbol_pop_scope(void) {
         error("No scope to pop!");
     }
     scope_idx--;
-    sym_last = scope[scope_idx];
+    sym_start = scope[scope_idx];
 }
 
-struct symbol *symbol_get(const char *name, uint8_t name_len, bool allow_undefined) {
-    if (sym_last) {
+struct symbol *symbol_find(const char *name, uint8_t name_len, bool allow_undefined) {
+    if (sym_start) {
         if (name_len == 0)
             name_len = strlen(name);
 
-        struct symbol *cur = sym_last;
-        while (1) {
+        struct symbol *cur = sym_start;
+        while ((uint8_t *)cur < getheap_end()) {
             if (cur->name_len == name_len && memcmp(name, cur->name, name_len) == 0)
                 return cur;
 
-            if (cur == sym_first)
-                break;
-
-            cur = cur->prev;
+            cur = (struct symbol *)((uint8_t *)(cur + 1) + cur->name_len + 1);
         }
     }
     if (!allow_undefined)
@@ -61,56 +57,50 @@ struct symbol *symbol_get(const char *name, uint8_t name_len, bool allow_undefin
     return NULL;
 }
 
-struct symbol *symbol_add(uint8_t type, const char *name, uint8_t name_len) {
+struct symbol *symbol_add(const char *name, uint8_t name_len) {
     if (name_len == 0)
         name_len = strlen(name);
 
-    struct symbol *sym = symbol_get(name, name_len, true);
-    if (sym && sym->scope_idx == scope_idx) {
+    struct symbol *sym = symbol_find(name, name_len, true);
+    if (sym && sym->scope_idx == scope_idx)
         error("Symbol already defined!");
-    }
 
-    if (sym_last == NULL) {
-        sym = getheap();
+    unsigned sym_size = sizeof(struct symbol) + name_len + 1;
+
+    if (sym_start == NULL) {
+        sym = (struct symbol *)(getheap_end() - sym_size);
     } else {
-        sym = (struct symbol *)((uint8_t *)(sym_last + 1) + sym_last->name_len + 1);
+        sym = (struct symbol *)((uint8_t *)sym_start - sym_size);
     }
-
-    unsigned reclen = sizeof(struct symbol) + name_len + 1;
-    if ((uint8_t *)sym + reclen > getheap_end())
+    if ((uint8_t *)sym < (uint8_t *)getheap())
         error("Out of memory!");
 
-    if (sym_first == NULL)
-        sym_first = sym;
-
-    sym->prev      = sym_last;
     sym->scope_idx = scope_idx;
-    sym->type      = type;
+    sym->symtype   = 0;
+    sym->typespec  = 0;
+    sym->storage   = 0;
     sym->value     = 0;
     sym->name_len  = name_len;
     memcpy(sym->name, name, name_len);
     sym->name[sym->name_len] = 0;
 
-    sym_last = sym;
+    sym_start = sym;
 
     return sym;
 }
 
-void symbol_dump(struct symbol *symbol) {
-    printf("- '%s' $%02x value:%u\n", symbol->name, symbol->type, symbol->value);
+void symbol_dump(struct symbol *sym) {
+    printf("- '%s' symtype:%u typespec:%u storage:%u value:%d\n", sym->name, sym->symtype, sym->typespec, sym->storage, sym->value);
 }
 
-void symbol_dump_all(void) {
-    if (!sym_first)
+void symbols_dump(void) {
+    if (!sym_start)
         return;
 
     printf("--- Symbols ---\n");
-    struct symbol *cur = sym_first;
-    while (1) {
+    struct symbol *cur = sym_start;
+    while ((uint8_t *)cur < getheap_end()) {
         symbol_dump(cur);
-        if (cur == sym_last)
-            break;
-
         cur = (struct symbol *)((uint8_t *)(cur + 1) + cur->name_len + 1);
     }
 }

@@ -8,7 +8,7 @@ static uint16_t lbl_idx;
 static uint16_t flags;
 static uint8_t  arg_count;
 static int      cur_ix_offset;
-static uint8_t  cur_type;
+static uint8_t  cur_typespec;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI (1 << 0)
@@ -70,7 +70,7 @@ static int gen_local_lbl(void) {
 }
 
 static void emit_expr(struct expr_node *node) {
-    cur_type = 0;
+    cur_typespec = 0;
 
     switch (node->op) {
         case TOK_CONSTANT: {
@@ -80,11 +80,11 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
-            cur_type           = sym->type;
-            if (sym->type & SYMTYPE_GLOBAL) {
-                if ((sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_INT || (sym->type & SYMTYPE_PTR)) {
+            cur_typespec       = sym->typespec;
+            if (sym->storage == SYM_STORAGE_STATIC) {
+                if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
                     emit("ld      hl,(_%s)", sym->name);
-                } else if ((sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
+                } else if (sym->typespec == SYM_TYPESPEC_CHAR) {
                     emit("ld      a,(_%s)", sym->name);
                     emit("ld      h,0");
                     emit("ld      l,a");
@@ -93,19 +93,21 @@ static void emit_expr(struct expr_node *node) {
                     syntax_error();
                 }
 
-            } else {
-                if (sym->type == SYMTYPE_VAR_CHAR) {
-                    emit("ld      h,0");
-                    emit("ld      l,(ix+%d)", sym->value);
-
-                } else if (sym->type == SYMTYPE_VAR_INT) {
+            } else if (sym->storage == SYM_STORAGE_STACK) {
+                if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
                     emit("ld      l,(ix+%d)", sym->value);
                     emit("ld      h,(ix+%d)", sym->value + 1);
+
+                } else if (sym->typespec == SYM_TYPESPEC_CHAR) {
+                    emit("ld      h,0");
+                    emit("ld      l,(ix+%d)", sym->value);
 
                 } else {
                     printf("Unimplemented local symbol type in expression!\n");
                     syntax_error();
                 }
+            } else {
+                error("Invalid storage class");
             }
             break;
         }
@@ -114,11 +116,11 @@ static void emit_expr(struct expr_node *node) {
             emit_expr(node->right_node);
 
             if (node->left_node->op == TOK_IDENTIFIER) {
-                if (node->left_node->sym->type & SYMTYPE_GLOBAL) {
-                    if ((node->left_node->sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_INT || (node->left_node->sym->type & SYMTYPE_PTR)) {
+                if (node->left_node->sym->storage == SYM_STORAGE_STATIC) {
+                    if (node->left_node->sym->typespec == SYM_TYPESPEC_INT || node->left_node->sym->symtype == SYM_SYMTYPE_PTR) {
                         emit("ld      (_%s),hl", node->left_node->sym->name);
 
-                    } else if ((node->left_node->sym->type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
+                    } else if (node->left_node->sym->typespec == SYM_TYPESPEC_CHAR) {
                         emit("ld      a,l");
                         emit("ld      (_%s),a", node->left_node->sym->name);
 
@@ -138,27 +140,20 @@ static void emit_expr(struct expr_node *node) {
                 if (node->left_node->op == TOK_DEREF) {
                     emit_expr(node->left_node->left_node);
 
-                    if (cur_type & SYMTYPE_PTR) {
-                        printf("type: %02x\n", cur_type);
+                    if (cur_typespec == SYM_TYPESPEC_CHAR) {
+                        emit("pop     de");
+                        emit("ld      (hl),e");
+                        emit("ex      de,hl");
 
-                        if ((cur_type & SYMTYPE_MASK) == SYMTYPE_VAR_CHAR) {
-                            emit("pop     de");
-                            emit("ld      (hl),e");
-                            emit("ex      de,hl");
-
-                        } else if ((cur_type & SYMTYPE_MASK) == SYMTYPE_VAR_INT) {
-                            emit("pop     de");
-                            emit("ld      (hl),e");
-                            emit("inc     hl");
-                            emit("ld      (hl),d");
-                            emit("ex      de,hl");
-
-                        } else {
-                            error("Unimplemented assignment");
-                        }
+                    } else if (cur_typespec == SYM_TYPESPEC_INT) {
+                        emit("pop     de");
+                        emit("ld      (hl),e");
+                        emit("inc     hl");
+                        emit("ld      (hl),d");
+                        emit("ex      de,hl");
 
                     } else {
-                        error("Deref non-pointer type");
+                        error("Unimplemented assignment");
                     }
 
                 } else {
@@ -441,9 +436,13 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
 
             cur_ix_offset -= 2;
 
-            uint8_t        symtype = ((token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
-            struct symbol *sym     = symbol_add(symtype, tok_strval, 0);
-            sym->value             = cur_ix_offset;
+            struct symbol *sym = symbol_add(tok_strval, 0);
+
+            sym->symtype  = SYM_SYMTYPE_VAR;
+            sym->typespec = (token == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
+            sym->storage  = SYM_STORAGE_STACK;
+            sym->value    = cur_ix_offset;
+
             ack_token();
 
             token = get_token();
@@ -478,7 +477,11 @@ void parse(void) {
             // Function definition
             expect_ack('(');
             printf("- Function: %s\n", tok_strval);
-            symbol_add(SYMTYPE_FUNC, tok_strval, 0);
+            {
+                struct symbol *sym = symbol_add(tok_strval, 0);
+                sym->symtype       = SYM_SYMTYPE_FUNC;
+                sym->storage       = SYM_STORAGE_STATIC;
+            }
             emit_lbl(tok_strval);
 
             symbol_push_scope();
@@ -493,9 +496,11 @@ void parse(void) {
                     expect(TOK_IDENTIFIER);
                     printf("  - Argument: %s  (type: %d)\n", tok_strval, type);
 
-                    uint8_t        symtype = (token == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT;
-                    struct symbol *sym     = symbol_add(symtype, tok_strval, 0);
-                    sym->value             = offset;
+                    struct symbol *sym = symbol_add(tok_strval, 0);
+                    sym->symtype       = SYM_SYMTYPE_VAR;
+                    sym->typespec      = (token == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
+                    sym->storage       = SYM_STORAGE_STACK;
+                    sym->value         = offset;
                     offset += 2;
 
                     ack_token();
@@ -533,31 +538,29 @@ void parse(void) {
 
         // Variable definition?
         else if (token == TOK_CHAR || token == TOK_INT) {
-            uint8_t type = token;
+            uint8_t tok_type = token;
+            uint8_t is_ptr   = 0;
             ack_token();
-            uint8_t symtype = SYMTYPE_GLOBAL | ((type == TOK_CHAR) ? SYMTYPE_VAR_CHAR : SYMTYPE_VAR_INT);
-
-            token = get_token();
 
             // Pointer?
-            if (token == '*') {
+            if (get_token() == '*') {
+                is_ptr = 1;
                 ack_token();
-                symtype |= SYMTYPE_PTR;
             }
 
             expect(TOK_IDENTIFIER);
-            printf("  - Variable: %s  (symtype: $%02X)\n", tok_strval, symtype);
-
-            struct symbol *sym = symbol_add(symtype, tok_strval, 0);
+            struct symbol *sym = symbol_add(tok_strval, 0);
+            sym->symtype       = is_ptr ? SYM_SYMTYPE_PTR : SYM_SYMTYPE_VAR;
+            sym->typespec      = tok_type == TOK_CHAR ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
+            sym->storage       = SYM_STORAGE_STATIC;
+            symbol_dump(sym);
 
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);
             ack_token();
 
             int value = 0;
-
-            token = get_token();
-            if (token == '=') {
+            if (get_token() == '=') {
                 ack_token();
                 struct expr_node *node = parse_expression();
                 if (!node || node->op != TOK_CONSTANT)
@@ -565,7 +568,7 @@ void parse(void) {
                 value = node->val;
             }
 
-            if ((symtype & SYMTYPE_PTR) || type == TOK_INT) {
+            if (is_ptr || sym->typespec == SYM_TYPESPEC_INT) {
                 sprintf(tmpbuf, "    defw %d\n", value);
             } else {
                 sprintf(tmpbuf, "    defb %d\n", value);

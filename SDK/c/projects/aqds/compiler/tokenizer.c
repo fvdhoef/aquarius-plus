@@ -156,7 +156,10 @@ static bool nextline(void) {
                 p++;
             }
             uint8_t        len     = p - cur_p;
-            struct symbol *sym_def = symbol_add(SYMTYPE_DEFINE, cur_p, len);
+            struct symbol *sym_def = symbol_add(cur_p, len);
+            sym_def->symtype       = SYM_SYMTYPE_VAR;
+            sym_def->typespec      = SYM_TYPESPEC_INT;
+            sym_def->storage       = SYM_STORAGE_CONSTANT;
 
             cur_p += len;
             skip_whitespace();
