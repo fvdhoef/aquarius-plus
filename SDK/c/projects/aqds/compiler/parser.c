@@ -11,11 +11,12 @@ static int      cur_ix_offset;
 static uint8_t  ptr_typespec;
 
 // Flags to indicate which helper functions to generate
-#define FLAGS_USES_MULTSI (1 << 0)
-#define FLAGS_USES_DIVSI  (1 << 1)
-#define FLAGS_USES_MODSI  (1 << 2)
-#define FLAGS_USES_SHL    (1 << 3)
-#define FLAGS_USES_SHR    (1 << 4)
+#define FLAGS_USES_MULTSI  (1 << 0)
+#define FLAGS_USES_DIVSI   (1 << 1)
+#define FLAGS_USES_MODSI   (1 << 2)
+#define FLAGS_USES_SHL     (1 << 3)
+#define FLAGS_USES_SHR     (1 << 4)
+#define FLAGS_USES_CALL_HL (1 << 5)
 
 static void emit_expr(struct expr_node *node);
 
@@ -315,7 +316,15 @@ static void emit_expr(struct expr_node *node) {
 
             uint8_t count = arg_count;
 
-            emit("call    _%s", node->left_node->sym->name);
+            if (node->left_node->op == TOK_IDENTIFIER) {
+                // Directly call a label
+                emit("call    _%s", node->left_node->sym->name);
+            } else {
+                // Indirect call
+                emit_expr(node->left_node);
+                emit("call    __call_hl");
+                flags |= FLAGS_USES_CALL_HL;
+            }
             while (count--) {
                 // Clean up stack
                 emit("pop     af");
@@ -611,5 +620,9 @@ void parse(void) {
         emit_lbl("_shr");
         emit("; To be implemented");
         emit("ret");
+    }
+    if (flags & FLAGS_USES_CALL_HL) {
+        emit_lbl("_call_hl");
+        emit("jp      (hl)");
     }
 }
