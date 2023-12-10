@@ -8,7 +8,7 @@ static uint16_t lbl_idx;
 static uint16_t flags;
 static uint8_t  arg_count;
 static int      cur_ix_offset;
-static uint8_t  cur_typespec;
+static uint8_t  ptr_typespec;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI (1 << 0)
@@ -70,8 +70,6 @@ static int gen_local_lbl(void) {
 }
 
 static void emit_expr(struct expr_node *node) {
-    cur_typespec = 0;
-
     switch (node->op) {
         case TOK_CONSTANT: {
             emit("ld      hl,%d", node->val);
@@ -80,7 +78,9 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
-            cur_typespec       = sym->typespec;
+            if (sym->symtype == SYM_SYMTYPE_PTR) {
+                ptr_typespec = sym->typespec;
+            }
             if (sym->storage == SYM_STORAGE_STATIC) {
                 if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
                     emit("ld      hl,(_%s)", sym->name);
@@ -138,14 +138,15 @@ static void emit_expr(struct expr_node *node) {
                 emit("push    hl");
 
                 if (node->left_node->op == TOK_DEREF) {
+                    ptr_typespec = SYM_TYPESPEC_UNDEFINED;
                     emit_expr(node->left_node->left_node);
 
-                    if (cur_typespec == SYM_TYPESPEC_CHAR) {
+                    if (ptr_typespec == SYM_TYPESPEC_CHAR) {
                         emit("pop     de");
                         emit("ld      (hl),e");
                         emit("ex      de,hl");
 
-                    } else if (cur_typespec == SYM_TYPESPEC_INT) {
+                    } else if (ptr_typespec == SYM_TYPESPEC_INT) {
                         emit("pop     de");
                         emit("ld      (hl),e");
                         emit("inc     hl");
@@ -153,7 +154,7 @@ static void emit_expr(struct expr_node *node) {
                         emit("ex      de,hl");
 
                     } else {
-                        error("Unimplemented assignment");
+                        error("Deref non-pointer");
                     }
 
                 } else {

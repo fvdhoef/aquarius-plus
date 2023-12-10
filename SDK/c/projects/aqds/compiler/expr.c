@@ -60,45 +60,41 @@ static struct expr_node *parse_primary_expr(void) {
 
 static struct expr_node *parse_postfix_expr(void) {
     struct expr_node *result = parse_primary_expr();
-    if (result->op == TOK_IDENTIFIER) {
+    while (1) {
         uint8_t token = get_token();
-
-        // Function call?
-        if (result->sym->symtype == SYM_SYMTYPE_FUNC) {
-            if (token == '(') {
+        if (token == '(') {
+            ack_token();
+            result = alloc_node(TOK_FUNC_CALL, result, NULL);
+            token  = get_token();
+            if (token == ')') {
                 ack_token();
-                result = alloc_node(TOK_FUNC_CALL, result, NULL);
-                token  = get_token();
-                if (token == ')') {
-                    ack_token();
-                } else {
+            } else {
+                struct expr_node **list_next = &result->right_node;
+                while (1) {
+                    *list_next = alloc_node(TOK_FUNC_ARG, _parse_expression(), NULL);
+                    list_next  = &(*list_next)->right_node;
 
-                    struct expr_node **list_next = &result->right_node;
-                    while (1) {
-                        *list_next = alloc_node(TOK_FUNC_ARG, _parse_expression(), NULL);
-                        list_next  = &(*list_next)->right_node;
-
-                        token = get_token();
-                        if (token == ')') {
-                            ack_token();
-                            break;
-                        }
-                        if (token == ',') {
-                            ack_token();
-                        } else {
-                            error("Expected comma");
-                        }
+                    token = get_token();
+                    if (token == ')') {
+                        ack_token();
+                        break;
+                    }
+                    if (token == ',') {
+                        ack_token();
+                    } else {
+                        error("Expected comma");
                     }
                 }
             }
-        }
 
-        // Indexing?
-        else if (token == '[') {
+        } else if (token == '[') {
             ack_token();
             result = alloc_node(TOK_INDEX, result, _parse_expression());
             if (get_token() != ']')
                 syntax_error();
+
+        } else {
+            break;
         }
     }
     return result;

@@ -7,22 +7,30 @@ main:
 char *screen = 0x3001;
 char *screen2 = 0x3003;
 
+dinges() {
+    *(screen + 1) = 'A';
+}
+
 main() {
-    if (0) 
-        *screen = 'A';
-    else
-        *screen = 'B';
+    dinges();
 
-    while (1)
-        if (1)
-            continue;
+//    screen[10] = 'A';
 
-    while (1) {
-        *screen = 'A';
+//    if (0) 
+//        *screen = 'A';
+//    else
+//        *screen = 'B';
 
-        continue;
-        break;
-    }
+//    while (1)
+//        if (1)
+//            continue;
+//
+//    while (1) {
+//        *screen = 'A';
+//
+//        continue;
+//        break;
+//    }
 
 //    *(screen + 1) = 'B';
 //    screen = screen + 1;
