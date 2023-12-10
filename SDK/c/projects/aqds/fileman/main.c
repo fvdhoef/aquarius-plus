@@ -39,8 +39,6 @@ struct pane {
     bool    is_end_of_dir;
 };
 
-static char *const     pgm_binary   = (char *)0xFE80;
-static char *const     pgm_argument = (char *)0xFF00;
 static struct pane     left_pane    = {.dir_path = "/"};
 static struct pane     right_pane   = {.dir_path = "/"};
 static struct pane    *current_pane = &left_pane;
@@ -66,6 +64,9 @@ static const char *fn_labels[10] = {
     "",       // F9
     "Quit",   // F10
 };
+
+static char *get_pgm_path(void) __naked { __asm__("jp 0xF809"); }
+static char *get_pgm_arg(void) __naked { __asm__("jp 0xF80C"); }
 
 static uint8_t get_cur_year(void) {
     esp_cmd(ESPCMD_GETDATETIME);
@@ -397,8 +398,8 @@ static bool compare_str(const char *s1, const char *s2) {
 
 static void assemble_file(void) {
     const char *pgm = "/aqds/assembler.bin";
-    memcpy(pgm_binary, pgm, strlen(pgm) + 1);
-    memcpy(pgm_argument, filename, 128);
+    memcpy(get_pgm_path(), pgm, strlen(pgm) + 1);
+    memcpy(get_pgm_arg(), filename, 128);
     __asm__("jp 0xF803");
 }
 
@@ -417,7 +418,7 @@ static void cmd_run(void) {
         }
     }
 
-    char       *p       = pgm_binary;
+    char       *p       = get_pgm_path();
     const char *runcmd  = " RUN \"";
     const char *runcmd2 = "\"\r";
 
@@ -457,8 +458,8 @@ static void cmd_edit(void) {
         return;
 
     const char *pgm = "/aqds/editor.bin";
-    memcpy(pgm_binary, pgm, strlen(pgm) + 1);
-    memcpy(pgm_argument, filename, 128);
+    memcpy(get_pgm_path(), pgm, strlen(pgm) + 1);
+    memcpy(get_pgm_arg(), filename, 128);
 
     // Run editor
     __asm__("jp 0xF803");
@@ -620,7 +621,7 @@ static void cmd_delete(void) {
 
 static void cmd_quit(void) {
     esp_chdir(current_pane->dir_path);
-    *pgm_binary = 0;
+    *(get_pgm_path()) = 0;
 
     // Go back to BASIC
     __asm__("jp 0xF800");

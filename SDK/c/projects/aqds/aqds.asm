@@ -6,8 +6,9 @@
 ; Put the text you want typed into a zero-filled string in memory, The put the start address of that string minus 1 into $380B-380C
 
 PAGE_LAUNCHSTATE    equ 40
-PGM_PATH            equ $FE80
-PGM_ARG             equ $FF00
+PGM_PATH            equ _end
+PGM_ARG             equ PGM_PATH + $80
+STACK_START         equ PGM_ARG + $80
 
 ;-----------------------------------------------------------------------------
 ; Header and BASIC stub
@@ -236,6 +237,8 @@ _os_start:
     jp      _go_basic       ; $F800
     jp      _run_program    ; $F803
     jp      _go_fileman     ; $F806
+    jp      _get_pgm_path   ; $F809
+    jp      _get_pgm_arg    ; $F80C
 
 ;-----------------------------------------------------------------------------
 ; _os_entry
@@ -260,24 +263,28 @@ _os_entry:
     ld      bc,$F000-1
     ldir
 
+    ; Load file manager
     jp      _go_fileman
-
-    ; ; Load initial program
-    ; ld      hl,.initial_program
-    ; ld      de,PGM_PATH
-    ; ld      bc,.initial_program_end - .initial_program
-    ; ldir
-    ; ld      hl,.initial_program_arg
-    ; ld      de,PGM_ARG
-    ; ld      bc,.initial_program_arg_end - .initial_program_arg
-    ; ldir
-    ; jp      _run_program
 
 .initial_program:   defb "/aqds/editor.bin",0
 .initial_program_end:
 
 .initial_program_arg:   defb "/blaat.txt",0
 .initial_program_arg_end:
+
+;-----------------------------------------------------------------------------
+; _get_pgm_path
+;-----------------------------------------------------------------------------
+_get_pgm_path:
+    ld      de,PGM_PATH
+    ret
+
+;-----------------------------------------------------------------------------
+; _get_pgm_arg
+;-----------------------------------------------------------------------------
+_get_pgm_arg:
+    ld      de,PGM_ARG
+    ret
 
 ;-----------------------------------------------------------------------------
 ; _go_fileman

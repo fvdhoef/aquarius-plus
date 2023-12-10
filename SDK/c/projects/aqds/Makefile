@@ -22,7 +22,7 @@ all:
 	make -C editor
 	make -C fileman
 	make -C assembler
-	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -n aqds.asm --oo cim,lst
+	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -c -n aqds.asm --oo cim,lst
 	mv zout/aqds.cim zout/$(OUTFILE)
 
 run_emu: all

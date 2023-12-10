@@ -11,6 +11,10 @@
 
 static int8_t fd_out = -1;
 
+#ifdef __SDCC
+static char *get_pgm_arg(void) __naked { __asm__("jp 0xF80C"); }
+#endif
+
 void output_puts(const char *str, int len) {
     if (len <= 0)
         len = strlen(str);
@@ -40,8 +44,8 @@ int main(
     }
     path = argv[1];
 #else
-    // Path is located in buffer at $FF00
-    path = (const char *)0xFF00;
+    // Get path
+    path = get_pgm_arg();
 #endif
 
     // Determine base name (filename without extension) and path of assembler file (temporarily stored in tmpbuf)
