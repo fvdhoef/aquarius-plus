@@ -11,9 +11,9 @@ enum {
 };
 
 enum {
+    SYM_TYPESPEC_UNDEFINED,
     SYM_TYPESPEC_CHAR,
     SYM_TYPESPEC_INT,
-    SYM_TYPESPEC_UNDEFINED,
 };
 
 enum {

@@ -7,11 +7,13 @@ main:
 char *screen = 0x3001;
 char *screen2 = 0x3003;
 
-dinges() {
+dinges(int a, int b) {
     *(screen + 1) = 'A';
 }
 
-main() {
+main(int q, int w) {
+    int a = q + w;
+
     dinges();
 
 //    screen[10] = 'A';

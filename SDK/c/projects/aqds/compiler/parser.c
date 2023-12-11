@@ -426,6 +426,36 @@ static void parse_statement(int lbl_continue, int lbl_break) {
     }
 }
 
+static struct symbol *parse_var(uint8_t storage, int value) {
+    uint8_t token = get_token();
+    if (token == TOK_CHAR || token == TOK_INT) {
+        uint8_t tok_type = token;
+        ack_token();
+
+        // Pointer?
+        uint8_t is_ptr = 0;
+        if (get_token() == '*') {
+            is_ptr = 1;
+            ack_token();
+        }
+
+        expect(TOK_IDENTIFIER);
+        struct symbol *sym = symbol_add(tok_strval, 0);
+        ack_token();
+
+        sym->symtype  = is_ptr ? SYM_SYMTYPE_PTR : SYM_SYMTYPE_VAR;
+        sym->typespec = (tok_type == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
+        sym->storage  = storage;
+        sym->value    = value;
+        symbol_dump(sym);
+        return sym;
+
+    } else {
+        syntax_error();
+        return NULL;
+    }
+}
+
 static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
     if (new_scope)
         symbol_push_scope();
@@ -439,21 +469,8 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             break;
 
         } else if (token == TOK_CHAR || token == TOK_INT) {
-            uint8_t type = token;
-            ack_token();
-            expect(TOK_IDENTIFIER);
-            printf("  - Variable: %s  (type: %d)\n", tok_strval, type);
-
             cur_ix_offset -= 2;
-
-            struct symbol *sym = symbol_add(tok_strval, 0);
-
-            sym->symtype  = SYM_SYMTYPE_VAR;
-            sym->typespec = (token == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
-            sym->storage  = SYM_STORAGE_STACK;
-            sym->value    = cur_ix_offset;
-
-            ack_token();
+            parse_var(SYM_STORAGE_STACK, cur_ix_offset);
 
             token = get_token();
             if (token == '=') {
@@ -501,18 +518,8 @@ void parse(void) {
             while (1) {
                 token = get_token();
                 if (token == TOK_CHAR || token == TOK_INT) {
-                    uint8_t type = token;
-                    ack_token();
-                    expect(TOK_IDENTIFIER);
-                    printf("  - Argument: %s  (type: %d)\n", tok_strval, type);
-
-                    struct symbol *sym = symbol_add(tok_strval, 0);
-                    sym->symtype       = SYM_SYMTYPE_VAR;
-                    sym->typespec      = (token == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
-                    sym->storage       = SYM_STORAGE_STACK;
-                    sym->value         = offset;
+                    parse_var(SYM_STORAGE_STACK, offset);
                     offset += 2;
-
                     ack_token();
                 }
 
@@ -548,26 +555,10 @@ void parse(void) {
 
         // Variable definition?
         else if (token == TOK_CHAR || token == TOK_INT) {
-            uint8_t tok_type = token;
-            uint8_t is_ptr   = 0;
-            ack_token();
-
-            // Pointer?
-            if (get_token() == '*') {
-                is_ptr = 1;
-                ack_token();
-            }
-
-            expect(TOK_IDENTIFIER);
-            struct symbol *sym = symbol_add(tok_strval, 0);
-            sym->symtype       = is_ptr ? SYM_SYMTYPE_PTR : SYM_SYMTYPE_VAR;
-            sym->typespec      = tok_type == TOK_CHAR ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
-            sym->storage       = SYM_STORAGE_STATIC;
-            symbol_dump(sym);
+            struct symbol *sym = parse_var(SYM_STORAGE_STATIC, 0);
 
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);
-            ack_token();
 
             int value = 0;
             if (get_token() == '=') {
@@ -578,7 +569,7 @@ void parse(void) {
                 value = node->val;
             }
 
-            if (is_ptr || sym->typespec == SYM_TYPESPEC_INT) {
+            if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
                 sprintf(tmpbuf, "    defw %d\n", value);
             } else {
                 sprintf(tmpbuf, "    defb %d\n", value);
@@ -586,7 +577,6 @@ void parse(void) {
             output_puts(tmpbuf, 0);
 
             expect_ack(';');
-
         }
 
         // Syntax error
