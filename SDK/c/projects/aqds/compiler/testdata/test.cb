@@ -15,9 +15,11 @@ dinges(int a, int b) {
     *(screen + 1) = 'A';
     *screen2 = *screen;
 
-    int col = 80;
+    char col = 80;
 
-//    *(&col) = 40;
+    col = 40*5;
+
+    //*(&col) = 40*5;
 
     *(char *)(0x3000 + col) = 'Q';
 

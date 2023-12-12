@@ -116,8 +116,31 @@ static void emit_expr(struct expr_node *node) {
             break;
         }
 
+        case TOK_ADDR_OF: {
+            if (node->left_node->symtype == SYM_SYMTYPE_VAR) {
+                if (node->left_node->sym->storage == SYM_STORAGE_STATIC) {
+                    emit("ld      hl,_%s", node->left_node->sym->name);
+
+                } else if (node->left_node->sym->storage == SYM_STORAGE_STACK) {
+                    emit("ld      hl,%d", node->left_node->sym->value);
+                    emit("ld      d,ixh");
+                    emit("ld      e,ixl");
+                    emit("add     hl,de");
+
+                } else {
+                    syntax_error();
+                }
+
+            } else {
+                error("Illegal addr of");
+            }
+            break;
+        }
+
         case '=': {
             emit_expr(node->right_node);
+
+            // Handle left hand side of assignment
 
             if (node->left_node->op == TOK_IDENTIFIER) {
                 if (node->left_node->sym->storage == SYM_STORAGE_STATIC) {
@@ -133,8 +156,12 @@ static void emit_expr(struct expr_node *node) {
                         syntax_error();
                     }
 
+                } else if (node->left_node->sym->storage == SYM_STORAGE_STACK) {
+                    emit("ld      (ix+%d),l", node->left_node->sym->value);
+                    if (node->left_node->sym->typespec == SYM_TYPESPEC_INT) {
+                        emit("ld      (ix+%d),h", node->left_node->sym->value + 1);
+                    }
                 } else {
-                    printf("Unimplemented identifier symbol type in LHS assignment!\n");
                     syntax_error();
                 }
 
