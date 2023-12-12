@@ -25,18 +25,6 @@ static int      cur_ix_offset;
 #define FLAGS_USES_GTS     (1 << 12)
 #define FLAGS_USES_GES     (1 << 13)
 
-int _multsi(int a, int b) {
-    return a * b;
-}
-
-int _divsi(int a, int b) {
-    return a / b;
-}
-
-int _modsi(int a, int b) {
-    return a % b;
-}
-
 static void emit_expr(struct expr_node *node);
 
 static void emit(char *fmt, ...) {
@@ -832,13 +820,32 @@ void parse(void) {
         emit("ret");
     }
     if (flags & FLAGS_USES_SHL) {
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
+
         emit_lbl("_shl");
-        emit("; To be implemented");
+        emit("ld      b,e");
+        emit("inc     b");
+        emit("jr      .l%d", lbl2);
+        emit_local_lbl(lbl1);
+        emit("add     hl,hl");
+        emit_local_lbl(lbl2);
+        emit("djnz    .l%d", lbl1);
         emit("ret");
     }
     if (flags & FLAGS_USES_SHR) {
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
+
         emit_lbl("_shr");
-        emit("; To be implemented");
+        emit("ld      b, e");
+        emit("inc     b");
+        emit("jr      .l%d", lbl2);
+        emit_local_lbl(lbl1);
+        emit("sra     h");
+        emit("rr      l");
+        emit_local_lbl(lbl2);
+        emit("djnz    .l%d", lbl1);
         emit("ret");
     }
     if (flags & FLAGS_USES_CALL_HL) {
