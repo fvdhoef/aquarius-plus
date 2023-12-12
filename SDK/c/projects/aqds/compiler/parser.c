@@ -54,7 +54,7 @@ static void emit_lbl(const char *str) {
     output_puts(tmpbuf, len);
 }
 
-static int gen_local_lbl(void) {
+static int gen_lbl_idx(void) {
     return lbl_idx++;
 }
 
@@ -187,6 +187,8 @@ static void emit_expr(struct expr_node *node) {
                         error("Deref non-pointer");
                     }
 
+                // } else if (node->left_node->op == TOK_INDEX) {
+
                 } else {
                     error("Unimplemented assignment");
                 }
@@ -298,8 +300,8 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_OP_AND: {
             // Boolean-AND operation with short circuit
-            int lbl1 = gen_local_lbl();
-            int lbl2 = gen_local_lbl();
+            int lbl1 = gen_lbl_idx();
+            int lbl2 = gen_lbl_idx();
             emit_expr(node->left_node);
             emit("ld      a,h");
             emit("or      l");
@@ -317,8 +319,8 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_OP_OR: {
             // Boolean-OR operation with short circuit
-            int lbl1 = gen_local_lbl();
-            int lbl2 = gen_local_lbl();
+            int lbl1 = gen_lbl_idx();
+            int lbl2 = gen_lbl_idx();
             emit_expr(node->left_node);
             emit("ld      a,h");
             emit("or      l");
@@ -389,7 +391,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
         emit_expr(node);
         emit("ld      a,h");
         emit("or      l");
-        int lbl1 = gen_local_lbl();
+        int lbl1 = gen_lbl_idx();
         emit("jp      z,.l%d", lbl1);
         parse_statement(lbl_continue, lbl_break);
 
@@ -400,7 +402,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
         }
 
         if (has_else) {
-            int lbl2 = gen_local_lbl();
+            int lbl2 = gen_lbl_idx();
             emit("jp      .l%d", lbl2);
             emit_local_lbl(lbl1);
             parse_statement(lbl_continue, lbl_break);
@@ -415,8 +417,8 @@ static void parse_statement(int lbl_continue, int lbl_break) {
         struct expr_node *node = parse_expression();
         expect_tok_ack(')');
 
-        int lbl1 = gen_local_lbl();
-        int lbl2 = gen_local_lbl();
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
         emit_local_lbl(lbl1);
 
         emit_expr(node);
