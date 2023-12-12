@@ -8,6 +8,7 @@ enum {
     SYM_SYMTYPE_ARRAY,
     SYM_SYMTYPE_PTR,
     SYM_SYMTYPE_FUNC,
+    SYM_SYMTYPE_VALUE,
 };
 
 enum {

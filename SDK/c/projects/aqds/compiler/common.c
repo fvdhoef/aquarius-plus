@@ -165,3 +165,14 @@ bool pop_file(void) {
     }
     return false;
 }
+
+void expect_tok_ack(uint8_t token) {
+    if (get_token() != token)
+        syntax_error();
+    ack_token();
+}
+
+void expect_tok(uint8_t token) {
+    if (get_token() != token)
+        syntax_error();
+}

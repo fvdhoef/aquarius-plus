@@ -7,8 +7,24 @@ main:
 char *screen = 0x3001;
 char *screen2 = 0x3003;
 
+int* blaat = 0x3010;
+int* blaat2 = 0x3020;
+
 dinges(int a, int b) {
+    *screen = 'Q';
     *(screen + 1) = 'A';
+    *screen2 = *screen;
+
+    int col = 80;
+
+//    *(&col) = 40;
+
+    *(char *)(0x3000 + col) = 'Q';
+
+    *(blaat - 1) = 0x4142;
+    *(blaat + 1) = 0x4142;
+
+    *blaat2 = *(int*)0x3000;
 }
 
 main(int q, int w) {

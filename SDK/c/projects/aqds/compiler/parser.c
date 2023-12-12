@@ -8,7 +8,6 @@ static uint16_t lbl_idx;
 static uint16_t flags;
 static uint8_t  arg_count;
 static int      cur_ix_offset;
-static uint8_t  ptr_typespec;
 
 // Flags to indicate which helper functions to generate
 #define FLAGS_USES_MULTSI  (1 << 0)
@@ -19,17 +18,6 @@ static uint8_t  ptr_typespec;
 #define FLAGS_USES_CALL_HL (1 << 5)
 
 static void emit_expr(struct expr_node *node);
-
-static void expect_ack(uint8_t token) {
-    if (get_token() != token)
-        syntax_error();
-    ack_token();
-}
-
-static void expect(uint8_t token) {
-    if (get_token() != token)
-        syntax_error();
-}
 
 static void emit(char *fmt, ...) {
     tmpbuf[0] = ' ';
@@ -79,9 +67,6 @@ static void emit_expr(struct expr_node *node) {
 
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
-            if (sym->symtype == SYM_SYMTYPE_PTR) {
-                ptr_typespec = sym->typespec;
-            }
             if (sym->storage == SYM_STORAGE_STATIC) {
                 if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
                     emit("ld      hl,(_%s)", sym->name);
@@ -113,6 +98,24 @@ static void emit_expr(struct expr_node *node) {
             break;
         }
 
+        case TOK_DEREF: {
+            if (node->left_node->symtype != SYM_SYMTYPE_PTR)
+                error("Deref non-pointer");
+
+            emit_expr(node->left_node);
+            if (node->left_node->typespec == SYM_TYPESPEC_CHAR) {
+                emit("ld      a,(hl)");
+                emit("ld      l,a");
+                emit("ld      h,0");
+            } else {
+                emit("ld      e,(hl)");
+                emit("inc     hl");
+                emit("ld      d,(hl)");
+                emit("ex      de,hl");
+            }
+            break;
+        }
+
         case '=': {
             emit_expr(node->right_node);
 
@@ -139,15 +142,14 @@ static void emit_expr(struct expr_node *node) {
                 emit("push    hl");
 
                 if (node->left_node->op == TOK_DEREF) {
-                    ptr_typespec = SYM_TYPESPEC_UNDEFINED;
                     emit_expr(node->left_node->left_node);
 
-                    if (ptr_typespec == SYM_TYPESPEC_CHAR) {
+                    if (node->left_node->typespec == SYM_TYPESPEC_CHAR) {
                         emit("pop     de");
                         emit("ld      (hl),e");
                         emit("ex      de,hl");
 
-                    } else if (ptr_typespec == SYM_TYPESPEC_INT) {
+                    } else if (node->left_node->typespec == SYM_TYPESPEC_INT) {
                         emit("pop     de");
                         emit("ld      (hl),e");
                         emit("inc     hl");
@@ -204,12 +206,18 @@ static void emit_expr(struct expr_node *node) {
         case '+':
             emit_binary(node);
             emit("add     hl,de");
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR && node->left_node->typespec == SYM_TYPESPEC_INT)
+                emit("add     hl,de");
             break;
 
         case '-':
             emit_binary(node);
             emit("or      a");
             emit("sbc     hl,de");
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR && node->left_node->typespec == SYM_TYPESPEC_INT) {
+                emit("or      a");
+                emit("sbc     hl,de");
+            }
             break;
 
         case TOK_OP_SHL:
@@ -348,9 +356,9 @@ static void parse_statement(int lbl_continue, int lbl_break) {
 
     } else if (token == TOK_IF) {
         ack_token();
-        expect_ack('(');
+        expect_tok_ack('(');
         struct expr_node *node = parse_expression();
-        expect_ack(')');
+        expect_tok_ack(')');
         emit_expr(node);
         emit("ld      a,h");
         emit("or      l");
@@ -376,9 +384,9 @@ static void parse_statement(int lbl_continue, int lbl_break) {
 
     } else if (token == TOK_WHILE) {
         ack_token();
-        expect_ack('(');
+        expect_tok_ack('(');
         struct expr_node *node = parse_expression();
-        expect_ack(')');
+        expect_tok_ack(')');
 
         int lbl1 = gen_local_lbl();
         int lbl2 = gen_local_lbl();
@@ -398,7 +406,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
             error("Continue outside loop");
         }
         emit("jp      .l%d", lbl_continue);
-        expect_ack(';');
+        expect_tok_ack(';');
 
     } else if (token == TOK_BREAK) {
         ack_token();
@@ -406,7 +414,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
             error("Break outside loop");
         }
         emit("jp      .l%d", lbl_break);
-        expect_ack(';');
+        expect_tok_ack(';');
 
     } else if (token == TOK_RETURN) {
         ack_token();
@@ -417,12 +425,12 @@ static void parse_statement(int lbl_continue, int lbl_break) {
             emit_expr(node);
         }
         emit("jp      .return");
-        expect_ack(';');
+        expect_tok_ack(';');
 
     } else {
         struct expr_node *node = parse_expression();
         emit_expr(node);
-        expect_ack(';');
+        expect_tok_ack(';');
     }
 }
 
@@ -439,7 +447,7 @@ static struct symbol *parse_var(uint8_t storage, int value) {
             ack_token();
         }
 
-        expect(TOK_IDENTIFIER);
+        expect_tok(TOK_IDENTIFIER);
         struct symbol *sym = symbol_add(tok_strval, 0);
         ack_token();
 
@@ -459,7 +467,7 @@ static struct symbol *parse_var(uint8_t storage, int value) {
 static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
     if (new_scope)
         symbol_push_scope();
-    expect_ack('{');
+    expect_tok_ack('{');
 
     while (1) {
         int token = get_token();
@@ -481,7 +489,7 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             } else {
                 emit("push    af");
             }
-            expect_ack(';');
+            expect_tok_ack(';');
 
         } else {
             parse_statement(lbl_continue, lbl_break);
@@ -502,7 +510,7 @@ void parse(void) {
             ack_token();
 
             // Function definition
-            expect_ack('(');
+            expect_tok_ack('(');
             printf("- Function: %s\n", tok_strval);
             {
                 struct symbol *sym = symbol_add(tok_strval, 0);
@@ -539,7 +547,7 @@ void parse(void) {
             emit("ld      ix,0");
             emit("add     ix,sp");
 
-            expect('{');
+            expect_tok('{');
 
             cur_ix_offset = 0;
             parse_compound(false, -1, -1);
@@ -576,7 +584,7 @@ void parse(void) {
             }
             output_puts(tmpbuf, 0);
 
-            expect_ack(';');
+            expect_tok_ack(';');
         }
 
         // Syntax error

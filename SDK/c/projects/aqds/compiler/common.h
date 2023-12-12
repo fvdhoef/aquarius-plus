@@ -31,4 +31,7 @@ void output_puts(const char *str, int len);
 void push_file(const char *path);
 bool pop_file(void);
 
+void expect_tok_ack(uint8_t token);
+void expect_tok(uint8_t token);
+
 #endif

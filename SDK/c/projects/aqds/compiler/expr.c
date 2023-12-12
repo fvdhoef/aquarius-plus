@@ -8,8 +8,9 @@ static struct expr_node nodes[MAX_NODES];
 static int              node_idx = 0;
 
 static struct expr_node *_parse_expression(void);
+static struct expr_node *parse_cast_expr(void);
 
-static struct expr_node *alloc_node(uint8_t op, struct expr_node *left, struct expr_node *right) {
+static struct expr_node *alloc_node(uint8_t op, struct expr_node *left, struct expr_node *right, uint8_t symtype, uint8_t typespec) {
     if (node_idx >= MAX_NODES)
         error("Expression too complex");
 
@@ -17,6 +18,9 @@ static struct expr_node *alloc_node(uint8_t op, struct expr_node *left, struct e
     result->op               = op;
     result->left_node        = left;
     result->right_node       = right;
+    result->symtype          = symtype;
+    result->typespec         = typespec;
+
     return result;
 }
 
@@ -29,7 +33,7 @@ static struct expr_node *parse_primary_expr(void) {
 
     uint8_t token = get_token();
     if (token == TOK_CONSTANT) {
-        node      = alloc_node(TOK_CONSTANT, NULL, NULL);
+        node      = alloc_node(TOK_CONSTANT, NULL, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
         node->val = tok_value;
         ack_token();
 
@@ -38,10 +42,11 @@ static struct expr_node *parse_primary_expr(void) {
         ack_token();
 
         if (sym->storage == SYM_STORAGE_CONSTANT) {
-            node      = alloc_node(TOK_CONSTANT, NULL, NULL);
+            node      = alloc_node(TOK_CONSTANT, NULL, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
             node->val = sym->value;
+
         } else {
-            node      = alloc_node(TOK_IDENTIFIER, NULL, NULL);
+            node      = alloc_node(TOK_IDENTIFIER, NULL, NULL, sym->symtype, sym->typespec);
             node->sym = sym;
         }
 
@@ -64,14 +69,17 @@ static struct expr_node *parse_postfix_expr(void) {
         uint8_t token = get_token();
         if (token == '(') {
             ack_token();
-            result = alloc_node(TOK_FUNC_CALL, result, NULL);
-            token  = get_token();
+            result = alloc_node(TOK_FUNC_CALL, result, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
+
+            token = get_token();
             if (token == ')') {
                 ack_token();
             } else {
                 struct expr_node **list_next = &result->right_node;
                 while (1) {
-                    *list_next = alloc_node(TOK_FUNC_ARG, _parse_expression(), NULL);
+                    struct expr_node *expr = _parse_expression();
+
+                    *list_next = alloc_node(TOK_FUNC_ARG, expr, NULL, expr->symtype, expr->typespec);
                     list_next  = &(*list_next)->right_node;
 
                     token = get_token();
@@ -89,7 +97,9 @@ static struct expr_node *parse_postfix_expr(void) {
 
         } else if (token == '[') {
             ack_token();
-            result = alloc_node(TOK_INDEX, result, _parse_expression());
+            struct expr_node *expr = _parse_expression();
+
+            result = alloc_node(TOK_INDEX, result, expr, SYM_SYMTYPE_VALUE, expr->typespec);
             if (get_token() != ']')
                 syntax_error();
 
@@ -104,37 +114,70 @@ static struct expr_node *parse_unary_expr(void) {
     uint8_t token = get_token();
     if (token == '-') {
         ack_token();
-        return alloc_node(TOK_OP_NEG, parse_unary_expr(), NULL);
+        struct expr_node *expr = parse_cast_expr();
+        return alloc_node(TOK_OP_NEG, expr, NULL, expr->symtype, expr->typespec);
     }
     if (token == '+') {
-        return parse_unary_expr();
+        return parse_cast_expr();
     }
     if (token == '~') {
         ack_token();
-        return alloc_node('~', parse_unary_expr(), NULL);
+        struct expr_node *expr = parse_cast_expr();
+        return alloc_node('~', expr, NULL, expr->symtype, expr->typespec);
     }
     if (token == '!') {
         ack_token();
-        return alloc_node('!', parse_unary_expr(), NULL);
+        struct expr_node *expr = parse_cast_expr();
+        return alloc_node('!', expr, NULL, expr->symtype, expr->typespec);
     }
     if (token == '*') {
         ack_token();
-        return alloc_node(TOK_DEREF, parse_unary_expr(), NULL);
+        struct expr_node *expr = parse_cast_expr();
+        return alloc_node(TOK_DEREF, expr, NULL, SYM_SYMTYPE_VALUE, expr->typespec);
     }
     if (token == '&') {
         ack_token();
-        return alloc_node(TOK_ADDR_OF, parse_unary_expr(), NULL);
+        struct expr_node *expr = parse_cast_expr();
+        return alloc_node(TOK_ADDR_OF, expr, NULL, SYM_SYMTYPE_PTR, expr->typespec);
     }
     return parse_postfix_expr();
 }
 
+static struct expr_node *parse_cast_expr(void) {
+    uint8_t token = get_token();
+    if (token == '(') {
+        ack_token();
+        token = get_token();
+        if (token == TOK_CHAR || token == TOK_INT) {
+            uint8_t tok_type = token;
+
+            ack_token();
+            expect_tok_ack('*');
+            expect_tok_ack(')');
+
+            struct expr_node *expr = parse_unary_expr();
+            expr->symtype          = SYM_SYMTYPE_PTR;
+            expr->typespec         = (tok_type == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
+            return expr;
+
+        } else {
+            struct expr_node *expr = _parse_expression();
+            if (get_token() != ')')
+                syntax_error();
+            ack_token();
+            return expr;
+        }
+    }
+    return parse_unary_expr();
+}
+
 static struct expr_node *parse_mult_expr(void) {
-    struct expr_node *result = parse_unary_expr();
+    struct expr_node *result = parse_cast_expr();
     while (1) {
         uint8_t token = get_token();
         if (token == '*' || token == '/' || token == '%') {
             ack_token();
-            result = alloc_node(token, result, parse_unary_expr());
+            result = alloc_node(token, result, parse_cast_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -148,7 +191,7 @@ static struct expr_node *parse_add_expr(void) {
         uint8_t token = get_token();
         if (token == '+' || token == '-') {
             ack_token();
-            result = alloc_node(token, result, parse_mult_expr());
+            result = alloc_node(token, result, parse_mult_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -162,7 +205,7 @@ static struct expr_node *parse_shift_expr(void) {
         uint8_t token = get_token();
         if (token == TOK_OP_SHL || token == TOK_OP_SHR) {
             ack_token();
-            result = alloc_node(token, result, parse_add_expr());
+            result = alloc_node(token, result, parse_add_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -176,7 +219,7 @@ static struct expr_node *parse_rel_expr(void) {
         uint8_t token = get_token();
         if (token == TOK_OP_LE || token == TOK_OP_GE || token == '<' || token == '>') {
             ack_token();
-            result = alloc_node(token, result, parse_shift_expr());
+            result = alloc_node(token, result, parse_shift_expr(), SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
         } else {
             break;
         }
@@ -190,7 +233,7 @@ static struct expr_node *parse_eq_expr(void) {
         uint8_t token = get_token();
         if (token == TOK_OP_EQ || token == TOK_OP_NE) {
             ack_token();
-            result = alloc_node(token, result, parse_rel_expr());
+            result = alloc_node(token, result, parse_rel_expr(), SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
         } else {
             break;
         }
@@ -204,7 +247,7 @@ static struct expr_node *parse_and_expr(void) {
         uint8_t token = get_token();
         if (token == '&') {
             ack_token();
-            result = alloc_node(token, result, parse_eq_expr());
+            result = alloc_node(token, result, parse_eq_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -218,7 +261,7 @@ static struct expr_node *parse_xor_expr(void) {
         uint8_t token = get_token();
         if (token == '^') {
             ack_token();
-            result = alloc_node(token, result, parse_and_expr());
+            result = alloc_node(token, result, parse_and_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -232,7 +275,7 @@ static struct expr_node *parse_or_expr(void) {
         uint8_t token = get_token();
         if (token == '|') {
             ack_token();
-            result = alloc_node(token, result, parse_xor_expr());
+            result = alloc_node(token, result, parse_xor_expr(), result->symtype, result->typespec);
         } else {
             break;
         }
@@ -246,7 +289,7 @@ static struct expr_node *parse_logical_and_expr(void) {
         uint8_t token = get_token();
         if (token == TOK_OP_AND) {
             ack_token();
-            result = alloc_node(token, result, parse_or_expr());
+            result = alloc_node(token, result, parse_or_expr(), SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
         } else {
             break;
         }
@@ -260,7 +303,7 @@ static struct expr_node *parse_logical_or_expr(void) {
         uint8_t token = get_token();
         if (token == TOK_OP_OR) {
             ack_token();
-            result = alloc_node(token, result, parse_logical_and_expr());
+            result = alloc_node(token, result, parse_logical_and_expr(), SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
         } else {
             break;
         }
@@ -274,7 +317,9 @@ static struct expr_node *parse_assign_expr(void) {
         uint8_t token = get_token();
         if (token == '=') {
             ack_token();
-            result = alloc_node(token, result, parse_assign_expr());
+            struct expr_node *expr = parse_assign_expr();
+
+            result = alloc_node(token, result, expr, expr->symtype, expr->typespec);
         } else {
             break;
         }
@@ -350,9 +395,9 @@ static void dump_expr(struct expr_node *node, int depth) {
         printf("- identifier: %s\n", node->sym->name);
     } else {
         if (node->op > ' ') {
-            printf("- '%c'\n", node->op);
+            printf("- '%c' -> symtype:%u typespec:%u\n", node->op, node->symtype, node->typespec);
         } else {
-            printf("- %d\n", node->op);
+            printf("- %d -> symtype:%u typespec:%u\n", node->op, node->symtype, node->typespec);
         }
         if (node->left_node)
             dump_expr(node->left_node, depth + 2);
