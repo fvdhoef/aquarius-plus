@@ -6,9 +6,8 @@ main:
 
 char *screen = 0x3001;
 char *screen2 = 0x3003;
-
-int* blaat = 0x3010;
-int* blaat2 = 0x3020;
+int *blaat = 0x3010;
+int *blaat2 = 0x3020;
 
 dinges(int a, int b) {
     *screen = 'Q';
@@ -16,6 +15,8 @@ dinges(int a, int b) {
     *screen2 = *screen;
 
     char col = 80;
+
+    char bla = col <= 80;
 
     col = 40*5;
 

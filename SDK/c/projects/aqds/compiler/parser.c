@@ -16,6 +16,26 @@ static int      cur_ix_offset;
 #define FLAGS_USES_SHL     (1 << 3)
 #define FLAGS_USES_SHR     (1 << 4)
 #define FLAGS_USES_CALL_HL (1 << 5)
+#define FLAGS_USES_LTU     (1 << 6)
+#define FLAGS_USES_LEU     (1 << 7)
+#define FLAGS_USES_GTU     (1 << 8)
+#define FLAGS_USES_GEU     (1 << 9)
+#define FLAGS_USES_LTS     (1 << 10)
+#define FLAGS_USES_LES     (1 << 11)
+#define FLAGS_USES_GTS     (1 << 12)
+#define FLAGS_USES_GES     (1 << 13)
+
+int _multsi(int a, int b) {
+    return a * b;
+}
+
+int _divsi(int a, int b) {
+    return a / b;
+}
+
+int _modsi(int a, int b) {
+    return a % b;
+}
 
 static void emit_expr(struct expr_node *node);
 
@@ -56,6 +76,12 @@ static void emit_lbl(const char *str) {
 
 static int gen_lbl_idx(void) {
     return lbl_idx++;
+}
+
+static void emit_16b_sub(struct expr_node *node) {
+    emit_binary(node);
+    emit("or      a");
+    emit("sbc     hl,de");
 }
 
 static void emit_expr(struct expr_node *node) {
@@ -187,7 +213,7 @@ static void emit_expr(struct expr_node *node) {
                         error("Deref non-pointer");
                     }
 
-                // } else if (node->left_node->op == TOK_INDEX) {
+                    // } else if (node->left_node->op == TOK_INDEX) {
 
                 } else {
                     error("Unimplemented assignment");
@@ -214,24 +240,6 @@ static void emit_expr(struct expr_node *node) {
             emit("ld      l,a");
             break;
 
-        case '*':
-            emit_binary(node);
-            emit("call    __multsi");
-            flags |= FLAGS_USES_MULTSI;
-            break;
-
-        case '/':
-            emit_binary(node);
-            emit("call    __divsi");
-            flags |= FLAGS_USES_DIVSI;
-            break;
-
-        case '%':
-            emit_binary(node);
-            emit("call    __modsi");
-            flags |= FLAGS_USES_MODSI;
-            break;
-
         case '+':
             emit_binary(node);
             emit("add     hl,de");
@@ -240,33 +248,95 @@ static void emit_expr(struct expr_node *node) {
             break;
 
         case '-':
-            emit_binary(node);
-            emit("or      a");
-            emit("sbc     hl,de");
+            emit_16b_sub(node);
             if (node->left_node->symtype == SYM_SYMTYPE_PTR && node->left_node->typespec == SYM_TYPESPEC_INT) {
                 emit("or      a");
                 emit("sbc     hl,de");
             }
             break;
 
-        case TOK_OP_SHL:
+            // clang-format off
+        case '*':        emit_binary(node); emit("call    __multsi"); flags |= FLAGS_USES_MULTSI; break;
+        case '/':        emit_binary(node); emit("call    __divsi");  flags |= FLAGS_USES_DIVSI;  break;
+        case '%':        emit_binary(node); emit("call    __modsi");  flags |= FLAGS_USES_MODSI;  break;
+        case TOK_OP_SHL: emit_binary(node); emit("call    __shl");    flags |= FLAGS_USES_SHL;    break;
+        case TOK_OP_SHR: emit_binary(node); emit("call    __shr");    flags |= FLAGS_USES_SHR;    break;
+            // clang-format on
+
+        case TOK_OP_LE:
             emit_binary(node);
-            emit("call    __shl");
-            flags |= FLAGS_USES_SHL;
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR) {
+                // Unsigned comparison
+                emit("call    __leu");
+                flags |= FLAGS_USES_LEU;
+            } else {
+                // Signed comparison
+                emit("call    __les");
+                flags |= FLAGS_USES_LES;
+            }
             break;
 
-        case TOK_OP_SHR:
+        case TOK_OP_GE:
             emit_binary(node);
-            emit("call    __shr");
-            flags |= FLAGS_USES_SHR;
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR) {
+                // Unsigned comparison
+                emit("call    __geu");
+                flags |= FLAGS_USES_GEU;
+            } else {
+                // Signed comparison
+                emit("call    __ges");
+                flags |= FLAGS_USES_GES;
+            }
             break;
 
-            // case TOK_OP_LE:
-            // case TOK_OP_GE:
-            // case '<':
-            // case '>':
-            // case TOK_OP_EQ:
-            // case TOK_OP_NE:
+        case '<':
+            emit_binary(node);
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR) {
+                // Unsigned comparison
+                emit("call    __ltu");
+                flags |= FLAGS_USES_LTU;
+            } else {
+                // Signed comparison
+                emit("call    __lts");
+                flags |= FLAGS_USES_LTS;
+            }
+            break;
+
+        case '>':
+            emit_binary(node);
+            if (node->left_node->symtype == SYM_SYMTYPE_PTR) {
+                // Unsigned comparison
+                emit("call    __gtu");
+                flags |= FLAGS_USES_GTU;
+            } else {
+                // Signed comparison
+                emit("call    __gts");
+                flags |= FLAGS_USES_GTS;
+            }
+            break;
+
+        case TOK_OP_EQ: {
+            int lbl1 = gen_lbl_idx();
+            int lbl2 = gen_lbl_idx();
+            emit_16b_sub(node);
+            emit("jp      z,.l%d", lbl1);
+            emit("ld      hl,0");
+            emit("jr      .l%d", lbl2);
+            emit_local_lbl(lbl1);
+            emit("inc     hl");
+            emit_local_lbl(lbl2);
+            break;
+        }
+
+        case TOK_OP_NE: {
+            int lbl = gen_lbl_idx();
+
+            emit_16b_sub(node);
+            emit("jr      z,.l%d", lbl);
+            emit("ld      hl,1");
+            emit_local_lbl(lbl);
+            break;
+        }
 
         case '&':
             emit_binary(node);
@@ -623,9 +693,32 @@ void parse(void) {
     }
 
     emit("\n; --- Support functions ---");
+    flags = 0xFFFF;
+
     if (flags & FLAGS_USES_MULTSI) {
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
+        int lbl3 = gen_lbl_idx();
+
         emit_lbl("_multsi");
-        emit("; To be implemented");
+        emit("ld      c,l");
+        emit("ld      b,h");
+        emit("xor     a");
+        emit("ld      l,a");
+        emit("or      b");
+        emit("ld      b,16");
+        emit("jr      nz,.l%d", lbl2);
+        emit("ld      b,8");
+        emit("ld      a,c");
+        emit_local_lbl(lbl1);
+        emit("add     hl,hl");
+        emit_local_lbl(lbl2);
+        emit("rl      c");
+        emit("rla");
+        emit("jr      nc,.l%d", lbl3);
+        emit("add     hl,de");
+        emit_local_lbl(lbl3);
+        emit("djnz    .l%d", lbl1);
         emit("ret");
     }
     if (flags & FLAGS_USES_DIVSI) {
@@ -651,5 +744,117 @@ void parse(void) {
     if (flags & FLAGS_USES_CALL_HL) {
         emit_lbl("_call_hl");
         emit("jp      (hl)");
+    }
+    if (flags & FLAGS_USES_LTU) {
+        emit_lbl("_ltu");
+        emit("xor     a");
+        emit("sbc     hl,de");
+        emit("ld      a,0");
+        emit("rla");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_LEU) {
+        emit_lbl("_leu");
+        emit("ld      a,e");
+        emit("sub     l");
+        emit("ld      a,d");
+        emit("sbc     a,h");
+        emit("ld      a,0");
+        emit("rla");
+        emit("xor     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_GTU) {
+        emit_lbl("_gtu");
+        emit("ld      a,e");
+        emit("sub     l");
+        emit("ld      a,d");
+        emit("sbc     a,h");
+        emit("ld      a,0");
+        emit("rla");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_GEU) {
+        emit_lbl("_geu");
+        emit("xor     a");
+        emit("sbc     hl,de");
+        emit("ld      a,0");
+        emit("rla");
+        emit("xor     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_LTS) {
+        int lbl = gen_lbl_idx();
+        emit_lbl("_lts");
+        emit("ld      a,l");
+        emit("sub     e");
+        emit("ld      a,h");
+        emit("sbc     a,d");
+        emit("jp      po,.l%d", lbl);
+        emit("xor     $80");
+        emit_local_lbl(lbl);
+        emit("rlca");
+        emit("and     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_LES) {
+        int lbl = gen_lbl_idx();
+        emit_lbl("_les");
+        emit("ld      a,e");
+        emit("sub     l");
+        emit("ld      a,d");
+        emit("sbc     a,h");
+        emit("jp      po,.l%d", lbl);
+        emit("xor     $80");
+        emit_local_lbl(lbl);
+        emit("rlca");
+        emit("and     1");
+        emit("xor     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_GTS) {
+        int lbl = gen_lbl_idx();
+        emit_lbl("_gts");
+        emit("ld      a,e");
+        emit("sub     l");
+        emit("ld      a,d");
+        emit("sbc     a,h");
+        emit("jp      po,.l%d", lbl);
+        emit("xor     $80");
+        emit_local_lbl(lbl);
+        emit("rlca");
+        emit("and     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
+    }
+    if (flags & FLAGS_USES_GES) {
+        int lbl = gen_lbl_idx();
+        emit_lbl("_ges");
+        emit("ld      a,l");
+        emit("sub     e");
+        emit("ld      a,h");
+        emit("sbc     a,d");
+        emit("jp      po,.l%d", lbl);
+        emit("xor     $80");
+        emit_local_lbl(lbl);
+        emit("rlca");
+        emit("and     1");
+        emit("xor     1");
+        emit("ld      l,a");
+        emit("ld      h,0");
+        emit("ret");
     }
 }
