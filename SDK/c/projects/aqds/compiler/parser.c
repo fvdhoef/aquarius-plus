@@ -721,14 +721,114 @@ void parse(void) {
         emit("djnz    .l%d", lbl1);
         emit("ret");
     }
-    if (flags & FLAGS_USES_DIVSI) {
+
+    if (flags & (FLAGS_USES_DIVSI | FLAGS_USES_MODSI)) {
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
+        int lbl3 = gen_lbl_idx();
+        int lbl4 = gen_lbl_idx();
+        int lbl5 = gen_lbl_idx();
+
+        // hl:dividend, de:divisor
+        emit_lbl("_divu16");
+        emit("ld      a,e");
+        emit("and     $80");
+        emit("or      d");
+        emit("jr      nz,.l%d", lbl3); // de >= 128? Use second algorithm
+
+        // Unsigned 16/7-bit division
+        emit("ld      b,16");
+        emit("adc     hl,hl");
+        emit_local_lbl(lbl1);
+        emit("rla");
+        emit("sub     e");
+        emit("jr      nc,.l%d", lbl2);
+        emit("add     a,e");
+        emit_local_lbl(lbl2);
+        emit("ccf");
+        emit("adc     hl,hl");
+        emit("djnz    .l%d", lbl1);
+        emit("ld      e,a");
+        emit("ex      de,hl");
+        emit("ret");
+
+        // Unsigned 16/16-bit division
+        emit_local_lbl(lbl3);
+        emit("ld      b,9");
+        emit("ld      a,l");
+        emit("ld      l,h");
+        emit("ld      h,0");
+        emit("rr      l");
+        emit_local_lbl(lbl4);
+        emit("adc     hl,hl");
+        emit("sbc     hl,de");
+        emit("jr      nc,.l%d", lbl5);
+        emit("add     hl,de");
+        emit_local_lbl(lbl5);
+        emit("ccf");
+        emit("rla");
+        emit("djnz    .l%d", lbl4);
+        emit("rl      b");
+        emit("ld      d,b");
+        emit("ld      e,a");
+        emit("ret");
+    }
+    if (flags & (FLAGS_USES_DIVSI | FLAGS_USES_MODSI)) {
+        int lbl1 = gen_lbl_idx();
+        int lbl2 = gen_lbl_idx();
+
         emit_lbl("_divsi");
-        emit("; To be implemented");
+        emit("ld      a,h");
+        emit("xor     d");
+        emit("rla");
+        emit("ld      a,h");
+        emit("push    af");
+        emit("rla");
+        emit("jr      nc,.l%d", lbl1);
+        emit("sub     a");
+        emit("sub     l");
+        emit("ld      l,a");
+        emit("sbc     a,a");
+        emit("sub     h");
+        emit("ld      h,a");
+        emit_local_lbl(lbl1);
+        emit("bit     7,d");
+        emit("jr      z,.l%d", lbl2);
+        emit("sub     a,a");
+        emit("sub     a,e");
+        emit("ld      e,a");
+        emit("sbc     a,a");
+        emit("sub     a,d");
+        emit("ld      d,a");
+        emit_local_lbl(lbl2);
+        emit("call    __divu16");
+        emit("pop     af");
+        emit("ret     nc");
+        emit("ld      b,a");
+        emit("sub     a");
+        emit("sub     e");
+        emit("ld      e,a");
+        emit("sbc     a,a");
+        emit("sub     d");
+        emit("ld      d,a");
+        emit("ld      a,b");   // de:quotient, hl:remainder
+        emit("ex      de,hl"); // hl:quotient, de:remainder
         emit("ret");
     }
     if (flags & FLAGS_USES_MODSI) {
         emit_lbl("_modsi");
-        emit("; To be implemented");
+        emit("call    __divsi"); // hl:quotient, de:remainder
+        emit("ex      de,hl");   // de:quotient, hl:remainder
+        emit("rla");
+        emit("ret     nc");
+        emit("ex      de,hl"); // hl:quotient, de:remainder
+        emit("sub     a");
+        emit("sub     e");
+        emit("ld      e,a");
+        emit("sbc     a,a");
+        emit("sub     d");
+        emit("ld      d,a");
+        emit("ex      de,hl");
         emit("ret");
     }
     if (flags & FLAGS_USES_SHL) {
