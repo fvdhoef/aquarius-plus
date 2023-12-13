@@ -10,6 +10,10 @@ static struct symbol *scope[MAX_SCOPE_DEPTH];
 static uint8_t        scope_idx;
 static struct symbol *sym_start;
 
+static struct string *str_start;
+static struct string *str_end;
+static int            str_idx = 0;
+
 #ifndef __SDCC
 void *getheap(void) {
     return fake_heap;
@@ -103,4 +107,42 @@ void symbols_dump(void) {
         symbol_dump(cur);
         cur = (struct symbol *)((uint8_t *)(cur + 1) + cur->name_len + 1);
     }
+}
+
+void strings_clear(void) {
+    str_start = NULL;
+    str_end   = NULL;
+}
+
+struct string *strings_add(const char *buf, uint8_t buf_len) {
+    if (buf_len == 0)
+        buf_len = strlen(buf);
+
+    if (!str_start) {
+        str_start = getheap();
+        str_end   = str_start;
+    }
+    str_idx++;
+
+    unsigned str_size = sizeof(struct string) + buf_len + 1;
+
+    struct string *str = str_end;
+    str_end            = (struct string *)((uint8_t *)str_end + str_size);
+    if ((uint8_t *)str_end > (uint8_t *)sym_start)
+        error("Out of memory!");
+
+    str->idx     = str_idx;
+    str->buf_len = buf_len;
+    memcpy(str->buf, buf, buf_len);
+    str->buf[str->buf_len] = 0;
+
+    return str;
+}
+
+struct string *strings_first(void) {
+    return str_start;
+}
+
+struct string *strings_last(void) {
+    return str_end;
 }

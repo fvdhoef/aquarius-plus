@@ -50,6 +50,11 @@ static struct expr_node *parse_primary_expr(void) {
             node->sym = sym;
         }
 
+    } else if (token == TOK_STRING_LITERAL) {
+        ack_token();
+        node      = alloc_node(TOK_STRING_LITERAL, NULL, NULL, 0, 0);
+        node->str = strings_add(tok_strval, 0);
+
     } else if (token == '(') {
         ack_token();
         node = _parse_expression();
@@ -332,7 +337,7 @@ static struct expr_node *_parse_expression(void) {
 }
 
 static void simplify_expr(struct expr_node *node) {
-    if (node->op == TOK_CONSTANT || node->op == TOK_IDENTIFIER)
+    if (node->op == TOK_CONSTANT || node->op == TOK_IDENTIFIER || node->op == TOK_STRING_LITERAL)
         return;
 
     if (node->left_node && node->left_node->op != TOK_CONSTANT) {
@@ -393,6 +398,8 @@ static void dump_expr(struct expr_node *node, int depth) {
         printf("- val: %d\n", node->val);
     } else if (node->op == TOK_IDENTIFIER) {
         printf("- identifier: %s\n", node->sym->name);
+    } else if (node->op == TOK_STRING_LITERAL) {
+        printf("- string literal %d: %s\n", node->str->idx, node->str->buf);
     } else {
         if (node->op > ' ') {
             printf("- '%c' -> symtype:%u typespec:%u\n", node->op, node->symtype, node->typespec);

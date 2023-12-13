@@ -33,11 +33,22 @@ struct symbol {
     char    name[];    // Zero-terminated name
 };
 
+struct string {
+    int16_t idx;
+    uint8_t buf_len; // Length of name excluding zero-termination
+    char    buf[];   // Zero-terminated name
+};
+
 struct symbol *symbol_find(const char *name, uint8_t name_len, bool allow_undefined);
 struct symbol *symbol_add(const char *name, uint8_t name_len);
 void           symbol_push_scope(void);
 void           symbol_pop_scope(void);
 void           symbol_dump(struct symbol *symbol);
 void           symbols_dump(void);
+
+void           strings_clear(void);
+struct string *strings_add(const char *buf, uint8_t buf_len);
+struct string *strings_first(void);
+struct string *strings_last(void);
 
 #endif

@@ -112,6 +112,11 @@ static void emit_expr(struct expr_node *node) {
             break;
         }
 
+        case TOK_STRING_LITERAL: {
+            emit("ld      hl,__str%d", node->str->idx);
+            break;
+        }
+
         case TOK_DEREF: {
             if (node->left_node->symtype != SYM_SYMTYPE_PTR)
                 error("Deref non-pointer");
@@ -172,7 +177,7 @@ static void emit_expr(struct expr_node *node) {
 
                 } else if (node->left_node->sym->storage == SYM_STORAGE_STACK) {
                     emit("ld      (ix+%d),l", node->left_node->sym->value);
-                    if (node->left_node->sym->typespec == SYM_TYPESPEC_INT) {
+                    if (node->left_node->sym->typespec == SYM_TYPESPEC_INT || node->left_node->sym->symtype == SYM_SYMTYPE_PTR) {
                         emit("ld      (ix+%d),h", node->left_node->sym->value + 1);
                     }
                 } else {
@@ -485,6 +490,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
         emit("jp      z,.l%d", lbl2);
 
         parse_statement(lbl1, lbl2);
+        emit("jp      .l%d", lbl1);
         emit_local_lbl(lbl2);
 
     } else if (token == TOK_CONTINUE) {
@@ -646,6 +652,28 @@ void parse(void) {
 
             symbol_pop_scope();
 
+            // Emit all strings for this function
+            {
+                struct string *last = strings_last();
+                struct string *str  = strings_first();
+                while (str != last) {
+                    int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
+                    output_puts(tmpbuf, len);
+
+                    // unsigned str_len = str->buf_len;
+                    // uint8_t *p       = (uint8_t *)str->buf;
+
+                    // while (len--) {
+                    //     uint8_t val = *(p++);
+
+                    // }
+
+                    // printf("- %s\n", str->buf);
+
+                    str = (struct string *)((uint8_t *)str + sizeof(*str) + str->buf_len + 1);
+                }
+                strings_clear();
+            }
         }
 
         // Variable definition?
@@ -681,8 +709,6 @@ void parse(void) {
     }
 
     emit("\n; --- Support functions ---");
-    flags = 0xFFFF;
-
     if (flags & FLAGS_USES_MULTSI) {
         int lbl1 = gen_lbl_idx();
         int lbl2 = gen_lbl_idx();
