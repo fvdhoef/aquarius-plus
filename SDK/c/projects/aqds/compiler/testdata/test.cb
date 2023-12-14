@@ -2,14 +2,18 @@
     include "../../../../../../../EndUser/sdcard/sdk/asm/inc/basic_stub.inc"
 main:
     jp      _main
+
+_putchar:
+    push    ix
+    ld      ix,0
+    add     ix,sp
+    ld      a,(ix+4)
+    call    $1D94
+    ld      sp,ix
+    pop     ix
+    ret
+
 #endasm
-
-char *screen = 0x3001;
-
-putchar(char c) {
-    *screen = c;
-    screen = screen + 1;
-}
 
 putstr(char* s) {
     while (*s) {
@@ -19,13 +23,6 @@ putstr(char* s) {
 }
 
 main() {
-    putchar('H');
-    putchar('e');
-    putchar('l');
-    putchar('l');
-    putchar('o');
-
-    screen = 0x3000 + 40 * 2;
     putstr("Hello world!");
     putstr("Test");
 }

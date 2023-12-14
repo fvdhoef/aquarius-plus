@@ -38,8 +38,19 @@ static struct expr_node *parse_primary_expr(void) {
         ack_token();
 
     } else if (token == TOK_IDENTIFIER) {
-        struct symbol *sym = symbol_find(tok_strval, 0, false);
+        struct symbol *sym = symbol_find(tok_strval, 0, true);
         ack_token();
+
+        if (!sym) {
+            if (get_token() == '(') {
+                // Function not defined. Implicitly define it.
+                sym          = symbol_add(tok_strval, 0);
+                sym->symtype = SYM_SYMTYPE_FUNC;
+                sym->storage = SYM_STORAGE_STATIC;
+            } else {
+                error("Symbol not found!");
+            }
+        }
 
         if (sym->storage == SYM_STORAGE_CONSTANT) {
             node      = alloc_node(TOK_CONSTANT, NULL, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
