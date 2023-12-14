@@ -657,18 +657,34 @@ void parse(void) {
                 struct string *last = strings_last();
                 struct string *str  = strings_first();
                 while (str != last) {
-                    int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
+                    // int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
+                    int len = sprintf(tmpbuf, "__str%d:\n", str->idx);
                     output_puts(tmpbuf, len);
 
-                    // unsigned str_len = str->buf_len;
-                    // uint8_t *p       = (uint8_t *)str->buf;
+                    unsigned       buf_len = str->buf_len + 1;
+                    const uint8_t *ps      = (uint8_t *)str->buf;
+                    char          *pd      = tmpbuf;
+                    while (buf_len) {
+                        if (pd == tmpbuf) {
+                            len = sprintf(pd, "    defb %u", *ps);
+                        } else {
+                            len = sprintf(pd, ",%u", *ps);
+                        }
 
-                    // while (len--) {
-                    //     uint8_t val = *(p++);
+                        ps++;
+                        pd += len;
+                        buf_len--;
 
-                    // }
+                        unsigned line_len = pd - tmpbuf;
+                        if (line_len > 80) {
+                            *(pd++) = '\n';
+                            output_puts(tmpbuf, pd - tmpbuf);
+                            pd = tmpbuf;
+                        }
+                    }
 
-                    // printf("- %s\n", str->buf);
+                    *(pd++) = '\n';
+                    output_puts(tmpbuf, pd - tmpbuf);
 
                     str = (struct string *)((uint8_t *)str + sizeof(*str) + str->buf_len + 1);
                 }
