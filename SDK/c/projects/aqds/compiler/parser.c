@@ -592,6 +592,44 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
         symbol_pop_scope();
 }
 
+void emit_string_literals(void) {
+    struct string *last = strings_last();
+    struct string *str  = strings_first();
+    while (str != last) {
+        // int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
+        int len = sprintf(tmpbuf, "__str%d:\n", str->idx);
+        output_puts(tmpbuf, len);
+
+        unsigned       buf_len = str->buf_len + 1;
+        const uint8_t *ps      = (uint8_t *)str->buf;
+        char          *pd      = tmpbuf;
+        while (buf_len) {
+            if (pd == tmpbuf) {
+                len = sprintf(pd, "    defb %u", *ps);
+            } else {
+                len = sprintf(pd, ",%u", *ps);
+            }
+
+            ps++;
+            pd += len;
+            buf_len--;
+
+            unsigned line_len = pd - tmpbuf;
+            if (line_len > 80) {
+                *(pd++) = '\n';
+                output_puts(tmpbuf, pd - tmpbuf);
+                pd = tmpbuf;
+            }
+        }
+
+        *(pd++) = '\n';
+        output_puts(tmpbuf, pd - tmpbuf);
+
+        str = (struct string *)((uint8_t *)str + sizeof(*str) + str->buf_len + 1);
+    }
+    strings_clear();
+}
+
 void parse(void) {
     while (1) {
         int token = get_token();
@@ -651,45 +689,7 @@ void parse(void) {
             emit("ret");
 
             symbol_pop_scope();
-
-            // Emit all strings for this function
-            {
-                struct string *last = strings_last();
-                struct string *str  = strings_first();
-                while (str != last) {
-                    // int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
-                    int len = sprintf(tmpbuf, "__str%d:\n", str->idx);
-                    output_puts(tmpbuf, len);
-
-                    unsigned       buf_len = str->buf_len + 1;
-                    const uint8_t *ps      = (uint8_t *)str->buf;
-                    char          *pd      = tmpbuf;
-                    while (buf_len) {
-                        if (pd == tmpbuf) {
-                            len = sprintf(pd, "    defb %u", *ps);
-                        } else {
-                            len = sprintf(pd, ",%u", *ps);
-                        }
-
-                        ps++;
-                        pd += len;
-                        buf_len--;
-
-                        unsigned line_len = pd - tmpbuf;
-                        if (line_len > 80) {
-                            *(pd++) = '\n';
-                            output_puts(tmpbuf, pd - tmpbuf);
-                            pd = tmpbuf;
-                        }
-                    }
-
-                    *(pd++) = '\n';
-                    output_puts(tmpbuf, pd - tmpbuf);
-
-                    str = (struct string *)((uint8_t *)str + sizeof(*str) + str->buf_len + 1);
-                }
-                strings_clear();
-            }
+            emit_string_literals();
         }
 
         // Variable definition?
@@ -699,16 +699,28 @@ void parse(void) {
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);
 
-            int value = 0;
+            int value  = 0;
+            int stridx = -1;
             if (get_token() == '=') {
                 ack_token();
                 struct expr_node *node = parse_expression();
-                if (!node || node->op != TOK_CONSTANT)
+                if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
                     syntax_error();
-                value = node->val;
+
+                if (node->op == TOK_CONSTANT)
+                    value = node->val;
+                else {
+                    stridx = node->str->idx;
+                }
             }
 
-            if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
+            if (stridx >= 0) {
+                if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
+                    syntax_error();
+
+                sprintf(tmpbuf, "    defw __str%d\n", stridx);
+
+            } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
                 sprintf(tmpbuf, "    defw %d\n", value);
             } else {
                 sprintf(tmpbuf, "    defb %d\n", value);
@@ -723,6 +735,8 @@ void parse(void) {
             syntax_error();
         }
     }
+
+    emit_string_literals();
 
     emit("\n; --- Support functions ---");
     if (flags & FLAGS_USES_MULTSI) {
