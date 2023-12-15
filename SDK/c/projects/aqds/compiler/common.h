@@ -19,7 +19,7 @@ extern char             basename[32];
 extern const char      *filename_cb;
 extern char             tmpbuf[256];
 
-void error(const char *str);
+void error(const char *fmt, ...);
 void syntax_error(void);
 void eof_error(void);
 void exit_program(void);

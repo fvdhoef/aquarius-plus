@@ -13,7 +13,6 @@ enum {
     TOK_FUNC_ARG,
     TOK_DEREF,
     TOK_ADDR_OF,
-    TOK_INDEX,
 
     TOK_BREAK,    // break
     TOK_CHAR,     // char

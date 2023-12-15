@@ -113,11 +113,18 @@ static struct expr_node *parse_postfix_expr(void) {
 
         } else if (token == '[') {
             ack_token();
+            if (result->symtype != SYM_SYMTYPE_ARRAY && result->symtype != SYM_SYMTYPE_PTR)
+                error("Expected pointer type");
+
             struct expr_node *expr = _parse_expression();
 
-            result = alloc_node(TOK_INDEX, result, expr, SYM_SYMTYPE_VALUE, expr->typespec);
-            if (get_token() != ']')
-                syntax_error();
+            // Transform: ident[expr] -> *(ident + expr)
+            result = alloc_node('+', result, expr, result->symtype, result->typespec);
+            if (result->symtype == SYM_SYMTYPE_ARRAY)
+                result->symtype = SYM_SYMTYPE_PTR;
+            result = alloc_node(TOK_DEREF, result, NULL, result->symtype, result->typespec);
+
+            expect_tok_ack(']');
 
         } else {
             break;

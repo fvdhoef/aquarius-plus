@@ -92,8 +92,7 @@ static void emit_expr(struct expr_node *node) {
                     emit("ld      h,0");
                     emit("ld      l,a");
                 } else {
-                    printf("Unimplemented global symbol type in expression!\n");
-                    syntax_error();
+                    error("Unimplemented global symbol type in expression!");
                 }
 
             } else if (sym->storage == SYM_STORAGE_STACK) {
@@ -106,8 +105,7 @@ static void emit_expr(struct expr_node *node) {
                     emit("ld      l,(ix+%d)", sym->value);
 
                 } else {
-                    printf("Unimplemented local symbol type in expression!\n");
-                    syntax_error();
+                    error("Unimplemented local symbol type in expression!");
                 }
             } else {
                 error("Invalid storage class");
@@ -177,8 +175,7 @@ static void emit_expr(struct expr_node *node) {
                         emit("ld      (_%s),a", node->left_node->sym->name);
 
                     } else {
-                        printf("Unimplemented identifier symbol type in expression!\n");
-                        syntax_error();
+                        error("Unimplemented identifier symbol type in expression!");
                     }
 
                 } else if (node->left_node->sym->storage == SYM_STORAGE_STACK) {
@@ -211,9 +208,6 @@ static void emit_expr(struct expr_node *node) {
                     } else {
                         error("Deref non-pointer");
                     }
-
-                    // } else if (node->left_node->op == TOK_INDEX) {
-
                 } else {
                     error("Unimplemented assignment");
                 }
@@ -439,8 +433,7 @@ static void emit_expr(struct expr_node *node) {
         }
 
         default:
-            printf("Error: op %d (%c)!\n", node->op, node->op > ' ' ? node->op : '?');
-            syntax_error();
+            error("op %d (%c)!", node->op, node->op > ' ' ? node->op : '?');
             break;
     }
 }
@@ -517,7 +510,6 @@ static void parse_statement(int lbl_continue, int lbl_break) {
 
     } else if (token == TOK_RETURN) {
         ack_token();
-        printf("Return!\n");
         token = get_token();
         if (token != ';') {
             struct expr_node *node = parse_expression();

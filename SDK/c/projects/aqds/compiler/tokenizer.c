@@ -1,6 +1,7 @@
 #include "tokenizer.h"
 #include "expr.h"
 #include "symbols.h"
+#include <stdarg.h>
 
 static char    linebuf[256];
 int            tok_value;
@@ -22,13 +23,18 @@ static bool is_hexadecimal(uint8_t ch) {
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
 }
 
-void error(const char *str) {
-    if (str == NULL)
-        str = "Unknown";
+void error(const char *fmt, ...) {
     if (cur_file_ctx)
-        printf("\n%s:%u Error: %s\n", cur_file_ctx->path, cur_file_ctx->linenr, str);
+        printf("\n%s:%u Error: ", cur_file_ctx->path, cur_file_ctx->linenr);
     else
-        printf("\nError: %s\n", str);
+        printf("\nError: ");
+
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+
+    printf("\n");
     exit_program();
 }
 

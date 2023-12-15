@@ -56,10 +56,8 @@ main() {
     
     // FIXME: This produces incorrect code
     // *(bla+2) = *(bla+3) = *bla;
-    // *(bla+2) = 1;
-
-    *(bla+1) = 5;
 
     // puts("Hello world!\r\n");
-    puts(s1);
+    c[5] = c[0];
+    puts(c);
 }
