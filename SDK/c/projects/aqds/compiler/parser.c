@@ -83,7 +83,9 @@ static void emit_expr(struct expr_node *node) {
         case TOK_IDENTIFIER: {
             struct symbol *sym = node->sym;
             if (sym->storage == SYM_STORAGE_STATIC) {
-                if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
+                if (sym->symtype == SYM_SYMTYPE_ARRAY) {
+                    emit("ld      hl,_%s", sym->name);
+                } else if (sym->typespec == SYM_TYPESPEC_INT || sym->symtype != SYM_SYMTYPE_VAR) {
                     emit("ld      hl,(_%s)", sym->name);
                 } else if (sym->typespec == SYM_TYPESPEC_CHAR) {
                     emit("ld      a,(_%s)", sym->name);
@@ -164,6 +166,9 @@ static void emit_expr(struct expr_node *node) {
 
             if (node->left_node->op == TOK_IDENTIFIER) {
                 if (node->left_node->sym->storage == SYM_STORAGE_STATIC) {
+                    if (node->left_node->sym->symtype == SYM_SYMTYPE_ARRAY)
+                        syntax_error();
+
                     if (node->left_node->sym->typespec == SYM_TYPESPEC_INT || node->left_node->sym->symtype == SYM_SYMTYPE_PTR) {
                         emit("ld      (_%s),hl", node->left_node->sym->name);
 
@@ -237,13 +242,13 @@ static void emit_expr(struct expr_node *node) {
         case '+':
             emit_binary(node);
             emit("add     hl,de");
-            if (node->left_node->symtype == SYM_SYMTYPE_PTR && node->left_node->typespec == SYM_TYPESPEC_INT)
+            if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT)
                 emit("add     hl,de");
             break;
 
         case '-':
             emit_16b_sub(node);
-            if (node->left_node->symtype == SYM_SYMTYPE_PTR && node->left_node->typespec == SYM_TYPESPEC_INT) {
+            if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT) {
                 emit("or      a");
                 emit("sbc     hl,de");
             }
@@ -730,6 +735,9 @@ void parse(void) {
                     ack_token();
 
                     if (get_token() == TOK_STRING_LITERAL) {
+                        if (sym->typespec != SYM_TYPESPEC_CHAR)
+                            syntax_error();
+
                         elements = emit_str_bytes(tok_strval, 0);
                         ack_token();
 

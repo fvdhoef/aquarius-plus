@@ -208,6 +208,8 @@ static struct expr_node *parse_add_expr(void) {
         if (token == '+' || token == '-') {
             ack_token();
             result = alloc_node(token, result, parse_mult_expr(), result->symtype, result->typespec);
+            if (result->symtype == SYM_SYMTYPE_ARRAY)
+                result->symtype = SYM_SYMTYPE_PTR;
         } else {
             break;
         }
