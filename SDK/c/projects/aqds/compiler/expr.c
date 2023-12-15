@@ -135,6 +135,7 @@ static struct expr_node *parse_unary_expr(void) {
         return alloc_node(TOK_OP_NEG, expr, NULL, expr->symtype, expr->typespec);
     }
     if (token == '+') {
+        ack_token();
         return parse_cast_expr();
     }
     if (token == '~') {

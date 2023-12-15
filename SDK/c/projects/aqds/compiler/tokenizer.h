@@ -18,7 +18,6 @@ enum {
     TOK_CHAR,     // char
     TOK_CONTINUE, // continue
     TOK_ELSE,     // else
-    TOK_GOTO,     // goto
     TOK_IF,       // if
     TOK_INT,      // int
     TOK_RETURN,   // return

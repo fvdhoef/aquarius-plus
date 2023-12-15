@@ -309,7 +309,6 @@ static uint8_t _get_token(void) {
             if (strcmp(tok_strval, "char") == 0) return TOK_CHAR;
             if (strcmp(tok_strval, "continue") == 0) return TOK_CONTINUE;
             if (strcmp(tok_strval, "else") == 0) return TOK_ELSE;
-            if (strcmp(tok_strval, "goto") == 0) return TOK_GOTO;
             if (strcmp(tok_strval, "if") == 0) return TOK_IF;
             if (strcmp(tok_strval, "int") == 0) return TOK_INT;
             if (strcmp(tok_strval, "return") == 0) return TOK_RETURN;
