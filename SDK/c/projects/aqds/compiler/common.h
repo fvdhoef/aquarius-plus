@@ -1,6 +1,8 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
+#define DEBUG_OUTPUT
+
 #include "aqplus.h"
 #include <stdbool.h>
 

@@ -410,6 +410,7 @@ static void simplify_expr(struct expr_node *node) {
     }
 }
 
+#ifdef DEBUG_OUTPUT
 static void dump_expr(struct expr_node *node, int depth) {
     for (int i = 0; i < depth; i++) {
         printf(" ");
@@ -432,6 +433,7 @@ static void dump_expr(struct expr_node *node, int depth) {
             dump_expr(node->right_node, depth + 2);
     }
 }
+#endif
 
 struct expr_node *parse_expression(void) {
     reset_nodes();
@@ -439,7 +441,10 @@ struct expr_node *parse_expression(void) {
     struct expr_node *node = NULL;
     node                   = _parse_expression();
     simplify_expr(node);
+
+#ifdef DEBUG_OUTPUT
     dump_expr(node, 0);
+#endif
 
     return node;
 }

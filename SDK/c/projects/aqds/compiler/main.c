@@ -34,7 +34,7 @@ int main(
 #endif
     const char *path;
 
-    puts("Aquarius+ Development Studio - C-flat (Cb) Compiler V1.0 by Frank van den Hoef\n");
+    puts("Aquarius+ Development Studio - C-flat (Cb) Compiler V0.1 by Frank van den Hoef\n");
 
 #ifndef __SDCC
     // Get path from command line argument
@@ -85,7 +85,9 @@ int main(
     // Close files
     esp_close(fd_out);
 
+#ifdef DEBUG_OUTPUT
     symbols_dump();
+#endif
 
     // We're done, exit the program
     puts("Done!\n");

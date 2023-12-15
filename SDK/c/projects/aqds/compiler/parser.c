@@ -565,7 +565,9 @@ static struct symbol *parse_var(uint8_t storage, int value) {
             expect_tok_ack(']');
         }
 
+#ifdef DEBUG_OUTPUT
         symbol_dump(sym);
+#endif
         return sym;
 
     } else {
@@ -665,7 +667,9 @@ void parse(void) {
 
             // Function definition
             expect_tok_ack('(');
+#ifdef DEBUG_OUTPUT
             printf("- Function: %s\n", tok_strval);
+#endif
             {
                 struct symbol *sym = symbol_add(tok_strval, 0);
                 sym->symtype       = SYM_SYMTYPE_FUNC;
