@@ -403,6 +403,13 @@ static void assemble_file(void) {
     __asm__("jp 0xF803");
 }
 
+static void compile_file(void) {
+    const char *pgm = "/aqds/compiler.bin";
+    memcpy(get_pgm_path(), pgm, strlen(pgm) + 1);
+    memcpy(get_pgm_arg(), filename, 128);
+    __asm__("jp 0xF803");
+}
+
 static void cmd_run(void) {
     // RUN selected item
     read_selected();
@@ -414,6 +421,10 @@ static void cmd_run(void) {
     if (ext) {
         if (compare_str(ext, "asm")) {
             assemble_file();
+            return;
+        }
+        if (compare_str(ext, "cb")) {
+            compile_file();
             return;
         }
     }
