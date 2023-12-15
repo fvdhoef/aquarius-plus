@@ -12,6 +12,7 @@
 static int8_t fd_out = -1;
 
 #ifdef __SDCC
+static char *get_pgm_path(void) __naked { __asm__("jp 0xF809"); }
 static char *get_pgm_arg(void) __naked { __asm__("jp 0xF80C"); }
 #endif
 
@@ -92,7 +93,21 @@ int main(
     // We're done, exit the program
     puts("Done!\n");
 #ifdef __SDCC
-    exit_program();
+    {
+        puts("\nPress enter to start assembler.\n");
+        while (1) {
+            uint8_t scancode = IO_KEYBUF;
+            if (scancode == '\r')
+                break;
+        }
+
+        const char *pgm = "/aqds/assembler.bin";
+        memcpy(get_pgm_path(), pgm, strlen(pgm) + 1);
+
+        sprintf(tmpbuf, "out/%s.asm", basename);
+        memcpy(get_pgm_arg(), tmpbuf, 128);
+        __asm__("jp 0xF803");
+    }
 #endif
     return 0;
 }
