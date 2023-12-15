@@ -26,6 +26,7 @@ static int      cur_ix_offset;
 #define FLAGS_USES_GES     (1 << 13)
 
 static void emit_expr(struct expr_node *node);
+static int  emit_str_bytes(char *str, uint16_t buf_len);
 
 static void emit(char *fmt, ...) {
     tmpbuf[0] = ' ';
@@ -548,6 +549,25 @@ static struct symbol *parse_var(uint8_t storage, int value) {
         sym->typespec = (tok_type == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
         sym->storage  = storage;
         sym->value    = value;
+
+        if (get_token() == '[') {
+            ack_token();
+            if (is_ptr || storage != SYM_STORAGE_STATIC)
+                syntax_error();
+
+            sym->symtype = SYM_SYMTYPE_ARRAY;
+
+            if (get_token() == ']') {
+                sym->value = -1;
+            } else {
+                struct expr_node *node = parse_expression();
+                if (!node || (node->op != TOK_CONSTANT))
+                    syntax_error();
+                sym->value = node->val;
+            }
+            expect_tok_ack(']');
+        }
+
         symbol_dump(sym);
         return sym;
 
@@ -592,39 +612,45 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
         symbol_pop_scope();
 }
 
-void emit_string_literals(void) {
+static int emit_str_bytes(char *str, uint16_t buf_len) {
+    if (buf_len == 0) {
+        buf_len = strlen(str) + 1;
+    }
+    int result = buf_len;
+
+    const uint8_t *ps = (uint8_t *)str;
+    char          *pd = tmpbuf;
+    int            len;
+    while (buf_len) {
+        if (pd == tmpbuf)
+            len = sprintf(pd, "    defb %u", *ps);
+        else
+            len = sprintf(pd, ",%u", *ps);
+
+        ps++;
+        pd += len;
+        buf_len--;
+
+        if (pd - tmpbuf > 70) {
+            *(pd++) = '\n';
+            output_puts(tmpbuf, pd - tmpbuf);
+            pd = tmpbuf;
+        }
+    }
+
+    *(pd++) = '\n';
+    output_puts(tmpbuf, pd - tmpbuf);
+
+    return result;
+}
+
+static void emit_string_literals(void) {
     struct string *last = strings_last();
     struct string *str  = strings_first();
     while (str != last) {
-        // int len = sprintf(tmpbuf, "__str%d: defb \"%s\",0\n", str->idx, str->buf);
         int len = sprintf(tmpbuf, "__str%d:\n", str->idx);
         output_puts(tmpbuf, len);
-
-        unsigned       buf_len = str->buf_len + 1;
-        const uint8_t *ps      = (uint8_t *)str->buf;
-        char          *pd      = tmpbuf;
-        while (buf_len) {
-            if (pd == tmpbuf) {
-                len = sprintf(pd, "    defb %u", *ps);
-            } else {
-                len = sprintf(pd, ",%u", *ps);
-            }
-
-            ps++;
-            pd += len;
-            buf_len--;
-
-            unsigned line_len = pd - tmpbuf;
-            if (line_len > 80) {
-                *(pd++) = '\n';
-                output_puts(tmpbuf, pd - tmpbuf);
-                pd = tmpbuf;
-            }
-        }
-
-        *(pd++) = '\n';
-        output_puts(tmpbuf, pd - tmpbuf);
-
+        emit_str_bytes(str->buf, str->buf_len + 1);
         str = (struct string *)((uint8_t *)str + sizeof(*str) + str->buf_len + 1);
     }
     strings_clear();
@@ -659,7 +685,6 @@ void parse(void) {
                 if (token == TOK_CHAR || token == TOK_INT) {
                     parse_var(SYM_STORAGE_STACK, offset);
                     offset += 2;
-                    ack_token();
                 }
 
                 token = get_token();
@@ -699,33 +724,77 @@ void parse(void) {
             sprintf(tmpbuf, "_%s:\n", tok_strval);
             output_puts(tmpbuf, 0);
 
-            int value  = 0;
-            int stridx = -1;
-            if (get_token() == '=') {
-                ack_token();
-                struct expr_node *node = parse_expression();
-                if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
-                    syntax_error();
+            if (sym->symtype == SYM_SYMTYPE_ARRAY) {
+                int elements = 0;
+                if (get_token() == '=') {
+                    ack_token();
 
-                if (node->op == TOK_CONSTANT)
-                    value = node->val;
-                else {
-                    stridx = node->str->idx;
+                    if (get_token() == TOK_STRING_LITERAL) {
+                        elements = emit_str_bytes(tok_strval, 0);
+                        ack_token();
+
+                    } else {
+                        expect_tok_ack('{');
+
+                        while (1) {
+                            struct expr_node *node = parse_expression();
+                            if (!node || node->op != TOK_CONSTANT)
+                                syntax_error();
+
+                            if (sym->typespec == SYM_TYPESPEC_CHAR)
+                                emit("defb %d", node->val);
+                            else
+                                emit("defw %d", node->val);
+
+                            elements++;
+
+                            if (get_token() != ',')
+                                break;
+                            ack_token();
+                        }
+                        expect_tok_ack('}');
+                    }
+                }
+
+                if (sym->value >= 0) {
+                    if (elements > sym->value)
+                        error("Too many initializers");
+
+                    int pad = sym->value - elements;
+                    if (pad > 0) {
+                        if (sym->typespec == SYM_TYPESPEC_INT)
+                            pad *= 2;
+                        emit("defs %d", pad);
+                    }
+                }
+
+            } else {
+                int value  = 0;
+                int stridx = -1;
+                if (get_token() == '=') {
+                    ack_token();
+                    struct expr_node *node = parse_expression();
+                    if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
+                        syntax_error();
+
+                    if (node->op == TOK_CONSTANT)
+                        value = node->val;
+                    else {
+                        stridx = node->str->idx;
+                    }
+                }
+
+                if (stridx >= 0) {
+                    if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
+                        syntax_error();
+
+                    emit("defw __str%d", stridx);
+                } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
+                    emit("defw %d", value);
+                } else {
+                    emit("defb %d", value);
                 }
             }
-
-            if (stridx >= 0) {
-                if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
-                    syntax_error();
-
-                sprintf(tmpbuf, "    defw __str%d\n", stridx);
-
-            } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
-                sprintf(tmpbuf, "    defw %d\n", value);
-            } else {
-                sprintf(tmpbuf, "    defb %d\n", value);
-            }
-            output_puts(tmpbuf, 0);
 
             expect_tok_ack(';');
         }
