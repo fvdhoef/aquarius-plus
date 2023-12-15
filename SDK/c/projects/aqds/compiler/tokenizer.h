@@ -16,6 +16,7 @@ enum {
 
     TOK_BREAK,    // break
     TOK_CHAR,     // char
+    TOK_CONST,    // const
     TOK_CONTINUE, // continue
     TOK_ELSE,     // else
     TOK_IF,       // if

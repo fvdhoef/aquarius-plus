@@ -124,6 +124,7 @@ static bool nextline(void) {
                 output_puts(linebuf + 2, 0);
             }
 
+#if 0
         } else if (strncmp(cur_p, "#define", 7) == 0) {
             cur_p += 7;
             if (cur_p[0] != ' ' && cur_p[0] != '\t')
@@ -155,6 +156,7 @@ static bool nextline(void) {
             if (!node || node->op != TOK_CONSTANT)
                 error_syntax();
             sym_def->value = node->val;
+#endif
 
         } else if (cur_p && cur_p[0] != 0) {
             break;
@@ -307,6 +309,7 @@ static uint8_t _get_token(void) {
             // clang-format off
             if (strcmp(tok_strval, "break") == 0) return TOK_BREAK;
             if (strcmp(tok_strval, "char") == 0) return TOK_CHAR;
+            if (strcmp(tok_strval, "const") == 0) return TOK_CONST;
             if (strcmp(tok_strval, "continue") == 0) return TOK_CONTINUE;
             if (strcmp(tok_strval, "else") == 0) return TOK_ELSE;
             if (strcmp(tok_strval, "if") == 0) return TOK_IF;

@@ -233,17 +233,35 @@ static void emit_expr(struct expr_node *node) {
             break;
 
         case '+':
-            emit_binary(node);
-            emit("add     hl,de");
-            if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT)
+            if (node->right_node->op == TOK_CONSTANT && node->right_node->val == 1) {
+                // Optimize simple +1 case
+                emit_expr(node->left_node);
+                emit("inc     hl");
+                if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT)
+                    emit("inc     hl");
+
+            } else {
+                emit_binary(node);
                 emit("add     hl,de");
+                if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT)
+                    emit("add     hl,de");
+            }
             break;
 
         case '-':
-            emit_16b_sub(node);
-            if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT) {
-                emit("or      a");
-                emit("sbc     hl,de");
+            if (node->right_node->op == TOK_CONSTANT && node->right_node->val == 1) {
+                // Optimize simple +1 case
+                emit_expr(node->left_node);
+                emit("dec     hl");
+                if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT)
+                    emit("dec     hl");
+
+            } else {
+                emit_16b_sub(node);
+                if (node->symtype == SYM_SYMTYPE_PTR && node->typespec == SYM_TYPESPEC_INT) {
+                    emit("or      a");
+                    emit("sbc     hl,de");
+                }
             }
             break;
 
@@ -525,6 +543,14 @@ static void parse_statement(int lbl_continue, int lbl_break) {
 }
 
 static struct symbol *parse_var(uint8_t storage, int value) {
+    uint8_t is_const = 0;
+    if (get_token() == TOK_CONST) {
+        ack_token();
+        is_const = 1;
+    }
+
+    struct symbol *sym = NULL;
+
     uint8_t token = get_token();
     if (token == TOK_CHAR || token == TOK_INT) {
         uint8_t tok_type = token;
@@ -538,15 +564,15 @@ static struct symbol *parse_var(uint8_t storage, int value) {
         }
 
         expect_tok(TOK_IDENTIFIER);
-        struct symbol *sym = symbol_add(tok_strval, 0);
+        sym = symbol_add(tok_strval, 0);
         ack_token();
 
         sym->symtype  = is_ptr ? SYM_SYMTYPE_PTR : SYM_SYMTYPE_VAR;
         sym->typespec = (tok_type == TOK_CHAR) ? SYM_TYPESPEC_CHAR : SYM_TYPESPEC_INT;
-        sym->storage  = storage;
+        sym->storage  = is_const ? SYM_STORAGE_CONSTANT : storage;
         sym->value    = value;
 
-        if (get_token() == '[') {
+        if (!is_const && get_token() == '[') {
             ack_token();
             if (is_ptr || storage != SYM_STORAGE_STATIC)
                 error_syntax();
@@ -563,16 +589,14 @@ static struct symbol *parse_var(uint8_t storage, int value) {
             }
             expect_tok_ack(']');
         }
-
-#ifdef DEBUG_OUTPUT
-        symbol_dump(sym);
-#endif
-        return sym;
-
     } else {
         error_syntax();
-        return NULL;
     }
+
+#ifdef DEBUG_OUTPUT
+    symbol_dump(sym);
+#endif
+    return sym;
 }
 
 static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
@@ -587,18 +611,27 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             ack_token();
             break;
 
-        } else if (token == TOK_CHAR || token == TOK_INT) {
-            cur_ix_offset -= 2;
-            parse_var(SYM_STORAGE_STACK, cur_ix_offset);
-
-            token = get_token();
-            if (token == '=') {
-                ack_token();
+        } else if (token == TOK_CHAR || token == TOK_INT || token == TOK_CONST) {
+            struct symbol *sym = parse_var(SYM_STORAGE_STACK, cur_ix_offset);
+            if (sym->storage == SYM_STORAGE_CONSTANT) {
+                expect_tok_ack('=');
                 struct expr_node *node = parse_expression();
-                emit_expr(node);
-                emit("push    hl");
+                if (node->op != TOK_CONSTANT)
+                    error_syntax();
+                sym->value = node->val;
+
             } else {
-                emit("push    af");
+                cur_ix_offset -= 2;
+
+                token = get_token();
+                if (token == '=') {
+                    ack_token();
+                    struct expr_node *node = parse_expression();
+                    emit_expr(node);
+                    emit("push    hl");
+                } else {
+                    emit("push    af");
+                }
             }
             expect_tok_ack(';');
 
@@ -700,7 +733,7 @@ void parse(void) {
 
             expect_tok('{');
 
-            cur_ix_offset = 0;
+            cur_ix_offset = -2;
             parse_compound(false, -1, -1);
 
             output_puts(".return:\n", 0);
@@ -713,87 +746,97 @@ void parse(void) {
         }
 
         // Variable definition?
-        else if (token == TOK_CHAR || token == TOK_INT) {
+        else if (token == TOK_CHAR || token == TOK_INT || token == TOK_CONST) {
             struct symbol *sym = parse_var(SYM_STORAGE_STATIC, 0);
-
-            sprintf(tmpbuf, "_%s:\n", tok_strval);
-            output_puts(tmpbuf, 0);
-
-            if (sym->symtype == SYM_SYMTYPE_ARRAY) {
-                int elements = 0;
-                if (get_token() == '=') {
-                    ack_token();
-
-                    if (get_token() == TOK_STRING_LITERAL) {
-                        if (sym->typespec != SYM_TYPESPEC_CHAR)
-                            error_syntax();
-
-                        elements = emit_str_bytes(tok_strval, 0);
-                        ack_token();
-
-                    } else {
-                        expect_tok_ack('{');
-
-                        while (1) {
-                            struct expr_node *node = parse_expression();
-                            if (!node || node->op != TOK_CONSTANT)
-                                error_syntax();
-
-                            if (sym->typespec == SYM_TYPESPEC_CHAR)
-                                emit("defb %d", node->val);
-                            else
-                                emit("defw %d", node->val);
-
-                            elements++;
-
-                            if (get_token() != ',')
-                                break;
-                            ack_token();
-                        }
-                        expect_tok_ack('}');
-                    }
-                }
-
-                if (sym->value >= 0) {
-                    if (elements > sym->value)
-                        error("Too many initializers");
-
-                    int pad = sym->value - elements;
-                    if (pad > 0) {
-                        if (sym->typespec == SYM_TYPESPEC_INT)
-                            pad *= 2;
-                        emit("defs %d", pad);
-                    }
-                }
+            if (sym->storage == SYM_STORAGE_CONSTANT) {
+                expect_tok_ack('=');
+                struct expr_node *node = parse_expression();
+                if (node->op != TOK_CONSTANT)
+                    error_syntax();
+                sym->value = node->val;
 
             } else {
-                int value  = 0;
-                int stridx = -1;
-                if (get_token() == '=') {
-                    ack_token();
-                    struct expr_node *node = parse_expression();
-                    if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
-                        error_syntax();
 
-                    if (node->op == TOK_CONSTANT)
-                        value = node->val;
-                    else {
-                        stridx = node->str->idx;
+                sprintf(tmpbuf, "_%s:\n", tok_strval);
+                output_puts(tmpbuf, 0);
+
+                if (sym->symtype == SYM_SYMTYPE_ARRAY) {
+                    int elements = 0;
+                    if (get_token() == '=') {
+                        ack_token();
+
+                        if (get_token() == TOK_STRING_LITERAL) {
+                            if (sym->typespec != SYM_TYPESPEC_CHAR)
+                                error_syntax();
+
+                            elements = emit_str_bytes(tok_strval, 0);
+                            ack_token();
+
+                        } else {
+                            expect_tok_ack('{');
+
+                            while (1) {
+                                struct expr_node *node = parse_expression();
+                                if (!node || node->op != TOK_CONSTANT)
+                                    error_syntax();
+
+                                if (sym->typespec == SYM_TYPESPEC_CHAR)
+                                    emit("defb %d", node->val);
+                                else
+                                    emit("defw %d", node->val);
+
+                                elements++;
+
+                                if (get_token() != ',')
+                                    break;
+                                ack_token();
+                            }
+                            expect_tok_ack('}');
+                        }
+                    }
+
+                    if (sym->value >= 0) {
+                        if (elements > sym->value)
+                            error("Too many initializers");
+
+                        int pad = sym->value - elements;
+                        if (pad > 0) {
+                            if (sym->typespec == SYM_TYPESPEC_INT)
+                                pad *= 2;
+                            emit("defs %d", pad);
+                        }
+                    }
+
+                } else {
+                    int value  = 0;
+                    int stridx = -1;
+                    if (get_token() == '=') {
+                        ack_token();
+                        struct expr_node *node = parse_expression();
+                        if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
+                            error_syntax();
+
+                        if (node->op == TOK_CONSTANT)
+                            value = node->val;
+                        else {
+                            stridx = node->str->idx;
+                        }
+                    }
+
+                    if (sym->storage != SYM_STORAGE_CONSTANT) {
+                        if (stridx >= 0) {
+                            if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
+                                error_syntax();
+
+                            emit("defw __str%d", stridx);
+                        } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
+                            emit("defw %d", value);
+                        } else {
+                            emit("defb %d", value);
+                        }
                     }
                 }
-
-                if (stridx >= 0) {
-                    if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
-                        error_syntax();
-
-                    emit("defw __str%d", stridx);
-                } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
-                    emit("defw %d", value);
-                } else {
-                    emit("defb %d", value);
-                }
             }
-
             expect_tok_ack(';');
         }
 

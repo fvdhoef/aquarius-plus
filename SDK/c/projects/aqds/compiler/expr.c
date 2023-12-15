@@ -53,7 +53,7 @@ static struct expr_node *parse_primary_expr(void) {
         }
 
         if (sym->storage == SYM_STORAGE_CONSTANT) {
-            node      = alloc_node(TOK_CONSTANT, NULL, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
+            node      = alloc_node(TOK_CONSTANT, NULL, NULL, sym->symtype, sym->typespec);
             node->val = sym->value;
 
         } else {
