@@ -103,6 +103,8 @@ static struct editor_data data;
 void print_5digits(uint16_t val);
 void print_4digits(uint16_t val);
 
+static char *get_pgm_arg(void) __naked { __asm__("jp 0xF80C"); }
+
 static int16_t esp_read_eol_conv(int8_t fd, void *buf, uint16_t length) {
     esp_cmd(ESPCMD_READ);
     esp_send_byte(fd);
@@ -730,7 +732,7 @@ void main(void) {
     bool quit         = false;
     bool prev_shifted = false;
 
-    const char *path = (const char *)0xFF00;
+    const char *path = get_pgm_arg();
     new_empty_file(path);
 
     render_status = true;

@@ -76,6 +76,12 @@ void AssemblyListing::load(const std::string &_path) {
                 // File switch
                 curFile = line.substr(5, line.rfind(" ****") - 5);
 
+                // Remove path from filename
+                size_t pos = curFile.rfind("/");
+                if (pos != curFile.npos) {
+                    curFile = curFile.substr(pos + 1);
+                }
+
                 if (prevLineHasInclude) {
                     lineNrStack.push(lineNr);
                     lineNr = 1;
@@ -92,24 +98,22 @@ void AssemblyListing::load(const std::string &_path) {
 
                 continue;
 
-            } else if (line.rfind("                        ", 0) == 0) {
-                line = line.substr(24);
+            } else if (line.rfind("                ", 0) == 0) {
+                // Line without address or bytes
+                line = line.substr(16);
 
-            } else if (line.rfind("              ", 0) == 0) {
-                // Line with just bytes
-                bytes      = line.substr(14);
+            } else if (line.rfind("      ", 0) == 0) {
+                // Line without address, but with bytes
+                bytes      = line.substr(6);
                 line       = "";
                 incrLineNr = false;
 
             } else {
-                size_t n = line.find_first_of(' ', 4);
-                n        = line.find_first_not_of(' ', n);
-                line     = line.substr(n);
-
+                // Line with address and bytes
                 if (line.size() > 4) {
                     addr = strtoul(line.c_str(), nullptr, 16);
                 }
-                bytes = line.substr(5, 11);
+                bytes = line.substr(6, 8);
                 line  = line.substr(16);
             }
 

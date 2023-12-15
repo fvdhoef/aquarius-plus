@@ -81,6 +81,10 @@ static handler_t *directive_handlers[TOK_DIR_LAST + 1] = {
 
 static void parse_file(const char *path);
 
+#ifdef __SDCC
+static char *get_pgm_arg(void) __naked { __asm__("jp 0xF80C"); }
+#endif
+
 void exit_program(void) {
 #ifdef __SDCC
     puts("\nPress enter to quit.\n");
@@ -772,15 +776,15 @@ int main(
     }
     path = argv[1];
 #else
-    // Path is located in buffer at $FF00
-    path = (const char *)0xFF00;
+    // Get path
+    path = get_pgm_arg();
 #endif
 
     // Determine base name (filename without extension) and path of assembler file (temporarily stored in linebuf)
     determine_basename(path);
 
     // Output header
-    puts("Aquarius+ Development Studio - Z80 Assembler V1.1 by Frank van den Hoef\n");
+    puts("Aquarius+ Development Studio - Z80 Assembler V1.1a by Frank van den Hoef\n");
     printf("Assembling %s\n", path);
 
     // Change directory
@@ -836,6 +840,8 @@ int main(
 
     // We're done, exit the program
     puts("Done!\n");
+#ifdef __SDCC
     exit_program();
+#endif
     return 0;
 }
