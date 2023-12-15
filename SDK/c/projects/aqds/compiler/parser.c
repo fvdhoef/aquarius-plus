@@ -2,7 +2,6 @@
 #include "tokenizer.h"
 #include "expr.h"
 #include "symbols.h"
-#include <stdarg.h>
 
 static uint16_t lbl_idx;
 static uint16_t flags;
@@ -148,7 +147,7 @@ static void emit_expr(struct expr_node *node) {
                     emit("add     hl,de");
 
                 } else {
-                    syntax_error();
+                    error_syntax();
                 }
 
             } else {
@@ -165,7 +164,7 @@ static void emit_expr(struct expr_node *node) {
             if (node->left_node->op == TOK_IDENTIFIER) {
                 if (node->left_node->sym->storage == SYM_STORAGE_STATIC) {
                     if (node->left_node->sym->symtype == SYM_SYMTYPE_ARRAY)
-                        syntax_error();
+                        error_syntax();
 
                     if (node->left_node->sym->typespec == SYM_TYPESPEC_INT || node->left_node->sym->symtype == SYM_SYMTYPE_PTR) {
                         emit("ld      (_%s),hl", node->left_node->sym->name);
@@ -184,7 +183,7 @@ static void emit_expr(struct expr_node *node) {
                         emit("ld      (ix+%d),h", node->left_node->sym->value + 1);
                     }
                 } else {
-                    syntax_error();
+                    error_syntax();
                 }
 
             } else {
@@ -550,7 +549,7 @@ static struct symbol *parse_var(uint8_t storage, int value) {
         if (get_token() == '[') {
             ack_token();
             if (is_ptr || storage != SYM_STORAGE_STATIC)
-                syntax_error();
+                error_syntax();
 
             sym->symtype = SYM_SYMTYPE_ARRAY;
 
@@ -559,7 +558,7 @@ static struct symbol *parse_var(uint8_t storage, int value) {
             } else {
                 struct expr_node *node = parse_expression();
                 if (!node || (node->op != TOK_CONSTANT))
-                    syntax_error();
+                    error_syntax();
                 sym->value = node->val;
             }
             expect_tok_ack(']');
@@ -571,7 +570,7 @@ static struct symbol *parse_var(uint8_t storage, int value) {
         return sym;
 
     } else {
-        syntax_error();
+        error_syntax();
         return NULL;
     }
 }
@@ -688,16 +687,11 @@ void parse(void) {
                     offset += 2;
                 }
 
-                token = get_token();
-                if (token == ')') {
+                if (get_token() == ')') {
                     ack_token();
                     break;
                 }
-                if (token == ',') {
-                    ack_token();
-                } else {
-                    error("Expected comma");
-                }
+                expect_tok_ack(',');
             }
 
             emit("push    ix");
@@ -732,7 +726,7 @@ void parse(void) {
 
                     if (get_token() == TOK_STRING_LITERAL) {
                         if (sym->typespec != SYM_TYPESPEC_CHAR)
-                            syntax_error();
+                            error_syntax();
 
                         elements = emit_str_bytes(tok_strval, 0);
                         ack_token();
@@ -743,7 +737,7 @@ void parse(void) {
                         while (1) {
                             struct expr_node *node = parse_expression();
                             if (!node || node->op != TOK_CONSTANT)
-                                syntax_error();
+                                error_syntax();
 
                             if (sym->typespec == SYM_TYPESPEC_CHAR)
                                 emit("defb %d", node->val);
@@ -779,7 +773,7 @@ void parse(void) {
                     ack_token();
                     struct expr_node *node = parse_expression();
                     if (!node || (node->op != TOK_CONSTANT && node->op != TOK_STRING_LITERAL))
-                        syntax_error();
+                        error_syntax();
 
                     if (node->op == TOK_CONSTANT)
                         value = node->val;
@@ -790,7 +784,7 @@ void parse(void) {
 
                 if (stridx >= 0) {
                     if (sym->symtype != SYM_SYMTYPE_PTR || sym->typespec != SYM_TYPESPEC_CHAR)
-                        syntax_error();
+                        error_syntax();
 
                     emit("defw __str%d", stridx);
                 } else if (sym->symtype == SYM_SYMTYPE_PTR || sym->typespec == SYM_TYPESPEC_INT) {
@@ -805,7 +799,7 @@ void parse(void) {
 
         // Syntax error
         else {
-            syntax_error();
+            error_syntax();
         }
     }
 

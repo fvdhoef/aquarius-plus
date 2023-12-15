@@ -57,7 +57,7 @@ struct symbol *symbol_find(const char *name, uint8_t name_len, bool allow_undefi
         }
     }
     if (!allow_undefined)
-        error("Symbol not found");
+        error_sym_not_found(name);
     return NULL;
 }
 
@@ -77,7 +77,7 @@ struct symbol *symbol_add(const char *name, uint8_t name_len) {
         sym = (struct symbol *)((uint8_t *)sym_start - sym_size);
     }
     if ((uint8_t *)sym < (uint8_t *)getheap())
-        error("Out of memory!");
+        error_out_of_memory();
 
     sym->scope_idx = scope_idx;
     sym->symtype   = 0;
@@ -129,7 +129,7 @@ struct string *strings_add(const char *buf, uint8_t buf_len) {
     struct string *str = str_end;
     str_end            = (struct string *)((uint8_t *)str_end + str_size);
     if ((uint8_t *)str_end > (uint8_t *)sym_start)
-        error("Out of memory!");
+        error_out_of_memory();
 
     str->idx     = str_idx;
     str->buf_len = buf_len;

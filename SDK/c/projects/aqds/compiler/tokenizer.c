@@ -1,7 +1,6 @@
 #include "tokenizer.h"
 #include "expr.h"
 #include "symbols.h"
-#include <stdarg.h>
 
 static char    linebuf[256];
 int            tok_value;
@@ -23,36 +22,13 @@ static bool is_hexadecimal(uint8_t ch) {
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F');
 }
 
-void error(const char *fmt, ...) {
-    if (cur_file_ctx)
-        printf("\n%s:%u Error: ", cur_file_ctx->path, cur_file_ctx->linenr);
-    else
-        printf("\nError: ");
-
-    va_list ap;
-    va_start(ap, fmt);
-    vprintf(fmt, ap);
-    va_end(ap);
-
-    printf("\n");
-    exit_program();
-}
-
-void syntax_error(void) {
-    error("Syntax error");
-}
-
-void eof_error(void) {
-    error("Unexpected end-of-file");
-}
-
 static void skip_whitespace(void) {
     if (!cur_p)
         return;
     while (cur_p[0] == ' ' || cur_p[0] == '\t' || cur_p[0] == '\r' || cur_p[0] == '\n')
         cur_p++;
     if (cur_p[0] != 0 && cur_p[0] < ' ')
-        error("Invalid character");
+        error_syntax();
 }
 
 static void expect(uint8_t ch) {
@@ -151,11 +127,11 @@ static bool nextline(void) {
         } else if (strncmp(cur_p, "#define", 7) == 0) {
             cur_p += 7;
             if (cur_p[0] != ' ' && cur_p[0] != '\t')
-                syntax_error();
+                error_syntax();
             skip_whitespace();
 
             if (cur_p[0] != '_' && !is_alpha(cur_p[0]))
-                syntax_error();
+                error_syntax();
 
             char *p = cur_p;
             while (p[0] == '_' || is_alpha(p[0]) || is_decimal(p[0])) {
@@ -173,11 +149,11 @@ static bool nextline(void) {
             struct expr_node *node = parse_expression();
             crossline_disable      = false;
             if (cur_token != TOK_EOL)
-                syntax_error();
+                error_syntax();
             ack_token();
 
             if (!node || node->op != TOK_CONSTANT)
-                syntax_error();
+                error_syntax();
             sym_def->value = node->val;
 
         } else if (cur_p && cur_p[0] != 0) {
@@ -254,7 +230,7 @@ static uint8_t _get_token(void) {
             tok_value = 0;
 
             if (!is_hexadecimal(cur_p[0]))
-                syntax_error();
+                error_syntax();
 
             while (1) {
                 uint8_t ch = *cur_p;
@@ -286,7 +262,7 @@ static uint8_t _get_token(void) {
             if (cur_p[0] == '\\') {
                 tok_value = esq_seq();
             } else if (cur_p[0] < ' ' && cur_p[0] != '\t') {
-                error("Invalid character");
+                error_syntax();
             } else {
                 tok_value = *(cur_p++);
             }

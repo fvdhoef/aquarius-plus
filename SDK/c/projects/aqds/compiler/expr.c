@@ -48,7 +48,7 @@ static struct expr_node *parse_primary_expr(void) {
                 sym->symtype = SYM_SYMTYPE_FUNC;
                 sym->storage = SYM_STORAGE_STATIC;
             } else {
-                error("Symbol not found!");
+                error_sym_not_found(tok_strval);
             }
         }
 
@@ -70,11 +70,11 @@ static struct expr_node *parse_primary_expr(void) {
         ack_token();
         node = _parse_expression();
         if (get_token() != ')')
-            syntax_error();
+            error_syntax();
         ack_token();
 
     } else {
-        syntax_error();
+        error_syntax();
     }
     return node;
 }
@@ -87,8 +87,7 @@ static struct expr_node *parse_postfix_expr(void) {
             ack_token();
             result = alloc_node(TOK_FUNC_CALL, result, NULL, SYM_SYMTYPE_VALUE, SYM_TYPESPEC_INT);
 
-            token = get_token();
-            if (token == ')') {
+            if (get_token() == ')') {
                 ack_token();
             } else {
                 struct expr_node **list_next = &result->right_node;
@@ -98,16 +97,11 @@ static struct expr_node *parse_postfix_expr(void) {
                     *list_next = alloc_node(TOK_FUNC_ARG, expr, NULL, expr->symtype, expr->typespec);
                     list_next  = &(*list_next)->right_node;
 
-                    token = get_token();
-                    if (token == ')') {
+                    if (get_token() == ')') {
                         ack_token();
                         break;
                     }
-                    if (token == ',') {
-                        ack_token();
-                    } else {
-                        error("Expected comma");
-                    }
+                    expect_tok_ack(',');
                 }
             }
 
@@ -186,7 +180,7 @@ static struct expr_node *parse_cast_expr(void) {
         } else {
             struct expr_node *expr = _parse_expression();
             if (get_token() != ')')
-                syntax_error();
+                error_syntax();
             ack_token();
             return expr;
         }

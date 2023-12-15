@@ -1,10 +1,11 @@
 #ifndef _COMMON_H
 #define _COMMON_H
 
-#define DEBUG_OUTPUT
+// #define DEBUG_OUTPUT
 
 #include "aqplus.h"
 #include <stdbool.h>
+#include <stdarg.h>
 
 #ifndef __SDCC
 #include <unistd.h>
@@ -22,8 +23,11 @@ extern const char      *filename_cb;
 extern char             tmpbuf[256];
 
 void error(const char *fmt, ...);
-void syntax_error(void);
-void eof_error(void);
+void error_out_of_memory(void);
+void error_syntax(void);
+void error_eof(void);
+void error_sym_not_found(const char *name);
+
 void exit_program(void);
 void check_esp_result(int16_t result);
 void determine_basename(const char *path);

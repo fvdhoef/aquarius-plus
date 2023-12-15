@@ -35,7 +35,7 @@ void *malloc(size_t size) {
 
     uint16_t remaining = (uint8_t *)0xF000 - endp;
     if (size > remaining) {
-        error("Out of memory!");
+        error_out_of_memory();
     }
 
     uint8_t *result = endp;
@@ -43,6 +43,26 @@ void *malloc(size_t size) {
     return result;
 }
 #endif
+
+void error(const char *fmt, ...) {
+    if (cur_file_ctx)
+        printf("\n%s:%u Error: ", cur_file_ctx->path, cur_file_ctx->linenr);
+    else
+        printf("\nError: ");
+
+    va_list ap;
+    va_start(ap, fmt);
+    vprintf(fmt, ap);
+    va_end(ap);
+
+    printf("\n");
+    exit_program();
+}
+
+void error_out_of_memory(void) { error("Out of memory"); }
+void error_syntax(void) { error("Syntax error"); }
+void error_eof(void) { error("Unexpected end-of-file"); }
+void error_sym_not_found(const char *name) { error("Symbol '%s' not found", name); }
 
 void check_esp_result(int16_t result) {
     if (result < 0) {
@@ -166,13 +186,16 @@ bool pop_file(void) {
     return false;
 }
 
-void expect_tok_ack(uint8_t token) {
-    if (get_token() != token)
-        syntax_error();
-    ack_token();
+void expect_tok(uint8_t token) {
+    if (get_token() != token) {
+        if (token > ' ')
+            error("Expected token '%c'\n", token);
+        else
+            error("Expected token %u\n", token);
+    }
 }
 
-void expect_tok(uint8_t token) {
-    if (get_token() != token)
-        syntax_error();
+void expect_tok_ack(uint8_t token) {
+    expect_tok(token);
+    ack_token();
 }
