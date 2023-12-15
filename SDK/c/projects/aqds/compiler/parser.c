@@ -124,7 +124,7 @@ static void emit_expr(struct expr_node *node) {
         }
 
         case TOK_DEREF: {
-            if (node->left_node->symtype != SYM_SYMTYPE_PTR)
+            if (node->left_node->symtype != SYM_SYMTYPE_PTR && node->left_node->symtype != SYM_SYMTYPE_ARRAY)
                 error("Deref non-pointer");
 
             emit_expr(node->left_node);

@@ -41,7 +41,7 @@ puts(char* s) {
 // char b[10] = {1,2,3};
 char c[20] = "Hello";
 
-// int bla[5] = {12345};
+int bla[5] = {12345};
 
 ioport IO_VCTRL = 0xE0;
 
@@ -70,9 +70,6 @@ main() {
     // int q;
     // int w;
     
-    // FIXME: This produces incorrect code
-    // *(bla+2) = *(bla+3) = *bla;
-
     // puts("Hello world!\r\n");
     c[5] = c[0];
     puts(c);
