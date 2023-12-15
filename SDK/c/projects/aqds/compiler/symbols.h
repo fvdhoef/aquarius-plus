@@ -21,6 +21,7 @@ enum {
     SYM_STORAGE_STATIC,   // Global variable referred to by label name
     SYM_STORAGE_STACK,    // Variable stored on stack, value indicates offset
     SYM_STORAGE_CONSTANT, // Constant value stored in value
+    SYM_STORAGE_IOPORT,   // IO port
 };
 
 struct symbol {

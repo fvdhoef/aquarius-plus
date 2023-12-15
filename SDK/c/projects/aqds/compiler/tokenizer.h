@@ -21,6 +21,7 @@ enum {
     TOK_ELSE,     // else
     TOK_IF,       // if
     TOK_INT,      // int
+    TOK_IOPORT,   // ioport
     TOK_RETURN,   // return
     TOK_WHILE,    // while
     TOK_OP_EQ,    // ==

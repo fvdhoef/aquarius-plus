@@ -106,6 +106,12 @@ static void emit_expr(struct expr_node *node) {
                 } else {
                     error("Unimplemented local symbol type in expression!");
                 }
+
+            } else if (sym->storage == SYM_STORAGE_IOPORT) {
+                emit("in      a,($%02X)", sym->value);
+                emit("ld      h,0");
+                emit("ld      l,a");
+
             } else {
                 error("Invalid storage class");
             }
@@ -182,6 +188,11 @@ static void emit_expr(struct expr_node *node) {
                     if (node->left_node->sym->typespec == SYM_TYPESPEC_INT || node->left_node->sym->symtype == SYM_SYMTYPE_PTR) {
                         emit("ld      (ix+%d),h", node->left_node->sym->value + 1);
                     }
+
+                } else if (node->left_node->sym->storage == SYM_STORAGE_IOPORT) {
+                    emit("ld      a,l");
+                    emit("out     ($%02X),a", node->left_node->sym->value);
+
                 } else {
                     error_syntax();
                 }
@@ -542,6 +553,25 @@ static void parse_statement(int lbl_continue, int lbl_break) {
     }
 }
 
+static struct symbol *parse_ioport(void) {
+    expect_tok_ack(TOK_IOPORT);
+    expect_tok(TOK_IDENTIFIER);
+    struct symbol *sym = symbol_add(tok_strval, 0);
+    ack_token();
+
+    sym->symtype  = SYM_SYMTYPE_VAR;
+    sym->typespec = SYM_TYPESPEC_CHAR;
+    sym->storage  = SYM_STORAGE_IOPORT;
+
+    expect_tok_ack('=');
+    struct expr_node *node = parse_expression();
+    if (node->op != TOK_CONSTANT)
+        error_syntax();
+    sym->value = node->val;
+    expect_tok_ack(';');
+    return sym;
+}
+
 static struct symbol *parse_var(uint8_t storage, int value) {
     uint8_t is_const = 0;
     if (get_token() == TOK_CONST) {
@@ -610,6 +640,9 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             // End of compound statement
             ack_token();
             break;
+
+        } else if (token == TOK_IOPORT) {
+            parse_ioport();
 
         } else if (token == TOK_CHAR || token == TOK_INT || token == TOK_CONST) {
             struct symbol *sym = parse_var(SYM_STORAGE_STACK, cur_ix_offset);
@@ -743,6 +776,11 @@ void parse(void) {
 
             symbol_pop_scope();
             emit_string_literals();
+        }
+
+        // IO port definition?
+        else if (token == TOK_IOPORT) {
+            parse_ioport();
         }
 
         // Variable definition?

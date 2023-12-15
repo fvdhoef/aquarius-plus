@@ -43,6 +43,8 @@ char c[20] = "Hello";
 
 // int bla[5] = {12345};
 
+ioport IO_VCTRL = 0xE0;
+
 const char *DINGES = 0x3000;
 
 ///////////////////////////////////////////////////////////
@@ -50,9 +52,6 @@ const char *DINGES = 0x3000;
 ///////////////////////////////////////////////////////////
 main() {
     const char BLAAT = 'A';
-
-
-    *DINGES = 5;
 
     int x = 0;
     while (x < 10) {

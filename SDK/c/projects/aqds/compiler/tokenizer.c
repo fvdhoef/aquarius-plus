@@ -314,6 +314,7 @@ static uint8_t _get_token(void) {
             if (strcmp(tok_strval, "else") == 0) return TOK_ELSE;
             if (strcmp(tok_strval, "if") == 0) return TOK_IF;
             if (strcmp(tok_strval, "int") == 0) return TOK_INT;
+            if (strcmp(tok_strval, "ioport") == 0) return TOK_IOPORT;
             if (strcmp(tok_strval, "return") == 0) return TOK_RETURN;
             if (strcmp(tok_strval, "while") == 0) return TOK_WHILE;
             // clang-format on
