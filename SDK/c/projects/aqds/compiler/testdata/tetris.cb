@@ -525,31 +525,36 @@ draw_static_screen() {
 }
 
 // Draw score/level/lines stats
+int  old_score = 0xFFFF;
+char old_level = 0xFF;
+int  old_lines = 0xFFFF;
+
 draw_stats() {
-    // static uint32_t old_score = 0xFFFFFFFFUL;
-    // static uint8_t  old_level = 0xFF;
-    // static uint16_t old_lines = 0xFFFF;
+    tmpstr[0] = ' ';
+    tmpstr[1] = ' ';
+    tmpstr[7] = ' ';
+    tmpstr[8] = 0;
 
-    // tmpstr[8] = '\0';
-    // tmpstr[7] = ' ';
+    if (old_score != score) {
+        old_score = score;
+        itoa(tmpstr + 2, score);
+        tmpstr[7] = ' ';
+        draw_text(25, 12, tmpstr);
+    }
 
-    // if (old_score != score) {
-    //     old_score = score;
-    //     u32tos(score);
-    //     draw_text(25, 12, tmpstr);
-    // }
+    if (old_level != level) {
+        old_level = level;
+        itoa(tmpstr + 2, level);
+        tmpstr[7] = ' ';
+        draw_text(25, 15, tmpstr);
+    }
 
-    // if (old_level != level) {
-    //     old_level = level;
-    //     u16tos(level);
-    //     draw_text(25, 15, tmpstr);
-    // }
-
-    // if (old_lines != lines) {
-    //     old_lines = lines;
-    //     u16tos(lines);
-    //     draw_text(25, 18, tmpstr);
-    // }
+    if (old_lines != lines) {
+        old_lines = lines;
+        itoa(tmpstr + 2, lines);
+        tmpstr[7] = ' ';
+        draw_text(25, 18, tmpstr);
+    }
 }
 
 // Draw tetromino preview content
@@ -578,6 +583,14 @@ draw_preview() {
     draw_tetromino(x, y, next_tetromino, 0, 0, 0);
 }
 
+get_joystick() {
+    char old_addr = IO_PSG1ADDR;
+    IO_PSG1ADDR   = 14;
+    char joyval   = IO_PSG1DATA;
+    IO_PSG1ADDR   = old_addr;
+    return joyval;
+}
+
 // Compose keys bitmap with only the keys used by the game
 getkeys() {
     char result = 0;
@@ -594,19 +607,19 @@ getkeys() {
     if (kb_pressing(KEY_M) || kb_pressing(KEY_X))
         result = result | KBM_ROTATE_CW;
 
-    // char joyval = ~get_joystick();
-    // if (joyval & (1 << 0))
-    //     result |= KBM_DOWN;
-    // if (joyval & (1 << 1))
-    //     result |= KBM_RIGHT;
-    // if (joyval & (1 << 2))
-    //     result |= KBM_UP;
-    // if (joyval & (1 << 3))
-    //     result |= KBM_LEFT;
-    // if (joyval & (1 << 6))
-    //     result |= KBM_ROTATE_CW;
-    // if (joyval & (1 << 7))
-    //     result |= KBM_ROTATE_CCW;
+    char joyval = ~get_joystick();
+    if (joyval & (1 << 0))
+        result = result | KBM_DOWN;
+    if (joyval & (1 << 1))
+        result = result | KBM_RIGHT;
+    if (joyval & (1 << 2))
+        result = result | KBM_UP;
+    if (joyval & (1 << 3))
+        result = result | KBM_LEFT;
+    if (joyval & (1 << 6))
+        result = result | KBM_ROTATE_CW;
+    if (joyval & (1 << 7))
+        result = result | KBM_ROTATE_CCW;
 
     return result;
 }
@@ -933,6 +946,9 @@ play_marathon() {
 }
 
 init() {
+    // Enable turbo mode
+    IO_SYSCTRL = 4;
+
     // Map video RAM to 0xC000
     IO_BANK3 = 20;
 
@@ -997,5 +1013,6 @@ main() {
 #asm
     include "../tiledata.asm"
     include "../lib/memcpy.asm"
+    include "../lib/itoa.asm"
 #endasm
     // clang-format on
