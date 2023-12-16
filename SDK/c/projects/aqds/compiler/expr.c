@@ -377,8 +377,8 @@ static void simplify_expr(struct expr_node *node) {
         node->left_node && node->left_node->op == TOK_CONSTANT &&
         node->right_node && node->right_node->op == TOK_CONSTANT) {
 
-        int lv = node->left_node->val;
-        int rv = node->right_node->val;
+        int16_t lv = node->left_node->val;
+        int16_t rv = node->right_node->val;
 
         // clang-format off
         switch (node->op) {
