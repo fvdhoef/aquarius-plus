@@ -81,6 +81,10 @@ void AssemblyListing::load(const std::string &_path) {
                 if (pos != curFile.npos) {
                     curFile = curFile.substr(pos + 1);
                 }
+                pos = curFile.rfind("\\");
+                if (pos != curFile.npos) {
+                    curFile = curFile.substr(pos + 1);
+                }
 
                 if (prevLineHasInclude) {
                     lineNrStack.push(lineNr);
