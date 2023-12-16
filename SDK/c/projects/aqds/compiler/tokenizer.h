@@ -19,6 +19,7 @@ enum {
     TOK_CONST,    // const
     TOK_CONTINUE, // continue
     TOK_ELSE,     // else
+    TOK_EXTERN,   // extern
     TOK_IF,       // if
     TOK_INT,      // int
     TOK_IOPORT,   // ioport

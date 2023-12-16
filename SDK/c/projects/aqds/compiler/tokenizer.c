@@ -312,6 +312,7 @@ static uint8_t _get_token(void) {
             if (strcmp(tok_strval, "const") == 0) return TOK_CONST;
             if (strcmp(tok_strval, "continue") == 0) return TOK_CONTINUE;
             if (strcmp(tok_strval, "else") == 0) return TOK_ELSE;
+            if (strcmp(tok_strval, "extern") == 0) return TOK_EXTERN;
             if (strcmp(tok_strval, "if") == 0) return TOK_IF;
             if (strcmp(tok_strval, "int") == 0) return TOK_INT;
             if (strcmp(tok_strval, "ioport") == 0) return TOK_IOPORT;

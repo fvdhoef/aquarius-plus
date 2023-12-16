@@ -783,6 +783,13 @@ void parse(void) {
             parse_ioport();
         }
 
+        // External variable definition?
+        else if (token == TOK_EXTERN) {
+            ack_token();
+            parse_var(SYM_STORAGE_STATIC, 0);
+            expect_tok_ack(';');
+        }
+
         // Variable definition?
         else if (token == TOK_CHAR || token == TOK_INT || token == TOK_CONST) {
             struct symbol *sym = parse_var(SYM_STORAGE_STATIC, 0);
