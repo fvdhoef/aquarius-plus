@@ -646,6 +646,8 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
         symbol_push_scope();
     expect_tok_ack('{');
 
+    int ix_offset = cur_ix_offset;
+
     while (1) {
         int token = get_token();
         if (token == '}') {
@@ -684,8 +686,14 @@ static void parse_compound(bool new_scope, int lbl_continue, int lbl_break) {
             parse_statement(lbl_continue, lbl_break);
         }
     }
-    if (new_scope)
+    if (new_scope) {
+        int num_pops = (ix_offset - cur_ix_offset) / 2;
+        while (num_pops--) {
+            emit("pop     af");
+        }
+        cur_ix_offset = ix_offset;
         symbol_pop_scope();
+    }
 }
 
 static int emit_str_bytes(char *str, uint16_t buf_len) {
