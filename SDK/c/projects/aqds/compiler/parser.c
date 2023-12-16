@@ -563,7 +563,7 @@ static void parse_statement(int lbl_continue, int lbl_break) {
             emit_expr(node);
             emit("ld      a,h");
             emit("or      l");
-            emit("jr      z,.l%d", lbl_break);
+            emit("jp      z,.l%d", lbl_break);
         }
         emit("jr      .l%d", lbl_block);
         expect_tok_ack(';');

@@ -286,11 +286,10 @@ int wall_kick_offsets_i_y[8 * 5] = {
 // clang-format on
 
 kb_scan() {
-    char i = 0;
-    while (i < 8) {
+    char i;
+    for (i = 0; i < 8; i = i + 1)
         kb_pressing_prev[i] = kb_pressing_keys[i];
-        i                   = i + 1;
-    }
+
     kb_pressing_keys[0] = ~IO_KEYBOARD_COL0;
     kb_pressing_keys[1] = ~IO_KEYBOARD_COL1;
     kb_pressing_keys[2] = ~IO_KEYBOARD_COL2;
@@ -341,6 +340,8 @@ draw_tetromino(char i, char j, char tetromino, char rot, char check, char lock) 
     rot      = rot & 3;
     char *p  = 0;
     char  sz = 0;
+    char  y;
+    char  x;
 
     if (tetromino == TM_O) {
         sz = 2;
@@ -371,29 +372,19 @@ draw_tetromino(char i, char j, char tetromino, char rot, char check, char lock) 
     }
 
     if (check) {
-        char y = 0;
-        char x;
-
-        while (y < sz) {
-            x = 0;
-            while (x < sz) {
+        for (y = 0; y < sz; y = y + 1) {
+            for (x = 0; x < sz; x = x + 1) {
                 char val = *p;
                 p        = p + 1;
                 if (val && get_tile(i + x, j + y) != bg_tile)
                     return 0;
-                x = x + 1;
             }
-            y = y + 1;
         }
         return 1;
 
     } else {
-        char y = 0;
-        char x;
-
-        while (y < sz) {
-            x = 0;
-            while (x < sz) {
+        for (y = 0; y < sz; y = y + 1) {
+            for (x = 0; x < sz; x = x + 1) {
                 char val = *p;
                 p        = p + 1;
                 if (val) {
@@ -405,9 +396,7 @@ draw_tetromino(char i, char j, char tetromino, char rot, char check, char lock) 
                         val = MARKER_TILE;
                     set_tile(i + x, jy, val);
                 }
-                x = x + 1;
             }
-            y = y + 1;
         }
         return 1;
     }
@@ -448,14 +437,13 @@ set_tetromino_sprites(char x, char y, char tetromino, char rot) {
 
     IO_VSPRSEL = 0;
 
-    char j = 0;
+    char j;
     char i;
     char val;
     int  sx;
 
-    while (j < sz) {
-        i = 0;
-        while (i < sz) {
+    for (j = 0; j < sz; j = j + 1) {
+        for (i = 0; i < sz; i = i + 1) {
             val = *p;
             p   = p + 1;
             if (val) {
@@ -467,9 +455,7 @@ set_tetromino_sprites(char x, char y, char tetromino, char rot) {
                 IO_VSPRATTR = 0x91;
                 IO_VSPRSEL  = IO_VSPRSEL + 1;
             }
-            i = i + 1;
         }
-        j = j + 1;
     }
 }
 
@@ -498,27 +484,19 @@ draw_static_screen() {
     char j;
 
     // Draw playfield borders
-    j = 0;
-    while (j < PLAYFIELD_H) {
+    for (j = 0; j < PLAYFIELD_H; j = j + 1) {
         set_tile(PLAYFIELD_XL - 1, j + PLAYFIELD_YT, 32);
         set_tile(PLAYFIELD_XR + 1, j + PLAYFIELD_YT, 32);
-        j = j + 1;
     }
-    i = 0;
-    while (i < PLAYFIELD_W + 2) {
+    for (i = 0; i < PLAYFIELD_W + 2; i = i + 1) {
         set_tile(i + PLAYFIELD_W, PLAYFIELD_YB + 1, 33);
-        i = i + 1;
     }
 
     // Draw playfield content
-    j = 0;
-    while (j < PLAYFIELD_H) {
-        i = 0;
-        while (i < PLAYFIELD_W) {
+    for (j = 0; j < PLAYFIELD_H; j = j + 1) {
+        for (i = 0; i < PLAYFIELD_W; i = i + 1) {
             set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, bg_tile);
-            i = i + 1;
         }
-        j = j + 1;
     }
 
     // Draw tetromino preview borders
@@ -591,14 +569,11 @@ draw_preview() {
     // Draw tetromino preview content
     char j;
     char i;
-    j = 0;
-    while (j < 4) {
-        i = 0;
-        while (i < 4) {
+
+    for (j = 0; j < 4; j = j + 1) {
+        for (i = 0; i < 4; i = i + 1) {
             set_tile(i + 27, j + 5, 1);
-            i = i + 1;
         }
-        j = j + 1;
     }
 
     char x = 28;
@@ -703,8 +678,8 @@ rotate(char cw) {
     if (cur_tetromino == TM_O)
         max_i = 0;
 
-    char i = 0;
-    while (i <= max_i) {
+    char i;
+    for (i = 0; i <= max_i; i = i + 1) {
         char new_posx = cur_posx + wall_kick_offsets_x[i];
         char new_posy = cur_posy + wall_kick_offsets_y[i];
         if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, 1, 0)) {
@@ -713,7 +688,6 @@ rotate(char cw) {
             cur_posy = new_posy;
             break;
         }
-        i = i + 1;
     }
 }
 
@@ -766,11 +740,10 @@ next_piece() {
 
 // Check if given line is full
 check_line(char line) {
-    char i = 0;
-    while (i < PLAYFIELD_W) {
+    char i;
+    for (i = 0; i < PLAYFIELD_W; i = i + 1) {
         if (get_tile(i + PLAYFIELD_XL, line + PLAYFIELD_YT) == bg_tile)
             return 0;
-        i = i + 1;
     }
     return 1;
 }
@@ -781,28 +754,20 @@ check_lines() {
     int  j;
     int  i;
 
-    j = 0;
-    while (j < PLAYFIELD_H) {
+    for (j = 0; j < PLAYFIELD_H; j = j + 1) {
         if (check_line(j)) {
-            i = 0;
-            while (i < PLAYFIELD_W) {
+            for (i = 0; i < PLAYFIELD_W; i = i + 1) {
                 set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, MARKER_TILE);
-                i = i + 1;
             }
             lines_full = lines_full + 1;
         }
-        j = j + 1;
     }
-
     if (lines_full == 0)
         return;
 
     // Small delay
-    i = 0;
-    while (i < 5) {
+    for (i = 0; i < 5; i = i + 1)
         frame();
-        i = i + 1;
-    }
 
     // Remove all marked lines
     int line = PLAYFIELD_H - 1;
@@ -857,11 +822,9 @@ lock_piece() {
     IO_VCTRL = IO_VCTRL & ~VCTRL_SPR_EN;
 
     // Small delay
-    char i = 0;
-    while (i < 5) {
+    char i;
+    for (i = 0; i < 5; i = i + 1)
         frame();
-        i = i + 1;
-    }
     draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, 0, 0);
 
     // Switch to next piece
@@ -979,28 +942,19 @@ play_marathon() {
     // Animation
 
     // Draw playfield content
-    int j = PLAYFIELD_H - 1;
+    int j;
     int i;
-    while (j >= 0) {
-        i = 0;
-        while (i < PLAYFIELD_W) {
+    for (j = PLAYFIELD_H - 1; j >= 0; j = j - 1) {
+        for (i = 0; i < PLAYFIELD_W; i = i + 1)
             set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, 31);
-            i = i + 1;
-        }
         frame();
         frame();
-        j = j - 1;
     }
-    j = 0;
-    while (j < PLAYFIELD_H) {
-        i = 0;
-        while (i < PLAYFIELD_W) {
+    for (j = 0; j < PLAYFIELD_H; j = j + 1) {
+        for (i = 0; i < PLAYFIELD_W; i = i + 1)
             set_tile2(i + PLAYFIELD_XL, j + PLAYFIELD_YT, gameover_playfield[j * 10 + i] | 0x1100);
-            i = i + 1;
-        }
         frame();
         frame();
-        j = j + 1;
     }
 
     char blink = 0;
@@ -1008,8 +962,7 @@ play_marathon() {
     char idx;
     while (wait) {
         // Short blink delay
-        i = 0;
-        while (i < 20) {
+        for (i = 0; i < 20; i = i + 1) {
             frame();
 
             // Quit game on CTRL-C (or ESCAPE)
@@ -1023,8 +976,6 @@ play_marathon() {
             if (~prev_keys & keys)
                 wait = 0;
             prev_keys = keys;
-
-            i = i + 1;
         }
 
         if (blink)
@@ -1037,6 +988,9 @@ play_marathon() {
 }
 
 init() {
+    int i;
+    int j;
+
     // Enable turbo mode
     IO_SYSCTRL = 4;
 
@@ -1044,11 +998,9 @@ init() {
     IO_BANK3 = 20;
 
     // Set tile data palette
-    char i = 0;
-    while (i < 32) {
+    for (i = 0; i < 32; i = i + 1) {
         IO_VPALSEL  = 32 + i;
         IO_VPALDATA = tile_palette[i];
-        i           = i + 1;
     }
     // Copy tile data into VRAM
     memcpy(vram_tiledata, tile_data, tile_data_end - tile_data);
@@ -1059,11 +1011,9 @@ init() {
     IO_VSCRY   = 0;
 
     // Disable all sprites
-    i = 0;
-    while (i < 64) {
+    for (i = 0; i < 64; i = i + 1) {
         IO_VSPRSEL  = i;
         IO_VSPRATTR = 0;
-        i           = i + 1;
     }
 
     bgtiles_dst      = vram_tiledata + 32 * 46;
@@ -1072,10 +1022,8 @@ init() {
     tetromino_random = IO_VLINE % 7;
 
     // Draw background
-    char j = 0;
-    while (j < 25) {
-        i = 0;
-        while (i < 40) {
+    for (j = 0; j < 25; j = j + 1) {
+        for (i = 0; i < 40; i = i + 1) {
             char idx;
             if ((i ^ j) & 1) {
                 idx = 47;
@@ -1083,9 +1031,7 @@ init() {
                 idx = 46;
             }
             set_tile(i, j, idx);
-            i = i + 1;
         }
-        j = j + 1;
     }
 }
 
