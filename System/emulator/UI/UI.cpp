@@ -1225,6 +1225,11 @@ void UI::wndAssemblyListing(bool *p_open) {
                 }
             }
         } else {
+            if (ImGui::Button("Reload")) {
+                auto path = asmListing.getPath();
+                asmListing.load(path);
+            }
+            ImGui::SameLine();
             if (ImGui::Button("X")) {
                 asmListing.clear();
             }
