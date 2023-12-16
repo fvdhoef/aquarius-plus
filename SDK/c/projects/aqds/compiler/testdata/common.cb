@@ -1,0 +1,30 @@
+#asm
+    include "../../../../../../../EndUser/sdcard/sdk/asm/inc/basic_stub.inc"
+main:
+    jp      _main
+#endasm
+
+ioport IO_VCTRL    = 0xE0;
+ioport IO_VSCRX_L  = 0xE1;
+ioport IO_VSCRX_H  = 0xE2;
+ioport IO_VSCRY    = 0xE3;
+ioport IO_VSPRSEL  = 0xE4;
+ioport IO_VSPRX_L  = 0xE5;
+ioport IO_VSPRX_H  = 0xE6;
+ioport IO_VSPRY    = 0xE7;
+ioport IO_VSPRIDX  = 0xE8;
+ioport IO_VSPRATTR = 0xE9;
+ioport IO_VPALSEL  = 0xEA;
+ioport IO_VPALDATA = 0xEB;
+ioport IO_VLINE    = 0xEC;
+ioport IO_VIRQLINE = 0xED;
+ioport IO_IRQMASK  = 0xEE;
+ioport IO_IRQSTAT  = 0xEF;
+ioport IO_BANK0    = 0xF0;
+ioport IO_BANK1    = 0xF1;
+ioport IO_BANK2    = 0xF2;
+ioport IO_BANK3    = 0xF3;
+
+const char VCTRL_TEXT_EN   = (1 << 0);
+const char VCTRL_MODE_TILE = (1 << 1);
+const char VCTRL_SPR_EN    = (1 << 3);

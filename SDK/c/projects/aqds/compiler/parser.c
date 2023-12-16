@@ -995,6 +995,7 @@ void parse(void) {
     if (flags & (FLAGS_USES_DIVSI | FLAGS_USES_MODSI)) {
         int lbl1 = gen_lbl_idx();
         int lbl2 = gen_lbl_idx();
+        int lbl3 = gen_lbl_idx();
 
         emit_lbl("_divsi");
         emit("ld      a,h");
@@ -1022,7 +1023,7 @@ void parse(void) {
         emit_local_lbl(lbl2);
         emit("call    __divu16");
         emit("pop     af");
-        emit("ret     nc");
+        emit("jr      nc,.l%d", lbl3);
         emit("ld      b,a");
         emit("sub     a");
         emit("sub     e");
@@ -1030,7 +1031,8 @@ void parse(void) {
         emit("sbc     a,a");
         emit("sub     d");
         emit("ld      d,a");
-        emit("ld      a,b");   // de:quotient, hl:remainder
+        emit("ld      a,b"); // de:quotient, hl:remainder
+        emit_local_lbl(lbl3);
         emit("ex      de,hl"); // hl:quotient, de:remainder
         emit("ret");
     }
