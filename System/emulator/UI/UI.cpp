@@ -631,40 +631,46 @@ void UI::wndCpuState(bool *p_open) {
         if (ImGui::Button("Step Over")) {
             int tmpBreakpoint = -1;
 
-            uint8_t opcode = emuState.memRead(emuState.z80ctx.PC);
-            if (opcode == 0xCD ||          // CALL nn
-                (opcode & 0xC7) == 0xC4) { // CALL c,nn
-
-                tmpBreakpoint = emuState.z80ctx.PC + 3;
-
-            } else if ((opcode & 0xC7) == 0xC7) { // RST
-                tmpBreakpoint = emuState.z80ctx.PC + 1;
-                if ((opcode & 0x38) == 0x08 ||
-                    (opcode & 0x38) == 0x30) {
-
-                    // Skip one extra byte on RST 08H/30H, since on the Aq these
-                    // system calls absorb the byte following this instruction.
-                    tmpBreakpoint++;
-                }
-
-            } else if (opcode == 0xED) {
-                opcode = emuState.memRead(emuState.z80ctx.PC + 1);
-                if (opcode == 0xB9 || // CPDR
-                    opcode == 0xB1 || // CPIR
-                    opcode == 0xBA || // INDR
-                    opcode == 0xB2 || // INIR
-                    opcode == 0xB8 || // LDDR
-                    opcode == 0xB0 || // LDIR
-                    opcode == 0xBB || // OTDR
-                    opcode == 0xB3) { // OTIR
-                }
-                tmpBreakpoint = emuState.z80ctx.PC + 2;
-            }
-            emuState.tmpBreakpoint = tmpBreakpoint;
-            if (tmpBreakpoint >= 0) {
-                emuState.emuMode = EmuState::Em_Running;
+            if (emuState.z80ctx.halted) {
+                // Step over HALT instruction
+                emuState.z80ctx.halted = 0;
+                emuState.z80ctx.PC++;
             } else {
-                emuState.emuMode = EmuState::Em_Step;
+                uint8_t opcode = emuState.memRead(emuState.z80ctx.PC);
+                if (opcode == 0xCD ||          // CALL nn
+                    (opcode & 0xC7) == 0xC4) { // CALL c,nn
+
+                    tmpBreakpoint = emuState.z80ctx.PC + 3;
+
+                } else if ((opcode & 0xC7) == 0xC7) { // RST
+                    tmpBreakpoint = emuState.z80ctx.PC + 1;
+                    if ((opcode & 0x38) == 0x08 ||
+                        (opcode & 0x38) == 0x30) {
+
+                        // Skip one extra byte on RST 08H/30H, since on the Aq these
+                        // system calls absorb the byte following this instruction.
+                        tmpBreakpoint++;
+                    }
+
+                } else if (opcode == 0xED) {
+                    opcode = emuState.memRead(emuState.z80ctx.PC + 1);
+                    if (opcode == 0xB9 || // CPDR
+                        opcode == 0xB1 || // CPIR
+                        opcode == 0xBA || // INDR
+                        opcode == 0xB2 || // INIR
+                        opcode == 0xB8 || // LDDR
+                        opcode == 0xB0 || // LDIR
+                        opcode == 0xBB || // OTDR
+                        opcode == 0xB3) { // OTIR
+                    }
+                    tmpBreakpoint = emuState.z80ctx.PC + 2;
+                }
+                emuState.tmpBreakpoint = tmpBreakpoint;
+                if (tmpBreakpoint >= 0) {
+                    emuState.emuMode = EmuState::Em_Running;
+                } else {
+                    emuState.emuMode = EmuState::Em_Step;
+                }
             }
         }
 
