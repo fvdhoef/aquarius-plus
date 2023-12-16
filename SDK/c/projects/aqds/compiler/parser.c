@@ -243,6 +243,18 @@ static void emit_expr(struct expr_node *node) {
             emit("ld      l,a");
             break;
 
+        case '!': {
+            int lbl = gen_lbl_idx();
+            emit_expr(node->left_node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit("ld      hl,0");
+            emit("jr      nz,.l%d", lbl);
+            emit("inc     l");
+            emit_local_lbl(lbl);
+            break;
+        }
+
         case '+':
             if (node->right_node->op == TOK_CONSTANT && node->right_node->val == 1) {
                 // Optimize simple +1 case
