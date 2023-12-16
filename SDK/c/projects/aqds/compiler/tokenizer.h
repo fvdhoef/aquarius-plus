@@ -20,6 +20,7 @@ enum {
     TOK_CONTINUE, // continue
     TOK_ELSE,     // else
     TOK_EXTERN,   // extern
+    TOK_FOR,      // for
     TOK_IF,       // if
     TOK_INT,      // int
     TOK_IOPORT,   // ioport

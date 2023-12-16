@@ -93,7 +93,7 @@ int gameover_playfield[20 * 10] = {
     0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
     0x01, 0x01, 0x0F + 'A', 0x0F + 'G', 0x0F + 'A', 0x0F + 'I', 0x0F + 'N', 0x4F, 0x01, 0x01,
     0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
+    0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
 };
 // clang-format on
 
@@ -130,7 +130,7 @@ char tetromino_i[4 * 16] = {
      0, 19,  0,  0,
      0, 20,  0,  0,
      0, 20,  0,  0,
-     0, 21,  0,  0
+     0, 21,  0,  0,
 };
 
 // Tetromino J shape in 4 rotations
@@ -150,7 +150,7 @@ char tetromino_j[4 * 9] = {
     // Rotation 3
      0, 25,  0,
      0, 25,  0,
-    25, 25,  0
+    25, 25,  0,
 };
 
 // Tetromino L shape in 4 rotations
@@ -170,13 +170,13 @@ char tetromino_l[4 * 9] = {
     // Rotation 3
     26, 26,  0,
      0, 26,  0,
-     0, 26,  0
+     0, 26,  0,
 };
 
 // Tetromino O shape (just 1 rotation)
 char tetromino_o[4] = {
     27, 27,
-    27, 27
+    27, 27,
 };
 
 // Tetromino S shape in 4 rotations
@@ -196,7 +196,7 @@ char tetromino_s[4 * 9] = {
     // Rotation 3
     24,  0,  0,
     24, 24,  0,
-     0, 24,  0
+     0, 24,  0,
 };
 
 // Tetromino T shape in 4 rotations
@@ -216,7 +216,7 @@ char tetromino_t[4 * 9] = {
     // Rotation 3
      0, 22,  0,
     22, 22,  0,
-     0, 22,  0
+     0, 22,  0,
 };
 
 // Tetromino Z shape in 4 rotations
@@ -236,7 +236,7 @@ char tetromino_z[4 * 9] = {
     // Rotation 3
      0, 23,  0,
     23, 23,  0,
-    23,  0,  0
+    23,  0,  0,
 };
 
 // Offsets used for rotation
@@ -248,7 +248,7 @@ int wall_kick_offsets_jlstz_x[8 * 5] = {
     0, -1, -1, 0, -1, // CCW:2->R
     0, +1, +1, 0, +1, // CW :2->L
     0, -1, -1, 0, -1, // CCW:L->2
-    0, -1, -1, 0, -1  // CW :L->0
+    0, -1, -1, 0, -1, // CW :L->0
 };
 int wall_kick_offsets_jlstz_y[8 * 5] = {
     0, 0, +1, -2, -2, // CCW:0->L
@@ -258,7 +258,7 @@ int wall_kick_offsets_jlstz_y[8 * 5] = {
     0, 0, +1, -2, -2, // CCW:2->R
     0, 0, +1, -2, -2, // CW :2->L
     0, 0, -1, +2, +2, // CCW:L->2
-    0, 0, -1, +2, +2  // CW :L->0
+    0, 0, -1, +2, +2, // CW :L->0
 };
 
 // Offsets used for rotation
@@ -270,7 +270,7 @@ int wall_kick_offsets_i_x[8 * 5] = {
     0, +1, -2, +1, -2, // CCW:2->R
     0, +2, -1, +2, -1, // CW :2->L
     0, -2, +1, -2, +1, // CCW:L->2
-    0, +1, -2, +1, -2  // CW :L->0
+    0, +1, -2, +1, -2, // CW :L->0
 };
 int wall_kick_offsets_i_y[8 * 5] = {
     0, 0, 0, +2, -1, // CCW:0->L
@@ -280,7 +280,7 @@ int wall_kick_offsets_i_y[8 * 5] = {
     0, 0, 0, -2, +1, // CCW:2->R
     0, 0, 0, +1, -2, // CW :2->L
     0, 0, 0, -1, +2, // CCW:L->2
-    0, 0, 0, -2, +1  // CW :L->0
+    0, 0, 0, -2, +1, // CW :L->0
 };
 
 // clang-format on

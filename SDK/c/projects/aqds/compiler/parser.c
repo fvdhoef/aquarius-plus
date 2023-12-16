@@ -525,18 +525,63 @@ static void parse_statement(int lbl_continue, int lbl_break) {
         struct expr_node *node = parse_expression();
         expect_tok_ack(')');
 
-        int lbl1 = gen_lbl_idx();
-        int lbl2 = gen_lbl_idx();
-        emit_local_lbl(lbl1);
+        int lbl_continue = gen_lbl_idx();
+        int lbl_break    = gen_lbl_idx();
+        emit_local_lbl(lbl_continue);
 
         emit_expr(node);
         emit("ld      a,h");
         emit("or      l");
-        emit("jp      z,.l%d", lbl2);
+        emit("jp      z,.l%d", lbl_break);
 
-        parse_statement(lbl1, lbl2);
-        emit("jp      .l%d", lbl1);
-        emit_local_lbl(lbl2);
+        parse_statement(lbl_continue, lbl_break);
+        emit("jp      .l%d", lbl_continue);
+        emit_local_lbl(lbl_break);
+
+    } else if (token == TOK_FOR) {
+        ack_token();
+        expect_tok_ack('(');
+
+        // Get initializer expression
+        if (get_token() != ';') {
+            emit("; Initializer expression");
+            struct expr_node *node = parse_expression();
+            emit_expr(node);
+        }
+        expect_tok_ack(';');
+
+        int lbl_continue = gen_lbl_idx();
+        int lbl_break    = gen_lbl_idx();
+        int lbl_loop     = gen_lbl_idx();
+        int lbl_block    = gen_lbl_idx();
+
+        // Get condition expression
+        emit_local_lbl(lbl_loop);
+        if (get_token() != ';') {
+            emit("; Condition expression");
+            struct expr_node *node = parse_expression();
+            emit_expr(node);
+            emit("ld      a,h");
+            emit("or      l");
+            emit("jr      z,.l%d", lbl_break);
+        }
+        emit("jr      .l%d", lbl_block);
+        expect_tok_ack(';');
+
+        // Get loop expression
+        emit_local_lbl(lbl_continue);
+        if (get_token() != ')') {
+            emit("; Loop expression");
+            struct expr_node *node = parse_expression();
+            emit_expr(node);
+        }
+        emit("jr      .l%d", lbl_loop);
+        expect_tok_ack(')');
+
+        emit_local_lbl(lbl_block);
+        parse_statement(lbl_continue, lbl_break);
+        emit("jp      .l%d", lbl_continue);
+        emit_local_lbl(lbl_break);
 
     } else if (token == TOK_CONTINUE) {
         ack_token();
@@ -861,6 +906,10 @@ void parse(void) {
                                 if (get_token() != ',')
                                     break;
                                 ack_token();
+
+                                // Allow a comma at the end of a list
+                                if (get_token() == '}')
+                                    break;
                             }
                             expect_tok_ack('}');
                         }
