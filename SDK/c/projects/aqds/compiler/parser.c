@@ -5,7 +5,6 @@
 
 static uint16_t lbl_idx;
 static uint16_t flags;
-static uint8_t  arg_count;
 static int      cur_ix_offset;
 
 // Flags to indicate which helper functions to generate
@@ -449,16 +448,19 @@ static void emit_expr(struct expr_node *node) {
                 emit_expr(node->right_node);
             emit_expr(node->left_node);
             emit("push    hl");
-            arg_count++;
             break;
         }
 
         case TOK_FUNC_CALL: {
-            arg_count = 0;
+            uint8_t arg_count = 0;
+
+            struct expr_node *arg_node = node->right_node;
+            while (arg_node) {
+                arg_node = arg_node->right_node;
+                arg_count++;
+            }
             if (node->right_node)
                 emit_expr(node->right_node);
-
-            uint8_t count = arg_count;
 
             if (node->left_node->op == TOK_IDENTIFIER) {
                 // Directly call a label
@@ -469,7 +471,7 @@ static void emit_expr(struct expr_node *node) {
                 emit("call    __call_hl");
                 flags |= FLAGS_USES_CALL_HL;
             }
-            while (count--) {
+            while (arg_count--) {
                 // Clean up stack
                 emit("pop     af");
             }

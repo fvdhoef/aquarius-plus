@@ -80,6 +80,9 @@ const int KBM_DOWN       = (1 << 3);
 const int KBM_ROTATE_CCW = (1 << 4);
 const int KBM_ROTATE_CW  = (1 << 5);
 
+char kb_pressing_prev[8];
+char kb_pressing_keys[8];
+
 // clang-format off
 // Tetromino I shape in 4 rotations
 char tetromino_i[4 * 16] = {
@@ -256,6 +259,26 @@ int wall_kick_offsets_i_y[8 * 5] = {
 };
 
 // clang-format on
+
+kb_scan() {
+    char i = 0;
+    while (i < 8) {
+        kb_pressing_prev[i] = kb_pressing_keys[i];
+        i                   = i + 1;
+    }
+    kb_pressing_keys[0] = ~IO_KEYBOARD_COL0;
+    kb_pressing_keys[1] = ~IO_KEYBOARD_COL1;
+    kb_pressing_keys[2] = ~IO_KEYBOARD_COL2;
+    kb_pressing_keys[3] = ~IO_KEYBOARD_COL3;
+    kb_pressing_keys[4] = ~IO_KEYBOARD_COL4;
+    kb_pressing_keys[5] = ~IO_KEYBOARD_COL5;
+    kb_pressing_keys[6] = ~IO_KEYBOARD_COL6;
+    kb_pressing_keys[7] = ~IO_KEYBOARD_COL7;
+}
+
+kb_pressing(char scancode) {
+    return (kb_pressing_keys[scancode / 8] & (1 << (scancode & 7))) != 0;
+}
 
 video_wait_line(char linenr) {
     IO_VIRQLINE = linenr;
@@ -558,18 +581,18 @@ draw_preview() {
 // Compose keys bitmap with only the keys used by the game
 getkeys() {
     char result = 0;
-    // if (kb_pressing(KEY_A) || kb_pressing(KEY_LEFT))
-    //     result |= KBM_LEFT;
-    // if (kb_pressing(KEY_D) || kb_pressing(KEY_RIGHT))
-    //     result |= KBM_RIGHT;
-    // if (kb_pressing(KEY_W) || kb_pressing(KEY_UP))
-    //     result |= KBM_UP;
-    // if (kb_pressing(KEY_S) || kb_pressing(KEY_DOWN))
-    //     result |= KBM_DOWN;
-    // if (kb_pressing(KEY_N) || kb_pressing(KEY_Z))
-    //     result |= KBM_ROTATE_CCW;
-    // if (kb_pressing(KEY_M) || kb_pressing(KEY_X))
-    //     result |= KBM_ROTATE_CW;
+    if (kb_pressing(KEY_A) || kb_pressing(KEY_LEFT))
+        result = result | KBM_LEFT;
+    if (kb_pressing(KEY_D) || kb_pressing(KEY_RIGHT))
+        result = result | KBM_RIGHT;
+    if (kb_pressing(KEY_W) || kb_pressing(KEY_UP))
+        result = result | KBM_UP;
+    if (kb_pressing(KEY_S) || kb_pressing(KEY_DOWN))
+        result = result | KBM_DOWN;
+    if (kb_pressing(KEY_N) || kb_pressing(KEY_Z))
+        result = result | KBM_ROTATE_CCW;
+    if (kb_pressing(KEY_M) || kb_pressing(KEY_X))
+        result = result | KBM_ROTATE_CW;
 
     // char joyval = ~get_joystick();
     // if (joyval & (1 << 0))
@@ -654,11 +677,17 @@ rotate(char cw) {
 
 // Processing that needs to be done at the start of the frame
 frame() {
+    // IO_VPALSEL  = 0;
+    // IO_VPALDATA = 0;
+
     // Wait for end of frame (line 216)
     video_wait_line(216);
 
+    // IO_VPALSEL  = 0;
+    // IO_VPALDATA = 0xFF;
+
     // Scan keys
-    // kb_scan();
+    kb_scan();
 
     // Update screen during non-visible part
     if (bgdelay == 0) {
