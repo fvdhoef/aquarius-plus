@@ -108,7 +108,9 @@ static void emit_expr(struct expr_node *node) {
                 }
 
             } else if (sym->storage == SYM_STORAGE_IOPORT) {
-                emit("in      a,($%02X)", sym->value);
+                emit("ld      b,$%02X", (uint16_t)sym->value >> 8);
+                emit("ld      c,$%02X", (uint16_t)sym->value & 0xFF);
+                emit("in      a,(c)", sym->value);
                 emit("ld      h,0");
                 emit("ld      l,a");
 
@@ -190,8 +192,10 @@ static void emit_expr(struct expr_node *node) {
                     }
 
                 } else if (node->left_node->sym->storage == SYM_STORAGE_IOPORT) {
+                    emit("ld      b,$%02X", (uint16_t)node->left_node->sym->value >> 8);
+                    emit("ld      c,$%02X", (uint16_t)node->left_node->sym->value & 0xFF);
                     emit("ld      a,l");
-                    emit("out     ($%02X),a", node->left_node->sym->value);
+                    emit("out     (c),a");
 
                 } else {
                     error_syntax();

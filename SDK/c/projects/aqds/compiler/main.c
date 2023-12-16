@@ -35,7 +35,7 @@ int main(
 #endif
     const char *path;
 
-    puts("Aquarius+ Development Studio - C-flat (Cb) Compiler V0.1 by Frank van den Hoef\n");
+    puts("Aquarius+ Development Studio - C-flat (Cb) Compiler V0.2 by Frank van den Hoef\n");
 
 #ifndef __SDCC
     // Get path from command line argument

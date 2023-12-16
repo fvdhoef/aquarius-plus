@@ -68,7 +68,9 @@ char tmpstr[16];
 char tmpstr2[16];
 
 // Level speed curve (number of frames delay per gravity drop)
-char speed_curve[21] = {52, 48, 44, 40, 36, 32, 27, 21, 16, 10, 9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2};
+char speed_curve[21] = {
+    52, 48, 44, 40, 36, 32, 27, 21, 16, 10,
+    9, 8, 7, 6, 5, 5, 4, 4, 3, 3, 2};
 
 // Keyboard bitmap
 const int KBM_LEFT       = (1 << 0);
@@ -208,6 +210,51 @@ char tetromino_z[4 * 9] = {
     23, 23,  0,
     23,  0,  0
 };
+
+// Offsets used for rotation
+int wall_kick_offsets_jlstz_x[8 * 5] = {
+    0, +1, +1, 0, +1, // CCW:0->L
+    0, -1, -1, 0, -1, // CW :0->R
+    0, +1, +1, 0, +1, // CCW:R->0
+    0, +1, +1, 0, +1, // CW :R->2
+    0, -1, -1, 0, -1, // CCW:2->R
+    0, +1, +1, 0, +1, // CW :2->L
+    0, -1, -1, 0, -1, // CCW:L->2
+    0, -1, -1, 0, -1  // CW :L->0
+};
+int wall_kick_offsets_jlstz_y[8 * 5] = {
+    0, 0, +1, -2, -2, // CCW:0->L
+    0, 0, +1, -2, -2, // CW :0->R
+    0, 0, -1, +2, +2, // CCW:R->0
+    0, 0, -1, +2, +2, // CW :R->2
+    0, 0, +1, -2, -2, // CCW:2->R
+    0, 0, +1, -2, -2, // CW :2->L
+    0, 0, -1, +2, +2, // CCW:L->2
+    0, 0, -1, +2, +2  // CW :L->0
+};
+
+// Offsets used for rotation
+int wall_kick_offsets_i_x[8 * 5] = {
+    0, -1, +2, -1, +2, // CCW:0->L
+    0, -2, +1, -2, +1, // CW :0->R
+    0, +2, -1, +2, -1, // CCW:R->0
+    0, -1, +2, -1, +2, // CW :R->2
+    0, +1, -2, +1, -2, // CCW:2->R
+    0, +2, -1, +2, -1, // CW :2->L
+    0, -2, +1, -2, +1, // CCW:L->2
+    0, +1, -2, +1, -2  // CW :L->0
+};
+int wall_kick_offsets_i_y[8 * 5] = {
+    0, 0, 0, +2, -1, // CCW:0->L
+    0, 0, 0, -1, +2, // CW :0->R
+    0, 0, 0, +1, -2, // CCW:R->0
+    0, 0, 0, +2, -1, // CW :R->2
+    0, 0, 0, -2, +1, // CCW:2->R
+    0, 0, 0, +1, -2, // CW :2->L
+    0, 0, 0, -1, +2, // CCW:L->2
+    0, 0, 0, -2, +1  // CW :L->0
+};
+
 // clang-format on
 
 video_wait_line(char linenr) {
@@ -234,9 +281,10 @@ get_tile(char i, char j) {
     return vram_tilemap[(j << 6) | i] & 0xFF;
 }
 
-// This function will draw the given tetromino at coordinate i,j. If check is set,
-// instead of drawing the function will return if the tetromino can be drawn without
-// intersecting with existing blocks (returns 0 on collision).
+// This function will draw the given tetromino at coordinate i,j. If check
+// is set, instead of drawing the function will return if the tetromino
+// can be drawn without intersecting with existing blocks
+// (returns 0 on collision).
 draw_tetromino(char i, char j, char tetromino, char rot, char check, char lock) {
     rot      = rot & 3;
     char *p  = 0;
@@ -310,6 +358,66 @@ draw_tetromino(char i, char j, char tetromino, char rot, char check, char lock) 
             y = y + 1;
         }
         return 1;
+    }
+}
+
+// Update sprites used to display moving tetromino
+set_tetromino_sprites(char x, char y, char tetromino, char rot) {
+    rot      = rot & 3;
+    char *p  = 0;
+    char  sz = 0;
+
+    if (tetromino == TM_O) {
+        sz = 2;
+        p  = tetromino_o;
+    } else if (tetromino == TM_J) {
+        sz = 3;
+        p  = tetromino_j + 9 * rot;
+    } else if (tetromino == TM_L) {
+        sz = 3;
+        p  = tetromino_l + 9 * rot;
+    } else if (tetromino == TM_S) {
+        sz = 3;
+        p  = tetromino_s + 9 * rot;
+    } else if (tetromino == TM_T) {
+        sz = 3;
+        p  = tetromino_t + 9 * rot;
+    } else if (tetromino == TM_Z) {
+        sz = 3;
+        p  = tetromino_z + 9 * rot;
+    } else if (tetromino == TM_I) {
+        sz = 4;
+        p  = tetromino_i + 16 * rot;
+    }
+    if (sz == 3 || sz == 4) {
+        x = x - 8;
+        y = y - 8;
+    }
+
+    IO_VSPRSEL = 0;
+
+    char j = 0;
+    char i;
+    char val;
+    int  sx;
+
+    while (j < sz) {
+        i = 0;
+        while (i < sz) {
+            val = *p;
+            p   = p + 1;
+            if (val) {
+                sx          = x + (i << 3);
+                IO_VSPRX_L  = sx & 0xFF;
+                IO_VSPRX_H  = sx >> 8;
+                IO_VSPRY    = y + (j << 3);
+                IO_VSPRIDX  = val;
+                IO_VSPRATTR = 0x91;
+                IO_VSPRSEL  = IO_VSPRSEL + 1;
+            }
+            i = i + 1;
+        }
+        j = j + 1;
     }
 }
 
@@ -393,6 +501,34 @@ draw_static_screen() {
     draw_text(25, 17, "  LINES ");
 }
 
+// Draw score/level/lines stats
+draw_stats() {
+    // static uint32_t old_score = 0xFFFFFFFFUL;
+    // static uint8_t  old_level = 0xFF;
+    // static uint16_t old_lines = 0xFFFF;
+
+    // tmpstr[8] = '\0';
+    // tmpstr[7] = ' ';
+
+    // if (old_score != score) {
+    //     old_score = score;
+    //     u32tos(score);
+    //     draw_text(25, 12, tmpstr);
+    // }
+
+    // if (old_level != level) {
+    //     old_level = level;
+    //     u16tos(level);
+    //     draw_text(25, 15, tmpstr);
+    // }
+
+    // if (old_lines != lines) {
+    //     old_lines = lines;
+    //     u16tos(lines);
+    //     draw_text(25, 18, tmpstr);
+    // }
+}
+
 // Draw tetromino preview content
 draw_preview() {
     // Draw tetromino preview content
@@ -419,20 +555,117 @@ draw_preview() {
     draw_tetromino(x, y, next_tetromino, 0, 0, 0);
 }
 
+// Compose keys bitmap with only the keys used by the game
+getkeys() {
+    char result = 0;
+    // if (kb_pressing(KEY_A) || kb_pressing(KEY_LEFT))
+    //     result |= KBM_LEFT;
+    // if (kb_pressing(KEY_D) || kb_pressing(KEY_RIGHT))
+    //     result |= KBM_RIGHT;
+    // if (kb_pressing(KEY_W) || kb_pressing(KEY_UP))
+    //     result |= KBM_UP;
+    // if (kb_pressing(KEY_S) || kb_pressing(KEY_DOWN))
+    //     result |= KBM_DOWN;
+    // if (kb_pressing(KEY_N) || kb_pressing(KEY_Z))
+    //     result |= KBM_ROTATE_CCW;
+    // if (kb_pressing(KEY_M) || kb_pressing(KEY_X))
+    //     result |= KBM_ROTATE_CW;
+
+    // char joyval = ~get_joystick();
+    // if (joyval & (1 << 0))
+    //     result |= KBM_DOWN;
+    // if (joyval & (1 << 1))
+    //     result |= KBM_RIGHT;
+    // if (joyval & (1 << 2))
+    //     result |= KBM_UP;
+    // if (joyval & (1 << 3))
+    //     result |= KBM_LEFT;
+    // if (joyval & (1 << 6))
+    //     result |= KBM_ROTATE_CW;
+    // if (joyval & (1 << 7))
+    //     result |= KBM_ROTATE_CCW;
+
+    return result;
+}
+
+// Move tetromino left
+move_left() {
+    if (draw_tetromino(cur_posx - 1, cur_posy, cur_tetromino, cur_rot, 1, 0)) {
+        cur_posx = cur_posx - 1;
+    }
+}
+
+// Move tetromino right
+move_right() {
+    if (draw_tetromino(cur_posx + 1, cur_posy, cur_tetromino, cur_rot, 1, 0)) {
+        cur_posx = cur_posx + 1;
+    }
+}
+
+// Move tetromino down
+move_down() {
+    if (draw_tetromino(cur_posx, cur_posy + 1, cur_tetromino, cur_rot, 1, 0)) {
+        cur_posy = cur_posy + 1;
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+// Rotate tetromino either clockwise (cw=true) or counter-clockwise (cw=false)
+rotate(char cw) {
+    char new_rot = cur_rot;
+    if (cw)
+        new_rot = (new_rot + 1) & 3;
+    else
+        new_rot = (new_rot - 1) & 3;
+
+    char idx = (cur_rot << 1);
+    if (cw)
+        idx = idx | 1;
+
+    int *wall_kick_offsets_x;
+    int *wall_kick_offsets_y;
+    int  offset = 5 * idx;
+    if (cur_tetromino == TM_I) {
+        wall_kick_offsets_x = wall_kick_offsets_i_x + offset;
+        wall_kick_offsets_y = wall_kick_offsets_i_y + offset;
+    } else {
+        wall_kick_offsets_x = wall_kick_offsets_jlstz_x + offset;
+        wall_kick_offsets_y = wall_kick_offsets_jlstz_y + offset;
+    }
+    char max_i = 4;
+    if (cur_tetromino == TM_O)
+        max_i = 0;
+
+    char i = 0;
+    while (i <= max_i) {
+        char new_posx = cur_posx + wall_kick_offsets_x[i];
+        char new_posy = cur_posy + wall_kick_offsets_y[i];
+        if (draw_tetromino(new_posx, new_posy, cur_tetromino, new_rot, 1, 0)) {
+            cur_rot  = new_rot;
+            cur_posx = new_posx;
+            cur_posy = new_posy;
+            break;
+        }
+        i = i + 1;
+    }
+}
+
 // Processing that needs to be done at the start of the frame
 frame() {
     // Wait for end of frame (line 216)
     video_wait_line(216);
 
-    // // Scan keys
+    // Scan keys
     // kb_scan();
 
     // Update screen during non-visible part
     if (bgdelay == 0) {
-        //     // Animate background by updating 2 tile patterns
+        // Animate background by updating 2 tile patterns
         memcpy(bgtiles_dst, bgtiles_src2, 64);
     }
-    // set_tetromino_sprites(cur_posx << 3, cur_posy << 3, cur_tetromino, cur_rot);
+    set_tetromino_sprites(cur_posx << 3, cur_posy << 3, cur_tetromino, cur_rot);
 
     // Animate background
     if (bgdelay == 0) {
@@ -450,6 +683,126 @@ frame() {
     }
 }
 
+// Switch to next tetromino piece
+next_piece() {
+    cur_posx       = (PLAYFIELD_XL + PLAYFIELD_XR) / 2;
+    cur_posy       = PLAYFIELD_YT - 1;
+    cur_rot        = 0;
+    cur_tetromino  = next_tetromino;
+    next_tetromino = tetromino_random;
+    draw_preview();
+}
+
+// Check if given line is full
+check_line(char line) {
+    char i = 0;
+    while (i < PLAYFIELD_W) {
+        if (get_tile(i + PLAYFIELD_XL, line + PLAYFIELD_YT) == bg_tile)
+            return 0;
+        i = i + 1;
+    }
+    return 1;
+}
+
+// Check for full lines
+check_lines() {
+    char lines_full = 0;
+    int  j;
+    int  i;
+
+    j = 0;
+    while (j < PLAYFIELD_H) {
+        if (check_line(j)) {
+            i = 0;
+            while (i < PLAYFIELD_W) {
+                set_tile(i + PLAYFIELD_XL, j + PLAYFIELD_YT, MARKER_TILE);
+                i = i + 1;
+            }
+            lines_full = lines_full + 1;
+        }
+        j = j + 1;
+    }
+
+    if (lines_full == 0)
+        return;
+
+    // Small delay
+    i = 0;
+    while (i < 5) {
+        frame();
+        i = i + 1;
+    }
+
+    // Remove all marked lines
+    int line = PLAYFIELD_H - 1;
+    while (line >= 0) {
+        if (get_tile(PLAYFIELD_XL, line + PLAYFIELD_YT) == MARKER_TILE) {
+            // Remove line by copying all lines above it one line down
+            j = line;
+            while (j >= 0) {
+                i = 0;
+                while (i < PLAYFIELD_W) {
+                    set_tile(PLAYFIELD_XL + i, PLAYFIELD_YT + j, get_tile(PLAYFIELD_XL + i, PLAYFIELD_YT + j - 1));
+                    i = i + 1;
+                }
+                j = j - 1;
+            }
+            lines = lines + 1;
+            if (lines % 10 == 0) {
+                level = level + 1;
+                if (level > 20)
+                    level = 20;
+            }
+            frame();
+
+        } else {
+            line = line - 1;
+        }
+    }
+
+    if (lines_full == 1)
+        score = score + 40 * (level + 1);
+    else if (lines_full == 2)
+        score = score + 100 * (level + 1);
+    else if (lines_full == 3)
+        score = score + 300 * (level + 1);
+    else if (lines_full == 4)
+        score = score + 1200 * (level + 1);
+
+    if (score > 30000)
+        score = 30000;
+    // if (score > 9999999)
+    //     score = 9999999;
+}
+
+// Lock current tetromino in place and switch to the next one
+lock_piece() {
+    // Lock in place
+    if (!draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, 0, 1)) {
+        gameover = 1;
+    }
+
+    // Hide sprites
+    IO_VCTRL = IO_VCTRL & ~VCTRL_SPR_EN;
+
+    // Small delay
+    char i = 0;
+    while (i < 5) {
+        frame();
+        i = i + 1;
+    }
+    draw_tetromino(cur_posx, cur_posy, cur_tetromino, cur_rot, 0, 0);
+
+    // Switch to next piece
+    next_piece();
+
+    // Show sprites
+    IO_VCTRL = IO_VCTRL | VCTRL_SPR_EN;
+
+    // Check for full lines
+    check_lines();
+}
+
 play_marathon() {
     char prev_keys = 0;
 
@@ -465,20 +818,88 @@ play_marathon() {
 
     cur_tetromino = tetromino_random;
 
-    IO_VCTRL = VCTRL_SPR_EN | VCTRL_MODE_TILE;
-
     // Initial screen drawing
     draw_static_screen();
     draw_preview();
 
     // Switch video mode to tile mode
     IO_VCTRL = VCTRL_SPR_EN | VCTRL_MODE_TILE;
-    // next_piece();
+    next_piece();
 
     char wait_down_release = 0;
 
     while (!gameover) {
         frame();
+
+        // Move tetromino down when gravity delay expires
+        if (gravity_delay == 0) {
+            gravity_delay = speed_curve[level];
+            if (!move_down()) {
+                lock_piece();
+            }
+        } else {
+            gravity_delay = gravity_delay - 1;
+        }
+
+        // Update 'random' tetromino index
+        tetromino_random = tetromino_random + 1;
+        if (tetromino_random >= TM_TOTAL)
+            tetromino_random = 0;
+
+        // Handle keyboard interaction
+        char keys    = getkeys();
+        char newkeys = ~prev_keys & keys;
+
+        if (keys & KBM_LEFT) {
+            if (left_delay == 0) {
+                left_delay = DELAY_LEFT_RIGHT;
+                move_left();
+            } else {
+                left_delay = left_delay - 1;
+            }
+        } else {
+            left_delay = 0;
+        }
+        if (keys & KBM_RIGHT) {
+            if (right_delay == 0) {
+                right_delay = DELAY_LEFT_RIGHT;
+                move_right();
+            } else {
+                right_delay = right_delay - 1;
+            }
+        } else {
+            right_delay = 0;
+        }
+        if (keys & KBM_DOWN) {
+            if (!wait_down_release) {
+                if (down_delay == 0) {
+                    down_delay = 3;
+                    if (move_down()) {
+                        gravity_delay = speed_curve[level];
+                        score         = score + 1;
+                    } else {
+                        lock_piece();
+                        wait_down_release = 1;
+                    }
+                } else {
+                    down_delay = down_delay - 1;
+                }
+            }
+        } else {
+            wait_down_release = 0;
+            down_delay        = 0;
+        }
+        if (newkeys & KBM_ROTATE_CCW) {
+            rotate(0);
+        }
+        if (newkeys & KBM_ROTATE_CW) {
+            rotate(1);
+        }
+
+        draw_stats();
+
+        // Keep track of keys pressed during this round
+        prev_keys = keys;
     }
 }
 
