@@ -1188,7 +1188,8 @@ void UI::wndIoRegs(bool *p_open) {
 }
 
 void UI::addrPopup(uint16_t addr) {
-    if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft)) {
+    if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft) ||
+        ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
         ImGui::Text("Address $%04X", addr);
         ImGui::Separator();
         if (ImGui::MenuItem("Run to here")) {
