@@ -50,9 +50,17 @@ pc:
 	gcc -Istubs -Wall -Wextra -g -O0 -o compiler main.c tokenizer.c common.c parser.c expr.c symbols.c stubs/file_io.c
 
 pc_test: pc
-	./compiler testdata/test.cb
-	../assembler/assembler testdata/out/test.asm
+	./compiler testdata/tetris.cb
+	../assembler/assembler testdata/out/tetris.asm
 
 pc_emu: pc_test
-	cp testdata/out/out/test.aqx ../../../../../EndUser/sdcard/
-	../../../../../System/emulator/build/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -t "\n   RUN\"test.aqx\"\n"
+	cp testdata/out/out/tetris.aqx ../../../../../EndUser/sdcard/
+	../../../../../System/emulator/build/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -t "\n   RUN\"tetris.aqx\"\n"
+
+# pc_test: pc
+# 	./compiler testdata/test.cb
+# 	../assembler/assembler testdata/out/test.asm
+
+# pc_emu: pc_test
+# 	cp testdata/out/out/test.aqx ../../../../../EndUser/sdcard/
+# 	../../../../../System/emulator/build/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu -t "\n   RUN\"test.aqx\"\n"
