@@ -50,6 +50,11 @@ void AssemblyListing::load(const std::string &_path) {
 
         std::string line;
         while (std::getline(ifs, line)) {
+            if (!line.empty() && line[line.length() - 1] == '\r') {
+                // Strip off windows line ending residue
+                line = line.substr(0, line.length() - 1);
+            }
+
             if (line.empty()) {
                 // End of listing, start of statistics and symbol table
                 break;
