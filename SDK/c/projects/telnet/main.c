@@ -3,7 +3,7 @@
 #include <esp.h>
 #include "terminal.h"
 
-// #define DEBUG
+#define DEBUG
 
 static int8_t telnet_fd;
 
@@ -52,6 +52,7 @@ enum {
     CH_UP        = 0x8F,
     CH_END       = 0x9A,
     CH_HOME      = 0x9B,
+    CH_INSERT    = 0x9D,
     CH_LEFT      = 0x9E,
     CH_DOWN      = 0x9F,
     CH_F1        = 0x80,
@@ -89,6 +90,7 @@ static void telnet_do(uint8_t val) {
 }
 
 static void telnet_will(uint8_t val) {
+    (void)val;
 #ifdef DEBUG
     printf("- Telnet WILL: %d\r\n", val);
 #endif
@@ -99,7 +101,8 @@ static void telnet_sub_neg(uint8_t cmd[], int len) {
         uint8_t response[] = {
             TN_CMD_IAC, TN_CMD_SB,
             TN_OPT_TERM_TYPE, 0,
-            'a', 'n', 's', 'i',
+            // 'a', 'n', 's', 'i',
+            'x', 't', 'e', 'r', 'm', '-', 'c', 'o', 'l', 'o', 'r',
             TN_CMD_IAC, TN_CMD_SE};
         esp_write(telnet_fd, response, sizeof(response));
     } else {
@@ -180,6 +183,25 @@ static void process_keyboard(uint8_t ch) {
         case CH_DOWN: esp_write(telnet_fd, "\x1B[B", 3); break;
         case CH_RIGHT: esp_write(telnet_fd, "\x1B[C", 3); break;
         case CH_LEFT: esp_write(telnet_fd, "\x1B[D", 3); break;
+        case CH_HOME: esp_write(telnet_fd, "\x1B[H", 3); break;
+        case CH_END: esp_write(telnet_fd, "\x1B[F", 3); break;
+        case CH_F1: esp_write(telnet_fd, "\x1BOP", 3); break;
+        case CH_F2: esp_write(telnet_fd, "\x1BOQ", 3); break;
+        case CH_F3: esp_write(telnet_fd, "\x1BOR", 3); break;
+        case CH_F4: esp_write(telnet_fd, "\x1BOS", 3); break;
+        case CH_INSERT: esp_write(telnet_fd, "\x1B[2~", 4); break;
+        case CH_DELETE: esp_write(telnet_fd, "\x1B[3~", 4); break;
+        case CH_PGUP: esp_write(telnet_fd, "\x1B[5~", 4); break;
+        case CH_PGDN: esp_write(telnet_fd, "\x1B[6~", 4); break;
+        case CH_F5: esp_write(telnet_fd, "\x1B[15~", 5); break;
+        case CH_F6: esp_write(telnet_fd, "\x1B[17~", 5); break;
+        case CH_F7: esp_write(telnet_fd, "\x1B[18~", 5); break;
+        case CH_F8: esp_write(telnet_fd, "\x1B[19~", 5); break;
+        case CH_F9: esp_write(telnet_fd, "\x1B[20~", 5); break;
+        case CH_F10: esp_write(telnet_fd, "\x1B[21~", 5); break;
+        case CH_F11: esp_write(telnet_fd, "\x1B[23~", 5); break;
+        case CH_F12: esp_write(telnet_fd, "\x1B[24~", 5); break;
+        case CH_BACKSPACE: esp_write(telnet_fd, "\x7F", 1); break;
         default:
             esp_write(telnet_fd, &ch, 1);
             break;
@@ -233,10 +255,16 @@ int main(void) {
                 break;
 
             if (len > 0) {
+                // Hide cursor
+                terminal_show_cursor(false);
+
                 uint8_t *p = buf;
                 while (len--) {
                     process_char(*(p++));
                 }
+
+                // Show cursor
+                terminal_show_cursor(true);
             }
         }
         esp_close(telnet_fd);

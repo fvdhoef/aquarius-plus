@@ -12,10 +12,12 @@ static uint8_t  text_y;
 static uint8_t  text_color;
 static uint8_t  escape_idx = 0;
 static uint8_t  escape_cmd[16];
-static uint8_t  attributes = 0;
-static uint8_t  fg_col     = 7;
-static uint8_t  bg_col     = 0;
+static uint8_t  attributes     = 0;
+static uint8_t  fg_col         = 7;
+static uint8_t  bg_col         = 0;
+static uint8_t  old_cursor_col = 0x70;
 static char    *cmd_params;
+static uint8_t  last_char = 0;
 
 static void clear_display(int n);
 
@@ -103,6 +105,64 @@ static void insert_line(int n) {
     // memmove(TEXT_RAM, TEXT_RAM + COLUMNS * n, COLUMNS * (ROWS - n));
 }
 
+static void insert_char(int n) {
+    if (n < 1)
+        return;
+
+    uint8_t *p  = TEXT_RAM + text_y * COLUMNS;
+    int      x1 = text_x;
+    int      x2 = text_x + n;
+    if (x2 > COLUMNS)
+        x2 = COLUMNS;
+
+    uint8_t *p1     = p + x1;
+    uint8_t *p2     = p + x2;
+    int      count1 = COLUMNS - x2;
+    int      count2 = x2 - x1;
+
+    IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p2, p1, count1);
+    if (count2 > 0)
+        memset(p1, ' ', count2);
+
+    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p2, p1, count1);
+    if (count2 > 0)
+        memset(p1, text_color, count2);
+}
+
+static void delete_char(int n) {
+    if (n < 1)
+        return;
+
+    uint8_t *p  = TEXT_RAM + text_y * COLUMNS;
+    int      x1 = text_x;
+    int      x2 = text_x + n;
+    int      x3 = COLUMNS - n;
+    if (x3 < text_x)
+        x3 = text_x;
+
+    uint8_t *p1     = p + x1;
+    uint8_t *p2     = p + x2;
+    uint8_t *p3     = p + x3;
+    int      count1 = COLUMNS - x2;
+    int      count2 = COLUMNS - x3;
+
+    IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p1, p2, count1);
+    if (count2 > 0)
+        memset(p3, ' ', count2);
+
+    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p1, p2, count1);
+    if (count2 > 0)
+        memset(p3, text_color, count2);
+}
+
 static void scroll_up(int n) {
     if (n < 1)
         return;
@@ -139,6 +199,8 @@ static void recalc_p(void) {
 
 static void drawchar(uint8_t ch) {
     if (ch >= ' ') {
+        last_char = ch;
+
         IO_VCTRL    = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
         *text_p     = (ch);
         IO_VCTRL    = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
@@ -260,6 +322,7 @@ static void handle_csi(void) {
         case 'E': cursor_set(0, text_y + get_param(1)); break;
         case 'F': cursor_set(0, text_y - get_param(1)); break;
         case 'G': cursor_set(get_param(1) - 1, text_y); break;
+        case 'd': cursor_set(text_x, get_param(1) - 1); break;
         case 'f': // Same as 'H', but not quite?
         case 'H': {
             int n = get_param(1);
@@ -272,9 +335,34 @@ static void handle_csi(void) {
         case 'J': clear_display(get_param(0)); break;
         case 'K': clear_line(get_param(0)); break;
         case 'I': insert_line(get_param(0)); break;
+        case '@': insert_char(get_param(1)); break;
+        case 'P': delete_char(get_param(1)); break;
         case 'S': scroll_up(get_param(1)); break;
         case 'T': scroll_down(get_param(1)); break;
         case 'm': handle_sgr(); return;
+        case 'b': {
+            // Repeat last character n times
+            int n = get_param(1);
+            while (n > 0) {
+                drawchar(last_char);
+                n--;
+            }
+            break;
+        }
+        case 'X': {
+            // write N spaces w/o moving cursor
+            int n = get_param(1);
+            if (n > COLUMNS - text_x)
+                n = COLUMNS - text_x;
+
+            IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+            for (int i = 0; i < n; i++)
+                text_p[i] = ' ';
+            IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+            for (int i = 0; i < n; i++)
+                text_p[i] = text_color;
+            break;
+        }
 
         case 'h':
         case 'l':
@@ -303,6 +391,12 @@ void terminal_putchar(uint8_t ch) {
                 escape_idx             = 0;
                 handle_csi();
             }
+        } else if (escape_cmd[1] == ']') {
+            // Ignore OSC
+            if (ch == 7 || ch == '\\') {
+                escape_idx = 0;
+            }
+
         } else {
             escape_idx = 0;
         }
@@ -349,13 +443,25 @@ void terminal_putchar(uint8_t ch) {
     }
 
     if (text_x >= COLUMNS) {
-        text_x = 0;
-        text_y++;
+        text_x = COLUMNS - 1;
+        // text_y++;
         recalc_p();
     }
     if (text_y > ROWS - 1) {
         text_y = ROWS - 1;
         recalc_p();
         scroll_up(1);
+    }
+}
+
+void terminal_show_cursor(bool en) {
+    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+
+    if (en) {
+        old_cursor_col = text_p[0];
+        text_p[0]      = (text_p[0] >> 4) | (text_p[0] << 4);
+
+    } else {
+        text_p[0] = old_cursor_col;
     }
 }

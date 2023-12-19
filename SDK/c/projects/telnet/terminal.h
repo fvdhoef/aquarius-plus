@@ -4,3 +4,4 @@
 
 void terminal_init(void);
 void terminal_putchar(uint8_t ch);
+void terminal_show_cursor(bool en);

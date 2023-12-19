@@ -1,17 +1,15 @@
 #include "TcpVFS.h"
-#ifndef EMULATOR
+#ifndef _WIN32
 #include <netdb.h>
 #endif
 
 #define MAX_FDS (10)
 
-#ifndef EMULATOR
 struct state {
     int sockets[MAX_FDS];
 };
 
 static struct state state;
-#endif
 
 TcpVFS::TcpVFS() {
 }
@@ -58,7 +56,6 @@ int TcpVFS::open(uint8_t flags, const std::string &_path) {
 
     printf("TCP host '%s'  port '%d'\n", host.c_str(), port);
 
-#ifndef EMULATOR
     // Find free file descriptor
     int fd = -1;
     for (int i = 0; i < MAX_FDS; i++) {
@@ -70,6 +67,7 @@ int TcpVFS::open(uint8_t flags, const std::string &_path) {
     if (fd == -1)
         return ERR_TOO_MANY_OPEN;
 
+#ifndef _WIN32
     // Resolve name
     struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM};
 
@@ -134,13 +132,13 @@ int TcpVFS::read(int fd, size_t size, void *buf) {
     (void)fd;
     (void)size;
     (void)buf;
-    printf("TCP read: %d  size: %u\n", fd, (unsigned)size);
+    // printf("TCP read: %d  size: %u\n", fd, (unsigned)size);
 
-#ifndef EMULATOR
     if (fd >= MAX_FDS || state.sockets[fd] < 0)
         return ERR_PARAM;
     int sock = state.sockets[fd];
 
+#ifndef _WIN32
     int len = recv(sock, buf, size, 0);
     if (len < 0) {
         if (errno == EINPROGRESS || errno == EAGAIN || errno == EWOULDBLOCK) {
@@ -161,9 +159,9 @@ int TcpVFS::write(int fd, size_t size, const void *buf) {
     (void)fd;
     (void)size;
     (void)buf;
-    printf("TCP write: %d  size: %u\n", fd, (unsigned)size);
+    // printf("TCP write: %d  size: %u\n", fd, (unsigned)size);
 
-#ifndef EMULATOR
+#ifndef _WIN32
     if (fd >= MAX_FDS || state.sockets[fd] < 0)
         return ERR_PARAM;
     int sock = state.sockets[fd];
@@ -186,7 +184,7 @@ int TcpVFS::write(int fd, size_t size, const void *buf) {
 int TcpVFS::close(int fd) {
     printf("TCP close: %d\n", fd);
 
-#ifndef EMULATOR
+#ifndef _WIN32
     if (fd >= MAX_FDS || state.sockets[fd] < 0)
         return ERR_PARAM;
     ::close(state.sockets[fd]);
