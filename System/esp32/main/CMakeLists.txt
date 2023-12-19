@@ -26,6 +26,8 @@ idf_component_register(
         "../../emulator/Shared/VFS/VFS.cpp"
         "../../emulator/Shared/VFS/EspVFS.cpp"
         "../../emulator/Shared/VFS/SDCardVFS.cpp"
+        "../../emulator/Shared/VFS/HttpVFS.cpp"
+        "../../emulator/Shared/VFS/TcpVFS.cpp"
 
         "FileServer.cpp"
         "PowerLED.cpp"

@@ -1,23 +1,25 @@
 #include "AqUartProtocol.h"
 #include "SDCardVFS.h"
 #include "EspVFS.h"
+#include "HttpVFS.h"
+#include "TcpVFS.h"
 #include "AqKeyboard.h"
 #include <algorithm>
 #include <time.h>
 
 #ifndef EMULATOR
-#    include <driver/uart.h>
-#    include <esp_ota_ops.h>
-#    include <esp_app_format.h>
-#    include "FPGA.h"
+#include <driver/uart.h>
+#include <esp_ota_ops.h>
+#include <esp_app_format.h>
+#include "FPGA.h"
 
 static const char *TAG = "AqUartProtocol";
 
-#    define UART_NUM (UART_NUM_1)
-#    define BUF_SIZE (1024)
+#define UART_NUM (UART_NUM_1)
+#define BUF_SIZE (1024)
 #else
-#    include "EmuState.h"
-#    include "Config.h"
+#include "EmuState.h"
+#include "Config.h"
 #endif
 
 enum {
@@ -51,13 +53,13 @@ enum {
 #define ESP_PREFIX "esp:"
 
 #if 0
-#    ifdef EMULATOR
-#        define DBGF(...) printf(__VA_ARGS__)
-#    else
-#        define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
-#    endif
+#ifdef EMULATOR
+#define DBGF(...) printf(__VA_ARGS__)
 #else
-#    define DBGF(...)
+#define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
+#endif
+#else
+#define DBGF(...)
 #endif
 
 AqUartProtocol::AqUartProtocol() {
@@ -106,6 +108,8 @@ void AqUartProtocol::init() {
 #endif
 
     EspVFS::instance().init();
+    HttpVFS::instance().init();
+    TcpVFS::instance().init();
 
 #ifndef EMULATOR
     xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
@@ -242,13 +246,30 @@ void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string>
     }
 }
 
+static bool startsWith(const std::string &s1, const std::string &s2, bool caseSensitive = false) {
+    if (caseSensitive) {
+        return (strncasecmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
+    } else {
+        return (strncmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
+    }
+}
+
 std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
     *vfs = &SDCardVFS::instance();
+
+    if (startsWith(path, "http://") || startsWith(path, "https://")) {
+        *vfs = &HttpVFS::instance();
+        return path;
+    }
+    if (startsWith(path, "tcp://")) {
+        *vfs = &TcpVFS::instance();
+        return path;
+    }
 
     bool useCwd = true;
     if (!path.empty() && (path[0] == '/' || path[0] == '\\')) {
         useCwd = false;
-    } else if (strncasecmp(path.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+    } else if (startsWith(path, ESP_PREFIX)) {
         useCwd = false;
         *vfs   = &EspVFS::instance();
         path   = path.substr(strlen(ESP_PREFIX));
@@ -257,7 +278,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string
     // Split the path into parts
     std::vector<std::string> parts;
     if (useCwd) {
-        if (strncasecmp(currentPath.c_str(), ESP_PREFIX, strlen(ESP_PREFIX)) == 0) {
+        if (startsWith(currentPath, ESP_PREFIX)) {
             splitPath(currentPath.substr(strlen(ESP_PREFIX)), parts);
             *vfs = &EspVFS::instance();
         } else {
