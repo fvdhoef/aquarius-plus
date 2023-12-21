@@ -252,6 +252,14 @@ static void handle_sgr(void) {
         } else if (n == 10) {
             // Primary (default) font
             attributes = 0;
+        } else if (n == 22) {
+            // Normal intensity
+            attributes &= ~1;
+        } else if (n == 24) {
+            // Not underlined
+        } else if (n == 27) {
+            // Not reversed
+            attributes &= ~2;
         } else if (n >= 30 && n <= 37) {
             // Foreground color
             fg_col = n - 30;
@@ -364,14 +372,50 @@ static void handle_csi(void) {
             break;
         }
 
-        case 'h':
+        case 'h': {
+            if (cmd_params[0] == '?') {
+                cmd_params++;
+                int mode = get_param(0);
+                if (mode == 1) {
+                    // Cursor Keys Mode - set: application sequences
+                    term_flags |= 1;
+                }
+            }
+            break;
+        }
+
         case 'l':
-            // Bracketed paste mode
+            if (cmd_params[0] == '?') {
+                cmd_params++;
+                int mode = get_param(0);
+                if (mode == 1) {
+                    // Cursor Keys Mode - reset: cursor sequences
+                    term_flags &= ~1;
+                }
+            }
+            break;
+
+        case 'r': // DECSTBM: Set Top and Bottom Margins
+            break;
+        case 't': // DECSLPP: set page size - ie window height
+            break;
+        case 'n': // DSR: cursor position query
+            break;
+        case 'c': // RIS: restore power-on settings
+            text_color = 0x70;
+            attributes = 0;
+            term_flags = 0;
+            break;
+        case 's': // save cursor
+            break;
+        case 'u': // restore cursor
             break;
 
         default: {
             // text_color = 0xF5;
-            printf("\r\nCSI:'%c' - '%s'\r\n", cmd, cmd_params);
+            // printf("\r\nCSI:'%c' - '%s'\r\n", cmd, cmd_params);
+            // while (1)
+            //     ;
             break;
         }
     }
@@ -397,6 +441,13 @@ void terminal_putchar(uint8_t ch) {
                 escape_idx = 0;
             }
 
+            // } else if (escape_cmd[1] == '7') {
+            //     // DECSC: save cursor
+            //     escape_idx = 0;
+            // } else if (escape_cmd[1] == '8') {
+            //     // DECRC: restore cursor
+            //     escape_idx = 0;
+
         } else {
             escape_idx = 0;
         }
@@ -406,7 +457,7 @@ void terminal_putchar(uint8_t ch) {
     if (ch == 7) {
         // Bell
 
-    } else if (ch == 8) {
+    } else if (ch == '\b') {
         // Backspace
         if (text_x > 0) {
             text_x--;
@@ -414,20 +465,21 @@ void terminal_putchar(uint8_t ch) {
             text_y--;
             text_x = COLUMNS - 1;
         }
+        recalc_p();
 
-    } else if (ch == 9) {
+    } else if (ch == '\t') {
         // Tab
         do {
             text_x++;
         } while ((text_x & 7) != 0);
         recalc_p();
 
-    } else if (ch == 10) {
+    } else if (ch == '\n') {
         // Line feed
         text_y++;
         recalc_p();
 
-    } else if (ch == 13) {
+    } else if (ch == '\r') {
         // Carriage return
         text_x = 0;
         recalc_p();
@@ -439,6 +491,8 @@ void terminal_putchar(uint8_t ch) {
     } else if (ch >= ' ') {
         drawchar(ch);
     } else if (ch > 0) {
+        // printf("%02X ", ch);
+
         printf("\r\nUnknown char %d\r\n", ch);
     }
 

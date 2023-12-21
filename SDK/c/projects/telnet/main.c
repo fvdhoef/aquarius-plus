@@ -7,6 +7,8 @@
 
 static int8_t telnet_fd;
 
+uint8_t term_flags;
+
 int putchar(int c) {
     terminal_putchar(c);
     return c;
@@ -36,9 +38,16 @@ enum {
 };
 
 enum {
-    TN_OPT_TERM_TYPE        = 24,
-    TN_OPT_TERM_WINDOW_SIZE = 31,
-    TN_OPT_TERM_SPEED       = 32,
+    TN_OPT_ECHO                = 1,
+    TN_OPT_SUPPRESS_GO_AHEAD   = 3,
+    TN_OPT_STATUS              = 5,
+    TN_OPT_TERM_TYPE           = 24,
+    TN_OPT_TERM_WINDOW_SIZE    = 31,
+    TN_OPT_TERM_SPEED          = 32,
+    TN_OPT_REMOTE_FLOW_CONTROL = 33,
+    TN_OPT_LINEMODE            = 34,
+    TN_OPT_XDISPLAY            = 35,
+    TN_OPT_NEW_ENV_VAR         = 39,
 };
 
 enum {
@@ -71,17 +80,26 @@ enum {
 
 static void telnet_do(uint8_t val) {
     bool    will        = false;
+    bool    wont        = false;
     uint8_t response[3] = {TN_CMD_IAC, TN_CMD_WILL, val};
 
-    will = (val == TN_OPT_TERM_TYPE);
+    will =
+        (val == TN_OPT_TERM_TYPE ||
+         val == TN_OPT_TERM_SPEED ||
+         val == TN_OPT_NEW_ENV_VAR);
+    wont =
+        (val == TN_OPT_XDISPLAY ||
+         val == TN_OPT_REMOTE_FLOW_CONTROL ||
+         val == TN_OPT_ECHO);
 
     if (will) {
         response[1] = TN_CMD_WILL;
-
     } else {
+        if (!wont) {
 #ifdef DEBUG
-        printf("> Unhandled telnet DO: %d\r\n", val);
+            printf("> Unhandled telnet DO: %d\r\n", val);
 #endif
+        }
 
         // Send WONT response
         response[1] = TN_CMD_WONT;
@@ -96,22 +114,43 @@ static void telnet_will(uint8_t val) {
 #endif
 }
 
+static void send_sub_neg(uint8_t cmd[], int cmd_len, uint8_t data[], int data_len) {
+    uint8_t response[] = {TN_CMD_IAC, TN_CMD_SB};
+    esp_write(telnet_fd, response, sizeof(response));
+    esp_write(telnet_fd, cmd, cmd_len);
+
+    if (data_len < 0)
+        data_len = strlen(data);
+    if (data_len > 0)
+        esp_write(telnet_fd, data, data_len);
+
+    response[1] = TN_CMD_SE;
+    esp_write(telnet_fd, response, sizeof(response));
+}
+
 static void telnet_sub_neg(uint8_t cmd[], int len) {
     if (len == 2 && cmd[0] == TN_OPT_TERM_TYPE && cmd[1] == 1) {
-        uint8_t response[] = {
-            TN_CMD_IAC, TN_CMD_SB,
-            TN_OPT_TERM_TYPE, 0,
-            // 'a', 'n', 's', 'i',
-            'x', 't', 'e', 'r', 'm', '-', 'c', 'o', 'l', 'o', 'r',
-            TN_CMD_IAC, TN_CMD_SE};
-        esp_write(telnet_fd, response, sizeof(response));
+        uint8_t resp_cmd[] = {TN_OPT_TERM_TYPE, 0};
+        send_sub_neg(resp_cmd, sizeof(resp_cmd), "XTERM-COLOR", -1);
+        // send_sub_neg(resp_cmd, sizeof(resp_cmd), "xterm-16color", -1);
+        // send_sub_neg(resp_cmd, sizeof(resp_cmd), "ansi", -1);
+        // send_sub_neg(resp_cmd, sizeof(resp_cmd), "linux", -1);
+
+    } else if (len == 2 && cmd[0] == TN_OPT_TERM_SPEED && cmd[1] == 1) {
+        uint8_t resp_cmd[] = {TN_OPT_TERM_SPEED, 0};
+        send_sub_neg(resp_cmd, sizeof(resp_cmd), "38400,38400", -1);
+
+    } else if (len == 2 && cmd[0] == TN_OPT_NEW_ENV_VAR && cmd[1] == 1) {
+        uint8_t resp_cmd[] = {TN_OPT_NEW_ENV_VAR, 0};
+        send_sub_neg(resp_cmd, sizeof(resp_cmd), NULL, 0);
+
     } else {
 
 #ifdef DEBUG
         printf("Unhandled sub neg: %d\r\n", cmd[0]);
+
 #endif
     }
-
     // for (int i = 0; i < len; i++) {
     //     printf("SB: %d\r\n", cmd[i]);
     // }
@@ -124,7 +163,7 @@ static bool escape = false;
 
 static void process_char(uint8_t ch) {
     if (cmd_idx) {
-        // printf("%d\r\n", ch);
+        // printf("%02X ", ch);
 
         if (cmd_idx < sizeof(cmd))
             cmd[cmd_idx++] = ch;
@@ -133,6 +172,12 @@ static void process_char(uint8_t ch) {
             case TN_CMD_DO:
                 if (cmd_idx == 3) {
                     telnet_do(ch);
+                    cmd_idx = 0;
+                }
+                break;
+
+            case TN_CMD_DONT:
+                if (cmd_idx == 3) {
                     cmd_idx = 0;
                 }
                 break;
@@ -179,10 +224,10 @@ static void process_char(uint8_t ch) {
 
 static void process_keyboard(uint8_t ch) {
     switch (ch) {
-        case CH_UP: esp_write(telnet_fd, "\x1B[A", 3); break;
-        case CH_DOWN: esp_write(telnet_fd, "\x1B[B", 3); break;
-        case CH_RIGHT: esp_write(telnet_fd, "\x1B[C", 3); break;
-        case CH_LEFT: esp_write(telnet_fd, "\x1B[D", 3); break;
+        case CH_UP: esp_write(telnet_fd, (term_flags & 1) ? "\x1BOA" : "\x1B[A", 3); break;
+        case CH_DOWN: esp_write(telnet_fd, (term_flags & 1) ? "\x1BOB" : "\x1B[B", 3); break;
+        case CH_RIGHT: esp_write(telnet_fd, (term_flags & 1) ? "\x1BOC" : "\x1B[C", 3); break;
+        case CH_LEFT: esp_write(telnet_fd, (term_flags & 1) ? "\x1BOD" : "\x1B[D", 3); break;
         case CH_HOME: esp_write(telnet_fd, "\x1B[H", 3); break;
         case CH_END: esp_write(telnet_fd, "\x1B[F", 3); break;
         case CH_F1: esp_write(telnet_fd, "\x1BOP", 3); break;
@@ -202,9 +247,7 @@ static void process_keyboard(uint8_t ch) {
         case CH_F11: esp_write(telnet_fd, "\x1B[23~", 5); break;
         case CH_F12: esp_write(telnet_fd, "\x1B[24~", 5); break;
         case CH_BACKSPACE: esp_write(telnet_fd, "\x7F", 1); break;
-        default:
-            esp_write(telnet_fd, &ch, 1);
-            break;
+        default: esp_write(telnet_fd, &ch, 1); break;
     }
 }
 
@@ -240,6 +283,21 @@ int main(void) {
         printf("Error opening host.\r\n");
     } else {
         printf("Connected to host.\r\n\r\n");
+
+        // {
+        //     uint8_t data[] = {
+        //         TN_CMD_IAC, TN_CMD_DO, TN_OPT_SUPPRESS_GO_AHEAD,
+        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_TYPE,
+        //         // TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_WINDOW_SIZE,
+        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_SPEED,
+        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_REMOTE_FLOW_CONTROL,
+        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_LINEMODE,
+        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_NEW_ENV_VAR,
+        //         TN_CMD_IAC, TN_CMD_DO, TN_OPT_STATUS,
+        //         // TN_CMD_IAC, TN_CMD_WILL, TN_OPT_XDISPLAY,
+        //     };
+        //     esp_write(telnet_fd, data, sizeof(data));
+        // }
 
         static uint8_t buf[256];
         while (1) {
