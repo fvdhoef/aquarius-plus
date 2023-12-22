@@ -39,6 +39,8 @@
     <ClCompile Include="..\Shared\VFS\EspVFS.cpp" />
     <ClCompile Include="..\Shared\VFS\SDCardVFS.cpp" />
     <ClCompile Include="..\Shared\VFS\VFS.cpp" />
+    <ClCompile Include="..\Shared\VFS\HttpVFS.cpp" />
+    <ClCompile Include="..\Shared\VFS\TcpVFS.cpp" />
     <ClCompile Include="..\tinyfiledialogs.cpp" />
     <ClCompile Include="..\UI\AssemblyListing.cpp" />
     <ClCompile Include="..\UI\MemoryEditor.cpp" />
@@ -71,6 +73,8 @@
     <ClInclude Include="..\Shared\VFS\EspVFS.h" />
     <ClInclude Include="..\Shared\VFS\SDCardVFS.h" />
     <ClInclude Include="..\Shared\VFS\VFS.h" />
+    <ClInclude Include="..\Shared\VFS\HttpVFS.h" />
+    <ClInclude Include="..\Shared\VFS\TcpVFS.h" />
     <ClInclude Include="..\tinyfiledialogs.h" />
     <ClInclude Include="..\UI\AssemblyListing.h" />
     <ClInclude Include="..\UI\MemoryEditor.h" />
