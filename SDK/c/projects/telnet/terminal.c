@@ -1,6 +1,8 @@
 #include "terminal.h"
 #include <string.h>
 
+// #define DEBUG
+
 #define COLUMNS 80
 #define ROWS    24
 
@@ -91,18 +93,28 @@ static void insert_line(int n) {
     if (n > ROWS)
         n = ROWS;
 
-    // FIXME!!!
-
     // Inserts <n> lines into the buffer at the cursor position. The line the cursor is on, and lines below it, will be shifted downwards.
-    // uint8_t *from = TEXT_RAM + COLUMNS * text_y;
-    // uint8_t *to   = TEXT_RAM + COLUMNS * (text_y + n);
-    // int      size = COLUMNS * (ROWS - text_y);
+    int y1 = text_y;
+    int y2 = text_y + n;
+    if (y2 > ROWS)
+        y2 = ROWS;
 
-    // IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    // memmove(TEXT_RAM + COLUMNS * n, TEXT_RAM + COLUMNS * n, COLUMNS * (ROWS - n));
+    uint8_t *p1     = TEXT_RAM + COLUMNS * y1;
+    uint8_t *p2     = TEXT_RAM + COLUMNS * y2;
+    int      count1 = ROWS - y2;
+    int      count2 = y2 - y1;
 
-    // IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-    // memmove(TEXT_RAM, TEXT_RAM + COLUMNS * n, COLUMNS * (ROWS - n));
+    IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p2, p1, count1 * COLUMNS);
+    if (count2 > 0)
+        memset(p1, ' ', count2 * COLUMNS);
+
+    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p2, p1, count1 * COLUMNS);
+    if (count2 > 0)
+        memset(p1, text_color, count2 * COLUMNS);
 }
 
 static void insert_char(int n) {
@@ -131,6 +143,37 @@ static void insert_char(int n) {
         memmove(p2, p1, count1);
     if (count2 > 0)
         memset(p1, text_color, count2);
+}
+
+static void delete_line(int n) {
+    if (n < 1)
+        return;
+    if (n > ROWS)
+        n = ROWS;
+
+    int y1 = text_y;
+    int y2 = text_y + n;
+    int y3 = ROWS - n;
+    if (y3 < text_y)
+        y3 = text_y;
+
+    uint8_t *p1     = TEXT_RAM + COLUMNS * y1;
+    uint8_t *p2     = TEXT_RAM + COLUMNS * y2;
+    uint8_t *p3     = TEXT_RAM + COLUMNS * y3;
+    int      count1 = ROWS - y2;
+    int      count2 = ROWS - y3;
+
+    IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p1, p2, count1 * COLUMNS);
+    if (count2 > 0)
+        memset(p3, ' ', count2 * COLUMNS);
+
+    IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+    if (count1 > 0)
+        memmove(p1, p2, count1 * COLUMNS);
+    if (count2 > 0)
+        memset(p3, text_color, count2 * COLUMNS);
 }
 
 static void delete_char(int n) {
@@ -279,8 +322,10 @@ static void handle_sgr(void) {
             // Bright background color
             bg_col = n - 100 + 8;
         } else {
+#ifdef DEBUG
             text_color = 0xF0;
             printf("\r\nSGR:'%d'\r\n", n);
+#endif
         }
 
         if (cmd_params[0] != ';')
@@ -342,9 +387,10 @@ static void handle_csi(void) {
         }
         case 'J': clear_display(get_param(0)); break;
         case 'K': clear_line(get_param(0)); break;
-        case 'I': insert_line(get_param(0)); break;
+        case 'I': insert_line(get_param(1)); break;
         case '@': insert_char(get_param(1)); break;
         case 'P': delete_char(get_param(1)); break;
+        case 'M': delete_line(get_param(1)); break;
         case 'S': scroll_up(get_param(1)); break;
         case 'T': scroll_down(get_param(1)); break;
         case 'm': handle_sgr(); return;
@@ -379,6 +425,9 @@ static void handle_csi(void) {
                 if (mode == 1) {
                     // Cursor Keys Mode - set: application sequences
                     term_flags |= 1;
+                } else if (mode == 25) {
+                    // Cursor - set: show cursor
+                    term_flags |= 2;
                 }
             }
             break;
@@ -391,6 +440,9 @@ static void handle_csi(void) {
                 if (mode == 1) {
                     // Cursor Keys Mode - reset: cursor sequences
                     term_flags &= ~1;
+                } else if (mode == 25) {
+                    // Cursor - set: show cursor
+                    term_flags &= ~2;
                 }
             }
             break;
@@ -440,6 +492,9 @@ void terminal_putchar(uint8_t ch) {
             if (ch == 7 || ch == '\\') {
                 escape_idx = 0;
             }
+        } else if (escape_cmd[1] == 'M') {
+            insert_line(1);
+            escape_idx = 0;
 
             // } else if (escape_cmd[1] == '7') {
             //     // DECSC: save cursor
@@ -492,14 +547,21 @@ void terminal_putchar(uint8_t ch) {
         drawchar(ch);
     } else if (ch > 0) {
         // printf("%02X ", ch);
-
+#ifdef DEBUG
         printf("\r\nUnknown char %d\r\n", ch);
+#endif
     }
 
     if (text_x >= COLUMNS) {
-        text_x = COLUMNS - 1;
-        // text_y++;
-        recalc_p();
+        if (term_flags & 0x80) {
+            text_x = 0;
+            text_y++;
+            recalc_p();
+
+        } else {
+            text_x = COLUMNS - 1;
+            recalc_p();
+        }
     }
     if (text_y > ROWS - 1) {
         text_y = ROWS - 1;

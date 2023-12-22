@@ -3,7 +3,7 @@
 #include <esp.h>
 #include "terminal.h"
 
-#define DEBUG
+// #define DEBUG
 
 static int8_t telnet_fd;
 
@@ -251,6 +251,54 @@ static void process_keyboard(uint8_t ch) {
     }
 }
 
+static void connect(const char *uri) {
+    printf("\r\nConnecting to %s\r\n", uri);
+    terminal_show_cursor(true);
+
+    term_flags       = 2;
+    int8_t telnet_fd = esp_open(uri, 0);
+
+    terminal_show_cursor(false);
+    if (telnet_fd < 0) {
+        printf("Error opening host.\r\n");
+    } else {
+        printf("Connected to host.\r\n\r\n");
+
+        static uint8_t buf[256];
+        while (1) {
+            while (1) {
+                uint8_t val = IO_KEYBUF;
+                if (val == 0)
+                    break;
+                process_keyboard(val);
+            }
+
+            int len = esp_read(telnet_fd, buf, sizeof(buf));
+            if (len < 0)
+                break;
+
+            if (len > 0) {
+                // Hide cursor
+                if (term_flags & 2)
+                    terminal_show_cursor(false);
+
+                uint8_t *p = buf;
+                while (len--) {
+                    process_char(*(p++));
+                }
+
+                // Show cursor
+                if (term_flags & 2)
+                    terminal_show_cursor(true);
+            }
+        }
+        esp_close(telnet_fd);
+
+        terminal_show_cursor(false);
+        printf("\r\n\r\nConnection lost.\r\n");
+    }
+}
+
 int main(void) {
     // Enable turbo mode
     IO_SYSCTRL = 4;
@@ -268,65 +316,86 @@ int main(void) {
 
     terminal_init();
 
-    // Title bar
-    {
-        IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-        memset((uint8_t *)0x3000, ' ', 80);
-        memcpy((uint8_t *)0x3000, "Telnet", 6);
+    static char uri[128];
 
-        IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
-        memset((uint8_t *)0x3000, 0x74, 80);
-    }
+    while (1) {
+        // Title bar
+        {
+            IO_VCTRL = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+            memset((uint8_t *)0x3000, ' ', 80);
+            memcpy((uint8_t *)0x3000, "Telnet", 6);
 
-    int8_t telnet_fd = esp_open("tcp://192.168.178.10:23", 0);
-    if (telnet_fd < 0) {
-        printf("Error opening host.\r\n");
-    } else {
-        printf("Connected to host.\r\n\r\n");
+            IO_VCTRL = VCTRL_TEXTPAGE2 | VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+            memset((uint8_t *)0x3000, 0x74, 80);
+        }
 
-        // {
-        //     uint8_t data[] = {
-        //         TN_CMD_IAC, TN_CMD_DO, TN_OPT_SUPPRESS_GO_AHEAD,
-        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_TYPE,
-        //         // TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_WINDOW_SIZE,
-        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_TERM_SPEED,
-        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_REMOTE_FLOW_CONTROL,
-        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_LINEMODE,
-        //         TN_CMD_IAC, TN_CMD_WILL, TN_OPT_NEW_ENV_VAR,
-        //         TN_CMD_IAC, TN_CMD_DO, TN_OPT_STATUS,
-        //         // TN_CMD_IAC, TN_CMD_WILL, TN_OPT_XDISPLAY,
-        //     };
-        //     esp_write(telnet_fd, data, sizeof(data));
-        // }
+        printf("\r\nEnter address (hostname:port): ");
+        strcpy(uri, "tcp://");
+        char *p       = uri + strlen(uri);
+        int   max_len = sizeof(uri) - strlen(uri) - 1;
+        int   idx     = 0;
 
-        static uint8_t buf[256];
+        terminal_show_cursor(true);
+
+        term_flags = 0x82;
+
         while (1) {
-            while (1) {
-                uint8_t val = IO_KEYBUF;
-                if (val == 0)
-                    break;
-                process_keyboard(val);
-            }
-
-            int len = esp_read(telnet_fd, buf, sizeof(buf));
-            if (len < 0)
-                break;
-
-            if (len > 0) {
-                // Hide cursor
-                terminal_show_cursor(false);
-
-                uint8_t *p = buf;
-                while (len--) {
-                    process_char(*(p++));
+            char ch = IO_KEYBUF;
+            if (ch == '\b') {
+                if (idx > 0) {
+                    idx--;
+                    terminal_show_cursor(false);
+                    putchar('\b');
+                    putchar(' ');
+                    putchar('\b');
+                    terminal_show_cursor(true);
                 }
-
-                // Show cursor
-                terminal_show_cursor(true);
+            } else if (ch == '\r') {
+                terminal_show_cursor(false);
+                putchar('\r');
+                putchar('\n');
+                break;
+            } else if (ch <= ' ') {
+                continue;
+            } else {
+                if (idx < max_len) {
+                    terminal_show_cursor(false);
+                    putchar(ch);
+                    terminal_show_cursor(true);
+                    p[idx++] = ch;
+                }
             }
         }
-        esp_close(telnet_fd);
-        printf("\r\n\r\nConnection lost.\r\n");
+        p[idx] = 0;
+
+        // Check for ':'
+        {
+            bool        has_port = false;
+            const char *p2       = p;
+            while (*p2) {
+                if (*p2 == ':') {
+                    has_port = true;
+                }
+                p2++;
+            }
+
+            if (!has_port) {
+                // Append :23
+                if (strlen(uri) + 3 + 1 < sizeof(uri)) {
+                    strcat(uri, ":23");
+                }
+            }
+        }
+
+        for (int i = 0; i < 70; i++) {
+            if (!p[i])
+                break;
+
+            IO_VCTRL                     = VCTRL_80COLUMNS | VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+            *(uint8_t *)(0x3000 + 7 + i) = p[i];
+        }
+
+        connect(uri);
     }
     return 0;
 }
