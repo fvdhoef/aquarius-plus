@@ -460,7 +460,7 @@ uint8_t EmuState::ioRead(uint16_t addr, bool triggerBp) {
             if (emuState.sysCtrlAyDisable || emuState.sysCtrlDisableExt)
                 return 0xFF;
             else
-                return emuState.ay2.readReg(emuState.ay1Addr);
+                return emuState.ay2.readReg(emuState.ay2Addr);
 
         case 0xFA: return emuState.kbBufRead();
         case 0xFB: return (
