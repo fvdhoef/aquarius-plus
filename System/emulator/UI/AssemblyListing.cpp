@@ -134,14 +134,14 @@ void AssemblyListing::load(const std::string &_path) {
 
                     auto lblEnd = line.find_first_of(" :");
                     auto label  = line.substr(0, lblEnd);
-                    bool isEqu  = false;
 
-                    if (lblEnd != std::string::npos) {
-                        auto idx = line.find_first_not_of(' ', lblEnd + 1);
-                        if (idx != std::string::npos) {
-                            isEqu = (line[idx] == '=') || strncasecmp(line.substr(idx).c_str(), "equ ", 4) == 0;
-                        }
-                    }
+                    // bool isEqu  = false;
+                    // if (lblEnd != std::string::npos) {
+                    //     auto idx = line.find_first_not_of(' ', lblEnd + 1);
+                    //     if (idx != std::string::npos) {
+                    //         isEqu = (line[idx] == '=') || strncasecmp(line.substr(idx).c_str(), "equ ", 4) == 0;
+                    //     }
+                    // }
 
                     if (label[0] == '.') {
                         label = lastLabel + label;
@@ -150,18 +150,11 @@ void AssemblyListing::load(const std::string &_path) {
                     }
 
                     if (label[0] == '_') {
-                        label = label + '$' + curFile;
+                        label = label + " [" + curFile + "]";
                     }
 
-                    if (!isEqu) {
-                        symbolsAddrStr.insert(std::make_pair(addr, label));
-                        symbolsStrAddr.insert(std::make_pair(label, addr));
-
-                        // printf("%04x '%s'\n", addr, label.c_str());
-                    } else {
-                        equsAddrStr.insert(std::make_pair(addr, label));
-                        equsStrAddr.insert(std::make_pair(label, addr));
-                    }
+                    symbolsAddrStr.insert(std::make_pair(addr, label));
+                    symbolsStrAddr.insert(std::make_pair(label, addr));
                 }
             }
 

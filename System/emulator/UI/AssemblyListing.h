@@ -25,32 +25,52 @@ public:
         std::string s;
     };
 
-    std::vector<Line>               lines;
-    std::map<uint16_t, std::string> symbolsAddrStr;
-    std::map<std::string, uint16_t> symbolsStrAddr;
-    std::map<uint16_t, std::string> equsAddrStr;
-    std::map<std::string, uint16_t> equsStrAddr;
+    std::vector<Line>                    lines;
+    std::multimap<uint16_t, std::string> symbolsAddrStr;
+    std::multimap<std::string, uint16_t> symbolsStrAddr;
 
     bool findSymbolAddr(const std::string &name, uint16_t &addr) {
         auto it = symbolsStrAddr.find(name);
-        if (it == symbolsStrAddr.end()) {
-            it = equsStrAddr.find(name);
-            if (it == equsStrAddr.end())
-                return false;
-        }
+        if (it == symbolsStrAddr.end())
+            return false;
         addr = it->second;
         return true;
     }
 
     bool findSymbolName(uint16_t addr, std::string &name) {
         auto it = symbolsAddrStr.find(addr);
-        if (it == symbolsAddrStr.end()) {
-            it = equsAddrStr.find(addr);
-            if (it == equsAddrStr.end())
-                return false;
-        }
+        if (it == symbolsAddrStr.end())
+            return false;
         name = it->second;
         return true;
+    }
+
+    bool findNearestSymbol(uint16_t &addr, std::string &name) {
+        auto it = symbolsAddrStr.lower_bound(addr);
+        if (it == symbolsAddrStr.end())
+            return false;
+
+        ++it;
+        if (it != symbolsAddrStr.end() && it->first == addr) {
+            name = it->second;
+            return true;
+        }
+        --it;
+        if (it->first <= addr) {
+            name = it->second;
+            addr = it->first;
+            return true;
+        }
+        if (it != symbolsAddrStr.begin()) {
+            --it;
+            if (it->first <= addr) {
+                name = it->second;
+                addr = it->first;
+                return true;
+            }
+        }
+
+        return false;
     }
 
 private:

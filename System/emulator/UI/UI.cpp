@@ -694,6 +694,16 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::EndDisabled();
 
         ImGui::Separator();
+
+        {
+            uint16_t    addr = emuState.z80ctx.PC;
+            std::string name;
+            if (asmListing.findNearestSymbol(addr, name)) {
+                ImGui::Text("%s ($%04X + %u)", name.c_str(), addr, emuState.z80ctx.PC - addr);
+                ImGui::Separator();
+            }
+        }
+
         {
             char tmp1[64];
             char tmp2[64];
@@ -903,13 +913,6 @@ void UI::wndBreakpoints(bool *p_open) {
                     ImGui::SetNextItemWidth(-1);
                     if (ImGui::BeginCombo(fmtstr("##name%d", row_n).c_str(), bp.name.c_str())) {
                         for (auto &sym : asmListing.symbolsStrAddr) {
-                            if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
-                                bp.name  = sym.first;
-                                bp.value = sym.second;
-                            }
-                        }
-                        ImGui::SeparatorText("EQUs");
-                        for (auto &sym : asmListing.equsStrAddr) {
                             if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
                                 bp.name  = sym.first;
                                 bp.value = sym.second;
@@ -1242,6 +1245,7 @@ void UI::addrPopup(uint16_t addr) {
             bp.onX     = true;
             emuState.breakpoints.push_back(bp);
             ImGui::CloseCurrentPopup();
+            listingReloaded();
         }
         if (ImGui::MenuItem("Show in memory editor")) {
             auto &config            = Config::instance();
@@ -1272,6 +1276,7 @@ void UI::addrPopup(uint16_t addr) {
                 w.type = (EmuState::WatchType)i;
                 emuState.watches.push_back(w);
                 ImGui::CloseCurrentPopup();
+                listingReloaded();
             }
 
             ImGui::EndMenu();
@@ -1561,13 +1566,6 @@ void UI::wndWatch(bool *p_open) {
                         ImGui::SetNextItemWidth(-1);
                         if (ImGui::BeginCombo(fmtstr("##name%d", row_n).c_str(), w.name.c_str())) {
                             for (auto &sym : asmListing.symbolsStrAddr) {
-                                if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
-                                    w.name = sym.first;
-                                    w.addr = sym.second;
-                                }
-                            }
-                            ImGui::SeparatorText("EQUs");
-                            for (auto &sym : asmListing.equsStrAddr) {
                                 if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
                                     w.name = sym.first;
                                     w.addr = sym.second;
