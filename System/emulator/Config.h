@@ -39,6 +39,7 @@ public:
     bool showBreakpoints     = false;
     bool showAssemblyListing = false;
     bool showCpuTrace        = false;
+    bool showWatch           = false;
     bool showEspInfo         = false;
     int  memEditMemSelect    = 0;
 

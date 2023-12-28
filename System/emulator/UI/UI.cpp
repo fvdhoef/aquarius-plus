@@ -109,6 +109,8 @@ void UI::mainLoop() {
 
     int tooSlow = 0;
 
+    listingReloaded();
+
     bool done = false;
     while (!done) {
         SDL_Event event;
@@ -284,6 +286,7 @@ void UI::mainLoop() {
                     ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
                     ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
                     ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
+                    ImGui::MenuItem("Watch", "", &config.showWatch);
                     ImGui::MenuItem("ESP info", "", &config.showEspInfo);
                     ImGui::Separator();
 
@@ -347,6 +350,8 @@ void UI::mainLoop() {
                 wndAssemblyListing(&config.showAssemblyListing);
             if (config.showCpuTrace)
                 wndCpuTrace(&config.showCpuTrace);
+            if (config.showWatch)
+                wndWatch(&config.showWatch);
             if (config.showEspInfo)
                 wndEspInfo(&config.showEspInfo);
         }
@@ -863,59 +868,83 @@ void UI::wndBreakpoints(bool *p_open) {
     ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
     if (ImGui::Begin("Breakpoints", p_open, 0)) {
         ImGui::Checkbox("Enable breakpoints", &emuState.enableBreakpoints);
-        ImGui::SameLine(ImGui::GetWindowWidth() - 35);
+        ImGui::SameLine(ImGui::GetWindowWidth() - 25);
         if (ImGui::Button("+")) {
             emuState.breakpoints.emplace_back();
         }
+        ImGui::Separator();
+        if (ImGui::BeginTable("Table", 8, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("En", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Symbol", 0);
+            ImGui::TableSetupColumn("R", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("W", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("X", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
 
-        int eraseIdx = -1;
-        for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
-            auto &bp = emuState.breakpoints[i];
-            ImGui::PushID(i);
+            ImGuiListClipper clipper;
+            clipper.Begin((int)emuState.breakpoints.size());
+            int eraseIdx = -1;
 
-            ImGui::Separator();
+            while (clipper.Step()) {
+                for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                    auto &bp = emuState.breakpoints[row_n];
 
-            if (emuState.lastBp == i) {
-                ImGui::PushStyleColor(ImGuiCol_FrameBg, (ImVec4)ImColor(255, 110, 0, 144));
-                ImGui::PushStyleColor(ImGuiCol_Button, (ImVec4)ImColor(255, 110, 0, 200));
+                    ImGui::TableNextRow();
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox(fmtstr("##en%d", row_n).c_str(), &bp.enabled);
+                    ImGui::TableNextColumn();
+                    ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
+                    ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &bp.value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
+                    ImGui::TableNextColumn();
+                    ImGui::SetNextItemWidth(-1);
+                    if (ImGui::BeginCombo(fmtstr("##name%d", row_n).c_str(), bp.name.c_str())) {
+                        for (auto &sym : asmListing.symbolsStrAddr) {
+                            if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
+                                bp.name  = sym.first;
+                                bp.value = sym.second;
+                            }
+                        }
+                        ImGui::SeparatorText("EQUs");
+                        for (auto &sym : asmListing.equsStrAddr) {
+                            if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
+                                bp.name  = sym.first;
+                                bp.value = sym.second;
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox(fmtstr("##onR%d", row_n).c_str(), &bp.onR);
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox(fmtstr("##onW%d", row_n).c_str(), &bp.onW);
+                    ImGui::TableNextColumn();
+                    ImGui::Checkbox(fmtstr("##onX%d", row_n).c_str(), &bp.onX);
+                    ImGui::TableNextColumn();
+                    ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 9);
+
+                    static const char *types[] = {"Mem", "IO 8", "IO 16"};
+                    if (ImGui::BeginCombo(fmtstr("##type%d", row_n).c_str(), types[bp.type])) {
+                        for (int i = 0; i < 3; i++) {
+                            if (ImGui::Selectable(types[i])) {
+                                bp.type = i;
+                            }
+                        }
+                        ImGui::EndCombo();
+                    }
+                    ImGui::TableNextColumn();
+                    if (ImGui::Button(fmtstr("X##del%d", row_n).c_str())) {
+                        eraseIdx = row_n;
+                    }
+                }
             }
-
-            ImGui::Checkbox("En", &bp.enabled);
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
-            ImGui::InputScalar("##", ImGuiDataType_U16, &bp.value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
-            ImGui::SameLine();
-            ImGui::Checkbox("R", &bp.onR);
-            ImGui::SameLine();
-            ImGui::Checkbox("W", &bp.onW);
-            ImGui::SameLine();
-
-            if (bp.type != 0)
-                ImGui::BeginDisabled();
-            ImGui::Checkbox("X", &bp.onX);
-            if (bp.type != 0)
-                ImGui::EndDisabled();
-
-            ImGui::SameLine();
-            ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 10);
-            ImGui::Combo(
-                "##Type", &bp.type,
-                "Mem\0"
-                "IO 8\0"
-                "IO 16\0");
-            ImGui::SameLine();
-            if (ImGui::Button("X##Delete")) {
-                eraseIdx = i;
+            if (eraseIdx >= 0) {
+                emuState.breakpoints.erase(emuState.breakpoints.begin() + eraseIdx);
             }
-
-            if (emuState.lastBp == i) {
-                ImGui::PopStyleColor(2);
-            }
-
-            ImGui::PopID();
-        }
-        if (eraseIdx >= 0) {
-            emuState.breakpoints.erase(emuState.breakpoints.begin() + eraseIdx);
+            ImGui::EndTable();
         }
     }
     ImGui::End();
@@ -1190,7 +1219,14 @@ void UI::wndIoRegs(bool *p_open) {
 void UI::addrPopup(uint16_t addr) {
     if (ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonLeft) ||
         ImGui::BeginPopupContextItem(nullptr, ImGuiPopupFlags_MouseButtonRight)) {
-        ImGui::Text("Address $%04X", addr);
+
+        auto sym = asmListing.symbolsAddrStr.find(addr);
+        if (sym != asmListing.symbolsAddrStr.end()) {
+            ImGui::Text("Address $%04X (%s)", addr, sym->second.c_str());
+        } else {
+            ImGui::Text("Address $%04X", addr);
+        }
+
         ImGui::Separator();
         if (ImGui::MenuItem("Run to here")) {
             emuState.tmpBreakpoint = addr;
@@ -1214,6 +1250,33 @@ void UI::addrPopup(uint16_t addr) {
             memEdit.gotoAddr        = addr;
             ImGui::CloseCurrentPopup();
         }
+        if (ImGui::BeginMenu("Add watch")) {
+            int i = -1;
+
+            if (ImGui::MenuItem("Hex 8"))
+                i = (int)EmuState::WatchType::Hex8;
+            if (ImGui::MenuItem("Dec U8"))
+                i = (int)EmuState::WatchType::DecU8;
+            if (ImGui::MenuItem("Dec S8"))
+                i = (int)EmuState::WatchType::DecS8;
+            if (ImGui::MenuItem("Hex 16"))
+                i = (int)EmuState::WatchType::Hex16;
+            if (ImGui::MenuItem("Dec U16"))
+                i = (int)EmuState::WatchType::DecU16;
+            if (ImGui::MenuItem("Dec S16"))
+                i = (int)EmuState::WatchType::DecS16;
+
+            if (i >= 0) {
+                EmuState::Watch w;
+                w.addr = addr;
+                w.type = (EmuState::WatchType)i;
+                emuState.watches.push_back(w);
+                ImGui::CloseCurrentPopup();
+            }
+
+            ImGui::EndMenu();
+        }
+
         ImGui::EndPopup();
     }
 }
@@ -1229,16 +1292,19 @@ void UI::wndAssemblyListing(bool *p_open) {
                 char       *lstFile            = tinyfd_openFileDialog("Open zmac listing file", "", 1, lFilterPatterns, "Zmac listing files", 0);
                 if (lstFile) {
                     asmListing.load(lstFile);
+                    listingReloaded();
                 }
             }
         } else {
             if (ImGui::Button("Reload")) {
                 auto path = asmListing.getPath();
                 asmListing.load(path);
+                listingReloaded();
             }
             ImGui::SameLine();
             if (ImGui::Button("X")) {
                 asmListing.clear();
+                listingReloaded();
             }
             ImGui::SameLine();
             ImGui::TextUnformatted(asmListing.getPath().c_str());
@@ -1408,6 +1474,145 @@ void UI::wndCpuTrace(bool *p_open) {
     ImGui::End();
 }
 
+void UI::wndWatch(bool *p_open) {
+    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
+    if (ImGui::Begin("Watch", p_open, 0)) {
+        if (ImGui::BeginTable("Table", 5, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
+            ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Address", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("Symbol", 0);
+            ImGui::TableSetupColumn("Type", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed);
+            ImGui::TableSetupScrollFreeze(0, 1);
+            ImGui::TableHeadersRow();
+
+            ImGuiListClipper clipper;
+            int              numWatches = (int)emuState.watches.size();
+            clipper.Begin(numWatches + 1);
+            int eraseIdx = -1;
+
+            while (clipper.Step()) {
+                for (int row_n = clipper.DisplayStart; row_n < clipper.DisplayEnd; row_n++) {
+                    ImGui::TableNextRow();
+
+                    if (row_n < numWatches) {
+                        auto &w = emuState.watches[row_n];
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 7);
+                        switch (w.type) {
+                            case EmuState::WatchType::Hex8: {
+                                uint8_t val = emuState.memRead(w.addr);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U8, &val, nullptr, nullptr, "%02X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val);
+                                }
+                                break;
+                            }
+                            case EmuState::WatchType::DecU8: {
+                                uint8_t val = emuState.memRead(w.addr);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U8, &val, nullptr, nullptr, "%u", ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val);
+                                }
+                                break;
+                            }
+                            case EmuState::WatchType::DecS8: {
+                                int8_t val = emuState.memRead(w.addr);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_S8, &val, nullptr, nullptr, "%d", ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val);
+                                }
+                                break;
+                            }
+                            case EmuState::WatchType::Hex16: {
+                                uint16_t val = emuState.memRead(w.addr) | (emuState.memRead(w.addr + 1) << 8);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &val, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val & 0xFF);
+                                    emuState.memWrite(w.addr + 1, (val >> 8) & 0xFF);
+                                }
+                                break;
+                            }
+                            case EmuState::WatchType::DecU16: {
+                                uint16_t val = emuState.memRead(w.addr) | (emuState.memRead(w.addr + 1) << 8);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &val, nullptr, nullptr, "%u", ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val & 0xFF);
+                                    emuState.memWrite(w.addr + 1, (val >> 8) & 0xFF);
+                                }
+                                break;
+                            }
+                            case EmuState::WatchType::DecS16: {
+                                int16_t val = emuState.memRead(w.addr) | (emuState.memRead(w.addr + 1) << 8);
+                                if (ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_S16, &val, nullptr, nullptr, "%d", ImGuiInputTextFlags_CharsDecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                                    emuState.memWrite(w.addr, val & 0xFF);
+                                    emuState.memWrite(w.addr + 1, (val >> 8) & 0xFF);
+                                }
+                                break;
+                            }
+                        }
+                        // ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &w.value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
+                        if (ImGui::InputScalar(fmtstr("##addr%d", row_n).c_str(), ImGuiDataType_U16, &w.addr, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite)) {
+                            auto sym = asmListing.symbolsAddrStr.find(w.addr);
+                            if (sym != asmListing.symbolsAddrStr.end()) {
+                                w.name = sym->second;
+                            } else {
+                                w.name = "";
+                            }
+                        }
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(-1);
+                        if (ImGui::BeginCombo(fmtstr("##name%d", row_n).c_str(), w.name.c_str())) {
+                            for (auto &sym : asmListing.symbolsStrAddr) {
+                                if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
+                                    w.name = sym.first;
+                                    w.addr = sym.second;
+                                }
+                            }
+                            ImGui::SeparatorText("EQUs");
+                            for (auto &sym : asmListing.equsStrAddr) {
+                                if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
+                                    w.name = sym.first;
+                                    w.addr = sym.second;
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+
+                        ImGui::TableNextColumn();
+                        ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 11);
+
+                        static const char *types[] = {"Hex 8", "Dec U8", "Dec S8", "Hex 16", "Dec U16", "Dec S16"};
+                        if (ImGui::BeginCombo(fmtstr("##type%d", row_n).c_str(), types[(int)w.type])) {
+                            for (int i = 0; i < 6; i++) {
+                                if (ImGui::Selectable(types[i])) {
+                                    w.type = (EmuState::WatchType)i;
+                                }
+                            }
+                            ImGui::EndCombo();
+                        }
+                        ImGui::TableNextColumn();
+                        if (ImGui::Button(fmtstr("X##del%d", row_n).c_str())) {
+                            eraseIdx = row_n;
+                        }
+                    } else {
+                        ImGui::TableNextColumn();
+                        ImGui::TableNextColumn();
+                        ImGui::TableNextColumn();
+                        ImGui::TableNextColumn();
+                        ImGui::TableNextColumn();
+                        if (ImGui::Button(fmtstr("+##add%d", row_n).c_str())) {
+                            emuState.watches.emplace_back();
+                        }
+                    }
+                }
+            }
+            if (eraseIdx >= 0) {
+                emuState.watches.erase(emuState.watches.begin() + eraseIdx);
+            }
+            ImGui::EndTable();
+        }
+    }
+    ImGui::End();
+}
+
 void UI::wndEspInfo(bool *p_open) {
     bool open = ImGui::Begin("ESP info", p_open, 0);
     if (open) {
@@ -1459,4 +1664,24 @@ void UI::wndEspInfo(bool *p_open) {
         }
     }
     ImGui::End();
+}
+
+void UI::listingReloaded() {
+    // Update watches
+    for (auto &w : emuState.watches) {
+        if (!asmListing.findSymbolAddr(w.name, w.addr)) {
+            if (!asmListing.findSymbolName(w.addr, w.name)) {
+                w.name = "";
+            }
+        }
+    }
+
+    // Update breakpoints
+    for (auto &bp : emuState.breakpoints) {
+        if (!asmListing.findSymbolAddr(bp.name, bp.value)) {
+            if (!asmListing.findSymbolName(bp.value, bp.name)) {
+                bp.name = "";
+            }
+        }
+    }
 }

@@ -79,6 +79,7 @@ void Config::load() {
         showBreakpoints     = getBoolValue(root, "showBreakpoints", false);
         showAssemblyListing = getBoolValue(root, "showAssemblyListing", false);
         showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
+        showWatch           = getBoolValue(root, "showWatch", false);
         showEspInfo         = getBoolValue(root, "showEspInfo", false);
 
         memEditMemSelect = getIntValue(root, "memEditMemSelect", 0);
@@ -92,6 +93,7 @@ void Config::load() {
 
                 EmuState::Breakpoint bp;
                 bp.value   = getIntValue(breakpoint, "addr", 0);
+                bp.name    = getStringValue(breakpoint, "name", "");
                 bp.enabled = getBoolValue(breakpoint, "enabled", false);
                 bp.type    = getIntValue(breakpoint, "type", 0);
                 bp.onR     = getBoolValue(breakpoint, "onR", false);
@@ -103,6 +105,21 @@ void Config::load() {
         emuState.enableBreakpoints = getBoolValue(root, "enableBreakpoints", false);
         emuState.traceEnable       = getBoolValue(root, "traceEnable", false);
         emuState.traceDepth        = getIntValue(root, "traceDepth", 16);
+
+        auto watches = cJSON_GetObjectItem(root, "watches");
+        if (cJSON_IsArray(watches)) {
+            cJSON *watch;
+            cJSON_ArrayForEach(watch, watches) {
+                if (!cJSON_IsObject(watch))
+                    continue;
+
+                EmuState::Watch w;
+                w.addr = getIntValue(watch, "addr", 0);
+                w.name = getStringValue(watch, "name", "");
+                w.type = (EmuState::WatchType)getIntValue(watch, "type", 0);
+                emuState.watches.push_back(w);
+            }
+        }
 
         cJSON_free(root);
     }
@@ -141,6 +158,7 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showBreakpoints", showBreakpoints);
     cJSON_AddBoolToObject(root, "showAssemblyListing", showAssemblyListing);
     cJSON_AddBoolToObject(root, "showCpuTrace", showCpuTrace);
+    cJSON_AddBoolToObject(root, "showWatch", showWatch);
     cJSON_AddBoolToObject(root, "showEspInfo", showEspInfo);
 
     cJSON_AddNumberToObject(root, "memEditMemSelect", memEditMemSelect);
@@ -154,6 +172,7 @@ void Config::save() {
         auto breakpoint = cJSON_CreateObject();
 
         cJSON_AddNumberToObject(breakpoint, "addr", bp.value);
+        cJSON_AddStringToObject(breakpoint, "name", bp.name.c_str());
         cJSON_AddBoolToObject(breakpoint, "enabled", bp.enabled);
         cJSON_AddNumberToObject(breakpoint, "type", bp.type);
         cJSON_AddBoolToObject(breakpoint, "onR", bp.onR);
@@ -161,6 +180,15 @@ void Config::save() {
         cJSON_AddBoolToObject(breakpoint, "onX", bp.onX);
 
         cJSON_AddItemToArray(breakpoints, breakpoint);
+    }
+
+    auto watches = cJSON_AddArrayToObject(root, "watches");
+    for (auto &w : emuState.watches) {
+        auto watch = cJSON_CreateObject();
+        cJSON_AddNumberToObject(watch, "addr", w.addr);
+        cJSON_AddStringToObject(watch, "name", w.name.c_str());
+        cJSON_AddNumberToObject(watch, "type", (int)w.type);
+        cJSON_AddItemToArray(watches, watch);
     }
 
     std::ofstream ofs(configPath);

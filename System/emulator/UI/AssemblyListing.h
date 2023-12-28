@@ -25,7 +25,33 @@ public:
         std::string s;
     };
 
-    std::vector<Line> lines;
+    std::vector<Line>               lines;
+    std::map<uint16_t, std::string> symbolsAddrStr;
+    std::map<std::string, uint16_t> symbolsStrAddr;
+    std::map<uint16_t, std::string> equsAddrStr;
+    std::map<std::string, uint16_t> equsStrAddr;
+
+    bool findSymbolAddr(const std::string &name, uint16_t &addr) {
+        auto it = symbolsStrAddr.find(name);
+        if (it == symbolsStrAddr.end()) {
+            it = equsStrAddr.find(name);
+            if (it == equsStrAddr.end())
+                return false;
+        }
+        addr = it->second;
+        return true;
+    }
+
+    bool findSymbolName(uint16_t addr, std::string &name) {
+        auto it = symbolsAddrStr.find(addr);
+        if (it == symbolsAddrStr.end()) {
+            it = equsAddrStr.find(addr);
+            if (it == equsAddrStr.end())
+                return false;
+        }
+        name = it->second;
+        return true;
+    }
 
 private:
     std::string path;

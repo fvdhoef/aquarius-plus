@@ -17,6 +17,8 @@ public:
         const std::string &cartRomPath,
         const std::string &typeInStr);
 
+    void listingReloaded();
+
 private:
     void mainLoop();
 
@@ -33,6 +35,7 @@ private:
     void wndIoRegs(bool *p_open);
     void wndAssemblyListing(bool *p_open);
     void wndCpuTrace(bool *p_open);
+    void wndWatch(bool *p_open);
     void wndEspInfo(bool *p_open);
 
     SDL_Texture  *texture  = nullptr;
