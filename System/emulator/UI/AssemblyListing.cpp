@@ -30,8 +30,12 @@ AssemblyListing::AssemblyListing() {
 }
 
 void AssemblyListing::load(const std::string &_path) {
+    std::string lastLabel;
+
     try {
         lines.clear();
+        symbolsAddrStr.clear();
+        symbolsStrAddr.clear();
 
         path = _path;
         std::ifstream ifs(path);
@@ -124,6 +128,34 @@ void AssemblyListing::load(const std::string &_path) {
                 }
                 bytes = line.substr(6, 8);
                 line  = line.substr(16);
+
+                if (line[0] != ' ') {
+                    // Label
+
+                    auto lblEnd = line.find_first_of(" :");
+                    auto label  = line.substr(0, lblEnd);
+
+                    // bool isEqu  = false;
+                    // if (lblEnd != std::string::npos) {
+                    //     auto idx = line.find_first_not_of(' ', lblEnd + 1);
+                    //     if (idx != std::string::npos) {
+                    //         isEqu = (line[idx] == '=') || strncasecmp(line.substr(idx).c_str(), "equ ", 4) == 0;
+                    //     }
+                    // }
+
+                    if (label[0] == '.') {
+                        label = lastLabel + label;
+                    } else {
+                        lastLabel = label;
+                    }
+
+                    if (label[0] == '_') {
+                        label = label + " [" + curFile + "]";
+                    }
+
+                    symbolsAddrStr.insert(std::make_pair(addr, label));
+                    symbolsStrAddr.insert(std::make_pair(label, addr));
+                }
             }
 
             trim(bytes);
@@ -164,4 +196,6 @@ void AssemblyListing::clear() {
     lines.clear();
     path.clear();
     Config::instance().asmListingPath.clear();
+    symbolsAddrStr.clear();
+    symbolsStrAddr.clear();
 }

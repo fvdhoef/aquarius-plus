@@ -66,12 +66,13 @@ struct EmuState {
     bool enableBreakpoints = false;
 
     struct Breakpoint {
-        uint16_t value   = 0;
-        bool     enabled = false;
-        int      type    = 0;
-        bool     onR     = true;
-        bool     onW     = true;
-        bool     onX     = true;
+        uint16_t    value = 0;
+        std::string name;
+        bool        enabled = false;
+        int         type    = 0;
+        bool        onR     = true;
+        bool        onW     = true;
+        bool        onX     = true;
     };
 
     std::vector<Breakpoint> breakpoints;
@@ -79,6 +80,21 @@ struct EmuState {
     int                     lastBpAddress = -1;
     int                     lastBp        = -1;
     int                     haltAfterRet  = -1;
+
+    enum class WatchType {
+        Hex8 = 0,
+        DecU8,
+        DecS8,
+        Hex16,
+        DecU16,
+        DecS16,
+    };
+    struct Watch {
+        uint16_t    addr = 0;
+        std::string name;
+        WatchType   type;
+    };
+    std::vector<Watch> watches;
 
     enum EmuMode {
         Em_Halted,
