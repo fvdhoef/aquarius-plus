@@ -875,7 +875,7 @@ void UI::wndScreen(bool *p_open) {
 }
 
 void UI::wndBreakpoints(bool *p_open) {
-    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(FLT_MAX, FLT_MAX));
     if (ImGui::Begin("Breakpoints", p_open, 0)) {
         ImGui::Checkbox("Enable breakpoints", &emuState.enableBreakpoints);
         ImGui::SameLine(ImGui::GetWindowWidth() - 25);
@@ -1480,7 +1480,7 @@ void UI::wndCpuTrace(bool *p_open) {
 }
 
 void UI::wndWatch(bool *p_open) {
-    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(330, FLT_MAX));
+    ImGui::SetNextWindowSizeConstraints(ImVec2(330, 132), ImVec2(FLT_MAX, FLT_MAX));
     if (ImGui::Begin("Watch", p_open, 0)) {
         if (ImGui::BeginTable("Table", 5, ImGuiTableFlags_ScrollY | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
             ImGui::TableSetupColumn("Value", ImGuiTableColumnFlags_WidthFixed);
