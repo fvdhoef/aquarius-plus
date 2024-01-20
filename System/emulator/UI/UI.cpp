@@ -908,14 +908,14 @@ void UI::wndBreakpoints(bool *p_open) {
                     ImGui::Checkbox(fmtstr("##en%d", row_n).c_str(), &bp.enabled);
                     ImGui::TableNextColumn();
                     ImGui::SetNextItemWidth(ImGui::CalcTextSize("F").x * 6);
-                    ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &bp.value, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
+                    ImGui::InputScalar(fmtstr("##val%d", row_n).c_str(), ImGuiDataType_U16, &bp.addr, nullptr, nullptr, "%04X", ImGuiInputTextFlags_CharsHexadecimal | ImGuiInputTextFlags_AlwaysOverwrite);
                     ImGui::TableNextColumn();
                     ImGui::SetNextItemWidth(-1);
                     if (ImGui::BeginCombo(fmtstr("##name%d", row_n).c_str(), bp.name.c_str())) {
                         for (auto &sym : asmListing.symbolsStrAddr) {
                             if (ImGui::Selectable(fmtstr("%04X %s", sym.second, sym.first.c_str()).c_str())) {
-                                bp.name  = sym.first;
-                                bp.value = sym.second;
+                                bp.name = sym.first;
+                                bp.addr = sym.second;
                             }
                         }
                         ImGui::EndCombo();
@@ -1239,7 +1239,7 @@ void UI::addrPopup(uint16_t addr) {
         if (ImGui::MenuItem("Add breakpoint")) {
             EmuState::Breakpoint bp;
             bp.enabled = true;
-            bp.value   = addr;
+            bp.addr    = addr;
             bp.onR     = false;
             bp.onW     = false;
             bp.onX     = true;
@@ -1676,8 +1676,8 @@ void UI::listingReloaded() {
 
     // Update breakpoints
     for (auto &bp : emuState.breakpoints) {
-        if (!asmListing.findSymbolAddr(bp.name, bp.value)) {
-            if (!asmListing.findSymbolName(bp.value, bp.name)) {
+        if (!asmListing.findSymbolAddr(bp.name, bp.addr)) {
+            if (!asmListing.findSymbolName(bp.addr, bp.name)) {
                 bp.name = "";
             }
         }

@@ -66,7 +66,7 @@ struct EmuState {
     bool enableBreakpoints = false;
 
     struct Breakpoint {
-        uint16_t    value = 0;
+        uint16_t    addr = 0;
         std::string name;
         bool        enabled = false;
         int         type    = 0;

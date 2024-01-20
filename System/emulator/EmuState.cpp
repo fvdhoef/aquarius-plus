@@ -78,10 +78,10 @@ int EmuState::cpuEmulate() {
         if (enableBreakpoints) {
             for (int i = 0; i < (int)breakpoints.size(); i++) {
                 auto &bp = breakpoints[i];
-                if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.value && bp.value != lastBpAddress) {
+                if (bp.enabled && bp.type == 0 && bp.onX && z80ctx.PC == bp.addr && bp.addr != lastBpAddress) {
                     emuMode       = EmuState::Em_Halted;
                     lastBp        = i;
-                    lastBpAddress = bp.value;
+                    lastBpAddress = bp.addr;
                     return 0;
                 }
             }
@@ -268,10 +268,10 @@ uint8_t EmuState::memRead(uint16_t addr, bool triggerBp) {
     if (emuState.enableBreakpoints && triggerBp) {
         for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
             auto &bp = emuState.breakpoints[i];
-            if (bp.enabled && bp.onR && bp.type == 0 && addr == bp.value && bp.value != emuState.lastBpAddress) {
+            if (bp.enabled && bp.onR && bp.type == 0 && addr == bp.addr && bp.addr != emuState.lastBpAddress) {
                 emuState.emuMode       = EmuState::Em_Halted;
                 emuState.lastBp        = i;
-                emuState.lastBpAddress = bp.value;
+                emuState.lastBpAddress = bp.addr;
             }
         }
     }
@@ -333,10 +333,10 @@ void EmuState::memWrite(uint16_t addr, uint8_t data, bool triggerBp) {
     if (emuState.enableBreakpoints && triggerBp) {
         for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
             auto &bp = emuState.breakpoints[i];
-            if (bp.enabled && bp.onW && bp.type == 0 && addr == bp.value && bp.value != emuState.lastBpAddress) {
+            if (bp.enabled && bp.onW && bp.type == 0 && addr == bp.addr && bp.addr != emuState.lastBpAddress) {
                 emuState.emuMode       = EmuState::Em_Halted;
                 emuState.lastBp        = i;
-                emuState.lastBpAddress = bp.value;
+                emuState.lastBpAddress = bp.addr;
             }
         }
     }
@@ -405,7 +405,7 @@ uint8_t EmuState::ioRead(uint16_t addr, bool triggerBp) {
     if (emuState.enableBreakpoints && triggerBp) {
         for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
             auto &bp = emuState.breakpoints[i];
-            if (bp.enabled && bp.onR && ((bp.type == 1 && (addr & 0xFF) == (bp.value & 0xFF)) || (bp.type == 2 && addr == bp.value))) {
+            if (bp.enabled && bp.onR && ((bp.type == 1 && (addr & 0xFF) == (bp.addr & 0xFF)) || (bp.type == 2 && addr == bp.addr))) {
                 emuState.emuMode = EmuState::Em_Halted;
                 emuState.lastBp  = i;
             }
@@ -495,7 +495,7 @@ void EmuState::ioWrite(uint16_t addr, uint8_t data, bool triggerBp) {
     if (emuState.enableBreakpoints && triggerBp) {
         for (int i = 0; i < (int)emuState.breakpoints.size(); i++) {
             auto &bp = emuState.breakpoints[i];
-            if (bp.enabled && bp.onW && ((bp.type == 1 && (addr & 0xFF) == (bp.value & 0xFF)) || (bp.type == 2 && addr == bp.value))) {
+            if (bp.enabled && bp.onW && ((bp.type == 1 && (addr & 0xFF) == (bp.addr & 0xFF)) || (bp.type == 2 && addr == bp.addr))) {
                 emuState.emuMode = EmuState::Em_Halted;
                 emuState.lastBp  = i;
             }

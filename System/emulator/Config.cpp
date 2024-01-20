@@ -92,7 +92,7 @@ void Config::load() {
                     continue;
 
                 EmuState::Breakpoint bp;
-                bp.value   = getIntValue(breakpoint, "addr", 0);
+                bp.addr    = getIntValue(breakpoint, "addr", 0);
                 bp.name    = getStringValue(breakpoint, "name", "");
                 bp.enabled = getBoolValue(breakpoint, "enabled", false);
                 bp.type    = getIntValue(breakpoint, "type", 0);
@@ -171,7 +171,7 @@ void Config::save() {
     for (auto &bp : emuState.breakpoints) {
         auto breakpoint = cJSON_CreateObject();
 
-        cJSON_AddNumberToObject(breakpoint, "addr", bp.value);
+        cJSON_AddNumberToObject(breakpoint, "addr", bp.addr);
         cJSON_AddStringToObject(breakpoint, "name", bp.name.c_str());
         cJSON_AddBoolToObject(breakpoint, "enabled", bp.enabled);
         cJSON_AddNumberToObject(breakpoint, "type", bp.type);
