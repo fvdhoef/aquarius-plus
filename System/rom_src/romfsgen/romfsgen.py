@@ -3,6 +3,7 @@
 import argparse
 import pathlib
 import struct
+from datetime import datetime, timezone
 
 parser = argparse.ArgumentParser(prog="romfsgen", description="Generate romfs file")
 parser.add_argument("output")
@@ -20,7 +21,12 @@ try:
             raise Exception(f"Expected file ({file})")
         st = path.stat()
 
-        file = (path, path.name.encode() + b"\0", offset, st.st_size, int(st.st_mtime))
+        dt = datetime.fromtimestamp(st.st_mtime)
+
+        date = ((dt.year - 1980) << 9) | (dt.month << 5) | dt.day
+        time = (dt.hour << 11) | (dt.minute << 4) | (dt.second // 2)
+
+        file = (path, path.name.encode() + b"\0", offset, st.st_size, date, time)
         files.append(file)
 
         hdr_size += 1 + 4 + 4 + 4 + len(file[1])
@@ -30,11 +36,12 @@ try:
             record = bytearray()
             record.extend(
                 struct.pack(
-                    "<BIII",
+                    "<BIIHH",
                     1 + 4 + 4 + 4 + len(file[1]),  # Size of record
                     file[2] + hdr_size,  # Offset to file contents
                     file[3],  # File size
-                    file[4],  # Modified time
+                    file[4],  # File date
+                    file[5],  # File time
                 )
             )
             record.extend(file[1])

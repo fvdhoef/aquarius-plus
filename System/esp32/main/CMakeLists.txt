@@ -75,7 +75,7 @@ idf_component_register(
 
     EMBED_FILES
         "../../fpga/top.bit"
-        "../../rom_src/settings/build/settings.aqx"
+        "../../rom_src/romfs.bin"
 
     EMBED_TXTFILES
         "Assets/root_certificates"
