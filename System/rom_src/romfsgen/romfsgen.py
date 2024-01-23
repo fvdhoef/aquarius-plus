@@ -29,6 +29,7 @@ try:
         file = (path, path.name.encode() + b"\0", offset, st.st_size, date, time)
         files.append(file)
 
+        offset += st.st_size
         hdr_size += 1 + 4 + 4 + 4 + len(file[1])
 
     with open(args.output, "wb") as f:

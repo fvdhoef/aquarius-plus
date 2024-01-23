@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include "AqUartProtocol.h"
 #include "AqKeyboard.h"
+#include "fpgarom.h"
 
 EmuState emuState;
 
@@ -20,7 +21,6 @@ EmuState::EmuState() {
 
     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
     memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
-    memset(emuState.systemRom, 0xFF, sizeof(emuState.systemRom));
     for (unsigned i = 0; i < sizeof(emuState.mainRam); i++) {
         emuState.mainRam[i] = rand();
     }
@@ -212,21 +212,6 @@ unsigned EmuState::emulate() {
     return resultFlags;
 }
 
-bool EmuState::loadSystemROM(const std::string &path) {
-    auto ifs = std::ifstream(path, std::ifstream::binary);
-    if (!ifs.good()) {
-        return false;
-    }
-
-    ifs.read((char *)systemRom, sizeof(systemRom));
-    if ((emuState.systemRomSize = ifs.gcount()) < 8192) {
-        fprintf(stderr, "Error during reading of system ROM image.\n");
-        return false;
-    }
-    emuState.systemRomSize = (emuState.systemRomSize + 0x1FFF) & ~0x1FFF;
-    return true;
-}
-
 bool EmuState::loadCartridgeROM(const std::string &path) {
     auto ifs = std::ifstream(path, std::ifstream::binary);
     if (!ifs.good()) {
@@ -313,8 +298,10 @@ uint8_t EmuState::memRead(uint16_t addr, bool triggerBp) {
         }
     }
 
-    if (page < 16) {
-        return emuState.systemRom[page * 0x4000 + addr];
+    if (page == 0) {
+        if (addr < sizeof(fpgarom_start))
+            return fpgarom_start[addr];
+        return 0;
     } else if (page == 19) {
         return emuState.cartridgeInserted ? emuState.cartRom[addr] : 0xFF;
     } else if (page == 20) {
