@@ -13,6 +13,7 @@ extern const uint8_t romfs_end[] asm("_binary_romfs_bin_end");
 
 static const char *fn_com = "com";
 
+#pragma pack(push, 1)
 struct FileEntry {
     uint8_t  rec_size;
     uint32_t offset;
@@ -20,7 +21,8 @@ struct FileEntry {
     uint16_t fdate;
     uint16_t ftime;
     char     filename[128];
-} __attribute__((packed));
+};
+#pragma pack(pop)
 
 struct OpenFile {
     const FileEntry *fe;
@@ -124,7 +126,7 @@ int EspVFS::seek(int fd, size_t offset) {
     if (offset > openFile.fe->fsize)
         offset = openFile.fe->fsize;
 
-    openFile.offset = offset;
+    openFile.offset = (unsigned)offset;
     return 0;
 }
 
@@ -182,7 +184,7 @@ int EspVFS::stat(const std::string &_path, struct stat *st) {
 
         memset(st, 0, sizeof(*st));
         st->st_size = fe->fsize;
-        st->st_mode = S_IRWXU | S_IRWXG | S_IRWXO | S_IFREG;
+        st->st_mode = S_IFREG;
 
         struct tm tm;
         memset(&tm, 0, sizeof(tm));
