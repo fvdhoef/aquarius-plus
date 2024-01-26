@@ -4,7 +4,19 @@
 ; By Frank van den Hoef
 ;-----------------------------------------------------------------------------
 
-BOOTSTUB_ADDR   equ $3880
+PAGE_CART           equ 19
+PAGE_CHARROM        equ 21
+
+PAGE_MAINRAM0       equ 56
+PAGE_MAINRAM1       equ 57
+PAGE_MAINRAM2       equ 58
+PAGE_MAINRAM3       equ 59
+PAGE_SYSROM0        equ 60
+PAGE_SYSROM1        equ 61
+PAGE_SYSROM2        equ 62
+PAGE_CART_NONSCRAM  equ 63
+
+BOOTSTUB_ADDR       equ $3880
 
     include "regs.inc"
 
@@ -15,7 +27,7 @@ BOOTSTUB_ADDR   equ $3880
     ld      sp,$0
 
     ; Load character ROM
-    ld      a,21
+    ld      a,PAGE_CHARROM
     out     (IO_BANK2),a
     ld      hl,fn_default_chr
     call    esp_open
@@ -43,9 +55,9 @@ BOOTSTUB_ADDR   equ $3880
     out     (IO_VCTRL), a
 
     ; Check for cartridge
-    ld      a,35            ; page 35 holds descrambled ROM
+    ld      a,PAGE_CART_NONSCRAM
     out     (IO_BANK1),a
-    ld      a,19            ; page 19 is cartridge ROM
+    ld      a,PAGE_CART
     out     (IO_BANK2),a
 
     ld      de,$A010+1
@@ -74,7 +86,7 @@ BOOTSTUB_ADDR   equ $3880
 
     ; Descramble ROM with XOR value in A
     ld      b,a
-    ld      a,35
+    ld      a,PAGE_CART_NONSCRAM
     ld      (bank3_page),a
 
     ld      hl,$8000
@@ -98,34 +110,34 @@ descramble_done:
 no_cart:
 
     ; Initialize memory banks
-    ld      a,32
+    ld      a,PAGE_SYSROM0
     out     (IO_BANK0),a
-    ld      a,33
+    ld      a,PAGE_SYSROM1
     out     (IO_BANK1),a
-    ld      a,34
+    ld      a,PAGE_SYSROM2
     out     (IO_BANK2),a
 
     ; Load system ROM
     ld      hl,fn_sysrom_s2_bin
-    call    esp_open
-    ld      hl,$0
-    ld      de,$C000
-    call    esp_read_bytes
-    call    esp_close
+    call    load_sysrom
 
-    ; Disable turbo mode
-    ld      a,0
-    out     (IO_SYSCTRL),a
-
-    ; Remap bank 0
-    ld      a,32 | BANK_READONLY | BANK_OVERLAY
+    ; Remap banks
+    ld      a,PAGE_SYSROM0 | BANK_READONLY | BANK_OVERLAY
     out     (IO_BANK0),a
+    ld      a,PAGE_MAINRAM1
+    out     (IO_BANK1),a
+    ld      a,PAGE_MAINRAM2
+    out     (IO_BANK2),a
 
     ; Copy stub to bank 0 and jump to it
     ld      de,BOOTSTUB_ADDR
     ld      hl,bootstub
     ld      bc,bootstub_end-bootstub
     ldir
+
+    ; Disable turbo mode
+    ld      a,0
+    out     (IO_SYSCTRL),a
 
     ld      a,(bank3_page)
     jp      BOOTSTUB_ADDR
@@ -137,6 +149,44 @@ default_palette:
 fn_default_chr:    defb "esp:default.chr",0
 fn_sysrom_s2_bin:  defb "esp:sysrom_s2.bin",0
 
+cart_crtsig:
+    defb "+7$$3,",0
+cart_fixup:
+    defb 65,81,80,76,85,156,83,176,70,108,73,100,88,168,131,112
+
+bank3_page:
+    defb PAGE_CART
+
+;-----------------------------------------------------------------------------
+; load_sysrom
+;-----------------------------------------------------------------------------
+load_sysrom:
+    push    hl
+
+    ld      a,$FF
+    ld      hl,$2000
+    ld      (hl),a
+    ld      de,$2001
+    ld      bc,$1800-1
+    ldir
+
+    pop     hl
+    call    esp_open
+    ld      hl,$0
+    ld      de,$3800
+    call    esp_read_bytes
+    ld      hl,$4000
+    ld      de,$0800
+    call    esp_read_bytes
+    ld      hl,$4000
+    ld      de,$8000
+    call    esp_read_bytes
+    call    esp_close
+    ret
+
+;-----------------------------------------------------------------------------
+; bootstub - used to switch bank 3 and jump to sysrom entry
+;-----------------------------------------------------------------------------
 bootstub:
     phase   BOOTSTUB_ADDR
     out     (IO_BANK3),a
@@ -144,12 +194,9 @@ bootstub:
     dephase
 bootstub_end:
 
-cart_crtsig:
-    defb "+7$$3,",0
-cart_fixup:
-    defb 65,81,80,76,85,156,83,176,70,108,73,100,88,168,131,112
-bank3_page:
-    defb 19
-
+;-----------------------------------------------------------------------------
+; esp functions
+;-----------------------------------------------------------------------------
     include "esp.asm"
+
     end

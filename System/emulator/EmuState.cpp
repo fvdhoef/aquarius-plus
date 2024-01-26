@@ -276,11 +276,7 @@ uint8_t EmuState::memRead(uint16_t addr, bool triggerBp) {
 
     addr &= 0x3FFF;
 
-    if (overlayRam && addr >= 0x3000) {
-        if (addr >= 0x3800) {
-            return emuState.mainRam[addr];
-        }
-
+    if (overlayRam && addr >= 0x3000 && addr < 0x3800) {
         if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
             if (emuState.videoCtrl & VCTRL_TRAM_PAGE) {
                 return emuState.colorRam[addr & 0x7FF];
@@ -343,12 +339,7 @@ void EmuState::memWrite(uint16_t addr, uint8_t data, bool triggerBp) {
     bool     readonly   = (bankReg & (1 << 7)) != 0;
     addr &= 0x3FFF;
 
-    if (overlayRam && addr >= 0x3000) {
-        if (addr >= 0x3800) {
-            emuState.mainRam[addr] = data;
-            return;
-        }
-
+    if (overlayRam && addr >= 0x3000 && addr < 0x3800) {
         if (emuState.videoCtrl & VCTRL_80_COLUMNS) {
             if (emuState.videoCtrl & VCTRL_TRAM_PAGE) {
                 emuState.colorRam[addr & 0x7FF] = data;
@@ -367,9 +358,8 @@ void EmuState::memWrite(uint16_t addr, uint8_t data, bool triggerBp) {
         return;
     }
 
-    if (readonly) {
+    if (readonly && !(overlayRam && addr >= 0x3800))
         return;
-    }
 
     if (page < 16) {
         // System ROM is readonly

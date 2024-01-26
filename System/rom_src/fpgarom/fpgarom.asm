@@ -4,18 +4,20 @@
 ; By Frank van den Hoef
 ;-----------------------------------------------------------------------------
 
+PAGE_BOOTBIN equ 51
+
     include "regs.inc"
 
     org     0
-    ld      sp,$38A0
+
+    ; Initialize bank 3 and initialize stack
+    ld      a,PAGE_BOOTBIN
+    out     (IO_BANK3),a
+    ld      sp,$0
 
     ; Enable turbo mode
     ld      a,4
     out     (IO_SYSCTRL),a
-
-    ; Initialize bank 3 to page 36
-    ld      a,36
-    out     (IO_BANK3),a
 
     ; Initialize ESP
     ld      a,ESPCMD_RESET
