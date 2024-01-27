@@ -449,26 +449,6 @@
             "IsDependency" = "11:TRUE"
             "IsolateTo" = "8:"
             }
-            "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_B85747DCA55949A8B2399FABD205A136"
-            {
-            "SourcePath" = "8:..\\..\\aquarius.rom"
-            "TargetName" = "8:aquarius.rom"
-            "Tag" = "8:"
-            "Folder" = "8:_3682718B78C14851BAE010FD4FC24DA3"
-            "Condition" = "8:"
-            "Transitive" = "11:FALSE"
-            "Vital" = "11:TRUE"
-            "ReadOnly" = "11:FALSE"
-            "Hidden" = "11:FALSE"
-            "System" = "11:FALSE"
-            "Permanent" = "11:FALSE"
-            "SharedLegacy" = "11:FALSE"
-            "PackageAs" = "3:1"
-            "Register" = "3:1"
-            "Exclude" = "11:FALSE"
-            "IsDependency" = "11:FALSE"
-            "IsolateTo" = "8:"
-            }
             "{1FB2D0AE-D3B9-43D4-B9DD-F88EC61E35DE}:_CA40736FF9452BA2ED6D1074125BC478"
             {
             "SourcePath" = "8:api-ms-win-crt-stdio-l1-1-0.dll"
