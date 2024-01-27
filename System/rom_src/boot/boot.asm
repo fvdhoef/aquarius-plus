@@ -73,7 +73,7 @@ BOOTSTUB_ADDR       equ $3880
     jr      z,.1
     ld      a,(hl)
     or      a
-    jr      nz,no_cart  ; ROM not found, start Basic
+    jp      nz,no_cart  ; ROM not found
     ex      de,hl       ; Encryption Key Address into HL
     ld      b,$0C
 .2: add     a,(hl)
@@ -82,7 +82,7 @@ BOOTSTUB_ADDR       equ $3880
     dec     b
     jr      nz,.2
     xor     (hl)
-    jp      z,descramble_done
+    jp      z,.descramble_done
 
     ; Descramble ROM with XOR value in A
     ld      b,a
@@ -106,29 +106,49 @@ BOOTSTUB_ADDR       equ $3880
     ld      bc,16
     ldir
 
-descramble_done:
-no_cart:
-
-    ; Initialize memory banks
-    ld      a,PAGE_SYSROM0
-    out     (IO_BANK0),a
-    ld      a,PAGE_SYSROM1
-    out     (IO_BANK1),a
-    ld      a,PAGE_SYSROM2
-    out     (IO_BANK2),a
-
-    ; Load system ROM
+.descramble_done:
+    ; Load S2 ROM for highest compatibility with cartridge games
     ld      hl,fn_sysrom_s2_bin
     call    load_sysrom
+    jp      start_sysrom
 
-    ; Remap banks
-    ld      a,PAGE_SYSROM0 | BANK_READONLY | BANK_OVERLAY
-    out     (IO_BANK0),a
-    ld      a,PAGE_MAINRAM1
-    out     (IO_BANK1),a
-    ld      a,PAGE_MAINRAM2
-    out     (IO_BANK2),a
+;-----------------------------------------------------------------------------
+; No cartridge
+;-----------------------------------------------------------------------------
+no_cart:
+    ; Try to load system ROM from SD card
+    ld      hl,fn_sysrom_sdcard_bin
+    call    load_sysrom
+    jr      z,.done
 
+    ; SD card load failed, fall back to S2 ROM
+    ld      hl,fn_sysrom_s2_bin
+    call    load_sysrom
+.done:
+    jp      start_sysrom
+
+
+default_palette:
+    dw $111,$F11,$1F1,$FF1,$22E,$F1F,$3CC,$FFF
+    dw $CCC,$3BB,$C2C,$419,$FF7,$2D4,$B22,$333
+
+fn_default_chr:        defb "esp:default.chr",0
+fn_sysrom_s2_bin:      defb "esp:sysrom_s2.bin",0
+fn_sysrom_pb_bin:      defb "esp:sysrom_pb.bin",0
+fn_sysrom_sdcard_bin:  defb "sysrom.bin",0
+
+cart_crtsig:
+    defb "+7$$3,",0
+cart_fixup:
+    defb 65,81,80,76,85,156,83,176,70,108,73,100,88,168,131,112
+
+bank3_page:
+    defb PAGE_CART
+
+;-----------------------------------------------------------------------------
+; start_sysrom
+;-----------------------------------------------------------------------------
+start_sysrom:
     ; Copy stub to bank 0 and jump to it
     ld      de,BOOTSTUB_ADDR
     ld      hl,bootstub
@@ -142,27 +162,21 @@ no_cart:
     ld      a,(bank3_page)
     jp      BOOTSTUB_ADDR
 
-default_palette:
-    dw $111,$F11,$1F1,$FF1,$22E,$F1F,$3CC,$FFF
-    dw $CCC,$3BB,$C2C,$419,$FF7,$2D4,$B22,$333
-
-fn_default_chr:    defb "esp:default.chr",0
-fn_sysrom_s2_bin:  defb "esp:sysrom_s2.bin",0
-
-cart_crtsig:
-    defb "+7$$3,",0
-cart_fixup:
-    defb 65,81,80,76,85,156,83,176,70,108,73,100,88,168,131,112
-
-bank3_page:
-    defb PAGE_CART
-
 ;-----------------------------------------------------------------------------
 ; load_sysrom
 ;-----------------------------------------------------------------------------
 load_sysrom:
     push    hl
 
+    ; Initialize memory banks
+    ld      a,PAGE_SYSROM0
+    out     (IO_BANK0),a
+    ld      a,PAGE_SYSROM1
+    out     (IO_BANK1),a
+    ld      a,PAGE_SYSROM2
+    out     (IO_BANK2),a
+
+    ; Clear area from $2000-$3800 with $FF
     ld      a,$FF
     ld      hl,$2000
     ld      (hl),a
@@ -170,8 +184,10 @@ load_sysrom:
     ld      bc,$1800-1
     ldir
 
+    ; Read file
     pop     hl
     call    esp_open
+    ret     nz
     ld      hl,$0
     ld      de,$3800
     call    esp_read_bytes
@@ -182,6 +198,16 @@ load_sysrom:
     ld      de,$8000
     call    esp_read_bytes
     call    esp_close
+
+    ; Remap banks
+    ld      a,PAGE_SYSROM0 | BANK_READONLY | BANK_OVERLAY
+    out     (IO_BANK0),a
+    ld      a,PAGE_MAINRAM1
+    out     (IO_BANK1),a
+    ld      a,PAGE_MAINRAM2
+    out     (IO_BANK2),a
+
+    xor     a
     ret
 
 ;-----------------------------------------------------------------------------
