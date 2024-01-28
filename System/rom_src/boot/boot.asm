@@ -121,8 +121,8 @@ no_cart:
     call    load_sysrom
     jr      z,.done
 
-    ; SD card load failed, fall back to S2 ROM
-    ld      hl,fn_sysrom_s2_bin
+    ; SD card load failed, fall back to plusBASIC ROM
+    ld      hl,fn_sysrom_pb_bin
     call    load_sysrom
 .done:
     jp      start_sysrom
@@ -134,7 +134,7 @@ default_palette:
 
 fn_default_chr:        defb "esp:default.chr",0
 fn_sysrom_s2_bin:      defb "esp:sysrom_s2.bin",0
-fn_sysrom_pb_bin:      defb "esp:sysrom_pb.bin",0
+fn_sysrom_pb_bin:      defb "esp:sysrom.bin",0
 fn_sysrom_sdcard_bin:  defb "sysrom.bin",0
 
 cart_crtsig:
