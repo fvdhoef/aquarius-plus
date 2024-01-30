@@ -5,7 +5,7 @@
 
 ; Put the text you want typed into a zero-filled string in memory, The put the start address of that string minus 1 into $380B-380C
 
-PAGE_LAUNCHSTATE    equ 40
+PAGE_LAUNCHSTATE    equ 51
 PGM_PATH            equ _end
 PGM_ARG             equ PGM_PATH + $80
 STACK_START         equ PGM_ARG + $80
@@ -61,11 +61,6 @@ _entry:
     out     (IO_BANK3),a
     ld      de,$C000
 
-    ; Save overlay RAM
-    ld      hl,$3800
-    ld      bc,$800
-    ldir
-
     ; Save text RAM
     ld      a,$60       ; 80-columns mode, text page
     out     (IO_VCTRL),a
@@ -99,20 +94,7 @@ _entry:
     cp      64
     jr      nz,.1
 
-    ; Load default character set
-    ld      a,0
-    out     (IO_BANK2)
-    ld      a,21
-    out     (IO_BANK3)
-    ld      hl,$B000
-    ld      de,$C000
-    ld      bc,$800
-    ldir
-    ld      a,(_bank2)
-    out     (IO_BANK2),a
-
     jp      _main
-
 
     org     $4000
 ;-----------------------------------------------------------------------------
@@ -137,11 +119,6 @@ ret_basic:
     ld      a,PAGE_LAUNCHSTATE
     out     (IO_BANK3),a
     ld      hl,$C000
-
-    ; Save overlay RAM
-    ld      de,$3800
-    ld      bc,$800
-    ldir
 
     ; Restore text RAM
     ld      a,$60       ; 80-columns mode, text page
@@ -224,8 +201,22 @@ _main:
     ld      bc,_os_end - _os_start
     ldir
 
+    ; Init stack
+    ld      sp,$0
+
+    ; Load default character set
+    call    _esp_closeall
+    ld      hl,fn_font
+    call    _esp_openfile
+    ld      hl,$C000
+    ld      de,$800
+    call    _esp_read_bytes
+    call    _esp_closeall
+
     ; Jump to OS entry
     jp      _os_entry
+
+fn_font: defb "esp:default.chr",0
 
 ;-----------------------------------------------------------------------------
 ; Start of OS
@@ -323,12 +314,15 @@ _run_program:
 ; _go_basic
 ;-----------------------------------------------------------------------------
 _go_basic:
-    ; Restore bank configuration
-    ld      a,$C0
-    out     (IO_BANK0),a
-    ld      a,33
+    ld      a,PAGE_LAUNCHSTATE
     out     (IO_BANK1),a
-    inc     a
+
+    ; Restore bank configuration
+    ld      a,$FC
+    out     (IO_BANK0),a
+    ld      a,57
+    out     (IO_BANK1),a
+    ld      a,58
     out     (IO_BANK2),a
 
     ; Copy PGM_PATH into typetext buffer

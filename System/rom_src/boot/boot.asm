@@ -50,6 +50,14 @@ BOOTSTUB_ADDR       equ $3880
     dec     d
     jr      nz,.palloop
 
+    ; Clear video RAM $3000-$37FF
+    xor     a
+    ld      hl,$3000
+    ld      (hl),a
+    ld      de,$3001
+    ld      bc,$800-1
+    ldir
+
     ; Init video mode
     ld      a, 1
     out     (IO_VCTRL), a
