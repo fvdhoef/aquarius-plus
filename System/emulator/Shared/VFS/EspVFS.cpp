@@ -75,7 +75,7 @@ int EspVFS::open(uint8_t flags, const std::string &_path) {
     }
     auto path = _path.substr(idx);
 
-    // printf("esp_open(%u, \"%s\")\n", flags, path);
+    // printf("esp_open(%u, \"%s\")\n", flags, path.c_str());
 
     if (strcasecmp(path.c_str(), fn_com) == 0) {
         EspSettingsConsole::instance().newSession();

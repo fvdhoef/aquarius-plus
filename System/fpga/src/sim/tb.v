@@ -280,31 +280,71 @@ module tb();
         @(posedge phi);
         @(posedge phi);
 
+        iowr(16'hF3, 8'h33);
+        memwr(16'hFFFF, 8'h01);
+        memwr(16'hFFFE, 8'h02);
+
+        memwr(16'hC000, 8'h42);
+        memwr(16'hD000, 8'h42);
+        memwr(16'hE000, 8'h42);
+        memwr(16'hF000, 8'h42);
+        memwr(16'hF800, 8'h42);
+
+        memrd(16'hC000);
+        memrd(16'hD000);
+        memrd(16'hE000);
+        memrd(16'hF000);
+        memrd(16'hF800);
+
+        memrd(16'hFFFF);
+        memrd(16'hFFFE);
+
+
+        iowr(16'hF4, 8'h80);
         @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
-        spi_tx(8'h12);
-        spi_tx(8'hA5);
-        spi_ssel_n_r <= 1'b1;
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        @(posedge phi);
+        iowr(16'hF5, 8'h01);
+
+
+        // @(posedge phi);
+        // spi_ssel_n_r <= 1'b0;
+        // spi_tx(8'h12);
+        // spi_tx(8'hA5);
+        // spi_ssel_n_r <= 1'b1;
      
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
+        // @(posedge phi);
 
-        iord(16'h00FA);
+        // iord(16'h00FA);
 
-        iord(16'h00FA);
+        // iord(16'h00FA);
 
-        // iowr(16'hEC, 8'd255);
-        iowr(16'hEC, 8'd128);
+        // // iowr(16'hEC, 8'd255);
+        // iowr(16'hEC, 8'd128);
         // iowr(16'hEC, 8'd0);
 
         // iowr(16'hE0, 8'd06);

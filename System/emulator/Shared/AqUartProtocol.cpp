@@ -343,6 +343,8 @@ void AqUartProtocol::receivedByte(uint8_t data) {
         return;
     }
 
+    // printf("AqUartProtocol::receivedByte %02X\n", data);
+
     rxBuf[rxBufIdx] = data;
     if (rxBufIdx < sizeof(rxBuf) - 1) {
         rxBufIdx++;
@@ -356,6 +358,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 // Close any open descriptors
                 DBGF("RESET\n");
                 cmdReset();
+                rxBufIdx = 0;
                 break;
             }
             case ESPCMD_VERSION: {
@@ -563,6 +566,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
             }
             default: {
                 DBGF("Invalid command: 0x%02X\n", cmd);
+                rxBufIdx = 0;
                 break;
             }
         }
