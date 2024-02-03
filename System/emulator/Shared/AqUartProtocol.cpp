@@ -248,9 +248,9 @@ void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string>
 
 static bool startsWith(const std::string &s1, const std::string &s2, bool caseSensitive = false) {
     if (caseSensitive) {
-        return (strncasecmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
-    } else {
         return (strncmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
+    } else {
+        return (strncasecmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
     }
 }
 
