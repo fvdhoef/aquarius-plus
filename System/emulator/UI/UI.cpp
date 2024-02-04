@@ -136,6 +136,12 @@ void UI::mainLoop() {
                     break;
                 }
 
+                case SDL_MOUSEWHEEL: {
+                    if (!io.WantCaptureMouse)
+                        emuState.mouseWheel += event.wheel.y;
+                    break;
+                }
+
                 case SDL_WINDOWEVENT: {
                     if (event.window.event == SDL_WINDOWEVENT_MOVED) {
                         config.wndPosX = event.window.data1;
@@ -862,6 +868,7 @@ void UI::wndScreen(bool *p_open) {
                 emuState.mouseX       = mx;
                 emuState.mouseY       = my;
                 emuState.mouseButtons = buttonMask;
+                emuState.mouseWheel += (int)io.MouseWheel;
             }
         }
         allowTyping = ImGui::IsWindowFocused();
