@@ -30,7 +30,6 @@ extern EmuState emuState;
 struct EmuState {
     EmuState();
     void reset();
-    bool loadSystemROM(const std::string &path);
     bool loadCartridgeROM(const std::string &path);
     void keyboardTypeIn();
 
@@ -112,7 +111,6 @@ struct EmuState {
     uint8_t    handCtrl1         = 0xFF; // Mini-expander - Hand controller 1 state (connected to port 1 of AY-3-8910)
     uint8_t    handCtrl2         = 0xFF; // Mini-expander - Hand controller 2 state (connected to port 2 of AY-3-8910)
     bool       cartridgeInserted = false;
-    size_t     systemRomSize     = 0;
 
     // Keyboard buffer
     uint8_t kbBuf[16];
@@ -146,6 +144,7 @@ struct EmuState {
     uint8_t  mouseY           = 0;
     uint8_t  mouseButtons     = 0;
     float    mouseHideTimeout = 0;
+    int      mouseWheel       = 0;
 
     // IO space
     uint8_t  videoCtrl        = 0;      // $E0   : Video control register
@@ -175,11 +174,10 @@ struct EmuState {
     bool     cpmRemap          = false; // $FD<1>: Remap memory for CP/M
 
     // Memory space
-    uint8_t screenRam[2048];       // $3000-33FF: Screen RAM for text mode
-    uint8_t colorRam[2048];        // $3400-37FF: Color RAM for text mode
-    uint8_t systemRom[256 * 1024]; // Flash memory
-    uint8_t mainRam[512 * 1024];   // Main RAM
-    uint8_t cartRom[16 * 1024];    // Cartridge ROM
-    uint8_t videoRam[16 * 1024];   // Video RAM
-    uint8_t charRam[2048];         // Character RAM
+    uint8_t screenRam[2048];     // $3000-33FF: Screen RAM for text mode
+    uint8_t colorRam[2048];      // $3400-37FF: Color RAM for text mode
+    uint8_t mainRam[512 * 1024]; // Main RAM
+    uint8_t cartRom[16 * 1024];  // Cartridge ROM
+    uint8_t videoRam[16 * 1024]; // Video RAM
+    uint8_t charRam[2048];       // Character RAM
 };

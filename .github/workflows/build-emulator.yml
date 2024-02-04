@@ -91,7 +91,6 @@ jobs:
           mkdir System\emulator\windows\x64\Release\AquariusPlusEmu
           copy System\emulator\windows\x64\Release\aquarius-emu.exe System\emulator\windows\x64\Release\AquariusPlusEmu\
           copy System\emulator\windows\SDL2-2.0.20\lib\x64\SDL2.dll System\emulator\windows\x64\Release\AquariusPlusEmu\
-          copy System\emulator\aquarius.rom System\emulator\windows\x64\Release\AquariusPlusEmu\
           xcopy /E /I EndUser\sdcard System\emulator\windows\x64\Release\AquariusPlusEmu\sdcard
           cd System\emulator\windows\x64\Release
           Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-portable-$VERSION.zip

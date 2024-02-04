@@ -19,7 +19,6 @@ UI::UI() {
 }
 
 void UI::start(
-    const std::string &romPath,
     const std::string &cartRomPath,
     const std::string &typeInStr) {
 
@@ -33,10 +32,6 @@ void UI::start(
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         exit(1);
     }
-
-    // Load system ROM
-    if (!emuState.loadSystemROM(romPath))
-        exit(1);
 
     // Load cartridge ROM
     if (!cartRomPath.empty() && !emuState.loadCartridgeROM(cartRomPath.c_str())) {
@@ -138,6 +133,12 @@ void UI::mainLoop() {
                             AqKeyboard::instance().updateMatrix();
                         }
                     }
+                    break;
+                }
+
+                case SDL_MOUSEWHEEL: {
+                    if (!io.WantCaptureMouse)
+                        emuState.mouseWheel += event.wheel.y;
                     break;
                 }
 
@@ -867,6 +868,7 @@ void UI::wndScreen(bool *p_open) {
                 emuState.mouseX       = mx;
                 emuState.mouseY       = my;
                 emuState.mouseButtons = buttonMask;
+                emuState.mouseWheel += (int)io.MouseWheel;
             }
         }
         allowTyping = ImGui::IsWindowFocused();
@@ -977,9 +979,6 @@ void UI::wndMemEdit(bool *p_open) {
         memAreas.emplace_back("Z80 memory", nullptr, 0x10000);
         memAreas.emplace_back("Screen RAM", emuState.screenRam, sizeof(emuState.screenRam));
         memAreas.emplace_back("Color RAM", emuState.colorRam, sizeof(emuState.colorRam));
-        memAreas.emplace_back("Page  0: System ROM $0000-$3FFF", emuState.systemRom + 0, 16384);
-        memAreas.emplace_back("Page  1: System ROM $4000-$7FFF", emuState.systemRom + 16384, 16384);
-        memAreas.emplace_back("Page  2: System ROM $8000-$9FFF", emuState.systemRom + 32768, 8192);
         memAreas.emplace_back("Page 19: Cartridge ROM", emuState.cartRom, sizeof(emuState.cartRom));
         memAreas.emplace_back("Page 20: Video RAM", emuState.videoRam, sizeof(emuState.videoRam));
         memAreas.emplace_back("Page 21: Character RAM", emuState.charRam, sizeof(emuState.charRam));

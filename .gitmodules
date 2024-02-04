@@ -1,0 +1,3 @@
+[submodule "System/rom_src/plusbasic"]
+	path = System/rom_src/plusbasic
+	url = https://github.com/RevCurtisP/AquariusPlus

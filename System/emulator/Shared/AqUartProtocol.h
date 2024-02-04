@@ -22,7 +22,7 @@ public:
 #endif
 
 #ifndef EMULATOR
-    void mouseReport(int dx, int dy, uint8_t buttonMask);
+    void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel);
     void setMouseSensitivityDiv(uint8_t val) {
         mouseSensitivityDiv = std::max((uint8_t)1, std::min((uint8_t)8, val));
     }
@@ -113,6 +113,7 @@ private:
     float             mouseY              = 0;
     uint8_t           mouseButtons        = 0;
     uint8_t           mouseSensitivityDiv = 4;
+    int               mouseWheel          = 0;
 #endif
 
 #ifdef EMULATOR

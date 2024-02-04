@@ -64,11 +64,10 @@ DEPS        := $(OBJS:.o=.d)
 
 all: $(OUT)
 
-$(OUT): $(OBJS) aquarius.rom
+$(OUT): $(OBJS)
 	@echo Linking $@
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) $(OBJS) $(LFLAGS) -o $@
-	@ln -sf ../aquarius.rom build/aquarius.rom
 
 ifeq ($(detected_OS),Darwin)
 	@echo Building app bundle
@@ -76,7 +75,6 @@ ifeq ($(detected_OS),Darwin)
 	@cp -r macos/AquariusPlusEmu.app build/
 	@mkdir -p build/AquariusPlusEmu.app/Contents/MacOS/
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu
-	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Resources/
 	@sed -i '' 's/#VERSION#/$(VERSION_STR)/' $(BUILD_DIR)/AquariusPlusEmu.app/Contents/Info.plist
 	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu-macOS-$(VERSION_STR).zip AquariusPlusEmu.app
 endif
@@ -85,7 +83,6 @@ ifeq ($(detected_OS),Linux)
 	@echo Building distribution
 	@rm -rf $(BUILD_DIR)/AquariusPlusEmu
 	@mkdir -p $(BUILD_DIR)/AquariusPlusEmu
-	@cp aquarius.rom $(BUILD_DIR)/AquariusPlusEmu/
 	@cp $(OUT) $(BUILD_DIR)/AquariusPlusEmu/
 	@cp -r ../../EndUser/sdcard $(BUILD_DIR)/AquariusPlusEmu/
 	@cd $(BUILD_DIR); zip -rq AquariusPlusEmu-Linux-$(VERSION_STR).zip AquariusPlusEmu

@@ -1,9 +1,9 @@
 #include "Common.h"
 #if _WIN32
-#    include <Windows.h>
-#    include <shlobj.h>
+#include <Windows.h>
+#include <shlobj.h>
 #else
-#    undef main
+#undef main
 #endif
 #include "UI.h"
 #include "Config.h"
@@ -39,21 +39,19 @@ int main(int argc, char *argv[]) {
     auto &config = Config::instance();
     config.init(appDataPath);
 
-    std::string romPath = basePath + "/aquarius.rom";
     std::string cartRomPath;
     std::string typeInStr;
 
     int  opt;
     bool paramsOk = true;
     bool showHelp = false;
-    while ((opt = getopt(argc, argv, "hr:c:u:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "hc:u:t:")) != -1) {
         if (opt == '?' || opt == ':') {
             paramsOk = false;
             break;
         }
         switch (opt) {
             case 'h': showHelp = true; break;
-            case 'r': romPath = optarg; break;
             case 'c': cartRomPath = optarg; break;
             case 'u': {
 #if _WIN32
@@ -96,7 +94,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Usage: %s <options>\n\n", argv[0]);
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-h          This help screen\n");
-        fprintf(stderr, "-r <path>   Set system ROM image path (default: %s/aquarius.rom)\n", basePath.c_str());
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
         fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", config.sdCardPath.c_str());
         fprintf(stderr, "-t <string> Type in string.\n");
@@ -106,7 +103,6 @@ int main(int argc, char *argv[]) {
 
     UI ui;
     ui.start(
-        romPath,
         cartRomPath,
         typeInStr);
 

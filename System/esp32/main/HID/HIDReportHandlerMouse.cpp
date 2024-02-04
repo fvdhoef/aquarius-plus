@@ -60,19 +60,20 @@ void HIDReportHandlerMouse::_inputReport(uint8_t reportId, const uint8_t *buf, s
 
     int     dx         = 0;
     int     dy         = 0;
+    int     dWheel     = 0;
     uint8_t buttonMask = 0;
 
     if (xIdx >= 0)
         dx = (int)readBits(buf, length, xIdx, xSize, true);
     if (yIdx >= 0)
         dy = (int)readBits(buf, length, yIdx, ySize, true);
-    // if (wheelIdx >= 0)
-    //     printf("W:%5d ", (int)readBits(buf, length, wheelIdx, wheelSize, true));
+    if (wheelIdx >= 0)
+        dWheel = (int)readBits(buf, length, wheelIdx, wheelSize, true);
 
     for (int i = 0; i < 3; i++) {
         if (buttons[i] >= 0 && (int)readBits(buf, length, buttons[i], 1, false))
             buttonMask |= (1 << i);
     }
 
-    AqUartProtocol::instance().mouseReport(dx, dy, buttonMask);
+    AqUartProtocol::instance().mouseReport(dx, dy, buttonMask, dWheel);
 }

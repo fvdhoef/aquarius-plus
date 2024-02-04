@@ -160,9 +160,9 @@ module top(
     wire sel_mem_sysram  = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b111;   // $3800-$3FFF
     wire sel_mem_vram    = !ebus_mreq_n && reg_bank_page == 6'd20;                        // Page 20
     wire sel_mem_chram   = !ebus_mreq_n && reg_bank_page == 6'd21;                        // Page 21
-    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page <= 6'd3 && !sel_mem_sysram;      // Page 0-3
+    wire sel_mem_rom     = !ebus_mreq_n && reg_bank_page <= 6'd3;                         // Page 0-3
 
-    assign ebus_ba = sel_mem_sysram ? 5'b0 : reg_bank_page[4:0];    // sysram is always in page 32
+    assign ebus_ba = reg_bank_page[4:0];
 
     // IO space decoding
     wire sel_io_video             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:4] == 4'hE;
@@ -189,12 +189,10 @@ module top(
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 | sel_io_kbbuf | sel_io_sysctrl |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
-    wire allow_sel_mem = !ebus_mreq_n && !sel_internal && !sel_mem_sysram && (ebus_wr_n || (!ebus_wr_n && !reg_bank_ro));
+    wire sel_mem_cart    = !ebus_mreq_n && !sel_internal && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
+    wire sel_mem_ram     = !ebus_mreq_n && !sel_internal && reg_bank_page[5];                       // Page 32-63
 
-    wire sel_mem_cart    = allow_sel_mem && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
-    wire sel_mem_ram     = (allow_sel_mem && reg_bank_page[5]) || sel_mem_sysram;   // Page 32-63
-
-    assign ebus_ram_we_n  = !(!ebus_wr_n && (sel_mem_sysram || (sel_mem_ram && !reg_bank_ro)));
+    assign ebus_ram_we_n  = !(sel_mem_ram && !ebus_wr_n && (!reg_bank_ro || sel_mem_sysram));
     assign ebus_ram_ce_n  = !sel_mem_ram;
     assign ebus_cart_ce_n = !sel_mem_cart;
 
@@ -236,10 +234,10 @@ module top(
     always @(posedge clk or posedge reset)
         if (reset) begin
             audio_dac_r         <= 8'b0;
-            reg_bank0_r         <= {2'b11, 6'd0};
-            reg_bank1_r         <= {2'b00, 6'd33};
-            reg_bank2_r         <= {2'b00, 6'd34};
-            reg_bank3_r         <= {2'b00, 6'd19};
+            reg_bank0_r         <= {2'b00, 6'd0};
+            reg_bank1_r         <= {2'b00, 6'd0};
+            reg_bank2_r         <= {2'b00, 6'd0};
+            reg_bank3_r         <= {2'b00, 6'd0};
             sysctrl_dis_regs_r  <= 1'b0;
             sysctrl_dis_psgs_r  <= 1'b0;
             sysctrl_turbo_r     <= 1'b0;

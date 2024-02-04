@@ -248,9 +248,9 @@ void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string>
 
 static bool startsWith(const std::string &s1, const std::string &s2, bool caseSensitive = false) {
     if (caseSensitive) {
-        return (strncasecmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
-    } else {
         return (strncmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
+    } else {
+        return (strncasecmp(s1.c_str(), s2.c_str(), s2.size()) == 0);
     }
 }
 
@@ -343,6 +343,8 @@ void AqUartProtocol::receivedByte(uint8_t data) {
         return;
     }
 
+    // printf("AqUartProtocol::receivedByte %02X\n", data);
+
     rxBuf[rxBufIdx] = data;
     if (rxBufIdx < sizeof(rxBuf) - 1) {
         rxBufIdx++;
@@ -356,6 +358,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 // Close any open descriptors
                 DBGF("RESET\n");
                 cmdReset();
+                rxBufIdx = 0;
                 break;
             }
             case ESPCMD_VERSION: {
@@ -563,6 +566,7 @@ void AqUartProtocol::receivedByte(uint8_t data) {
             }
             default: {
                 DBGF("Invalid command: 0x%02X\n", cmd);
+                rxBufIdx = 0;
                 break;
             }
         }
@@ -641,6 +645,8 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite(x >> 8);
     txFifoWrite(y);
     txFifoWrite(mouseButtons);
+    txFifoWrite((int8_t)std::max(-128, std::min(mouseWheel, 127)));
+    mouseWheel = 0;
 
 #else
     if (!Config::instance().enableMouse) {
@@ -652,6 +658,8 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite(emuState.mouseX >> 8);
     txFifoWrite(emuState.mouseY);
     txFifoWrite(emuState.mouseButtons);
+    txFifoWrite((int8_t)std::max(-128, std::min(emuState.mouseWheel, 127)));
+    emuState.mouseWheel = 0;
 
     emuState.mouseHideTimeout = 1.0f;
 #endif
@@ -1166,7 +1174,7 @@ void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
 }
 
 #ifndef EMULATOR
-void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask) {
+void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel) {
     RecursiveMutexLock lock(mutexMouseData);
 
     float sensitivity = 1.0f / (float)mouseSensitivityDiv;
@@ -1174,5 +1182,6 @@ void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask) {
     mouseY            = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
     mouseButtons      = buttonMask;
     mousePresent      = true;
+    mouseWheel        = mouseWheel + dWheel;
 }
 #endif
