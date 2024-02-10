@@ -13,7 +13,7 @@ jobs:
 
     steps:
       - name: Checking out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get all Git tags
@@ -33,7 +33,7 @@ jobs:
         run: |
           cd System/esp32; ./do_release.sh nobuild
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Firmware_${{ github.ref_name }}
           path: System/esp32/AquariusPlus-Firmware-*.zip

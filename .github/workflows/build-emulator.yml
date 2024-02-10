@@ -15,7 +15,7 @@ jobs:
     runs-on: macos-latest
     steps:
       - name: Checking out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get all Git tags
@@ -25,7 +25,7 @@ jobs:
           echo "const char *versionStr = \"`git describe`\";" > System/emulator/Version.cpp
           make -C System/emulator
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusEmu-macOS-${{ github.ref_name }}
           path: System/emulator/build/AquariusPlusEmu-macOS-*.zip
@@ -41,7 +41,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checking out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get all Git tags
@@ -56,7 +56,7 @@ jobs:
           echo "const char *versionStr = \"`git describe`\";" > System/emulator/Version.cpp
           make -C System/emulator
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusEmu-Linux-${{ github.ref_name }}
           path: System/emulator/build/AquariusPlusEmu-Linux-*.zip
@@ -72,7 +72,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Checking out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get all Git tags
@@ -95,7 +95,7 @@ jobs:
           cd System\emulator\windows\x64\Release
           Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-portable-$VERSION.zip
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
           path: |
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checking out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       - name: Get all Git tags
@@ -131,7 +131,7 @@ jobs:
           mv sdcard AquariusPlusDisk
           zip -r AquariusPlusDisk-`git describe`.zip AquariusPlusDisk
       - name: Upload Artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusDisk-${{ github.ref_name }}
           path: EndUser/AquariusPlusDisk-*.zip
