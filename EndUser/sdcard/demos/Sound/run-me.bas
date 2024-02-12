@@ -1,0 +1,58 @@
+10 REM Multinote tone generator
+20 REM to test dual AY-3-8910 chips
+50 LOAD"data/six-voice.scr",12288
+60 IF INKEY$="" GOTO 60
+100 REM Main loop
+105 REM a0 b0 c0 vol 15
+110 PSG 8,15,9,15,10,15
+115 REM C1 in ch-a0
+116 LOAD SCREEN "data/six-c1.scr"
+120 PSG 0,45,1,4
+121 REM ch-a0 on
+122 PSG 7,62
+125 GOSUB 900:REM 500 tick delay
+128 REM E2 in ch-b0
+129 LOAD SCREEN "data/six-e2.scr"
+130 PSG 2,80,3,3
+131 REM ch-a0,b0 on
+132 PSG 7,60
+135 GOSUB 900:REM 500 tick delay
+138 REM G2 in ch-c0
+139 LOAD SCREEN "data/six-g2.scr"
+140 PSG 4,201,5,2
+141 REM ch-a0,b0,c0 on
+142 PSG 7,56
+145 GOSUB 900:REM 500 tick delay
+205 REM a1 b1 c1 vol 15
+210 PSG 24,15,25,15,26,15
+218 REM C3 in ch-a1
+219 LOAD SCREEN "data/six-c3.scr"
+220 PSG 16,22,17,2
+221 REM ch-a1 on
+222 PSG 23,62
+225 GOSUB 900:REM 500 tick delay
+228 REM E3 in ch-b1
+229 LOAD SCREEN "data/six-e3.scr"
+230 PSG 18,168,19,1
+231 REM ch-a1,b1 on
+232 PSG 23,60
+235 GOSUB 900:REM 500 tick delay
+238 REM G3 in ch-c1
+239 LOAD SCREEN "data/six-g3.scr"
+240 PSG 20,101,21,1
+241 REM ch-a1,b1,c1 on
+242 PSG 23,56
+245 GOSUB 900:REM 500 tick delay
+246 GOSUB 900:REM 500 tick delay
+247 GOSUB 900:REM 500 tick delay
+744 REM abc0 off
+745 PSG 7,63
+746 REM abc1 off
+747 PSG 23,63
+749 REM 2000 tick delay
+750 GOSUB 900:GOSUB 900
+751 LOAD SCREEN "data/six-voice.scr"
+752 GOSUB 900:GOSUB 900
+799 CLS
+800 END
+900 FOR I=1 TO 500:NEXT:RETURN

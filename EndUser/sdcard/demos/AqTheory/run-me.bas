@@ -1,6 +1,6 @@
 1 LOAD"data/aqtitle.scr",12288
-2 LOAD"data/aquarius.saq",@60,0
-4 PLAY SAMPLE @60,0
+2 LOAD"data/aquarius.saq",@32,0
+4 PLAY SAMPLE @32,0
 5 GOTO 60
 6 PSG 8,15,9,15,10,15:REM abc vol 15
 10 PSG 0,148,1,1:REM Db4 in a

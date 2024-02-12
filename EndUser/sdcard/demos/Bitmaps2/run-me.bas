@@ -1,0 +1,32 @@
+10 REM Color Bitmap Demo
+15 LOAD SCREEN "data/color-title.scr"
+20 PAUSE
+100 REM Set mem map to VRAM
+120 LOAD"data/image1.bm4",@20,0
+121 GOSUB 1150
+122 LOAD"data/image2.bm4",@20,0
+123 GOSUB 1150
+124 LOAD"data/image3.bm4",@20,0
+125 GOSUB 1150
+126 LOAD"data/image4.bm4",@20,0
+127 GOSUB 1150
+128 LOAD"data/image5.bm4",@20,0
+129 GOSUB 1150
+130 LOAD"data/image6.bm4",@20,0
+131 GOSUB 1150
+132 LOAD"data/image7.bm4",@20,0
+133 GOSUB 1150
+134 LOAD"data/image8.bm4",@20,0
+135 GOSUB 1150
+136 LOAD"data/image9.bm4",@20,0
+137 GOSUB 1150
+138 LOAD"data/image10.bm4",@20,0
+139 GOSUB 1150
+998 CLS
+999 END
+1000 REM Loops and Subroutines
+1150 SET PALETTE 1 TO PEEK$(@20,16000,32)
+1160 SCREEN 0,3
+1170 PAUSE
+1180 SCREEN 0,0
+1190 RETURN
