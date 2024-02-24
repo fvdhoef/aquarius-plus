@@ -567,9 +567,57 @@ static inline std::string trim(const std::string &s, const char *t = " \t\n\r\f\
 }
 #endif
 
+#ifndef EMULATOR
+
+#define LATEST_TAG_LEN (32)
+static esp_err_t http_evt_cb(esp_http_client_event_t *evt) {
+    if (evt->event_id == HTTP_EVENT_ON_HEADER) {
+        if (strcasecmp(evt->header_key, "Location") == 0) {
+            char *tag = strrchr(evt->header_value, '/');
+            if (tag) {
+                tag += 1;
+                char *latestTag;
+                esp_http_client_get_user_data(evt->client, (void **)&latestTag);
+                if (latestTag)
+                    snprintf(latestTag, LATEST_TAG_LEN, "%s", tag);
+            }
+        }
+    }
+    return ESP_OK;
+}
+#endif
+
 void EspSettingsConsole::systemUpdateGitHub() {
 #ifndef EMULATOR
-    cprintf("Enter firmware version (GitHub tag, e.g. V0.7):");
+    char latestTag[LATEST_TAG_LEN];
+    latestTag[0] = 0;
+
+    // Get tag of latest release
+    {
+        esp_http_client_config_t cfg = {
+            .url                   = "https://github.com/fvdhoef/aquarius-plus/releases/latest",
+            .timeout_ms            = 5000,
+            .disable_auto_redirect = true,
+            .event_handler         = http_evt_cb,
+            .user_data             = latestTag,
+            .use_global_ca_store   = true,
+        };
+        esp_http_client_handle_t client = esp_http_client_init(&cfg);
+        esp_err_t                err    = esp_http_client_open(client, 0);
+        if (err == ESP_OK) {
+            esp_http_client_fetch_headers(client);
+            esp_http_client_close(client);
+        }
+        esp_http_client_cleanup(client);
+    }
+
+    if (latestTag[0]) {
+        cprintf("Latest firmware available: %s\n", latestTag);
+    } else {
+        cprintf("Error fetching latest available\nfirmware version!\n");
+    }
+
+    cprintf("Enter firmware version or leave empty to install latest version (GitHub tag, e.g. %s):", latestTag[0] ? latestTag : "V0.24b");
     char str[32];
     creadline(str, sizeof(str), false);
     if (new_session)
@@ -577,8 +625,12 @@ void EspSettingsConsole::systemUpdateGitHub() {
 
     auto trimmedStr = trim(str);
     if (trimmedStr.empty()) {
-        cprintf("Invalid name, aborting.\n");
-        return;
+        if (latestTag[0]) {
+            trimmedStr = trim(latestTag);
+        } else {
+            cprintf("Invalid name, aborting.\n");
+            return;
+        }
     }
     if (trimmedStr[0] == 'v') {
         trimmedStr[0] = 'V';

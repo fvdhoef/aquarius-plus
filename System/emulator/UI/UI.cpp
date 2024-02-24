@@ -257,35 +257,39 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Screen")) {
                 if (ImGui::MenuItem("Save screenshot...", "")) {
                     char const *lFilterPatterns[1] = {"*.png"};
-                    std::string pngFile            = tinyfd_saveFileDialog("Save screenshot", "", 1, lFilterPatterns, "PNG files");
-                    if (pngFile.size() < 4 || pngFile.substr(pngFile.size() - 4) != ".png")
-                        pngFile += ".png";
+                    char       *path               = tinyfd_saveFileDialog("Save screenshot", "", 1, lFilterPatterns, "PNG files");
+                    if (path) {
+                        std::string pngFile = path;
+                        if (pngFile.size() < 4 || pngFile.substr(pngFile.size() - 4) != ".png")
+                            pngFile += ".png";
 
-                    auto *fb = emuState.video.getFb();
+                        auto *fb = emuState.video.getFb();
 
-                    std::array<uint32_t, VIDEO_WIDTH * VIDEO_HEIGHT * 2> tmpBuf;
-                    for (int j = 0; j < VIDEO_HEIGHT * 2; j++) {
-                        for (int i = 0; i < VIDEO_WIDTH; i++) {
-                            // Convert from RGB444 to RGB888
-                            uint16_t col444 = fb[j / 2 * VIDEO_WIDTH + i];
+                        std::vector<uint32_t> tmpBuf;
+                        tmpBuf.resize(VIDEO_WIDTH * VIDEO_HEIGHT * 2);
+                        for (int j = 0; j < VIDEO_HEIGHT * 2; j++) {
+                            for (int i = 0; i < VIDEO_WIDTH; i++) {
+                                // Convert from RGB444 to RGB888
+                                uint16_t col444 = fb[j / 2 * VIDEO_WIDTH + i];
 
-                            unsigned r4 = (col444 >> 8) & 0xF;
-                            unsigned g4 = (col444 >> 4) & 0xF;
-                            unsigned b4 = (col444 >> 0) & 0xF;
+                                unsigned r4 = (col444 >> 8) & 0xF;
+                                unsigned g4 = (col444 >> 4) & 0xF;
+                                unsigned b4 = (col444 >> 0) & 0xF;
 
-                            unsigned r8 = (r4 << 4) | r4;
-                            unsigned g8 = (g4 << 4) | g4;
-                            unsigned b8 = (b4 << 4) | b4;
+                                unsigned r8 = (r4 << 4) | r4;
+                                unsigned g8 = (g4 << 4) | g4;
+                                unsigned b8 = (b4 << 4) | b4;
 
-                            tmpBuf[j * VIDEO_WIDTH + i] = (0xFF << 24) | (b8 << 16) | (g8 << 8) | (r8);
+                                tmpBuf[j * VIDEO_WIDTH + i] = (0xFF << 24) | (b8 << 16) | (g8 << 8) | (r8);
+                            }
                         }
-                    }
 
-                    std::vector<unsigned char> png;
-                    lodepng::State             state;
-                    unsigned                   error = lodepng::encode(png, reinterpret_cast<uint8_t *>(tmpBuf.data()), VIDEO_WIDTH, VIDEO_HEIGHT * 2, state);
-                    if (!error)
-                        lodepng::save_file(png, pngFile);
+                        std::vector<unsigned char> png;
+                        lodepng::State             state;
+                        unsigned                   error = lodepng::encode(png, reinterpret_cast<uint8_t *>(tmpBuf.data()), VIDEO_WIDTH, VIDEO_HEIGHT * 2, state);
+                        if (!error)
+                            lodepng::save_file(png, pngFile);
+                    }
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Scaling: Nearest Neighbor", "", config.displayScaling == DisplayScaling::NearestNeighbor)) {
