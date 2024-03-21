@@ -290,13 +290,6 @@ uint8_t FPGA::aqpReadIO(uint16_t addr) {
     return result[1];
 }
 
-void FPGA::aqpWriteROM(uint16_t addr, uint8_t data) {
-    RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_ROM_WRITE, addr & 0xFF, addr >> 8, data);
-    aqpSel(false);
-}
-
 void FPGA::aqpSaveMemBanks() {
     RecursiveMutexLock lock(mutex);
     for (int i = 0; i < 4; i++) {

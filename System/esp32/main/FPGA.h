@@ -30,7 +30,6 @@ public:
     uint8_t aqpReadMem(uint16_t addr);
     void    aqpWriteIO(uint16_t addr, uint8_t data);
     uint8_t aqpReadIO(uint16_t addr);
-    void    aqpWriteROM(uint16_t addr, uint8_t data);
     void    aqpSaveMemBanks();
     void    aqpRestoreMemBanks();
     void    aqpSetMemBank(unsigned bank, uint8_t val);

@@ -9,6 +9,9 @@ by Sean Harrington, sph@1stage.com,
 
 The subfolders in this directory contain all the items necessary for a Maker to manufacture and assemble an Aquarius+ computer. For simplicity, the PCB section of this guide is geared towards using [JLCPCB](https://jlcpcb.com). Other vendors can absolutely be used, but this is the easiest path we have found.
 
+## Watch the Video!
+[Making an Aquarius+ Mini](https://youtu.be/Egu5tkLWHAY)
+
 ## Case Manufacturing:
 This guide is only an overview and is not meant to be an exhaustive guide for ordering or making your own case.
 

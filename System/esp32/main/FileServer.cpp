@@ -95,7 +95,6 @@ void FileServer::init() {
     }
 
     registerHandler("/keyboard", HTTP_POST, [&](httpd_req_t *req) { return postKeyboard(req); });
-    registerHandler("/sysrom", HTTP_POST, [&](httpd_req_t *req) { return postSysRom(req); });
     registerHandler("/*", HTTP_DELETE, [&](httpd_req_t *req) { return handleDelete(req); });
     registerHandler("/*", HTTP_GET, [&](httpd_req_t *req) { return handleGet(req); });
     registerHandler("/*", HTTP_HEAD, [&](httpd_req_t *req) { return handleHead(req); });
@@ -565,57 +564,5 @@ esp_err_t FileServer::postKeyboard(httpd_req_t *req) {
         // Keep track of remaining size of the file left to be uploaded
         remaining -= received;
     }
-    return resp204(req);
-}
-
-esp_err_t FileServer::postSysRom(httpd_req_t *req) {
-    // Allocate buffers
-    const size_t tmpSize = 16384;
-    auto         tmp     = std::make_unique<char[]>(tmpSize);
-
-    auto remaining = req->content_len;
-    if (req->content_len > 40 * 1024) {
-        return serverError(req);
-    }
-
-    auto &fpga = FPGA::instance();
-    fpga.aqpAqcuireBus();
-
-    uint16_t addr = 0;
-
-    bool error = false;
-
-    while (remaining > 0) {
-        // ESP_LOGI(TAG, "Remaining size : %d", remaining);
-        // Receive the file part by part into a buffer
-        int received;
-        if ((received = httpd_req_recv(req, tmp.get(), std::min(remaining, tmpSize))) <= 0) {
-            if (received == HTTPD_SOCK_ERR_TIMEOUT) {
-                // Retry if timeout occurred
-                continue;
-            }
-            // In case of unrecoverable error, close and delete the unfinished file
-            error = true;
-            break;
-        }
-
-        // Write buffer content to file on storage
-        for (int i = 0; i < received; i++) {
-            fpga.aqpWriteROM(addr++, tmp[i]);
-        }
-
-        // Keep track of remaining size of the file left to be uploaded
-        remaining -= received;
-    }
-
-    while (addr < 40 * 1024) {
-        fpga.aqpWriteROM(addr++, 0xFF);
-    }
-    fpga.aqpReleaseBus();
-    fpga.aqpReset();
-
-    if (error)
-        return serverError(req);
-
     return resp204(req);
 }

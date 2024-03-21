@@ -17,6 +17,7 @@
 #define CONFIG_NIMBLE_CPP_ENABLE_ADVERTISEMENT_TYPE_TEXT 1
 #define CONFIG_NIMBLE_CPP_ENABLE_GAP_EVENT_CODE_TEXT 1
 
+#include <time.h>
 #include <nimble/nimble_port.h>
 #include <nimble/nimble_port_freertos.h>
 #include <host/ble_hs.h>
