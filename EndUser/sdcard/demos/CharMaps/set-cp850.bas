@@ -1,11 +1,10 @@
-1000 REM Load CP850.CHR font
+1000 REM Load ARABIC.CHR font
 1010 CLS
-1020 USE CHRSET 0
-1030 LOAD CHRSET "charmaps/cp850.chr"
-1040 LOAD"chrdemo.scr",12288
+1020 USE CHRSET "charmaps/cp850.chr"
+1040 LOAD "chrdemo.scr",12288
 1050 LOCATE 1,2
 1060 PRINT "This is the"
-1070 PRINT "Code Page 850"
+1070 PRINT "Arabic"
 1080 PRINT "font...
 1090 PRINT
 1100 PRINT "Press any key"

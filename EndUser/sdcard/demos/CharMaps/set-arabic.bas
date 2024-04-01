@@ -1,7 +1,6 @@
 1000 REM Load ARABIC.CHR font
 1010 CLS
-1020 USE CHRSET 0
-1030 LOAD CHRSET "charmaps/arabic.chr"
+1020 USE CHRSET "charmaps/arabic.chr"
 1040 LOAD "chrdemo.scr",12288
 1050 LOCATE 1,2
 1060 PRINT "This is the"
