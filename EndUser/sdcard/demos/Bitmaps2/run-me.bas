@@ -3,9 +3,10 @@
 1002 REM by Sean P. Harrington
 
 1200 _init
-1210 LOAD SCREEN "data/color-title.scr"
-1220 fb$ = "data/image"
-1230 fe$ = ".bm4"
+1210 SCREEN 1
+1220 LOAD SCREEN "data/color-title.scr"
+1230 fb$ = "data/image"
+1240 fe$ = ".bm4"
 1299 PAUSE
 
 2000 _main
