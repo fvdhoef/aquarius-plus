@@ -4,7 +4,7 @@
 
 1200 _init
 1210 SCREEN 1
-1220 LOAD SCREEN "data/color-title.scr"
+1220 LOAD SCREEN "data/COLOR-TITLE.SCR"
 1230 fb$ = "data/image"
 1240 fe$ = ".bm4"
 1299 PAUSE
