@@ -9,7 +9,8 @@
 
 1100 _init
 1110 SCREEN 1
-1120 CLS
+1120 USE CHRSET 0
+1130 CLS
 
 2000 _mainloop
 2001 REM Animate frames

@@ -19,10 +19,14 @@
 1220 goto _main
 
 1300 _nonet
-1301 REM No network connection
-1310 POKE SCREEN 13+(2*40),"! NO NETWORK !"
-1320 WS$ = "data/iss-now.json"
-1330 LOAD WS$, *D$
+1301 REM Exit program politely
+1310 SET SPRITE * CLEAR
+1320 SCREEN 1,0,0,0
+1330 CLS
+1340 PRINT "Sorry, ISS-Map requires"
+1350 PRINT "an Internet connection!"
+1360 PRINT
+1399 END
 
 2000 _main
 2001 REM Main loop
@@ -57,7 +61,7 @@
 4040 O2=INSTR(D$(I),"latitude")-4
 4050 LO$=MID$(D$(I),O1,O2-O1)
 4060 A1=INSTR(D$(I),"latitude")+12
-4070 A2=INSTR(D$(I),"},")-1
+4070 A2=INSTR(D$(I),"}}")-1
 4080 LA$=MID$(D$(I),A1,A2-A1)
 4400 O3=5-INSTR(LO$,".")
 4410 A3=5-INSTR(LA$,".")

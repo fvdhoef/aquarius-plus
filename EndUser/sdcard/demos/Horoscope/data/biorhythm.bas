@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM                Biorhythm Module
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM              Updated 02 APR 2024
+1003 REM              Updated 18 APR 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -572,7 +572,7 @@
 9701 REM Return to Horoscope main program
 9710 save "data/dtBio.arry",*dt
 9720 save "data/nmBio.arry",*nm$
-9730 RUN "data/horoscope.bas"
+9730 RUN  "data/horoscope.bas"
 9799 END
 
 9800 _closeout
