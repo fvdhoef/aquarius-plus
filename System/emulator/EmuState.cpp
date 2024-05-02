@@ -167,7 +167,7 @@ unsigned EmuState::emulate() {
         video.drawLine();
 
         videoLine++;
-        if (videoLine == 200) {
+        if (videoLine == 240) {
             irqStatus |= (1 << 0);
 
         } else if (videoLine == 262) {
