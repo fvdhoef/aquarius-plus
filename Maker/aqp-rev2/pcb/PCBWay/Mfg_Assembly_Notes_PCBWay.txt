@@ -1,4 +1,5 @@
 Please confirm the following items after assembly:
+- In a few instances, resistors R7 - R21 in the VGA RGB ladder have occasionally been placed misaligned and disconnected, causing color issues. Visually inspect ALL SMT components for proper placement, alignment, and attachment. 
 - Ensure J7 expansion port is in the right two rows of holes. There should be an empty row of pins on the left.
 - Verify Micro USB Power connector J1 mounting lugs are properly attached
 - Verify SD card J9 pin 11 (upper left) is properly connected
