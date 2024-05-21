@@ -409,7 +409,7 @@ module top(
     assign ebus_wr_n     = spibm_en ? spibm_wr_n   : 1'bZ;
     assign ebus_mreq_n   = spibm_en ? spibm_mreq_n : 1'bZ;
     assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
-    assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
+    assign ebus_busreq_n = 1'b0;    // spibm_busreq ? 1'b0 : 1'bZ;
 
     spiregs spiregs(
         .clk(clk),
@@ -553,5 +553,30 @@ module top(
         // PWM audio output
         .audio_l(audio_l),
         .audio_r(audio_r));
+
+    //////////////////////////////////////////////////////////////////////////
+    // T80 core
+    //////////////////////////////////////////////////////////////////////////
+    t80a #(
+        .MODE(0),   // 0:Z80, 1:Fast Z80, 2:8080, 3:GB
+        .IOWait(1)  // 0:Single cycle I/O, 1:Std I/O cycle
+    ) t80 (
+        .RESET_n(ebus_reset_n),
+        .CLK_n(!ebus_phi),
+        .WAIT_n(1'b1),
+        .INT_n(ebus_int_n),
+        .NMI_n(1'b1),
+        .BUSRQ_n(1'b1),
+        .M1_n(),
+        .MREQ_n(ebus_mreq_n),
+        .IORQ_n(ebus_iorq_n),
+        .RD_n(ebus_rd_n),
+        .WR_n(ebus_wr_n),
+        .RFSH_n(),
+        .HALT_n(),
+        .BUSAK_n(),
+        .A(ebus_a),
+        .D(ebus_d)
+    );
 
 endmodule

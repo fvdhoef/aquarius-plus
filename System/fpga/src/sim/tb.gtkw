@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.4.0 (w)1999-2022 BSI
-[*] Tue Nov 21 11:37:54 2023
+[*] Tue May 21 06:32:49 2024
 [*]
 [dumpfile] "tb.vcd"
-[dumpfile_mtime] "Tue Nov 21 11:37:34 2023"
-[dumpfile_size] 94143
+[dumpfile_mtime] "Tue May 21 06:31:12 2024"
+[dumpfile_size] 105667
 [savefile] "tb.gtkw"
 [timestart] 0
 [size] 2096 1387
-[pos] 791 0
-*-22.575424 25460000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+[pos] 240 0
+*-24.577229 55600000 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
 [markername] AA
 [markername] BB
 [markername] CC
@@ -42,6 +42,31 @@
 [signals_width] 225
 [sst_expanded] 1
 [sst_vpaned_height] 434
+@200
+-
+@28
+tb.top_inst.ebus_reset_n
+tb.top_inst.ebus_phi
+@22
+tb.top_inst.ebus_a[15:0]
+tb.top_inst.ebus_d[7:0]
+@28
+tb.top_inst.ebus_rd_n
+tb.top_inst.ebus_wr_n
+tb.top_inst.ebus_mreq_n
+tb.top_inst.ebus_iorq_n
+tb.top_inst.ebus_int_n
+tb.top_inst.ebus_busreq_n
+tb.top_inst.ebus_busack_n
+@22
+tb.top_inst.ebus_ba[4:0]
+@28
+tb.top_inst.ebus_ram_ce_n
+tb.top_inst.ebus_cart_ce_n
+@29
+tb.top_inst.ebus_ram_we_n
+@200
+-
 @28
 tb.top_inst.clk
 @22
@@ -72,7 +97,7 @@ tb.top_inst.ay8910_ch_c[9:0]
 tb.top_inst.ay8910_2_ch_a[9:0]
 tb.top_inst.ay8910_2_ch_b[9:0]
 tb.top_inst.ay8910_2_ch_c[9:0]
-@29
+@28
 tb.top_inst.pwm_dac.audio_l
 [pattern_trace] 1
 [pattern_trace] 0
