@@ -41,8 +41,8 @@ struct DirEnumEntry {
     DirEnumEntry()
         : size(0), attr(0), fdate(0), ftime(0) {
     }
-    DirEnumEntry(const std::string &filename, uint32_t size, uint8_t attr, uint16_t fdate, uint16_t ftime)
-        : filename(filename), size(size), attr(attr), fdate(fdate), ftime(ftime) {
+    DirEnumEntry(const std::string &_filename, uint32_t _size, uint8_t _attr, uint16_t _fdate, uint16_t _ftime)
+        : filename(_filename), size(_size), attr(_attr), fdate(_fdate), ftime(_ftime) {
     }
 
     std::string filename;

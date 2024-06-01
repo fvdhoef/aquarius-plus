@@ -69,7 +69,10 @@ int TcpVFS::open(uint8_t flags, const std::string &_path) {
 
 #ifndef _WIN32
     // Resolve name
-    struct addrinfo hints = {.ai_family = AF_INET, .ai_socktype = SOCK_STREAM};
+    struct addrinfo hints;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_INET;
+    hints.ai_socktype = SOCK_STREAM;
 
     struct addrinfo *ai;
     if (getaddrinfo(host.c_str(), portStr.c_str(), &hints, &ai) != 0) {
