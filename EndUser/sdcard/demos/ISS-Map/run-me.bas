@@ -1,22 +1,24 @@
 1000 REM               ISS Location Mapper
 1001 REM              by Sean P. Harrington
-1002 REM               Updated 13 APR 2024
+1002 REM               Updated 02 MAY 2024
 1003 REM -----------------------------------------------
 
 1100 _init
 1110 SET FAST ON
-1120 D=10
+1120 D=20
 1130 SET SPRITE * CLEAR
 1140 SCREEN 1,0,1,0
 1150 CLS
 1160 GOSUB _MSPRITE
 1170 DIM D$(D)
 1180 LOAD SCREEN "data/issmap.scr"
-1190 ON ERROR GOTO _nonet
 
 1200 WS$ = "http://api.open-notify.org/iss-now.json"
-1210 LOAD WS$, *D$
-1220 goto _main
+1210 LOAD WS$, ^J$
+1220 SPLIT J$ INTO *D$ DEL 34
+1230 I=INDEX(*D$,"timestamp")
+1240 IF I=0 THEN GOTO _nonet
+1299 goto _main
 
 1300 _nonet
 1301 REM Exit program politely
@@ -30,10 +32,9 @@
 
 2000 _main
 2001 REM Main loop
-2010 LOAD WS$, *D$
-2020 FOR I = 0 TO D
-2030 IF LEN(D$(I)) THEN GOSUB _PARSE
-2040 NEXT I
+2010 LOAD WS$, ^J$
+2020 SPLIT J$ into *D$ DEL 34
+2030 GOSUB _PARSE
 2050 TIMER = 300
 2100 _WAITHERE
 2110 IF TIMER THEN GOTO _WAITHERE
@@ -57,12 +58,10 @@
 
 4000 _PARSE
 4001 REM This section parses the JSON data
-4030 O1=INSTR(D$(I),"longitude")+13
-4040 O2=INSTR(D$(I),"latitude")-4
-4050 LO$=MID$(D$(I),O1,O2-O1)
-4060 A1=INSTR(D$(I),"latitude")+12
-4070 A2=INSTR(D$(I),"}}")-1
-4080 LA$=MID$(D$(I),A1,A2-A1)
+4010 O=INDEX(*D$,"longitude")
+4020 A=INDEX(*D$,"latitude")
+4030 LO$=D$(O+2)
+4040 LA$=D$(A+2)
 4400 O3=5-INSTR(LO$,".")
 4410 A3=5-INSTR(LA$,".")
 4500 POKE SCREEN 14+(1*40),"ISS Position"
