@@ -1,6 +1,6 @@
 1000 REM               ISS Location Mapper
 1001 REM              by Sean P. Harrington
-1002 REM               Updated 02 MAY 2024
+1002 REM               Updated 10 JUN 2024 
 1003 REM -----------------------------------------------
 
 1100 _init
