@@ -1,41 +1,39 @@
 1000 REM               ISS Location Mapper
 1001 REM              by Sean P. Harrington
-1002 REM               Updated 10 JUN 2024 
+1002 REM               Updated 14 JUN 2024 
 1003 REM -----------------------------------------------
 
-1100 _init
+1100 _INIT
 1110 SET FAST ON
-1120 D=20
+1120 WS$ = "https://api.wheretheiss.at/v1/satellites/25544"
 1130 SET SPRITE * CLEAR
 1140 SCREEN 1,0,1,0
 1150 CLS
-1160 GOSUB _MSPRITE
-1170 DIM D$(D)
-1180 LOAD SCREEN "data/issmap.scr"
+1160 MS$ = "data/issmap-"
+1170 MM$ = "00"
+1180 ME$ = ".scr"
+1190 MW$ = "http://worldtimeapi.org/api/timezone/Europe/London"
+1200 CH  = VAL(MID$(DATETIME$,9,2))
+1210 LH  = CH
 
-1200 WS$ = "http://api.open-notify.org/iss-now.json"
-1210 LOAD WS$, ^J$
-1220 SPLIT J$ INTO *D$ DEL 34
-1230 I=INDEX(*D$,"timestamp")
-1240 IF I=0 THEN GOTO _nonet
-1299 goto _main
+1500 GOSUB _MSPRITE
+1510 GOSUB _LOADMAP
 
-1300 _nonet
-1301 REM Exit program politely
-1310 SET SPRITE * CLEAR
-1320 SCREEN 1,0,0,0
-1330 CLS
-1340 PRINT "Sorry, ISS-Map requires"
-1350 PRINT "an Internet connection!"
-1360 PRINT
-1399 END
-
-2000 _main
+2000 _MAIN
 2001 REM Main loop
-2010 LOAD WS$, ^J$
-2020 SPLIT J$ into *D$ DEL 34
-2030 GOSUB _PARSE
-2050 TIMER = 300
+2010 ON ERROR GOTO 4200
+2020 LOAD WS$,@40,0
+2030 ON ERROR GOTO 0
+2040 GOSUB _PARSE
+
+2050 _DRAWMAIN
+2060 GOSUB _DRAWLL
+2061 REM Draw LAT/LON at top of page
+2070 CH  = VAL(MID$(DATETIME$,9,2))
+2080 IF LH <> CH THEN GOSUB _LOADMAP
+2081 REM Compare last HOUR with current HOUR to check for redraw
+
+2099 TIMER = 300
 2100 _WAITHERE
 2110 IF TIMER THEN GOTO _WAITHERE
 2120 if inkey$ <> "" THEN GOTO _closeout
@@ -58,19 +56,55 @@
 
 4000 _PARSE
 4001 REM This section parses the JSON data
-4010 O=INDEX(*D$,"longitude")
-4020 A=INDEX(*D$,"latitude")
-4030 LO$=D$(O+2)
-4040 LA$=D$(A+2)
-4400 O3=5-INSTR(LO$,".")
-4410 A3=5-INSTR(LA$,".")
-4500 POKE SCREEN 14+(1*40),"ISS Position"
-4510 POKE SCREEN 13+(3*40),"LAT: "+STRING$(A3," ")+LA$
-4530 POKE SCREEN 13+(4*40),"LON: "+STRING$(O3," ")+LO$
-4600 X=INT((VAL(LO$)/1.875)+0.5)+152
-4610 Y=INT(0-(VAL(LA$)/1.600)+0.5)+126
-4800 SET SPRITE S$ POS X,Y
-4999 RETURN
+4010 SA=INMEM(@40,0,"lati")+ 10
+4011 REM Start LAT
+4020 EA=INMEM(@40,0,"long")- 10
+4021 REM End LAT
+4030 SO=INMEM(@40,0,"long")+ 11
+4031 REM Start LON
+4040 EO=INMEM(@40,0,"alti")- 10
+4041 REM End LON
+4050 LA$=PEEK$(@40,SA,EA-SA)
+4060 LO$=PEEK$(@40,SO,EO-SO)
+4061 REM Calc LAT & LON strings from RAM locations
+4099 RETURN
+
+4200 _NONET
+4201 REM If no net for UTC pull, use Wichita, KS
+4210 LA$="37.6872"
+4220 LO$="-97.3301"
+4299 GOTO _drawmain
+
+4300 _DRAWLL
+4301 REM Draw LAT LON values at top
+4310 O3=5-INSTR(LO$,".")
+4320 A3=5-INSTR(LA$,".")
+4321 REM Find the decimal point to seed spaces before value
+4330 POKE SCREEN 14+(1*40),"ISS Position"
+4340 POKE SCREEN 13+(3*40),"LAT: "+STRING$(A3," ")+LA$+"    "
+4350 POKE SCREEN 13+(4*40),"LON: "+STRING$(O3," ")+LO$+"    "
+4351 REM Extra spaces after in case previously printed numbers are there
+4360 X=INT((VAL(LO$)/1.875)+0.5)+152
+4361 REM X scaling for sprite location from LON
+4370 Y=INT(0-(VAL(LA$)/1.600)+0.5)+126
+4371 REM Y scaling for sprite location from LAT
+4380 SET SPRITE S$ POS X,Y
+4399 RETURN
+
+7000 _LOADMAP
+7001 REM Load MAP SCR file according to GMT hour (from net)
+7010 LH = CH
+7020 ON ERROR GOTO 7100
+7030 LOAD MW$,@41,0
+7040 ON ERROR GOTO 0
+7050 UT=INMEM(@41,0,"utc_datetime")
+7060 MM$ = PEEK$(@41,UT+26,2)
+7070 LOAD SCREEN MS$+MM$+ME$
+7099 RETURN
+
+7100 MM$ = "00"
+7101 REM In case UTC web load doesn't work, set to 00 file
+7110 GOTO 7070
 
 9000 _closeout
 9001 REM Exit program politely
@@ -78,4 +112,5 @@
 9020 SCREEN 1,0,0,0
 9030 CLS
 9040 PRINT "     We hope you enjoyed ISS-Map!"
+
 9999 END
