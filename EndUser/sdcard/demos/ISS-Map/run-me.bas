@@ -15,6 +15,10 @@
 1190 MW$ = "http://worldtimeapi.org/api/timezone/Europe/London"
 1200 CH  = VAL(MID$(DATETIME$,9,2))
 1210 LH  = CH
+1220 XL  = 152
+1221 REM X value of left-most part of map area for plot
+1230 YU  = 126
+1231 REM Y value of upper-most part of map area for plot
 
 1500 GOSUB _MSPRITE
 1510 GOSUB _LOADMAP
@@ -84,9 +88,9 @@
 4340 POKE SCREEN 13+(3*40),"LAT: "+STRING$(A3," ")+LA$+"    "
 4350 POKE SCREEN 13+(4*40),"LON: "+STRING$(O3," ")+LO$+"    "
 4351 REM Extra spaces after in case previously printed numbers are there
-4360 X=INT((VAL(LO$)/1.875)+0.5)+152
+4360 X=INT((VAL(LO$)/1.875)+0.5)+XL
 4361 REM X scaling for sprite location from LON
-4370 Y=INT(0-(VAL(LA$)/1.600)+0.5)+126
+4370 Y=INT(0-(VAL(LA$)/1.600)+0.5)+YU
 4371 REM Y scaling for sprite location from LAT
 4380 SET SPRITE S$ POS X,Y
 4399 RETURN
