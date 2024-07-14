@@ -22,7 +22,7 @@ enum GameCtrlBtnIdx {
     GCB_DPAD_DOWN  = (1 << 12),
     GCB_DPAD_LEFT  = (1 << 13),
     GCB_DPAD_RIGHT = (1 << 14),
-    GCB_DPAD_SHARE = (1 << 15),
+    GCB_SHARE      = (1 << 15),
 };
 
 class AqUartProtocol {
@@ -87,6 +87,7 @@ private:
     void cmdGetDateTime(uint8_t type);
     void cmdKeyMode(uint8_t mode);
     void cmdGetMouse();
+    void cmdGetGameCtrl(uint8_t idx);
     void cmdOpen(uint8_t flags, const char *pathArg);
     void cmdClose(uint8_t fd);
     void cmdRead(uint8_t fd, uint16_t size);
@@ -139,9 +140,27 @@ private:
     SemaphoreHandle_t mutexGameCtrlData;
 #endif
     bool     gameCtrlPresent = false;
-    int8_t   gameCtrlAxes[6] = {0};
+    int8_t   gameCtrlLX      = 0;
+    int8_t   gameCtrlLY      = 0;
+    int8_t   gameCtrlRX      = 0;
+    int8_t   gameCtrlRY      = 0;
+    uint8_t  gameCtrlLT      = 0;
+    uint8_t  gameCtrlRT      = 0;
     uint16_t gameCtrlButtons = 0;
-    void     gameCtrlUpdated();
+
+    void gameCtrlReset(bool present) {
+        gameCtrlPresent = present;
+        gameCtrlLX      = 0;
+        gameCtrlLY      = 0;
+        gameCtrlRX      = 0;
+        gameCtrlRY      = 0;
+        gameCtrlLT      = 0;
+        gameCtrlRT      = 0;
+        gameCtrlButtons = 0;
+        gameCtrlUpdated();
+    }
+
+    void gameCtrlUpdated();
 
 #ifdef EMULATOR
     friend class UI;

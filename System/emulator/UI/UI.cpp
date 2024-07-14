@@ -162,41 +162,31 @@ void UI::mainLoop() {
                     if (!gameCtrl) {
                         gameCtrlIdx = event.cdevice.which;
                         gameCtrl    = SDL_GameControllerOpen(gameCtrlIdx);
-
-                        auto &aqp           = AqUartProtocol::instance();
-                        aqp.gameCtrlPresent = true;
-
-                        for (int i = 0; i < 6; i++)
-                            aqp.gameCtrlAxes[i] = 0;
-                        aqp.gameCtrlButtons = 0;
-                        aqp.gameCtrlUpdated();
+                        AqUartProtocol::instance().gameCtrlReset(true);
                     }
                     break;
                 }
                 case SDL_CONTROLLERDEVICEREMOVED: {
                     if (gameCtrlIdx == event.cdevice.which) {
                         SDL_GameControllerClose(gameCtrl);
-
                         gameCtrl    = nullptr;
                         gameCtrlIdx = -1;
-
-                        auto &aqp           = AqUartProtocol::instance();
-                        aqp.gameCtrlPresent = false;
-
-                        for (int i = 0; i < 6; i++)
-                            aqp.gameCtrlAxes[i] = 0;
-                        aqp.gameCtrlButtons = 0;
-                        aqp.gameCtrlUpdated();
+                        AqUartProtocol::instance().gameCtrlReset(false);
                     }
                     break;
                 }
 
                 case SDL_CONTROLLERAXISMOTION: {
-                    if (event.caxis.axis < 6) {
-                        auto &aqp                          = AqUartProtocol::instance();
-                        aqp.gameCtrlAxes[event.caxis.axis] = event.caxis.value / 256;
-                        aqp.gameCtrlUpdated();
+                    auto &aqp = AqUartProtocol::instance();
+                    switch (event.caxis.axis) {
+                        case SDL_CONTROLLER_AXIS_LEFTX: aqp.gameCtrlLX = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_LEFTY: aqp.gameCtrlLY = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_RIGHTX: aqp.gameCtrlRX = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_RIGHTY: aqp.gameCtrlRY = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_TRIGGERLEFT: aqp.gameCtrlLT = event.caxis.value / 128; break;
+                        case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: aqp.gameCtrlRT = event.caxis.value / 128; break;
                     }
+                    aqp.gameCtrlUpdated();
                     break;
                 }
                 case SDL_CONTROLLERBUTTONDOWN:

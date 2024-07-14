@@ -28,6 +28,7 @@ enum {
     ESPCMD_GETDATETIME       = 0x03, // Get current date/time
     ESPCMD_KEYMODE           = 0x08, // Set keyboard mode
     ESPCMD_GETMOUSE          = 0x0C, // Get mouse state
+    ESPCMD_GETGAMECTRL       = 0x0E, // Get game controller state
     ESPCMD_OPEN              = 0x10, // Open / create file
     ESPCMD_CLOSE             = 0x11, // Close open file
     ESPCMD_READ              = 0x12, // Read from file
@@ -87,7 +88,8 @@ AqUartProtocol &AqUartProtocol::instance() {
 
 void AqUartProtocol::init() {
 #ifndef EMULATOR
-    mutexMouseData = xSemaphoreCreateRecursiveMutex();
+    mutexMouseData    = xSemaphoreCreateRecursiveMutex();
+    mutexGameCtrlData = xSemaphoreCreateRecursiveMutex();
 
     // Initialize UART to FPGA
     uart_config_t uart_config = {
@@ -391,6 +393,14 @@ void AqUartProtocol::receivedByte(uint8_t data) {
                 rxBufIdx = 0;
                 break;
             }
+            case ESPCMD_GETGAMECTRL: {
+                if (rxBufIdx == 2) {
+                    uint8_t ctrlIdx = rxBuf[1];
+                    cmdGetGameCtrl(ctrlIdx);
+                    rxBufIdx = 0;
+                }
+                break;
+            }
             case ESPCMD_OPEN: {
                 if (data == 0 && rxBufIdx >= 3) {
                     uint8_t     flags   = rxBuf[1];
@@ -658,6 +668,27 @@ void AqUartProtocol::cmdGetMouse() {
 #ifdef EMULATOR
     emuState.mouseHideTimeout = 1.0f;
 #endif
+}
+
+void AqUartProtocol::cmdGetGameCtrl(uint8_t idx) {
+    DBGF("GETGAMECTRL");
+#ifndef EMULATOR
+    RecursiveMutexLock lock(mutexGameCtrlData);
+#endif
+
+    if (idx != 0 || !gameCtrlPresent) {
+        txFifoWrite(ERR_NOT_FOUND);
+        return;
+    }
+    txFifoWrite(0);
+    txFifoWrite(gameCtrlLX);
+    txFifoWrite(gameCtrlLY);
+    txFifoWrite(gameCtrlRX);
+    txFifoWrite(gameCtrlRY);
+    txFifoWrite(gameCtrlLT);
+    txFifoWrite(gameCtrlRT);
+    txFifoWrite(gameCtrlButtons & 0xFF);
+    txFifoWrite(gameCtrlButtons >> 8);
 }
 
 void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
@@ -1219,8 +1250,8 @@ void AqUartProtocol::gameCtrlUpdated() {
             p = 11;
 
         {
-            float x = gameCtrlAxes[0] / 128.0f;
-            float y = gameCtrlAxes[1] / 128.0f;
+            float x = gameCtrlLX / 128.0f;
+            float y = gameCtrlLY / 128.0f;
 
             float len   = sqrtf(x * x + y * y);
             float angle = 0;
