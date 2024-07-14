@@ -76,6 +76,8 @@ public:
     }
     void repeatTimer();
 
+    uint8_t handCtrl_gameCtrl = 0xFF;
+
 private:
 #ifndef EMULATOR
     SemaphoreHandle_t  mutex;

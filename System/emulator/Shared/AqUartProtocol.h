@@ -6,6 +6,25 @@
 #define MAX_FDS (10)
 #define MAX_DDS (10)
 
+enum GameCtrlBtnIdx {
+    GCB_A          = (1 << 0),
+    GCB_B          = (1 << 1),
+    GCB_X          = (1 << 2),
+    GCB_Y          = (1 << 3),
+    GCB_VIEW       = (1 << 4),
+    GCB_GUIDE      = (1 << 5),
+    GCB_MENU       = (1 << 6),
+    GCB_LS         = (1 << 7),
+    GCB_RS         = (1 << 8),
+    GCB_LB         = (1 << 9),
+    GCB_RB         = (1 << 10),
+    GCB_DPAD_UP    = (1 << 11),
+    GCB_DPAD_DOWN  = (1 << 12),
+    GCB_DPAD_LEFT  = (1 << 13),
+    GCB_DPAD_RIGHT = (1 << 14),
+    GCB_DPAD_SHARE = (1 << 15),
+};
+
 class AqUartProtocol {
     AqUartProtocol();
 
@@ -115,6 +134,14 @@ private:
     float   mouseY       = 0;
     uint8_t mouseButtons = 0;
     int     mouseWheel   = 0;
+
+#ifndef EMULATOR
+    SemaphoreHandle_t mutexGameCtrlData;
+#endif
+    bool     gameCtrlPresent = false;
+    int8_t   gameCtrlAxes[6] = {0};
+    uint16_t gameCtrlButtons = 0;
+    void     gameCtrlUpdated();
 
 #ifdef EMULATOR
     friend class UI;

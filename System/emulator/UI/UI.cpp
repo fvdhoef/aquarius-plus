@@ -30,7 +30,7 @@ void UI::start(
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(config.sdCardPath);
 
-    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER) != 0) {
+    if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
         exit(1);
     }
@@ -154,6 +154,57 @@ void UI::mainLoop() {
                     } else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
                         config.wndWidth  = event.window.data1;
                         config.wndHeight = event.window.data2;
+                    }
+                    break;
+                }
+
+                case SDL_CONTROLLERDEVICEADDED: {
+                    if (!gameCtrl) {
+                        gameCtrlIdx = event.cdevice.which;
+                        gameCtrl    = SDL_GameControllerOpen(gameCtrlIdx);
+
+                        auto &aqp           = AqUartProtocol::instance();
+                        aqp.gameCtrlPresent = true;
+
+                        for (int i = 0; i < 6; i++)
+                            aqp.gameCtrlAxes[i] = 0;
+                        aqp.gameCtrlButtons = 0;
+                        aqp.gameCtrlUpdated();
+                    }
+                    break;
+                }
+                case SDL_CONTROLLERDEVICEREMOVED: {
+                    if (gameCtrlIdx == event.cdevice.which) {
+                        SDL_GameControllerClose(gameCtrl);
+
+                        gameCtrl    = nullptr;
+                        gameCtrlIdx = -1;
+
+                        auto &aqp           = AqUartProtocol::instance();
+                        aqp.gameCtrlPresent = false;
+
+                        for (int i = 0; i < 6; i++)
+                            aqp.gameCtrlAxes[i] = 0;
+                        aqp.gameCtrlButtons = 0;
+                        aqp.gameCtrlUpdated();
+                    }
+                    break;
+                }
+
+                case SDL_CONTROLLERAXISMOTION: {
+                    if (event.caxis.axis < 6) {
+                        auto &aqp                          = AqUartProtocol::instance();
+                        aqp.gameCtrlAxes[event.caxis.axis] = event.caxis.value / 256;
+                        aqp.gameCtrlUpdated();
+                    }
+                    break;
+                }
+                case SDL_CONTROLLERBUTTONDOWN:
+                case SDL_CONTROLLERBUTTONUP: {
+                    if (event.cbutton.button < 16) {
+                        auto &aqp           = AqUartProtocol::instance();
+                        aqp.gameCtrlButtons = (aqp.gameCtrlButtons & ~(1 << event.cbutton.button)) | ((event.cbutton.state & 1) << event.cbutton.button);
+                        aqp.gameCtrlUpdated();
                     }
                     break;
                 }

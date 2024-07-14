@@ -2,15 +2,15 @@
 #include "AqKeyboardDefs.h"
 
 #ifdef EMULATOR
-#    include <SDL.h>
-#    include "EmuState.h"
-#    include "Config.h"
+#include <SDL.h>
+#include "EmuState.h"
+#include "Config.h"
 #else
-#    include "FPGA.h"
-#    include <esp_system.h>
-#    include "USBHost.h"
-#    include "MemDump.h"
-#    include <nvs_flash.h>
+#include "FPGA.h"
+#include <esp_system.h>
+#include "USBHost.h"
+#include "MemDump.h"
+#include <nvs_flash.h>
 #endif
 
 #ifndef EMULATOR
@@ -774,14 +774,16 @@ void AqKeyboard::updateMatrix() {
         prevMatrix = keybMatrix;
     }
 
-    if (prevHandCtrl1 != handCtrl1 || prevHandCtrl2 != handCtrl2) {
+    uint8_t handCtrl1_merged = handCtrl1 & handCtrl_gameCtrl;
+
+    if (prevHandCtrl1 != handCtrl1_merged || prevHandCtrl2 != handCtrl2) {
 #ifdef EMULATOR
-        emuState.handCtrl1 = handCtrl1;
+        emuState.handCtrl1 = handCtrl1_merged;
         emuState.handCtrl2 = handCtrl2;
 #else
         FPGA::instance().aqpUpdateHandCtrl(handCtrl1, handCtrl2);
 #endif
-        prevHandCtrl1 = handCtrl1;
+        prevHandCtrl1 = handCtrl1_merged;
         prevHandCtrl2 = handCtrl2;
     }
 }

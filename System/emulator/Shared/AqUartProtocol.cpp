@@ -636,6 +636,9 @@ void AqUartProtocol::cmdGetMouse() {
     DBGF("GETMOUSE");
 #ifndef EMULATOR
     RecursiveMutexLock lock(mutexMouseData);
+#else
+    mousePresent = Config::instance().enableMouse;
+#endif
 
     if (!mousePresent) {
         txFifoWrite(ERR_NOT_FOUND);
@@ -652,19 +655,7 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite((int8_t)std::max(-128, std::min(mouseWheel, 127)));
     mouseWheel = 0;
 
-#else
-    if (!Config::instance().enableMouse) {
-        txFifoWrite(ERR_NOT_FOUND);
-        return;
-    }
-    txFifoWrite(0);
-    txFifoWrite(emuState.mouseX & 0xFF);
-    txFifoWrite(emuState.mouseX >> 8);
-    txFifoWrite(emuState.mouseY);
-    txFifoWrite(emuState.mouseButtons);
-    txFifoWrite((int8_t)std::max(-128, std::min(emuState.mouseWheel, 127)));
-    emuState.mouseWheel = 0;
-
+#ifdef EMULATOR
     emuState.mouseHideTimeout = 1.0f;
 #endif
 }
@@ -1189,3 +1180,78 @@ void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel)
     mouseWheel        = mouseWheel + dWheel;
 }
 #endif
+
+void AqUartProtocol::gameCtrlUpdated() {
+    // Update hand controller
+    uint8_t handCtrl = 0xFF;
+
+    if (gameCtrlPresent) {
+        if (gameCtrlButtons & GCB_A)
+            handCtrl &= ~(1 << 6);
+        if (gameCtrlButtons & GCB_B)
+            handCtrl &= ~((1 << 7) | (1 << 2));
+        if (gameCtrlButtons & GCB_X)
+            handCtrl &= ~((1 << 7) | (1 << 5));
+        if (gameCtrlButtons & GCB_Y)
+            handCtrl &= ~((1 << 5));
+        if (gameCtrlButtons & GCB_LB)
+            handCtrl &= ~((1 << 7) | (1 << 1));
+        if (gameCtrlButtons & GCB_RB)
+            handCtrl &= ~((1 << 7) | (1 << 0));
+
+        // Map D-pad on hand controller disc
+        unsigned p = 0;
+        if ((gameCtrlButtons & GCB_DPAD_UP) == GCB_DPAD_UP)
+            p = 13;
+        else if ((gameCtrlButtons & (GCB_DPAD_UP | GCB_DPAD_RIGHT)) == (GCB_DPAD_UP | GCB_DPAD_RIGHT))
+            p = 15;
+        else if ((gameCtrlButtons & GCB_DPAD_RIGHT) == GCB_DPAD_RIGHT)
+            p = 1;
+        else if ((gameCtrlButtons & (GCB_DPAD_DOWN | GCB_DPAD_RIGHT)) == (GCB_DPAD_DOWN | GCB_DPAD_RIGHT))
+            p = 3;
+        else if ((gameCtrlButtons & GCB_DPAD_DOWN) == GCB_DPAD_DOWN)
+            p = 5;
+        else if ((gameCtrlButtons & (GCB_DPAD_DOWN | GCB_DPAD_LEFT)) == (GCB_DPAD_DOWN | GCB_DPAD_LEFT))
+            p = 7;
+        else if ((gameCtrlButtons & GCB_DPAD_LEFT) == GCB_DPAD_LEFT)
+            p = 9;
+        else if ((gameCtrlButtons & (GCB_DPAD_UP | GCB_DPAD_LEFT)) == (GCB_DPAD_UP | GCB_DPAD_LEFT))
+            p = 11;
+
+        {
+            float x = gameCtrlAxes[0] / 128.0f;
+            float y = gameCtrlAxes[1] / 128.0f;
+
+            float len   = sqrtf(x * x + y * y);
+            float angle = 0;
+            if (len > 0.4f) {
+                angle = atan2f(y, x) / M_PI * 180.0f + 180.0f;
+                p     = ((int)((angle + 11.25) / 22.5f) + 8) % 16 + 1;
+            }
+        }
+
+        switch (p) {
+            case 1: handCtrl &= ~((1 << 1)); break;
+            case 2: handCtrl &= ~((1 << 4) | (1 << 1)); break;
+            case 3: handCtrl &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+            case 4: handCtrl &= ~((1 << 1) | (1 << 0)); break;
+            case 5: handCtrl &= ~((1 << 0)); break;
+            case 6: handCtrl &= ~((1 << 4) | (1 << 0)); break;
+            case 7: handCtrl &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+            case 8: handCtrl &= ~((1 << 3) | (1 << 0)); break;
+            case 9: handCtrl &= ~((1 << 3)); break;
+            case 10: handCtrl &= ~((1 << 4) | (1 << 3)); break;
+            case 11: handCtrl &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+            case 12: handCtrl &= ~((1 << 3) | (1 << 2)); break;
+            case 13: handCtrl &= ~((1 << 2)); break;
+            case 14: handCtrl &= ~((1 << 4) | (1 << 2)); break;
+            case 15: handCtrl &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+            case 16: handCtrl &= ~((1 << 2) | (1 << 1)); break;
+            default: break;
+        }
+    }
+
+    auto &aqk             = AqKeyboard::instance();
+    aqk.handCtrl_gameCtrl = handCtrl;
+    aqk.updateMatrix();
+}

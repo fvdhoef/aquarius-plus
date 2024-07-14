@@ -41,6 +41,9 @@ private:
     SDL_Window   *window   = nullptr;
     SDL_Renderer *renderer = nullptr;
 
+    SDL_GameController *gameCtrl    = nullptr;
+    int                 gameCtrlIdx = -1;
+
     DCBlock dcBlockLeft;
     DCBlock dcBlockRight;
 
