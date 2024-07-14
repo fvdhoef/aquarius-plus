@@ -139,8 +139,10 @@ void UI::mainLoop() {
                 }
 
                 case SDL_MOUSEWHEEL: {
-                    if (!io.WantCaptureMouse)
-                        emuState.mouseWheel += event.wheel.y;
+                    if (!io.WantCaptureMouse) {
+                        auto &aqp = AqUartProtocol::instance();
+                        aqp.mouseWheel += event.wheel.y;
+                    }
                     break;
                 }
 
@@ -431,9 +433,11 @@ void UI::mainLoop() {
                     (io.MouseDown[1] ? 2 : 0) |
                     (io.MouseDown[2] ? 4 : 0);
 
-                emuState.mouseX       = mx;
-                emuState.mouseY       = my;
-                emuState.mouseButtons = buttonMask;
+                auto &aqp        = AqUartProtocol::instance();
+                aqp.mouseX       = mx;
+                aqp.mouseY       = my;
+                aqp.mouseButtons = buttonMask;
+
                 if (hideMouse)
                     ImGui::SetMouseCursor(ImGuiMouseCursor_None);
             }
@@ -904,10 +908,11 @@ void UI::wndScreen(bool *p_open) {
                     ImGui::SetMouseCursor(ImGuiMouseCursor_None);
             }
             if (update) {
-                emuState.mouseX       = mx;
-                emuState.mouseY       = my;
-                emuState.mouseButtons = buttonMask;
-                emuState.mouseWheel += (int)io.MouseWheel;
+                auto &aqp        = AqUartProtocol::instance();
+                aqp.mouseX       = mx;
+                aqp.mouseY       = my;
+                aqp.mouseButtons = buttonMask;
+                aqp.mouseWheel += (int)io.MouseWheel;
             }
         }
         allowTyping = ImGui::IsWindowFocused();

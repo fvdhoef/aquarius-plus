@@ -108,13 +108,13 @@ private:
 
 #ifndef EMULATOR
     SemaphoreHandle_t mutexMouseData;
-    bool              mousePresent        = false;
-    float             mouseX              = 0;
-    float             mouseY              = 0;
-    uint8_t           mouseButtons        = 0;
     uint8_t           mouseSensitivityDiv = 4;
-    int               mouseWheel          = 0;
 #endif
+    bool    mousePresent = false;
+    float   mouseX       = 0;
+    float   mouseY       = 0;
+    uint8_t mouseButtons = 0;
+    int     mouseWheel   = 0;
 
 #ifdef EMULATOR
     friend class UI;
