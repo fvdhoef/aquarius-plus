@@ -1,10 +1,11 @@
 #pragma once
 
 #include "Common.h"
-#include "NimBLEDevice.h"
+#include <host/ble_hs.h>
+
 #include "HIDReportHandler.h"
 
-class BLE : public NimBLEClientCallbacks, NimBLEAdvertisedDeviceCallbacks {
+class BLE {
     BLE();
 
 public:
@@ -13,28 +14,40 @@ public:
     void init();
 
 private:
-    static void _bleTask(void *arg);
-    void        bleTask();
+    static void onReset(int reason);
+    static void onSync();
+    static void hostTask(void *param);
 
-    // NimBLEClientCallbacks
-    void onConnect(NimBLEClient *client) override;
-    void onDisconnect(NimBLEClient *client) override;
-    bool onConnParamsUpdateRequest(NimBLEClient *client, const ble_gap_upd_params *params) override;
-    void onAuthenticationComplete(ble_gap_conn_desc *desc) override;
+    void startScan();
 
-    // NimBLEAdvertisedDeviceCallbacks
-    void onResult(NimBLEAdvertisedDevice *advertisedDevice) override;
+    int  onGapEvent(struct ble_gap_event *event);
+    void onGapConnect(int status, uint16_t connHandle);
+    void onGapDisconnect(int reason, const struct ble_gap_conn_desc &connDesc);
+    void onGapEncryptionChange(int status, uint16_t connHandle);
+    void onGapNotifyReceived(uint16_t connHandle, uint16_t attrHandle, bool isIndication, struct os_mbuf *om);
+    int  onGapRepeatPairing(const struct ble_gap_repeat_pairing &eventInfo);
+    void onGapDiscovery(const struct ble_gap_disc_desc &eventInfo);
+    void onGapExtDiscovery(const struct ble_gap_ext_disc_desc &eventInfo);
 
-    static void _notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
-    void        notifyCB(NimBLERemoteCharacteristic *pRemoteCharacteristic, uint8_t *pData, size_t length, bool isNotify);
-    static void _scanEndedCB(NimBLEScanResults results);
-    void        scanEndedCB(NimBLEScanResults &results);
+    void onDiscoveryComplete(const struct peer *peer, int status);
 
-    bool connectToServer(NimBLEAdvertisedDevice *advDevice);
+    void connectIfInteresting(const ble_addr_t *addr, const struct ble_hs_adv_fields &advFields);
 
-    NimBLEAdvertisedDevice *advDevice;
-    bool                    scanning;
-    bool                    connected;
+    int onRead(uint16_t connHandle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr);
 
+    static int _onGapEvent(struct ble_gap_event *event, void *arg) {
+        return static_cast<BLE *>(arg)->onGapEvent(event);
+    }
+    static void _onDiscoveryComplete(const struct peer *peer, int status, void *arg) {
+        static_cast<BLE *>(arg)->onDiscoveryComplete(peer, status);
+    }
+    static int _onRead(uint16_t connHandle, const struct ble_gatt_error *error, struct ble_gatt_attr *attr, void *arg) {
+        return static_cast<BLE *>(arg)->onRead(connHandle, error, attr);
+    }
+
+    uint16_t          hidDataHandle  = 0;
     HIDReportHandler *reportHandlers = nullptr;
+
+    uint8_t reportDesc[512];
+    int     reportDescOffset = 0;
 };

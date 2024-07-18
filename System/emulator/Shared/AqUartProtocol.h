@@ -136,6 +136,7 @@ private:
     uint8_t mouseButtons = 0;
     int     mouseWheel   = 0;
 
+public:
 #ifndef EMULATOR
     SemaphoreHandle_t mutexGameCtrlData;
 #endif
@@ -162,6 +163,7 @@ private:
 
     void gameCtrlUpdated();
 
+private:
 #ifdef EMULATOR
     friend class UI;
 #endif

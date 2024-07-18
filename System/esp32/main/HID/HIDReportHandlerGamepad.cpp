@@ -30,6 +30,8 @@ HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
 
 void HIDReportHandlerGamepad::_addInputField(const HIDReportDescriptor::HIDField &field) {
     if (field.arraySize == 1) {
+        // printf("usage: %02X:%02X\n", field.usagePage, field.usageMin);
+
         switch (field.usagePage) {
             case 1: {
                 switch (field.usageMin) {

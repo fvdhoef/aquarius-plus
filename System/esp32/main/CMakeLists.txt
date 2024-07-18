@@ -34,17 +34,6 @@ idf_component_register(
         "WiFi.cpp"
         "BLE.cpp"
 
-        "NimBLE_Cpp/NimBLEAddress.cpp"
-        "NimBLE_Cpp/NimBLEAdvertisedDevice.cpp"
-        "NimBLE_Cpp/NimBLEClient.cpp"
-        "NimBLE_Cpp/NimBLEDevice.cpp"
-        "NimBLE_Cpp/NimBLERemoteCharacteristic.cpp"
-        "NimBLE_Cpp/NimBLERemoteDescriptor.cpp"
-        "NimBLE_Cpp/NimBLERemoteService.cpp"
-        "NimBLE_Cpp/NimBLEScan.cpp"
-        "NimBLE_Cpp/NimBLEUUID.cpp"
-        "NimBLE_Cpp/NimBLEUtils.cpp"
-
     INCLUDE_DIRS
         "."
         "../../emulator/Shared"
@@ -52,7 +41,6 @@ idf_component_register(
         "fatfs"
         "HID"
         "USB"
-        "NimBLE_Cpp"
 
     REQUIRES
         "driver"

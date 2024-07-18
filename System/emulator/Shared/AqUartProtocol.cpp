@@ -6,6 +6,7 @@
 #include "AqKeyboard.h"
 #include <algorithm>
 #include <time.h>
+#include <math.h>
 
 #ifndef EMULATOR
 #include <driver/uart.h>
