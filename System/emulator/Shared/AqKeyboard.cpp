@@ -781,7 +781,7 @@ void AqKeyboard::updateMatrix() {
         emuState.handCtrl1 = handCtrl1_merged;
         emuState.handCtrl2 = handCtrl2;
 #else
-        FPGA::instance().aqpUpdateHandCtrl(handCtrl1, handCtrl2);
+        FPGA::instance().aqpUpdateHandCtrl(handCtrl1_merged, handCtrl2);
 #endif
         prevHandCtrl1 = handCtrl1_merged;
         prevHandCtrl2 = handCtrl2;
