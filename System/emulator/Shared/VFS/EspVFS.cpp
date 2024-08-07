@@ -143,10 +143,10 @@ int EspVFS::close(int fd) {
     return 0;
 }
 
-DirEnumCtx EspVFS::direnum(const std::string &path, uint8_t flags) {
+std::pair<int, DirEnumCtx> EspVFS::direnum(const std::string &path, uint8_t flags) {
     (void)path;
     if (flags & DE_FLAG_MODE83)
-        return nullptr;
+        return std::make_pair(ERR_PARAM, nullptr);
 
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
 
@@ -159,7 +159,7 @@ DirEnumCtx EspVFS::direnum(const std::string &path, uint8_t flags) {
 
         result->emplace_back(fe->filename, (uint32_t)fe->fsize, 0, (uint16_t)fe->fdate, (uint16_t)fe->ftime);
     }
-    return result;
+    return std::make_pair(0, result);
 }
 
 int EspVFS::stat(const std::string &_path, struct stat *st) {

@@ -71,7 +71,7 @@ public:
     virtual int tell(int fd);
 
     // Directory operations
-    virtual DirEnumCtx direnum(const std::string &path, uint8_t flags);
+    virtual std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags);
 
     // Filesystem operations
     virtual int delete_(const std::string &path);

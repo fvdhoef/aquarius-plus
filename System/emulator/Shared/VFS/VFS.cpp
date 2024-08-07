@@ -22,8 +22,8 @@ int VFS::seek(int, size_t) {
 int VFS::tell(int) {
     return ERR_OTHER;
 }
-DirEnumCtx VFS::direnum(const std::string &, uint8_t) {
-    return nullptr;
+std::pair<int, DirEnumCtx> VFS::direnum(const std::string &, uint8_t) {
+    return std::make_pair(ERR_OTHER, nullptr);
 }
 int VFS::delete_(const std::string &) {
     return ERR_OTHER;

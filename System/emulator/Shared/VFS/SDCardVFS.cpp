@@ -219,13 +219,13 @@ int SDCardVFS::tell(int fd) {
     return f_tell(state.fds[fd]);
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
+std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t flags) {
     bool mode83 = (flags & DE_FLAG_MODE83) != 0;
 
-    DIR dir;
-    if (f_opendir(&dir, path.c_str()) != F_OK) {
-        return nullptr;
-    }
+    DIR  dir;
+    auto res = f_opendir(&dir, path.c_str());
+    if (res != FR_OK)
+        return std::make_pair(mapFatFsResult(res), nullptr);
 
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
 
@@ -255,7 +255,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
     // Close directory
     f_closedir(&dir);
 
-    return result;
+    return std::make_pair(0, result);
 }
 
 int SDCardVFS::delete_(const std::string &path) {
@@ -633,9 +633,9 @@ int SDCardVFS::tell(int fd) {
     return (result < 0) ? mapErrNoResult() : result;
 }
 
-DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
+std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t flags) {
     if (basePath.empty())
-        return nullptr;
+        return std::pair(ERR_NO_DISK, nullptr);
 
     bool mode83     = (flags & DE_FLAG_MODE83) != 0;
     bool showHidden = (flags & DE_FLAG_HIDDEN) != 0;
@@ -645,13 +645,13 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
 #    ifndef _WIN32
     DIR *dir = ::opendir(fullPath.c_str());
     if (dir == nullptr) {
-        return nullptr;
+        return std::pair(ERR_NOT_FOUND, nullptr);
     }
 #    else
     struct _finddata_t fileinfo;
     intptr_t           handle = _findfirst((fullPath + "/*.*").c_str(), &fileinfo);
     if (handle < 0) {
-        return nullptr;
+        return std::pair(ERR_NOT_FOUND, nullptr);
     }
     bool first = true;
 #    endif
@@ -757,7 +757,7 @@ DirEnumCtx SDCardVFS::direnum(const std::string &path, uint8_t flags) {
     ::_findclose(handle);
 #    endif
 
-    return result;
+    return std::make_pair(0, result);
 }
 
 int SDCardVFS::delete_(const std::string &path) {
@@ -790,11 +790,11 @@ int SDCardVFS::mkdir(const std::string &path) {
 
     auto fullPath = getFullPath(path);
 
-#    if _WIN32
+#if _WIN32
     int result = ::mkdir(fullPath.c_str());
-#    else
+#else
     int result = ::mkdir(fullPath.c_str(), 0775);
-#    endif
+#endif
     return (result < 0) ? mapErrNoResult() : 0;
 }
 
