@@ -135,7 +135,7 @@ int EmuState::cpuEmulate() {
         }
         prevHalted = z80ctx.halted;
 
-        if (haltAfterThis || z80ctx.halted) {
+        if (haltAfterThis || (z80ctx.halted && !ignoreHalt)) {
             emuMode = EmuState::Em_Halted;
         }
     }

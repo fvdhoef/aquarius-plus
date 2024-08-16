@@ -27,6 +27,7 @@ void UI::start(
     auto &config = Config::instance();
 
     emuState.typeInStr = typeInStr;
+    emuState.ignoreHalt = config.ignoreHalt;
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(config.sdCardPath);
 

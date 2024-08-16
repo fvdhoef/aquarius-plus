@@ -139,6 +139,11 @@ struct EmuState {
     // Virtual typing from command-line argument
     std::string typeInStr;
 
+    // Ignore halt instruction in debugger
+    // prevents debugger from stopping execution
+    // each time a halt instruction is executed.
+    bool     ignoreHalt       = false;
+
     // Mouse state
     float mouseHideTimeout = 0;
 
