@@ -51,6 +51,9 @@ void disp_cursor_hide(void) {
 }
 
 void disp_clear(void) {
+    // Switch to 40-column mode
+    IO_VCTRL = VCTRL_REMAP_BORDER_CH | VCTRL_TEXT_EN;
+
     for (int i = 0; i < 40; i++) {
         TRAM[i] = ' ';
         CRAM[i] = col_bar;

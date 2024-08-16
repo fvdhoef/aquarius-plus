@@ -20,7 +20,7 @@ public:
     int tell(int fd) override;
 
     // Directory operations
-    DirEnumCtx direnum(const std::string &path, uint8_t flags) override;
+    std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags) override;
 
     // Filesystem operations
     int stat(const std::string &path, struct stat *st) override;

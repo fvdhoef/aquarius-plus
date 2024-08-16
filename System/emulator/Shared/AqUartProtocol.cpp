@@ -927,9 +927,9 @@ void AqUartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t 
         return;
     }
 
-    auto deCtx = vfs->direnum(path, flags);
-    if (!deCtx) {
-        txFifoWrite(ERR_NOT_FOUND);
+    auto [result, deCtx] = vfs->direnum(path, flags);
+    if (result < 0) {
+        txFifoWrite(result);
     } else {
         if (!path.empty() && (flags & DE_FLAG_DOTDOT) != 0) {
             deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));

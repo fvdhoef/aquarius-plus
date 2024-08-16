@@ -255,9 +255,9 @@ esp_err_t FileServer::handlePropFind(httpd_req_t *req) {
     propfind_st(req, tmp.get(), &st);
 
     if (S_ISDIR(st.st_mode) && depth[0] != '0') {
-        auto deCtx = vfs.direnum(uriPath, 0);
-        if (!deCtx)
-            return serverError(req);
+        auto [result, deCtx] = vfs.direnum(uriPath, 0);
+        if (result < 0)
+            return mapResult(req, result);
         deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
 
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
@@ -323,9 +323,9 @@ esp_err_t FileServer::handleGet(httpd_req_t *req) {
         return mapResult(req, result);
 
     if (S_ISDIR(st.st_mode)) {
-        auto deCtx = vfs.direnum(uriPath, 0);
-        if (!deCtx)
-            return serverError(req);
+        auto [result, deCtx] = vfs.direnum(uriPath, 0);
+        if (result < 0)
+            return mapResult(req, result);
         deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
 
         std::sort(deCtx->begin(), deCtx->end(), [](auto &a, auto &b) {
