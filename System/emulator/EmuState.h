@@ -142,6 +142,9 @@ struct EmuState {
     // Mouse state
     float mouseHideTimeout = 0;
 
+    // Stop the CPU when a HALT
+    // instruction is executed.
+    bool     stopOnHalt       = false;
 
     // IO space
     uint8_t  videoCtrl        = 0;      // $E0   : Video control register

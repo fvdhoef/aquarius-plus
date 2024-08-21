@@ -27,6 +27,7 @@ void UI::start(
     auto &config = Config::instance();
 
     emuState.typeInStr = typeInStr;
+    emuState.stopOnHalt = config.stopOnHalt;
     AqUartProtocol::instance().init();
     SDCardVFS::instance().init(config.sdCardPath);
 
@@ -371,6 +372,9 @@ void UI::mainLoop() {
                     ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
                     ImGui::MenuItem("Watch", "", &config.showWatch);
                     ImGui::MenuItem("ESP info", "", &config.showEspInfo);
+                    if (ImGui::MenuItem("Stop on HALT instruction", "", &config.stopOnHalt)) {
+			    emuState.stopOnHalt = config.stopOnHalt;
+		    }
                     ImGui::Separator();
 
                     if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {
