@@ -81,6 +81,7 @@ void Config::load() {
         showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
         showWatch           = getBoolValue(root, "showWatch", false);
         showEspInfo         = getBoolValue(root, "showEspInfo", false);
+        stopOnHalt	    = getBoolValue(root, "stopOnHalt", false);
 
         memEditMemSelect = getIntValue(root, "memEditMemSelect", 0);
 
@@ -160,6 +161,7 @@ void Config::save() {
     cJSON_AddBoolToObject(root, "showCpuTrace", showCpuTrace);
     cJSON_AddBoolToObject(root, "showWatch", showWatch);
     cJSON_AddBoolToObject(root, "showEspInfo", showEspInfo);
+    cJSON_AddBoolToObject(root, "stopOnHalt", stopOnHalt);
 
     cJSON_AddNumberToObject(root, "memEditMemSelect", memEditMemSelect);
 

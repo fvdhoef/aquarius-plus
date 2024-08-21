@@ -41,7 +41,7 @@ public:
     bool showCpuTrace        = false;
     bool showWatch           = false;
     bool showEspInfo         = false;
-    bool ignoreHalt          = false;
+    bool stopOnHalt          = false;
     int  memEditMemSelect    = 0;
 
     DisplayScaling displayScaling = DisplayScaling::Linear;

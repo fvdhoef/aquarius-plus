@@ -45,14 +45,13 @@ int main(int argc, char *argv[]) {
     int  opt;
     bool paramsOk = true;
     bool showHelp = false;
-    while ((opt = getopt(argc, argv, "hic:u:t:")) != -1) {
+    while ((opt = getopt(argc, argv, "hc:u:t:")) != -1) {
         if (opt == '?' || opt == ':') {
             paramsOk = false;
             break;
         }
         switch (opt) {
             case 'h': showHelp = true; break;
-            case 'i': config.ignoreHalt = true; break;
             case 'c': cartRomPath = optarg; break;
             case 'u': {
 #if _WIN32
@@ -98,7 +97,6 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
         fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", config.sdCardPath.c_str());
         fprintf(stderr, "-t <string> Type in string.\n");
-        fprintf(stderr, "-i Ignore 'halt' instruction when debugging.\n");
         fprintf(stderr, "\n");
         exit(1);
     }
