@@ -1257,7 +1257,7 @@ void AqUartProtocol::gameCtrlUpdated() {
             float len   = sqrtf(x * x + y * y);
             float angle = 0;
             if (len > 0.4f) {
-                angle = atan2f(y, x) / M_PI * 180.0f + 180.0f;
+                angle = atan2f(y, x) / (float)M_PI * 180.0f + 180.0f;
                 p     = ((int)((angle + 11.25) / 22.5f) + 8) % 16 + 1;
             }
         }

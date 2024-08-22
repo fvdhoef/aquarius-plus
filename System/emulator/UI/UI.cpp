@@ -479,8 +479,8 @@ void UI::mainLoop() {
                     (io.MouseDown[2] ? 4 : 0);
 
                 auto &aqp        = AqUartProtocol::instance();
-                aqp.mouseX       = mx;
-                aqp.mouseY       = my;
+                aqp.mouseX       = (float)mx;
+                aqp.mouseY       = (float)my;
                 aqp.mouseButtons = buttonMask;
 
                 if (hideMouse)
@@ -954,8 +954,8 @@ void UI::wndScreen(bool *p_open) {
             }
             if (update) {
                 auto &aqp        = AqUartProtocol::instance();
-                aqp.mouseX       = mx;
-                aqp.mouseY       = my;
+                aqp.mouseX       = (float)mx;
+                aqp.mouseY       = (float)my;
                 aqp.mouseButtons = buttonMask;
                 aqp.mouseWheel += (int)io.MouseWheel;
             }
