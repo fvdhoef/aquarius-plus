@@ -1,0 +1,4 @@
+Please confirm the following items after assembly:
+- Verify Micro USB Power connector J1 mounting lugs are properly attached
+- Verify SD card J9 pin 11 (upper left) is properly connected
+- Verify LED D3 anode is in the left hole (GND) and fold the LED forward at a right angle
