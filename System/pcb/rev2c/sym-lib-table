@@ -1,3 +1,0 @@
-(sym_lib_table
-  (lib (name "aquarius-plus")(type "KiCad")(uri "${KIPRJMOD}/aquarius-plus.kicad_sym")(options "")(descr ""))
-)
