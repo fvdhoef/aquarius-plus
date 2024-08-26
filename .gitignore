@@ -5,3 +5,4 @@ SDK/projects/game_galaxian/.vscode/c_cpp_properties.json
 EndUser/sdcard/autoexec
 desktop.ini
 /System/emulator/.vs
+*.lck
