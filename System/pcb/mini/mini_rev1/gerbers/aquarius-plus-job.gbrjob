@@ -3,15 +3,15 @@
     "GenerationSoftware": {
       "Vendor": "KiCad",
       "Application": "Pcbnew",
-      "Version": "(7.0.0)"
+      "Version": "8.0.4"
     },
-    "CreationDate": "2023-08-07T16:44:30-07:00"
+    "CreationDate": "2024-08-27T13:10:03-07:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
       "Name": "aquarius-plus",
       "GUID": "61717561-7269-4757-932d-706c75732e6b",
-      "Revision": "rev?"
+      "Revision": "1"
     },
     "Size": {
       "X": 128.1,
@@ -19,13 +19,13 @@
     },
     "LayerNumber": 2,
     "BoardThickness": 1.6,
-    "Finish": "None"
+    "Finish": "HAL lead-free"
   },
   "DesignRules": [
     {
       "Layers": "Outer",
-      "PadToPad": 0.0,
-      "PadToTrack": 0.0,
+      "PadToPad": 0.2,
+      "PadToTrack": 0.2,
       "TrackToTrack": 0.2,
       "MinLineWidth": 0.2,
       "TrackToRegion": 0.2,
@@ -83,6 +83,7 @@
     {
       "Type": "Legend",
       "Color": "White",
+      "Material": "Direct Printing",
       "Name": "Top Silk Screen"
     },
     {
@@ -91,8 +92,9 @@
     },
     {
       "Type": "SolderMask",
-      "Color": "R19G60B99",
+      "Color": "Blue",
       "Thickness": 0.01,
+      "Material": "Epoxy",
       "Name": "Top Solder Mask"
     },
     {
@@ -114,8 +116,9 @@
     },
     {
       "Type": "SolderMask",
-      "Color": "R19G60B99",
+      "Color": "Blue",
       "Thickness": 0.01,
+      "Material": "Epoxy",
       "Name": "Bottom Solder Mask"
     },
     {
@@ -125,6 +128,7 @@
     {
       "Type": "Legend",
       "Color": "White",
+      "Material": "Direct Printing",
       "Name": "Bottom Silk Screen"
     }
   ]

@@ -37,9 +37,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 3.7,
-          "height": 3.7,
-          "width": 3.7
+          "drill": 1.0,
+          "height": 1.7,
+          "width": 1.7
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -66,13 +66,13 @@
       ],
       "drc_exclusions": [
         "footprint_type_mismatch|90010099|32329978|6be5c1b3-38fe-404a-a1a3-551a3050bde2|00000000-0000-0000-0000-000000000000",
+        "lib_footprint_mismatch|143352947|105225509|495b9f3e-72d4-4443-8d1b-2b95612acb36|00000000-0000-0000-0000-000000000000",
         "lib_footprint_mismatch|201542947|109870509|29988b94-1561-4c8e-aa85-5007173bb25e|00000000-0000-0000-0000-000000000000",
         "lib_footprint_mismatch|201542947|34870509|af42cd1d-d96b-4d61-b0da-a2a63cc543af|00000000-0000-0000-0000-000000000000",
         "lib_footprint_mismatch|81542947|109870509|2cc01bbd-3d8b-4a91-8ca0-b6e1648b6830|00000000-0000-0000-0000-000000000000",
         "lib_footprint_mismatch|81542947|34870509|987ea692-d9bd-4af5-93e9-f5c0564c3cff|00000000-0000-0000-0000-000000000000",
-        "text_height|78501816|63246064|94607b2c-10dd-41b4-832f-4c0024c8193b|00000000-0000-0000-0000-000000000000",
-        "via_dangling|103535236|74553064|bc11504e-be8c-4f0a-a181-03baf27156df|00000000-0000-0000-0000-000000000000",
-        "via_dangling|103907880|61809240|380e5fbf-0ac3-438b-9741-524ba86ddcd4|00000000-0000-0000-0000-000000000000"
+        "via_dangling|103907880|61809240|380e5fbf-0ac3-438b-9741-524ba86ddcd4|00000000-0000-0000-0000-000000000000",
+        "via_dangling|104072955|74697249|bc11504e-be8c-4f0a-a181-03baf27156df|00000000-0000-0000-0000-000000000000"
       ],
       "meta": {
         "version": 2
@@ -542,7 +542,7 @@
       "gencad": "",
       "idf": "",
       "netlist": "",
-      "plot": "",
+      "plot": "gerbers/",
       "pos_files": "./",
       "specctra_dsn": "",
       "step": "aquarius-plus.step",
