@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--/271092/338119/2.50/4/0/Inductor/-->
+<quadcept_library>
+  <setting unit="mil" />
+  <textstyle name="Default" height="47.244094488189" strokewidth="7.8740157480315" charwidth="47.244094488189" />
+  <textstyle name="Dimension" height="19.6850393700787" strokewidth="0" charwidth="19.6850393700787" />
+  <textstyle name="H127W0635TH00762" height="50" strokewidth="3" charwidth="25" />
+  <textstyle name="H15W15TH02" height="59.0551181102362" strokewidth="7.8740157480315" charwidth="59.0551181102362" />
+  <padstyle name="r90_40" surface="True" plated="False" isvia="False" nopaste="False" nomask="True" complex="False" holesize="0">
+    <padshape layer="TOP" shape="rectangle" width="15.748031496063" height="35.433070866141" />
+    <padshape layer="TOP_SOLDER_MASK" shape="rectangle" width="23.622047244094" height="43.307086614173" />
+    <padshape layer="TOP_SOLDER_PASTE" shape="rectangle" width="15.748031496063" height="35.433070866141" />
+  </padstyle>
+  <footprint name="WE-CNSW_08058" originx="0" originy="0" pickpointx="0" pickpointy="0">
+    <pcbpin number="1" name="1" style="r90_40" originx="-15.748031496063" originy="-33.464566929133" rotation="0" />
+    <pcbpin number="2" name="2" style="r90_40" originx="-15.748031496063" originy="33.464566929133" rotation="0" />
+    <pcbpin number="3" name="3" style="r90_40" originx="15.748031496063" originy="33.464566929133" rotation="0" />
+    <pcbpin number="4" name="4" style="r90_40" originx="15.748031496063" originy="-33.464566929133" rotation="0" />
+    <line layer="TOP_ASSEMBLY" originx="15.748031496063" originy="33.464566929133" endx="15.748031496063" endy="-33.464566929133" width="2.755905511811" />
+    <line layer="TOP_ASSEMBLY" originx="-15.748031496063" originy="33.464566929133" endx="-15.748031496063" endy="-33.464566929133" width="2.755905511811" />
+    <line layer="TOP_ASSEMBLY" originx="-24.590551181102" originy="-50.685039370078" endx="-24.590551181102" endy="49.744094488188" width="4.9999999999999" />
+    <line layer="TOP_ASSEMBLY" originx="-24.590551181102" originy="49.744094488188" endx="24.610236220472" endy="49.744094488188" width="4.9999999999999" />
+    <line layer="TOP_ASSEMBLY" originx="24.610236220472" originy="49.744094488188" endx="24.610236220472" endy="-50.496062992125" width="4.9999999999999" />
+    <line layer="TOP_ASSEMBLY" originx="24.421259842519" originy="-50.685039370078" endx="-24.590551181102" endy="-50.685039370078" width="4.9999999999999" />
+    <line layer="TOP_PLACE_BOUND" originx="-31.496062992126" originy="59.055118110235" endx="-31.496062992126" endy="-59.055118110235" width="4.9999999999999" />
+    <line layer="TOP_PLACE_BOUND" originx="-31.496062992126" originy="-59.055118110235" endx="31.496062992126" endy="-59.055118110235" width="4.9999999999999" />
+    <line layer="TOP_PLACE_BOUND" originx="31.496062992126" originy="-59.055118110235" endx="31.496062992126" endy="59.055118110235" width="4.9999999999999" />
+    <line layer="TOP_PLACE_BOUND" originx="31.496062992126" originy="59.055118110235" endx="-31.496062992126" endy="59.055118110235" width="4.9999999999999" />
+  </footprint>
+  <symbol name="744231091" originx="0" originy="0">
+    <line originx="200" originy="100" endx="600" endy="100" width="0" />
+    <line originx="600" originy="-200" endx="600" endy="100" width="0" />
+    <line originx="600" originy="-200" endx="200" endy="-200" width="0" />
+    <line originx="200" originy="100" endx="200" endy="-200" width="0" />
+    <sympin number="1" originx="200" originy="-100" rotation="180" length="100" width="7.8740157480315" flipped="False">
+      <text name="pinname" originx="230" originy="-100" style="Default" rotation="0" justify="left" flipped="False" hidden="False" data="1" />
+      <text name="pindes" originx="140" originy="-80" style="Default" rotation="0" justify="lowerright" flipped="False" hidden="False" data="1" />
+    </sympin>
+    <sympin number="2" originx="200" originy="0" rotation="180" length="100" width="7.8740157480315" flipped="False">
+      <text name="pinname" originx="230" originy="0" style="Default" rotation="0" justify="left" flipped="False" hidden="False" data="2" />
+      <text name="pindes" originx="140" originy="20" style="Default" rotation="0" justify="lowerright" flipped="False" hidden="False" data="2" />
+    </sympin>
+    <sympin number="3" originx="600" originy="0" rotation="0" length="100" width="7.8740157480315" flipped="False">
+      <text name="pinname" originx="570" originy="0" style="Default" rotation="0" justify="right" flipped="False" hidden="False" data="4" />
+      <text name="pindes" originx="660" originy="20" style="Default" rotation="0" justify="lowerleft" flipped="False" hidden="False" data="3" />
+    </sympin>
+    <sympin number="4" originx="600" originy="-100" rotation="0" length="100" width="7.8740157480315" flipped="False">
+      <text name="pinname" originx="570" originy="-100" style="Default" rotation="0" justify="right" flipped="False" hidden="False" data="3" />
+      <text name="pindes" originx="660" originy="-80" style="Default" rotation="0" justify="lowerleft" flipped="False" hidden="False" data="4" />
+    </sympin>
+  </symbol>
+  <component name="744231091" designatorprefix="L" height="0" footprint="WE-CNSW_08058">
+    <comppin designator="1" sympin="1" pinswap="0" gateswap="0" gate="1" group="1" side="" type="Any" name="1" />
+    <comppin designator="2" sympin="2" pinswap="0" gateswap="0" gate="1" group="1" side="" type="Any" name="2" />
+    <comppin designator="3" sympin="3" pinswap="0" gateswap="0" gate="1" group="1" side="" type="Any" name="4" />
+    <comppin designator="4" sympin="4" pinswap="0" gateswap="0" gate="1" group="1" side="" type="Any" name="3" />
+    <attached_symbol gate="1" name="744231091" />
+    <pinmap designator="1" footprintpin="1" />
+    <pinmap designator="2" footprintpin="2" />
+    <pinmap designator="3" footprintpin="3" />
+    <pinmap designator="4" footprintpin="4" />
+    <text name="Datasheet" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="http://componentsearchengine.com/Datasheets/1/744231091.pdf" />
+    <text name="Description" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="Common Mode Line Filter CNSW 0805 90Ohm Wurth WE-CNSW SMD Series Wire-wound SMD Inductor with a Ferrite Core,  /-25% Bifilar, Winding Symmetry 370mA Idc" />
+    <text name="Manufacturer_Name" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="Wurth Elektronik" />
+    <text name="Manufacturer_Part_Number" originx="650" originy="200" style="Default" rotation="0" justify="left" flipped="False" hidden="False" data="744231091" />
+    <text name="Mouser Part Number" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="710-744231091" />
+    <text name="Mouser Price/Stock" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="https://www.mouser.co.uk/ProductDetail/Wurth-Elektronik/744231091?qs=PGXP4M47uW7beLYOUbZm8Q%3D%3D" />
+    <text name="Arrow Part Number" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="" />
+    <text name="Arrow Price/Stock" originx="0" originy="0" style="Default" rotation="0" justify="" flipped="False" hidden="True" data="" />
+  </component>
+</quadcept_library>

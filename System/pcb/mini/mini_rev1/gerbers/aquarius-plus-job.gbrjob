@@ -5,7 +5,7 @@
       "Application": "Pcbnew",
       "Version": "8.0.4"
     },
-    "CreationDate": "2024-08-27T13:10:03-07:00"
+    "CreationDate": "2024-08-30T09:31:55-07:00"
   },
   "GeneralSpecs": {
     "ProjectId": {
@@ -82,7 +82,7 @@
   "MaterialStackup": [
     {
       "Type": "Legend",
-      "Color": "White",
+      "Color": "R231G231B231",
       "Material": "Direct Printing",
       "Name": "Top Silk Screen"
     },
@@ -92,7 +92,7 @@
     },
     {
       "Type": "SolderMask",
-      "Color": "Blue",
+      "Color": "R6G0B197",
       "Thickness": 0.01,
       "Material": "Epoxy",
       "Name": "Top Solder Mask"
@@ -104,6 +104,7 @@
     },
     {
       "Type": "Dielectric",
+      "Color": "R109G116B75",
       "Thickness": 1.51,
       "Material": "FR4",
       "Name": "F.Cu/B.Cu",
@@ -116,7 +117,7 @@
     },
     {
       "Type": "SolderMask",
-      "Color": "Blue",
+      "Color": "R6G0B197",
       "Thickness": 0.01,
       "Material": "Epoxy",
       "Name": "Bottom Solder Mask"
@@ -127,7 +128,7 @@
     },
     {
       "Type": "Legend",
-      "Color": "White",
+      "Color": "R231G231B231",
       "Material": "Direct Printing",
       "Name": "Bottom Silk Screen"
     }

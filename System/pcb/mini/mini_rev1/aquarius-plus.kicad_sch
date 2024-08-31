@@ -6,7 +6,7 @@
 	(paper "A3")
 	(title_block
 		(title "Aquarius+ mini vZ80")
-		(date "2024-08-27")
+		(date "2024-08-30")
 		(rev "1")
 		(company "Designed by Frank van den Hoef")
 		(comment 1 "Drawing by Sean P. Harrington")
@@ -33710,7 +33710,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Inductor_SMD:L_CommonMode_Wurth_WE-CNSW-1206"
+		(property "Footprint" "Inductor_SMD_Wurth:WE-CNSW_08058"
 			(at 355.6 184.15 0)
 			(effects
 				(font
@@ -33719,7 +33719,7 @@
 				(hide yes)
 			)
 		)
-		(property "Datasheet" "https://www.we-online.com/components/products/datasheet/744232090.pdf"
+		(property "Datasheet" "https://www.we-online.com/components/products/datasheet/744231091.pdf"
 			(at 355.6 181.61 0)
 			(effects
 				(font
@@ -33728,7 +33728,7 @@
 				(hide yes)
 			)
 		)
-		(property "Description" "Common mode choke, 370 mA, 125VDC, USB2.0, 111 nH"
+		(property "Description" "Common mode choke, 370 mA, 125VDC, USB2.0, 131 nH"
 			(at 355.6 173.99 0)
 			(effects
 				(font
