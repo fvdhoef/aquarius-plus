@@ -98,6 +98,8 @@ NET "hc2[6]"            LOC = P93;
 NET "hc2[7]"            LOC = P88;
 NET "hc2[8]"            LOC = P85;
 
+NET "printer_in" PULLUP;
+
 NET "ebus_d[0]" PULLUP;
 NET "ebus_d[1]" PULLUP;
 NET "ebus_d[2]" PULLUP;
