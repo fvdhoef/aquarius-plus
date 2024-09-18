@@ -36,19 +36,16 @@ BOOTSTUB_ADDR       equ $3880
     call    esp_read_bytes
     call    esp_close
 
-    ; Init palette 0
-    ld      hl,default_palette
-    ld      c,IO_VPALSEL
+    ; Init palettes
     ld      b,0
-    ld      d,32
-.palloop:
-    out     (c),b
-    ld      a,(hl)
-    out     (IO_VPALDATA),a
-    inc     hl
-    inc     b
-    dec     d
-    jr      nz,.palloop
+    ld      hl,default_palette
+    call    .set_palette
+    ld      hl,default_palette
+    call    .set_palette
+    ld      hl,default_palette
+    call    .set_palette
+    ld      hl,default_palette
+    call    .set_palette
 
     ; Clear video RAM $3000-$37FF
     xor     a
@@ -119,6 +116,19 @@ BOOTSTUB_ADDR       equ $3880
     ld      hl,fn_sysrom_s2_bin
     call    load_sysrom
     jp      start_sysrom
+
+.set_palette:
+    ld      c,IO_VPALSEL
+    ld      d,32
+.palloop:
+    out     (c),b
+    ld      a,(hl)
+    out     (IO_VPALDATA),a
+    inc     hl
+    inc     b
+    dec     d
+    jr      nz,.palloop
+    ret
 
 ;-----------------------------------------------------------------------------
 ; No cartridge

@@ -11,14 +11,7 @@ EmuState::EmuState() {
     emuState.handCtrl1 = 0xFF;
     emuState.handCtrl2 = 0xFF;
 
-    static const uint16_t defaultPalette[] = {
-        0x111, 0xF11, 0x1F1, 0xFF1, 0x22E, 0xF1F, 0x3CC, 0xFFF,
-        0xCCC, 0x3BB, 0xC2C, 0x419, 0xFF7, 0x2D4, 0xB22, 0x333};
-    memcpy(emuState.videoPalette + 0, defaultPalette, sizeof(defaultPalette));
-    memcpy(emuState.videoPalette + 16, defaultPalette, sizeof(defaultPalette));
-    memcpy(emuState.videoPalette + 32, defaultPalette, sizeof(defaultPalette));
-    memcpy(emuState.videoPalette + 48, defaultPalette, sizeof(defaultPalette));
-
+    memset(emuState.videoPalette, 0, sizeof(emuState.videoPalette));
     memset(emuState.screenRam, 0, sizeof(emuState.screenRam));
     memset(emuState.colorRam, 0, sizeof(emuState.colorRam));
     for (unsigned i = 0; i < sizeof(emuState.mainRam); i++) {
