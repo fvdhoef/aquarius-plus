@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "rev3")(type "KiCad")(uri "C:/Users/sph/Box/Retro/Aquarius/AquariusPlus/aquarius-plus/System/pcb/standard/rev3")(options "")(descr ""))
+  (lib (name "aquarius-plus")(type "KiCad")(uri "${KIPRJMOD}/aquarius-plus.pretty")(options "")(descr ""))
+  (lib (name "samtec-mec5-30")(type "KiCad")(uri "${KIPRJMOD}/MEC5-030-01-L-RA-W1-TR")(options "")(descr ""))
+)

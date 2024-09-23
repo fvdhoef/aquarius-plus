@@ -1,0 +1,2791 @@
+EESchema Schematic File Version 4
+EELAYER 30 0
+EELAYER END
+$Descr A4 11693 8268
+encoding utf-8
+Sheet 1 1
+Title "Keyboard"
+Date "2021-09-14"
+Rev "1"
+Comp "Designed by Frank van den Hoef in 2021"
+Comment1 ""
+Comment2 ""
+Comment3 ""
+Comment4 ""
+$EndDescr
+$Comp
+L Switch:SW_Push_45deg SW1
+U 1 1 5DE23676
+P 2750 1350
+F 0 "SW1" H 2750 1631 50  0000 C CNN
+F 1 "ESC" H 2750 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 2750 1350 50  0001 C CNN
+F 3 "~" H 2750 1350 50  0001 C CNN
+	1    2750 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW2
+U 1 1 5DE253C5
+P 3350 1350
+F 0 "SW2" H 3350 1631 50  0000 C CNN
+F 1 "1" H 3350 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3350 1350 50  0001 C CNN
+F 3 "~" H 3350 1350 50  0001 C CNN
+	1    3350 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW3
+U 1 1 5DE25903
+P 3950 1350
+F 0 "SW3" H 3950 1631 50  0000 C CNN
+F 1 "2" H 3950 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3950 1350 50  0001 C CNN
+F 3 "~" H 3950 1350 50  0001 C CNN
+	1    3950 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW4
+U 1 1 5DE25EF6
+P 4550 1350
+F 0 "SW4" H 4550 1631 50  0000 C CNN
+F 1 "3" H 4550 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 4550 1350 50  0001 C CNN
+F 3 "~" H 4550 1350 50  0001 C CNN
+	1    4550 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW6
+U 1 1 5DE26BB7
+P 5750 1350
+F 0 "SW6" H 5750 1631 50  0000 C CNN
+F 1 "5" H 5750 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5750 1350 50  0001 C CNN
+F 3 "~" H 5750 1350 50  0001 C CNN
+	1    5750 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW7
+U 1 1 5DE27236
+P 6350 1350
+F 0 "SW7" H 6350 1631 50  0000 C CNN
+F 1 "6" H 6350 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6350 1350 50  0001 C CNN
+F 3 "~" H 6350 1350 50  0001 C CNN
+	1    6350 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW8
+U 1 1 5DE2778F
+P 6950 1350
+F 0 "SW8" H 6950 1631 50  0000 C CNN
+F 1 "7" H 6950 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6950 1350 50  0001 C CNN
+F 3 "~" H 6950 1350 50  0001 C CNN
+	1    6950 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW9
+U 1 1 5DE30592
+P 7550 1350
+F 0 "SW9" H 7550 1631 50  0000 C CNN
+F 1 "8" H 7550 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 7550 1350 50  0001 C CNN
+F 3 "~" H 7550 1350 50  0001 C CNN
+	1    7550 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW10
+U 1 1 5DE30598
+P 8150 1350
+F 0 "SW10" H 8150 1631 50  0000 C CNN
+F 1 "9" H 8150 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8150 1350 50  0001 C CNN
+F 3 "~" H 8150 1350 50  0001 C CNN
+	1    8150 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW11
+U 1 1 5DE3059E
+P 8750 1350
+F 0 "SW11" H 8750 1631 50  0000 C CNN
+F 1 "0" H 8750 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8750 1350 50  0001 C CNN
+F 3 "~" H 8750 1350 50  0001 C CNN
+	1    8750 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW12
+U 1 1 5DE305A4
+P 9300 1350
+F 0 "SW12" H 9300 1631 50  0000 C CNN
+F 1 "-" H 9300 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9300 1350 50  0001 C CNN
+F 3 "~" H 9300 1350 50  0001 C CNN
+	1    9300 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW13
+U 1 1 5DE305AA
+P 9900 1350
+F 0 "SW13" H 9900 1631 50  0000 C CNN
+F 1 "=" H 9900 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9900 1350 50  0001 C CNN
+F 3 "~" H 9900 1350 50  0001 C CNN
+	1    9900 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW14
+U 1 1 5DE305B0
+P 10500 1350
+F 0 "SW14" H 10500 1631 50  0000 C CNN
+F 1 "BS" H 10500 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_2.00u_PCB" H 10500 1350 50  0001 C CNN
+F 3 "~" H 10500 1350 50  0001 C CNN
+	1    10500 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW5
+U 1 1 5DE26659
+P 5150 1350
+F 0 "SW5" H 5150 1631 50  0000 C CNN
+F 1 "4" H 5150 1540 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5150 1350 50  0001 C CNN
+F 3 "~" H 5150 1350 50  0001 C CNN
+	1    5150 1350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW15
+U 1 1 5DEB7957
+P 2750 2100
+F 0 "SW15" H 2750 2381 50  0000 C CNN
+F 1 "TAB" H 2750 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.50u_PCB" H 2750 2100 50  0001 C CNN
+F 3 "~" H 2750 2100 50  0001 C CNN
+	1    2750 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW16
+U 1 1 5DEB795D
+P 3350 2100
+F 0 "SW16" H 3350 2381 50  0000 C CNN
+F 1 "Q" H 3350 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3350 2100 50  0001 C CNN
+F 3 "~" H 3350 2100 50  0001 C CNN
+	1    3350 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW17
+U 1 1 5DEB7963
+P 3950 2100
+F 0 "SW17" H 3950 2381 50  0000 C CNN
+F 1 "W" H 3950 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3950 2100 50  0001 C CNN
+F 3 "~" H 3950 2100 50  0001 C CNN
+	1    3950 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW18
+U 1 1 5DEB7969
+P 4550 2100
+F 0 "SW18" H 4550 2381 50  0000 C CNN
+F 1 "E" H 4550 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 4550 2100 50  0001 C CNN
+F 3 "~" H 4550 2100 50  0001 C CNN
+	1    4550 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW20
+U 1 1 5DEB796F
+P 5750 2100
+F 0 "SW20" H 5750 2381 50  0000 C CNN
+F 1 "T" H 5750 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5750 2100 50  0001 C CNN
+F 3 "~" H 5750 2100 50  0001 C CNN
+	1    5750 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW21
+U 1 1 5DEB7975
+P 6350 2100
+F 0 "SW21" H 6350 2381 50  0000 C CNN
+F 1 "Y" H 6350 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6350 2100 50  0001 C CNN
+F 3 "~" H 6350 2100 50  0001 C CNN
+	1    6350 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW22
+U 1 1 5DEB797B
+P 6950 2100
+F 0 "SW22" H 6950 2381 50  0000 C CNN
+F 1 "U" H 6950 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6950 2100 50  0001 C CNN
+F 3 "~" H 6950 2100 50  0001 C CNN
+	1    6950 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW23
+U 1 1 5DEB7981
+P 7550 2100
+F 0 "SW23" H 7550 2381 50  0000 C CNN
+F 1 "I" H 7550 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 7550 2100 50  0001 C CNN
+F 3 "~" H 7550 2100 50  0001 C CNN
+	1    7550 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW24
+U 1 1 5DEB7987
+P 8150 2100
+F 0 "SW24" H 8150 2381 50  0000 C CNN
+F 1 "O" H 8150 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8150 2100 50  0001 C CNN
+F 3 "~" H 8150 2100 50  0001 C CNN
+	1    8150 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW25
+U 1 1 5DEB798D
+P 8750 2100
+F 0 "SW25" H 8750 2381 50  0000 C CNN
+F 1 "P" H 8750 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8750 2100 50  0001 C CNN
+F 3 "~" H 8750 2100 50  0001 C CNN
+	1    8750 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW26
+U 1 1 5DEB7993
+P 9300 2100
+F 0 "SW26" H 9300 2381 50  0000 C CNN
+F 1 "[" H 9300 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9300 2100 50  0001 C CNN
+F 3 "~" H 9300 2100 50  0001 C CNN
+	1    9300 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW27
+U 1 1 5DEB7999
+P 9900 2100
+F 0 "SW27" H 9900 2381 50  0000 C CNN
+F 1 "]" H 9900 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9900 2100 50  0001 C CNN
+F 3 "~" H 9900 2100 50  0001 C CNN
+	1    9900 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW28
+U 1 1 5DEB799F
+P 10500 2100
+F 0 "SW28" H 10500 2381 50  0000 C CNN
+F 1 "\\" H 10500 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.50u_PCB" H 10500 2100 50  0001 C CNN
+F 3 "~" H 10500 2100 50  0001 C CNN
+	1    10500 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW19
+U 1 1 5DEB79A5
+P 5150 2100
+F 0 "SW19" H 5150 2381 50  0000 C CNN
+F 1 "R" H 5150 2290 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5150 2100 50  0001 C CNN
+F 3 "~" H 5150 2100 50  0001 C CNN
+	1    5150 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW29
+U 1 1 5DEBF926
+P 2750 2850
+F 0 "SW29" H 2750 3131 50  0000 C CNN
+F 1 "HYPER" H 2750 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.75u_PCB" H 2750 2850 50  0001 C CNN
+F 3 "~" H 2750 2850 50  0001 C CNN
+	1    2750 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW30
+U 1 1 5DEBF92C
+P 3350 2850
+F 0 "SW30" H 3350 3131 50  0000 C CNN
+F 1 "A" H 3350 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3350 2850 50  0001 C CNN
+F 3 "~" H 3350 2850 50  0001 C CNN
+	1    3350 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW31
+U 1 1 5DEBF932
+P 3950 2850
+F 0 "SW31" H 3950 3131 50  0000 C CNN
+F 1 "S" H 3950 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3950 2850 50  0001 C CNN
+F 3 "~" H 3950 2850 50  0001 C CNN
+	1    3950 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW32
+U 1 1 5DEBF938
+P 4550 2850
+F 0 "SW32" H 4550 3131 50  0000 C CNN
+F 1 "D" H 4550 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 4550 2850 50  0001 C CNN
+F 3 "~" H 4550 2850 50  0001 C CNN
+	1    4550 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW34
+U 1 1 5DEBF93E
+P 5750 2850
+F 0 "SW34" H 5750 3131 50  0000 C CNN
+F 1 "G" H 5750 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5750 2850 50  0001 C CNN
+F 3 "~" H 5750 2850 50  0001 C CNN
+	1    5750 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW35
+U 1 1 5DEBF944
+P 6350 2850
+F 0 "SW35" H 6350 3131 50  0000 C CNN
+F 1 "H" H 6350 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6350 2850 50  0001 C CNN
+F 3 "~" H 6350 2850 50  0001 C CNN
+	1    6350 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW36
+U 1 1 5DEBF94A
+P 6950 2850
+F 0 "SW36" H 6950 3131 50  0000 C CNN
+F 1 "J" H 6950 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6950 2850 50  0001 C CNN
+F 3 "~" H 6950 2850 50  0001 C CNN
+	1    6950 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW37
+U 1 1 5DEBF950
+P 7550 2850
+F 0 "SW37" H 7550 3131 50  0000 C CNN
+F 1 "K" H 7550 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 7550 2850 50  0001 C CNN
+F 3 "~" H 7550 2850 50  0001 C CNN
+	1    7550 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW38
+U 1 1 5DEBF956
+P 8150 2850
+F 0 "SW38" H 8150 3131 50  0000 C CNN
+F 1 "L" H 8150 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8150 2850 50  0001 C CNN
+F 3 "~" H 8150 2850 50  0001 C CNN
+	1    8150 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW39
+U 1 1 5DEBF95C
+P 8750 2850
+F 0 "SW39" H 8750 3131 50  0000 C CNN
+F 1 ";" H 8750 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8750 2850 50  0001 C CNN
+F 3 "~" H 8750 2850 50  0001 C CNN
+	1    8750 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW40
+U 1 1 5DEBF962
+P 9300 2850
+F 0 "SW40" H 9300 3131 50  0000 C CNN
+F 1 "'" H 9300 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9300 2850 50  0001 C CNN
+F 3 "~" H 9300 2850 50  0001 C CNN
+	1    9300 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW41
+U 1 1 5DEBF96E
+P 9900 2850
+F 0 "SW41" H 9900 3131 50  0000 C CNN
+F 1 "ENTER" H 9900 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_2.25u_PCB" H 9900 2850 50  0001 C CNN
+F 3 "~" H 9900 2850 50  0001 C CNN
+	1    9900 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW33
+U 1 1 5DEBF974
+P 5150 2850
+F 0 "SW33" H 5150 3131 50  0000 C CNN
+F 1 "F" H 5150 3040 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5150 2850 50  0001 C CNN
+F 3 "~" H 5150 2850 50  0001 C CNN
+	1    5150 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW42
+U 1 1 5DEC42B4
+P 2750 3650
+F 0 "SW42" H 2750 3931 50  0000 C CNN
+F 1 "SHIFT" H 2750 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_2.00u_PCB" H 2750 3839 50  0001 C CNN
+F 3 "~" H 2750 3650 50  0001 C CNN
+	1    2750 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW43
+U 1 1 5DEC42BA
+P 3350 3650
+F 0 "SW43" H 3350 3931 50  0000 C CNN
+F 1 "Z" H 3350 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3350 3650 50  0001 C CNN
+F 3 "~" H 3350 3650 50  0001 C CNN
+	1    3350 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW44
+U 1 1 5DEC42C0
+P 3950 3650
+F 0 "SW44" H 3950 3931 50  0000 C CNN
+F 1 "X" H 3950 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 3950 3650 50  0001 C CNN
+F 3 "~" H 3950 3650 50  0001 C CNN
+	1    3950 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW45
+U 1 1 5DEC42C6
+P 4550 3650
+F 0 "SW45" H 4550 3931 50  0000 C CNN
+F 1 "C" H 4550 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 4550 3650 50  0001 C CNN
+F 3 "~" H 4550 3650 50  0001 C CNN
+	1    4550 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW47
+U 1 1 5DEC42CC
+P 5750 3650
+F 0 "SW47" H 5750 3931 50  0000 C CNN
+F 1 "B" H 5750 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5750 3650 50  0001 C CNN
+F 3 "~" H 5750 3650 50  0001 C CNN
+	1    5750 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW48
+U 1 1 5DEC42D2
+P 6350 3650
+F 0 "SW48" H 6350 3931 50  0000 C CNN
+F 1 "N" H 6350 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6350 3650 50  0001 C CNN
+F 3 "~" H 6350 3650 50  0001 C CNN
+	1    6350 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW49
+U 1 1 5DEC42D8
+P 6950 3650
+F 0 "SW49" H 6950 3931 50  0000 C CNN
+F 1 "M" H 6950 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 6950 3650 50  0001 C CNN
+F 3 "~" H 6950 3650 50  0001 C CNN
+	1    6950 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW50
+U 1 1 5DEC42DE
+P 7550 3650
+F 0 "SW50" H 7550 3931 50  0000 C CNN
+F 1 "," H 7550 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 7550 3650 50  0001 C CNN
+F 3 "~" H 7550 3650 50  0001 C CNN
+	1    7550 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW51
+U 1 1 5DEC42E4
+P 8150 3650
+F 0 "SW51" H 8150 3931 50  0000 C CNN
+F 1 "." H 8150 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8150 3650 50  0001 C CNN
+F 3 "~" H 8150 3650 50  0001 C CNN
+	1    8150 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW52
+U 1 1 5DEC42EA
+P 8750 3650
+F 0 "SW52" H 8750 3931 50  0000 C CNN
+F 1 "/" H 8750 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8750 3650 50  0001 C CNN
+F 3 "~" H 8750 3650 50  0001 C CNN
+	1    8750 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW53
+U 1 1 5DEC42F0
+P 9300 3650
+F 0 "SW53" H 9300 3931 50  0000 C CNN
+F 1 "SHIFT" H 9300 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9300 3650 50  0001 C CNN
+F 3 "~" H 9300 3650 50  0001 C CNN
+	1    9300 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW46
+U 1 1 5DEC4302
+P 5150 3650
+F 0 "SW46" H 5150 3931 50  0000 C CNN
+F 1 "V" H 5150 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 5150 3650 50  0001 C CNN
+F 3 "~" H 5150 3650 50  0001 C CNN
+	1    5150 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW56
+U 1 1 5DEC8FDD
+P 2750 4450
+F 0 "SW56" H 2750 4731 50  0000 C CNN
+F 1 "CTRL" H 2750 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.25u_PCB" H 2750 4450 50  0001 C CNN
+F 3 "~" H 2750 4450 50  0001 C CNN
+	1    2750 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW57
+U 1 1 5DEC8FE3
+P 3350 4450
+F 0 "SW57" H 3350 4731 50  0000 C CNN
+F 1 "SUPER" H 3350 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.25u_PCB" H 3350 4450 50  0001 C CNN
+F 3 "~" H 3350 4450 50  0001 C CNN
+	1    3350 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW58
+U 1 1 5DEC8FE9
+P 3950 4450
+F 0 "SW58" H 3950 4731 50  0000 C CNN
+F 1 "ALT" H 3950 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.25u_PCB" H 3950 4450 50  0001 C CNN
+F 3 "~" H 3950 4450 50  0001 C CNN
+	1    3950 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW59
+U 1 1 5DEC8FEF
+P 6350 4450
+F 0 "SW59" H 6350 4731 50  0000 C CNN
+F 1 "SPACE" H 6350 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_6.25u_PCB" H 6350 4450 50  0001 C CNN
+F 3 "~" H 6350 4450 50  0001 C CNN
+	1    6350 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW60
+U 1 1 5DEC8FFB
+P 8150 4450
+F 0 "SW60" H 8150 4731 50  0000 C CNN
+F 1 "FN" H 8150 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8150 4450 50  0001 C CNN
+F 3 "~" H 8150 4450 50  0001 C CNN
+	1    8150 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW54
+U 1 1 5DEF0CBB
+P 9900 3650
+F 0 "SW54" H 9900 3931 50  0000 C CNN
+F 1 "UP" H 9900 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9900 3650 50  0001 C CNN
+F 3 "~" H 9900 3650 50  0001 C CNN
+	1    9900 3650
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW63
+U 1 1 5DEF159C
+P 9900 4450
+F 0 "SW63" H 9900 4731 50  0000 C CNN
+F 1 "DOWN" H 9900 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9900 4450 50  0001 C CNN
+F 3 "~" H 9900 4450 50  0001 C CNN
+	1    9900 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW62
+U 1 1 5DEF1E0D
+P 9300 4450
+F 0 "SW62" H 9300 4731 50  0000 C CNN
+F 1 "LEFT" H 9300 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 9300 4450 50  0001 C CNN
+F 3 "~" H 9300 4450 50  0001 C CNN
+	1    9300 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW64
+U 1 1 5DEF24EA
+P 10500 4450
+F 0 "SW64" H 10500 4731 50  0000 C CNN
+F 1 "RIGHT" H 10500 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 10500 4450 50  0001 C CNN
+F 3 "~" H 10500 4450 50  0001 C CNN
+	1    10500 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW61
+U 1 1 5DF0CCC4
+P 8750 4450
+F 0 "SW61" H 8750 4731 50  0000 C CNN
+F 1 "CTRL" H 8750 4640 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 8750 4450 50  0001 C CNN
+F 3 "~" H 8750 4450 50  0001 C CNN
+	1    8750 4450
+	1    0    0    -1  
+$EndComp
+$Comp
+L Switch:SW_Push_45deg SW55
+U 1 1 5DF58132
+P 10500 3650
+F 0 "SW55" H 10500 3931 50  0000 C CNN
+F 1 "DELETE" H 10500 3840 50  0000 C CNN
+F 2 "Button_Switch_Keyboard:SW_Cherry_MX1A_1.00u_PCB" H 10500 3650 50  0001 C CNN
+F 3 "~" H 10500 3650 50  0001 C CNN
+	1    10500 3650
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2600 900  2600 1000
+Wire Wire Line
+	2650 3550 2600 3550
+Wire Wire Line
+	2650 2750 2600 2750
+Wire Wire Line
+	2600 2750 2600 3550
+Wire Wire Line
+	2650 2000 2600 2000
+Wire Wire Line
+	2600 2000 2600 2750
+Wire Wire Line
+	2650 1250 2600 1250
+Wire Wire Line
+	3250 3550 3200 3550
+Wire Wire Line
+	3250 2750 3200 2750
+Wire Wire Line
+	3200 2750 3200 3550
+Wire Wire Line
+	3250 2000 3200 2000
+Wire Wire Line
+	3200 2000 3200 2750
+Wire Wire Line
+	3250 1250 3200 1250
+Wire Wire Line
+	1400 1700 1600 1700
+Wire Wire Line
+	2850 1700 2850 1650
+Wire Wire Line
+	1400 2450 1600 2450
+Wire Wire Line
+	2850 2450 2850 2400
+Wire Wire Line
+	1400 3200 1600 3200
+Wire Wire Line
+	2850 3200 2850 3150
+Wire Wire Line
+	2850 3950 2850 4000
+Wire Wire Line
+	2850 4000 2250 4000
+Wire Wire Line
+	3850 1250 3800 1250
+Wire Wire Line
+	3800 1250 3800 1000
+Wire Wire Line
+	3850 2000 3800 2000
+Wire Wire Line
+	3850 2750 3800 2750
+Wire Wire Line
+	3800 2750 3800 2000
+Wire Wire Line
+	3850 3550 3800 3550
+Wire Wire Line
+	3800 3550 3800 2750
+Wire Wire Line
+	4050 1700 4050 1650
+Wire Wire Line
+	4050 2400 4050 2450
+Wire Wire Line
+	4050 3150 4050 3200
+Wire Wire Line
+	4050 3950 4050 4000
+Wire Wire Line
+	2600 1000 3200 1000
+Connection ~ 2600 1000
+Wire Wire Line
+	2600 1000 2600 1250
+Wire Wire Line
+	3200 1000 3200 1250
+Wire Wire Line
+	2850 1700 4050 1700
+Wire Wire Line
+	3450 1650 3450 1750
+Connection ~ 2600 2000
+Connection ~ 3800 2750
+Connection ~ 3200 2750
+Connection ~ 2600 2750
+Wire Wire Line
+	2850 2450 4050 2450
+Wire Wire Line
+	3450 2400 3450 2500
+Wire Wire Line
+	2850 3200 4050 3200
+Wire Wire Line
+	2850 4000 4050 4000
+Wire Wire Line
+	3450 3150 3450 3250
+Wire Wire Line
+	3450 3950 3450 4050
+Wire Wire Line
+	2600 1250 2600 2000
+Connection ~ 2600 1250
+Wire Wire Line
+	3800 1000 4400 1000
+Wire Wire Line
+	4400 1000 4400 1250
+Connection ~ 3800 1000
+Wire Wire Line
+	3800 1000 3800 900 
+Wire Wire Line
+	4450 1250 4400 1250
+Wire Wire Line
+	4450 2000 4400 2000
+Wire Wire Line
+	4400 2000 4400 2750
+Wire Wire Line
+	4450 2750 4400 2750
+Connection ~ 4400 2750
+Wire Wire Line
+	4400 2750 4400 3550
+Wire Wire Line
+	4450 3550 4400 3550
+Wire Wire Line
+	4650 1750 4650 1650
+Wire Wire Line
+	3450 1750 4650 1750
+Wire Wire Line
+	4650 2500 4650 2400
+Wire Wire Line
+	3450 2500 4650 2500
+Wire Wire Line
+	4650 3250 4650 3150
+Wire Wire Line
+	3450 3250 4650 3250
+Wire Wire Line
+	4650 4050 4650 3950
+Wire Wire Line
+	3450 4050 4650 4050
+Connection ~ 2850 1700
+Connection ~ 3450 1750
+Connection ~ 3450 2500
+Connection ~ 2850 2450
+Connection ~ 2850 3200
+Connection ~ 3450 3250
+Connection ~ 3450 4050
+Connection ~ 2850 4000
+Wire Wire Line
+	5000 900  5000 1000
+Wire Wire Line
+	5000 3550 5050 3550
+Wire Wire Line
+	5000 2750 5050 2750
+Connection ~ 5000 2750
+Wire Wire Line
+	5000 2750 5000 3550
+Wire Wire Line
+	5000 2000 5050 2000
+Wire Wire Line
+	5000 2000 5000 2750
+Wire Wire Line
+	5000 1250 5050 1250
+Wire Wire Line
+	4050 1700 5250 1700
+Wire Wire Line
+	5250 1700 5250 1650
+Connection ~ 4050 1700
+Wire Wire Line
+	4050 2450 5250 2450
+Wire Wire Line
+	5250 2450 5250 2400
+Connection ~ 4050 2450
+Wire Wire Line
+	4050 3200 5250 3200
+Wire Wire Line
+	5250 3200 5250 3150
+Connection ~ 4050 3200
+Wire Wire Line
+	4050 4000 5250 4000
+Wire Wire Line
+	5250 4000 5250 3950
+Connection ~ 4050 4000
+Wire Wire Line
+	5000 1000 5600 1000
+Wire Wire Line
+	5600 1000 5600 1250
+Wire Wire Line
+	5600 3550 5650 3550
+Connection ~ 5000 1000
+Wire Wire Line
+	5000 1000 5000 1250
+Wire Wire Line
+	5600 2750 5650 2750
+Connection ~ 5600 2750
+Wire Wire Line
+	5600 2750 5600 3550
+Wire Wire Line
+	5600 2000 5650 2000
+Wire Wire Line
+	5600 2000 5600 2750
+Wire Wire Line
+	5600 1250 5650 1250
+Wire Wire Line
+	4650 1750 5850 1750
+Wire Wire Line
+	5850 1750 5850 1650
+Connection ~ 4650 1750
+Wire Wire Line
+	4650 2500 5850 2500
+Wire Wire Line
+	5850 2500 5850 2400
+Connection ~ 4650 2500
+Wire Wire Line
+	4650 3250 5850 3250
+Wire Wire Line
+	5850 3250 5850 3150
+Connection ~ 4650 3250
+Wire Wire Line
+	4650 4050 5850 4050
+Wire Wire Line
+	5850 4050 5850 3950
+Connection ~ 4650 4050
+Wire Wire Line
+	6200 900  6200 1000
+Wire Wire Line
+	6200 3550 6250 3550
+Wire Wire Line
+	6200 2750 6250 2750
+Connection ~ 6200 2750
+Wire Wire Line
+	6200 2750 6200 3550
+Wire Wire Line
+	6200 2000 6250 2000
+Wire Wire Line
+	6200 2000 6200 2750
+Wire Wire Line
+	6200 1250 6250 1250
+Wire Wire Line
+	5250 1700 6450 1700
+Wire Wire Line
+	6450 1700 6450 1650
+Connection ~ 5250 1700
+Wire Wire Line
+	5250 2450 6450 2450
+Wire Wire Line
+	6450 2450 6450 2400
+Connection ~ 5250 2450
+Wire Wire Line
+	6450 3200 6450 3150
+Wire Wire Line
+	5250 4000 6450 4000
+Wire Wire Line
+	6450 4000 6450 3950
+Connection ~ 5250 4000
+Wire Wire Line
+	6200 1000 6800 1000
+Wire Wire Line
+	6800 1000 6800 1250
+Wire Wire Line
+	6800 3550 6850 3550
+Connection ~ 6200 1000
+Wire Wire Line
+	6200 1000 6200 1250
+Wire Wire Line
+	6800 2750 6850 2750
+Connection ~ 6800 2750
+Wire Wire Line
+	6800 2750 6800 3550
+Wire Wire Line
+	6800 2000 6850 2000
+Wire Wire Line
+	6800 2000 6800 2750
+Wire Wire Line
+	6800 1250 6850 1250
+Wire Wire Line
+	5850 1750 7050 1750
+Wire Wire Line
+	7050 1750 7050 1650
+Connection ~ 5850 1750
+Wire Wire Line
+	5850 2500 7050 2500
+Wire Wire Line
+	7050 2500 7050 2400
+Connection ~ 5850 2500
+Wire Wire Line
+	5250 3200 6450 3200
+Connection ~ 5250 3200
+Wire Wire Line
+	5850 3250 7050 3250
+Wire Wire Line
+	7050 3250 7050 3150
+Connection ~ 5850 3250
+Wire Wire Line
+	5850 4050 7050 4050
+Wire Wire Line
+	7050 4050 7050 3950
+Connection ~ 5850 4050
+Wire Wire Line
+	7450 3550 7400 3550
+Wire Wire Line
+	7400 3550 7400 2750
+Wire Wire Line
+	7400 1250 7450 1250
+Wire Wire Line
+	7400 1250 7400 1000
+Wire Wire Line
+	7400 2000 7450 2000
+Wire Wire Line
+	7400 2750 7450 2750
+Connection ~ 7400 2750
+Wire Wire Line
+	7400 2750 7400 2000
+Wire Wire Line
+	7400 1000 8000 1000
+Wire Wire Line
+	8000 1000 8000 1250
+Wire Wire Line
+	8000 3550 8050 3550
+Connection ~ 7400 1000
+Wire Wire Line
+	7400 1000 7400 900 
+Wire Wire Line
+	8000 2750 8050 2750
+Connection ~ 8000 2750
+Wire Wire Line
+	8000 2750 8000 3550
+Wire Wire Line
+	8000 2000 8050 2000
+Wire Wire Line
+	8000 2000 8000 2750
+Wire Wire Line
+	8000 1250 8050 1250
+Wire Wire Line
+	6450 1700 7650 1700
+Wire Wire Line
+	7650 1700 7650 1650
+Connection ~ 6450 1700
+Wire Wire Line
+	6450 2450 7650 2450
+Wire Wire Line
+	7650 2450 7650 2400
+Connection ~ 6450 2450
+Wire Wire Line
+	6450 3200 7650 3200
+Wire Wire Line
+	7650 3200 7650 3150
+Connection ~ 6450 3200
+Wire Wire Line
+	6450 4000 7650 4000
+Wire Wire Line
+	7650 4000 7650 3950
+Connection ~ 6450 4000
+Wire Wire Line
+	7050 1750 8250 1750
+Wire Wire Line
+	8250 1750 8250 1650
+Connection ~ 7050 1750
+Wire Wire Line
+	7050 2500 8250 2500
+Wire Wire Line
+	8250 2500 8250 2400
+Connection ~ 7050 2500
+Wire Wire Line
+	7050 3250 8250 3250
+Wire Wire Line
+	8250 3250 8250 3150
+Connection ~ 7050 3250
+Wire Wire Line
+	7050 4050 8250 4050
+Wire Wire Line
+	8250 4050 8250 3950
+Connection ~ 7050 4050
+Wire Wire Line
+	8650 3550 8600 3550
+Wire Wire Line
+	8600 3550 8600 2750
+Wire Wire Line
+	8600 2750 8650 2750
+Wire Wire Line
+	8600 2750 8600 2000
+Wire Wire Line
+	8600 2000 8650 2000
+Connection ~ 8600 2750
+Wire Wire Line
+	8600 1250 8650 1250
+Wire Wire Line
+	8600 1250 8600 1000
+Wire Wire Line
+	9200 3550 9150 3550
+Wire Wire Line
+	9150 3550 9150 2750
+Wire Wire Line
+	9150 2750 9200 2750
+Wire Wire Line
+	9150 2750 9150 2000
+Wire Wire Line
+	9150 2000 9200 2000
+Connection ~ 9150 2750
+Wire Wire Line
+	9150 1250 9200 1250
+Wire Wire Line
+	9150 1250 9150 1000
+Wire Wire Line
+	9150 1000 8600 1000
+Connection ~ 8600 1000
+Wire Wire Line
+	8600 1000 8600 900 
+Wire Wire Line
+	7650 1700 8850 1700
+Wire Wire Line
+	8850 1700 8850 1650
+Connection ~ 7650 1700
+Wire Wire Line
+	7650 2450 8850 2450
+Wire Wire Line
+	8850 2450 8850 2400
+Connection ~ 7650 2450
+Wire Wire Line
+	7650 3200 8850 3200
+Wire Wire Line
+	8850 3200 8850 3150
+Connection ~ 7650 3200
+Wire Wire Line
+	7650 4000 8850 4000
+Wire Wire Line
+	8850 4000 8850 3950
+Connection ~ 7650 4000
+Wire Wire Line
+	8250 1750 9400 1750
+Wire Wire Line
+	9400 1750 9400 1650
+Connection ~ 8250 1750
+Wire Wire Line
+	8250 2500 9400 2500
+Wire Wire Line
+	9400 2500 9400 2400
+Connection ~ 8250 2500
+Wire Wire Line
+	8250 3250 9400 3250
+Wire Wire Line
+	9400 3250 9400 3150
+Connection ~ 8250 3250
+Wire Wire Line
+	8250 4050 9400 4050
+Wire Wire Line
+	9400 4050 9400 3950
+Connection ~ 8250 4050
+Wire Wire Line
+	9800 3550 9750 3550
+Wire Wire Line
+	9750 3550 9750 2750
+Wire Wire Line
+	9750 2750 9800 2750
+Wire Wire Line
+	9750 2750 9750 2000
+Wire Wire Line
+	9750 2000 9800 2000
+Connection ~ 9750 2750
+Wire Wire Line
+	9750 1250 9800 1250
+Wire Wire Line
+	9750 1250 9750 1000
+Wire Wire Line
+	9750 1000 10350 1000
+Wire Wire Line
+	10350 1000 10350 1250
+Wire Wire Line
+	10350 3550 10400 3550
+Wire Wire Line
+	10400 2000 10350 2000
+Wire Wire Line
+	10350 2000 10350 3550
+Wire Wire Line
+	10400 1250 10350 1250
+Wire Wire Line
+	9750 1000 9750 900 
+Connection ~ 9750 1000
+Wire Wire Line
+	8850 1700 10000 1700
+Wire Wire Line
+	10000 1700 10000 1650
+Connection ~ 8850 1700
+Wire Wire Line
+	8850 2450 10000 2450
+Wire Wire Line
+	10000 2450 10000 2400
+Connection ~ 8850 2450
+Wire Wire Line
+	8850 3200 10000 3200
+Wire Wire Line
+	10000 3200 10000 3150
+Connection ~ 8850 3200
+Wire Wire Line
+	8850 4000 10000 4000
+Wire Wire Line
+	10000 4000 10000 3950
+Connection ~ 8850 4000
+Wire Wire Line
+	9400 1750 10600 1750
+Wire Wire Line
+	10600 1750 10600 1650
+Connection ~ 9400 1750
+Wire Wire Line
+	9400 2500 10600 2500
+Wire Wire Line
+	10600 2500 10600 2400
+Connection ~ 9400 2500
+Wire Wire Line
+	9400 3250 10300 3250
+Wire Wire Line
+	10300 3250 10300 4000
+Wire Wire Line
+	10300 4000 10600 4000
+Connection ~ 9400 3250
+Wire Wire Line
+	10600 4000 10600 3950
+Wire Wire Line
+	9400 4050 10300 4050
+Wire Wire Line
+	10300 4050 10300 4800
+Wire Wire Line
+	10300 4800 10600 4800
+Wire Wire Line
+	10600 4800 10600 4750
+Connection ~ 9400 4050
+Wire Wire Line
+	10400 4350 10350 4350
+Wire Wire Line
+	10350 4350 10350 3550
+Connection ~ 10350 3550
+Wire Wire Line
+	10950 4850 10250 4850
+Wire Wire Line
+	10250 4850 10250 4100
+Wire Wire Line
+	10950 900  10950 4850
+Wire Wire Line
+	2650 4350 2600 4350
+Wire Wire Line
+	2600 4350 2600 4100
+Wire Wire Line
+	2600 4100 3200 4100
+Wire Wire Line
+	3250 4350 3200 4350
+Wire Wire Line
+	3200 4350 3200 4100
+Connection ~ 3200 4100
+Wire Wire Line
+	3200 4100 3800 4100
+Wire Wire Line
+	6250 4350 6200 4350
+Wire Wire Line
+	6200 4350 6200 4100
+Connection ~ 6200 4100
+Wire Wire Line
+	6200 4100 8000 4100
+Wire Wire Line
+	8050 4350 8000 4350
+Wire Wire Line
+	8000 4350 8000 4100
+Connection ~ 8000 4100
+Wire Wire Line
+	8000 4100 8600 4100
+Wire Wire Line
+	8650 4350 8600 4350
+Wire Wire Line
+	8600 4350 8600 4100
+Connection ~ 8600 4100
+Wire Wire Line
+	8600 4100 9150 4100
+Wire Wire Line
+	9200 4350 9150 4350
+Wire Wire Line
+	9150 4350 9150 4100
+Connection ~ 9150 4100
+Wire Wire Line
+	9150 4100 9750 4100
+Wire Wire Line
+	9800 4350 9750 4350
+Wire Wire Line
+	9750 4350 9750 4100
+Connection ~ 9750 4100
+Wire Wire Line
+	9750 4100 10250 4100
+Wire Wire Line
+	2850 4750 2850 4800
+Wire Wire Line
+	2850 4800 2550 4800
+Wire Wire Line
+	2550 4800 2550 1700
+Connection ~ 2550 1700
+Wire Wire Line
+	2550 1700 2850 1700
+Wire Wire Line
+	2500 1750 2500 4850
+Wire Wire Line
+	2500 4850 3450 4850
+Wire Wire Line
+	3450 4850 3450 4750
+Connection ~ 2500 1750
+Wire Wire Line
+	2500 1750 3450 1750
+Wire Wire Line
+	3850 4350 3800 4350
+Wire Wire Line
+	3800 4350 3800 4100
+Connection ~ 3800 4100
+Wire Wire Line
+	3800 4100 6200 4100
+Wire Wire Line
+	4050 4750 4050 4900
+Wire Wire Line
+	4050 4900 2450 4900
+Wire Wire Line
+	2450 4900 2450 2450
+Connection ~ 2450 2450
+Wire Wire Line
+	2450 2450 2850 2450
+Wire Wire Line
+	2400 2500 2400 4950
+Wire Wire Line
+	2400 4950 6450 4950
+Wire Wire Line
+	6450 4950 6450 4750
+Wire Wire Line
+	2400 2500 3450 2500
+Wire Wire Line
+	2350 3200 2350 5000
+Wire Wire Line
+	2350 5000 8250 5000
+Wire Wire Line
+	8250 5000 8250 4750
+Connection ~ 2350 3200
+Wire Wire Line
+	2350 3200 2850 3200
+Wire Wire Line
+	2300 3250 2300 5050
+Wire Wire Line
+	2300 5050 8850 5050
+Wire Wire Line
+	8850 5050 8850 4750
+Connection ~ 2300 3250
+Wire Wire Line
+	2300 3250 3450 3250
+Wire Wire Line
+	2250 4000 2250 5100
+Wire Wire Line
+	2250 5100 9400 5100
+Wire Wire Line
+	9400 5100 9400 4750
+Connection ~ 2250 4000
+Wire Wire Line
+	2250 4000 1600 4000
+Wire Wire Line
+	2200 4050 2200 5150
+Wire Wire Line
+	2200 5150 10000 5150
+Wire Wire Line
+	10000 5150 10000 4750
+Connection ~ 2200 4050
+Wire Wire Line
+	2200 4050 3450 4050
+Text GLabel 2600 900  1    50   Input ~ 0
+COL0
+Text GLabel 3800 900  1    50   Input ~ 0
+COL1
+Text GLabel 5000 900  1    50   Input ~ 0
+COL2
+Text GLabel 6200 900  1    50   Input ~ 0
+COL3
+Text GLabel 7400 900  1    50   Input ~ 0
+COL4
+Text GLabel 8600 900  1    50   Input ~ 0
+COL5
+Text GLabel 9750 900  1    50   Input ~ 0
+COL6
+Text GLabel 10950 900  1    50   Input ~ 0
+COL7
+Text GLabel 1400 1700 0    50   Output ~ 0
+ROW0
+Text GLabel 1400 1800 0    50   Output ~ 0
+ROW1
+Wire Wire Line
+	2500 1750 1900 1750
+Wire Wire Line
+	1450 1800 1400 1800
+Wire Wire Line
+	1450 1750 1450 1800
+Wire Wire Line
+	2400 2500 1900 2500
+Wire Wire Line
+	1450 2500 1450 2550
+Wire Wire Line
+	1450 2550 1400 2550
+Connection ~ 2400 2500
+Wire Wire Line
+	1450 3250 1450 3300
+Wire Wire Line
+	1450 3300 1400 3300
+Wire Wire Line
+	1450 3250 1900 3250
+Wire Wire Line
+	1450 4050 1450 4100
+Wire Wire Line
+	1450 4100 1400 4100
+Wire Wire Line
+	1450 4050 1900 4050
+Text GLabel 1400 2450 0    50   Output ~ 0
+ROW2
+Text GLabel 1400 2550 0    50   Output ~ 0
+ROW3
+Text GLabel 1400 3200 0    50   Output ~ 0
+ROW4
+Text GLabel 1400 3300 0    50   Output ~ 0
+ROW5
+Text GLabel 1400 4000 0    50   Output ~ 0
+ROW6
+Text GLabel 1400 4100 0    50   Output ~ 0
+ROW7
+$Comp
+L Mechanical:MountingHole H1
+U 1 1 5E9FFCE5
+P 8000 5850
+F 0 "H1" H 8100 5896 50  0000 L CNN
+F 1 "MountingHole" H 8100 5805 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8000 5850 50  0001 C CNN
+F 3 "~" H 8000 5850 50  0001 C CNN
+	1    8000 5850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H3
+U 1 1 5EA00F5B
+P 8000 6100
+F 0 "H3" H 8100 6146 50  0000 L CNN
+F 1 "MountingHole" H 8100 6055 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8000 6100 50  0001 C CNN
+F 3 "~" H 8000 6100 50  0001 C CNN
+	1    8000 6100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H5
+U 1 1 5EA0126F
+P 8000 6350
+F 0 "H5" H 8100 6396 50  0000 L CNN
+F 1 "MountingHole" H 8100 6305 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8000 6350 50  0001 C CNN
+F 3 "~" H 8000 6350 50  0001 C CNN
+	1    8000 6350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H2
+U 1 1 5EA02548
+P 8800 5850
+F 0 "H2" H 8900 5896 50  0000 L CNN
+F 1 "MountingHole" H 8900 5805 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8800 5850 50  0001 C CNN
+F 3 "~" H 8800 5850 50  0001 C CNN
+	1    8800 5850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H4
+U 1 1 5EA0254E
+P 8800 6100
+F 0 "H4" H 8900 6146 50  0000 L CNN
+F 1 "MountingHole" H 8900 6055 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8800 6100 50  0001 C CNN
+F 3 "~" H 8800 6100 50  0001 C CNN
+	1    8800 6100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H6
+U 1 1 5EA02554
+P 8800 6350
+F 0 "H6" H 8900 6396 50  0000 L CNN
+F 1 "MountingHole" H 8900 6305 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 8800 6350 50  0001 C CNN
+F 3 "~" H 8800 6350 50  0001 C CNN
+	1    8800 6350
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H7
+U 1 1 5EA4B0DA
+P 9650 5850
+F 0 "H7" H 9750 5896 50  0000 L CNN
+F 1 "MountingHole" H 9750 5805 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 9650 5850 50  0001 C CNN
+F 3 "~" H 9650 5850 50  0001 C CNN
+	1    9650 5850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H8
+U 1 1 5EA4B4E2
+P 9650 6100
+F 0 "H8" H 9750 6146 50  0000 L CNN
+F 1 "MountingHole" H 9750 6055 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 9650 6100 50  0001 C CNN
+F 3 "~" H 9650 6100 50  0001 C CNN
+	1    9650 6100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H9
+U 1 1 5EA4B7B6
+P 9650 6350
+F 0 "H9" H 9750 6396 50  0000 L CNN
+F 1 "MountingHole" H 9750 6305 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 9650 6350 50  0001 C CNN
+F 3 "~" H 9650 6350 50  0001 C CNN
+	1    9650 6350
+	1    0    0    -1  
+$EndComp
+Text GLabel 2050 5850 2    50   Output ~ 0
+COL0
+Text GLabel 2050 5950 2    50   Output ~ 0
+COL1
+Text GLabel 2050 6050 2    50   Output ~ 0
+COL2
+Text GLabel 2050 6150 2    50   Output ~ 0
+COL3
+Text GLabel 2050 6250 2    50   Output ~ 0
+COL4
+Text GLabel 2050 6350 2    50   Output ~ 0
+COL5
+Text GLabel 2050 6450 2    50   Output ~ 0
+COL6
+Text GLabel 2050 6550 2    50   Output ~ 0
+COL7
+Text GLabel 2800 5950 0    50   Input ~ 0
+ROW0
+Text GLabel 2800 6050 0    50   Input ~ 0
+ROW1
+Text GLabel 2800 6150 0    50   Input ~ 0
+ROW2
+Text GLabel 2800 6250 0    50   Input ~ 0
+ROW3
+Text GLabel 2800 6350 0    50   Input ~ 0
+ROW4
+Text GLabel 2800 6450 0    50   Input ~ 0
+ROW5
+Text GLabel 2800 6550 0    50   Input ~ 0
+ROW6
+Text GLabel 2800 6650 0    50   Input ~ 0
+ROW7
+$Comp
+L Mechanical:MountingHole H10
+U 1 1 5E12D541
+P 10500 5850
+F 0 "H10" H 10600 5896 50  0000 L CNN
+F 1 "MountingHole" H 10600 5805 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 10500 5850 50  0001 C CNN
+F 3 "~" H 10500 5850 50  0001 C CNN
+	1    10500 5850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H11
+U 1 1 5E12D547
+P 10500 6100
+F 0 "H11" H 10600 6146 50  0000 L CNN
+F 1 "MountingHole" H 10600 6055 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 10500 6100 50  0001 C CNN
+F 3 "~" H 10500 6100 50  0001 C CNN
+	1    10500 6100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H12
+U 1 1 5E12D54D
+P 10500 6350
+F 0 "H12" H 10600 6396 50  0000 L CNN
+F 1 "MountingHole" H 10600 6305 50  0000 L CNN
+F 2 "MountingHole:MountingHole_3.2mm_M3" H 10500 6350 50  0001 C CNN
+F 3 "~" H 10500 6350 50  0001 C CNN
+	1    10500 6350
+	1    0    0    -1  
+$EndComp
+Connection ~ 3200 1250
+Connection ~ 3200 2000
+Connection ~ 3800 1250
+Connection ~ 3800 2000
+Connection ~ 4400 1250
+Connection ~ 4400 2000
+Connection ~ 5000 1250
+Connection ~ 5000 2000
+Connection ~ 5600 1250
+Connection ~ 5600 2000
+Connection ~ 6200 1250
+Connection ~ 6200 2000
+Connection ~ 6800 1250
+Connection ~ 6800 2000
+Connection ~ 7400 2000
+Connection ~ 7400 1250
+Connection ~ 8000 1250
+Connection ~ 8000 2000
+Connection ~ 8600 2000
+Connection ~ 8600 1250
+Connection ~ 9150 2000
+Connection ~ 9150 1250
+Connection ~ 9750 2000
+Connection ~ 9750 1250
+Connection ~ 10350 1250
+Connection ~ 10350 2000
+$Comp
+L Device:D_Small D14
+U 1 1 61286F59
+P 10600 1550
+F 0 "D14" V 10646 1480 50  0000 R CNN
+F 1 "1N4148" V 10555 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10600 1550 50  0001 C CNN
+F 3 "~" V 10600 1550 50  0001 C CNN
+	1    10600 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D13
+U 1 1 61286C53
+P 10000 1550
+F 0 "D13" V 10046 1480 50  0000 R CNN
+F 1 "1N4148" V 9955 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10000 1550 50  0001 C CNN
+F 3 "~" V 10000 1550 50  0001 C CNN
+	1    10000 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D12
+U 1 1 61286736
+P 9400 1550
+F 0 "D12" V 9446 1480 50  0000 R CNN
+F 1 "1N4148" V 9355 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 9400 1550 50  0001 C CNN
+F 3 "~" V 9400 1550 50  0001 C CNN
+	1    9400 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D11
+U 1 1 61286205
+P 8850 1550
+F 0 "D11" V 8896 1480 50  0000 R CNN
+F 1 "1N4148" V 8805 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8850 1550 50  0001 C CNN
+F 3 "~" V 8850 1550 50  0001 C CNN
+	1    8850 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D10
+U 1 1 61285A16
+P 8250 1550
+F 0 "D10" V 8296 1480 50  0000 R CNN
+F 1 "1N4148" V 8205 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8250 1550 50  0001 C CNN
+F 3 "~" V 8250 1550 50  0001 C CNN
+	1    8250 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D9
+U 1 1 61285657
+P 7650 1550
+F 0 "D9" V 7696 1480 50  0000 R CNN
+F 1 "1N4148" V 7605 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7650 1550 50  0001 C CNN
+F 3 "~" V 7650 1550 50  0001 C CNN
+	1    7650 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D8
+U 1 1 612851CB
+P 7050 1550
+F 0 "D8" V 7096 1480 50  0000 R CNN
+F 1 "1N4148" V 7005 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7050 1550 50  0001 C CNN
+F 3 "~" V 7050 1550 50  0001 C CNN
+	1    7050 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D7
+U 1 1 61284DA8
+P 6450 1550
+F 0 "D7" V 6496 1480 50  0000 R CNN
+F 1 "1N4148" V 6405 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 6450 1550 50  0001 C CNN
+F 3 "~" V 6450 1550 50  0001 C CNN
+	1    6450 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D6
+U 1 1 612848B3
+P 5850 1550
+F 0 "D6" V 5896 1480 50  0000 R CNN
+F 1 "1N4148" V 5805 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5850 1550 50  0001 C CNN
+F 3 "~" V 5850 1550 50  0001 C CNN
+	1    5850 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D5
+U 1 1 6128426A
+P 5250 1550
+F 0 "D5" V 5296 1480 50  0000 R CNN
+F 1 "1N4148" V 5205 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5250 1550 50  0001 C CNN
+F 3 "~" V 5250 1550 50  0001 C CNN
+	1    5250 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D4
+U 1 1 61283B1D
+P 4650 1550
+F 0 "D4" V 4696 1480 50  0000 R CNN
+F 1 "1N4148" V 4605 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4650 1550 50  0001 C CNN
+F 3 "~" V 4650 1550 50  0001 C CNN
+	1    4650 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D3
+U 1 1 6128336A
+P 4050 1550
+F 0 "D3" V 4096 1480 50  0000 R CNN
+F 1 "1N4148" V 4005 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4050 1550 50  0001 C CNN
+F 3 "~" V 4050 1550 50  0001 C CNN
+	1    4050 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D2
+U 1 1 61282DF8
+P 3450 1550
+F 0 "D2" V 3496 1480 50  0000 R CNN
+F 1 "1N4148" V 3405 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 3450 1550 50  0001 C CNN
+F 3 "~" V 3450 1550 50  0001 C CNN
+	1    3450 1550
+	0    -1   -1   0   
+$EndComp
+Wire Wire Line
+	3200 1250 3200 2000
+Wire Wire Line
+	3800 1250 3800 2000
+Wire Wire Line
+	4400 1250 4400 2000
+Wire Wire Line
+	5000 1250 5000 2000
+Wire Wire Line
+	5600 1250 5600 2000
+Wire Wire Line
+	6200 1250 6200 2000
+Wire Wire Line
+	6800 1250 6800 2000
+Wire Wire Line
+	7400 2000 7400 1250
+Wire Wire Line
+	8000 1250 8000 2000
+Wire Wire Line
+	8600 2000 8600 1250
+Wire Wire Line
+	9150 2000 9150 1250
+Wire Wire Line
+	9750 2000 9750 1250
+Wire Wire Line
+	10350 1250 10350 2000
+$Comp
+L Device:D_Small D1
+U 1 1 612201D5
+P 2850 1550
+F 0 "D1" V 2896 1480 50  0000 R CNN
+F 1 "1N4148" V 2805 1480 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 2850 1550 50  0001 C CNN
+F 3 "~" V 2850 1550 50  0001 C CNN
+	1    2850 1550
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D15
+U 1 1 612E3204
+P 2850 2300
+F 0 "D15" V 2896 2230 50  0000 R CNN
+F 1 "1N4148" V 2805 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 2850 2300 50  0001 C CNN
+F 3 "~" V 2850 2300 50  0001 C CNN
+	1    2850 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D16
+U 1 1 612E320A
+P 3450 2300
+F 0 "D16" V 3496 2230 50  0000 R CNN
+F 1 "1N4148" V 3405 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 3450 2300 50  0001 C CNN
+F 3 "~" V 3450 2300 50  0001 C CNN
+	1    3450 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D17
+U 1 1 612E3210
+P 4050 2300
+F 0 "D17" V 4096 2230 50  0000 R CNN
+F 1 "1N4148" V 4005 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4050 2300 50  0001 C CNN
+F 3 "~" V 4050 2300 50  0001 C CNN
+	1    4050 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D18
+U 1 1 612E3216
+P 4650 2300
+F 0 "D18" V 4696 2230 50  0000 R CNN
+F 1 "1N4148" V 4605 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4650 2300 50  0001 C CNN
+F 3 "~" V 4650 2300 50  0001 C CNN
+	1    4650 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D19
+U 1 1 612E321C
+P 5250 2300
+F 0 "D19" V 5296 2230 50  0000 R CNN
+F 1 "1N4148" V 5205 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5250 2300 50  0001 C CNN
+F 3 "~" V 5250 2300 50  0001 C CNN
+	1    5250 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D20
+U 1 1 612E3222
+P 5850 2300
+F 0 "D20" V 5896 2230 50  0000 R CNN
+F 1 "1N4148" V 5805 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5850 2300 50  0001 C CNN
+F 3 "~" V 5850 2300 50  0001 C CNN
+	1    5850 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D21
+U 1 1 612E3228
+P 6450 2300
+F 0 "D21" V 6496 2230 50  0000 R CNN
+F 1 "1N4148" V 6405 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 6450 2300 50  0001 C CNN
+F 3 "~" V 6450 2300 50  0001 C CNN
+	1    6450 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D22
+U 1 1 612E322E
+P 7050 2300
+F 0 "D22" V 7096 2230 50  0000 R CNN
+F 1 "1N4148" V 7005 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7050 2300 50  0001 C CNN
+F 3 "~" V 7050 2300 50  0001 C CNN
+	1    7050 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D23
+U 1 1 612E3234
+P 7650 2300
+F 0 "D23" V 7696 2230 50  0000 R CNN
+F 1 "1N4148" V 7605 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7650 2300 50  0001 C CNN
+F 3 "~" V 7650 2300 50  0001 C CNN
+	1    7650 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D24
+U 1 1 612E323A
+P 8250 2300
+F 0 "D24" V 8296 2230 50  0000 R CNN
+F 1 "1N4148" V 8205 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8250 2300 50  0001 C CNN
+F 3 "~" V 8250 2300 50  0001 C CNN
+	1    8250 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D25
+U 1 1 612E3240
+P 8850 2300
+F 0 "D25" V 8896 2230 50  0000 R CNN
+F 1 "1N4148" V 8805 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8850 2300 50  0001 C CNN
+F 3 "~" V 8850 2300 50  0001 C CNN
+	1    8850 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D26
+U 1 1 612E3246
+P 9400 2300
+F 0 "D26" V 9446 2230 50  0000 R CNN
+F 1 "1N4148" V 9355 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 9400 2300 50  0001 C CNN
+F 3 "~" V 9400 2300 50  0001 C CNN
+	1    9400 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D27
+U 1 1 612E324C
+P 10000 2300
+F 0 "D27" V 10046 2230 50  0000 R CNN
+F 1 "1N4148" V 9955 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10000 2300 50  0001 C CNN
+F 3 "~" V 10000 2300 50  0001 C CNN
+	1    10000 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D28
+U 1 1 612E3252
+P 10600 2300
+F 0 "D28" V 10646 2230 50  0000 R CNN
+F 1 "1N4148" V 10555 2230 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10600 2300 50  0001 C CNN
+F 3 "~" V 10600 2300 50  0001 C CNN
+	1    10600 2300
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D29
+U 1 1 612FF17E
+P 2850 3050
+F 0 "D29" V 2896 2980 50  0000 R CNN
+F 1 "1N4148" V 2805 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 2850 3050 50  0001 C CNN
+F 3 "~" V 2850 3050 50  0001 C CNN
+	1    2850 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D30
+U 1 1 612FF184
+P 3450 3050
+F 0 "D30" V 3496 2980 50  0000 R CNN
+F 1 "1N4148" V 3405 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 3450 3050 50  0001 C CNN
+F 3 "~" V 3450 3050 50  0001 C CNN
+	1    3450 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D31
+U 1 1 612FF18A
+P 4050 3050
+F 0 "D31" V 4096 2980 50  0000 R CNN
+F 1 "1N4148" V 4005 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4050 3050 50  0001 C CNN
+F 3 "~" V 4050 3050 50  0001 C CNN
+	1    4050 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D32
+U 1 1 612FF190
+P 4650 3050
+F 0 "D32" V 4696 2980 50  0000 R CNN
+F 1 "1N4148" V 4605 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4650 3050 50  0001 C CNN
+F 3 "~" V 4650 3050 50  0001 C CNN
+	1    4650 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D33
+U 1 1 612FF196
+P 5250 3050
+F 0 "D33" V 5296 2980 50  0000 R CNN
+F 1 "1N4148" V 5205 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5250 3050 50  0001 C CNN
+F 3 "~" V 5250 3050 50  0001 C CNN
+	1    5250 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D34
+U 1 1 612FF19C
+P 5850 3050
+F 0 "D34" V 5896 2980 50  0000 R CNN
+F 1 "1N4148" V 5805 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5850 3050 50  0001 C CNN
+F 3 "~" V 5850 3050 50  0001 C CNN
+	1    5850 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D35
+U 1 1 612FF1A2
+P 6450 3050
+F 0 "D35" V 6496 2980 50  0000 R CNN
+F 1 "1N4148" V 6405 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 6450 3050 50  0001 C CNN
+F 3 "~" V 6450 3050 50  0001 C CNN
+	1    6450 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D36
+U 1 1 612FF1A8
+P 7050 3050
+F 0 "D36" V 7096 2980 50  0000 R CNN
+F 1 "1N4148" V 7005 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7050 3050 50  0001 C CNN
+F 3 "~" V 7050 3050 50  0001 C CNN
+	1    7050 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D37
+U 1 1 612FF1AE
+P 7650 3050
+F 0 "D37" V 7696 2980 50  0000 R CNN
+F 1 "1N4148" V 7605 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7650 3050 50  0001 C CNN
+F 3 "~" V 7650 3050 50  0001 C CNN
+	1    7650 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D38
+U 1 1 612FF1B4
+P 8250 3050
+F 0 "D38" V 8296 2980 50  0000 R CNN
+F 1 "1N4148" V 8205 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8250 3050 50  0001 C CNN
+F 3 "~" V 8250 3050 50  0001 C CNN
+	1    8250 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D39
+U 1 1 612FF1BA
+P 8850 3050
+F 0 "D39" V 8896 2980 50  0000 R CNN
+F 1 "1N4148" V 8805 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8850 3050 50  0001 C CNN
+F 3 "~" V 8850 3050 50  0001 C CNN
+	1    8850 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D40
+U 1 1 612FF1C0
+P 9400 3050
+F 0 "D40" V 9446 2980 50  0000 R CNN
+F 1 "1N4148" V 9355 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 9400 3050 50  0001 C CNN
+F 3 "~" V 9400 3050 50  0001 C CNN
+	1    9400 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D41
+U 1 1 612FF1C6
+P 10000 3050
+F 0 "D41" V 10046 2980 50  0000 R CNN
+F 1 "1N4148" V 9955 2980 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10000 3050 50  0001 C CNN
+F 3 "~" V 10000 3050 50  0001 C CNN
+	1    10000 3050
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D42
+U 1 1 6131A794
+P 2850 3850
+F 0 "D42" V 2896 3780 50  0000 R CNN
+F 1 "1N4148" V 2805 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 2850 3850 50  0001 C CNN
+F 3 "~" V 2850 3850 50  0001 C CNN
+	1    2850 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D43
+U 1 1 6131A79A
+P 3450 3850
+F 0 "D43" V 3496 3780 50  0000 R CNN
+F 1 "1N4148" V 3405 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 3450 3850 50  0001 C CNN
+F 3 "~" V 3450 3850 50  0001 C CNN
+	1    3450 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D44
+U 1 1 6131A7A0
+P 4050 3850
+F 0 "D44" V 4096 3780 50  0000 R CNN
+F 1 "1N4148" V 4005 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4050 3850 50  0001 C CNN
+F 3 "~" V 4050 3850 50  0001 C CNN
+	1    4050 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D45
+U 1 1 6131A7A6
+P 4650 3850
+F 0 "D45" V 4696 3780 50  0000 R CNN
+F 1 "1N4148" V 4605 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4650 3850 50  0001 C CNN
+F 3 "~" V 4650 3850 50  0001 C CNN
+	1    4650 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D46
+U 1 1 6131A7AC
+P 5250 3850
+F 0 "D46" V 5296 3780 50  0000 R CNN
+F 1 "1N4148" V 5205 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5250 3850 50  0001 C CNN
+F 3 "~" V 5250 3850 50  0001 C CNN
+	1    5250 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D47
+U 1 1 6131A7B2
+P 5850 3850
+F 0 "D47" V 5896 3780 50  0000 R CNN
+F 1 "1N4148" V 5805 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 5850 3850 50  0001 C CNN
+F 3 "~" V 5850 3850 50  0001 C CNN
+	1    5850 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D48
+U 1 1 6131A7B8
+P 6450 3850
+F 0 "D48" V 6496 3780 50  0000 R CNN
+F 1 "1N4148" V 6405 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 6450 3850 50  0001 C CNN
+F 3 "~" V 6450 3850 50  0001 C CNN
+	1    6450 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D49
+U 1 1 6131A7BE
+P 7050 3850
+F 0 "D49" V 7096 3780 50  0000 R CNN
+F 1 "1N4148" V 7005 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7050 3850 50  0001 C CNN
+F 3 "~" V 7050 3850 50  0001 C CNN
+	1    7050 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D50
+U 1 1 6131A7C4
+P 7650 3850
+F 0 "D50" V 7696 3780 50  0000 R CNN
+F 1 "1N4148" V 7605 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 7650 3850 50  0001 C CNN
+F 3 "~" V 7650 3850 50  0001 C CNN
+	1    7650 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D51
+U 1 1 6131A7CA
+P 8250 3850
+F 0 "D51" V 8296 3780 50  0000 R CNN
+F 1 "1N4148" V 8205 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8250 3850 50  0001 C CNN
+F 3 "~" V 8250 3850 50  0001 C CNN
+	1    8250 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D52
+U 1 1 6131A7D0
+P 8850 3850
+F 0 "D52" V 8896 3780 50  0000 R CNN
+F 1 "1N4148" V 8805 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8850 3850 50  0001 C CNN
+F 3 "~" V 8850 3850 50  0001 C CNN
+	1    8850 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D53
+U 1 1 6131A7D6
+P 9400 3850
+F 0 "D53" V 9446 3780 50  0000 R CNN
+F 1 "1N4148" V 9355 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 9400 3850 50  0001 C CNN
+F 3 "~" V 9400 3850 50  0001 C CNN
+	1    9400 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D54
+U 1 1 6131A7DC
+P 10000 3850
+F 0 "D54" V 10046 3780 50  0000 R CNN
+F 1 "1N4148" V 9955 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10000 3850 50  0001 C CNN
+F 3 "~" V 10000 3850 50  0001 C CNN
+	1    10000 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D55
+U 1 1 6131A7E2
+P 10600 3850
+F 0 "D55" V 10646 3780 50  0000 R CNN
+F 1 "1N4148" V 10555 3780 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10600 3850 50  0001 C CNN
+F 3 "~" V 10600 3850 50  0001 C CNN
+	1    10600 3850
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D56
+U 1 1 613384F2
+P 2850 4650
+F 0 "D56" V 2896 4580 50  0000 R CNN
+F 1 "1N4148" V 2805 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 2850 4650 50  0001 C CNN
+F 3 "~" V 2850 4650 50  0001 C CNN
+	1    2850 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D57
+U 1 1 613384F8
+P 3450 4650
+F 0 "D57" V 3496 4580 50  0000 R CNN
+F 1 "1N4148" V 3405 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 3450 4650 50  0001 C CNN
+F 3 "~" V 3450 4650 50  0001 C CNN
+	1    3450 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D58
+U 1 1 613384FE
+P 4050 4650
+F 0 "D58" V 4096 4580 50  0000 R CNN
+F 1 "1N4148" V 4005 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 4050 4650 50  0001 C CNN
+F 3 "~" V 4050 4650 50  0001 C CNN
+	1    4050 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D59
+U 1 1 61338516
+P 6450 4650
+F 0 "D59" V 6496 4580 50  0000 R CNN
+F 1 "1N4148" V 6405 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 6450 4650 50  0001 C CNN
+F 3 "~" V 6450 4650 50  0001 C CNN
+	1    6450 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D60
+U 1 1 61338528
+P 8250 4650
+F 0 "D60" V 8296 4580 50  0000 R CNN
+F 1 "1N4148" V 8205 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8250 4650 50  0001 C CNN
+F 3 "~" V 8250 4650 50  0001 C CNN
+	1    8250 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D61
+U 1 1 6133852E
+P 8850 4650
+F 0 "D61" V 8896 4580 50  0000 R CNN
+F 1 "1N4148" V 8805 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 8850 4650 50  0001 C CNN
+F 3 "~" V 8850 4650 50  0001 C CNN
+	1    8850 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D62
+U 1 1 61338534
+P 9400 4650
+F 0 "D62" V 9446 4580 50  0000 R CNN
+F 1 "1N4148" V 9355 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 9400 4650 50  0001 C CNN
+F 3 "~" V 9400 4650 50  0001 C CNN
+	1    9400 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D63
+U 1 1 6133853A
+P 10000 4650
+F 0 "D63" V 10046 4580 50  0000 R CNN
+F 1 "1N4148" V 9955 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10000 4650 50  0001 C CNN
+F 3 "~" V 10000 4650 50  0001 C CNN
+	1    10000 4650
+	0    -1   -1   0   
+$EndComp
+$Comp
+L Device:D_Small D64
+U 1 1 61338540
+P 10600 4650
+F 0 "D64" V 10646 4580 50  0000 R CNN
+F 1 "1N4148" V 10555 4580 50  0000 R CNN
+F 2 "Diode_THT:D_DO-35_SOD27_P7.62mm_Horizontal" V 10600 4650 50  0001 C CNN
+F 3 "~" V 10600 4650 50  0001 C CNN
+	1    10600 4650
+	0    -1   -1   0   
+$EndComp
+Text GLabel 2800 5850 0    50   Input ~ 0
+GND
+$Comp
+L power:GND #PWR08
+U 1 1 618E1E83
+P 3300 7450
+F 0 "#PWR08" H 3300 7200 50  0001 C CNN
+F 1 "GND" H 3305 7277 50  0000 C CNN
+F 2 "" H 3300 7450 50  0001 C CNN
+F 3 "" H 3300 7450 50  0001 C CNN
+	1    3300 7450
+	1    0    0    -1  
+$EndComp
+Text GLabel 3800 5850 2    50   Output ~ 0
+DOUT
+Text GLabel 7300 6200 2    50   Input ~ 0
+DOUT
+Text GLabel 6800 6200 0    50   Output ~ 0
+SHCLK
+Text GLabel 7300 6100 2    50   Output ~ 0
+LOAD#
+$Comp
+L 74xx:74LS165 U2
+U 1 1 6191A6D4
+P 3300 6450
+F 0 "U2" H 3350 7300 50  0000 L CNN
+F 1 "74HCT165" H 3350 7200 50  0000 L CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 3300 6450 50  0001 C CNN
+F 3 "" H 3300 6450 50  0001 C CNN
+	1    3300 6450
+	1    0    0    -1  
+$EndComp
+Text GLabel 2800 6850 0    50   Input ~ 0
+LOAD#
+NoConn ~ 3800 5950
+Text GLabel 2800 7150 0    50   Input ~ 0
+GND
+Text GLabel 2800 7050 0    50   Input ~ 0
+SHCLK
+$Comp
+L power:+5V #PWR02
+U 1 1 619B136B
+P 3300 5550
+F 0 "#PWR02" H 3300 5400 50  0001 C CNN
+F 1 "+5V" H 3315 5723 50  0000 C CNN
+F 2 "" H 3300 5550 50  0001 C CNN
+F 3 "" H 3300 5550 50  0001 C CNN
+	1    3300 5550
+	1    0    0    -1  
+$EndComp
+$Comp
+L 4xxx:4017 U1
+U 1 1 619D121E
+P 1550 6350
+F 0 "U1" H 1700 7150 50  0000 C CNN
+F 1 "4017" H 1750 7050 50  0000 C CNN
+F 2 "Package_DIP:DIP-16_W7.62mm" H 1550 6350 50  0001 C CNN
+F 3 "" H 1550 6350 50  0001 C CNN
+	1    1550 6350
+	1    0    0    -1  
+$EndComp
+Text GLabel 1050 5950 0    50   Input ~ 0
+GND
+$Comp
+L power:GND #PWR07
+U 1 1 619D2FFC
+P 1550 7250
+F 0 "#PWR07" H 1550 7000 50  0001 C CNN
+F 1 "GND" H 1555 7077 50  0000 C CNN
+F 2 "" H 1550 7250 50  0001 C CNN
+F 3 "" H 1550 7250 50  0001 C CNN
+	1    1550 7250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR01
+U 1 1 619D3785
+P 1550 5550
+F 0 "#PWR01" H 1550 5400 50  0001 C CNN
+F 1 "+5V" H 1565 5723 50  0000 C CNN
+F 2 "" H 1550 5550 50  0001 C CNN
+F 3 "" H 1550 5550 50  0001 C CNN
+	1    1550 5550
+	1    0    0    -1  
+$EndComp
+NoConn ~ 2050 6950
+NoConn ~ 2050 6750
+NoConn ~ 2050 6650
+Text GLabel 7300 6000 2    50   Output ~ 0
+FIRSTCOL
+Text GLabel 1050 6150 0    50   Input ~ 0
+FIRSTCOL
+Text GLabel 6800 6100 0    50   Output ~ 0
+NEXTCOL
+Text GLabel 1050 5850 0    50   Input ~ 0
+NEXTCOL
+$Comp
+L Device:C C1
+U 1 1 61A38930
+P 800 7050
+F 0 "C1" H 915 7096 50  0000 L CNN
+F 1 "100nF" H 915 7005 50  0000 L CNN
+F 2 "Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm" H 838 6900 50  0001 C CNN
+F 3 "~" H 800 7050 50  0001 C CNN
+	1    800  7050
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:C C2
+U 1 1 61A390EF
+P 3900 7300
+F 0 "C2" H 4015 7346 50  0000 L CNN
+F 1 "100nF" H 4015 7255 50  0000 L CNN
+F 2 "Capacitor_THT:C_Disc_D4.7mm_W2.5mm_P5.00mm" H 3938 7150 50  0001 C CNN
+F 3 "~" H 3900 7300 50  0001 C CNN
+	1    3900 7300
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR05
+U 1 1 61A40549
+P 800 7200
+F 0 "#PWR05" H 800 6950 50  0001 C CNN
+F 1 "GND" H 805 7027 50  0000 C CNN
+F 2 "" H 800 7200 50  0001 C CNN
+F 3 "" H 800 7200 50  0001 C CNN
+	1    800  7200
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR06
+U 1 1 61A40827
+P 3900 7450
+F 0 "#PWR06" H 3900 7200 50  0001 C CNN
+F 1 "GND" H 3905 7277 50  0000 C CNN
+F 2 "" H 3900 7450 50  0001 C CNN
+F 3 "" H 3900 7450 50  0001 C CNN
+	1    3900 7450
+	1    0    0    -1  
+$EndComp
+Text GLabel 6800 6000 0    50   Output ~ 0
++5V
+Text GLabel 7300 6300 2    50   Output ~ 0
+GND
+Text GLabel 6800 6300 0    50   Output ~ 0
+GND
+$Comp
+L power:+5V #PWR03
+U 1 1 61A484C8
+P 800 6900
+F 0 "#PWR03" H 800 6750 50  0001 C CNN
+F 1 "+5V" H 815 7073 50  0000 C CNN
+F 2 "" H 800 6900 50  0001 C CNN
+F 3 "" H 800 6900 50  0001 C CNN
+	1    800  6900
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:+5V #PWR04
+U 1 1 61A48AB3
+P 3900 7150
+F 0 "#PWR04" H 3900 7000 50  0001 C CNN
+F 1 "+5V" H 3915 7323 50  0000 C CNN
+F 2 "" H 3900 7150 50  0001 C CNN
+F 3 "" H 3900 7150 50  0001 C CNN
+	1    3900 7150
+	1    0    0    -1  
+$EndComp
+$Comp
+L Connector_Generic:Conn_02x04_Odd_Even J1
+U 1 1 61A46343
+P 7000 6100
+F 0 "J1" H 7050 6417 50  0000 C CNN
+F 1 "Conn_02x04_Odd_Even" H 7050 6326 50  0000 C CNN
+F 2 "Connector_PinHeader_2.54mm:PinHeader_2x04_P2.54mm_Vertical" H 7000 6100 50  0001 C CNN
+F 3 "~" H 7000 6100 50  0001 C CNN
+	1    7000 6100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H13
+U 1 1 61B769BA
+P 10500 5300
+F 0 "H13" H 10600 5346 50  0000 L CNN
+F 1 "MountingHole" H 10600 5255 50  0000 L CNN
+F 2 "6502-computer:MountingHole_3.2mm_M3_minimal" H 10500 5300 50  0001 C CNN
+F 3 "~" H 10500 5300 50  0001 C CNN
+	1    10500 5300
+	1    0    0    -1  
+$EndComp
+$Comp
+L Mechanical:MountingHole H14
+U 1 1 61B76E9E
+P 10500 5550
+F 0 "H14" H 10600 5596 50  0000 L CNN
+F 1 "MountingHole" H 10600 5505 50  0000 L CNN
+F 2 "6502-computer:MountingHole_3.2mm_M3_minimal" H 10500 5550 50  0001 C CNN
+F 3 "~" H 10500 5550 50  0001 C CNN
+	1    10500 5550
+	1    0    0    -1  
+$EndComp
+$Comp
+L 6502-computer:RETRO65-LOGO LOGO1
+U 1 1 61443E91
+P 7700 6800
+F 0 "LOGO1" H 7700 6297 60  0001 C CNN
+F 1 "RETRO65-LOGO" H 7700 7303 60  0001 C CNN
+F 2 "6502-computer:RETRO65-LOGO" H 7700 6800 50  0001 C CNN
+F 3 "" H 7700 6800 50  0001 C CNN
+	1    7700 6800
+	1    0    0    -1  
+$EndComp
+$Comp
+L Graphic:Logo_Open_Hardware_Small LOGO2
+U 1 1 6122CC87
+P 10950 6775
+F 0 "LOGO2" H 10950 7050 50  0001 C CNN
+F 1 "Logo_Open_Hardware_Small" H 10950 6550 50  0001 C CNN
+F 2 "Symbol:OSHW-Logo_11.4x12mm_SilkScreen" H 10950 6775 50  0001 C CNN
+F 3 "~" H 10950 6775 50  0001 C CNN
+	1    10950 6775
+	1    0    0    -1  
+$EndComp
+Text Notes 10700 7125 0    50   ~ 0
+open source\n  hardware
+$Comp
+L Device:R R1
+U 1 1 6144386C
+P 1600 1950
+F 0 "R1" H 1670 1996 50  0000 L CNN
+F 1 "10k" H 1670 1905 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1530 1950 50  0001 C CNN
+F 3 "~" H 1600 1950 50  0001 C CNN
+	1    1600 1950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR09
+U 1 1 61443E41
+P 1600 2100
+F 0 "#PWR09" H 1600 1850 50  0001 C CNN
+F 1 "GND" H 1605 1927 50  0000 C CNN
+F 2 "" H 1600 2100 50  0001 C CNN
+F 3 "" H 1600 2100 50  0001 C CNN
+	1    1600 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R2
+U 1 1 6148E6BA
+P 1900 1950
+F 0 "R2" H 1970 1996 50  0000 L CNN
+F 1 "10k" H 1970 1905 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1830 1950 50  0001 C CNN
+F 3 "~" H 1900 1950 50  0001 C CNN
+	1    1900 1950
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR010
+U 1 1 6148E6C0
+P 1900 2100
+F 0 "#PWR010" H 1900 1850 50  0001 C CNN
+F 1 "GND" H 1905 1927 50  0000 C CNN
+F 2 "" H 1900 2100 50  0001 C CNN
+F 3 "" H 1900 2100 50  0001 C CNN
+	1    1900 2100
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R3
+U 1 1 614A68C6
+P 1600 2700
+F 0 "R3" H 1670 2746 50  0000 L CNN
+F 1 "10k" H 1670 2655 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1530 2700 50  0001 C CNN
+F 3 "~" H 1600 2700 50  0001 C CNN
+	1    1600 2700
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR011
+U 1 1 614A68CC
+P 1600 2850
+F 0 "#PWR011" H 1600 2600 50  0001 C CNN
+F 1 "GND" H 1605 2677 50  0000 C CNN
+F 2 "" H 1600 2850 50  0001 C CNN
+F 3 "" H 1600 2850 50  0001 C CNN
+	1    1600 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R4
+U 1 1 614BECDC
+P 1900 2700
+F 0 "R4" H 1970 2746 50  0000 L CNN
+F 1 "10k" H 1970 2655 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1830 2700 50  0001 C CNN
+F 3 "~" H 1900 2700 50  0001 C CNN
+	1    1900 2700
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR012
+U 1 1 614BECE2
+P 1900 2850
+F 0 "#PWR012" H 1900 2600 50  0001 C CNN
+F 1 "GND" H 1905 2677 50  0000 C CNN
+F 2 "" H 1900 2850 50  0001 C CNN
+F 3 "" H 1900 2850 50  0001 C CNN
+	1    1900 2850
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R5
+U 1 1 614D8BB8
+P 1600 3450
+F 0 "R5" H 1670 3496 50  0000 L CNN
+F 1 "10k" H 1670 3405 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1530 3450 50  0001 C CNN
+F 3 "~" H 1600 3450 50  0001 C CNN
+	1    1600 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR013
+U 1 1 614D8BBE
+P 1600 3600
+F 0 "#PWR013" H 1600 3350 50  0001 C CNN
+F 1 "GND" H 1605 3427 50  0000 C CNN
+F 2 "" H 1600 3600 50  0001 C CNN
+F 3 "" H 1600 3600 50  0001 C CNN
+	1    1600 3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R6
+U 1 1 614D8BC4
+P 1900 3450
+F 0 "R6" H 1970 3496 50  0000 L CNN
+F 1 "10k" H 1970 3405 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1830 3450 50  0001 C CNN
+F 3 "~" H 1900 3450 50  0001 C CNN
+	1    1900 3450
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR014
+U 1 1 614D8BCA
+P 1900 3600
+F 0 "#PWR014" H 1900 3350 50  0001 C CNN
+F 1 "GND" H 1905 3427 50  0000 C CNN
+F 2 "" H 1900 3600 50  0001 C CNN
+F 3 "" H 1900 3600 50  0001 C CNN
+	1    1900 3600
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R7
+U 1 1 614D8BD0
+P 1600 4250
+F 0 "R7" H 1670 4296 50  0000 L CNN
+F 1 "10k" H 1670 4205 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1530 4250 50  0001 C CNN
+F 3 "~" H 1600 4250 50  0001 C CNN
+	1    1600 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR015
+U 1 1 614D8BD6
+P 1600 4400
+F 0 "#PWR015" H 1600 4150 50  0001 C CNN
+F 1 "GND" H 1605 4227 50  0000 C CNN
+F 2 "" H 1600 4400 50  0001 C CNN
+F 3 "" H 1600 4400 50  0001 C CNN
+	1    1600 4400
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R8
+U 1 1 614D8BDC
+P 1900 4250
+F 0 "R8" H 1970 4296 50  0000 L CNN
+F 1 "10k" H 1970 4205 50  0000 L CNN
+F 2 "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal" V 1830 4250 50  0001 C CNN
+F 3 "~" H 1900 4250 50  0001 C CNN
+	1    1900 4250
+	1    0    0    -1  
+$EndComp
+$Comp
+L power:GND #PWR016
+U 1 1 614D8BE2
+P 1900 4400
+F 0 "#PWR016" H 1900 4150 50  0001 C CNN
+F 1 "GND" H 1905 4227 50  0000 C CNN
+F 2 "" H 1900 4400 50  0001 C CNN
+F 3 "" H 1900 4400 50  0001 C CNN
+	1    1900 4400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	1600 1800 1600 1700
+Connection ~ 1600 1700
+Wire Wire Line
+	1600 1700 2550 1700
+Wire Wire Line
+	1900 1800 1900 1750
+Connection ~ 1900 1750
+Wire Wire Line
+	1900 1750 1450 1750
+Wire Wire Line
+	1600 2550 1600 2450
+Connection ~ 1600 2450
+Wire Wire Line
+	1600 2450 2450 2450
+Wire Wire Line
+	1900 2550 1900 2500
+Connection ~ 1900 2500
+Wire Wire Line
+	1900 2500 1450 2500
+Wire Wire Line
+	1600 3300 1600 3200
+Connection ~ 1600 3200
+Wire Wire Line
+	1600 3200 2350 3200
+Wire Wire Line
+	1900 3300 1900 3250
+Connection ~ 1900 3250
+Wire Wire Line
+	1900 3250 2300 3250
+Wire Wire Line
+	1600 4100 1600 4000
+Connection ~ 1600 4000
+Wire Wire Line
+	1600 4000 1400 4000
+Wire Wire Line
+	1900 4100 1900 4050
+Connection ~ 1900 4050
+Wire Wire Line
+	1900 4050 2200 4050
+$EndSCHEMATC

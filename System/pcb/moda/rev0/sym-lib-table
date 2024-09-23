@@ -1,0 +1,6 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "aquarius-plus")(type "KiCad")(uri "${KIPRJMOD}/aquarius-plus.kicad_sym")(options "")(descr ""))
+  (lib (name "samtec-mec5-50")(type "KiCad")(uri "${KIPRJMOD}/MEC5-050-01-L-RA-W1-TR/MEC5-050-01-L-RA-W1-TR.kicad_sym")(options "")(descr ""))
+  (lib (name "samtec-mec5-30")(type "KiCad")(uri "${KIPRJMOD}/MEC5-030-01-L-RA-W1-TR/MEC5-030-01-X-RA-W1-XX.kicad_sym")(options "")(descr ""))
+)

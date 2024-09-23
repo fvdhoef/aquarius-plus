@@ -54235,7 +54235,7 @@
 				)
 			)
 		)
-		(property "Footprint" "Inductor_SMD:L_CommonMode_Wurth_WE-CNSW-1206"
+		(property "Footprint" "Inductor_SMD_Wurth:WE-CNSW_08058"
 			(at 490.22 143.51 0)
 			(effects
 				(font
