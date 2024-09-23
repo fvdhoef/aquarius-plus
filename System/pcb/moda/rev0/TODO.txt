@@ -1,8 +1,17 @@
-- Remove old R18 - done SPH
-- Remove old R22 - done SPH
-- Make J5 Ring float - done SPH
-- Make J6 Ring float - done SPH
-- Add new R18 at R22 location as 82 ohm 0603 thick film, trace between J6 Tip and GND - done SPH
-- Update expansion port footprint to remove third row - done SPH
-- Replace Z80 QFP-44 with PLCC-44 socket - done SPH
-- Add Ferrite Beads 220o to USB +5v busses - done SPH
+Updated 23 SEP 2024
+
+General
+- Create edge connector to Samtec MEC5-30 test boards with test pads, etc.
+
+Main PCB
+- Turn into 4-layer board
+- Re-number components
+- Add mfg part identifiers
+- Adjust text
+
+Z80 PCB
+- Turn into  4-layer board
+- Rotate 180
+- Re-number components
+- Add mfg part identifiers
+- Adjust text
