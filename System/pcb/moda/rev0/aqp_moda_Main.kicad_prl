@@ -38,6 +38,7 @@
       8,
       9,
       10,
+      11,
       12,
       13,
       14,
@@ -72,7 +73,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "aquarius-plus.kicad_prl",
+    "filename": "aqp_moda_Main.kicad_prl",
     "version": 3
   },
   "project": {
