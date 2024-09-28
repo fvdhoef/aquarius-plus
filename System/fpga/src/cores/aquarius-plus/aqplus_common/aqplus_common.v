@@ -8,8 +8,6 @@ module aqplus_common(
 
     output wire        reset_req,
 
-    input  wire        vclk,
-
     // Bus interface
     input  wire [15:0] ebus_a,
     input  wire  [7:0] ebus_d_in,
@@ -28,6 +26,7 @@ module aqplus_common(
     input  wire        ebus_stb,
 
     // Video output
+    input  wire        video_clk,
     output wire  [3:0] video_r,
     output wire  [3:0] video_g,
     output wire  [3:0] video_b,
@@ -301,7 +300,7 @@ module aqplus_common(
         .clk(clk),
         .reset(reset),
 
-        .vclk(vclk),
+        .vclk(video_clk),
         .video_mode(video_mode),
 
         .io_addr(ebus_a[3:0]),

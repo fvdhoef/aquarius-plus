@@ -5,14 +5,10 @@ module aqp_clkctrl(
     input  wire clk_in,
     output wire clk_out,
 
-    output wire vclk,
+    output wire video_clk,
     input  wire video_mode
 );
 
-`ifdef __ICARUS__
-    assign clk_out = clk_in;
-    assign vclk = clk_in;
-`else
     wire clk0;
     wire clk28;
     assign clk_out = clk28;
@@ -117,12 +113,10 @@ module aqp_clkctrl(
         .CLK_SEL_TYPE("SYNC")
     )
     clksel(
-        .O(vclk),
+        .O(video_clk),
         .I0(clk28),
         .I1(clk25),
         .S(video_mode)
     );
-
-`endif
 
 endmodule

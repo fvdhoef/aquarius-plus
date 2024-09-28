@@ -24,17 +24,17 @@ module aqp_esp_spi(
     output wire [63:0] spi_rxdata,
 
     // Display overlay interface
-    // output wire   [9:0] ovl_text_addr,
-    // output wire  [15:0] ovl_text_wrdata,
-    // output wire         ovl_text_wr,
+    output wire  [9:0] ovl_text_addr,
+    output wire [15:0] ovl_text_wrdata,
+    output wire        ovl_text_wr,
 
-    // output wire  [10:0] ovl_font_addr,
-    // output wire   [7:0] ovl_font_wrdata,
-    // output wire         ovl_font_wr,
+    output wire [10:0] ovl_font_addr,
+    output wire  [7:0] ovl_font_wrdata,
+    output wire        ovl_font_wr,
 
-    // output wire   [3:0] ovl_palette_addr,
-    // output wire  [15:0] ovl_palette_wrdata,
-    // output wire         ovl_palette_wr,
+    output wire  [3:0] ovl_palette_addr,
+    output wire [15:0] ovl_palette_wrdata,
+    output wire        ovl_palette_wr,
 
     // ESP SPI slave interface
     input  wire        esp_ssel_n,
@@ -79,27 +79,32 @@ module aqp_esp_spi(
         StCmd  = 2'b01,
         StData = 2'b10;
 
-    reg [1:0] q_state = StIdle;
-    reg [7:0] q_cmd;
-    reg [2:0] q_byte_cnt;
+    reg  [1:0] q_state = StIdle;
+    reg  [7:0] q_cmd;
+    reg [10:0] q_byte_cnt;
+    reg        q_data_updated;
+    // reg        q_cmd_updated;
 
     always @(posedge clk) begin
+        q_data_updated <= 1'b0;
+        // q_cmd_updated  <= 1'b0;
+
+        if (q_data_updated)
+            q_byte_cnt <= q_byte_cnt + 11'd1;
+
         if (msg_start)
             q_state <= StCmd;
         if (msg_end)
             q_state <= StIdle;
         if (msg_start || msg_end)
-            q_byte_cnt <= 3'b0;
-        if (rxdata_valid)
-            q_byte_cnt <= q_byte_cnt + 3'b1;
-
+            q_byte_cnt <= 11'd0;
         if (q_state == StCmd && rxdata_valid) begin
             q_cmd   <= rxdata;
             q_state <= StData;
         end
-
         if (q_state == StData && rxdata_valid) begin
-            q_data <= {rxdata, q_data[63:8]};
+            q_data         <= {rxdata, q_data[63:8]};
+            q_data_updated <= 1'b1;
         end
     end
 
@@ -128,9 +133,13 @@ module aqp_esp_spi(
         CMD_MEM_WRITE       = 8'h22,
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
-        CMD_IO_READ         = 8'h25;
+        CMD_IO_READ         = 8'h25,
         // CMD_ROM_WRITE       = 8'h30,
-        // CMD_SET_VIDMODE     = 8'h40;
+        // CMD_SET_VIDMODE     = 8'h40,
+        CMD_OVL_TEXT          = 8'hF4,
+        CMD_OVL_FONT          = 8'hF5,
+        CMD_OVL_PALETTE       = 8'hF6;
+        // CMD_GET_STATUS        = 8'hF7;
 
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin
@@ -139,6 +148,19 @@ module aqp_esp_spi(
             if (q_cmd == CMD_BUS_RELEASE) q_busreq <= 1'b0;
         end
     end
+
+    // Overlay interface
+    assign ovl_text_addr      = q_byte_cnt[10:1];
+    assign ovl_text_wrdata    = q_data[63:48];
+    assign ovl_text_wr        = (q_cmd == CMD_OVL_TEXT && q_byte_cnt[0] && q_data_updated);
+
+    assign ovl_font_addr      = q_byte_cnt[10:0];
+    assign ovl_font_wrdata    = q_data[63:56];
+    assign ovl_font_wr        = (q_cmd == CMD_OVL_FONT && q_data_updated);
+
+    assign ovl_palette_addr   = q_byte_cnt[4:1];
+    assign ovl_palette_wrdata = q_data[63:48];
+    assign ovl_palette_wr     = (q_cmd == CMD_OVL_PALETTE && q_byte_cnt[0] && q_data_updated);
 
     localparam
         BStIdle   = 3'd0,
@@ -158,15 +180,15 @@ module aqp_esp_spi(
                 spibm_iorq_n    <= 1'b1;
                 spibm_wrdata_en <= 1'b0;
 
-                if (rxdata_valid) begin
+                if (q_data_updated) begin
                     case (q_byte_cnt)
-                        3'd1: spibm_a[7:0] <= rxdata;
-                        3'd2: begin
-                            spibm_a[15:8] <= rxdata;
+                        11'd0: spibm_a[7:0] <= q_data[63:56];
+                        11'd1: begin
+                            spibm_a[15:8] <= q_data[63:56];
                             if (q_cmd == CMD_MEM_READ || q_cmd == CMD_IO_READ) q_bus_state <= BStCycle0;
                         end
-                        3'd3: begin
-                            spibm_wrdata <= rxdata;
+                        11'd2: begin
+                            spibm_wrdata <= q_data[63:56];
                             if (q_cmd == CMD_MEM_WRITE || q_cmd == CMD_IO_WRITE) q_bus_state <= BStCycle0;
                         end
 

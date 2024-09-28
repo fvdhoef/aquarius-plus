@@ -1,0 +1,14 @@
+{
+    "verilog.linting.verilator.includePath": [
+        "lint_wrappers",
+        ".",
+        "util",
+        "wrappers",
+
+        "cores/aquarius-plus",
+        "cores/aquarius-plus/wrappers",
+        "cores/aquarius-plus/aqplus_common",
+        "cores/aquarius-plus/aqplus_common/video"
+    ],
+    "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
+}

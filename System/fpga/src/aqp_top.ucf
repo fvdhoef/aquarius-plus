@@ -227,9 +227,9 @@ NET "hc2[6]"            IOSTANDARD = LVTTL;
 NET "hc2[7]"            IOSTANDARD = LVTTL;
 NET "hc2[8]"            IOSTANDARD = LVTTL;
 
-NET "sysclk" TNM_NET = sysclk;
-NET "clk"    TNM_NET = clk28;
-NET "vclk"   TNM_NET = vclk;
+NET "sysclk"    TNM_NET = sysclk;
+NET "clk"       TNM_NET = clk28;
+NET "video_clk" TNM_NET = vclk;
 
 TIMESPEC TS_sysclk = PERIOD "sysclk" 14.31818 MHz HIGH 50%;
 TIMESPEC TS_clk    = PERIOD "clk28"  28.63636 MHz HIGH 50%;
