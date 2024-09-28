@@ -314,7 +314,7 @@
     <property xil_pn:name="Other Compiler Options Par" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Compiler Options Translate" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Compxlib Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
-    <property xil_pn:name="Other Map Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
+    <property xil_pn:name="Other Map Command Line Options" xil_pn:value="-convert_bram8" xil_pn:valueState="non-default"/>
     <property xil_pn:name="Other NETGEN Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Ngdbuild Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>
     <property xil_pn:name="Other Place &amp; Route Command Line Options" xil_pn:value="" xil_pn:valueState="default"/>

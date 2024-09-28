@@ -61,12 +61,12 @@ module aqp_top(
 
     assign exp = 10'b0;
 
-    // ESP SPI interface
-
     wire [15:0] spibm_a;
     wire  [7:0] spibm_wrdata;
     wire        spibm_wrdata_en;
     wire        spibm_en;
+    wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
+    wire        spibm_busreq;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -176,14 +176,6 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
-    wire [63:0] keys;
-
-    wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
-    wire        spibm_busreq;
-
-    wire  [7:0] kbbuf_data;
-    wire        kbbuf_wren;
-
     assign spibm_en      = spibm_busreq && !ebus_busack_n;
     assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
     assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
@@ -252,12 +244,13 @@ module aqp_top(
     wire        video_oddline;
     wire        turbo_unlimited; // unused
 
-
     aqplus_common common(
         .clk(clk),
         .reset(reset),
 
         .reset_req(reset_req),
+
+        .vclk(vclk),
 
         // Bus interface
         .ebus_a(ebus_a),

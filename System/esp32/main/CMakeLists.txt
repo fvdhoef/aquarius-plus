@@ -62,7 +62,7 @@ idf_component_register(
         "bt"
 
     EMBED_FILES
-        "../../fpga/top.bit"
+        "../../fpga/aqp_top.bit"
         "../../rom_src/romfs.bin"
 
     EMBED_TXTFILES

@@ -8,6 +8,8 @@ module aqplus_common(
 
     output wire        reset_req,
 
+    input  wire        vclk,
+
     // Bus interface
     input  wire [15:0] ebus_a,
     input  wire  [7:0] ebus_d_in,
@@ -72,8 +74,6 @@ module aqplus_common(
     output wire  [7:0] hc2_out,
     output wire        hc2_oe
 );
-
-    wire vclk = clk;
 
     wire        reg_fd_val;
 

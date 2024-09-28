@@ -137,8 +137,8 @@ bool FPGA::loadBitstream(const void *data, size_t length) {
 }
 
 bool FPGA::loadDefaultBitstream() {
-    extern const uint8_t fpga_image_start[] asm("_binary_top_bit_start");
-    extern const uint8_t fpga_image_end[] asm("_binary_top_bit_end");
+    extern const uint8_t fpga_image_start[] asm("_binary_aqp_top_bit_start");
+    extern const uint8_t fpga_image_end[] asm("_binary_aqp_top_bit_end");
     return loadBitstream(fpga_image_start, fpga_image_end - fpga_image_start);
 }
 

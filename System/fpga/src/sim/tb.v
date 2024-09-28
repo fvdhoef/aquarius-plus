@@ -2,6 +2,7 @@
 
 module tb();
 
+`ifndef MODEL_TECH
     initial begin
         $dumpfile("tb.vcd");
         $dumpvars(0, tb);
@@ -11,10 +12,11 @@ module tb();
         // #2000000 $finish;
         #200000 $finish;
     end
+`endif
 
-    // Generate approx. 28.63636MHz sysclk
+    // Generate approx. 14.31818MHz sysclk
     reg sysclk = 0;
-    always #17 sysclk = !sysclk;
+    always #34.92 sysclk = !sysclk;
 
     reg  [7:0] bus_wrdata = 8'b0;
     reg        bus_wren = 1'b0;
@@ -49,7 +51,7 @@ module tb();
 
     always @(posedge phi) busack_n <= busreq_n;
 
-    top top_inst(
+    aqp_top top_inst(
         .sysclk(sysclk),
 
         // Z80 bus interface
@@ -227,9 +229,11 @@ module tb();
     task esptx;
         input [7:0] data;
 
+        integer i;
+
         begin
             #560 esp_rx = 1'b0;
-            for (integer i=0; i<8; i++)
+            for (i=0; i<8; i=i+1)
                 #560 esp_rx = data[i];
             #560 esp_rx = 1'b1;
         end
@@ -238,9 +242,11 @@ module tb();
     task esptx_fe;
         input [7:0] data;
 
+        integer i;
+
         begin
             #560 esp_rx = 1'b0;
-            for (integer i=0; i<8; i++)
+            for (i=0; i<8; i=i+1)
                 #560 esp_rx = data[i];
             #560 esp_rx = 1'b0;
             #560 esp_rx = 1'b1;
@@ -252,8 +258,10 @@ module tb();
     task spi_tx;
         input [7:0] data;
 
+        integer i;
+
         begin
-            for (integer i=0; i<8; i++) begin
+            for (i=0; i<8; i=i+1) begin
                 #TSPI;
                 spi_sclk_r = 1'b0;
                 spi_mosi_r = data[7-i];
@@ -274,6 +282,14 @@ module tb();
             iowr(16'hF6, data);
         end
     endtask
+
+    initial begin
+        #2500
+        spi_ssel_n_r <= 1'b0;
+        spi_tx(8'h40);
+        spi_tx(8'h01);
+        spi_ssel_n_r <= 1'b1;
+    end
 
     initial begin
         #2500;
@@ -367,7 +383,7 @@ module tb();
         // memwr(16'h0F06, 8'h03);
         // memwr(16'h0F07, 8'h01);
 
-        // for (integer i=0; i<256; i++) begin
+        // for (integer i=0; i<256; i=i+1) begin
         //     memwr(16'h2000 + i, i);
         // end
 
