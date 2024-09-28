@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module aqp_sysctrl(
     input  wire sysclk,
     inout  wire ebus_reset_n,
@@ -68,7 +71,7 @@ module aqp_sysctrl(
     // Generate phi signal @ 3.58MHz
     //////////////////////////////////////////////////////////////////////////
     reg       phi_r = 1'b0;
-    reg [1:0] phi_div_r = 3'd0;
+    reg [1:0] phi_div_r = 2'd0;
 
     wire [1:0] toggle_val = turbo_mode ? 2'd1 : 2'd3;
 
@@ -76,9 +79,9 @@ module aqp_sysctrl(
     always @(posedge sysclk) begin
         if (phi_div_r == toggle_val) begin
             phi_r <= !phi_r;
-            phi_div_r <= 3'd0;
+            phi_div_r <= 2'd0;
         end else begin
-            phi_div_r <= phi_div_r + 3'd1;
+            phi_div_r <= phi_div_r + 2'd1;
         end
     end
 

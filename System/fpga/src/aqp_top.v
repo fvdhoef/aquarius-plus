@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module aqp_top(
     input  wire        sysclk,          // 14.31818MHz
 
@@ -152,8 +155,8 @@ module aqp_top(
     always @(posedge clk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
     always @(posedge clk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
 
-    wire bus_read  = ebus_rd_n_r[2:1] == 3'b10;
-    wire bus_write = ebus_wr_n_r[2:1] == 3'b10;
+    wire bus_read  = ebus_rd_n_r[2:1] == 2'b10;
+    wire bus_write = ebus_wr_n_r[2:1] == 2'b10;
 
     // Memory space decoding
     wire sel_mem_tram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
@@ -198,27 +201,27 @@ module aqp_top(
 
     reg [7:0] rddata;
     always @* begin
-        rddata <= 8'h00;
-        if (sel_mem_rom)              rddata <= rddata_rom;
-        if (sel_mem_tram)             rddata <= rddata_tram;            // TRAM $3000-$37FF
-        if (sel_mem_vram)             rddata <= rddata_vram;
-        if (sel_mem_chram)            rddata <= rddata_chram;
+        rddata = 8'h00;
+        if (sel_mem_rom)              rddata = rddata_rom;
+        if (sel_mem_tram)             rddata = rddata_tram;            // TRAM $3000-$37FF
+        if (sel_mem_vram)             rddata = rddata_vram;
+        if (sel_mem_chram)            rddata = rddata_chram;
 
-        if (sel_io_video)             rddata <= rddata_io_video;                                // IO $E0-$EF
-        if (sel_io_bank0)             rddata <= reg_bank0_r;                                    // IO $F0
-        if (sel_io_bank1)             rddata <= reg_bank1_r;                                    // IO $F1
-        if (sel_io_bank2)             rddata <= reg_bank2_r;                                    // IO $F2
-        if (sel_io_bank3)             rddata <= reg_bank3_r;                                    // IO $F3
-        if (sel_io_espctrl)           rddata <= rddata_espctrl;                                 // IO $F4
-        if (sel_io_espdata)           rddata <= rddata_espdata;                                 // IO $F5
-        if (sel_io_ay8910)            rddata <= rddata_ay8910;                                  // IO $F6/F7
-        if (sel_io_ay8910_2)          rddata <= rddata_ay8910_2;                                // IO $F8/F9
-        if (sel_io_kbbuf)             rddata <= rddata_kbbuf;                                   // IO $FA
-        if (sel_io_sysctrl)           rddata <= {5'b0, sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
-        if (sel_io_cassette)          rddata <= {7'b0, !cassette_in_r[2]};                      // IO $FC
-        if (sel_io_vsync_r_cpm_w)     rddata <= {7'b0, reg_fd_val};                             // IO $FD
-        if (sel_io_printer)           rddata <= {7'b0, printer_in_r[2]};                        // IO $FE
-        if (sel_io_keyb_r_scramble_w) rddata <= rddata_keyboard;                                // IO $FF
+        if (sel_io_video)             rddata = rddata_io_video;                                // IO $E0-$EF
+        if (sel_io_bank0)             rddata = reg_bank0_r;                                    // IO $F0
+        if (sel_io_bank1)             rddata = reg_bank1_r;                                    // IO $F1
+        if (sel_io_bank2)             rddata = reg_bank2_r;                                    // IO $F2
+        if (sel_io_bank3)             rddata = reg_bank3_r;                                    // IO $F3
+        if (sel_io_espctrl)           rddata = rddata_espctrl;                                 // IO $F4
+        if (sel_io_espdata)           rddata = rddata_espdata;                                 // IO $F5
+        if (sel_io_ay8910)            rddata = rddata_ay8910;                                  // IO $F6/F7
+        if (sel_io_ay8910_2)          rddata = rddata_ay8910_2;                                // IO $F8/F9
+        if (sel_io_kbbuf)             rddata = rddata_kbbuf;                                   // IO $FA
+        if (sel_io_sysctrl)           rddata = {5'b0, sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
+        if (sel_io_cassette)          rddata = {7'b0, !cassette_in_r[2]};                      // IO $FC
+        if (sel_io_vsync_r_cpm_w)     rddata = {7'b0, reg_fd_val};                             // IO $FD
+        if (sel_io_printer)           rddata = {7'b0, printer_in_r[2]};                        // IO $FE
+        if (sel_io_keyb_r_scramble_w) rddata = rddata_keyboard;                                // IO $FF
     end
 
     wire ebus_d_enable = !ebus_rd_n && sel_internal;
@@ -260,16 +263,10 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // System ROM
     //////////////////////////////////////////////////////////////////////////
-    wire rom_p2_wren;
-
     rom rom(
         .clk(clk),
-        .addr({reg_bank_page[1:0], ebus_a[13:0]}),
-        .rddata(rddata_rom),
-        
-        .p2_addr(spibm_a),
-        .p2_wrdata(spibm_wrdata),
-        .p2_wren(rom_p2_wren));
+        .addr(ebus_a[7:0]),
+        .rddata(rddata_rom));
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
@@ -436,7 +433,6 @@ module aqp_top(
         .keys(keys),
         .hctrl1(spi_hctrl1),
         .hctrl2(spi_hctrl2),
-        .rom_p2_wren(rom_p2_wren),
         
         .kbbuf_data(kbbuf_data),
         .kbbuf_wren(kbbuf_wren),
@@ -486,6 +482,11 @@ module aqp_top(
 
     wire [9:0] beep = cassette_out ? 10'd1023 : 10'd0;
 
+    wire [7:0] ay8190_2_ioa_out_data;
+    wire       ay8190_2_ioa_oe;
+    wire [7:0] ay8190_2_iob_out_data;
+    wire       ay8190_2_iob_oe;
+
     ay8910 ay8910(
         .clk(clk),
         .reset(reset),
@@ -517,7 +518,12 @@ module aqp_top(
         .rddata(rddata_ay8910_2),
 
         .ioa_in_data(8'h00),
+        .ioa_out_data(ay8190_2_ioa_out_data),
+        .ioa_oe(ay8190_2_ioa_oe),
+
         .iob_in_data(8'h00),
+        .iob_out_data(ay8190_2_iob_out_data),
+        .iob_oe(ay8190_2_iob_oe),
 
         .ch_a(ay8910_2_ch_a),
         .ch_b(ay8910_2_ch_b),
@@ -525,14 +531,14 @@ module aqp_top(
 
     // Create stereo mix of output channels and system beep (cassette output)
     wire [13:0] mix_l =
-        {ay8910_ch_a,   1'b0} + {ay8910_ch_b,   1'b0} + {1'b0, ay8910_ch_c  } +
-        {ay8910_2_ch_a, 1'b0} + {ay8910_2_ch_b, 1'b0} + {1'b0, ay8910_2_ch_c} +
-        {audio_dac_r,   4'b0} + {1'b0, beep};
+        {2'b0, ay8910_ch_a,   1'b0} + {2'b0, ay8910_ch_b,   1'b0} + {4'b0, ay8910_ch_c  } +
+        {2'b0, ay8910_2_ch_a, 1'b0} + {2'b0, ay8910_2_ch_b, 1'b0} + {4'b0, ay8910_2_ch_c} +
+        {2'b0, audio_dac_r,   4'b0} + {4'b0, beep};
 
     wire [13:0] mix_r =
-        {1'b0, ay8910_ch_a  } + {ay8910_ch_b,   1'b0} + {ay8910_ch_c,   1'b0} +
-        {1'b0, ay8910_2_ch_a} + {ay8910_2_ch_b, 1'b0} + {ay8910_2_ch_c, 1'b0} +
-        {audio_dac_r,   4'b0} + {1'b0, beep};
+        {4'b0, ay8910_ch_a  }     + {2'b0, ay8910_ch_b,   1'b0} + {2'b0, ay8910_ch_c,   1'b0} +
+        {4'b0, ay8910_2_ch_a}     + {2'b0, ay8910_2_ch_b, 1'b0} + {2'b0, ay8910_2_ch_c, 1'b0} +
+        {2'b0, audio_dac_r, 4'b0} + {4'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC

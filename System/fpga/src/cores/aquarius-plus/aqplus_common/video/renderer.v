@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module renderer(
     input  wire        clk,
     input  wire        reset,
@@ -9,7 +12,7 @@ module renderer(
     input  wire        is_sprite,
     input  wire        hflip,
     input  wire  [1:0] palette,
-    input  wire        priority,
+    input  wire        render_priority,
     output wire        last_pixel,
     output wire        busy,
 
@@ -77,13 +80,13 @@ module renderer(
         if (render_start) begin
             render_data_next = render_data;
             palette_next     = palette;
-            datasel_next     = 2'b00;
+            datasel_next     = 3'b000;
             wren_next        = 1'b1;
             busy_next        = 1'b1;
             wridx_next       = render_idx;
             is_sprite_next   = is_sprite;
             hflip_next       = hflip;
-            priority_next    = priority;
+            priority_next    = render_priority;
 
         end else if (busy_r) begin
             datasel_next = datasel_r + 3'd1;
@@ -116,7 +119,7 @@ module renderer(
             wridx_r       <= 9'd511;
             wrdata_r      <= 6'b0;
             wren_r        <= 1'b0;
-            datasel_r     <= 2'b0;
+            datasel_r     <= 3'b0;
             busy_r        <= 1'b0;
             last_pixel_r  <= 1'b0;
             is_sprite_r   <= 1'b0;

@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module charram(
     input  wire        clk1,
     input  wire [10:0] addr1,
@@ -8,6 +11,8 @@ module charram(
     input  wire        clk2,
     input  wire [10:0] addr2,
     output wire  [7:0] rddata2);
+
+    wire [0:0] dopa, dopb;  // unused
 
     RAMB16_S9_S9 #(
         .INIT_A(9'h000),                // Value of output RAM registers on Port A at startup
@@ -90,7 +95,7 @@ module charram(
         .SSRA(1'b0),
         .ADDRA(addr1),
         .DOA(rddata1),
-        .DOPA(),
+        .DOPA(dopa),
         .DIA(wrdata1),
         .DIPA(1'b0),
         .ENA(1'b1),
@@ -100,7 +105,7 @@ module charram(
         .SSRB(1'b0),
         .ADDRB(addr2),
         .DOB(rddata2),
-        .DOPB(),
+        .DOPB(dopb),
         .DIB(8'b0),
         .DIPB(1'b0),
         .ENB(1'b1),

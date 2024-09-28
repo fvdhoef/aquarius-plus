@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module aqp_esp_uart_rx(
     input  wire        clk,
     input  wire        rst,
@@ -8,7 +11,7 @@ module aqp_esp_uart_rx(
     output reg         rx_valid,
     
     output reg         framing_error,
-    output reg         break);
+    output reg         brk);
 
     reg started_r;
 
@@ -33,11 +36,11 @@ module aqp_esp_uart_rx(
         if (rst) begin
             started_r     <= 1'b0;
             rx_valid      <= 1'b0;
-            shift_r       <= 1'b0;
-            rx_data       <= 1'b0;
-            bit_cnt_r     <= 1'b0;
+            shift_r       <= 8'b0;
+            rx_data       <= 8'b0;
+            bit_cnt_r     <= 4'b0;
             framing_error <= 1'b0;
-            break         <= 1'b0;
+            brk           <= 1'b0;
 
         end else begin
             rx_valid <= 0;
@@ -45,7 +48,7 @@ module aqp_esp_uart_rx(
             if (!started_r) begin
                 bit_cnt_r     <= 4'd0;
                 framing_error <= 1'b0;
-                break         <= 1'b0;
+                brk           <= 1'b0;
 
                 if (start_condition)
                     started_r <= 1;
@@ -54,13 +57,13 @@ module aqp_esp_uart_rx(
                 if (bit_cnt_r == 4'd9) begin
                     if (rx_in) begin
                         started_r <= 0;
-                        if (!(framing_error || break)) begin
+                        if (!(framing_error || brk)) begin
                             rx_data  <= shift_r;
                             rx_valid <= 1;
                         end
                     end else begin
                         if (shift_r == 8'h00)
-                            break <= 1'b1;
+                            brk <= 1'b1;
                         else
                             framing_error <= 1'b1;
                     end

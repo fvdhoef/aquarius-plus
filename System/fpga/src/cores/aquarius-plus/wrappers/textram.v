@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module textram(
     // First port - CPU access
     input  wire        p1_clk,
@@ -25,6 +28,8 @@ module textram(
     wire [15:0] p2_rddata_ram1;
     assign p2_rddata = p2_addr_10_r ? p2_rddata_ram1 : p2_rddata_ram0;
 
+    wire [0:0] p1_rddata_p_ram0, p1_rddata_p_ram1;
+    wire [1:0] p2_rddata_p_ram0, p2_rddata_p_ram1;
 
     RAMB16_S9_S18 #(
         .INIT_A(9'h000),                // Value of output RAM registers on Port A at startup
@@ -42,7 +47,7 @@ module textram(
         .SSRA(1'b0),                    // Synchronous Set/Reset Input
         .ADDRA(p1_addr[10:0]),          // 11-bit Address Input
         .DOA(p1_rddata_ram0),           // 8-bit Data Output
-        .DOPA(),                        // 1-bit Parity Output
+        .DOPA(p1_rddata_p_ram0),        // 1-bit Parity Output
         .DIA(p1_wrdata),                // 8-bit Data Input
         .DIPA(1'b0),                    // 1-bit parity Input
         .ENA(1'b1),                     // RAM Enable Input
@@ -53,7 +58,7 @@ module textram(
         .SSRB(1'b0),                    // Synchronous Set/Reset Input
         .ADDRB(p2_addr[9:0]),           // 10-bit Address Input
         .DOB(p2_rddata_ram0),           // 16-bit Data Output
-        .DOPB(),                        // 2-bit Parity Output
+        .DOPB(p2_rddata_p_ram0),        // 2-bit Parity Output
         .DIB(16'b0),                    // 16-bit Data Input
         .DIPB(2'b0),                    // 2-bit parity Input
         .ENB(1'b1),                     // RAM Enable Input
@@ -76,7 +81,7 @@ module textram(
         .SSRA(1'b0),                    // Synchronous Set/Reset Input
         .ADDRA(p1_addr[10:0]),          // 11-bit Address Input
         .DOA(p1_rddata_ram1),           // 8-bit Data Output
-        .DOPA(),                        // 1-bit Parity Output
+        .DOPA(p1_rddata_p_ram1),        // 1-bit Parity Output
         .DIA(p1_wrdata),                // 8-bit Data Input
         .DIPA(1'b0),                    // 1-bit parity Input
         .ENA(1'b1),                     // RAM Enable Input
@@ -87,7 +92,7 @@ module textram(
         .SSRB(1'b0),                    // Synchronous Set/Reset Input
         .ADDRB(p2_addr[9:0]),           // 10-bit Address Input
         .DOB(p2_rddata_ram1),           // 16-bit Data Output
-        .DOPB(),                        // 2-bit Parity Output
+        .DOPB(p2_rddata_p_ram1),        // 2-bit Parity Output
         .DIB(16'b0),                    // 16-bit Data Input
         .DIPB(2'b0),                    // 2-bit parity Input
         .ENB(1'b1),                     // RAM Enable Input

@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module lineattrbuf(
     input  wire        clk,
     input  wire  [8:0] idx1,
@@ -11,6 +14,8 @@ module lineattrbuf(
     wire [31:0] rddata;
     assign rddata2 = rddata[idx2[8:4]];
 
+    wire [31:0] spo;    // unused
+
     reg [31:0] wren;
     always @* begin
         wren = 32'b0;
@@ -23,7 +28,7 @@ module lineattrbuf(
             RAM16X1D ram0(
                 // Port 1
                 .WCLK(clk),
-                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(),
+                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(spo[i]),
                 .D(wrdata1), .WE(wren[i]),
 
                 // Port 2

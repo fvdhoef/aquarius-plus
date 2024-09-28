@@ -1,4 +1,6 @@
-// `default_nettype none
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module aqp_esp_uart(
     input  wire        rst,
     input  wire        clk,
@@ -83,6 +85,6 @@ module aqp_esp_uart(
         .rx_valid(rx_valid),
         
         .framing_error(rx_fe),
-        .break(rx_brk));
+        .brk(rx_brk));
 
 endmodule

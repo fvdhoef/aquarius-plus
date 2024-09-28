@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module sprattr(
     input  wire        clk,
     input  wire        reset,
@@ -48,7 +51,7 @@ module sprattr(
     };
 
     always @* case (io_addr)
-        4'h4: io_rddata = sprsel_r;             // VSPRSEL
+        4'h4: io_rddata = {2'b0, sprsel_r};     // VSPRSEL
         4'h5: io_rddata = a_rddata[7:0];        // VSPRX_L
         4'h6: io_rddata = {7'b0, a_rddata[8]};  // VSPRX_H
         4'h7: io_rddata = a_rddata[16:9];       // VSPRY

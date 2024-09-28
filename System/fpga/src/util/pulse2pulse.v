@@ -1,4 +1,5 @@
-// `default_nettype none
+`default_nettype none
+`timescale 1 ns / 1 ps
 
 module pulse2pulse(
     input  wire in_clk,
@@ -7,12 +8,12 @@ module pulse2pulse(
     output wire out_pulse);
 
     // in_clk domain
-    reg toggle_r /* synthesis syn_keep=1 */ = 0;
-    always @(posedge in_clk) if (in_pulse) toggle_r <= !toggle_r;
+    reg q_toggle /* synthesis syn_keep=1 */ = 0;
+    always @(posedge in_clk) if (in_pulse) q_toggle <= !q_toggle;
 
     // out_clk domain
-    reg [2:0] toggle_sync_r /* synthesis syn_keep=1 */ = 0;
-    always @(posedge out_clk) toggle_sync_r <= {toggle_sync_r[1:0], toggle_r};
-    assign out_pulse = toggle_sync_r[1] ^ toggle_sync_r[2];
+    reg [2:0] q_toggle_sync /* synthesis syn_keep=1 */ = 0;
+    always @(posedge out_clk) q_toggle_sync <= {q_toggle_sync[1:0], q_toggle};
+    assign out_pulse = q_toggle_sync[1] ^ q_toggle_sync[2];
 
 endmodule

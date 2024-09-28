@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module aqp_spiregs(
     input  wire        clk,
     input  wire        reset,
@@ -23,7 +26,6 @@ module aqp_spiregs(
     output reg  [63:0] keys,
     output reg   [7:0] hctrl1,
     output reg   [7:0] hctrl2,
-    output reg         rom_p2_wren,
     
     output reg   [7:0] kbbuf_data,
     output reg         kbbuf_wren,
@@ -110,7 +112,7 @@ module aqp_spiregs(
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
         CMD_IO_READ         = 8'h25,
-        CMD_ROM_WRITE       = 8'h30,
+        // CMD_ROM_WRITE       = 8'h30,
         CMD_SET_VIDMODE     = 8'h40;
 
     // 01h: Reset command
@@ -120,21 +122,21 @@ module aqp_spiregs(
     end
 
     // 10h: Set keyboard matrix
-    always @(posedge clk)
+    always @(posedge clk or posedge reset)
         if (reset)
             keys <= 64'hFFFFFFFFFFFFFFFF;
         else if (cmd_r == CMD_SET_KEYB_MATRIX && msg_end)
             keys <= data_r;
 
     // 11h: Set keyboard matrix
-    always @(posedge clk)
+    always @(posedge clk or posedge reset)
         if (reset)
             {hctrl2, hctrl1} <= 16'hFFFF;
         else if (cmd_r == CMD_SET_HCTRL && msg_end)
             {hctrl2, hctrl1} <= data_r[63:48];
 
     // 12h: Write keyboard buffer
-    always @(posedge clk)
+    always @(posedge clk or posedge reset)
         if (reset) begin
             kbbuf_data <= 8'h00;
             kbbuf_wren <= 1'b0;
@@ -173,8 +175,6 @@ module aqp_spiregs(
     reg [2:0] bus_state_r = BST_IDLE;
 
     always @(posedge clk) begin
-        rom_p2_wren <= 1'b0;
-
         case (bus_state_r)
             BST_IDLE: begin
                 spibm_rd_n      <= 1'b1;
@@ -195,8 +195,9 @@ module aqp_spiregs(
                         3'd3: begin
                             spibm_wrdata <= rxdata;
                             if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE) bus_state_r <= BST_CYCLE0;
-                            if (cmd_r == CMD_ROM_WRITE) rom_p2_wren <= 1'b1;
                         end
+
+                        default: begin end
                     endcase
                 end
             end
@@ -239,6 +240,8 @@ module aqp_spiregs(
                     spibm_wrdata_en <= 1'b0;
                 end
             end
+
+            default: begin end
 
         endcase
 

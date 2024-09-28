@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module video(
     input  wire        clk,
     input  wire        reset,
@@ -95,17 +98,17 @@ module video(
     wire sel_io_irqstat  = (io_addr == 4'hF);
 
     always @* begin
-        io_rddata <= rddata_sprattr;
-        if (sel_io_vctrl)    io_rddata <= {vctrl_tram_page_r, vctrl_80_columns_r, vctrl_border_remap_r, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
-        if (sel_io_vscrx_l)  io_rddata <= vscrx_r[7:0];                             // IO $E1
-        if (sel_io_vscrx_h)  io_rddata <= {7'b0, vscrx_r[8]};                       // IO $E2
-        if (sel_io_vscry)    io_rddata <= vscry_r;                                  // IO $E3
-        if (sel_io_vpalsel)  io_rddata <= {1'b0, vpalsel_r};                        // IO $EA
-        if (sel_io_vpaldata) io_rddata <= rddata_vpaldata;                          // IO $EB
-        if (sel_io_vline)    io_rddata <= vpos;                                     // IO $EC
-        if (sel_io_virqline) io_rddata <= virqline_r;                               // IO $ED
-        if (sel_io_irqmask)  io_rddata <= {6'b0, irqmask_line_r, irqmask_vblank_r}; // IO $EE
-        if (sel_io_irqstat)  io_rddata <= {6'b0, irqstat_line_r, irqstat_vblank_r}; // IO $EF
+        io_rddata = rddata_sprattr;
+        if (sel_io_vctrl)    io_rddata = {vctrl_tram_page_r, vctrl_80_columns_r, vctrl_border_remap_r, vctrl_text_priority_r, vctrl_sprites_enable_r, vctrl_gfx_mode_r, vctrl_text_enable_r};
+        if (sel_io_vscrx_l)  io_rddata = vscrx_r[7:0];                             // IO $E1
+        if (sel_io_vscrx_h)  io_rddata = {7'b0, vscrx_r[8]};                       // IO $E2
+        if (sel_io_vscry)    io_rddata = vscry_r;                                  // IO $E3
+        if (sel_io_vpalsel)  io_rddata = {1'b0, vpalsel_r};                        // IO $EA
+        if (sel_io_vpaldata) io_rddata = rddata_vpaldata;                          // IO $EB
+        if (sel_io_vline)    io_rddata = vpos;                                     // IO $EC
+        if (sel_io_virqline) io_rddata = virqline_r;                               // IO $ED
+        if (sel_io_irqmask)  io_rddata = {6'b0, irqmask_line_r, irqmask_vblank_r}; // IO $EE
+        if (sel_io_irqstat)  io_rddata = {6'b0, irqstat_line_r, irqstat_vblank_r}; // IO $EF
     end
 
     always @(posedge clk or posedge reset)
@@ -181,7 +184,7 @@ module video(
         .blank(blank));
 
     wire hborder = video_mode ? blank : (hpos < 10'd32 || hpos >= 10'd672);
-    wire vborder = vpos < 9'd16 || vpos >= 9'd216;
+    wire vborder = vpos < 8'd16 || vpos >= 8'd216;
 
     reg [9:0] hpos_r, hpos_rr;
     always @(posedge vclk) hpos_r <= hpos;
@@ -205,7 +208,7 @@ module video(
     reg  [10:0] row_addr_r  = 11'd0;
     reg  [10:0] char_addr_r = 11'd0;
 
-    wire        next_row         = (vpos >= 9'd23) && vnext && (vpos[2:0] == 3'd7);
+    wire        next_row         = (vpos >= 8'd23) && vnext && (vpos[2:0] == 3'd7);
     wire [10:0] row_addr_next    = row_addr_r + (mode80_r ? 11'd80 : 11'd40);
     wire [10:0] border_char_addr = vctrl_border_remap_r ? (mode80_r ? 11'h7FF : 11'h3FF) : 11'h0;
 

@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 // VGA video timing module - 704x480 visible (910x525 total)
 
 module video_timing(
