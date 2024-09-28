@@ -1,4 +1,4 @@
-module pwm_dac(
+module aqp_pwm_dac(
     input  wire        rst,
     input  wire        clk,
 

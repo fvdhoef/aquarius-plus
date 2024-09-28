@@ -1,4 +1,4 @@
-module esp_uart_tx(
+module aqp_esp_uart_tx(
     input  wire        clk,
     input  wire        rst,
 

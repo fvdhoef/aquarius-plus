@@ -1,4 +1,4 @@
-module top(
+module aqp_top(
     input  wire        sysclk,          // 14.31818MHz
 
     // Z80 bus interface
@@ -92,7 +92,7 @@ module top(
     wire clk, vclk;
     wire video_mode;
 
-    clkctrl clkctrl(
+    aqp_clkctrl clkctrl(
         .clk_in(sysclk),    // 14.31818MHz
         .clk_out(clk),      // 28.63636MHz
 
@@ -105,7 +105,7 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     wire reset;
 
-    sysctrl sysctrl(
+    aqp_sysctrl sysctrl(
         .sysclk(clk),
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
@@ -297,7 +297,7 @@ module top(
 
     assign rddata_espctrl = {3'b0, esp_ctrl_status_r, esp_txbusy, esp_rxfifo_not_empty};
 
-    esp_uart esp_uart(
+    aqp_esp_uart esp_uart(
         .rst(reset),
         .clk(clk),
 
@@ -411,7 +411,7 @@ module top(
     assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
     assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
 
-    spiregs spiregs(
+    aqp_spiregs spiregs(
         .clk(clk),
         .reset(reset),
 
@@ -541,7 +541,7 @@ module top(
     wire [15:0] left_data   = {mix_l, 2'b0};
     wire [15:0] right_data  = {mix_r, 2'b0};
 
-    pwm_dac pwm_dac(
+    aqp_pwm_dac pwm_dac(
         .rst(reset),
         .clk(clk),
 

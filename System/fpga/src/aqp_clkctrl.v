@@ -1,4 +1,4 @@
-module clkctrl(
+module aqp_clkctrl(
     input  wire clk_in,
     output wire clk_out,
 

@@ -1,5 +1,5 @@
 // `default_nettype none
-module esp_uart_rxfifo(
+module aqp_esp_uart_rxfifo(
     input  wire       clk,
     input  wire       rst,
 

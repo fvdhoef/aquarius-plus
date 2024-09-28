@@ -1,4 +1,4 @@
-module spiregs(
+module aqp_spiregs(
     input  wire        clk,
     input  wire        reset,
 
@@ -39,7 +39,7 @@ module spiregs(
     reg   [7:0] txdata_r = 8'h00;
     wire        txdata_ack;
 
-    spislave spislave(
+    aqp_spislave spislave(
         .clk(clk),
 
         .esp_ssel_n(esp_ssel_n),

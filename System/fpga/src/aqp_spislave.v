@@ -1,4 +1,4 @@
-module spislave(
+module aqp_spislave(
     input  wire        clk,
 
     input  wire        esp_ssel_n,

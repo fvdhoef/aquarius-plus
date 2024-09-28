@@ -1,4 +1,4 @@
-module handctrl(
+module aqp_handctrl(
     input  wire       clk,
     input  wire       reset,
 

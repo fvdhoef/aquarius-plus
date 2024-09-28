@@ -1,5 +1,5 @@
 // `default_nettype none
-module esp_uart(
+module aqp_esp_uart(
     input  wire        rst,
     input  wire        clk,
 
@@ -23,7 +23,7 @@ module esp_uart(
     //////////////////////////////////////////////////////////////////////////
     // UART TX
     //////////////////////////////////////////////////////////////////////////
-    esp_uart_tx esp_uart_tx(
+    aqp_esp_uart_tx esp_uart_tx(
         .clk(clk),
         .rst(rst),
         .uart_txd(uart_txd),
@@ -44,7 +44,7 @@ module esp_uart(
 
     always @(posedge clk) if (rxfifo_read) rxfifo_data <= rxfifo_rddata;
 
-    esp_uart_rxfifo esp_uart_rxfifo(
+    aqp_esp_uart_rxfifo esp_uart_rxfifo(
 	    .clk(clk),
         .rst(rst),
 
@@ -75,7 +75,7 @@ module esp_uart(
     assign rx_framing_error = rx_fe && !rx_fe_r;
     assign rx_break         = rx_brk && !rx_brk_r;
 
-    esp_uart_rx esp_uart_rx(
+    aqp_esp_uart_rx esp_uart_rx(
         .clk(clk),
         .rst(rst),
         .uart_rxd(uart_rxd),

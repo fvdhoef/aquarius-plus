@@ -1,4 +1,4 @@
-module sysctrl(
+module aqp_sysctrl(
     input  wire sysclk,
     inout  wire ebus_reset_n,
     input  wire reset_req,
