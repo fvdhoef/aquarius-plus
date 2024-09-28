@@ -1,15 +1,11 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module aqp_spiregs(
+module aqp_esp_spi(
     input  wire        clk,
     input  wire        reset,
 
-    input  wire        esp_ssel_n,
-    input  wire        esp_sclk,
-    input  wire        esp_mosi,
-    output wire        esp_miso,
-
+    // Bus master interface
     input  wire        ebus_phi,
 
     output reg  [15:0] spibm_a,
@@ -22,15 +18,33 @@ module aqp_spiregs(
     output reg         spibm_iorq_n,
     output wire        spibm_busreq,
 
-    output reg         reset_req,
-    output reg  [63:0] keys,
-    output reg   [7:0] hctrl1,
-    output reg   [7:0] hctrl2,
-    
-    output reg   [7:0] kbbuf_data,
-    output reg         kbbuf_wren,
-    
-    output wire        video_mode);
+    // Interface for core specific messages
+    output wire        spi_msg_end,
+    output wire  [7:0] spi_cmd,
+    output wire [63:0] spi_rxdata,
+
+    // Display overlay interface
+    // output wire   [9:0] ovl_text_addr,
+    // output wire  [15:0] ovl_text_wrdata,
+    // output wire         ovl_text_wr,
+
+    // output wire  [10:0] ovl_font_addr,
+    // output wire   [7:0] ovl_font_wrdata,
+    // output wire         ovl_font_wr,
+
+    // output wire   [3:0] ovl_palette_addr,
+    // output wire  [15:0] ovl_palette_wrdata,
+    // output wire         ovl_palette_wr,
+
+    // ESP SPI slave interface
+    input  wire        esp_ssel_n,
+    input  wire        esp_sclk,
+    input  wire        esp_mosi,
+    output wire        esp_miso,
+    output wire        esp_notify
+);
+
+    assign esp_notify = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI slave
@@ -89,6 +103,10 @@ module aqp_spiregs(
         end
     end
 
+    assign spi_msg_end = msg_end;
+    assign spi_cmd     = q_cmd;
+    assign spi_rxdata  = q_data;
+
     //////////////////////////////////////////////////////////////////////////
     // Commands
     //////////////////////////////////////////////////////////////////////////
@@ -100,52 +118,19 @@ module aqp_spiregs(
     reg q_busreq = 1'b0;
     assign spibm_busreq = q_busreq;
 
-    localparam
-        CMD_RESET           = 8'h01,
-        CMD_SET_KEYB_MATRIX = 8'h10,
-        CMD_SET_HCTRL       = 8'h11,
-        CMD_WRITE_KBBUF     = 8'h12,
+    localparam [7:0]
+        // CMD_RESET           = 8'h01,
+        // CMD_SET_KEYB_MATRIX = 8'h10,
+        // CMD_SET_HCTRL       = 8'h11,
+        // CMD_WRITE_KBBUF     = 8'h12,
         CMD_BUS_ACQUIRE     = 8'h20,
         CMD_BUS_RELEASE     = 8'h21,
         CMD_MEM_WRITE       = 8'h22,
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
-        CMD_IO_READ         = 8'h25,
+        CMD_IO_READ         = 8'h25;
         // CMD_ROM_WRITE       = 8'h30,
-        CMD_SET_VIDMODE     = 8'h40;
-
-    // 01h: Reset command
-    always @(posedge clk) begin
-        reset_req <= 1'b0;
-        if (q_cmd == CMD_RESET && msg_end) reset_req <= 1'b1;
-    end
-
-    // 10h: Set keyboard matrix
-    always @(posedge clk or posedge reset)
-        if (reset)
-            keys <= 64'hFFFFFFFFFFFFFFFF;
-        else if (q_cmd == CMD_SET_KEYB_MATRIX && msg_end)
-            keys <= q_data;
-
-    // 11h: Set keyboard matrix
-    always @(posedge clk or posedge reset)
-        if (reset)
-            {hctrl2, hctrl1} <= 16'hFFFF;
-        else if (q_cmd == CMD_SET_HCTRL && msg_end)
-            {hctrl2, hctrl1} <= q_data[63:48];
-
-    // 12h: Write keyboard buffer
-    always @(posedge clk or posedge reset)
-        if (reset) begin
-            kbbuf_data <= 8'h00;
-            kbbuf_wren <= 1'b0;
-        end else begin
-            kbbuf_wren <= 1'b0;
-            if (q_cmd == CMD_WRITE_KBBUF && msg_end) begin
-                kbbuf_data <= q_data[63:56];
-                kbbuf_wren <= 1'b1;
-            end
-        end
+        // CMD_SET_VIDMODE     = 8'h40;
 
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin
@@ -154,15 +139,6 @@ module aqp_spiregs(
             if (q_cmd == CMD_BUS_RELEASE) q_busreq <= 1'b0;
         end
     end
-
-    // 40h: Set video mode
-    reg q_video_mode = 1'b0;
-    always @(posedge clk) begin
-        if (q_cmd == CMD_SET_VIDMODE && msg_end) begin
-            q_video_mode <= q_data[56];
-        end
-    end
-    assign video_mode = q_video_mode;
 
     localparam
         BStIdle   = 3'd0,
@@ -181,8 +157,6 @@ module aqp_spiregs(
                 spibm_mreq_n    <= 1'b1;
                 spibm_iorq_n    <= 1'b1;
                 spibm_wrdata_en <= 1'b0;
-
-                // q_txdata <= 8'h00;
 
                 if (rxdata_valid) begin
                     case (q_byte_cnt)

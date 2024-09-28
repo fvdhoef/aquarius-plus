@@ -20,8 +20,8 @@ module aqp_pwm_dac(
     always @(posedge clk) begin
         if (next_sample) begin
             // Convert to unsigned data
-            q_left_sample  <= left_data;
-            q_right_sample <= right_data;
+            q_left_sample  <= {~left_data[15],  left_data[14:0]};
+            q_right_sample <= {~right_data[15], right_data[14:0]};
         end
     end
 
