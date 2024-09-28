@@ -22,122 +22,122 @@ module renderer(
     output wire        wren
 );
 
-    reg [31:0] render_data_r, render_data_next;
-    reg  [1:0] palette_r,     palette_next;
-    reg  [8:0] wridx_r,       wridx_next;
-    reg  [5:0] wrdata_r,      wrdata_next;
-    reg        wren_r,        wren_next;
-    reg  [2:0] datasel_r,     datasel_next;
-    reg        busy_r,        busy_next;
-    reg        last_pixel_r,  last_pixel_next;
-    reg        is_sprite_r,   is_sprite_next;
-    reg        hflip_r,       hflip_next;
-    reg        priority_r,    priority_next;
+    reg [31:0] d_render_data, q_render_data;
+    reg  [1:0] d_palette,     q_palette;
+    reg  [8:0] d_wridx,       q_wridx;
+    reg  [5:0] d_wrdata,      q_wrdata;
+    reg        d_wren,        q_wren;
+    reg  [2:0] d_datasel,     q_datasel;
+    reg        d_busy,        q_busy;
+    reg        d_last_pixel,  q_last_pixel;
+    reg        d_is_sprite,   q_is_sprite;
+    reg        d_hflip,       q_hflip;
+    reg        d_priority,    q_priority;
 
-    assign wridx      = wridx_r;
-    assign wrdata     = wrdata_r;
-    assign wren       = wren_r;
-    assign busy       = busy_r;
-    assign last_pixel = last_pixel_r;
+    assign wridx      = q_wridx;
+    assign wrdata     = q_wrdata;
+    assign wren       = q_wren;
+    assign busy       = q_busy;
+    assign last_pixel = q_last_pixel;
 
     reg [3:0] pixel_data;
-    always @* case (datasel_next ^ (hflip_next ? 3'b111 : 3'b000))
-        3'b000: pixel_data = render_data_next[31:28];
-        3'b001: pixel_data = render_data_next[27:24];
-        3'b010: pixel_data = render_data_next[23:20];
-        3'b011: pixel_data = render_data_next[19:16];
-        3'b100: pixel_data = render_data_next[15:12];
-        3'b101: pixel_data = render_data_next[11:8];
-        3'b110: pixel_data = render_data_next[7:4];
-        3'b111: pixel_data = render_data_next[3:0];
+    always @* case (d_datasel ^ (d_hflip ? 3'b111 : 3'b000))
+        3'b000: pixel_data = d_render_data[31:28];
+        3'b001: pixel_data = d_render_data[27:24];
+        3'b010: pixel_data = d_render_data[23:20];
+        3'b011: pixel_data = d_render_data[19:16];
+        3'b100: pixel_data = d_render_data[15:12];
+        3'b101: pixel_data = d_render_data[11:8];
+        3'b110: pixel_data = d_render_data[7:4];
+        3'b111: pixel_data = d_render_data[3:0];
     endcase
 
     wire lab_priority;
-    wire lab_wrdata = priority_r && (wrdata_r[3:0] != 4'd0);
+    wire lab_wrdata = q_priority && (q_wrdata[3:0] != 4'd0);
 
     lineattrbuf lab(
         .clk(clk),
-        .idx1(wridx_r),
+        .idx1(q_wridx),
         .wrdata1(lab_wrdata),
-        .wren1(wren_r),
+        .wren1(q_wren),
 
-        .idx2(wridx_next),
+        .idx2(d_wridx),
         .rddata2(lab_priority));
 
     always @* begin
-        render_data_next = render_data_r;
-        palette_next     = palette_r;
-        wridx_next       = wridx_r;
-        wrdata_next      = wrdata_r;
-        wren_next        = 1'b0;
-        datasel_next     = datasel_r;
-        busy_next        = busy_r;
-        last_pixel_next  = 1'b0;
-        is_sprite_next   = is_sprite_r;
-        hflip_next       = hflip_r;
-        priority_next    = priority_r;
+        d_render_data = q_render_data;
+        d_palette     = q_palette;
+        d_wridx       = q_wridx;
+        d_wrdata      = q_wrdata;
+        d_wren        = 1'b0;
+        d_datasel     = q_datasel;
+        d_busy        = q_busy;
+        d_last_pixel  = 1'b0;
+        d_is_sprite   = q_is_sprite;
+        d_hflip       = q_hflip;
+        d_priority    = q_priority;
 
         if (render_start) begin
-            render_data_next = render_data;
-            palette_next     = palette;
-            datasel_next     = 3'b000;
-            wren_next        = 1'b1;
-            busy_next        = 1'b1;
-            wridx_next       = render_idx;
-            is_sprite_next   = is_sprite;
-            hflip_next       = hflip;
-            priority_next    = render_priority;
+            d_render_data = render_data;
+            d_palette     = palette;
+            d_datasel     = 3'b00;
+            d_wren        = 1'b1;
+            d_busy        = 1'b1;
+            d_wridx       = render_idx;
+            d_is_sprite   = is_sprite;
+            d_hflip       = hflip;
+            d_priority    = render_priority;
 
-        end else if (busy_r) begin
-            datasel_next = datasel_r + 3'd1;
-            wren_next    = 1'b1;
-            wridx_next   = wridx_r + 9'd1;
+        end else if (q_busy) begin
+            d_datasel = q_datasel + 3'd1;
+            d_wren    = 1'b1;
+            d_wridx   = q_wridx + 9'd1;
 
-            if (datasel_r == 3'd7) begin
-                busy_next = 1'b0;
-                wren_next = 1'b0;
+            if (q_datasel == 3'd7) begin
+                d_busy = 1'b0;
+                d_wren = 1'b0;
             end
-            if (datasel_r == 3'd6) begin
-                last_pixel_next = 1'b1;
+            if (q_datasel == 3'd6) begin
+                d_last_pixel = 1'b1;
             end
         end
 
-        wrdata_next[5:4] = palette_next[1:0];
-        wrdata_next[3:0] = pixel_data;
+        d_wrdata[5:4] = d_palette[1:0];
+        d_wrdata[3:0] = pixel_data;
 
         // Don't render transparent sprite pixels
-        if (is_sprite_next) begin
-            if (pixel_data == 4'd0 || (lab_priority && !priority_r))
-                wren_next = 1'b0;
+        if (d_is_sprite) begin
+            if (pixel_data == 4'd0 || (lab_priority && !q_priority))
+                d_wren = 1'b0;
         end
     end
 
     always @(posedge clk) begin
         if (reset) begin
-            render_data_r <= 32'b0;
-            palette_r     <= 2'b0;
-            wridx_r       <= 9'd511;
-            wrdata_r      <= 6'b0;
-            wren_r        <= 1'b0;
-            datasel_r     <= 3'b0;
-            busy_r        <= 1'b0;
-            last_pixel_r  <= 1'b0;
-            is_sprite_r   <= 1'b0;
-            hflip_r       <= 1'b0;
-            priority_r    <= 1'b0;
+            q_render_data <= 32'b0;
+            q_palette     <= 2'b0;
+            q_wridx       <= 9'd511;
+            q_wrdata      <= 6'b0;
+            q_wren        <= 1'b0;
+            q_datasel     <= 3'b0;
+            q_busy        <= 1'b0;
+            q_last_pixel  <= 1'b0;
+            q_is_sprite   <= 1'b0;
+            q_hflip       <= 1'b0;
+            q_priority    <= 1'b0;
 
         end else begin
-            render_data_r <= render_data_next;
-            palette_r     <= palette_next;
-            wridx_r       <= wridx_next;
-            wrdata_r      <= wrdata_next;
-            wren_r        <= wren_next;
-            datasel_r     <= datasel_next;
-            busy_r        <= busy_next;
-            last_pixel_r  <= last_pixel_next;
-            is_sprite_r   <= is_sprite_next;
-            hflip_r       <= hflip_next;
-            priority_r    <= priority_next;
+            q_render_data <= d_render_data;
+            q_palette     <= d_palette;
+            q_wridx       <= d_wridx;
+            q_wrdata      <= d_wrdata;
+            q_wren        <= d_wren;
+            q_datasel     <= d_datasel;
+            q_busy        <= d_busy;
+            q_last_pixel  <= d_last_pixel;
+            q_is_sprite   <= d_is_sprite;
+            q_hflip       <= d_hflip;
+            q_priority    <= d_priority;
         end
     end
 

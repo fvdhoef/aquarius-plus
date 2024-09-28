@@ -323,6 +323,8 @@ module aqp_top(
     wire chram_wren    = sel_mem_chram   && bus_write;
     wire io_video_wren = sel_io_video    && bus_write;
 
+    wire video_de, video_newframe, video_oddline;   // unused
+
     video video(
         .clk(clk),
         .reset(reset),
@@ -351,11 +353,14 @@ module aqp_top(
         .vram_wrdata(wrdata),
         .vram_wren(vram_wren),
 
-        .vga_r(vga_r),
-        .vga_g(vga_g),
-        .vga_b(vga_b),
-        .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync),
+        .video_r(vga_r),
+        .video_g(vga_g),
+        .video_b(vga_b),
+        .video_de(video_de),
+        .video_hsync(vga_hsync),
+        .video_vsync(vga_vsync),
+        .video_newframe(video_newframe),
+        .video_oddline(video_oddline),
         
         .reg_fd_val(reg_fd_val));
 
