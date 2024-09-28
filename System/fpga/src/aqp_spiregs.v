@@ -37,8 +37,7 @@ module aqp_spiregs(
     //////////////////////////////////////////////////////////////////////////
     wire        msg_start, msg_end, rxdata_valid;
     wire  [7:0] rxdata;
-
-    reg   [7:0] txdata_r = 8'h00;
+    reg   [7:0] q_txdata = 0;
     wire        txdata_ack;
 
     aqp_spislave spislave(
@@ -53,53 +52,53 @@ module aqp_spiregs(
         .msg_end(msg_end),
         .rxdata(rxdata),
         .rxdata_valid(rxdata_valid),
-        .txdata(txdata_r),
+        .txdata(q_txdata),
         .txdata_ack(txdata_ack));
 
     //////////////////////////////////////////////////////////////////////////
     // Data reception
     //////////////////////////////////////////////////////////////////////////
-    reg [63:0] data_r;
+    reg [63:0] q_data;
 
-    localparam
-        ST_IDLE = 2'b00,
-        ST_CMD  = 2'b01,
-        ST_DATA = 2'b10;
+    localparam [1:0]
+        StIdle = 2'b00,
+        StCmd  = 2'b01,
+        StData = 2'b10;
 
-    reg [1:0] state_r;
-    reg [7:0] cmd_r;
-    reg [2:0] byte_cnt_r;
+    reg [1:0] q_state = StIdle;
+    reg [7:0] q_cmd;
+    reg [2:0] q_byte_cnt;
 
     always @(posedge clk) begin
         if (msg_start)
-            state_r <= ST_CMD;
+            q_state <= StCmd;
         if (msg_end)
-            state_r <= ST_IDLE;
+            q_state <= StIdle;
         if (msg_start || msg_end)
-            byte_cnt_r <= 3'b0;
+            q_byte_cnt <= 3'b0;
         if (rxdata_valid)
-            byte_cnt_r <= byte_cnt_r + 3'b1;
+            q_byte_cnt <= q_byte_cnt + 3'b1;
 
-        if (state_r == ST_CMD && rxdata_valid) begin
-            cmd_r   <= rxdata;
-            state_r <= ST_DATA;
+        if (q_state == StCmd && rxdata_valid) begin
+            q_cmd   <= rxdata;
+            q_state <= StData;
         end
 
-        if (state_r == ST_DATA && rxdata_valid) begin
-            data_r <= {rxdata, data_r[63:8]};
+        if (q_state == StData && rxdata_valid) begin
+            q_data <= {rxdata, q_data[63:8]};
         end
     end
 
     //////////////////////////////////////////////////////////////////////////
     // Commands
     //////////////////////////////////////////////////////////////////////////
-    reg phi_r;
-    always @(posedge clk) phi_r <= ebus_phi;
-    wire phi_falling = phi_r && !ebus_phi;
-    wire phi_rising = !phi_r && ebus_phi;
+    reg q_phi;
+    always @(posedge clk) q_phi <= ebus_phi;
+    wire phi_falling =  q_phi && !ebus_phi;
+    wire phi_rising  = !q_phi &&  ebus_phi;
 
-    reg busreq_r = 1'b0;
-    assign spibm_busreq = busreq_r;
+    reg q_busreq = 1'b0;
+    assign spibm_busreq = q_busreq;
 
     localparam
         CMD_RESET           = 8'h01,
@@ -118,22 +117,22 @@ module aqp_spiregs(
     // 01h: Reset command
     always @(posedge clk) begin
         reset_req <= 1'b0;
-        if (cmd_r == CMD_RESET && msg_end) reset_req <= 1'b1;
+        if (q_cmd == CMD_RESET && msg_end) reset_req <= 1'b1;
     end
 
     // 10h: Set keyboard matrix
     always @(posedge clk or posedge reset)
         if (reset)
             keys <= 64'hFFFFFFFFFFFFFFFF;
-        else if (cmd_r == CMD_SET_KEYB_MATRIX && msg_end)
-            keys <= data_r;
+        else if (q_cmd == CMD_SET_KEYB_MATRIX && msg_end)
+            keys <= q_data;
 
     // 11h: Set keyboard matrix
     always @(posedge clk or posedge reset)
         if (reset)
             {hctrl2, hctrl1} <= 16'hFFFF;
-        else if (cmd_r == CMD_SET_HCTRL && msg_end)
-            {hctrl2, hctrl1} <= data_r[63:48];
+        else if (q_cmd == CMD_SET_HCTRL && msg_end)
+            {hctrl2, hctrl1} <= q_data[63:48];
 
     // 12h: Write keyboard buffer
     always @(posedge clk or posedge reset)
@@ -142,8 +141,8 @@ module aqp_spiregs(
             kbbuf_wren <= 1'b0;
         end else begin
             kbbuf_wren <= 1'b0;
-            if (cmd_r == CMD_WRITE_KBBUF && msg_end) begin
-                kbbuf_data <= data_r[63:56];
+            if (q_cmd == CMD_WRITE_KBBUF && msg_end) begin
+                kbbuf_data <= q_data[63:56];
                 kbbuf_wren <= 1'b1;
             end
         end
@@ -151,50 +150,50 @@ module aqp_spiregs(
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin
         if (phi_falling) begin
-            if (cmd_r == CMD_BUS_ACQUIRE) busreq_r <= 1'b1;
-            if (cmd_r == CMD_BUS_RELEASE) busreq_r <= 1'b0;
+            if (q_cmd == CMD_BUS_ACQUIRE) q_busreq <= 1'b1;
+            if (q_cmd == CMD_BUS_RELEASE) q_busreq <= 1'b0;
         end
     end
 
     // 40h: Set video mode
-    reg video_mode_r = 1'b0;
+    reg q_video_mode = 1'b0;
     always @(posedge clk) begin
-        if (cmd_r == CMD_SET_VIDMODE && msg_end) begin
-            video_mode_r <= data_r[56];
+        if (q_cmd == CMD_SET_VIDMODE && msg_end) begin
+            q_video_mode <= q_data[56];
         end
     end
-    assign video_mode = video_mode_r;
+    assign video_mode = q_video_mode;
 
     localparam
-        BST_IDLE   = 3'd0,
-        BST_CYCLE0 = 3'd1,
-        BST_CYCLE1 = 3'd2,
-        BST_CYCLE2 = 3'd3,
-        BST_DONE   = 3'd4;
+        BStIdle   = 3'd0,
+        BStCycle0 = 3'd1,
+        BStCycle1 = 3'd2,
+        BStCycle2 = 3'd3,
+        BStDone   = 3'd4;
 
-    reg [2:0] bus_state_r = BST_IDLE;
+    reg [2:0] q_bus_state = BStIdle;
 
     always @(posedge clk) begin
-        case (bus_state_r)
-            BST_IDLE: begin
+        case (q_bus_state)
+            BStIdle: begin
                 spibm_rd_n      <= 1'b1;
                 spibm_wr_n      <= 1'b1;
                 spibm_mreq_n    <= 1'b1;
                 spibm_iorq_n    <= 1'b1;
                 spibm_wrdata_en <= 1'b0;
 
-                // txdata_r <= 8'h00;
+                // q_txdata <= 8'h00;
 
                 if (rxdata_valid) begin
-                    case (byte_cnt_r)
+                    case (q_byte_cnt)
                         3'd1: spibm_a[7:0] <= rxdata;
                         3'd2: begin
                             spibm_a[15:8] <= rxdata;
-                            if (cmd_r == CMD_MEM_READ || cmd_r == CMD_IO_READ) bus_state_r <= BST_CYCLE0;
+                            if (q_cmd == CMD_MEM_READ || q_cmd == CMD_IO_READ) q_bus_state <= BStCycle0;
                         end
                         3'd3: begin
                             spibm_wrdata <= rxdata;
-                            if (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE) bus_state_r <= BST_CYCLE0;
+                            if (q_cmd == CMD_MEM_WRITE || q_cmd == CMD_IO_WRITE) q_bus_state <= BStCycle0;
                         end
 
                         default: begin end
@@ -202,40 +201,40 @@ module aqp_spiregs(
                 end
             end
 
-            BST_CYCLE0: begin
+            BStCycle0: begin
                 if (phi_falling) begin
-                    spibm_mreq_n    <= !(cmd_r == CMD_MEM_READ  || cmd_r == CMD_MEM_WRITE);
-                    spibm_iorq_n    <= !(cmd_r == CMD_IO_READ   || cmd_r == CMD_IO_WRITE);
-                    spibm_rd_n      <= !(cmd_r == CMD_MEM_READ  || cmd_r == CMD_IO_READ);
-                    spibm_wrdata_en <=  (cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE);
+                    spibm_mreq_n    <= !(q_cmd == CMD_MEM_READ  || q_cmd == CMD_MEM_WRITE);
+                    spibm_iorq_n    <= !(q_cmd == CMD_IO_READ   || q_cmd == CMD_IO_WRITE);
+                    spibm_rd_n      <= !(q_cmd == CMD_MEM_READ  || q_cmd == CMD_IO_READ);
+                    spibm_wrdata_en <=  (q_cmd == CMD_MEM_WRITE || q_cmd == CMD_IO_WRITE);
                     
-                    bus_state_r <= BST_CYCLE1;
+                    q_bus_state <= BStCycle1;
                 end
             end
 
-            BST_CYCLE1: begin
+            BStCycle1: begin
                 if (phi_falling) begin
-                    spibm_wr_n <= !(cmd_r == CMD_MEM_WRITE || cmd_r == CMD_IO_WRITE);
+                    spibm_wr_n <= !(q_cmd == CMD_MEM_WRITE || q_cmd == CMD_IO_WRITE);
 
-                    bus_state_r <= BST_CYCLE2;
+                    q_bus_state <= BStCycle2;
                 end
             end
 
-            BST_CYCLE2: begin
+            BStCycle2: begin
                 if (phi_falling) begin
-                    if (cmd_r == CMD_MEM_READ || cmd_r == CMD_IO_READ)
-                        txdata_r <= spibm_rddata;
+                    if (q_cmd == CMD_MEM_READ || q_cmd == CMD_IO_READ)
+                        q_txdata <= spibm_rddata;
 
                     spibm_mreq_n <= 1'b1;
                     spibm_iorq_n <= 1'b1;
                     spibm_rd_n   <= 1'b1;
                     spibm_wr_n   <= 1'b1;
 
-                    bus_state_r <= BST_DONE;
+                    q_bus_state <= BStDone;
                 end
             end
 
-            BST_DONE: begin
+            BStDone: begin
                 if (phi_rising) begin
                     spibm_wrdata_en <= 1'b0;
                 end
@@ -245,7 +244,7 @@ module aqp_spiregs(
 
         endcase
 
-        if (msg_start) bus_state_r <= BST_IDLE;
+        if (msg_start) q_bus_state <= BStIdle;
     end
 
 endmodule

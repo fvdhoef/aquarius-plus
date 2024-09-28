@@ -3,7 +3,7 @@
 
 module aqp_esp_uart_tx(
     input  wire        clk,
-    input  wire        rst,
+    input  wire        reset,
 
     output reg         uart_txd,
 
@@ -13,50 +13,50 @@ module aqp_esp_uart_tx(
     output wire        tx_busy);
 
     // Bit-timing
-    reg [2:0] clk_cnt_r = 3'd0;
-    always @(posedge clk) clk_cnt_r <= clk_cnt_r + 3'd1;
+    reg [2:0] q_clk_cnt = 3'd0;
+    always @(posedge clk) q_clk_cnt <= q_clk_cnt + 3'd1;
 
-    wire next_bit = clk_cnt_r == 3'd0;
+    wire next_bit = q_clk_cnt == 3'd0;
 
     // Shift out serial data
-    reg [8:0] tx_shift_r;
-    reg [3:0] bit_cnt_r;
-    reg busy;
-    reg uart_txd_r;
+    reg [8:0] q_tx_shift;
+    reg [3:0] q_bit_cnt;
+    reg       q_busy;
+    reg       q_uart_txd;
 
-    always @(posedge clk or posedge rst) begin
-        if (rst) begin
-            uart_txd_r <= 1'b1;
-            busy       <= 1'b0;
-            tx_shift_r <= 9'b0;
-            bit_cnt_r  <= 4'b0;
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            q_uart_txd <= 1'b1;
+            q_busy     <= 1'b0;
+            q_tx_shift <= 9'b0;
+            q_bit_cnt  <= 4'b0;
 
         end else begin
-            if (!busy) begin
-                uart_txd_r <= 1'b1;
+            if (!q_busy) begin
+                q_uart_txd <= 1'b1;
                 if (tx_valid || tx_break) begin
-                    tx_shift_r <= tx_break ? 9'b0 : { tx_data, 1'b0 };
-                    busy       <= 1'b1;
-                    bit_cnt_r  <= tx_break ? 4'd15 : 4'd9;
+                    q_tx_shift <= tx_break ? 9'b0 : { tx_data, 1'b0 };
+                    q_busy     <= 1'b1;
+                    q_bit_cnt  <= tx_break ? 4'd15 : 4'd9;
                 end
 
             end else if (next_bit) begin
-                uart_txd_r <= tx_shift_r[0];
+                q_uart_txd <= q_tx_shift[0];
 
-                if (bit_cnt_r == 4'd0) begin
-                    busy <= 1'b0;
-                    uart_txd_r <= 1'b1;
+                if (q_bit_cnt == 4'd0) begin
+                    q_busy     <= 1'b0;
+                    q_uart_txd <= 1'b1;
                 end else begin
-                    bit_cnt_r <= bit_cnt_r - 4'd1;
+                    q_bit_cnt  <= q_bit_cnt - 4'd1;
                 end
 
-                tx_shift_r <= { 1'b0, tx_shift_r[8:1] };
+                q_tx_shift <= { 1'b0, q_tx_shift[8:1] };
             end
         end
     end
 
-    always @(posedge clk) uart_txd <= uart_txd_r;
+    always @(posedge clk) uart_txd <= q_uart_txd;
 
-    assign tx_busy = busy;
+    assign tx_busy = q_busy;
 
 endmodule

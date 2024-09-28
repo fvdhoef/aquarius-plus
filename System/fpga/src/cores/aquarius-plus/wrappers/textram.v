@@ -14,19 +14,19 @@ module textram(
     input  wire [10:0] p2_addr,
     output wire [15:0] p2_rddata);
 
-    reg p1_addr_11_r;
-    always @(posedge p1_clk) p1_addr_11_r <= p1_addr[11];
+    reg q_p1_addr_11;
+    always @(posedge p1_clk) q_p1_addr_11 <= p1_addr[11];
 
     wire [7:0] p1_rddata_ram0;
     wire [7:0] p1_rddata_ram1;
-    assign p1_rddata = p1_addr_11_r ? p1_rddata_ram1 : p1_rddata_ram0;
+    assign p1_rddata = q_p1_addr_11 ? p1_rddata_ram1 : p1_rddata_ram0;
 
-    reg p2_addr_10_r;
-    always @(posedge p2_clk) p2_addr_10_r <= p2_addr[10];
+    reg q_p2_addr_10;
+    always @(posedge p2_clk) q_p2_addr_10 <= p2_addr[10];
 
     wire [15:0] p2_rddata_ram0;
     wire [15:0] p2_rddata_ram1;
-    assign p2_rddata = p2_addr_10_r ? p2_rddata_ram1 : p2_rddata_ram0;
+    assign p2_rddata = q_p2_addr_10 ? p2_rddata_ram1 : p2_rddata_ram0;
 
     wire [0:0] p1_rddata_p_ram0, p1_rddata_p_ram1;
     wire [1:0] p2_rddata_p_ram0, p2_rddata_p_ram1;

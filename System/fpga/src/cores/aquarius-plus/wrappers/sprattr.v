@@ -21,7 +21,7 @@ module sprattr(
     output wire        spr_hflip
 );
 
-    reg [5:0] sprsel_r;
+    reg [5:0] q_sprsel;
 
     localparam NUMBITS = 33;
 
@@ -51,7 +51,7 @@ module sprattr(
     };
 
     always @* case (io_addr)
-        4'h4: io_rddata = {2'b0, sprsel_r};     // VSPRSEL
+        4'h4: io_rddata = {2'b0, q_sprsel};     // VSPRSEL
         4'h5: io_rddata = a_rddata[7:0];        // VSPRX_L
         4'h6: io_rddata = {7'b0, a_rddata[8]};  // VSPRX_H
         4'h7: io_rddata = a_rddata[16:9];       // VSPRY
@@ -62,9 +62,9 @@ module sprattr(
 
     always @(posedge clk or posedge reset)
         if (reset)
-            sprsel_r <= 6'b0;
+            q_sprsel <= 6'b0;
         else if (io_wren && io_addr == 4'h4)
-            sprsel_r <= io_wrdata[5:0];
+            q_sprsel <= io_wrdata[5:0];
 
     wire wren_vsprx_l  = io_wren && io_addr == 4'h5;
     wire wren_vsprx_h  = io_wren && io_addr == 4'h6;
@@ -84,7 +84,7 @@ module sprattr(
         genvar i;
         for (i=0; i<NUMBITS; i=i+1) begin: sprattr_gen
             ram64x1d ram(
-                .a_clk(clk), .a_addr(sprsel_r), .a_rddata(a_rddata[i]), .a_wrdata(a_wrdata[i]), .a_wren(a_wren[i]),
+                .a_clk(clk), .a_addr(q_sprsel), .a_rddata(a_rddata[i]), .a_wrdata(a_wrdata[i]), .a_wren(a_wren[i]),
                 .b_addr(spr_sel), .b_rddata(b_rddata[i]));
         end
     endgenerate

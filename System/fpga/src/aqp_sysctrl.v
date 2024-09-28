@@ -16,31 +16,31 @@ module aqp_sysctrl(
     //////////////////////////////////////////////////////////////////////////
     wire ext_reset;
 
-`ifdef __ICARUS__
+`ifdef MODEL_TECH
 
     // Simulation: only have a short reset duration
-    reg [4:0] ext_reset_cnt_r = 0;
+    reg [4:0] q_ext_reset_cnt = 0;
     always @(posedge sysclk) begin
-        if (!ext_reset_cnt_r[4])
-            ext_reset_cnt_r <= ext_reset_cnt_r + 5'b1;
+        if (!q_ext_reset_cnt[4])
+            q_ext_reset_cnt <= q_ext_reset_cnt + 5'b1;
         if (reset_req)
-            ext_reset_cnt_r <= 5'b0;
+            q_ext_reset_cnt <= 5'b0;
     end
 
-    assign ext_reset = !ext_reset_cnt_r[4];
+    assign ext_reset = !q_ext_reset_cnt[4];
 
 `else
 
     // Synthesis: reset duration ~146ms
-    reg [22:0] ext_reset_cnt_r = 0;
+    reg [22:0] q_ext_reset_cnt = 0;
     always @(posedge sysclk) begin
-        if (!ext_reset_cnt_r[22])
-            ext_reset_cnt_r <= ext_reset_cnt_r + 23'b1;
+        if (!q_ext_reset_cnt[22])
+            q_ext_reset_cnt <= q_ext_reset_cnt + 23'b1;
         if (reset_req)
-            ext_reset_cnt_r <= 23'b0;
+            q_ext_reset_cnt <= 23'b0;
     end
 
-    assign ext_reset = !ext_reset_cnt_r[22];
+    assign ext_reset = !q_ext_reset_cnt[22];
 
 `endif
 
@@ -58,30 +58,30 @@ module aqp_sysctrl(
         .clk(sysclk),
         .reset_out(ext_reset_synced));
 
-    reg [4:0] reset_cnt_r = 0;
+    reg [4:0] q_reset_cnt = 0;
     always @(posedge sysclk)
         if (ext_reset_synced)
-            reset_cnt_r <= 5'b0;
-        else if (!reset_cnt_r[4])
-            reset_cnt_r <= reset_cnt_r + 5'b1;
+            q_reset_cnt <= 5'b0;
+        else if (!q_reset_cnt[4])
+            q_reset_cnt <= q_reset_cnt + 5'b1;
 
-    assign reset = !reset_cnt_r[4];
+    assign reset = !q_reset_cnt[4];
 
     //////////////////////////////////////////////////////////////////////////
     // Generate phi signal @ 3.58MHz
     //////////////////////////////////////////////////////////////////////////
-    reg       phi_r = 1'b0;
-    reg [1:0] phi_div_r = 2'd0;
+    reg       q_phi     = 1'b0;
+    reg [1:0] q_phi_div = 2'd0;
 
     wire [1:0] toggle_val = turbo_mode ? 2'd1 : 2'd3;
 
-    assign ebus_phi = phi_r;
+    assign ebus_phi = q_phi;
     always @(posedge sysclk) begin
-        if (phi_div_r == toggle_val) begin
-            phi_r <= !phi_r;
-            phi_div_r <= 2'd0;
+        if (q_phi_div == toggle_val) begin
+            q_phi     <= !q_phi;
+            q_phi_div <= 2'd0;
         end else begin
-            phi_div_r <= phi_div_r + 2'd1;
+            q_phi_div <= q_phi_div + 2'd1;
         end
     end
 

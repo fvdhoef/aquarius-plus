@@ -59,6 +59,8 @@ module aqp_top(
     output wire        esp_notify
 );
 
+    assign exp = 10'b0;
+
     wire [15:0] spibm_a;
     wire  [7:0] spibm_wrdata;
     wire        spibm_wrdata_en;
@@ -80,14 +82,14 @@ module aqp_top(
     wire  [7:0] rddata_kbbuf;            // IO $FA
     wire  [7:0] rddata_keyboard;         // IO $FF:R
 
-    reg   [7:0] audio_dac_r;             // IO $EC
-    reg   [7:0] reg_bank0_r;             // IO $F0
-    reg   [7:0] reg_bank1_r;             // IO $F1
-    reg   [7:0] reg_bank2_r;             // IO $F2
-    reg   [7:0] reg_bank3_r;             // IO $F3
-    reg         reg_cpm_remap_r;         // IO $FD:W
+    reg   [7:0] q_audio_dac;             // IO $EC
+    reg   [7:0] q_reg_bank0;             // IO $F0
+    reg   [7:0] q_reg_bank1;             // IO $F1
+    reg   [7:0] q_reg_bank2;             // IO $F2
+    reg   [7:0] q_reg_bank3;             // IO $F3
+    reg         q_reg_cpm_remap;         // IO $FD:W
 
-    reg         sysctrl_turbo_r;
+    reg         q_sysctrl_turbo;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -113,7 +115,7 @@ module aqp_top(
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
 
-        .turbo_mode(sysctrl_turbo_r),
+        .turbo_mode(q_sysctrl_turbo),
 
         .ebus_phi(ebus_phi),
         .reset(reset));
@@ -121,25 +123,25 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // Synchronize cassette and printer input
     //////////////////////////////////////////////////////////////////////////
-    reg [2:0] cassette_in_r;
-    always @(posedge ebus_phi) cassette_in_r <= {cassette_in_r[1:0], cassette_in};
+    reg [2:0] q_cassette_in;
+    always @(posedge ebus_phi) q_cassette_in <= {q_cassette_in[1:0], cassette_in};
 
-    reg [2:0] printer_in_r;
-    always @(posedge ebus_phi) printer_in_r <= {printer_in_r[1:0], printer_in};
+    reg [2:0] q_printer_in;
+    always @(posedge ebus_phi) q_printer_in <= {q_printer_in[1:0], printer_in};
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
-    reg sysctrl_dis_regs_r;
-    reg sysctrl_dis_psgs_r;
+    reg q_sysctrl_dis_regs;
+    reg q_sysctrl_dis_psgs;
 
     // Select banking register based on upper address bits
     reg [7:0] reg_bank;
     always @* case (ebus_a[15:14])
-        2'd0: reg_bank = reg_bank0_r;
-        2'd1: reg_bank = reg_bank1_r;
-        2'd2: reg_bank = reg_bank2_r;
-        2'd3: reg_bank = reg_bank3_r;
+        2'd0: reg_bank = q_reg_bank0;
+        2'd1: reg_bank = q_reg_bank1;
+        2'd2: reg_bank = q_reg_bank2;
+        2'd3: reg_bank = q_reg_bank3;
     endcase
 
     wire [5:0] reg_bank_page    = reg_bank[5:0];
@@ -150,13 +152,13 @@ module aqp_top(
     reg [7:0] wrdata;
     always @(posedge clk) if (!ebus_wr_n) wrdata <= ebus_d;
 
-    reg [2:0] ebus_wr_n_r;
-    reg [2:0] ebus_rd_n_r;
-    always @(posedge clk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
-    always @(posedge clk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
+    reg [2:0] q_ebus_wr_n;
+    reg [2:0] q_ebus_rd_n;
+    always @(posedge clk) q_ebus_wr_n <= {q_ebus_wr_n[1:0], ebus_wr_n};
+    always @(posedge clk) q_ebus_rd_n <= {q_ebus_rd_n[1:0], ebus_rd_n};
 
-    wire bus_read  = ebus_rd_n_r[2:1] == 2'b10;
-    wire bus_write = ebus_wr_n_r[2:1] == 2'b10;
+    wire bus_read  = q_ebus_rd_n[2:1] == 2'b10;
+    wire bus_write = q_ebus_wr_n[2:1] == 2'b10;
 
     // Memory space decoding
     wire sel_mem_tram    = !ebus_mreq_n && reg_bank_overlay && ebus_a[13:11] == 3'b110;   // $3000-$37FF
@@ -168,16 +170,16 @@ module aqp_top(
     assign ebus_ba = reg_bank_page[4:0];
 
     // IO space decoding
-    wire sel_io_video             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:4] == 4'hE;
-    wire sel_io_audio_dac         = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hEC;
-    wire sel_io_bank0             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
-    wire sel_io_bank1             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
-    wire sel_io_bank2             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
-    wire sel_io_bank3             = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
-    wire sel_io_espctrl           = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
-    wire sel_io_espdata           = !sysctrl_dis_regs_r && !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
-    wire sel_io_ay8910            = !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
-    wire sel_io_ay8910_2          = !sysctrl_dis_regs_r && !sysctrl_dis_psgs_r && !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
+    wire sel_io_video             = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:4] == 4'hE;
+    wire sel_io_audio_dac         = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hEC;
+    wire sel_io_bank0             = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF0;
+    wire sel_io_bank1             = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF1;
+    wire sel_io_bank2             = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF2;
+    wire sel_io_bank3             = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF3;
+    wire sel_io_espctrl           = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF4;
+    wire sel_io_espdata           = !q_sysctrl_dis_regs && !ebus_iorq_n && ebus_a[7:0] == 8'hF5;
+    wire sel_io_ay8910            = !q_sysctrl_dis_psgs && !ebus_iorq_n && (ebus_a[7:0] == 8'hF6 || ebus_a[7:0] == 8'hF7);
+    wire sel_io_ay8910_2          = !q_sysctrl_dis_regs && !q_sysctrl_dis_psgs && !ebus_iorq_n && (ebus_a[7:0] == 8'hF8 || ebus_a[7:0] == 8'hF9);
     wire sel_io_kbbuf             = !ebus_iorq_n && ebus_a[7:0] == 8'hFA;
     wire sel_io_sysctrl           = !ebus_iorq_n && ebus_a[7:0] == 8'hFB;
     wire sel_io_cassette          = !ebus_iorq_n && ebus_a[7:0] == 8'hFC;
@@ -208,19 +210,19 @@ module aqp_top(
         if (sel_mem_chram)            rddata = rddata_chram;
 
         if (sel_io_video)             rddata = rddata_io_video;                                // IO $E0-$EF
-        if (sel_io_bank0)             rddata = reg_bank0_r;                                    // IO $F0
-        if (sel_io_bank1)             rddata = reg_bank1_r;                                    // IO $F1
-        if (sel_io_bank2)             rddata = reg_bank2_r;                                    // IO $F2
-        if (sel_io_bank3)             rddata = reg_bank3_r;                                    // IO $F3
+        if (sel_io_bank0)             rddata = q_reg_bank0;                                    // IO $F0
+        if (sel_io_bank1)             rddata = q_reg_bank1;                                    // IO $F1
+        if (sel_io_bank2)             rddata = q_reg_bank2;                                    // IO $F2
+        if (sel_io_bank3)             rddata = q_reg_bank3;                                    // IO $F3
         if (sel_io_espctrl)           rddata = rddata_espctrl;                                 // IO $F4
         if (sel_io_espdata)           rddata = rddata_espdata;                                 // IO $F5
         if (sel_io_ay8910)            rddata = rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata = rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_kbbuf)             rddata = rddata_kbbuf;                                   // IO $FA
-        if (sel_io_sysctrl)           rddata = {5'b0, sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r}; // IO $FB
-        if (sel_io_cassette)          rddata = {7'b0, !cassette_in_r[2]};                      // IO $FC
+        if (sel_io_sysctrl)           rddata = {5'b0, q_sysctrl_turbo, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
+        if (sel_io_cassette)          rddata = {7'b0, !q_cassette_in[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata = {7'b0, reg_fd_val};                             // IO $FD
-        if (sel_io_printer)           rddata = {7'b0, printer_in_r[2]};                        // IO $FE
+        if (sel_io_printer)           rddata = {7'b0, q_printer_in[2]};                        // IO $FE
         if (sel_io_keyb_r_scramble_w) rddata = rddata_keyboard;                                // IO $FF
     end
 
@@ -230,34 +232,37 @@ module aqp_top(
 
     wire video_irq;
 
-    assign ebus_int_n       = video_irq ? 1'b0 : 1'bZ;
-
-    assign exp              = 10'b0;
+    assign ebus_int_n = video_irq ? 1'b0 : 1'bZ;
 
     always @(posedge clk or posedge reset)
         if (reset) begin
-            audio_dac_r         <= 8'b0;
-            reg_bank0_r         <= {2'b00, 6'd0};
-            reg_bank1_r         <= {2'b00, 6'd0};
-            reg_bank2_r         <= {2'b00, 6'd0};
-            reg_bank3_r         <= {2'b00, 6'd0};
-            sysctrl_dis_regs_r  <= 1'b0;
-            sysctrl_dis_psgs_r  <= 1'b0;
-            sysctrl_turbo_r     <= 1'b0;
+            q_audio_dac         <= 8'b0;
+            q_reg_bank0         <= {2'b00, 6'd0};
+            q_reg_bank1         <= {2'b00, 6'd0};
+            q_reg_bank2         <= {2'b00, 6'd0};
+            q_reg_bank3         <= {2'b00, 6'd0};
+            q_sysctrl_dis_regs  <= 1'b0;
+            q_sysctrl_dis_psgs  <= 1'b0;
+            q_sysctrl_turbo     <= 1'b0;
             cassette_out        <= 1'b0;
-            reg_cpm_remap_r     <= 1'b0;
+            q_reg_cpm_remap     <= 1'b0;
             printer_out         <= 1'b0;
 
         end else begin
-            if (sel_io_audio_dac     && bus_write) audio_dac_r     <= wrdata;
-            if (sel_io_bank0         && bus_write) reg_bank0_r     <= wrdata;
-            if (sel_io_bank1         && bus_write) reg_bank1_r     <= wrdata;
-            if (sel_io_bank2         && bus_write) reg_bank2_r     <= wrdata;
-            if (sel_io_bank3         && bus_write) reg_bank3_r     <= wrdata;
-            if (sel_io_sysctrl       && bus_write) {sysctrl_turbo_r, sysctrl_dis_psgs_r, sysctrl_dis_regs_r} <= wrdata[2:0];
+            if (sel_io_audio_dac     && bus_write) q_audio_dac     <= wrdata;
+            if (sel_io_bank0         && bus_write) q_reg_bank0     <= wrdata;
+            if (sel_io_bank1         && bus_write) q_reg_bank1     <= wrdata;
+            if (sel_io_bank2         && bus_write) q_reg_bank2     <= wrdata;
+            if (sel_io_bank3         && bus_write) q_reg_bank3     <= wrdata;
             if (sel_io_cassette      && bus_write) cassette_out    <= wrdata[0];
-            if (sel_io_vsync_r_cpm_w && bus_write) reg_cpm_remap_r <= wrdata[0];
+            if (sel_io_vsync_r_cpm_w && bus_write) q_reg_cpm_remap <= wrdata[0];
             if (sel_io_printer       && bus_write) printer_out     <= wrdata[0];
+
+            if (sel_io_sysctrl && bus_write) begin
+                q_sysctrl_turbo    <= wrdata[2];
+                q_sysctrl_dis_psgs <= wrdata[1];
+                q_sysctrl_dis_regs <= wrdata[0];
+            end
         end
 
     //////////////////////////////////////////////////////////////////////////
@@ -279,24 +284,24 @@ module aqp_top(
     wire esp_rxfifo_read = sel_io_espdata && bus_read;
     wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
 
-    reg [2:0] esp_ctrl_status_r;
+    reg [2:0] q_esp_ctrl_status;
     always @(posedge clk or posedge reset) begin
         if (reset)
-            esp_ctrl_status_r <= 3'b0;
+            q_esp_ctrl_status <= 3'b0;
         else begin
-            if (sel_io_espctrl && bus_write) esp_ctrl_status_r <= esp_ctrl_status_r & ~wrdata[4:2];
+            if (sel_io_espctrl && bus_write) q_esp_ctrl_status <= q_esp_ctrl_status & ~wrdata[4:2];
 
-            if (esp_rxfifo_overflow)  esp_ctrl_status_r[2] <= 1'b1;
-            if (esp_rx_framing_error) esp_ctrl_status_r[1] <= 1'b1;
-            if (esp_rx_break)         esp_ctrl_status_r[0] <= 1'b1;
+            if (esp_rxfifo_overflow)  q_esp_ctrl_status[2] <= 1'b1;
+            if (esp_rx_framing_error) q_esp_ctrl_status[1] <= 1'b1;
+            if (esp_rx_break)         q_esp_ctrl_status[0] <= 1'b1;
         end
     end
 
-    assign rddata_espctrl = {3'b0, esp_ctrl_status_r, esp_txbusy, esp_rxfifo_not_empty};
+    assign rddata_espctrl = {3'b0, q_esp_ctrl_status, esp_txbusy, esp_rxfifo_not_empty};
 
     aqp_esp_uart esp_uart(
-        .rst(reset),
         .clk(clk),
+        .reset(reset),
 
         .tx_data(wrdata),
         .tx_valid(esp_txvalid),
@@ -383,16 +388,16 @@ module aqp_top(
     wire [7:0] hctrl2 = hc2[7:0];
 
     // Synchronize inputs
-    reg [7:0] hctrl1_r, hctrl1_rr;
-    reg [7:0] hctrl2_r, hctrl2_rr;
-    always @(posedge clk) hctrl1_r  <= hctrl1;
-    always @(posedge clk) hctrl1_rr <= hctrl1_r;
-    always @(posedge clk) hctrl2_r  <= hctrl2;
-    always @(posedge clk) hctrl2_rr <= hctrl2_r;
+    reg [7:0] q_hctrl1, q2_hctrl1;
+    reg [7:0] q_hctrl2, q2_hctrl2;
+    always @(posedge clk) q_hctrl1  <= hctrl1;
+    always @(posedge clk) q2_hctrl1 <= q_hctrl1;
+    always @(posedge clk) q_hctrl2  <= hctrl2;
+    always @(posedge clk) q2_hctrl2 <= q_hctrl2;
 
     // Combine data from ESP with data from handcontroller input
-    wire [7:0] hctrl1_data = hctrl1_rr & spi_hctrl1;
-    wire [7:0] hctrl2_data = hctrl2_rr & spi_hctrl2;
+    wire [7:0] hctrl1_data = q2_hctrl1 & spi_hctrl1;
+    wire [7:0] hctrl2_data = q2_hctrl2 & spi_hctrl2;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
@@ -538,12 +543,12 @@ module aqp_top(
     wire [13:0] mix_l =
         {2'b0, ay8910_ch_a,   1'b0} + {2'b0, ay8910_ch_b,   1'b0} + {4'b0, ay8910_ch_c  } +
         {2'b0, ay8910_2_ch_a, 1'b0} + {2'b0, ay8910_2_ch_b, 1'b0} + {4'b0, ay8910_2_ch_c} +
-        {2'b0, audio_dac_r,   4'b0} + {4'b0, beep};
+        {2'b0, q_audio_dac,   4'b0} + {4'b0, beep};
 
     wire [13:0] mix_r =
         {4'b0, ay8910_ch_a  }     + {2'b0, ay8910_ch_b,   1'b0} + {2'b0, ay8910_ch_c,   1'b0} +
         {4'b0, ay8910_2_ch_a}     + {2'b0, ay8910_2_ch_b, 1'b0} + {2'b0, ay8910_2_ch_c, 1'b0} +
-        {2'b0, audio_dac_r, 4'b0} + {4'b0, beep};
+        {2'b0, q_audio_dac, 4'b0} + {4'b0, beep};
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC
@@ -553,8 +558,8 @@ module aqp_top(
     wire [15:0] right_data  = {mix_r, 2'b0};
 
     aqp_pwm_dac pwm_dac(
-        .rst(reset),
         .clk(clk),
+        .reset(reset),
 
         // Sample input
         .next_sample(next_sample),

@@ -13,32 +13,32 @@ module aqp_handctrl(
     output reg  [7:0] hctrl2_data);
 
     // Clock divider for hctrl_clk
-    reg [7:0] clkdiv_r = 8'd0;
+    reg [7:0] q_clkdiv = 8'd0;
     always @(posedge clk)
-        clkdiv_r <= clkdiv_r + 8'd1;
+        q_clkdiv <= q_clkdiv + 8'd1;
 
-    assign hctrl_clk = clkdiv_r[7];
+    assign hctrl_clk = q_clkdiv[7];
 
     // Bit counter
-    reg [4:0] bitcnt_r = 5'd0;
+    reg [4:0] q_bitcnt = 5'd0;
 
-    wire do_shift = (clkdiv_r == 4'd0);
-    wire shift_done = (bitcnt_r == 5'd16);
+    wire do_shift   = (q_clkdiv == 8'd0);
+    wire shift_done = (q_bitcnt == 5'd16);
 
-    reg [15:0] data_r;
+    reg [15:0] q_data;
     always @(posedge clk)
         if (do_shift) begin
             // Shift in data
-            data_r <= {data_r[14:0], hctrl_data};
+            q_data <= {q_data[14:0], hctrl_data};
 
-            if (bitcnt_r == 5'd16)
-                bitcnt_r <= 4'd0;
+            if (q_bitcnt == 5'd16)
+                q_bitcnt <= 5'd0;
             else
-                bitcnt_r <= bitcnt_r + 4'd1;
+                q_bitcnt <= q_bitcnt + 4'd1;
         end
 
     // Generate shift register LOAD# signal
-    assign hctrl_load_n = (bitcnt_r == 5'd0) ? 1'b0 : 1'b1;
+    assign hctrl_load_n = (q_bitcnt == 5'd0) ? 1'b0 : 1'b1;
 
     always @(posedge clk)
         if (reset) begin
@@ -46,8 +46,8 @@ module aqp_handctrl(
             hctrl2_data <= 8'hFF;
 
         end else if (shift_done) begin
-            hctrl1_data <= data_r[7:0];
-            hctrl2_data <= data_r[15:8];
+            hctrl1_data <= q_data[7:0];
+            hctrl2_data <= q_data[15:8];
         end
 
 endmodule

@@ -2,8 +2,8 @@
 `timescale 1 ns / 1 ps
 
 module aqp_esp_uart(
-    input  wire        rst,
     input  wire        clk,
+    input  wire        reset,
 
     input  wire  [7:0] tx_data,
     input  wire        tx_valid,
@@ -27,7 +27,7 @@ module aqp_esp_uart(
     //////////////////////////////////////////////////////////////////////////
     aqp_esp_uart_tx esp_uart_tx(
         .clk(clk),
-        .rst(rst),
+        .reset(reset),
         .uart_txd(uart_txd),
         .tx_data(tx_data),
         .tx_valid(tx_valid),
@@ -48,7 +48,7 @@ module aqp_esp_uart(
 
     aqp_esp_uart_rxfifo esp_uart_rxfifo(
 	    .clk(clk),
-        .rst(rst),
+        .reset(reset),
 
     	.wrdata(rx_data),
 	    .wr_en(rx_valid),
@@ -69,17 +69,17 @@ module aqp_esp_uart(
     // UART RX - 'uart_clk' clock domain
     //////////////////////////////////////////////////////////////////////////
     wire rx_fe, rx_brk;
-    reg rx_fe_r, rx_brk_r;
+    reg q_rx_fe, q_rx_brk;
 
-    always @(posedge clk) rx_fe_r  <= rx_fe;
-    always @(posedge clk) rx_brk_r <= rx_brk;
+    always @(posedge clk) q_rx_fe  <= rx_fe;
+    always @(posedge clk) q_rx_brk <= rx_brk;
 
-    assign rx_framing_error = rx_fe && !rx_fe_r;
-    assign rx_break         = rx_brk && !rx_brk_r;
+    assign rx_framing_error = rx_fe  && !q_rx_fe;
+    assign rx_break         = rx_brk && !q_rx_brk;
 
     aqp_esp_uart_rx esp_uart_rx(
         .clk(clk),
-        .rst(rst),
+        .reset(reset),
         .uart_rxd(uart_rxd),
         .rx_data(rx_data),
         .rx_valid(rx_valid),
