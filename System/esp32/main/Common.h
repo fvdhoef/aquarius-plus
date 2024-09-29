@@ -31,6 +31,7 @@
 #include <freertos/task.h>
 #include <freertos/event_groups.h>
 #include <freertos/semphr.h>
+#include <freertos/queue.h>
 
 #include <driver/gpio.h>
 

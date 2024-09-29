@@ -4,7 +4,6 @@
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <esp_intr_alloc.h>
-#include "AqKeyboard.h"
 
 static const char *TAG = "USBHost";
 

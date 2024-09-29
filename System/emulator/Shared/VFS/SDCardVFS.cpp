@@ -1,22 +1,22 @@
 #include "SDCardVFS.h"
 
 #ifndef EMULATOR
-#    include <sys/unistd.h>
-#    include <sys/stat.h>
-#    include <errno.h>
-#    include "PowerLED.h"
-#    include "ff.h"
-#    include "diskio.h"
+#include <sys/unistd.h>
+#include <sys/stat.h>
+#include <errno.h>
+#include "PowerLED.h"
+#include "ff.h"
+#include "diskio.h"
 #else
-#    ifndef _WIN32
-#        include <sys/types.h>
-#        include <sys/stat.h>
-#        include <dirent.h>
-#        include <unistd.h>
-#    else
-#        include <io.h>
-#        include <time.h>
-#    endif
+#ifndef _WIN32
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <unistd.h>
+#else
+#include <io.h>
+#include <time.h>
+#endif
 #endif
 
 #ifndef EMULATOR
@@ -382,9 +382,9 @@ int SDCardVFS::diskRead(uint8_t pdrv, uint8_t *buf, size_t sector, size_t count)
     if (!card)
         return RES_PARERR;
 
-    PowerLED::instance().flashStart();
+    getPowerLED()->flashStart();
     esp_err_t err = sdmmc_read_sectors(card, buf, sector, count);
-    PowerLED::instance().flashStop();
+    getPowerLED()->flashStop();
 
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "sdmmc_read_blocks failed (%d)", err);
@@ -398,9 +398,9 @@ int SDCardVFS::diskWrite(uint8_t pdrv, const uint8_t *buf, size_t sector, size_t
     if (!card)
         return RES_PARERR;
 
-    PowerLED::instance().flashStart();
+    getPowerLED()->flashStart();
     esp_err_t err = sdmmc_write_sectors(card, buf, sector, count);
-    PowerLED::instance().flashStop();
+    getPowerLED()->flashStop();
 
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "sdmmc_write_blocks failed (%d)", err);
@@ -419,11 +419,11 @@ int SDCardVFS::diskIoctl(uint8_t pdrv, uint8_t cmd, void *buf) {
         case GET_SECTOR_COUNT: *((DWORD *)buf) = card->csd.capacity; return RES_OK;
         case GET_SECTOR_SIZE: *((WORD *)buf) = card->csd.sector_size; return RES_OK;
         case GET_BLOCK_SIZE: return RES_ERROR;
-#    if FF_USE_TRIM
+#if FF_USE_TRIM
         case CTRL_TRIM:
             return ff_sdmmc_trim(pdrv, *((DWORD *)buf),                        // start_sector
                                  (*((DWORD *)buf + 1) - *((DWORD *)buf) + 1)); // sector_count
-#    endif                                                                     // FF_USE_TRIM
+#endif                                                                         // FF_USE_TRIM
     }
     return RES_ERROR;
 }
@@ -642,26 +642,26 @@ std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t f
 
     auto fullPath = getFullPath(path);
 
-#    ifndef _WIN32
+#ifndef _WIN32
     DIR *dir = ::opendir(fullPath.c_str());
     if (dir == nullptr) {
         return std::pair(ERR_NOT_FOUND, nullptr);
     }
-#    else
+#else
     struct _finddata_t fileinfo;
     intptr_t           handle = _findfirst((fullPath + "/*.*").c_str(), &fileinfo);
     if (handle < 0) {
         return std::pair(ERR_NOT_FOUND, nullptr);
     }
     bool first = true;
-#    endif
+#endif
 
     auto result = std::make_shared<std::vector<DirEnumEntry>>();
 
     // Read directory contents
     while (1) {
         DirEnumEntry dee;
-#    ifndef _WIN32
+#ifndef _WIN32
         // Read directory entry
         struct dirent *de = ::readdir(dir);
         if (de == NULL) {
@@ -680,13 +680,13 @@ std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t f
         dee.size     = (de->d_type == DT_DIR) ? 0 : st.st_size;
         dee.attr     = (de->d_type == DT_DIR) ? DE_ATTR_DIR : 0;
 
-#        ifdef __APPLE__
+#ifdef __APPLE__
         time_t t = st.st_mtimespec.tv_sec;
-#        else
+#else
         time_t t = st.st_mtim.tv_sec;
-#        endif
+#endif
 
-#    else
+#else
         if (!first) {
             if (_findnext(handle, &fileinfo) != 0)
                 break;
@@ -702,7 +702,7 @@ std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t f
         dee.size     = (fileinfo.attrib & _A_SUBDIR) ? 0 : fileinfo.size;
         dee.attr     = (fileinfo.attrib & _A_SUBDIR) ? DE_ATTR_DIR : 0;
         time_t t     = fileinfo.time_write;
-#    endif
+#endif
 
         struct tm *tm = ::localtime(&t);
         dee.ftime     = (tm->tm_hour << 11) | (tm->tm_min << 5) | (tm->tm_sec / 2);
@@ -751,11 +751,11 @@ std::pair<int, DirEnumCtx> SDCardVFS::direnum(const std::string &path, uint8_t f
         result->push_back(dee);
     }
 
-#    ifndef _WIN32
+#ifndef _WIN32
     ::closedir(dir);
-#    else
+#else
     ::_findclose(handle);
-#    endif
+#endif
 
     return std::make_pair(0, result);
 }

@@ -19,7 +19,7 @@ static const char *TAG = "main";
 
 static void init() {
     // Init power LED
-    PowerLED::instance().init();
+    getPowerLED()->init();
 
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -69,7 +69,7 @@ static void init() {
     SDCardVFS::instance().init();
     USBHost::instance().init();
     AqUartProtocol::instance().init();
-    FileServer::instance().init();
+    getFileServer()->init();
 
     // Initialize FPGA
     auto &fpga = FPGA::instance();

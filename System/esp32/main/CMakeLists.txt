@@ -5,10 +5,18 @@ idf_component_register(
         "MemDump.cpp"
         "WiFi.cpp"
         "Bluetooth.cpp"
+        "FileServer.cpp"
+        "PowerLED.cpp"
 
         "DisplayOverlay/DisplayOverlay.cpp"
         "DisplayOverlay/Menu.cpp"
         "DisplayOverlay/Menus.cpp"
+
+        "HID/HIDReportDescriptor.cpp"
+        "HID/HIDReportHandler.cpp"
+        "HID/HIDReportHandlerKeyboard.cpp"
+        "HID/HIDReportHandlerMouse.cpp"
+        "HID/HIDReportHandlerGamepad.cpp"
 
         "USB/USBHost.cpp"
         "USB/USBDevice.cpp"
@@ -18,12 +26,6 @@ idf_component_register(
         "fatfs/ff.c"
         "fatfs/ffsystem.c"
         "fatfs/ffunicode.c"
-
-        "HID/HIDReportDescriptor.cpp"
-        "HID/HIDReportHandler.cpp"
-        "HID/HIDReportHandlerKeyboard.cpp"
-        "HID/HIDReportHandlerMouse.cpp"
-        "HID/HIDReportHandlerGamepad.cpp"
 
         # Files shared between emulator and ESP32
         "../../emulator/Shared/AqKeyboard.cpp"
@@ -35,16 +37,13 @@ idf_component_register(
         "../../emulator/Shared/VFS/HttpVFS.cpp"
         "../../emulator/Shared/VFS/TcpVFS.cpp"
 
-        "FileServer.cpp"
-        "PowerLED.cpp"
-
     INCLUDE_DIRS
         "."
-        "../../emulator/Shared"
-        "../../emulator/Shared/VFS"
-        "fatfs"
         "HID"
         "USB"
+        "fatfs"
+        "../../emulator/Shared"
+        "../../emulator/Shared/VFS"
 
     REQUIRES
         "driver"
