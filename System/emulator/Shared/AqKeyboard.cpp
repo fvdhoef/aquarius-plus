@@ -335,6 +335,8 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
                 emuState.kbBufWrite(ch);
 #else
                 FPGA::instance().aqpWriteKeybBuffer(ch);
+
+                xQueueSend(AqKeyboard::instance().keyQueue, &ch, 0);
 #endif
                 // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
             }
@@ -467,7 +469,8 @@ AqKeyboard &AqKeyboard::instance() {
 
 void AqKeyboard::init() {
 #ifndef EMULATOR
-    mutex = xSemaphoreCreateRecursiveMutex();
+    mutex    = xSemaphoreCreateRecursiveMutex();
+    keyQueue = xQueueCreate(128, 1);
 
     const esp_timer_create_args_t periodic_timer_args = {
         .callback              = &keyRepeatTimer,
@@ -689,6 +692,8 @@ void AqKeyboard::repeatTimer() {
 #ifdef EMULATOR
         emuState.kbBufWrite(kbLayout.repeat);
 #else
+        xQueueSend(keyQueue, &kbLayout.repeat, 0);
+
         FPGA::instance().aqpWriteKeybBuffer(kbLayout.repeat);
 #endif
     }
@@ -819,3 +824,12 @@ void AqKeyboard::pressKey(unsigned char ch) {
 
 #endif
 }
+
+#ifndef EMULATOR
+int AqKeyboard::getKey(TickType_t ticksToWait) {
+    uint8_t result;
+    if (!xQueueReceive(keyQueue, &result, ticksToWait))
+        return -1;
+    return result;
+}
+#endif

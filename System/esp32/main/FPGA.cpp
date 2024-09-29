@@ -324,12 +324,12 @@ void FPGA::aqpSetVideoTimingMode(uint8_t mode) {
     spiSel(false);
 }
 
-void FPGA::setOverlayText(const uint16_t buf[1000]) {
+void FPGA::setOverlayText(const uint16_t buf[1024]) {
     RecursiveMutexLock lock(mutex);
     spiSel(true);
     uint8_t cmd[] = {CMD_OVL_TEXT};
     spiTx(cmd, sizeof(cmd));
-    tx(buf, 2 * 1000);
+    tx(buf, 2 * 1024);
     spiSel(false);
 }
 

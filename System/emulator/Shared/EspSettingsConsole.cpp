@@ -1,7 +1,7 @@
 #include "EspSettingsConsole.h"
 #include "AqKeyboard.h"
 #include "AqUartProtocol.h"
-#ifndef EMULATOR
+#if 0
 #include <esp_ota_ops.h>
 #include <esp_app_format.h>
 #include <esp_wifi.h>
@@ -26,12 +26,12 @@ EspSettingsConsole &EspSettingsConsole::instance() {
 }
 
 void EspSettingsConsole::init() {
-#ifndef EMULATOR
+#if 0
     tx_buffer = xStreamBufferCreate(256, 1);
     rx_buffer = xStreamBufferCreate(256, 1);
     xTaskCreate(_consoleTask, "console", 8192, this, 1, nullptr);
 #else
-    std::thread([&]() { consoleTask(); }).detach();
+    // std::thread([&]() { consoleTask(); }).detach();
 #endif
 }
 
@@ -39,7 +39,7 @@ void EspSettingsConsole::newSession() {
     new_session = true;
 
     // Flush any data still in TX buffer
-#ifndef EMULATOR
+#if 0
     for (int i = 0; i < 256; i++) {
         uint8_t data;
         if (xStreamBufferReceive(tx_buffer, &data, 1, 0) == 0)
@@ -50,40 +50,40 @@ void EspSettingsConsole::newSession() {
         xStreamBufferSend(rx_buffer, &data, 1, portMAX_DELAY);
     }
 #else
-    while (!tx_buffer.empty())
-        tx_buffer.pop();
-    rx_buffer.push(0);
+    // while (!tx_buffer.empty())
+    //     tx_buffer.pop();
+    // rx_buffer.push(0);
 #endif
 }
 
 int EspSettingsConsole::recv(void *buf, size_t size) {
-#ifndef EMULATOR
+#if 0
     return xStreamBufferReceive(tx_buffer, buf, size, 0);
 #else
     int      count = 0;
-    uint8_t *p     = (uint8_t *)buf;
-    while (count < (int)size) {
-        if (tx_buffer.empty())
-            break;
-        p[count++] = tx_buffer.pop();
-    }
+    // uint8_t *p     = (uint8_t *)buf;
+    // while (count < (int)size) {
+    //     if (tx_buffer.empty())
+    //         break;
+    //     p[count++] = tx_buffer.pop();
+    // }
     return count;
 #endif
 }
 
 int EspSettingsConsole::send(const void *buf, size_t size) {
-#ifndef EMULATOR
+#if 0
     return xStreamBufferSend(rx_buffer, buf, size, 0);
 #else
-    const uint8_t *p = (const uint8_t *)buf;
-    for (int i = 0; i < (int)size; i++) {
-        rx_buffer.push(p[i]);
-    }
+    // const uint8_t *p = (const uint8_t *)buf;
+    // for (int i = 0; i < (int)size; i++) {
+    //     rx_buffer.push(p[i]);
+    // }
     return (int)size;
 #endif
 }
 
-#ifndef EMULATOR
+#if 0
 void EspSettingsConsole::_consoleTask(void *obj) {
     static_cast<EspSettingsConsole *>(obj)->consoleTask();
     vTaskDelete(nullptr);
@@ -95,7 +95,7 @@ void EspSettingsConsole::consoleTask() {
         if (new_session) {
             new_session = false;
 
-#ifndef EMULATOR
+#if 0
             cprintf("\n");
             const esp_partition_t *running = esp_ota_get_running_partition();
             esp_app_desc_t         running_app_info;
@@ -156,7 +156,7 @@ void EspSettingsConsole::cprintf(const char *fmt, ...) {
     vsnprintf(tmp, sizeof(tmp), fmt, ap);
     va_end(ap);
 
-#ifndef EMULATOR
+#if 0
     xStreamBufferSend(tx_buffer, tmp, strlen(tmp), portMAX_DELAY);
 #else
     for (int i = 0; i < (int)strlen(tmp); i++) {
@@ -166,20 +166,21 @@ void EspSettingsConsole::cprintf(const char *fmt, ...) {
 }
 
 void EspSettingsConsole::cputc(char ch) {
-#ifndef EMULATOR
+#if 0
     xStreamBufferSend(tx_buffer, &ch, 1, portMAX_DELAY);
 #else
-    tx_buffer.push(ch);
+    // tx_buffer.push(ch);
 #endif
 }
 
 char EspSettingsConsole::cgetc() {
-#ifndef EMULATOR
+#if 0
     uint8_t val;
     xStreamBufferReceive(rx_buffer, &val, 1, portMAX_DELAY);
     return val;
 #else
-    return rx_buffer.pop();
+    // return rx_buffer.pop();
+    return 0;
 #endif
 }
 
@@ -237,7 +238,7 @@ void EspSettingsConsole::showHelp() {
 }
 
 void EspSettingsConsole::wifiStatus() {
-#ifndef EMULATOR
+#if 0
     WiFi &wifi       = WiFi::instance();
     auto  wifiStatus = wifi.getStatus();
     cprintf("WiFi status: %s\n", wifi.getStatusStr().c_str());
@@ -285,7 +286,7 @@ void EspSettingsConsole::wifiStatus() {
 }
 
 void EspSettingsConsole::wifiSet() {
-#ifndef EMULATOR
+#if 0
     cprintf("Scanning networks\n");
 
     uint16_t         ap_count = MAX_SCAN_AP;
@@ -373,7 +374,7 @@ void EspSettingsConsole::wifiSet() {
 }
 
 void EspSettingsConsole::wifiSetHostname() {
-#ifndef EMULATOR
+#if 0
     const char *cur_hostname;
     if (esp_netif_get_hostname(esp_netif_get_handle_from_ifkey("WIFI_STA_DEF"), &cur_hostname) == ESP_OK) {
         if (cur_hostname && *cur_hostname)
@@ -417,7 +418,7 @@ void EspSettingsConsole::showDate() {
 }
 
 void EspSettingsConsole::systemUpdate() {
-#ifndef EMULATOR
+#if 0
     const int              app_desc_offset  = sizeof(esp_image_header_t) + sizeof(esp_image_segment_header_t);
     size_t                 update_size      = 0;
     const esp_partition_t *update_partition = nullptr;
@@ -546,7 +547,7 @@ done:
 #endif
 }
 
-#ifndef EMULATOR
+#if 0
 // trim from left
 static inline std::string ltrim(const std::string &s, const char *t = " \t\n\r\f\v") {
     std::string result = s;
@@ -567,7 +568,7 @@ static inline std::string trim(const std::string &s, const char *t = " \t\n\r\f\
 }
 #endif
 
-#ifndef EMULATOR
+#if 0
 
 #define LATEST_TAG_LEN (32)
 static esp_err_t http_evt_cb(esp_http_client_event_t *evt) {
@@ -588,7 +589,7 @@ static esp_err_t http_evt_cb(esp_http_client_event_t *evt) {
 #endif
 
 void EspSettingsConsole::systemUpdateGitHub() {
-#ifndef EMULATOR
+#if 0
     char latestTag[LATEST_TAG_LEN];
     latestTag[0] = 0;
 
@@ -925,7 +926,7 @@ void EspSettingsConsole::timeZoneSet() {
     setenv("TZ", tz, 1);
 #endif
 
-#ifndef EMULATOR
+#if 0
     // Save timezone to flash
     {
         nvs_handle_t h;
@@ -942,42 +943,42 @@ void EspSettingsConsole::timeZoneSet() {
 }
 
 void EspSettingsConsole::timeZoneShow() {
-#ifndef EMULATOR
-    const char *cur_tz;
-#endif
+// #if 0
+//     const char *cur_tz;
+// #endif
 
-#ifndef _WIN32
-    cur_tz = getenv("TZ");
-    if (!cur_tz)
-        cur_tz = "";
-#endif
+// #ifndef _WIN32
+//     cur_tz = getenv("TZ");
+//     if (!cur_tz)
+//         cur_tz = "";
+// #endif
 
-    const char *p = cur_tz;
-    if (p[0] == 0) {
-        cprintf("No timezone set.\n");
-        return;
-    }
+//     const char *p = cur_tz;
+//     if (p[0] == 0) {
+//         cprintf("No timezone set.\n");
+//         return;
+//     }
 
-    std::string tzName;
-    std::string tzDstName;
+//     std::string tzName;
+//     std::string tzDstName;
 
-    // Extract timezone
-    while (isalpha(*p))
-        tzName.push_back(*(p++));
+//     // Extract timezone
+//     while (isalpha(*p))
+//         tzName.push_back(*(p++));
 
-    // Skip GMT offset
-    while (isdigit(*p) || *p == ':' || *p == '-')
-        p++;
+//     // Skip GMT offset
+//     while (isdigit(*p) || *p == ':' || *p == '-')
+//         p++;
 
-    // Extract DST timezone if available
-    while (isalpha(*p))
-        tzDstName.push_back(*(p++));
+//     // Extract DST timezone if available
+//     while (isalpha(*p))
+//         tzDstName.push_back(*(p++));
 
-    if (!tzDstName.empty()) {
-        cprintf("Timezone:%s/%s\n", tzName.c_str(), tzDstName.c_str());
-    } else {
-        cprintf("Timezone:%s\n", tzName.c_str());
-    }
+//     if (!tzDstName.empty()) {
+//         cprintf("Timezone:%s/%s\n", tzName.c_str(), tzDstName.c_str());
+//     } else {
+//         cprintf("Timezone:%s\n", tzName.c_str());
+//     }
 }
 
 void EspSettingsConsole::keybShow() {
@@ -999,7 +1000,7 @@ void EspSettingsConsole::keybSet() {
     }
     setKeyLayout((KeyLayout)value);
 
-#ifndef EMULATOR
+#if 0
     // Save layout to flash
     {
         nvs_handle_t h;
@@ -1014,51 +1015,51 @@ void EspSettingsConsole::keybSet() {
 }
 
 void EspSettingsConsole::systemReset() {
-    char str[4];
-    cprintf("This will clear all stored settings,\nsuch as WiFi credentials, Bluetooth\nsettings, etc.\n\n");
-    cprintf("Do you want to continue?\nType yes to confirm\n");
-    creadline(str, sizeof(str), false);
-    if (strcmp(str, "yes") != 0) {
-        cprintf("Aborting factory reset.\n");
-        return;
-    }
-#ifdef EMULATOR
-    cprintf("Not available on emulator\n");
-#else
-    cprintf("Erasing settings...");
-    ESP_ERROR_CHECK(nvs_flash_erase());
-    ESP_ERROR_CHECK(nvs_flash_init());
-    cprintf("Done.\nPress enter to reboot.\n");
-    creadline(str, sizeof(str), false);
-    esp_restart();
-#endif
+//     char str[4];
+//     cprintf("This will clear all stored settings,\nsuch as WiFi credentials, Bluetooth\nsettings, etc.\n\n");
+//     cprintf("Do you want to continue?\nType yes to confirm\n");
+//     creadline(str, sizeof(str), false);
+//     if (strcmp(str, "yes") != 0) {
+//         cprintf("Aborting factory reset.\n");
+//         return;
+//     }
+// #ifdef EMULATOR
+//     cprintf("Not available on emulator\n");
+// #else
+//     cprintf("Erasing settings...");
+//     ESP_ERROR_CHECK(nvs_flash_erase());
+//     ESP_ERROR_CHECK(nvs_flash_init());
+//     cprintf("Done.\nPress enter to reboot.\n");
+//     creadline(str, sizeof(str), false);
+//     esp_restart();
+// #endif
 }
 
 void EspSettingsConsole::mouseSensitivity() {
-#ifdef EMULATOR
-    cprintf("Not available on emulator\n");
-#else
-    cprintf("Current setting: 1/%u\n", AqUartProtocol::instance().getMouseSensitivityDiv());
+// #ifdef EMULATOR
+//     cprintf("Not available on emulator\n");
+// #else
+//     cprintf("Current setting: 1/%u\n", AqUartProtocol::instance().getMouseSensitivityDiv());
 
-    cprintf("\nEnter sensitivity divider (1-8):");
-    unsigned value;
-    if (!creadUint(&value) || value < 1 || value > 8) {
-        if (new_session)
-            return;
-        cprintf("Invalid entry, aborting.\n");
-        return;
-    }
-    AqUartProtocol::instance().setMouseSensitivityDiv(value);
+//     cprintf("\nEnter sensitivity divider (1-8):");
+//     unsigned value;
+//     if (!creadUint(&value) || value < 1 || value > 8) {
+//         if (new_session)
+//             return;
+//         cprintf("Invalid entry, aborting.\n");
+//         return;
+//     }
+//     AqUartProtocol::instance().setMouseSensitivityDiv(value);
 
-    {
-        nvs_handle_t h;
-        if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
-            if (nvs_set_u8(h, "mouseDiv", AqUartProtocol::instance().getMouseSensitivityDiv()) == ESP_OK) {
-                nvs_commit(h);
-            }
-            nvs_close(h);
-        }
-    }
+//     {
+//         nvs_handle_t h;
+//         if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+//             if (nvs_set_u8(h, "mouseDiv", AqUartProtocol::instance().getMouseSensitivityDiv()) == ESP_OK) {
+//                 nvs_commit(h);
+//             }
+//             nvs_close(h);
+//         }
+//     }
 
-#endif
+// #endif
 }

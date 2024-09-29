@@ -4,10 +4,11 @@
 #include "FPGA.h"
 #include "AqUartProtocol.h"
 #include "WiFi.h"
-#include "BLE.h"
+#include "Bluetooth.h"
 #include "FileServer.h"
 #include "AqKeyboard.h"
 #include "PowerLED.h"
+#include "DisplayOverlay/DisplayOverlay.h"
 
 #include <nvs_flash.h>
 #include <esp_heap_caps.h>
@@ -61,8 +62,8 @@ static void init() {
     // Initialize the event loop
     ESP_ERROR_CHECK(esp_event_loop_create_default());
 
-    WiFi::instance().init();
-    BLE::instance().init();
+    getWiFi()->init();
+    getBluetooth()->init();
 
     AqKeyboard::instance().init();
     SDCardVFS::instance().init();
@@ -82,6 +83,11 @@ extern "C" void app_main(void);
 
 void app_main(void) {
     init();
+
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    auto displayOverlay = getDisplayOverlay();
+    displayOverlay->init();
 
 #if 0
     while (1) {

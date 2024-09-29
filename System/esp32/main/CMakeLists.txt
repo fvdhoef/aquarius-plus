@@ -3,6 +3,12 @@ idf_component_register(
         "main.cpp"
         "FPGA.cpp"
         "MemDump.cpp"
+        "WiFi.cpp"
+        "Bluetooth.cpp"
+
+        "DisplayOverlay/DisplayOverlay.cpp"
+        "DisplayOverlay/Menu.cpp"
+        "DisplayOverlay/Menus.cpp"
 
         "USB/USBHost.cpp"
         "USB/USBDevice.cpp"
@@ -31,8 +37,6 @@ idf_component_register(
 
         "FileServer.cpp"
         "PowerLED.cpp"
-        "WiFi.cpp"
-        "BLE.cpp"
 
     INCLUDE_DIRS
         "."
@@ -64,10 +68,10 @@ idf_component_register(
     EMBED_FILES
         "../../fpga/aqp_top.bit"
         "../../rom_src/romfs.bin"
-        "Assets/ovl_font.chr"
+        "assets/ovl_font.chr"
 
     EMBED_TXTFILES
-        "Assets/root_certificates"
+        "assets/root_certificates"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

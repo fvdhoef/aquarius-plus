@@ -36,7 +36,7 @@ public:
     void    aqpSetVideoTimingMode(uint8_t mode);
 
     // Display overlay
-    void setOverlayText(const uint16_t buf[1000]);
+    void setOverlayText(const uint16_t buf[1024]);
     void setOverlayFont(const uint8_t buf[2048]);
     void setOverlayPalette(const uint16_t buf[16]);
 
