@@ -348,9 +348,9 @@ module aqp_top(
     );
 
     //////////////////////////////////////////////////////////////////////////
-    // Display
+    // Display overlay
     //////////////////////////////////////////////////////////////////////////
-    aqp_display display(
+    aqp_overlay overlay(
         // Core video interface
         .video_clk(video_clk),
         .video_r(video_r),

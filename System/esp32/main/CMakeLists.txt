@@ -64,6 +64,7 @@ idf_component_register(
     EMBED_FILES
         "../../fpga/aqp_top.bit"
         "../../rom_src/romfs.bin"
+        "Assets/ovl_font.chr"
 
     EMBED_TXTFILES
         "Assets/root_certificates"

@@ -2,7 +2,7 @@
 
 static const char *TAG = "FPGA";
 
-#define SPIBUS SPI3_HOST // SPI2 host is used by SD card interface
+#define SPIBUS            SPI3_HOST // SPI2 host is used by SD card interface
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_CS_N
 
 #define MAX_TRANSFER_SIZE (1024)
@@ -20,6 +20,9 @@ enum {
     CMD_IO_READ         = 0x25,
     CMD_ROM_WRITE       = 0x30,
     CMD_SET_VIDMODE     = 0x40,
+    CMD_OVL_TEXT        = 0xF4,
+    CMD_OVL_FONT        = 0xF5,
+    CMD_OVL_PALETTE     = 0xF6,
 };
 
 FPGA::FPGA() {
@@ -112,7 +115,7 @@ bool FPGA::loadBitstream(const void *data, size_t length) {
 
     // Send bitstream
     ESP_LOGI(TAG, "Sending bitstream");
-    fpgaTx(data, length);
+    tx(data, length, true);
 
     // Keep sending clock pulses until DONE becomes high
     ESP_LOGI(TAG, "Sending extra clock cycles");
@@ -121,7 +124,7 @@ bool FPGA::loadBitstream(const void *data, size_t length) {
             break;
 
         uint8_t val = 0;
-        fpgaTx(&val, 1);
+        tx(&val, 1, true);
     }
     if (!gpio_get_level((gpio_num_t)IOPIN_FPGA_DONE)) {
         ESP_LOGE(TAG, "Error: DONE didn't become high, aborting!");
@@ -142,7 +145,9 @@ bool FPGA::loadDefaultBitstream() {
     return loadBitstream(fpga_image_start, fpga_image_end - fpga_image_start);
 }
 
-void FPGA::fpgaTx(const void *data, size_t length) {
+void FPGA::tx(const void *data, size_t length, bool cfg) {
+    spi_device_handle_t spiDev = cfg ? fpgaSpiDev : aqpSpiDev;
+
     unsigned       remaining = length;
     const uint8_t *p         = (const uint8_t *)data;
     while (remaining > 0) {
@@ -153,18 +158,18 @@ void FPGA::fpgaTx(const void *data, size_t length) {
         spi_transaction_t t = {0};
         t.length            = txsize * 8;
         t.tx_buffer         = p;
-        ESP_ERROR_CHECK(spi_device_transmit(fpgaSpiDev, &t));
+        ESP_ERROR_CHECK(spi_device_transmit(spiDev, &t));
 
         p += txsize;
         remaining -= txsize;
     }
 }
 
-void FPGA::aqpSel(bool enable) {
+void FPGA::spiSel(bool enable) {
     gpio_set_level((gpio_num_t)IOPIN_SPI_CS_N, !enable);
 }
 
-void FPGA::aqpTx(int data0, int data1, int data2, int data3) {
+void FPGA::spiTx(int data0, int data1, int data2, int data3) {
     spi_transaction_t t = {0};
     t.flags             = SPI_TRANS_USE_TXDATA;
     if (data0 >= 0) {
@@ -189,14 +194,14 @@ void FPGA::aqpTx(int data0, int data1, int data2, int data3) {
     ESP_ERROR_CHECK(spi_device_transmit(aqpSpiDev, &t));
 }
 
-void FPGA::aqpTx(const void *data, size_t length) {
+void FPGA::spiTx(const void *data, size_t length) {
     spi_transaction_t t = {0};
     t.length            = length * 8;
     t.tx_buffer         = data;
     ESP_ERROR_CHECK(spi_device_transmit(aqpSpiDev, &t));
 }
 
-void FPGA::aqpRx(void *buf, size_t length) {
+void FPGA::spiRx(void *buf, size_t length) {
     spi_transaction_t t = {0};
     t.length            = length * 8;
     t.rxlength          = length * 8;
@@ -206,27 +211,27 @@ void FPGA::aqpRx(void *buf, size_t length) {
 
 void FPGA::aqpReset() {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_RESET);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_RESET);
+    spiSel(false);
 }
 
 void FPGA::aqpUpdateKeybMatrix(uint64_t keyb_matrix) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
+    spiSel(true);
     uint8_t buf[9];
     buf[0] = CMD_SET_KEYB_MATRIX;
     memcpy(&buf[1], &keyb_matrix, 8);
-    aqpTx(buf, sizeof(buf));
-    aqpSel(false);
+    spiTx(buf, sizeof(buf));
+    spiSel(false);
 }
 
 void FPGA::aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait) {
     if (xSemaphoreTakeRecursive(mutex, ticks_to_wait) != pdTRUE)
         return;
-    aqpSel(true);
-    aqpTx(CMD_SET_HCTRL, hctrl1, hctrl2);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_SET_HCTRL, hctrl1, hctrl2);
+    spiSel(false);
     xSemaphoreGiveRecursive(mutex);
 }
 
@@ -234,59 +239,59 @@ void FPGA::aqpWriteKeybBuffer(uint8_t ch) {
     if (ch == 0)
         return;
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_WRITE_KBBUF, ch);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_WRITE_KBBUF, ch);
+    spiSel(false);
     xSemaphoreGiveRecursive(mutex);
 }
 
 void FPGA::aqpAqcuireBus() {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_BUS_ACQUIRE);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_BUS_ACQUIRE);
+    spiSel(false);
 }
 
 void FPGA::aqpReleaseBus() {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_BUS_RELEASE);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_BUS_RELEASE);
+    spiSel(false);
 }
 
 void FPGA::aqpWriteMem(uint16_t addr, uint8_t data) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_MEM_WRITE, addr & 0xFF, addr >> 8, data);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_MEM_WRITE, addr & 0xFF, addr >> 8, data);
+    spiSel(false);
 }
 
 uint8_t FPGA::aqpReadMem(uint16_t addr) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_MEM_READ, addr & 0xFF, addr >> 8);
+    spiSel(true);
+    spiTx(CMD_MEM_READ, addr & 0xFF, addr >> 8);
 
     uint8_t result[2];
-    aqpRx(result, 2);
-    aqpSel(false);
+    spiRx(result, 2);
+    spiSel(false);
     return result[1];
 }
 
 void FPGA::aqpWriteIO(uint16_t addr, uint8_t data) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_IO_WRITE, addr & 0xFF, addr >> 8, data);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_IO_WRITE, addr & 0xFF, addr >> 8, data);
+    spiSel(false);
 }
 
 uint8_t FPGA::aqpReadIO(uint16_t addr) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_IO_READ, addr & 0xFF, addr >> 8);
+    spiSel(true);
+    spiTx(CMD_IO_READ, addr & 0xFF, addr >> 8);
 
     uint8_t result[2];
-    aqpRx(result, 2);
-    aqpSel(false);
+    spiRx(result, 2);
+    spiSel(false);
     return result[1];
 }
 
@@ -314,7 +319,34 @@ void FPGA::aqpSetMemBank(unsigned bank, uint8_t val) {
 
 void FPGA::aqpSetVideoTimingMode(uint8_t mode) {
     RecursiveMutexLock lock(mutex);
-    aqpSel(true);
-    aqpTx(CMD_SET_VIDMODE, mode);
-    aqpSel(false);
+    spiSel(true);
+    spiTx(CMD_SET_VIDMODE, mode);
+    spiSel(false);
+}
+
+void FPGA::setOverlayText(const uint16_t buf[1000]) {
+    RecursiveMutexLock lock(mutex);
+    spiSel(true);
+    uint8_t cmd[] = {CMD_OVL_TEXT};
+    spiTx(cmd, sizeof(cmd));
+    tx(buf, 2 * 1000);
+    spiSel(false);
+}
+
+void FPGA::setOverlayFont(const uint8_t buf[2048]) {
+    RecursiveMutexLock lock(mutex);
+    spiSel(true);
+    uint8_t cmd[] = {CMD_OVL_FONT};
+    spiTx(cmd, sizeof(cmd));
+    tx(buf, 2048);
+    spiSel(false);
+}
+
+void FPGA::setOverlayPalette(const uint16_t buf[16]) {
+    RecursiveMutexLock lock(mutex);
+    spiSel(true);
+    uint8_t cmd[] = {CMD_OVL_PALETTE};
+    spiTx(cmd, sizeof(cmd));
+    tx(buf, 2 * 16);
+    spiSel(false);
 }
