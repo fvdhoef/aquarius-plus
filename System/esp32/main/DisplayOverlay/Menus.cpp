@@ -39,7 +39,7 @@ public:
         }
 
         {
-            auto &item   = items.emplace_back(MenuItemType::subMenu, "Restart ESP (CTRL-ALT-ESC)");
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Restart ESP (CTRL-SHIFT-ESC)");
             item.onEnter = [&]() {
                 drawMessage("Restarting ESP...");
                 esp_restart();

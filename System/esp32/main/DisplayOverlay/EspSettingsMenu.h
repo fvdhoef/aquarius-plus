@@ -5,6 +5,7 @@
 #include "BluetoothMenu.h"
 #include "TimeZoneMenu.h"
 #include "KeyboardLayoutMenu.h"
+#include "GitHubUpdateMenu.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -34,8 +35,8 @@ public:
 
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [&]() {
-                TimeZoneMenu timeZoneMenu;
-                timeZoneMenu.show();
+                TimeZoneMenu subMenu;
+                subMenu.show();
                 setNeedsUpdate();
             };
         }
@@ -45,15 +46,18 @@ public:
 
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [&]() {
-                KeyboardLayoutMenu kbLayoutMenu;
-                kbLayoutMenu.show();
+                KeyboardLayoutMenu subMenu;
+                subMenu.show();
                 setNeedsUpdate();
             };
         }
         items.emplace_back(MenuItemType::separator);
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "System update from GitHub");
-            item.onEnter = []() {};
+            item.onEnter = []() {
+                GitHubUpdateMenu subMenu;
+                subMenu.show();
+            };
         }
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "System update from SD card");

@@ -242,10 +242,8 @@ public:
                 if (combinedModifiers == ModLCtrl) {
                     aqpReset();
                 } else if (combinedModifiers == (ModLShift | ModLCtrl)) {
-                    // // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
-                    // FPGA::instance().aqpAqcuireBus();
-                    // FPGA::instance().aqpReset();
-                    // esp_restart();
+                    // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
+                    esp_restart();
                 }
             }
         }

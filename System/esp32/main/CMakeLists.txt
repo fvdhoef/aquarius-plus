@@ -11,6 +11,7 @@ idf_component_register(
         "DisplayOverlay/DisplayOverlay.cpp"
         "DisplayOverlay/Menu.cpp"
         "DisplayOverlay/Menus.cpp"
+        "DisplayOverlay/GitHubUpdateMenu.cpp"
 
         "HID/HIDReportDescriptor.cpp"
         "HID/HIDReportHandler.cpp"

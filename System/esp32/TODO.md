@@ -4,6 +4,5 @@ TODO:
 - Keyboard layout
 - System update
   - SD card
-  - GitHub
 - Screenshot
 - ROM dump
