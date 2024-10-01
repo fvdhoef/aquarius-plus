@@ -59,6 +59,17 @@ public:
         // Initialize Wi-Fi including netif with default config
         netIf = esp_netif_create_default_wifi_sta();
 
+        // Set hostname
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
+            char   hostname[32];
+            size_t len = sizeof(hostname);
+            if (nvs_get_str(h, "hostname", hostname, &len) == ESP_OK) {
+                esp_netif_set_hostname(netIf, hostname);
+            }
+            nvs_close(h);
+        }
+
         wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
         ESP_ERROR_CHECK(esp_wifi_init(&cfg));
         ESP_ERROR_CHECK(esp_wifi_set_mode(WIFI_MODE_STA));

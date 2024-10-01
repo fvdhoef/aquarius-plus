@@ -2,6 +2,7 @@
 
 #include "Menu.h"
 #include "WiFi.h"
+#include <nvs_flash.h>
 
 class WiFiDetailsMenu : public Menu {
 public:
@@ -106,8 +107,24 @@ public:
         }
 
         auto hostName = wifi->getHostName();
-        if (!hostName.empty())
-            items.emplace_back(MenuItemType::subMenu, "Hostname " + wifi->getHostName());
+        if (!hostName.empty()) {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Hostname " + wifi->getHostName());
+            item.onEnter = [this]() {
+                std::string hostName = getWiFi()->getHostName();
+                if (editString("Enter new hostname", hostName) && !hostName.empty()) {
+                    nvs_handle_t h;
+                    if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                        if (nvs_set_str(h, "hostname", hostName.c_str()) == ESP_OK) {
+                            nvs_commit(h);
+                        }
+                        nvs_close(h);
+                    }
+
+                    drawMessage("Restart ESP to use new hostname.");
+                    vTaskDelay(pdMS_TO_TICKS(2000));
+                }
+            };
+        }
         items.emplace_back(MenuItemType::separator);
 
         if (ni.connected && !ni.currentNetwork.ssid.empty()) {
