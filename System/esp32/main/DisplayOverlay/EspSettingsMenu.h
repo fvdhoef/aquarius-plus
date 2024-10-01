@@ -6,6 +6,7 @@
 #include "TimeZoneMenu.h"
 #include "KeyboardLayoutMenu.h"
 #include "GitHubUpdateMenu.h"
+#include "SdCardUpdateMenu.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -61,7 +62,10 @@ public:
         }
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "System update from SD card");
-            item.onEnter = []() {};
+            item.onEnter = []() {
+                SdCardUpdateMenu subMenu;
+                subMenu.show();
+            };
         }
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "Factory reset");
