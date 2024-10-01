@@ -49,7 +49,7 @@ void app_main(void) {
 
             uint8_t kblayout = 0;
             if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
-                // setKeyLayout((KeyLayout)kblayout);
+                getKeyboard()->setKeyLayout((KeyLayout)kblayout);
             }
 
             uint8_t mouseDiv = 0;

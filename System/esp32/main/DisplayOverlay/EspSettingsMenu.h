@@ -4,6 +4,7 @@
 #include "WiFiMenu.h"
 #include "BluetoothMenu.h"
 #include "TimeZoneMenu.h"
+#include "KeyboardLayoutMenu.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -38,8 +39,15 @@ public:
             };
         }
         {
-            auto &item   = items.emplace_back(MenuItemType::subMenu, "Keyboard layout: FR/BE (AZERTY)");
-            item.onEnter = []() {};
+            char tmp[40];
+            snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", getKeyboard()->getKeyLayoutName(getKeyboard()->getKeyLayout()).c_str());
+
+            auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
+            item.onEnter = [&]() {
+                KeyboardLayoutMenu kbLayoutMenu;
+                kbLayoutMenu.show();
+                setNeedsUpdate();
+            };
         }
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "System update from GitHub");

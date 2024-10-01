@@ -15,6 +15,7 @@ public:
     unsigned          pressCounter = 0;
     uint8_t           keyMode      = 3;
     SemaphoreHandle_t mutex;
+    KeyLayout         curLayout = KeyLayout::US;
 
     KeyboardInt() {
         mutex    = xSemaphoreCreateRecursiveMutex();
@@ -227,6 +228,24 @@ public:
         if (!xQueueReceive(keyQueue, &result, ticksToWait))
             return -1;
         return result;
+    }
+
+    void setKeyLayout(KeyLayout layout) override {
+        curLayout = layout;
+    }
+
+    KeyLayout getKeyLayout() override {
+        return curLayout;
+    }
+
+    std::string getKeyLayoutName(KeyLayout layout) override {
+        switch (layout) {
+            default: return "Unknown";
+            case KeyLayout::US: return "US";
+            case KeyLayout::UK: return "UK";
+            case KeyLayout::FR: return "FR/BE (AZERTY)";
+            case KeyLayout::DE: return "DE (QWERTZ)";
+        }
     }
 };
 

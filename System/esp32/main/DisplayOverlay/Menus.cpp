@@ -14,6 +14,8 @@ public:
     MainMenu() : Menu("", 38) {}
 
     void onUpdate() override {
+        setNeedsRedraw();
+
         // Update title
         {
             time_t now;
