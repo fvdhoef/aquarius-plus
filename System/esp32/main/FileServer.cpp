@@ -2,11 +2,10 @@
 #include <esp_http_server.h>
 #include <sys/unistd.h>
 #include <sys/stat.h>
-#include "SDCardVFS.h"
 #include <errno.h>
 // #include "AqKeyboard.h"
 #include "FPGA.h"
-#include "SDCardVFS.h"
+#include "VFS.h"
 #include <source_location>
 #include <esp_http_server.h>
 
@@ -233,11 +232,11 @@ public:
 
         httpd_resp_set_hdr(req, "DAV", "1");
 
-        auto &vfs = SDCardVFS::instance();
+        auto vfs = getSDCardVFS();
 
         // Check file
         struct stat st;
-        int         result = vfs.stat(uriPath, &st);
+        int         result = vfs->stat(uriPath, &st);
         if (result < 0)
             return mapResult(req, result);
 
@@ -250,7 +249,7 @@ public:
         propfind_st(req, tmp.get(), &st);
 
         if (S_ISDIR(st.st_mode) && depth[0] != '0') {
-            auto [result, deCtx] = vfs.direnum(uriPath, 0);
+            auto [result, deCtx] = vfs->direnum(uriPath, 0);
             if (result < 0)
                 return mapResult(req, result);
             deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
@@ -296,8 +295,8 @@ public:
     }
 
     esp_err_t handleDelete(httpd_req_t *req) {
-        auto &vfs = SDCardVFS::instance();
-        return mapResult(req, vfs.delete_(getPathFromUri(req->uri)));
+        auto vfs = getSDCardVFS();
+        return mapResult(req, vfs->delete_(getPathFromUri(req->uri)));
     }
 
     esp_err_t handleGet(httpd_req_t *req) {
@@ -310,15 +309,15 @@ public:
         if (uriPath.empty() || uriPath.back() != '/')
             uriPath += '/';
 
-        auto &vfs = SDCardVFS::instance();
+        auto vfs = getSDCardVFS();
 
         struct stat st;
-        int         result = vfs.stat(uriPath, &st);
+        int         result = vfs->stat(uriPath, &st);
         if (result != 0)
             return mapResult(req, result);
 
         if (S_ISDIR(st.st_mode)) {
-            auto [result, deCtx] = vfs.direnum(uriPath, 0);
+            auto [result, deCtx] = vfs->direnum(uriPath, 0);
             if (result < 0)
                 return mapResult(req, result);
             deCtx->push_back(DirEnumEntry("..", 0, DE_ATTR_DIR, 0, 0));
@@ -357,13 +356,13 @@ public:
             httpd_resp_sendstr_chunk(req, nullptr);
 
         } else {
-            int fd = vfs.open(FO_RDONLY, uriPath);
+            int fd = vfs->open(FO_RDONLY, uriPath);
             if (fd < 0) {
                 return mapResult(req, fd);
             } else {
                 httpd_resp_set_type(req, "application/octet-stream");
                 while (1) {
-                    int size = vfs.read(fd, tmpSize, tmp.get());
+                    int size = vfs->read(fd, tmpSize, tmp.get());
                     if (size < 0)
                         break;
 
@@ -372,7 +371,7 @@ public:
                         break;
                     }
                 }
-                vfs.close(fd);
+                vfs->close(fd);
             }
         }
         return ESP_OK;
@@ -389,12 +388,12 @@ public:
 
         // printf("PUT %s\n", path);
 
-        auto &vfs = SDCardVFS::instance();
+        auto vfs = getSDCardVFS();
 
         auto path = getPathFromUri(req->uri);
 
         // Open target file
-        int fd = vfs.open(FO_WRONLY | FO_CREATE, path);
+        int fd = vfs->open(FO_WRONLY | FO_CREATE, path);
         if (fd < 0) {
             return mapResult(req, fd);
         }
@@ -411,8 +410,8 @@ public:
                 }
 
                 // In case of unrecoverable error, close and delete the unfinished file
-                vfs.close(fd);
-                vfs.delete_(path);
+                vfs->close(fd);
+                vfs->delete_(path);
                 if (received == 0)
                     return serverError(req);
                 else
@@ -420,18 +419,18 @@ public:
             }
 
             // Write buffer content to file on storage
-            int written = vfs.write(fd, received, tmp.get());
+            int written = vfs->write(fd, received, tmp.get());
             if (written != received) {
                 // Couldn't write everything to file! Storage may be full?
-                vfs.close(fd);
-                vfs.delete_(path);
+                vfs->close(fd);
+                vfs->delete_(path);
                 return mapResult(req, written);
             }
 
             // Keep track of remaining size of the file left to be uploaded
             remaining -= received;
         }
-        vfs.close(fd);
+        vfs->close(fd);
 
         return resp204(req);
     }
@@ -461,14 +460,14 @@ public:
         // printf("MOVE %s to %s\n", path, path2);
 
         // Do rename
-        auto &vfs = SDCardVFS::instance();
-        return mapResult(req, vfs.rename(path, path2));
+        auto vfs = getSDCardVFS();
+        return mapResult(req, vfs->rename(path, path2));
     }
 
     esp_err_t handleMkCol(httpd_req_t *req) {
         // Unlink file
-        auto &vfs = SDCardVFS::instance();
-        return mapResult(req, vfs.mkdir(getPathFromUri(req->uri)));
+        auto vfs = getSDCardVFS();
+        return mapResult(req, vfs->mkdir(getPathFromUri(req->uri)));
     }
 
     esp_err_t handleCopy(httpd_req_t *req) {
@@ -498,26 +497,26 @@ public:
             return resp204(req);
 
         // printf("COPY %s to %s\n", path, path2);
-        auto &vfs = SDCardVFS::instance();
-        int   fd  = vfs.open(FO_RDONLY, path);
+        auto vfs = getSDCardVFS();
+        int   fd  = vfs->open(FO_RDONLY, path);
         if (fd < 0)
             return mapResult(req, fd);
-        int fd2 = vfs.open(FO_CREATE | FO_WRONLY, path2);
+        int fd2 = vfs->open(FO_CREATE | FO_WRONLY, path2);
         if (fd2 < 0) {
-            vfs.close(fd);
+            vfs->close(fd);
             return mapResult(req, fd2);
         }
 
         while (1) {
-            int size = vfs.read(fd, tmpSize, tmp.get());
+            int size = vfs->read(fd, tmpSize, tmp.get());
             if (size <= 0)
                 break;
 
-            int written = vfs.write(fd2, size, tmp.get());
+            int written = vfs->write(fd2, size, tmp.get());
             if (written != size) {
-                vfs.close(fd);
-                vfs.close(fd2);
-                vfs.delete_(path2);
+                vfs->close(fd);
+                vfs->close(fd2);
+                vfs->delete_(path2);
 
                 if (written < 0) {
                     return mapResult(req, written);
@@ -526,8 +525,8 @@ public:
                 }
             }
         }
-        vfs.close(fd);
-        vfs.close(fd2);
+        vfs->close(fd);
+        vfs->close(fd2);
 
         return resp204(req);
     }

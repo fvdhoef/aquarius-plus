@@ -1,106 +1,112 @@
 #include "USBHost.h"
-
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/semphr.h>
 #include <esp_intr_alloc.h>
+#include <usb/usb_host.h>
+#include <USBDevice.h>
 
 static const char *TAG = "USBHost";
 
-USBHost::USBHost() {
-}
+class USBHostInt : public USBHost {
+public:
+    usb_host_client_handle_t                    clientHdl    = nullptr;
+    TaskHandle_t                                clientTask   = nullptr;
+    SemaphoreHandle_t                           devicesMutex = nullptr;
+    std::map<usb_device_handle_t, USBDevicePtr> devices;
 
-USBHost &USBHost::instance() {
-    static USBHost obj;
-    return obj;
-}
-
-void USBHost::init() {
-    devicesMutex = xSemaphoreCreateRecursiveMutex();
-
-    // Install USB host library
-    ESP_LOGI(TAG, "Installing USB Host Library");
-    usb_host_config_t hostCfg = {.intr_flags = ESP_INTR_FLAG_LEVEL1};
-    ESP_ERROR_CHECK(usb_host_install(&hostCfg));
-
-    xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, 2, nullptr, 0);
-
-    // Create class driver task
-    xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, 3, nullptr, 0);
-    vTaskDelay(10); // Short delay to let client task spin up
-}
-
-void USBHost::_taskUSBEvents(void *arg) {
-    static_cast<USBHost *>(arg)->taskUSBEvents();
-}
-
-void USBHost::taskUSBEvents() {
-    while (1) {
-        ESP_ERROR_CHECK(usb_host_lib_handle_events(portMAX_DELAY, nullptr));
+    USBHostInt() {
     }
-}
 
-void USBHost::_clientEventCb(const usb_host_client_event_msg_t *eventMsg, void *arg) {
-    static_cast<USBHost *>(arg)->clientEventCb(eventMsg);
-}
+    void init() override {
+        devicesMutex = xSemaphoreCreateRecursiveMutex();
 
-void USBHost::clientEventCb(const usb_host_client_event_msg_t *eventMsg) {
-    if (eventMsg->event == USB_HOST_CLIENT_EVENT_NEW_DEV) {
-        xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 1, eSetBits);
-    } else if (eventMsg->event == USB_HOST_CLIENT_EVENT_DEV_GONE) {
-        RecursiveMutexLock lock(devicesMutex);
-        devices.erase(eventMsg->dev_gone.dev_hdl);
+        // Install USB host library
+        ESP_LOGI(TAG, "Installing USB Host Library");
+        usb_host_config_t hostCfg = {.intr_flags = ESP_INTR_FLAG_LEVEL1};
+        ESP_ERROR_CHECK(usb_host_install(&hostCfg));
+
+        xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, 2, nullptr, 0);
+
+        // Create class driver task
+        xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, 3, nullptr, 0);
+        vTaskDelay(10); // Short delay to let client task spin up
     }
-}
 
-void USBHost::_taskClassDriver(void *arg) {
-    static_cast<USBHost *>(arg)->taskClassDriver();
-}
+    static void _taskUSBEvents(void *arg) {
+        static_cast<USBHostInt *>(arg)->taskUSBEvents();
+    }
 
-void USBHost::_taskClient(void *arg) {
-    static_cast<USBHost *>(arg)->taskClient();
-}
+    void taskUSBEvents() {
+        while (1) {
+            ESP_ERROR_CHECK(usb_host_lib_handle_events(portMAX_DELAY, nullptr));
+        }
+    }
 
-void USBHost::taskClient() {
-    // int bInterfaceNumber = -1;
+    static void _clientEventCb(const usb_host_client_event_msg_t *eventMsg, void *arg) {
+        static_cast<USBHostInt *>(arg)->clientEventCb(eventMsg);
+    }
 
-    while (1) {
-        uint32_t notifiedValue;
-        xTaskNotifyWait(0, ULONG_MAX, &notifiedValue, portMAX_DELAY);
+    void clientEventCb(const usb_host_client_event_msg_t *eventMsg) {
+        if (eventMsg->event == USB_HOST_CLIENT_EVENT_NEW_DEV) {
+            xTaskNotify(clientTask, (eventMsg->new_dev.address << 4) | 1, eSetBits);
+        } else if (eventMsg->event == USB_HOST_CLIENT_EVENT_DEV_GONE) {
+            RecursiveMutexLock lock(devicesMutex);
+            devices.erase(eventMsg->dev_gone.dev_hdl);
+        }
+    }
 
-        if (notifiedValue & 1) {
-            // New device
-            unsigned devAddr = (notifiedValue >> 4) & 0x7F;
+    static void _taskClassDriver(void *arg) {
+        static_cast<USBHostInt *>(arg)->taskClassDriver();
+    }
 
-            auto devPtr = USBDevice::init(clientHdl, devAddr);
-            if (devPtr) {
-                RecursiveMutexLock lock(devicesMutex);
-                devices.insert(std::pair(devPtr->getHandle(), devPtr));
+    static void _taskClient(void *arg) {
+        static_cast<USBHostInt *>(arg)->taskClient();
+    }
+
+    void taskClient() {
+        // int bInterfaceNumber = -1;
+
+        while (1) {
+            uint32_t notifiedValue;
+            xTaskNotifyWait(0, ULONG_MAX, &notifiedValue, portMAX_DELAY);
+
+            if (notifiedValue & 1) {
+                // New device
+                unsigned devAddr = (notifiedValue >> 4) & 0x7F;
+
+                auto devPtr = USBDevice::init(clientHdl, devAddr);
+                if (devPtr) {
+                    RecursiveMutexLock lock(devicesMutex);
+                    devices.insert(std::pair(devPtr->getHandle(), devPtr));
+                }
             }
         }
     }
-}
 
-void USBHost::taskClassDriver() {
-    ESP_LOGI(TAG, "Registering Client");
-    usb_host_client_config_t clientCfg = {
-        .is_synchronous    = false,
-        .max_num_event_msg = 5,
-        .async             = {.client_event_callback = _clientEventCb, .callback_arg = this},
-    };
-    ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
+    void taskClassDriver() {
+        ESP_LOGI(TAG, "Registering Client");
+        usb_host_client_config_t clientCfg = {
+            .is_synchronous    = false,
+            .max_num_event_msg = 5,
+            .async             = {.client_event_callback = _clientEventCb, .callback_arg = this},
+        };
+        ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
 
-    xTaskCreatePinnedToCore(_taskClient, "client", 8192, this, 3, &clientTask, 0);
+        xTaskCreatePinnedToCore(_taskClient, "client", 8192, this, 3, &clientTask, 0);
 
-    while (1) {
-        usb_host_client_handle_events(clientHdl, portMAX_DELAY);
+        while (1) {
+            usb_host_client_handle_events(clientHdl, portMAX_DELAY);
+        }
     }
-}
 
-void USBHost::keyboardSetLeds(uint8_t leds) {
-    RecursiveMutexLock lock(devicesMutex);
-    for (auto it = devices.begin(); it != devices.end(); ++it) {
-        auto device = it->second;
-        device->setLeds(leds);
+    void keyboardSetLeds(uint8_t leds) override {
+        RecursiveMutexLock lock(devicesMutex);
+        for (auto it = devices.begin(); it != devices.end(); ++it) {
+            auto device = it->second;
+            device->setLeds(leds);
+        }
     }
+};
+
+USBHost *getUSBHost() {
+    static USBHostInt obj;
+    return &obj;
 }

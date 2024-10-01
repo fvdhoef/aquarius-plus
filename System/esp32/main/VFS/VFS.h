@@ -61,21 +61,28 @@ public:
     virtual ~VFS() {
     }
 
+    virtual void init() {}
+
     // File operations
-    virtual int open(uint8_t flags, const std::string &path);
-    virtual int close(int fd);
-    virtual int read(int fd, size_t size, void *buf);
-    virtual int readline(int fd, size_t size, void *buf);
-    virtual int write(int fd, size_t size, const void *buf);
-    virtual int seek(int fd, size_t offset);
-    virtual int tell(int fd);
+    virtual int open(uint8_t flags, const std::string &path) { return ERR_OTHER; }
+    virtual int close(int fd) { return ERR_OTHER; }
+    virtual int read(int fd, size_t size, void *buf) { return ERR_OTHER; }
+    virtual int readline(int fd, size_t size, void *buf) { return ERR_OTHER; }
+    virtual int write(int fd, size_t size, const void *buf) { return ERR_OTHER; }
+    virtual int seek(int fd, size_t offset) { return ERR_OTHER; }
+    virtual int tell(int fd) { return ERR_OTHER; }
 
     // Directory operations
-    virtual std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags);
+    virtual std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags) { return std::make_pair(ERR_OTHER, nullptr); }
 
     // Filesystem operations
-    virtual int delete_(const std::string &path);
-    virtual int rename(const std::string &path_old, const std::string &path_new);
-    virtual int mkdir(const std::string &path);
-    virtual int stat(const std::string &path, struct stat *st);
+    virtual int delete_(const std::string &path) { return ERR_OTHER; }
+    virtual int rename(const std::string &path_old, const std::string &path_new) { return ERR_OTHER; }
+    virtual int mkdir(const std::string &path) { return ERR_OTHER; }
+    virtual int stat(const std::string &path, struct stat *st) { return ERR_OTHER; }
 };
+
+VFS *getSDCardVFS();
+VFS *getEspVFS();
+VFS *getHttpVFS();
+VFS *getTcpVFS();

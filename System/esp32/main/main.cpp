@@ -7,7 +7,7 @@
 #include "UartProtocol.h"
 #include "DisplayOverlay/DisplayOverlay.h"
 #include <nvs_flash.h>
-#include "SDCardVFS.h"
+#include "VFS.h"
 #include "FileServer.h"
 #include "FpgaCore.h"
 #include "PowerLED.h"
@@ -54,8 +54,8 @@ void app_main(void) {
         }
     }
 
-    SDCardVFS::instance().init();
-    USBHost::instance().init();
+    getSDCardVFS()->init();
+    getUSBHost()->init();
     getWiFi()->init();
     getBluetooth()->init();
     getUartProtocol()->init();

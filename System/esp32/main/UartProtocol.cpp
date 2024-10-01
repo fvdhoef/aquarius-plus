@@ -4,10 +4,7 @@
 #include <esp_ota_ops.h>
 #include <esp_app_format.h>
 
-#include "SDCardVFS.h"
-#include "EspVFS.h"
-#include "HttpVFS.h"
-#include "TcpVFS.h"
+#include "VFS.h"
 #include "Keyboard.h"
 #include "FpgaCore.h"
 
@@ -74,9 +71,9 @@ public:
         ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
         ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
 
-        EspVFS::instance().init();
-        HttpVFS::instance().init();
-        TcpVFS::instance().init();
+        getEspVFS()->init();
+        getHttpVFS()->init();
+        getTcpVFS()->init();
 
         xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
     }
@@ -754,7 +751,7 @@ public:
         int         result = vfs->stat(path, &st);
         if (result == 0) {
             if (st.st_mode & S_IFDIR) {
-                if (vfs == &EspVFS::instance()) {
+                if (vfs == getEspVFS()) {
                     currentPath = std::string(ESP_PREFIX) + path;
                 } else {
                     currentPath = path;
@@ -841,14 +838,14 @@ public:
     }
 
     std::string resolvePath(std::string path, VFS **vfs, std::string *wildCard = nullptr) {
-        *vfs = &SDCardVFS::instance();
+        *vfs = getSDCardVFS();
 
         if (startsWith(path, "http://") || startsWith(path, "https://")) {
-            *vfs = &HttpVFS::instance();
+            *vfs = getHttpVFS();
             return path;
         }
         if (startsWith(path, "tcp://")) {
-            *vfs = &TcpVFS::instance();
+            *vfs = getTcpVFS();
             return path;
         }
 
@@ -857,7 +854,7 @@ public:
             useCwd = false;
         } else if (startsWith(path, ESP_PREFIX)) {
             useCwd = false;
-            *vfs   = &EspVFS::instance();
+            *vfs   = getEspVFS();
             path   = path.substr(strlen(ESP_PREFIX));
         }
 
@@ -866,7 +863,7 @@ public:
         if (useCwd) {
             if (startsWith(currentPath, ESP_PREFIX)) {
                 splitPath(currentPath.substr(strlen(ESP_PREFIX)), parts);
-                *vfs = &EspVFS::instance();
+                *vfs = getEspVFS();
             } else {
                 splitPath(currentPath, parts);
             }

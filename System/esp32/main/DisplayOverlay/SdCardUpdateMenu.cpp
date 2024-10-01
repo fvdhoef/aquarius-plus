@@ -4,7 +4,7 @@
 #include <esp_app_format.h>
 #include <esp_ota_ops.h>
 #include <nvs_flash.h>
-#include "SDCardVFS.h"
+#include "VFS.h"
 
 #define UPDATEFILE_NAME "aquarius-plus.bin"
 
@@ -24,20 +24,20 @@ void SdCardUpdateMenu::doUpdate() {
     const size_t     tmpbuf_size = 65536;
     void            *tmpbuf      = malloc(tmpbuf_size);
     bool             success     = false;
-    auto            &vfs         = SDCardVFS::instance();
+    auto             vfs         = getSDCardVFS();
 
     if (tmpbuf == nullptr) {
         goto done;
     }
 
     struct stat st;
-    if (vfs.stat(UPDATEFILE_NAME, &st) < 0) {
+    if (vfs->stat(UPDATEFILE_NAME, &st) < 0) {
         drawMessage(UPDATEFILE_NAME " not found");
         vTaskDelay(pdMS_TO_TICKS(2000));
         goto done;
     }
 
-    fd = vfs.open(FO_RDONLY, UPDATEFILE_NAME);
+    fd = vfs->open(FO_RDONLY, UPDATEFILE_NAME);
     if (fd < 0) {
         drawMessage(UPDATEFILE_NAME " not found");
         vTaskDelay(pdMS_TO_TICKS(2000));
@@ -51,9 +51,9 @@ void SdCardUpdateMenu::doUpdate() {
 
     esp_app_desc_t app_info;
 
-    if (vfs.seek(fd, app_desc_offset) < 0)
+    if (vfs->seek(fd, app_desc_offset) < 0)
         goto done;
-    if (vfs.read(fd, sizeof(app_info), &app_info) != sizeof(app_info))
+    if (vfs->read(fd, sizeof(app_info), &app_info) != sizeof(app_info))
         goto done;
 
     if (app_info.magic_word != ESP_APP_DESC_MAGIC_WORD) {
@@ -83,10 +83,10 @@ void SdCardUpdateMenu::doUpdate() {
         goto done;
     }
 
-    vfs.seek(fd, 0);
+    vfs->seek(fd, 0);
 
     while (1) {
-        int size = vfs.read(fd, tmpbuf_size, tmpbuf);
+        int size = vfs->read(fd, tmpbuf_size, tmpbuf);
         if (size <= 0)
             break;
 
@@ -119,7 +119,7 @@ void SdCardUpdateMenu::doUpdate() {
 
 done:
     if (fd >= 0)
-        vfs.close(fd);
+        vfs->close(fd);
 
     if (!success) {
         drawMessage("Upgrade failed.");

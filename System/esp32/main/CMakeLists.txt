@@ -30,7 +30,6 @@ idf_component_register(
         "fatfs/ffunicode.c"
 
         "UartProtocol.cpp"
-        "VFS/VFS.cpp"
         "VFS/EspVFS.cpp"
         "VFS/SDCardVFS.cpp"
         "VFS/HttpVFS.cpp"

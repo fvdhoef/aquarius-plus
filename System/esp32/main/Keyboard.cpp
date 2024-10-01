@@ -500,7 +500,7 @@ public:
         }
 
         if (prevLeds != leds) {
-            USBHost::instance().keyboardSetLeds(leds);
+            getUSBHost()->keyboardSetLeds(leds);
         }
     }
 

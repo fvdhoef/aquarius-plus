@@ -1,5 +1,5 @@
 #include "MemDump.h"
-#include "SDCardVFS.h"
+#include "VFS.h"
 #include "FPGA.h"
 
 uint8_t MemDump::savedRam3000[40];
@@ -69,11 +69,11 @@ void MemDump::dumpCartridge() {
     }
 
     // Save cartridge contents to file
-    auto &vfs = SDCardVFS::instance();
-    int   fd;
-    if ((fd = vfs.open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
-        vfs.write(fd, size, buf);
-        vfs.close(fd);
+    auto vfs = getSDCardVFS();
+    int  fd;
+    if ((fd = vfs->open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
+        vfs->write(fd, size, buf);
+        vfs->close(fd);
     }
 
     restoreMsgRam();
@@ -116,11 +116,11 @@ void MemDump::dumpScreen() {
     }
 
     // Save cartridge contents to file
-    auto &vfs = SDCardVFS::instance();
-    int   fd;
-    if ((fd = vfs.open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
-        vfs.write(fd, size, buf);
-        vfs.close(fd);
+    auto vfs = getSDCardVFS;
+    int  fd;
+    if ((fd = vfs->open(FO_WRONLY | FO_CREATE, filename)) >= 0) {
+        vfs->write(fd, size, buf);
+        vfs->close(fd);
     }
 
     // Restore screen RAM
