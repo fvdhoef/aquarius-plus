@@ -93,12 +93,12 @@ void Menu::show() {
     auto keyboard = getKeyboard();
     auto ovl      = getDisplayOverlay();
 
-    int selectedRow = 0;
-
     auto prevTicks = xTaskGetTickCount();
     onEnter();
 
-    bool needsRedraw = true;
+    needsUpdate = true;
+    needsRedraw = true;
+    selectedRow = 0;
 
     while (!exitMenu) {
         bool ovlVisible = ovl->isVisible();
@@ -108,6 +108,10 @@ void Menu::show() {
             if (ovlVisible)
                 needsRedraw |= onTick();
             prevTicks = curTicks;
+        }
+
+        if (needsUpdate) {
+            onUpdate();
         }
 
         selectedRow = items.empty() ? -1 : (std::min(std::max(selectedRow, 0), (int)items.size() - 1));

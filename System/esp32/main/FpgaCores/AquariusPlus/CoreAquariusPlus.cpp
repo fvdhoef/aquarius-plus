@@ -5,6 +5,7 @@
 #include "VFS.h"
 #include "GameCtrl.h"
 #include <math.h>
+#include <nvs_flash.h>
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -28,16 +29,18 @@ enum {
 class CoreAquariusPlus : public FpgaCore {
 public:
     SemaphoreHandle_t mutex;
-    uint64_t          prevMatrix  = 0;
-    uint64_t          keybMatrix  = 0;
-    GamePadData       gamepads[2] = {0};
+    uint64_t          prevMatrix      = 0;
+    uint64_t          keybMatrix      = 0;
+    GamePadData       gamepads[2]     = {0};
+    uint8_t           videoTimingMode = 0;
 
     // Mouse state
-    bool    mousePresent        = false;
-    float   mouseX              = 0;
-    float   mouseY              = 0;
-    uint8_t mouseButtons        = 0;
-    int     mouseWheel          = 0;
+    bool    mousePresent = false;
+    float   mouseX       = 0;
+    float   mouseY       = 0;
+    uint8_t mouseButtons = 0;
+    int     mouseWheel   = 0;
+
     uint8_t mouseSensitivityDiv = 4;
 
     CoreAquariusPlus() {
@@ -55,7 +58,22 @@ public:
             data   = fpgaImageStart;
             length = fpgaImageEnd - fpgaImageStart;
         }
-        return getFPGA()->loadBitstream(data, length);
+        bool result = getFPGA()->loadBitstream(data, length);
+        if (result) {
+            applySettings();
+        }
+        return result;
+    }
+
+    void applySettings() {
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
+            if (nvs_get_u8(h, "videoTiming", &videoTimingMode) != ESP_OK) {
+                videoTimingMode = 0;
+            }
+            nvs_close(h);
+        }
+        aqpSetVideoMode(videoTimingMode);
     }
 
     void aqpWriteKeybBuffer(uint8_t ch) {
@@ -92,6 +110,15 @@ public:
         RecursiveMutexLock lock(fpga->getMutex());
         fpga->spiSel(true);
         uint8_t cmd[] = {CMD_SET_HCTRL, hctrl1, hctrl2};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+    }
+
+    void aqpSetVideoMode(uint8_t mode) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_SET_VIDMODE, mode};
         fpga->spiTx(cmd, sizeof(cmd));
         fpga->spiSel(false);
     }
@@ -387,12 +414,27 @@ public:
     }
 
     void addMainMenuItems(Menu &menu) override {
-        printf("addMainMenuItems\n");
-
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Restart Aquarius+ (CTRL-ESC)");
             item.onEnter = [this]() {
                 aqpReset();
+            };
+        }
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, videoTimingMode ? "Video timing: 640x480" : "Video timing: 704x480");
+            item.onEnter = [this, &menu]() {
+                videoTimingMode = (videoTimingMode == 0) ? 1 : 0;
+                aqpSetVideoMode(videoTimingMode);
+
+                nvs_handle_t h;
+                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                    if (nvs_set_u8(h, "videoTiming", videoTimingMode) == ESP_OK) {
+                        nvs_commit(h);
+                    }
+                    nvs_close(h);
+                }
+
+                menu.setNeedsUpdate();
             };
         }
     }

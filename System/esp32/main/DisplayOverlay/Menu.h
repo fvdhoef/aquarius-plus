@@ -38,6 +38,7 @@ public:
     virtual void onEnter() {}
     virtual void onExit() {}
     virtual bool onTick() { return false; }
+    virtual void onUpdate() {}
 
     virtual void show();
 
@@ -51,10 +52,18 @@ public:
 
     static const unsigned colSeparatorFg = 9; // 4;
 
+    void setNeedsRedraw() { needsRedraw = true; }
+    void setNeedsUpdate() { needsUpdate = true; }
+    void resetSelectedRow() { selectedRow = 0; }
+    void setExitMenu() { exitMenu = true; }
+
 protected:
     void draw(int selectedRow);
     void drawMessage(const char *msg);
     bool editString(const std::string &title, std::string &value);
 
-    bool exitMenu = false;
+    bool exitMenu    = false;
+    bool needsRedraw = true;
+    bool needsUpdate = true;
+    int  selectedRow = 0;
 };

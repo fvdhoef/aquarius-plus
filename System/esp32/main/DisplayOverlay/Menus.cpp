@@ -13,8 +13,20 @@ class MainMenu : public Menu {
 public:
     MainMenu() : Menu("", 38) {}
 
-    void onEnter() {
-        updateTitle();
+    void onUpdate() override {
+        // Update title
+        {
+            time_t now;
+            time(&now);
+            struct tm timeinfo = *localtime(&now);
+
+            char strftime_buf[20];
+            strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+            char tmp[40];
+            snprintf(tmp, sizeof(tmp), "Aquarius+        %s", strftime_buf);
+            title = tmp;
+        }
 
         items.clear();
 
@@ -37,22 +49,9 @@ public:
         }
     }
 
-    void updateTitle() {
-        time_t now;
-        time(&now);
-        struct tm timeinfo = *localtime(&now);
-
-        char strftime_buf[20];
-        strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
-
-        char tmp[40];
-        snprintf(tmp, sizeof(tmp), "Aquarius+        %s", strftime_buf);
-        title = tmp;
-    }
-
     bool onTick() override {
-        updateTitle();
-        return true;
+        setNeedsUpdate();
+        return false;
     }
 };
 
