@@ -37,7 +37,6 @@ void app_main(void) {
     }
 
     // Initialize timezone, keyboard layout
-    uint8_t video_timing_mode = 0;
     {
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
@@ -51,10 +50,6 @@ void app_main(void) {
             if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
                 getKeyboard()->setKeyLayout((KeyLayout)kblayout);
             }
-
-            if (nvs_get_u8(h, "videoTiming", &video_timing_mode) != ESP_OK) {
-                video_timing_mode = 0;
-            }
             nvs_close(h);
         }
     }
@@ -65,11 +60,8 @@ void app_main(void) {
     getBluetooth()->init();
     getUartProtocol()->init();
     getFileServer()->init();
-
     getFPGA()->init();
     loadFpgaCore(FpgaCoreType::AquariusPlus);
-
-    // fpga->aqpSetVideoTimingMode(video_timing_mode);
 
     getDisplayOverlay()->init();
 

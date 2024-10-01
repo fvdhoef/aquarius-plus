@@ -7,6 +7,7 @@
 #include "KeyboardLayoutMenu.h"
 #include "GitHubUpdateMenu.h"
 #include "SdCardUpdateMenu.h"
+#include "EspStatsMenu.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -75,6 +76,14 @@ public:
                 ESP_ERROR_CHECK(nvs_flash_init());
                 drawMessage("Restarting system...");
                 esp_restart();
+            };
+        }
+        items.emplace_back(MenuItemType::separator);
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "ESP stats");
+            item.onEnter = [&]() {
+                EspStatsMenu subMenu;
+                subMenu.show();
             };
         }
     }
