@@ -3,6 +3,7 @@
 
 #include "DisplayOverlay.h"
 #include "EspSettingsMenu.h"
+#include "VersionMenu.h"
 
 static EspSettingsMenu espSettingsMenu;
 
@@ -48,6 +49,13 @@ public:
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "ESP settings");
             item.onEnter = []() { espSettingsMenu.show(); };
+        }
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Version");
+            item.onEnter = []() {
+                VersionMenu subMenu;
+                subMenu.show();
+            };
         }
     }
 
