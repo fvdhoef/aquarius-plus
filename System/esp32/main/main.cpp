@@ -52,11 +52,6 @@ void app_main(void) {
                 getKeyboard()->setKeyLayout((KeyLayout)kblayout);
             }
 
-            uint8_t mouseDiv = 0;
-            if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
-                // AqUartProtocol::instance().setMouseSensitivityDiv(mouseDiv);
-            }
-
             if (nvs_get_u8(h, "videoTiming", &video_timing_mode) != ESP_OK) {
                 video_timing_mode = 0;
             }

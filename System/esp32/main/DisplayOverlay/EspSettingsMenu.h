@@ -27,6 +27,7 @@ public:
             auto &item   = items.emplace_back(MenuItemType::subMenu, "Bluetooth");
             item.onEnter = []() { btMenu.show(); };
         }
+        items.emplace_back(MenuItemType::separator);
         {
             char tmp[40];
             snprintf(tmp, sizeof(tmp), "Time zone: %s", TimeZoneMenu::getTimeZone().c_str());
@@ -49,6 +50,7 @@ public:
                 setNeedsUpdate();
             };
         }
+        items.emplace_back(MenuItemType::separator);
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "System update from GitHub");
             item.onEnter = []() {};

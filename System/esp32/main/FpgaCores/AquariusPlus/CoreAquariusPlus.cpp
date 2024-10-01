@@ -71,6 +71,12 @@ public:
             if (nvs_get_u8(h, "videoTiming", &videoTimingMode) != ESP_OK) {
                 videoTimingMode = 0;
             }
+
+            uint8_t mouseDiv = 0;
+            if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
+                mouseSensitivityDiv = mouseDiv;
+            }
+
             nvs_close(h);
         }
         aqpSetVideoMode(videoTimingMode);
@@ -419,6 +425,25 @@ public:
             item.onEnter = [this]() {
                 aqpReset();
             };
+        }
+        menu.items.emplace_back(MenuItemType::separator);
+        {
+            auto &item  = menu.items.emplace_back(MenuItemType::percentage, "Mouse sensitivity");
+            item.setter = [this](int newVal) {
+                newVal = std::max(1, std::min(newVal, 8));
+                if (newVal != mouseSensitivityDiv) {
+                    mouseSensitivityDiv = newVal;
+
+                    nvs_handle_t h;
+                    if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                        if (nvs_set_u8(h, "mouseDiv", mouseSensitivityDiv) == ESP_OK) {
+                            nvs_commit(h);
+                        }
+                        nvs_close(h);
+                    }
+                }
+            };
+            item.getter = [this]() { return mouseSensitivityDiv; };
         }
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, videoTimingMode ? "Video timing: 640x480" : "Video timing: 704x480");
