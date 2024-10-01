@@ -8,19 +8,19 @@ int     MemDump::screenshotIdx = 1;
 
 void MemDump::saveMsgRam() {
     // Save screen RAM where we put text
-    auto &fpga = FPGA::instance();
+    auto fpga = getFPGA();
     for (int i = 0; i < 40; i++) {
-        savedRam3000[i] = fpga.aqpReadMem(0x3000 + i);
-        savedRam3400[i] = fpga.aqpReadMem(0x3400 + i);
+        savedRam3000[i] = fpga->aqpReadMem(0x3000 + i);
+        savedRam3400[i] = fpga->aqpReadMem(0x3400 + i);
     }
 }
 
 void MemDump::restoreMsgRam() {
     // Restore screen RAM
-    auto &fpga = FPGA::instance();
+    auto fpga = getFPGA();
     for (int i = 0; i < 40; i++) {
-        fpga.aqpWriteMem(0x3000 + i, savedRam3000[i]);
-        fpga.aqpWriteMem(0x3400 + i, savedRam3400[i]);
+        fpga->aqpWriteMem(0x3000 + i, savedRam3000[i]);
+        fpga->aqpWriteMem(0x3400 + i, savedRam3400[i]);
     }
 }
 
@@ -32,13 +32,13 @@ void MemDump::showMessage(const char *fmt, ...) {
     vsnprintf(msg, sizeof(msg), fmt, ap);
     va_end(ap);
 
-    auto &fpga = FPGA::instance();
+    auto fpga = getFPGA();
 
     int         i = 1;
     const char *p = msg;
     for (; *p != 0; p++, i++) {
-        fpga.aqpWriteMem(0x3000 + i, *p);
-        fpga.aqpWriteMem(0x3400 + i, 0x70);
+        fpga->aqpWriteMem(0x3000 + i, *p);
+        fpga->aqpWriteMem(0x3400 + i, 0x70);
     }
 }
 
@@ -52,20 +52,20 @@ void MemDump::dumpCartridge() {
     if (!buf)
         return;
 
-    auto &fpga = FPGA::instance();
-    fpga.aqpAqcuireBus();
-    fpga.aqpSaveMemBanks();
+    auto fpga = getFPGA();
+    fpga->aqpAqcuireBus();
+    fpga->aqpSaveMemBanks();
 
     // Configure memory layout
-    fpga.aqpWriteIO(IO_BANK0, (3 << 6) | 0);
-    fpga.aqpWriteIO(IO_BANK3, 19);
+    fpga->aqpWriteIO(IO_BANK0, (3 << 6) | 0);
+    fpga->aqpWriteIO(IO_BANK3, 19);
 
     saveMsgRam();
     showMessage(" Saving cartridge to %s ", filename);
 
     // Read cartridge contents
     for (int i = 0; i < size; i++) {
-        buf[i] = fpga.aqpReadMem(0xC000 + i);
+        buf[i] = fpga->aqpReadMem(0xC000 + i);
     }
 
     // Save cartridge contents to file
@@ -77,8 +77,8 @@ void MemDump::dumpCartridge() {
     }
 
     restoreMsgRam();
-    fpga.aqpRestoreMemBanks();
-    fpga.aqpReleaseBus();
+    fpga->aqpRestoreMemBanks();
+    fpga->aqpReleaseBus();
     free(buf);
 
     printf("Done!\n");
@@ -96,12 +96,12 @@ void MemDump::dumpScreen() {
     if (!buf)
         return;
 
-    auto &fpga = FPGA::instance();
-    fpga.aqpAqcuireBus();
-    fpga.aqpSaveMemBanks();
+    auto fpga = getFPGA();
+    fpga->aqpAqcuireBus();
+    fpga->aqpSaveMemBanks();
 
     // Configure memory layout
-    fpga.aqpWriteIO(IO_BANK0, (3 << 6) | 0);
+    fpga->aqpWriteIO(IO_BANK0, (3 << 6) | 0);
 
     // Save screen RAM where we put text
     saveMsgRam();
@@ -111,8 +111,8 @@ void MemDump::dumpScreen() {
     memcpy(buf, savedRam3000, 40);
     memcpy(buf + 1024, savedRam3400, 40);
     for (int i = 40; i < 1024; i++) {
-        buf[i]        = fpga.aqpReadMem(0x3000 + i);
-        buf[i + 1024] = fpga.aqpReadMem(0x3400 + i);
+        buf[i]        = fpga->aqpReadMem(0x3000 + i);
+        buf[i + 1024] = fpga->aqpReadMem(0x3400 + i);
     }
 
     // Save cartridge contents to file
@@ -126,8 +126,8 @@ void MemDump::dumpScreen() {
     // Restore screen RAM
     restoreMsgRam();
 
-    fpga.aqpRestoreMemBanks();
-    fpga.aqpReleaseBus();
+    fpga->aqpRestoreMemBanks();
+    fpga->aqpReleaseBus();
     free(buf);
 
     printf("Done!\n");

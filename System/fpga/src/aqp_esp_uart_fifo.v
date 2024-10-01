@@ -1,14 +1,14 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module aqp_esp_uart_rxfifo(
+module aqp_esp_uart_fifo(
     input  wire       clk,
     input  wire       reset,
 
-    input  wire [7:0] wrdata,
+    input  wire [8:0] wrdata,
     input  wire       wr_en,
 
-    output reg  [7:0] rddata,
+    output reg  [8:0] rddata,
     input  wire       rd_en,
     
     output wire       empty,
@@ -16,7 +16,7 @@ module aqp_esp_uart_rxfifo(
     output wire       almost_full);
 
     reg  [3:0] q_wridx = 0, q_rdidx = 0;
-    reg  [7:0] mem [15:0];
+    reg  [8:0] mem [15:0];
 
     wire [3:0] d_wridx = q_wridx + 4'd1;
     wire [3:0] d_rdidx = q_rdidx + 4'd1;
@@ -37,8 +37,8 @@ module aqp_esp_uart_rxfifo(
                 q_wridx <= d_wridx;
             end
 
-            rddata <= mem[q_rdidx];
             if (rd_en && !empty) begin
+                rddata <= mem[q_rdidx];
                 q_rdidx <= d_rdidx;
             end
         end

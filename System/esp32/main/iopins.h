@@ -1,37 +1,48 @@
 #pragma once
 
-enum {
-    IOPIN_LED         = 4,
-    IOPIN_SD_WP_N     = 5,
-    IOPIN_SD_CD_N     = 6,
-    IOPIN_SD_MISO     = 7,
-    IOPIN_SD_SCK      = 15,
-    IOPIN_SD_MOSI     = 16,
-    IOPIN_SD_SSEL_N   = 17,
-    IOPIN_FPGA_DONE   = 8,
-    IOPIN_USB_DM      = 19,
-    IOPIN_USB_DP      = 20,
-    IOPIN_SPI_MISO    = 11,
-    IOPIN_SPI_MOSI    = 9,
-    IOPIN_SPI_SCLK    = 10,
-    IOPIN_SPI_CS_N    = 3,
-    IOPIN_ESP_NOTIFY  = 12,
-    IOPIN_ESP_TX      = 13,
-    IOPIN_ESP_RTS     = 14,
-    IOPIN_ESP_RX      = 21,
-    IOPIN_ESP_CTS     = 47,
-    IOPIN_FPGA_PROG_N = 48,
-    IOPIN_DBG_TXD0    = 43,
-    IOPIN_DBG_RXD0    = 44,
-    IOPIN_ESP_EXP0    = 1,
-    IOPIN_ESP_EXP1    = 2,
-    IOPIN_ESP_EXP2    = 42,
-    IOPIN_ESP_EXP3    = 41,
-    IOPIN_ESP_EXP4    = 40,
-    IOPIN_ESP_EXP5    = 39,
-    IOPIN_ESP_EXP6    = 38,
-    IOPIN_ESP_EXP7    = 37,
-    IOPIN_ESP_EXP8    = 36,
-    IOPIN_ESP_EXP9    = 35,
-    IOPIN_ESP_EXP10   = 18,
-};
+// SD card interface
+#define IOPIN_SD_WP_N     GPIO_NUM_5
+#define IOPIN_SD_CD_N     GPIO_NUM_6
+#define IOPIN_SD_SSEL_N   GPIO_NUM_17
+#define IOPIN_SD_SCK      GPIO_NUM_15
+#define IOPIN_SD_MOSI     GPIO_NUM_16
+#define IOPIN_SD_MISO     GPIO_NUM_7
+
+// SPI interface and FPGA programming interface
+#define IOPIN_SPI_SSEL_N  GPIO_NUM_3
+#define IOPIN_SPI_SCLK    GPIO_NUM_10
+#define IOPIN_SPI_MOSI    GPIO_NUM_9
+#define IOPIN_SPI_MISO    GPIO_NUM_11
+#define IOPIN_SPI_NOTIFY  GPIO_NUM_12
+#define IOPIN_FPGA_PROG_N GPIO_NUM_48
+#define IOPIN_FPGA_DONE   GPIO_NUM_8
+
+// UART interface
+#define IOPIN_UART_TX     GPIO_NUM_21
+#define IOPIN_UART_RX     GPIO_NUM_13
+#define IOPIN_UART_RTS    GPIO_NUM_47
+#define IOPIN_UART_CTS    GPIO_NUM_14
+
+// USB host interface
+#define IOPIN_USB_DM      GPIO_NUM_19
+#define IOPIN_USB_DP      GPIO_NUM_20
+
+// Power LED
+#define IOPIN_LED         GPIO_NUM_4
+
+// Debug UART
+#define IOPIN_DBG_TXD0    GPIO_NUM_43
+#define IOPIN_DBG_RXD0    GPIO_NUM_44
+
+// Expansion pins
+#define IOPIN_ESP_EXP0    GPIO_NUM_1
+#define IOPIN_ESP_EXP1    GPIO_NUM_2
+#define IOPIN_ESP_EXP2    GPIO_NUM_42
+#define IOPIN_ESP_EXP3    GPIO_NUM_41
+#define IOPIN_ESP_EXP4    GPIO_NUM_40
+#define IOPIN_ESP_EXP5    GPIO_NUM_39
+#define IOPIN_ESP_EXP6    GPIO_NUM_38
+#define IOPIN_ESP_EXP7    GPIO_NUM_37
+#define IOPIN_ESP_EXP8    GPIO_NUM_36
+#define IOPIN_ESP_EXP9    GPIO_NUM_35
+#define IOPIN_ESP_EXP10   GPIO_NUM_18

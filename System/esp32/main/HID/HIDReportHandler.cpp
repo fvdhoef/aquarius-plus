@@ -1,5 +1,4 @@
 #include "HIDReportHandler.h"
-#include "USBInterfaceHID.h"
 #include "HIDReportHandlerKeyboard.h"
 #include "HIDReportHandlerMouse.h"
 #include "HIDReportHandlerGamepad.h"

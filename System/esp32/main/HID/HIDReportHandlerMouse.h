@@ -5,6 +5,7 @@
 class HIDReportHandlerMouse : public HIDReportHandler {
 public:
     HIDReportHandlerMouse();
+    virtual ~HIDReportHandlerMouse();
 
 protected:
     void _addInputField(const HIDReportDescriptor::HIDField &field) override;

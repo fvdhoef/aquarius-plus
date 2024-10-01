@@ -1,25 +1,30 @@
 #include "Common.h"
-#include "USBHost.h"
-#include "SDCardVFS.h"
-#include "FPGA.h"
-#include "AqUartProtocol.h"
 #include "WiFi.h"
 #include "Bluetooth.h"
-#include "FileServer.h"
-#include "AqKeyboard.h"
-#include "PowerLED.h"
+#include "USBHost.h"
+#include "FPGA.h"
+#include "Keyboard.h"
+#include "UartProtocol.h"
 #include "DisplayOverlay/DisplayOverlay.h"
-
 #include <nvs_flash.h>
+#include "SDCardVFS.h"
+#include "FileServer.h"
+#include "FpgaCore.h"
+#include "PowerLED.h"
 #include <esp_heap_caps.h>
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
 
 static const char *TAG = "main";
 
-static void init() {
+extern "C" void app_main(void);
+
+void app_main(void) {
+    ESP_LOGI(TAG, "Aquarius+ ESP32 firmware");
+
     // Init power LED
     getPowerLED()->init();
+
+    // Initialize the event loop
+    ESP_ERROR_CHECK(esp_event_loop_create_default());
 
     // Initialize NVS
     esp_err_t ret = nvs_flash_init();
@@ -44,12 +49,12 @@ static void init() {
 
             uint8_t kblayout = 0;
             if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
-                setKeyLayout((KeyLayout)kblayout);
+                // setKeyLayout((KeyLayout)kblayout);
             }
 
             uint8_t mouseDiv = 0;
             if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
-                AqUartProtocol::instance().setMouseSensitivityDiv(mouseDiv);
+                // AqUartProtocol::instance().setMouseSensitivityDiv(mouseDiv);
             }
 
             if (nvs_get_u8(h, "videoTiming", &video_timing_mode) != ESP_OK) {
@@ -59,35 +64,19 @@ static void init() {
         }
     }
 
-    // Initialize the event loop
-    ESP_ERROR_CHECK(esp_event_loop_create_default());
-
-    getWiFi()->init();
-    getBluetooth()->init();
-
-    AqKeyboard::instance().init();
     SDCardVFS::instance().init();
     USBHost::instance().init();
-    AqUartProtocol::instance().init();
+    getWiFi()->init();
+    getBluetooth()->init();
+    getUartProtocol()->init();
     getFileServer()->init();
 
-    // Initialize FPGA
-    auto &fpga = FPGA::instance();
-    fpga.init();
-    fpga.loadDefaultBitstream();
+    getFPGA()->init();
+    loadFpgaCore(FpgaCoreType::AquariusPlus);
 
-    fpga.aqpSetVideoTimingMode(video_timing_mode);
-}
+    // fpga->aqpSetVideoTimingMode(video_timing_mode);
 
-extern "C" void app_main(void);
-
-void app_main(void) {
-    init();
-
-    vTaskDelay(pdMS_TO_TICKS(100));
-
-    auto displayOverlay = getDisplayOverlay();
-    displayOverlay->init();
+    getDisplayOverlay()->init();
 
 #if 0
     while (1) {

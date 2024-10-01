@@ -2,9 +2,9 @@ idf_component_register(
     SRCS
         "main.cpp"
         "FPGA.cpp"
-        "MemDump.cpp"
         "WiFi.cpp"
         "Bluetooth.cpp"
+        "Keyboard.cpp"
         "FileServer.cpp"
         "PowerLED.cpp"
 
@@ -27,23 +27,24 @@ idf_component_register(
         "fatfs/ffsystem.c"
         "fatfs/ffunicode.c"
 
-        # Files shared between emulator and ESP32
-        "../../emulator/Shared/AqKeyboard.cpp"
-        "../../emulator/Shared/AqUartProtocol.cpp"
-        "../../emulator/Shared/EspSettingsConsole.cpp"
-        "../../emulator/Shared/VFS/VFS.cpp"
-        "../../emulator/Shared/VFS/EspVFS.cpp"
-        "../../emulator/Shared/VFS/SDCardVFS.cpp"
-        "../../emulator/Shared/VFS/HttpVFS.cpp"
-        "../../emulator/Shared/VFS/TcpVFS.cpp"
+        "UartProtocol.cpp"
+        "VFS/VFS.cpp"
+        "VFS/EspVFS.cpp"
+        "VFS/SDCardVFS.cpp"
+        "VFS/HttpVFS.cpp"
+        "VFS/TcpVFS.cpp"
+
+        "FpgaCores/FpgaCore.cpp"
+        "FpgaCores/AquariusPlus/CoreAquariusPlus.cpp"
 
     INCLUDE_DIRS
         "."
         "HID"
+        "VFS"
         "USB"
         "fatfs"
-        "../../emulator/Shared"
-        "../../emulator/Shared/VFS"
+        "FpgaCores"
+        "FpgaCores/AquariusPlus"
 
     REQUIRES
         "driver"
@@ -61,13 +62,12 @@ idf_component_register(
         "app_update"
         "usb"
         "sdmmc"
-        # "fatfs"
         "bt"
 
     EMBED_FILES
         "../../fpga/aqp_top.bit"
-        "../../rom_src/romfs.bin"
         "assets/ovl_font.chr"
+        "../../rom_src/romfs.bin"
 
     EMBED_TXTFILES
         "assets/root_certificates"

@@ -1,6 +1,6 @@
 #include "Menu.h"
 #include "DisplayOverlay.h"
-#include "AqKeyboard.h"
+#include "Keyboard.h"
 
 void Menu::draw(int selectedRow) {
     auto ovl = getDisplayOverlay();
@@ -90,7 +90,7 @@ enum {
 };
 
 void Menu::show() {
-    auto keyboard = AqKeyboard::instance(); // getKeyboard();
+    auto keyboard = getKeyboard();
     auto ovl      = getDisplayOverlay();
 
     int selectedRow = 0;
@@ -117,7 +117,7 @@ void Menu::show() {
             needsRedraw = false;
         }
 
-        int ch = keyboard.getKey(pdMS_TO_TICKS(100));
+        int ch = keyboard->getKey(pdMS_TO_TICKS(100));
         if (ch < 0)
             continue;
 
@@ -221,8 +221,7 @@ void Menu::drawMessage(const char *msg) {
 }
 
 bool Menu::editString(const std::string &title, std::string &value) {
-    auto keyboard = AqKeyboard::instance();
-    // auto keyboard = getKeyboard();
+    auto keyboard = getKeyboard();
     auto ovl      = getDisplayOverlay();
 
     while (1) {
@@ -239,7 +238,7 @@ bool Menu::editString(const std::string &title, std::string &value) {
         ovl->drawStr(x + 1, y + 3, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg), value.c_str());
         ovl->render();
 
-        int ch = keyboard.getKey(portMAX_DELAY);
+        int ch = keyboard->getKey(portMAX_DELAY);
         switch (ch) {
             case CH_ESC: return false;
             case CH_ENTER: return true;

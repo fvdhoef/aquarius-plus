@@ -2,6 +2,12 @@
 
 #include "HIDReportHandler.h"
 
+enum {
+    NUM_LOCK    = (1 << 0),
+    CAPS_LOCK   = (1 << 1),
+    SCROLL_LOCK = (1 << 2),
+};
+
 class HIDReportHandlerKeyboard : public HIDReportHandler {
 public:
     HIDReportHandlerKeyboard();

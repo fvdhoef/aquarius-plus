@@ -9,7 +9,6 @@ module aqp_esp_uart_tx(
 
     input  wire  [7:0] tx_data,
     input  wire        tx_valid,
-    input  wire        tx_break,
     output wire        tx_busy);
 
     // Bit-timing
@@ -34,10 +33,10 @@ module aqp_esp_uart_tx(
         end else begin
             if (!q_busy) begin
                 q_uart_txd <= 1'b1;
-                if (tx_valid || tx_break) begin
-                    q_tx_shift <= tx_break ? 9'b0 : { tx_data, 1'b0 };
+                if (tx_valid) begin
+                    q_tx_shift <= { tx_data, 1'b0 };
                     q_busy     <= 1'b1;
-                    q_bit_cnt  <= tx_break ? 4'd15 : 4'd9;
+                    q_bit_cnt  <= 4'd9;
                 end
 
             end else if (next_bit) begin

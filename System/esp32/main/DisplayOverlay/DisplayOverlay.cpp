@@ -83,7 +83,7 @@ public:
         overlayVisible = show;
 
         static const uint16_t emptyPal[16] = {0};
-        FPGA::instance().setOverlayPalette(overlayVisible ? palette : emptyPal);
+        getFPGA()->setOverlayPalette(overlayVisible ? palette : emptyPal);
     }
 
     bool isVisible() override {
@@ -91,13 +91,13 @@ public:
     }
 
     void render() override {
-        FPGA::instance().setOverlayText(textBuf);
+        getFPGA()->setOverlayText(textBuf);
     }
 
     void task() {
         // Load font
         extern const uint8_t ovlFontStart[] asm("_binary_ovl_font_chr_start");
-        FPGA::instance().setOverlayFont(ovlFontStart);
+        getFPGA()->setOverlayFont(ovlFontStart);
 
         overlayVisible = true;
         setVisible(overlayVisible);

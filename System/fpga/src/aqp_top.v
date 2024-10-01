@@ -126,36 +126,33 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
-    wire  [8:0] esp_tx_data;   // if bit8 set: transmit break, ignore data
-    wire  [7:0] esp_rx_data;
-
-    wire esp_txvalid;
-    wire esp_txbusy;
-
-    wire esp_rxfifo_not_empty;
-    wire esp_rxfifo_read;
-    wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
+    wire [8:0] esp_tx_data;
+    wire       esp_tx_wr;
+    wire       esp_tx_fifo_full;
+    wire [8:0] esp_rx_data;
+    wire       esp_rx_rd;
+    wire       esp_rx_empty;
+    wire       esp_rx_fifo_overflow;
+    wire       esp_rx_framing_error;
 
     aqp_esp_uart esp_uart(
         .clk(clk),
         .reset(reset),
 
-        .tx_data(ebus_d_in),
-        .tx_valid(esp_txvalid),
-        .tx_break(esp_txvalid && esp_tx_data[8]),
-        .tx_busy(esp_txbusy),
+        .txfifo_data(esp_tx_data),
+        .txfifo_wr(esp_tx_wr),
+        .txfifo_full(esp_tx_fifo_full),
 
         .rxfifo_data(esp_rx_data),
-        .rxfifo_not_empty(esp_rxfifo_not_empty),
-        .rxfifo_read(esp_rxfifo_read),
-        .rxfifo_overflow(esp_rxfifo_overflow),
+        .rxfifo_rd(esp_rx_rd),
+        .rxfifo_empty(esp_rx_empty),
+        .rxfifo_overflow(esp_rx_fifo_overflow),
         .rx_framing_error(esp_rx_framing_error),
-        .rx_break(esp_rx_break),
 
-        .uart_rxd(esp_rx),
-        .uart_txd(esp_tx),
-        .uart_cts(esp_cts),
-        .uart_rts(esp_rts));
+        .esp_rx(esp_rx),
+        .esp_tx(esp_tx),
+        .esp_cts(esp_cts),
+        .esp_rts(esp_rts));
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
@@ -321,12 +318,12 @@ module aqp_top(
 
         // ESP UART interface
         .esp_tx_data(esp_tx_data),
-        .esp_tx_wr(esp_txvalid),
-        .esp_tx_fifo_full(esp_txbusy),
-        .esp_rx_data({esp_rx_break, esp_rx_data}),
-        .esp_rx_rd(esp_rxfifo_read),
-        .esp_rx_empty(!esp_rxfifo_not_empty),
-        .esp_rx_fifo_overflow(esp_rxfifo_overflow),
+        .esp_tx_wr(esp_tx_wr),
+        .esp_tx_fifo_full(esp_tx_fifo_full),
+        .esp_rx_data(esp_rx_data),
+        .esp_rx_rd(esp_rx_rd),
+        .esp_rx_empty(esp_rx_empty),
+        .esp_rx_fifo_overflow(esp_rx_fifo_overflow),
         .esp_rx_framing_error(esp_rx_framing_error),
 
         // Other

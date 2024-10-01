@@ -1,6 +1,14 @@
 #pragma once
 
 #include "HIDReportHandler.h"
+#include "IdxAlloc.h"
+
+struct GamePadData {
+    int8_t   lx, ly;
+    int8_t   rx, ry;
+    uint8_t  lt, rt;
+    uint16_t buttons;
+};
 
 class HIDReportHandlerGamepad : public HIDReportHandler {
 public:
@@ -23,5 +31,10 @@ private:
     int8_t  getInt8(int idx, int size, int min, int max, const uint8_t *buf, size_t length);
     uint8_t getUInt8(int idx, int size, int min, int max, const uint8_t *buf, size_t length);
 
-    int reportId = 0;
+    int reportId   = 0;
+    int gamePadIdx = -1;
+
+    GamePadData lastData;
+
+    static IdxAlloc idxAlloc;
 };

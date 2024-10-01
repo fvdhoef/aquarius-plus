@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include "SDCardVFS.h"
 #include <errno.h>
-#include "AqKeyboard.h"
+// #include "AqKeyboard.h"
 #include "FPGA.h"
 #include "SDCardVFS.h"
 #include <source_location>
@@ -551,10 +551,10 @@ public:
             }
 
             // Write buffer to keyboard
-            auto &kb = AqKeyboard::instance();
-            for (unsigned i = 0; i < received; i++) {
-                kb.pressKey(tmp[i]);
-            }
+            // auto &kb = AqKeyboard::instance();
+            // for (unsigned i = 0; i < received; i++) {
+            //     kb.pressKey(tmp[i]);
+            // }
 
             // Keep track of remaining size of the file left to be uploaded
             remaining -= received;

@@ -1,5 +1,5 @@
 #include "HIDReportHandlerMouse.h"
-#include "AqUartProtocol.h"
+#include "FpgaCore.h"
 
 HIDReportHandlerMouse::HIDReportHandlerMouse()
     : HIDReportHandler(TMouse) {
@@ -13,6 +13,9 @@ HIDReportHandlerMouse::HIDReportHandlerMouse()
     xSize     = -1;
     ySize     = -1;
     wheelSize = -1;
+}
+
+HIDReportHandlerMouse::~HIDReportHandlerMouse() {
 }
 
 void HIDReportHandlerMouse::_addInputField(const HIDReportDescriptor::HIDField &field) {
@@ -75,5 +78,8 @@ void HIDReportHandlerMouse::_inputReport(uint8_t reportId, const uint8_t *buf, s
             buttonMask |= (1 << i);
     }
 
-    AqUartProtocol::instance().mouseReport(dx, dy, buttonMask, dWheel);
+    auto core = getFpgaCore();
+    if (core) {
+        core->mouseReport(dx, dy, buttonMask, dWheel);
+    }
 }

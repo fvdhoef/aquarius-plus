@@ -22,7 +22,7 @@ public:
         gpio_config(&io_conf);
 
         // Enable LED
-        gpio_set_level((gpio_num_t)IOPIN_LED, 1);
+        gpio_set_level(IOPIN_LED, 1);
     }
 
     static void _timerCb(TimerHandle_t xTimer) {
@@ -37,7 +37,7 @@ public:
             ledLevel = true;
             xTimerStop(th, portMAX_DELAY);
         }
-        gpio_set_level((gpio_num_t)IOPIN_LED, ledLevel);
+        gpio_set_level(IOPIN_LED, ledLevel);
     }
 
     void flashStart() override {
@@ -50,7 +50,7 @@ public:
         }
         if (!xTimerIsTimerActive(th)) {
             ledLevel = false;
-            gpio_set_level((gpio_num_t)IOPIN_LED, ledLevel);
+            gpio_set_level(IOPIN_LED, ledLevel);
             xTimerReset(th, portMAX_DELAY);
         }
     }

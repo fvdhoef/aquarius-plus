@@ -1,11 +1,12 @@
 #include "HIDReportHandlerGamepad.h"
-#include "FPGA.h"
 #include <math.h>
-#include "AqUartProtocol.h"
+#include "FpgaCore.h"
+#include "GameCtrl.h"
 
 static const char *TAG = "HIDReportHandlerGamepad";
 
-#define AQP_EN
+IdxAlloc HIDReportHandlerGamepad::idxAlloc;
+
 // #define PRINT_INPUT
 
 HIDReportHandlerGamepad::HIDReportHandlerGamepad()
@@ -14,20 +15,13 @@ HIDReportHandlerGamepad::HIDReportHandlerGamepad()
     for (int i = 0; i < 16; i++) {
         idxBtns[i] = -1;
     }
+    memset(&lastData, 0, sizeof(lastData));
 
-#ifdef AQP_EN
-    auto              &aqp = AqUartProtocol::instance();
-    RecursiveMutexLock lk(aqp.mutexGameCtrlData);
-    aqp.gameCtrlReset(true);
-#endif
+    gamePadIdx = idxAlloc.alloc();
 }
 
 HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
-#ifdef AQP_EN
-    auto              &aqp = AqUartProtocol::instance();
-    RecursiveMutexLock lk(aqp.mutexGameCtrlData);
-    aqp.gameCtrlReset(false);
-#endif
+    idxAlloc.free(gamePadIdx);
 }
 
 void HIDReportHandlerGamepad::_addInputField(const HIDReportDescriptor::HIDField &field) {
@@ -159,19 +153,20 @@ uint8_t HIDReportHandlerGamepad::getUInt8(int idx, int size, int minVal, int max
 }
 
 void HIDReportHandlerGamepad::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
-    int8_t   ctrlLX      = getInt8(idxLSX, sizeLSX, minLSX, maxLSX, buf, length);
-    int8_t   ctrlLY      = getInt8(idxLSY, sizeLSY, minLSY, maxLSY, buf, length);
-    int8_t   ctrlRX      = getInt8(idxRSX, sizeRSX, minRSX, maxRSX, buf, length);
-    int8_t   ctrlRY      = getInt8(idxRSY, sizeRSY, minRSY, maxRSY, buf, length);
-    uint8_t  ctrlLT      = getUInt8(idxLT, sizeLT, minLT, maxLT, buf, length);
-    uint8_t  ctrlRT      = getUInt8(idxRT, sizeRT, minRT, maxRT, buf, length);
-    uint16_t ctrlButtons = 0;
+    GamePadData data;
+    data.lx      = getInt8(idxLSX, sizeLSX, minLSX, maxLSX, buf, length);
+    data.ly      = getInt8(idxLSY, sizeLSY, minLSY, maxLSY, buf, length);
+    data.rx      = getInt8(idxRSX, sizeRSX, minRSX, maxRSX, buf, length);
+    data.ry      = getInt8(idxRSY, sizeRSY, minRSY, maxRSY, buf, length);
+    data.lt      = getUInt8(idxLT, sizeLT, minLT, maxLT, buf, length);
+    data.rt      = getUInt8(idxRT, sizeRT, minRT, maxRT, buf, length);
+    data.buttons = 0;
 
     for (int i = 0; i < 16; i++) {
         // printf("%d:%d ", idxBtns[i]);
 
         if (idxBtns[i] >= 0 && readBits(buf, length, idxBtns[i], 1, 0)) {
-            ctrlButtons |= (1 << i);
+            data.buttons |= (1 << i);
         }
     }
     // printf("\n");
@@ -179,78 +174,72 @@ void HIDReportHandlerGamepad::_inputReport(uint8_t reportId, const uint8_t *buf,
     if (idxHat >= 0) {
         int hat = readBits(buf, length, idxHat, sizeHat, false);
         switch (hat - minHat) {
-            case 0: ctrlButtons |= GCB_DPAD_UP; break;                    // UP
-            case 1: ctrlButtons |= GCB_DPAD_UP | GCB_DPAD_RIGHT; break;   // UP+RIGHT
-            case 2: ctrlButtons |= GCB_DPAD_RIGHT; break;                 // RIGHT
-            case 3: ctrlButtons |= GCB_DPAD_DOWN | GCB_DPAD_RIGHT; break; // DOWN+RIGHT
-            case 4: ctrlButtons |= GCB_DPAD_DOWN; break;                  // DOWN
-            case 5: ctrlButtons |= GCB_DPAD_DOWN | GCB_DPAD_LEFT; break;  // DOWN+LEFT
-            case 6: ctrlButtons |= GCB_DPAD_LEFT; break;                  // LEFT
-            case 7: ctrlButtons |= GCB_DPAD_UP | GCB_DPAD_LEFT; break;    // UP+LEFT
+            case 0: data.buttons |= GCB_DPAD_UP; break;                    // UP
+            case 1: data.buttons |= GCB_DPAD_UP | GCB_DPAD_RIGHT; break;   // UP+RIGHT
+            case 2: data.buttons |= GCB_DPAD_RIGHT; break;                 // RIGHT
+            case 3: data.buttons |= GCB_DPAD_DOWN | GCB_DPAD_RIGHT; break; // DOWN+RIGHT
+            case 4: data.buttons |= GCB_DPAD_DOWN; break;                  // DOWN
+            case 5: data.buttons |= GCB_DPAD_DOWN | GCB_DPAD_LEFT; break;  // DOWN+LEFT
+            case 6: data.buttons |= GCB_DPAD_LEFT; break;                  // LEFT
+            case 7: data.buttons |= GCB_DPAD_UP | GCB_DPAD_LEFT; break;    // UP+LEFT
             default: break;
         }
     }
 
+    if (memcmp(&data, &lastData, sizeof(data)) == 0) {
+        // No change
+        return;
+    }
+    lastData = data;
+
 #ifdef PRINT_INPUT
     printf(
         "- LX:%4d LY:%4d RX:%4d RY:%4d LT:%3u RT:%3u Buttons:",
-        ctrlLX,
-        ctrlLY,
-        ctrlRX,
-        ctrlRY,
-        ctrlLT,
-        ctrlRT);
+        data.lx,
+        data.ly,
+        data.rx,
+        data.ry,
+        data.lt,
+        data.rt);
 
-    if (ctrlButtons & GCB_A)
+    if (data.buttons & GCB_A)
         printf("[A]");
-    if (ctrlButtons & GCB_B)
+    if (data.buttons & GCB_B)
         printf("[B]");
-    if (ctrlButtons & GCB_X)
+    if (data.buttons & GCB_X)
         printf("[X]");
-    if (ctrlButtons & GCB_Y)
+    if (data.buttons & GCB_Y)
         printf("[Y]");
-    if (ctrlButtons & GCB_VIEW)
+    if (data.buttons & GCB_VIEW)
         printf("[VIEW]");
-    if (ctrlButtons & GCB_GUIDE)
+    if (data.buttons & GCB_GUIDE)
         printf("[GUIDE]");
-    if (ctrlButtons & GCB_MENU)
+    if (data.buttons & GCB_MENU)
         printf("[MENU]");
-    if (ctrlButtons & GCB_LS)
+    if (data.buttons & GCB_LS)
         printf("[LS]");
-    if (ctrlButtons & GCB_RS)
+    if (data.buttons & GCB_RS)
         printf("[RS]");
-    if (ctrlButtons & GCB_LB)
+    if (data.buttons & GCB_LB)
         printf("[LB]");
-    if (ctrlButtons & GCB_RB)
+    if (data.buttons & GCB_RB)
         printf("[RB]");
-    if (ctrlButtons & GCB_DPAD_UP)
+    if (data.buttons & GCB_DPAD_UP)
         printf("[UP]");
-    if (ctrlButtons & GCB_DPAD_DOWN)
+    if (data.buttons & GCB_DPAD_DOWN)
         printf("[DOWN]");
-    if (ctrlButtons & GCB_DPAD_LEFT)
+    if (data.buttons & GCB_DPAD_LEFT)
         printf("[LEFT]");
-    if (ctrlButtons & GCB_DPAD_RIGHT)
+    if (data.buttons & GCB_DPAD_RIGHT)
         printf("[RIGHT]");
-    if (ctrlButtons & GCB_SHARE)
+    if (data.buttons & GCB_SHARE)
         printf("[SHARE]");
 
     printf("\n");
 #endif
 
-#ifdef AQP_EN
-    {
-        auto              &aqp = AqUartProtocol::instance();
-        RecursiveMutexLock lk(aqp.mutexGameCtrlData);
-
-        aqp.gameCtrlPresent = true;
-        aqp.gameCtrlLX      = ctrlLX;
-        aqp.gameCtrlLY      = ctrlLY;
-        aqp.gameCtrlRX      = ctrlRX;
-        aqp.gameCtrlRY      = ctrlRY;
-        aqp.gameCtrlLT      = ctrlLT;
-        aqp.gameCtrlRT      = ctrlRT;
-        aqp.gameCtrlButtons = ctrlButtons;
-        aqp.gameCtrlUpdated();
+    auto core = getFpgaCore();
+    if (core && gamePadIdx >= 0) {
+        core->gamepadReport(gamePadIdx, data);
     }
-#endif
 }
