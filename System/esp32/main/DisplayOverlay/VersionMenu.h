@@ -17,13 +17,13 @@ public:
         }
 
         char tmp[37];
-        snprintf(tmp, sizeof(tmp), "Name %s", running_app_info.project_name);
+        snprintf(tmp, sizeof(tmp), "Name:%s", running_app_info.project_name);
         items.emplace_back(MenuItemType::subMenu, tmp);
-        snprintf(tmp, sizeof(tmp), "Version %s", (const char *)running_app_info.version);
+        snprintf(tmp, sizeof(tmp), "Version:%s", (const char *)running_app_info.version);
         items.emplace_back(MenuItemType::subMenu, tmp);
-        snprintf(tmp, sizeof(tmp), "Compile date %s", running_app_info.date);
+        snprintf(tmp, sizeof(tmp), "Compile date:%s", running_app_info.date);
         items.emplace_back(MenuItemType::subMenu, tmp);
-        snprintf(tmp, sizeof(tmp), "Compile time %s", running_app_info.time);
+        snprintf(tmp, sizeof(tmp), "Compile time:%s", running_app_info.time);
         items.emplace_back(MenuItemType::subMenu, tmp);
     }
 };
