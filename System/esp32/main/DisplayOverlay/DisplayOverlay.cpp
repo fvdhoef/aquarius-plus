@@ -22,21 +22,18 @@ public:
     }
 
     void drawBorder(int x, int y, int w, int h, unsigned colBorder, unsigned colFill, int selectedRow, unsigned colFillSel) {
-        uint16_t col1 = makeAttr(colBorder, colFill) << 8;
-        uint16_t col2 = makeAttr(colFill, colBorder) << 8;
-
-        uint16_t col3 = makeAttr(colBorder, colFillSel) << 8;
-        uint16_t col4 = makeAttr(colFillSel, colBorder) << 8;
+        uint16_t col         = makeAttr(colBorder, colFill) << 8;
+        uint16_t colSelected = makeAttr(colBorder, colFillSel) << 8;
 
         uint16_t *p = &textBuf[y * 40 + x];
 
         // Top border
         {
             uint16_t *p2 = p;
-            *(p2++)      = col1 | 183;
+            *(p2++)      = col | 16;
             for (int i = 0; i < w - 2; i++)
-                *(p2++) = col1 | 163;
-            *(p2++) = col1 | 235;
+                *(p2++) = col | 17;
+            *(p2++) = col | 18;
             p += 40;
         }
 
@@ -44,20 +41,20 @@ public:
         for (int j = 0; j < h - 2; j++) {
 
             uint16_t *p2 = p;
-            *(p2++)      = ((j == selectedRow) ? col3 : col1) | 181;
+            *(p2++)      = ((j == selectedRow) ? colSelected : col) | 19;
             for (int i = 0; i < w - 2; i++)
-                *(p2++) = ((j == selectedRow) ? col3 : col1) | ' ';
-            *(p2++) = ((j == selectedRow) ? col4 : col2) | 181;
+                *(p2++) = ((j == selectedRow) ? colSelected : col) | ' ';
+            *(p2++) = ((j == selectedRow) ? colSelected : col) | 20;
             p += 40;
         }
 
         // Bottom border
         {
             uint16_t *p2 = p;
-            *(p2++)      = col1 | 245;
+            *(p2++)      = col | 21;
             for (int i = 0; i < w - 2; i++)
-                *(p2++) = col2 | 175;
-            *(p2++) = col1 | 250;
+                *(p2++) = col | 22;
+            *(p2++) = col | 23;
         }
     }
 

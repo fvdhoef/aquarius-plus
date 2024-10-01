@@ -385,6 +385,17 @@ public:
         }
         return -1;
     }
+
+    void addMainMenuItems(Menu &menu) override {
+        printf("addMainMenuItems\n");
+
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Restart Aquarius+ (CTRL-ESC)");
+            item.onEnter = [this]() {
+                aqpReset();
+            };
+        }
+    }
 };
 
 std::shared_ptr<FpgaCore> newCoreAquariusPlus() {

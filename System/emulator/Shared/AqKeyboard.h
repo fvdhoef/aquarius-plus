@@ -83,12 +83,6 @@ private:
     SemaphoreHandle_t  mutex;
     static void        keyRepeatTimer(void *arg);
     esp_timer_handle_t periodic_timer;
-
-public:
-    QueueHandle_t keyQueue;
-    int           getKey(TickType_t ticksToWait);
-
-private:
 #endif
 
     KeyboardLayout kbLayout;

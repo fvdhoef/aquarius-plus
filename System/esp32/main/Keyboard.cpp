@@ -140,7 +140,7 @@ public:
             uint8_t ch = layoutUS(scanCode);
             // printf("%d\n", scanCode);
 
-            if (scanCode == SCANCODE_ESP_MENU)
+            if (scanCode == SCANCODE_ESP_MENU || (scanCode == SCANCODE_TAB && (modifiers & (ModLGui | ModRGui))))
                 ch = 0xFF;
 
             if (

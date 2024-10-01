@@ -1,35 +1,62 @@
 #include "Menus.h"
+#include "FpgaCore.h"
 
 #include "DisplayOverlay.h"
-#include "WiFiMenu.h"
-#include "BluetoothMenu.h"
+#include "EspSettingsMenu.h"
 
-static WiFiMenu      wifiMenu;
-static BluetoothMenu btMenu;
+static EspSettingsMenu espSettingsMenu;
 
 //////////////////////////////////////////////////////////////////////////////
 // Main menu
 //////////////////////////////////////////////////////////////////////////////
 class MainMenu : public Menu {
 public:
-    MainMenu() : Menu("Aquarius+", 20) {
-        {
-            auto &item   = items.emplace_back(MenuItemType::subMenu, "Wi-Fi");
-            item.onEnter = []() { wifiMenu.show(); };
-        }
-        {
-            auto &item   = items.emplace_back(MenuItemType::subMenu, "Bluetooth");
-            item.onEnter = []() { btMenu.show(); };
-        }
-        items.emplace_back(MenuItemType::subMenu, "Date/Time");
+    MainMenu() : Menu("", 38) {}
 
-        items.emplace_back(MenuItemType::separator);
-        items.emplace_back(MenuItemType::subMenu, "Exit core");
+    void onEnter() {
+        updateTitle();
+
+        items.clear();
+
+        auto fpgaCore = getFpgaCore();
+        if (fpgaCore) {
+            fpgaCore->addMainMenuItems(*this);
+            items.emplace_back(MenuItemType::separator);
+        }
+
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Restart ESP (CTRL-ALT-ESC)");
+            item.onEnter = [&]() {
+                drawMessage("Restarting ESP...");
+                esp_restart();
+            };
+        }
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "ESP settings");
+            item.onEnter = []() { espSettingsMenu.show(); };
+        }
+    }
+
+    void updateTitle() {
+        time_t now;
+        time(&now);
+        struct tm timeinfo = *localtime(&now);
+
+        char strftime_buf[20];
+        strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
+
+        char tmp[40];
+        snprintf(tmp, sizeof(tmp), "Aquarius+        %s", strftime_buf);
+        title = tmp;
+    }
+
+    bool onTick() override {
+        updateTitle();
+        return true;
     }
 };
 
-static MainMenu mainMenu;
-
 Menu *getMainMenu() {
-    return &mainMenu;
+    static MainMenu obj;
+    return &obj;
 }
