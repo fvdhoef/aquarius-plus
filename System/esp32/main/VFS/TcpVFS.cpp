@@ -1,10 +1,5 @@
 #include "VFS.h"
-#ifdef _WIN32
-#include <ws2tcpip.h>
-#pragma comment(lib, "Ws2_32.lib")
-#else
 #include <netdb.h>
-#endif
 
 #define MAX_FDS (10)
 
