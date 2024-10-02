@@ -10,8 +10,8 @@
 class HttpVFS : public VFS {
 public:
 #ifdef _WIN32
-    static HINTERNET hInternet;
-    HINTERNET        clients[MAX_FDS];
+    HINTERNET hInternet;
+    HINTERNET clients[MAX_FDS];
 #endif
 
     HttpVFS() {
