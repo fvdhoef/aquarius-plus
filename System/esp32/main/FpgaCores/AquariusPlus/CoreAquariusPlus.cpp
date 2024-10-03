@@ -475,15 +475,21 @@ public:
         }
         {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Use external Z80");
-            item.setter = [this](int newVal) {
-                useT80 = (newVal == 0);
+            item.setter = [this, &menu](int newVal) {
+                bool newUseT80 = (newVal == 0);
+                if (useT80 != newUseT80) {
+                    useT80 = (newVal == 0);
 
-                nvs_handle_t h;
-                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
-                    if (nvs_set_u8(h, "useT80", useT80 ? 1 : 0) == ESP_OK) {
-                        nvs_commit(h);
+                    nvs_handle_t h;
+                    if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                        if (nvs_set_u8(h, "useT80", useT80 ? 1 : 0) == ESP_OK) {
+                            nvs_commit(h);
+                        }
+                        nvs_close(h);
                     }
-                    nvs_close(h);
+
+                    menu.drawMessage("Please restart Aquarius+");
+                    vTaskDelay(pdMS_TO_TICKS(1000));
                 }
             };
             item.getter = [this]() { return useT80 ? 0 : 1; };

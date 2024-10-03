@@ -57,10 +57,11 @@ public:
     void resetSelectedRow() { selectedRow = 0; }
     void setExitMenu() { exitMenu = true; }
 
-protected:
-    void draw(int selectedRow);
     void drawMessage(const char *msg);
     bool editString(const std::string &title, std::string &value);
+
+protected:
+    void draw(int selectedRow);
 
     bool exitMenu    = false;
     bool needsRedraw = true;
