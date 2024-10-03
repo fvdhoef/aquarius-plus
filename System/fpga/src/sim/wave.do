@@ -25,7 +25,7 @@ add wave -noupdate -expand -group aqp_top /tb/top_inst/cassette_in
 add wave -noupdate -expand -group aqp_top /tb/top_inst/printer_out
 add wave -noupdate -expand -group aqp_top /tb/top_inst/printer_in
 add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/exp
-add wave -noupdate -expand -group aqp_top /tb/top_inst/no_z80_n
+add wave -noupdate -expand -group aqp_top /tb/top_inst/has_z80
 add wave -noupdate -expand -group aqp_top /tb/top_inst/hc1
 add wave -noupdate -expand -group aqp_top /tb/top_inst/hc2
 add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/vga_r

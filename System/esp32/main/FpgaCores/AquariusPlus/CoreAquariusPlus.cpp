@@ -13,6 +13,7 @@
 enum {
     // Aq+ command
     CMD_RESET           = 0x01,
+    CMD_FORCE_TURBO     = 0x02,
     CMD_SET_KEYB_MATRIX = 0x10,
     CMD_SET_HCTRL       = 0x11,
     CMD_WRITE_KBBUF     = 0x12,
@@ -33,6 +34,8 @@ public:
     uint64_t          keybMatrix      = 0;
     GamePadData       gamepads[2]     = {0};
     uint8_t           videoTimingMode = 0;
+    bool              useT80          = false;
+    bool              forceTurbo      = false;
 
     // Mouse state
     bool    mousePresent = false;
@@ -77,9 +80,15 @@ public:
                 mouseSensitivityDiv = mouseDiv;
             }
 
+            uint8_t val8 = 0;
+            if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
+                useT80 = val8 != 0;
+            }
+
             nvs_close(h);
         }
         aqpSetVideoMode(videoTimingMode);
+        aqpReset();
     }
 
     void aqpWriteKeybBuffer(uint8_t ch) {
@@ -95,7 +104,20 @@ public:
         auto               fpga = getFPGA();
         RecursiveMutexLock lock(fpga->getMutex());
         fpga->spiSel(true);
-        uint8_t cmd[] = {CMD_RESET};
+        uint8_t resetCfg = useT80 ? 1 : 0;
+        uint8_t cmd[]    = {CMD_RESET, resetCfg};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+
+        forceTurbo = false;
+    }
+
+    void aqpForceTurbo(bool en) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cfg   = en ? 1 : 0;
+        uint8_t cmd[] = {CMD_FORCE_TURBO, cfg};
         fpga->spiTx(cmd, sizeof(cmd));
         fpga->spiSel(false);
     }
@@ -426,6 +448,14 @@ public:
         }
         menu.items.emplace_back(MenuItemType::separator);
         {
+            auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Force turbo mode");
+            item.setter = [this](int newVal) {
+                forceTurbo = (newVal != 0);
+                aqpForceTurbo(forceTurbo);
+            };
+            item.getter = [this]() { return forceTurbo ? 1 : 0; };
+        }
+        {
             auto &item  = menu.items.emplace_back(MenuItemType::percentage, "Mouse sensitivity");
             item.setter = [this](int newVal) {
                 newVal = std::max(1, std::min(newVal, 8));
@@ -442,6 +472,21 @@ public:
                 }
             };
             item.getter = [this]() { return mouseSensitivityDiv; };
+        }
+        {
+            auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Use external Z80");
+            item.setter = [this](int newVal) {
+                useT80 = (newVal == 0);
+
+                nvs_handle_t h;
+                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                    if (nvs_set_u8(h, "useT80", useT80 ? 1 : 0) == ESP_OK) {
+                        nvs_commit(h);
+                    }
+                    nvs_close(h);
+                }
+            };
+            item.getter = [this]() { return useT80 ? 0 : 1; };
         }
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, videoTimingMode ? "Video timing: 640x480" : "Video timing: 704x480");

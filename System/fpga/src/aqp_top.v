@@ -33,7 +33,7 @@ module aqp_top(
 
     // Misc
     output wire  [8:0] exp,
-    input  wire        no_z80_n,
+    input  wire        has_z80,
 
     // Hand controller interface
     inout  wire  [8:0] hc1,
@@ -69,7 +69,7 @@ module aqp_top(
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq;
 
-    wire        use_t80 = 1'b1;
+    wire        use_t80;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -286,6 +286,8 @@ module aqp_top(
         .reset(reset),
 
         .reset_req(reset_req),
+        .use_t80(use_t80),
+        .has_z80(has_z80),
 
         // Bus interface
         .ebus_a(ebus_a),

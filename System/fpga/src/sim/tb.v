@@ -44,7 +44,7 @@ module tb();
     wire        printer_in = 1'b1;
 
     wire  [8:0] exp;
-    wire        no_z80_n = 1'b0;
+    wire        has_z80 = 1'b0;
 
     wire  [8:0] hc1;
     wire  [8:0] hc2;
@@ -128,7 +128,7 @@ module tb();
 
         // Misc
         .exp(exp),
-        .no_z80_n(no_z80_n),
+        .has_z80(has_z80),
 
         // Hand controller interface
         .hc1(hc1),
