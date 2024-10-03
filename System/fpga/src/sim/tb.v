@@ -158,6 +158,7 @@ module tb();
     // IS61C5128AS RAM
     //////////////////////////////////////////////////////////////////////////
     is61c5128as sram(
+    // is61lv5128al sram(
         .A({ebus_ba, ebus_a[13:0]}),
         .IO(ebus_d),
         .CE_n(ebus_ram_ce_n),
