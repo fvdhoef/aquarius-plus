@@ -96,7 +96,7 @@ public:
         extern const uint8_t ovlFontStart[] asm("_binary_ovl_font_chr_start");
         getFPGA()->setOverlayFont(ovlFontStart);
 
-        overlayVisible = true;
+        overlayVisible = false;
         setVisible(overlayVisible);
 
         while (1) {
