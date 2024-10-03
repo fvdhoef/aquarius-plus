@@ -10,6 +10,5 @@ TODO:
 - FileServer keyboard typing
 
 - Implement file compression to save flash memory: https://github.com/espressif/esp-iot-solution/tree/master/examples/utilities/xz_decompress_file
-- Full root certificates
 
-- T80 core
+- BLE keyboard support

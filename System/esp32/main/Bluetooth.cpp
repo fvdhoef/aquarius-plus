@@ -168,7 +168,7 @@ public:
             return;
         }
 
-        ble_hs_cfg.sm_io_cap         = BLE_HS_IO_NO_INPUT_OUTPUT;
+        ble_hs_cfg.sm_io_cap         = BLE_HS_IO_DISPLAY_ONLY;
         ble_hs_cfg.sm_bonding        = 1;
         ble_hs_cfg.sm_mitm           = 1;
         ble_hs_cfg.sm_sc             = 1;
@@ -624,6 +624,18 @@ public:
     void onGapPairingComplete(int status, uint16_t connHandle) {
         ESP_LOGI(TAG, "onGapPairingComplete status=%d connHandle=%u", status, connHandle);
     }
+    void onGapPassKeyAction(const ble_gap_passkey_params *params, uint16_t connHandle) {
+        ESP_LOGI(TAG, "onGapPassKeyAction action=%u numcmp=%u connHandle=%u", params->action, (unsigned)params->numcmp, connHandle);
+
+        if (params->action == BLE_SM_IOACT_DISP) {
+            ble_sm_io pkey = {0};
+            pkey.passkey   = 123456;
+            ble_sm_inject_io(connHandle, &pkey);
+
+            ESP_LOGI(TAG, "Please enter 123456 on your device");
+            // TODO: show this on-screen
+        }
+    }
 
     BluetoothDevInfo *getBdiFromConnHandle(uint16_t connHandle) {
         ble_gap_conn_desc connDesc;
@@ -925,6 +937,7 @@ public:
             case BLE_GAP_EVENT_CONN_UPDATE_REQ: onGapConnUpdateReq(event->conn_update_req.peer_params, event->conn_update_req.self_params, event->conn_update_req.conn_handle); return 0;
             case BLE_GAP_EVENT_L2CAP_UPDATE_REQ: onGapL2CapUpdateReq(event->conn_update_req.peer_params, event->conn_update_req.self_params, event->conn_update_req.conn_handle); return 0;
             case BLE_GAP_EVENT_PARING_COMPLETE: onGapPairingComplete(event->pairing_complete.status, event->pairing_complete.conn_handle); return 0;
+            case BLE_GAP_EVENT_PASSKEY_ACTION: onGapPassKeyAction(&event->passkey.params, event->passkey.conn_handle); return 0;
             default: {
                 ESP_LOGW(TAG, "Unhandled gap event: %d", event->type);
                 return 0;
