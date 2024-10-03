@@ -127,7 +127,10 @@ NET "hc2[5]" PULLUP;
 NET "hc2[6]" PULLUP;
 NET "hc2[7]" PULLUP;
 
-NET "no_z80_n" PULLUP;
+NET "no_z80_n"      PULLUP;
+NET "ebus_int_n"    PULLUP;
+NET "ebus_busreq_n" PULLUP;
+NET "ebus_busack_n" PULLUP;
 
 NET "sysclk"            IOSTANDARD = LVTTL;
 NET "ebus_reset_n"      IOSTANDARD = LVTTL;
