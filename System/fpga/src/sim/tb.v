@@ -2,112 +2,172 @@
 
 module tb();
 
-`ifndef MODEL_TECH
-    initial begin
-        $dumpfile("tb.vcd");
-        $dumpvars(0, tb);
-    end
-
-    initial begin
-        // #2000000 $finish;
-        #200000 $finish;
-    end
-`endif
-
     // Generate approx. 14.31818MHz sysclk
     reg sysclk = 0;
     always #34.92 sysclk = !sysclk;
 
     reg  [7:0] bus_wrdata = 8'b0;
-    reg        bus_wren = 1'b0;
-    wire [7:0] bus_d = bus_wren ? bus_wrdata : 8'bZ;
+    reg        bus_wren   = 1'b0;
 
-    reg        esp_rx = 1'b1;
+    //////////////////////////////////////////////////////////////////////////
+    // aqp_top
+    //////////////////////////////////////////////////////////////////////////
+    reg  [15:0] q_ebus_a      = 16'h0000;
+    reg         q_ebus_rd_n   = 1'b1;
+    reg         q_ebus_wr_n   = 1'b1;
+    reg         q_ebus_mreq_n = 1'b1;
+    reg         q_ebus_iorq_n = 1'b1;
 
-    wire reset_n = 1'bZ;
-    pullup(reset_n);
+    reg         ebus_busack_n = 1'bZ;
 
-    wire phi;
+    wire        ebus_phi;
+    wire        ebus_reset_n;
+    wire [15:0] ebus_a      = (ebus_busack_n == 1'b0) ? 16'bZ : q_ebus_a;
+    wire  [7:0] ebus_d      = bus_wren ? bus_wrdata : 8'bZ;
+    wire        ebus_rd_n   = (ebus_busack_n == 1'b0) ? 1'bZ  : q_ebus_rd_n;
+    wire        ebus_wr_n   = (ebus_busack_n == 1'b0) ? 1'bZ  : q_ebus_wr_n;
+    wire        ebus_mreq_n = (ebus_busack_n == 1'b0) ? 1'bZ  : q_ebus_mreq_n;
+    wire        ebus_iorq_n = (ebus_busack_n == 1'b0) ? 1'bZ  : q_ebus_iorq_n;
+    wire        ebus_int_n;
+    wire        ebus_busreq_n;
+    wire  [4:0] ebus_ba;
+    wire        ebus_ram_ce_n;
+    wire        ebus_cart_ce_n;
+    wire        ebus_ram_we_n;
 
-    reg spi_ssel_n_r = 1'b1;
-    reg spi_sclk_r = 1'b0;
-    reg spi_mosi_r = 1'b0;
+    wire        audio_l;
+    wire        audio_r;
 
-    wire busreq_n;
-    reg busack_n = 1'bZ;
-    pullup(busreq_n);
+    wire        cassette_out;
+    wire        cassette_in = 1'b0;
+    wire        printer_out;
+    wire        printer_in = 1'b1;
 
-    reg  [15:0] bus_a_r      = 16'h0000;
-    reg         bus_rd_n_r   = 1'b1;
-    reg         bus_wr_n_r   = 1'b1;
-    reg         bus_mreq_n_r = 1'b1;
-    reg         bus_iorq_n_r = 1'b1;
+    wire  [8:0] exp;
+    wire        no_z80_n = 1'b0;
 
-    wire [15:0] bus_a      = (busack_n == 1'b0) ? 16'bZ : bus_a_r;
-    wire        bus_rd_n   = (busack_n == 1'b0) ? 1'bZ  : bus_rd_n_r;
-    wire        bus_wr_n   = (busack_n == 1'b0) ? 1'bZ  : bus_wr_n_r;
-    wire        bus_mreq_n = (busack_n == 1'b0) ? 1'bZ  : bus_mreq_n_r;
-    wire        bus_iorq_n = (busack_n == 1'b0) ? 1'bZ  : bus_iorq_n_r;
+    wire  [8:0] hc1;
+    wire  [8:0] hc2;
 
-    always @(posedge phi) busack_n <= busreq_n;
+    wire  [3:0] vga_r;
+    wire  [3:0] vga_g;
+    wire  [3:0] vga_b;
+    wire        vga_hsync;
+    wire        vga_vsync;
+
+    wire        esp_tx;
+    reg         esp_rx = 1'b1;
+    wire        esp_rts;
+    wire        esp_cts = 1'b0;
+
+    reg         esp_ssel_n = 1'b1;
+    reg         esp_sclk = 1'b0;
+    reg         esp_mosi = 1'b0;
+    wire        esp_miso;
+    wire        esp_notify;
+
+    pullup(ebus_reset_n);
+    pullup(ebus_busreq_n);
+    pullup(hc1[7]);
+    pullup(hc1[6]);
+    pullup(hc1[5]);
+    pullup(hc1[4]);
+    pullup(hc1[3]);
+    pullup(hc1[2]);
+    pullup(hc1[1]);
+    pullup(hc1[0]);
+    pullup(hc2[7]);
+    pullup(hc2[6]);
+    pullup(hc2[5]);
+    pullup(hc2[4]);
+    pullup(hc2[3]);
+    pullup(hc2[2]);
+    pullup(hc2[1]);
+    pullup(hc2[0]);
+
+    pullup(ebus_d[7]);
+    pullup(ebus_d[6]);
+    pullup(ebus_d[5]);
+    pullup(ebus_d[4]);
+    pullup(ebus_d[3]);
+    pullup(ebus_d[2]);
+    pullup(ebus_d[1]);
+    pullup(ebus_d[0]);
+
+    always @(posedge ebus_phi) ebus_busack_n <= ebus_busreq_n;
 
     aqp_top top_inst(
         .sysclk(sysclk),
 
         // Z80 bus interface
-        .ebus_reset_n(reset_n),
-        .ebus_phi(phi),
-        .ebus_a(bus_a),
-        .ebus_d(bus_d),
-        .ebus_rd_n(bus_rd_n),
-        .ebus_wr_n(bus_wr_n),
-        .ebus_mreq_n(bus_mreq_n),
-        .ebus_iorq_n(bus_iorq_n),
-        .ebus_int_n(),
-        .ebus_busreq_n(busreq_n),
-        .ebus_busack_n(busack_n),
-        .ebus_ba(),
-        .ebus_ram_ce_n(),
-        .ebus_cart_ce_n(),
-        .ebus_ram_we_n(),
+        .ebus_reset_n(ebus_reset_n),
+        .ebus_phi(ebus_phi),
+        .ebus_a(ebus_a),
+        .ebus_d(ebus_d),
+        .ebus_rd_n(ebus_rd_n),
+        .ebus_wr_n(ebus_wr_n),
+        .ebus_mreq_n(ebus_mreq_n),
+        .ebus_iorq_n(ebus_iorq_n),
+        .ebus_int_n(ebus_int_n),
+        .ebus_busreq_n(ebus_busreq_n),
+        .ebus_busack_n(ebus_busack_n),
+        .ebus_ba(ebus_ba),
+        .ebus_ram_ce_n(ebus_ram_ce_n),
+        .ebus_cart_ce_n(ebus_cart_ce_n),
+        .ebus_ram_we_n(ebus_ram_we_n),
 
         // PWM audio outputs
-        .audio_l(),
-        .audio_r(),
+        .audio_l(audio_l),
+        .audio_r(audio_r),
 
         // Other
-        .cassette_out(),
-        .cassette_in(1'b0),
-        .printer_out(),
-        .printer_in(1'b1),
+        .cassette_out(cassette_out),
+        .cassette_in(cassette_in),
+        .printer_out(printer_out),
+        .printer_in(printer_in),
 
         // Misc
-        .exp(),
+        .exp(exp),
+        .no_z80_n(no_z80_n),
 
         // Hand controller interface
-        .hc1(),
-        .hc2(),
+        .hc1(hc1),
+        .hc2(hc2),
 
         // VGA output
-        .vga_r(),
-        .vga_g(),
-        .vga_b(),
-        .vga_hsync(),
-        .vga_vsync(),
+        .vga_r(vga_r),
+        .vga_g(vga_g),
+        .vga_b(vga_b),
+        .vga_hsync(vga_hsync),
+        .vga_vsync(vga_vsync),
 
         // ESP32 serial interface
-        .esp_tx(),
+        .esp_tx(esp_tx),
         .esp_rx(esp_rx),
-        .esp_rts(),
-        .esp_cts(1'b1),
+        .esp_rts(esp_rts),
+        .esp_cts(esp_cts),
 
         // ESP32 SPI interface (also used for loading FPGA image)
-        .esp_ssel_n(spi_ssel_n_r),
-        .esp_sclk(spi_sclk_r),
-        .esp_mosi(spi_mosi_r),
-        .esp_miso(),
-        .esp_notify());
+        .esp_ssel_n(esp_ssel_n),
+        .esp_sclk(esp_sclk),
+        .esp_mosi(esp_mosi),
+        .esp_miso(esp_miso),
+        .esp_notify(esp_notify));
 
+    //////////////////////////////////////////////////////////////////////////
+    // IS61C5128AS RAM
+    //////////////////////////////////////////////////////////////////////////
+    is61c5128as sram(
+        .A({ebus_ba, ebus_a[13:0]}),
+        .IO(ebus_d),
+        .CE_n(ebus_ram_ce_n),
+        .OE_n(ebus_rd_n),
+        .WE_n(ebus_ram_we_n)
+    );
+
+    //////////////////////////////////////////////////////////////////////////
+    // Testbench
+    //////////////////////////////////////////////////////////////////////////
     task iowr;
         input [15:0] addr;
         input  [7:0] data;
@@ -116,25 +176,25 @@ module tb();
             bus_wrdata  = data;
 
             // T1
-            @(posedge phi)
+            @(posedge ebus_phi)
             #110
-            bus_a_r       = addr;
+            q_ebus_a       = addr;
 
             // T2
-            @(posedge phi)
+            @(posedge ebus_phi)
             bus_wren    = 1'b1;
             #65
-            bus_wr_n_r    = 1'b0;
+            q_ebus_wr_n    = 1'b0;
             #10
-            bus_iorq_n_r  = 1'b0;
+            q_ebus_iorq_n  = 1'b0;
 
             // T3
-            @(posedge phi)
-            @(negedge phi);
+            @(posedge ebus_phi)
+            @(negedge ebus_phi);
             #80
-            bus_wr_n_r    = 1'b1;
+            q_ebus_wr_n    = 1'b1;
             #5
-            bus_iorq_n_r  = 1'b1;
+            q_ebus_iorq_n  = 1'b1;
             #55
             bus_wren    = 1'b0;
         end
@@ -145,24 +205,24 @@ module tb();
 
         begin
             // T1
-            @(posedge phi)
+            @(posedge ebus_phi)
             #110
-            bus_a_r       = addr;
+            q_ebus_a       = addr;
 
             // T2
-            @(posedge phi)
+            @(posedge ebus_phi)
             #65
-            bus_rd_n_r    = 1'b0;
+            q_ebus_rd_n    = 1'b0;
             #10
-            bus_iorq_n_r  = 1'b0;
+            q_ebus_iorq_n  = 1'b0;
 
             // T3
-            @(posedge phi)
-            @(negedge phi);
+            @(posedge ebus_phi)
+            @(negedge ebus_phi);
             #80
-            bus_rd_n_r    = 1'b1;
+            q_ebus_rd_n    = 1'b1;
             #5
-            bus_iorq_n_r  = 1'b1;
+            q_ebus_iorq_n  = 1'b1;
             #55;
         end
     endtask
@@ -175,25 +235,25 @@ module tb();
             bus_wrdata  = data;
 
             // T1
-            @(posedge phi)
+            @(posedge ebus_phi)
             #110
-            bus_a_r     = addr;
+            q_ebus_a     = addr;
 
             // T2
-            @(posedge phi)
+            @(posedge ebus_phi)
             bus_wren    = 1'b1;
             #65
-            bus_wr_n_r    = 1'b0;
+            q_ebus_wr_n    = 1'b0;
             #10
-            bus_mreq_n_r  = 1'b0;
+            q_ebus_mreq_n  = 1'b0;
 
             // T3
-            @(posedge phi)
-            @(negedge phi);
+            @(posedge ebus_phi)
+            @(negedge ebus_phi);
             #80
-            bus_wr_n_r    = 1'b1;
+            q_ebus_wr_n    = 1'b1;
             #5
-            bus_mreq_n_r  = 1'b1;
+            q_ebus_mreq_n  = 1'b1;
             #55
             bus_wren    = 1'b0;
         end
@@ -204,24 +264,24 @@ module tb();
 
         begin
             // T1
-            @(posedge phi)
+            @(posedge ebus_phi)
             #110
-            bus_a_r       = addr;
+            q_ebus_a       = addr;
 
             // T2
-            @(posedge phi)
+            @(posedge ebus_phi)
             #65
-            bus_rd_n_r    = 1'b0;
+            q_ebus_rd_n    = 1'b0;
             #10
-            bus_mreq_n_r  = 1'b0;
+            q_ebus_mreq_n  = 1'b0;
 
             // T3
-            @(posedge phi)
-            @(negedge phi);
+            @(posedge ebus_phi)
+            @(negedge ebus_phi);
             #80
-            bus_rd_n_r    = 1'b1;
+            q_ebus_rd_n    = 1'b1;
             #5
-            bus_mreq_n_r  = 1'b1;
+            q_ebus_mreq_n  = 1'b1;
             #55;
         end
     endtask
@@ -263,13 +323,13 @@ module tb();
         begin
             for (i=0; i<8; i=i+1) begin
                 #TSPI;
-                spi_sclk_r = 1'b0;
-                spi_mosi_r = data[7-i];
+                esp_sclk = 1'b0;
+                esp_mosi = data[7-i];
                 
                 #TSPI;
-                spi_sclk_r = 1'b1;
+                esp_sclk = 1'b1;
             end
-            #TSPI spi_sclk_r = 1'b0;
+            #TSPI esp_sclk = 1'b0;
         end
     endtask
 
@@ -285,75 +345,75 @@ module tb();
 
     initial begin
         #2500
-        spi_ssel_n_r <= 1'b0;
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h40);
         spi_tx(8'h01);
-        spi_ssel_n_r <= 1'b1;
+        esp_ssel_n <= 1'b1;
     end
 
     initial begin
-        #2500;
-        @(posedge phi);
-        @(posedge phi);
+        // #2500;
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
 
-        iowr(16'hF3, 8'h33);
-        memwr(16'hFFFF, 8'h01);
-        memwr(16'hFFFE, 8'h02);
+        // iowr(16'hF3, 8'h33);
+        // memwr(16'hFFFF, 8'h01);
+        // memwr(16'hFFFE, 8'h02);
 
-        memwr(16'hC000, 8'h42);
-        memwr(16'hD000, 8'h42);
-        memwr(16'hE000, 8'h42);
-        memwr(16'hF000, 8'h42);
-        memwr(16'hF800, 8'h42);
+        // memwr(16'hC000, 8'h42);
+        // memwr(16'hD000, 8'h42);
+        // memwr(16'hE000, 8'h42);
+        // memwr(16'hF000, 8'h42);
+        // memwr(16'hF800, 8'h42);
 
-        memrd(16'hC000);
-        memrd(16'hD000);
-        memrd(16'hE000);
-        memrd(16'hF000);
-        memrd(16'hF800);
+        // memrd(16'hC000);
+        // memrd(16'hD000);
+        // memrd(16'hE000);
+        // memrd(16'hF000);
+        // memrd(16'hF800);
 
-        memrd(16'hFFFF);
-        memrd(16'hFFFE);
-
-
-        iowr(16'hF4, 8'h80);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        @(posedge phi);
-        iowr(16'hF5, 8'h01);
+        // memrd(16'hFFFF);
+        // memrd(16'hFFFE);
 
 
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // iowr(16'hF4, 8'h80);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // iowr(16'hF5, 8'h01);
+
+
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h12);
         // spi_tx(8'hA5);
-        // spi_ssel_n_r <= 1'b1;
+        // esp_ssel_n <= 1'b1;
      
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
-        // @(posedge phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
+        // @(posedge ebus_phi);
 
         // iord(16'h00FA);
 
@@ -444,88 +504,88 @@ module tb();
         ////////
 
         // // fpga_bus_acquire
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h20);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // set_bank(0, 0);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h24);
         // spi_tx(8'hF0);
         // spi_tx(8'h00);
         // spi_tx(8'h00);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // set_bank(1, 1);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h24);
         // spi_tx(8'hF1);
         // spi_tx(8'h00);
         // spi_tx(8'h01);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // set_bank(2, addr >> 14);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h24);
         // spi_tx(8'hF2);
         // spi_tx(8'h00);
         // spi_tx(8'h00);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // fpga_mem_write(0x5555, 0xAA);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h22);
         // spi_tx(8'h55);
         // spi_tx(8'h55);
         // spi_tx(8'hAA);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // fpga_mem_write(0x2AAA, 0x55);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h22);
         // spi_tx(8'hAA);
         // spi_tx(8'h2A);
         // spi_tx(8'h55);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // fpga_mem_write(0x5555, 0xA0);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h22);
         // spi_tx(8'h55);
         // spi_tx(8'h55);
         // spi_tx(8'hA0);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // fpga_mem_write(0x8000 + (addr & 0x3FFF), val);
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h22);
         // spi_tx(8'h00);
         // spi_tx(8'h80);
         // spi_tx(8'h42);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
         // // fpga_bus_release
-        // @(posedge phi);
-        // spi_ssel_n_r <= 1'b0;
+        // @(posedge ebus_phi);
+        // esp_ssel_n <= 1'b0;
         // spi_tx(8'h21);
-        // spi_ssel_n_r <= 1'b1;
-        // @(posedge phi);
+        // esp_ssel_n <= 1'b1;
+        // @(posedge ebus_phi);
 
 
         // iowr(16'd244, 8'd128);
@@ -533,51 +593,51 @@ module tb();
 
 
 /*
-        spi_ssel_n_r <= 1'b0;
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h01);
-        spi_ssel_n_r <= 1'b1;
+        esp_ssel_n <= 1'b1;
 
         #1000;
 
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
+        @(posedge ebus_phi);
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h20);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        esp_ssel_n <= 1'b1;
+        @(posedge ebus_phi);
 
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
+        @(posedge ebus_phi);
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h22);
         spi_tx(8'h00);
         spi_tx(8'h30);
         spi_tx(8'h5A);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        esp_ssel_n <= 1'b1;
+        @(posedge ebus_phi);
 
         #10000;
 
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
+        @(posedge ebus_phi);
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h23);
         spi_tx(8'h00);
         spi_tx(8'h30);
         spi_tx(8'h00);
         spi_tx(8'h00);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        esp_ssel_n <= 1'b1;
+        @(posedge ebus_phi);
 
         #10000;
 
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
+        @(posedge ebus_phi);
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h21);
-        spi_ssel_n_r <= 1'b1;
-        @(posedge phi);
+        esp_ssel_n <= 1'b1;
+        @(posedge ebus_phi);
 
         #10000;
 
-        @(posedge phi);
-        spi_ssel_n_r <= 1'b0;
+        @(posedge ebus_phi);
+        esp_ssel_n <= 1'b0;
         spi_tx(8'h10);
         spi_tx(8'h01);
         spi_tx(8'h23);
@@ -587,7 +647,7 @@ module tb();
         spi_tx(8'hAB);
         spi_tx(8'hCD);
         spi_tx(8'hEF);
-        spi_ssel_n_r <= 1'b1;
+        esp_ssel_n <= 1'b1;
 
         iord(16'h01FF);
         iord(16'h02FF);

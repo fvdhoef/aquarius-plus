@@ -9,6 +9,7 @@ module aqp_sysctrl(
     input  wire turbo_mode,
 
     output wire ebus_phi,
+    output reg  ebus_phi_clken,
     output wire reset);
 
     //////////////////////////////////////////////////////////////////////////
@@ -77,9 +78,14 @@ module aqp_sysctrl(
 
     assign ebus_phi = q_phi;
     always @(posedge sysclk) begin
+        ebus_phi_clken <= 1'b0;
+
         if (q_phi_div == toggle_val) begin
             q_phi     <= !q_phi;
             q_phi_div <= 2'd0;
+
+            ebus_phi_clken <= !q_phi;
+
         end else begin
             q_phi_div <= q_phi_div + 2'd1;
         end

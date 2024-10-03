@@ -32,7 +32,8 @@ module aqp_top(
     input  wire        printer_in,
 
     // Misc
-    output wire  [9:0] exp,
+    output wire  [8:0] exp,
+    input  wire        no_z80_n,
 
     // Hand controller interface
     inout  wire  [8:0] hc1,
@@ -53,13 +54,13 @@ module aqp_top(
 
     // ESP32 SPI interface (also used for loading FPGA image)
     input  wire        esp_ssel_n,
-    input  wire        esp_sclk,        // Connected to EXP7
+    input  wire        esp_sclk,
     input  wire        esp_mosi,
     output wire        esp_miso,
     output wire        esp_notify
 );
 
-    assign exp = 10'b0;
+    assign exp = 9'b0;
 
     wire [15:0] spibm_a;
     wire  [7:0] spibm_wrdata;
@@ -87,6 +88,7 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     wire reset_req;
     wire turbo;
+    wire ebus_phi_clken;
     wire reset;
 
     aqp_sysctrl sysctrl(
@@ -97,6 +99,7 @@ module aqp_top(
         .turbo_mode(turbo),
 
         .ebus_phi(ebus_phi),
+        .ebus_phi_clken(ebus_phi_clken),
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
