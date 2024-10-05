@@ -2,6 +2,13 @@
 #include "VFS.h"
 #include "FPGA.h"
 
+enum {
+    IO_BANK0 = 0xF0,
+    IO_BANK1 = 0xF1,
+    IO_BANK2 = 0xF2,
+    IO_BANK3 = 0xF3,
+};
+
 uint8_t MemDump::savedRam3000[40];
 uint8_t MemDump::savedRam3400[40];
 int     MemDump::screenshotIdx = 1;

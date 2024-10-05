@@ -48,32 +48,11 @@ idf_component_register(
         "FpgaCores"
         "FpgaCores/AquariusPlus"
 
-    REQUIRES
-        "driver"
-        "log"
-        "esp_event"
-        "esp_timer"
-        "esp_rom"
-        "esp-tls"
-        "nvs_flash"
-        "esp_wifi"
-        "esp_http_client"
-        "esp_http_server"
-        "esp_https_ota"
-        "json"
-        "app_update"
-        "usb"
-        "sdmmc"
-        "bt"
-
     EMBED_FILES
         "assets/ovl_font.chr"
         "../../rom_src/romfs.bin"
         "assets/aqp_top.bit.xzh"
         "assets/root_certificates.xzh"
-
-    # EMBED_TXTFILES
-    #     "assets/root_certificates"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

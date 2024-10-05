@@ -94,8 +94,4 @@ void app_main(void) {
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 #endif
-    // while (1) {
-    //     heap_caps_print_heap_info(MALLOC_CAP_DEFAULT);
-    //     vTaskDelay(pdMS_TO_TICKS(2000));
-    // }
 }

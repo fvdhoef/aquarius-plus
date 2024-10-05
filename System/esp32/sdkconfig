@@ -529,6 +529,16 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# * Firmware settings *
+#
+CONFIG_MACHINE_TYPE_AQPLUS=y
+CONFIG_UARTPROTOCOL_BAUDRATE=3579545
+CONFIG_FPGA_SPI_SPEED_HZ=1000000
+CONFIG_GITHUB_BASE_URL="https://github.com/fvdhoef/aquarius-plus"
+CONFIG_UPDATE_FILE_NAME="aquarius-plus.bin"
+# end of * Firmware settings *
+
+#
 # Compiler options
 #
 # CONFIG_COMPILER_OPTIMIZATION_DEBUG is not set

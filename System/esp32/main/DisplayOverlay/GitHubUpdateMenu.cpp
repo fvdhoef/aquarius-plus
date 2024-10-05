@@ -49,7 +49,7 @@ void GitHubUpdateMenu::onEnter() {
     // Get tag of latest release
     {
         esp_http_client_config_t cfg = {
-            .url                   = "https://github.com/fvdhoef/aquarius-plus/releases/latest",
+            .url                   = CONFIG_GITHUB_BASE_URL "/releases/latest",
             .timeout_ms            = 5000,
             .disable_auto_redirect = true,
             .event_handler         = http_evt_cb,
@@ -98,7 +98,7 @@ void GitHubUpdateMenu::onEnter() {
 }
 
 void GitHubUpdateMenu::doUpdate(const char *tag) {
-    auto url = std::string("https://github.com/fvdhoef/aquarius-plus/releases/download/") + tag + "/aquarius-plus.bin";
+    auto url = std::string(CONFIG_GITHUB_BASE_URL "/releases/download/") + tag + "/" + CONFIG_UPDATE_FILE_NAME;
 
     esp_http_client_config_t http_config = {
         .url                 = url.c_str(),

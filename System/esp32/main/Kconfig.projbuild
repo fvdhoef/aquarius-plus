@@ -1,0 +1,28 @@
+menu "* Firmware settings *"
+    choice
+        prompt "Machine type"
+        default MACHINE_TYPE_AQPLUS
+        config MACHINE_TYPE_AQPLUS
+            bool "Aquarius+"
+    endchoice
+
+    config UARTPROTOCOL_BAUDRATE
+        int "UART protocol baudrate"
+        default 3579545
+
+    config FPGA_SPI_SPEED_HZ
+        int "FPGA SPI speed in Hz"
+        default 1000000
+
+    config GITHUB_BASE_URL
+        string "GitHub base URL"
+        default "https://github.com/fvdhoef/aquarius-plus"
+        help
+            Base URL of GitHub project.
+    
+    config UPDATE_FILE_NAME
+        string "Update file name"
+        default "aquarius-plus.bin"
+        help
+            Name of update file. Assumed to be the same for GitHub and SD card update.
+endmenu

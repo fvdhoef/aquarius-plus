@@ -6,8 +6,6 @@
 #include <nvs_flash.h>
 #include "VFS.h"
 
-#define UPDATEFILE_NAME "aquarius-plus.bin"
-
 void SdCardUpdateMenu::onEnter() {
     doUpdate();
     setExitMenu();
@@ -31,15 +29,15 @@ void SdCardUpdateMenu::doUpdate() {
     }
 
     struct stat st;
-    if (vfs->stat(UPDATEFILE_NAME, &st) < 0) {
-        drawMessage(UPDATEFILE_NAME " not found");
+    if (vfs->stat(CONFIG_UPDATE_FILE_NAME, &st) < 0) {
+        drawMessage(CONFIG_UPDATE_FILE_NAME " not found");
         vTaskDelay(pdMS_TO_TICKS(2000));
         goto done;
     }
 
-    fd = vfs->open(FO_RDONLY, UPDATEFILE_NAME);
+    fd = vfs->open(FO_RDONLY, CONFIG_UPDATE_FILE_NAME);
     if (fd < 0) {
-        drawMessage(UPDATEFILE_NAME " not found");
+        drawMessage(CONFIG_UPDATE_FILE_NAME " not found");
         vTaskDelay(pdMS_TO_TICKS(2000));
     }
 

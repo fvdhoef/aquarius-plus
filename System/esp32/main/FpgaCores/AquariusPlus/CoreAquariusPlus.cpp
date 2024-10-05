@@ -58,10 +58,18 @@ public:
     bool loadBitstream(const void *data, size_t length) override {
         bool result = false;
         if (data == nullptr) {
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
             extern const uint8_t fpgaImageXzhStart[] asm("_binary_aqp_top_bit_xzh_start");
             extern const uint8_t fpgaImageXzhEnd[] asm("_binary_aqp_top_bit_xzh_end");
             auto                 fpgaImage = xzhDecompress(fpgaImageXzhStart, fpgaImageXzhEnd - fpgaImageXzhStart);
             result                         = getFPGA()->loadBitstream(fpgaImage.data(), fpgaImage.size());
+#else
+            extern const uint8_t fpgaImageStart[] asm("_binary_morphbook_impl1_bit_start");
+            extern const uint8_t fpgaImageEnd[] asm("_binary_morphbook_impl1_bit_end");
+            data   = fpgaImageStart;
+            length = fpgaImageEnd - fpgaImageStart;
+            result = getFPGA()->loadBitstream(data, length);
+#endif
         } else {
             result = getFPGA()->loadBitstream(data, length);
         }

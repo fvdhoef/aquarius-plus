@@ -1,9 +1,8 @@
-// This file will be shared with actual Aq+ in the future
 `default_nettype none
 `timescale 1 ns / 1 ps
 
 module aqplus_common(
-    input  wire        clk,
+    input  wire        clk,             // 28.63636MHz
     input  wire        reset,
 
     output wire        reset_req,
@@ -28,7 +27,7 @@ module aqplus_common(
     input  wire        ebus_stb,
 
     // Video output
-    input  wire        video_clk,
+    input  wire        video_clk,       // video_mode 0:28.63636MHz, 1:25.175MHz
     output wire  [3:0] video_r,
     output wire  [3:0] video_g,
     output wire  [3:0] video_b,

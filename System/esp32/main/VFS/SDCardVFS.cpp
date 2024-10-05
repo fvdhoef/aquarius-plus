@@ -3,12 +3,16 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
-#include "PowerLED.h"
 #include "ff.h"
 #include "diskio.h"
 #include <sdmmc_cmd.h>
 #include <driver/sdmmc_types.h>
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
 #include <driver/sdspi_host.h>
+#include "PowerLED.h"
+#else
+#include <driver/sdmmc_host.h>
+#endif
 
 static const char *TAG = "SDCardVFS";
 
@@ -34,11 +38,15 @@ typedef union {
 
 class SDCardVFS : public VFS {
 public:
-    sdmmc_card_t      *card         = nullptr;
-    sdmmc_host_t       host         = {0};
-    sdspi_dev_handle_t devHandle    = -1;
-    void              *fatfs        = nullptr;
-    FIL               *fds[MAX_FDS] = {0};
+    sdmmc_card_t *card = nullptr;
+    sdmmc_host_t  host = {0};
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
+    sdspi_dev_handle_t devHandle = -1;
+#else
+    sdmmc_slot_config_t slotConfig;
+#endif
+    void *fatfs        = nullptr;
+    FIL  *fds[MAX_FDS] = {0};
 
     SDCardVFS() {
     }
@@ -47,6 +55,7 @@ public:
         fatfs = calloc(1, sizeof(FATFS));
         assert(fatfs != nullptr);
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         host                     = SDSPI_HOST_DEFAULT();
         spi_bus_config_t bus_cfg = {
             .mosi_io_num   = IOPIN_SD_MOSI,
@@ -64,6 +73,32 @@ public:
         slot_config.gpio_wp               = IOPIN_SD_WP_N;
         slot_config.host_id               = (spi_host_device_t)host.slot;
         ESP_ERROR_CHECK(sdspi_host_init_device(&slot_config, &devHandle));
+#else
+        gpio_config_t io_conf = {
+            .pin_bit_mask = (1ULL << IOPIN_SD_PWR_EN) | (1ULL << IOPIN_SD_SEL),
+            .mode         = GPIO_MODE_OUTPUT,
+        };
+        gpio_config(&io_conf);
+        gpio_set_level(IOPIN_SD_SEL, 1);
+        gpio_set_level(IOPIN_SD_PWR_EN, 1);
+
+        host              = SDMMC_HOST_DEFAULT();
+        host.max_freq_khz = SDMMC_FREQ_HIGHSPEED;
+
+        slotConfig       = SDMMC_SLOT_CONFIG_DEFAULT();
+        slotConfig.width = 4;
+        slotConfig.clk   = IOPIN_SD_CLK;
+        slotConfig.cmd   = IOPIN_SD_CMD;
+        slotConfig.d0    = IOPIN_SD_DAT0;
+        slotConfig.d1    = IOPIN_SD_DAT1;
+        slotConfig.d2    = IOPIN_SD_DAT2;
+        slotConfig.d3    = IOPIN_SD_DAT3;
+        slotConfig.cd    = IOPIN_SD_CD_N;
+        slotConfig.flags |= SDMMC_SLOT_FLAG_INTERNAL_PULLUP;
+
+        ESP_ERROR_CHECK(host.init());
+        ESP_ERROR_CHECK(sdmmc_host_init_slot(host.slot, (const sdmmc_slot_config_t *)&slotConfig));
+#endif
 
         f_mount((FATFS *)fatfs, "", 0);
     }
@@ -315,7 +350,10 @@ public:
     uint8_t diskStatus(uint8_t pdrv) {
         (void)pdrv;
         bool hasDisk         = !gpio_get_level(IOPIN_SD_CD_N);
-        bool hasWriteProtect = !gpio_get_level(IOPIN_SD_WP_N);
+        bool hasWriteProtect = false;
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
+        hasWriteProtect = !gpio_get_level(IOPIN_SD_WP_N);
+#endif
 
         uint8_t status = 0;
         if (hasDisk) {
@@ -361,9 +399,13 @@ public:
         if (!card)
             return RES_PARERR;
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         getPowerLED()->flashStart();
+#endif
         esp_err_t err = sdmmc_read_sectors(card, buf, sector, count);
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         getPowerLED()->flashStop();
+#endif
 
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "sdmmc_read_blocks failed (%d)", err);
@@ -377,9 +419,13 @@ public:
         if (!card)
             return RES_PARERR;
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         getPowerLED()->flashStart();
+#endif
         esp_err_t err = sdmmc_write_sectors(card, buf, sector, count);
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         getPowerLED()->flashStop();
+#endif
 
         if (err != ESP_OK) {
             ESP_LOGE(TAG, "sdmmc_write_blocks failed (%d)", err);

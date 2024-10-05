@@ -2,19 +2,20 @@
 
 #include "Common.h"
 
-enum {
-    IO_BANK0 = 0xF0,
-    IO_BANK1 = 0xF1,
-    IO_BANK2 = 0xF2,
-    IO_BANK3 = 0xF3,
-};
-
 class FPGA {
 public:
     virtual void init() = 0;
 
     // FPGA configuration
     virtual bool loadBitstream(const void *data, size_t length) = 0;
+
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+    // FPGA core interface
+    virtual void setKeysOverride(bool en)               = 0;
+    virtual void getKeys(uint8_t keys[14])              = 0;
+    virtual void setKeys(uint64_t keys)                 = 0;
+    virtual void setVolume(uint16_t volume, bool spkEn) = 0;
+#endif
 
     // Display overlay
     virtual void setOverlayText(const uint16_t buf[1024])  = 0;

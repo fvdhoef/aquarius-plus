@@ -4,8 +4,11 @@
 
 static const char *TAG = "FPGA";
 
-#define SPIBUS            SPI3_HOST // SPI2 host is used by SD card interface
+#define SPIBUS SPI3_HOST
+
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
 #define IOPIN_FPGA_INIT_B IOPIN_SPI_SSEL_N
+#endif
 
 #define MAX_TRANSFER_SIZE (1024)
 
@@ -25,11 +28,14 @@ enum {
     CMD_SET_VIDMODE     = 0x40,
 
     // General commands
-    CMD_GET_KEYS    = 0xF1,
-    CMD_OVL_TEXT    = 0xF4,
-    CMD_OVL_FONT    = 0xF5,
-    CMD_OVL_PALETTE = 0xF6,
-    CMD_GET_STATUS  = 0xF7,
+    CMD_SET_KEYS_OVERRIDE = 0xF0, // MorphBook specific
+    CMD_GET_KEYS          = 0xF1, // MorphBook specific
+    CMD_SET_KEYS          = 0xF2, // MorphBook specific
+    CMD_SET_VOLUME        = 0xF3, // MorphBook specific
+    CMD_OVL_TEXT          = 0xF4,
+    CMD_OVL_FONT          = 0xF5,
+    CMD_OVL_PALETTE       = 0xF6,
+    CMD_GET_STATUS        = 0xF7,
 };
 
 enum {
@@ -75,7 +81,7 @@ public:
         {
             spi_device_interface_config_t cfg = {
                 .mode           = 0,
-                .clock_speed_hz = 1000000,
+                .clock_speed_hz = CONFIG_FPGA_SPI_SPEED_HZ,
                 .spics_io_num   = -1,
                 .queue_size     = 7,
             };
@@ -92,20 +98,25 @@ public:
             gpio_set_level(IOPIN_FPGA_PROG_N, 1);
         }
 
-        // Configure FPGA DONE
+        // Configure FPGA DONE line
         {
             gpio_config_t cfg = {
                 .pin_bit_mask = (1ULL << IOPIN_FPGA_DONE),
                 .mode         = GPIO_MODE_INPUT,
+                .pull_up_en   = GPIO_PULLUP_ENABLE,
             };
             gpio_config(&cfg);
         }
 
-        // Configure SPI_SSEL_N line (also used as INIT# during configuration)
+        // Configure SPI_SSEL_N line
         {
             gpio_config_t cfg = {
                 .pin_bit_mask = (1ULL << IOPIN_SPI_SSEL_N),
-                .mode         = GPIO_MODE_INPUT,
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
+                .mode = GPIO_MODE_INPUT,
+#else
+                .mode = GPIO_MODE_OUTPUT,
+#endif
             };
             gpio_config(&cfg);
             gpio_set_level(IOPIN_SPI_SSEL_N, 1);
@@ -129,14 +140,18 @@ public:
         RecursiveMutexLock lock(mutex);
         ESP_LOGI(TAG, "Starting configuration");
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         // Set FPGA INIT# as input
         gpio_set_direction(IOPIN_FPGA_INIT_B, GPIO_MODE_INPUT);
+#endif
 
-        // Pulse PROG_B to start configuration process
+        // Pulse PROG_N to start configuration process
         gpio_set_level(IOPIN_FPGA_PROG_N, 0);
         esp_rom_delay_us(10);
         gpio_set_level(IOPIN_FPGA_PROG_N, 1);
+        esp_rom_delay_us(10);
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         // Wait for INIT_B to become high
         for (int i = 0; i < 100; i++) {
             vTaskDelay(pdMS_TO_TICKS(1));
@@ -147,6 +162,7 @@ public:
             ESP_LOGE(TAG, "Error: INIT_B didn't become high, aborting!");
             return false;
         }
+#endif
 
         // Send bitstream
         ESP_LOGI(TAG, "Sending bitstream");
@@ -167,9 +183,11 @@ public:
         }
         ESP_LOGI(TAG, "Configuration completed");
 
-        // Configure INITB# (same as CS#) as output
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
+        // Configure INITB# (same as SSEL#) as output
         gpio_set_level(IOPIN_SPI_SSEL_N, 1);
         gpio_set_direction(IOPIN_SPI_SSEL_N, GPIO_MODE_OUTPUT);
+#endif
 
         return true;
     }
@@ -221,6 +239,45 @@ public:
         t.rx_buffer         = buf;
         ESP_ERROR_CHECK(spi_device_transmit(cmdSpiDev, &t));
     }
+
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+    void setKeysOverride(bool en) override {
+        RecursiveMutexLock lock(mutex);
+        spiSel(true);
+        uint8_t cmd[] = {CMD_SET_KEYS_OVERRIDE, (uint8_t)(en ? 1 : 0)};
+        spiTx(cmd, sizeof(cmd));
+        spiSel(false);
+    }
+
+    void getKeys(uint8_t keys[14]) override {
+        RecursiveMutexLock lock(mutex);
+        spiSel(true);
+
+        uint8_t cmd[] = {CMD_GET_KEYS, 0};
+        spiTx(cmd, sizeof(cmd));
+        spiRx(keys, 14);
+
+        spiSel(false);
+    }
+
+    void setKeys(uint64_t keys) override {
+        RecursiveMutexLock lock(mutex);
+        spiSel(true);
+        uint8_t buf[9];
+        buf[0] = CMD_SET_KEYS;
+        memcpy(buf + 1, &keys, 8);
+        spiTx(buf, sizeof(buf));
+        spiSel(false);
+    }
+
+    void setVolume(uint16_t volume, bool spkEn) override {
+        RecursiveMutexLock lock(mutex);
+        spiSel(true);
+        uint8_t cmd[] = {CMD_SET_VOLUME, (uint8_t)(volume & 0xFF), (uint8_t)(volume >> 8), (uint8_t)(spkEn ? 1 : 0)};
+        spiTx(cmd, sizeof(cmd));
+        spiSel(false);
+    }
+#endif
 
     void setOverlayText(const uint16_t buf[1024]) override {
         RecursiveMutexLock lock(mutex);
@@ -275,9 +332,11 @@ public:
         uint8_t status = getStatus();
 
         if (status & STATUS_KEYB) {
-            //     uint8_t keys[14];
-            //     getKeys(keys);
-            //     getKeyboard()->updateKeys(keys);
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+            uint8_t keys[14];
+            getKeys(keys);
+            getKeyboard()->updateKeys(keys);
+#endif
         }
     }
 

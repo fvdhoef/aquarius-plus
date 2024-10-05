@@ -20,7 +20,11 @@ public:
     virtual void render() = 0;
 
     static inline uint8_t makeAttr(unsigned fg, unsigned bg) {
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         return (fg << 4) | bg;
+#else
+        return (bg << 4) | fg;
+#endif
     }
 };
 
