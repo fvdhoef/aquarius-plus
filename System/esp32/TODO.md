@@ -6,6 +6,5 @@ TODO:
 - Screenshot
 - ROM dump original
 - ROM dump descrambled
-- Implement file compression to save flash memory: https://github.com/espressif/esp-iot-solution/tree/master/examples/utilities/xz_decompress_file
 - BLE keyboard support
 - FIFO based sample playback

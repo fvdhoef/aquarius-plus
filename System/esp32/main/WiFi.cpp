@@ -6,6 +6,8 @@
 #include <esp_sntp.h>
 #include <esp_tls.h>
 
+#include "XzDecompress.h"
+
 static const char *TAG = "WiFi";
 
 #define MAX_SCAN_AP (20)
@@ -40,11 +42,13 @@ public:
         RecursiveMutexLock lock(mutex);
 
         // Initialize CA store
-        extern const uint8_t certificatesStart[] asm("_binary_root_certificates_start");
-        extern const uint8_t certificatesEnd[] asm("_binary_root_certificates_end");
+        extern const uint8_t certificatesXzhStart[] asm("_binary_root_certificates_xzh_start");
+        extern const uint8_t certificatesXzhEnd[] asm("_binary_root_certificates_xzh_end");
+        auto                 certificates = xzhDecompressToString(certificatesXzhStart, certificatesXzhEnd - certificatesXzhStart);
+
         ESP_ERROR_CHECK(esp_tls_init_global_ca_store());
 
-        auto ret = esp_tls_set_global_ca_store(certificatesStart, certificatesEnd - certificatesStart);
+        auto ret = esp_tls_set_global_ca_store((const uint8_t *)certificates.c_str(), certificates.size() + 1);
         if (ret != ESP_OK) {
             ESP_LOGE(TAG, "esp_tls_set_global_ca_store failed: %d", ret);
         }

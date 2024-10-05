@@ -6,6 +6,7 @@
 #include "GameCtrl.h"
 #include <math.h>
 #include <nvs_flash.h>
+#include "XzDecompress.h"
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -55,13 +56,15 @@ public:
     }
 
     bool loadBitstream(const void *data, size_t length) override {
+        bool result = false;
         if (data == nullptr) {
-            extern const uint8_t fpgaImageStart[] asm("_binary_aqp_top_bit_start");
-            extern const uint8_t fpgaImageEnd[] asm("_binary_aqp_top_bit_end");
-            data   = fpgaImageStart;
-            length = fpgaImageEnd - fpgaImageStart;
+            extern const uint8_t fpgaImageXzhStart[] asm("_binary_aqp_top_bit_xzh_start");
+            extern const uint8_t fpgaImageXzhEnd[] asm("_binary_aqp_top_bit_xzh_end");
+            auto                 fpgaImage = xzhDecompress(fpgaImageXzhStart, fpgaImageXzhEnd - fpgaImageXzhStart);
+            result                         = getFPGA()->loadBitstream(fpgaImage.data(), fpgaImage.size());
+        } else {
+            result = getFPGA()->loadBitstream(data, length);
         }
-        bool result = getFPGA()->loadBitstream(data, length);
         if (result) {
             applySettings();
         }

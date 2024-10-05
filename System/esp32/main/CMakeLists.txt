@@ -7,6 +7,7 @@ idf_component_register(
         "Keyboard.cpp"
         "FileServer.cpp"
         "PowerLED.cpp"
+        "XzDecompress.cpp"
 
         "DisplayOverlay/DisplayOverlay.cpp"
         "DisplayOverlay/Menu.cpp"
@@ -66,12 +67,13 @@ idf_component_register(
         "bt"
 
     EMBED_FILES
-        "../../fpga/aqp_top.bit"
         "assets/ovl_font.chr"
         "../../rom_src/romfs.bin"
+        "assets/aqp_top.bit.xzh"
+        "assets/root_certificates.xzh"
 
-    EMBED_TXTFILES
-        "assets/root_certificates"
+    # EMBED_TXTFILES
+    #     "assets/root_certificates"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)
