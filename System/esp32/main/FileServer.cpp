@@ -3,7 +3,7 @@
 #include <sys/unistd.h>
 #include <sys/stat.h>
 #include <errno.h>
-// #include "AqKeyboard.h"
+#include "Keyboard.h"
 #include "FPGA.h"
 #include "VFS.h"
 #include <source_location>
@@ -565,10 +565,10 @@ public:
             }
 
             // Write buffer to keyboard
-            // auto &kb = AqKeyboard::instance();
-            // for (unsigned i = 0; i < received; i++) {
-            //     kb.pressKey(tmp[i]);
-            // }
+            auto kb = getKeyboard();
+            for (unsigned i = 0; i < received; i++) {
+                kb->pressKey(tmp[i]);
+            }
 
             // Keep track of remaining size of the file left to be uploaded
             remaining -= received;

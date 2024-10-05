@@ -363,7 +363,6 @@ public:
         // ESP_LOGI(TAG, "Key %3d %s", scanCode, keyDown ? "pressed" : "released");
         uint8_t prevLeds = leds;
 
-
         // Keep track of pressed modifier keys
         if (scanCode == SCANCODE_LCTRL)
             modifiers = (modifiers & ~ModLCtrl) | (keyDown ? ModLCtrl : 0);
@@ -527,6 +526,38 @@ public:
             case KeyLayout::FR: return "FR/BE (AZERTY)";
             case KeyLayout::DE: return "DE (QWERTZ)";
         }
+    }
+
+    void pressKey(uint8_t ch) {
+        auto core = getFpgaCore();
+        if (!core)
+            return;
+
+        if (ch == '\n') {
+            ch = '\r';
+        }
+
+        if (ch == 0x1C) {
+            // Delay for 100ms
+            vTaskDelay(pdMS_TO_TICKS(100));
+            return;
+        }
+        if (ch == 0x1D) {
+            // Delay for 500ms
+            vTaskDelay(pdMS_TO_TICKS(500));
+            return;
+        }
+        if (ch == 0x1E) {
+            // Reset
+            core->resetCore();
+            vTaskDelay(pdMS_TO_TICKS(500));
+            return;
+        }
+        if (ch > '~')
+            return;
+
+        core->keyChar(ch, false);
+        vTaskDelay(pdMS_TO_TICKS(10));
     }
 };
 

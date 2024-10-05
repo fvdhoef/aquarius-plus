@@ -88,7 +88,7 @@ public:
             nvs_close(h);
         }
         aqpSetVideoMode(videoTimingMode);
-        aqpReset();
+        resetCore();
     }
 
     void aqpWriteKeybBuffer(uint8_t ch) {
@@ -100,7 +100,7 @@ public:
         fpga->spiSel(false);
     }
 
-    void aqpReset() {
+    void resetCore() override {
         auto               fpga = getFPGA();
         RecursiveMutexLock lock(fpga->getMutex());
         fpga->spiSel(true);
@@ -262,7 +262,7 @@ public:
             uint8_t combinedModifiers = (modifiers & 0xF) | (modifiers >> 4);
             if (scanCode == SCANCODE_ESCAPE && keyDown) {
                 if (combinedModifiers == ModLCtrl) {
-                    aqpReset();
+                    resetCore();
                 } else if (combinedModifiers == (ModLShift | ModLCtrl)) {
                     // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                     esp_restart();
@@ -443,7 +443,7 @@ public:
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Restart Aquarius+ (CTRL-ESC)");
             item.onEnter = [this]() {
-                aqpReset();
+                resetCore();
             };
         }
         menu.items.emplace_back(MenuItemType::separator);

@@ -10,6 +10,7 @@ enum class FpgaCoreType {
 
 class FpgaCore {
 public:
+    virtual void resetCore() {}
     virtual void keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) {}
     virtual void keyChar(uint8_t ch, bool isRepeat) {}
     virtual void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel) {}
