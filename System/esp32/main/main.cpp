@@ -59,7 +59,21 @@ void app_main(void) {
     getWiFi()->init();
     getBluetooth()->init();
     getUartProtocol()->init();
-    getFileServer()->init();
+
+    {
+        bool         fileServerOn = false;
+        nvs_handle_t h;
+        if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
+            uint8_t val8 = 0;
+            if (nvs_get_u8(h, "fileserver", &val8) == ESP_OK) {
+                fileServerOn = (val8 != 0);
+            }
+            nvs_close(h);
+        }
+        if (fileServerOn)
+            getFileServer()->start();
+    }
+
     getFPGA()->init();
     loadFpgaCore(FpgaCoreType::AquariusPlus);
 

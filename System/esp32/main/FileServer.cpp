@@ -71,19 +71,22 @@ public:
     struct HandlerContext {
         HttpHandler handler;
     };
-    httpd_handle_t server;
+    httpd_handle_t serverHandle = nullptr;
 
     FileServerInt() {
-        server = nullptr;
+        serverHandle = nullptr;
     }
 
-    void init() override {
+    void start() override {
+        if (serverHandle != nullptr)
+            return;
+
         httpd_config_t config   = HTTPD_DEFAULT_CONFIG();
         config.max_uri_handlers = 11;
         config.uri_match_fn     = httpd_uri_match_wildcard;
 
         ESP_LOGI(TAG, "Starting HTTP Server on port: '%d'", config.server_port);
-        if (httpd_start(&server, &config) != ESP_OK) {
+        if (httpd_start(&serverHandle, &config) != ESP_OK) {
             ESP_LOGE(TAG, "Failed to start file server!");
             return;
         }
@@ -100,6 +103,18 @@ public:
         registerHandler("/*", HTTP_PROPFIND, [&](httpd_req_t *req) { return handlePropFind(req); });
     }
 
+    void stop() override {
+        if (serverHandle == nullptr)
+            return;
+
+        httpd_stop(serverHandle);
+        serverHandle = nullptr;
+    }
+
+    bool isRunning() override {
+        return serverHandle != nullptr;
+    }
+
     static esp_err_t _handler(httpd_req_t *req) {
         auto ctx = static_cast<HandlerContext *>(req->user_ctx);
         return ctx->handler(req);
@@ -110,7 +125,7 @@ public:
         ctx->handler = handler;
 
         httpd_uri_t hu = {.uri = uri.c_str(), .method = method, .handler = _handler, .user_ctx = ctx};
-        httpd_register_uri_handler(server, &hu);
+        httpd_register_uri_handler(serverHandle, &hu);
     }
 
     static std::string urlEncode(const std::string &s) {
@@ -498,7 +513,7 @@ public:
 
         // printf("COPY %s to %s\n", path, path2);
         auto vfs = getSDCardVFS();
-        int   fd  = vfs->open(FO_RDONLY, path);
+        int  fd  = vfs->open(FO_RDONLY, path);
         if (fd < 0)
             return mapResult(req, fd);
         int fd2 = vfs->open(FO_CREATE | FO_WRONLY, path2);

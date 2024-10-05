@@ -8,6 +8,7 @@
 #include "GitHubUpdateMenu.h"
 #include "SdCardUpdateMenu.h"
 #include "EspStatsMenu.h"
+#include "FileServer.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -31,6 +32,27 @@ public:
             item.onEnter = []() { btMenu.show(); };
         }
         items.emplace_back(MenuItemType::separator);
+        {
+            auto &item  = items.emplace_back(MenuItemType::onOff, "File server");
+            item.setter = [this](int newVal) {
+                bool fileServerOn = (newVal != 0);
+                if (getFileServer()->isRunning() != fileServerOn) {
+                    if (fileServerOn)
+                        getFileServer()->start();
+                    else
+                        getFileServer()->stop();
+
+                    nvs_handle_t h;
+                    if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                        if (nvs_set_u8(h, "fileserver", fileServerOn ? 1 : 0) == ESP_OK) {
+                            nvs_commit(h);
+                        }
+                        nvs_close(h);
+                    }
+                }
+            };
+            item.getter = [this]() { return getFileServer()->isRunning() ? 1 : 0; };
+        }
         {
             char tmp[40];
             snprintf(tmp, sizeof(tmp), "Time zone: %s", TimeZoneMenu::getTimeZone().c_str());
