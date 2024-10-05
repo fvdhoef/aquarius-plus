@@ -813,10 +813,54 @@ public:
     }
     void cmdLoadFpga(const char *pathArg) {
         DBGF("LOADFPGA(path='%s')", pathArg);
-
-        // FIXME
         txStart();
-        txWrite(ERR_PARAM);
+
+        VFS *vfs  = nullptr;
+        auto path = resolvePath(pathArg, &vfs);
+        if (!vfs) {
+            txWrite(ERR_PARAM);
+            return;
+        }
+
+        struct stat st;
+        int         result = vfs->stat(path, &st);
+        if (result < 0) {
+            txWrite(result);
+            return;
+        }
+        if ((st.st_mode & S_IFREG) == 0) {
+            txWrite(ERR_PARAM);
+            return;
+        }
+
+        void *buf = malloc(st.st_size);
+        if (buf == nullptr) {
+            printf("Insufficient memory to allocate buffer for bitstream!\n");
+            txWrite(ERR_OTHER);
+            return;
+        }
+
+        int vfs_fd = vfs->open(FO_RDONLY, path);
+        if (vfs_fd < 0) {
+            txWrite(vfs_fd);
+        } else {
+            vfs->read(vfs_fd, st.st_size, buf);
+            vfs->close(vfs_fd);
+            txWrite(0);
+
+            printf("Loading bitstream: %s (%u bytes)\n", pathArg, (unsigned)st.st_size);
+
+            auto newCore = loadFpgaCore(FpgaCoreType::AquariusPlus, buf, st.st_size);
+            if (!newCore) {
+                printf("Failed! Loading default bitstream\n");
+
+                // Restore Aq+ firmware
+                loadFpgaCore(FpgaCoreType::AquariusPlus);
+            }
+            cmdCloseAll();
+        }
+
+        free(buf);
     }
 
     static void splitPath(const std::string &path, std::vector<std::string> &result) {

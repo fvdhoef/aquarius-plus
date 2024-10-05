@@ -8,3 +8,4 @@ TODO:
 - ROM dump descrambled
 - BLE keyboard support
 - FIFO based sample playback
+- Hand controller emulation
