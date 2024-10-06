@@ -58,7 +58,7 @@ public:
     void setExitMenu() { exitMenu = true; }
 
     void drawMessage(const char *msg);
-    bool editString(const std::string &title, std::string &value);
+    bool editString(const std::string &title, std::string &value, int maxLen);
 
 protected:
     void draw(int selectedRow);

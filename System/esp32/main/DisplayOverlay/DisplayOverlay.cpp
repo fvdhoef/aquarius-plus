@@ -76,6 +76,21 @@ public:
         drawStr(x, y, attr, tmp);
     }
 
+    void fill(int x, int y, int w, int h, uint8_t attr, uint8_t ch) override {
+        uint16_t *pd = &textBuf[y * 40 + x];
+
+        for (int j = 0; j < h; j++) {
+            auto pd2 = pd;
+            for (int i = 0; i < w; i++)
+                *(pd2++) = (attr << 8) | ch;
+            pd += 40;
+        }
+    }
+
+    void setAttr(int x, int y, uint8_t attr) override {
+        textBuf[y * 40 + x] = (attr << 8) | (textBuf[y * 40 + x] & 0xFF);
+    }
+
     void setVisible(bool show) override {
         overlayVisible = show;
 

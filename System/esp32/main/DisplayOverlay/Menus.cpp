@@ -5,6 +5,10 @@
 #include "EspSettingsMenu.h"
 #include "VersionMenu.h"
 
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+#include "Settings.h"
+#endif
+
 static EspSettingsMenu espSettingsMenu;
 
 //////////////////////////////////////////////////////////////////////////////
@@ -27,11 +31,34 @@ public:
             strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
             char tmp[40];
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
             snprintf(tmp, sizeof(tmp), "Aquarius+        %s", strftime_buf);
+#else
+            snprintf(tmp, sizeof(tmp), "MorphBook        %s", strftime_buf);
+#endif
             title = tmp;
         }
 
         items.clear();
+
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+        {
+            auto &item  = items.emplace_back(MenuItemType::percentage, "Volume");
+            item.setter = [](int newVal) { getSettings()->setVolume(newVal); };
+            item.getter = []() { return getSettings()->getVolume(); };
+        }
+        {
+            auto &item  = items.emplace_back(MenuItemType::onOff, "Speakers");
+            item.setter = [](int newVal) { getSettings()->setSpeakersOn(newVal != 0); };
+            item.getter = []() { return getSettings()->getSpeakersOn(); };
+        }
+        {
+            auto &item  = items.emplace_back(MenuItemType::percentage, "Brightness");
+            item.setter = [](int newVal) { getSettings()->setBrightness(newVal); };
+            item.getter = []() { return getSettings()->getBrightness(); };
+        }
+        items.emplace_back(MenuItemType::separator);
+#endif
 
         auto fpgaCore = getFpgaCore();
         if (fpgaCore) {

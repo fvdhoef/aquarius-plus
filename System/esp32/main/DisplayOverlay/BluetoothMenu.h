@@ -87,7 +87,7 @@ public:
 
         auto bt      = getBluetooth();
         bi           = bt->getBluetoothInfo();
-        bool enabled = bt->getEnabled();
+        // bool enabled = bt->getEnabled();
 
         items.clear();
         {
@@ -134,7 +134,7 @@ public:
                 auto &item   = addNetworkItem(dev);
                 item.onEnter = [&]() {
                     std::string name = dev.name;
-                    if (editString("Enter name for this device:", name) && !name.empty()) {
+                    if (editString("Enter name for this device:", name, 30) && !name.empty()) {
                         if (!getBluetooth()->addDevice(dev.addr, name)) {
                             drawMessage("Failed, forget a device first.");
                             vTaskDelay(pdMS_TO_TICKS(2000));

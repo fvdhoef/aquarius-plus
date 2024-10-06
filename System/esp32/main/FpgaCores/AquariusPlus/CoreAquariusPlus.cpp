@@ -610,7 +610,7 @@ public:
 
         if (!buf.empty()) {
             std::string fileName = "screenshot.scr";
-            if (menu.editString("Enter filename for screenshot", fileName)) {
+            if (menu.editString("Enter filename for screenshot", fileName, 32)) {
                 // Save cartridge contents to file
                 auto vfs = getSDCardVFS();
                 int  fd;
@@ -667,7 +667,7 @@ public:
 
         if (!buf.empty()) {
             std::string fileName = "cart.rom";
-            if (menu.editString("Enter filename for cartridge", fileName)) {
+            if (menu.editString("Enter filename for cartridge", fileName, 32)) {
                 // Save cartridge contents to file
                 auto vfs = getSDCardVFS();
                 int  fd;

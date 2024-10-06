@@ -10,9 +10,11 @@ public:
     virtual void drawBorder(
         int x, int y, int w, int h,
         unsigned colBorder, unsigned colFill,
-        int selectedRow = -1, unsigned colFillSel = 0)                     = 0;
-    virtual void drawStr(int x, int y, uint8_t attr, const char *str)      = 0;
-    virtual void drawFmt(int x, int y, uint8_t attr, const char *fmt, ...) = 0;
+        int selectedRow = -1, unsigned colFillSel = 0)                            = 0;
+    virtual void drawStr(int x, int y, uint8_t attr, const char *str)             = 0;
+    virtual void drawFmt(int x, int y, uint8_t attr, const char *fmt, ...)        = 0;
+    virtual void fill(int x, int y, int w, int h, uint8_t attr, uint8_t ch = ' ') = 0;
+    virtual void setAttr(int x, int y, uint8_t attr)                              = 0;
 
     virtual void setVisible(bool show) = 0;
     virtual bool isVisible()           = 0;

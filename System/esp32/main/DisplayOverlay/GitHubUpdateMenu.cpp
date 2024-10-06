@@ -78,7 +78,7 @@ void GitHubUpdateMenu::onEnter() {
         auto &item   = items.emplace_back(MenuItemType::subMenu, "Specific version");
         item.onEnter = [&]() {
             std::string tag = latestTag;
-            if (!editString("Enter firmware version (GitHub tag)", tag)) {
+            if (!editString("Enter firmware version (GitHub tag)", tag, 20)) {
                 setExitMenu();
                 return;
             }

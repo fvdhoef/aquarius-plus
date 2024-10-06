@@ -80,10 +80,13 @@ void Menu::draw(int selectedRow) {
 }
 
 enum {
-    CH_UP        = 143,
-    CH_DOWN      = 159,
-    CH_LEFT      = 158,
-    CH_RIGHT     = 142,
+    CH_UP        = 0x8F,
+    CH_DOWN      = 0x9F,
+    CH_LEFT      = 0x9E,
+    CH_RIGHT     = 0x8E,
+    CH_HOME      = 0x9B,
+    CH_END       = 0x9A,
+    CH_DELETE    = 0x7F,
     CH_ENTER     = '\r',
     CH_BACKSPACE = '\b',
     CH_ESC       = 3,
@@ -224,22 +227,44 @@ void Menu::drawMessage(const char *msg) {
     ovl->render();
 }
 
-bool Menu::editString(const std::string &title, std::string &value) {
+bool Menu::editString(const std::string &title, std::string &str, int maxLen) {
     auto keyboard = getKeyboard();
     auto ovl      = getDisplayOverlay();
 
-    while (1) {
-        ovl->clearScreen();
+    int width  = 38;
+    int height = 5;
 
-        int width  = 38;
-        int height = 5;
+    int cursor        = (int)str.size();
+    int firstIdx      = 0;
+    int maxWidthShown = width - 2;
+
+    while (1) {
+        {
+            int strSize = (int)str.size();
+            cursor      = std::max(0, std::min(cursor, strSize));
+            if (firstIdx > cursor - 3) {
+                firstIdx = std::max(0, cursor - 3);
+            }
+            if (cursor - firstIdx > maxWidthShown) {
+                firstIdx = cursor - maxWidthShown;
+            }
+            if (strSize < maxWidthShown) {
+                firstIdx = 0;
+            }
+            if (cursor - firstIdx >= maxWidthShown)
+                firstIdx = std::max(0, cursor - maxWidthShown + 1);
+        }
+
+        ovl->clearScreen();
 
         int x = (40 - width) / 2;
         int y = (25 - height) / 2;
 
         ovl->drawBorder(x, y, width, height, colBorder, colBg);
         ovl->drawStr(x + 1, y + 1, DisplayOverlay::makeAttr(colTitleFg, colBg), title.c_str());
-        ovl->drawStr(x + 1, y + 3, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg), value.c_str());
+        ovl->fill(x + 1, y + 3, width - 2, 1, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg));
+        ovl->drawStr(x + 1, y + 3, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg), str.substr(firstIdx, maxWidthShown).c_str());
+        ovl->setAttr(x + 1 + cursor - firstIdx, y + 3, DisplayOverlay::makeAttr(colSelectedBg, colSelectedFg));
         ovl->render();
 
         int ch = keyboard->getKey(portMAX_DELAY);
@@ -247,15 +272,45 @@ bool Menu::editString(const std::string &title, std::string &value) {
             case CH_ESC: return false;
             case CH_ENTER: return true;
 
+            case CH_DELETE: {
+                if (cursor < (int)str.size()) {
+                    str.erase(str.begin() + cursor);
+                }
+                break;
+            }
+
             case CH_BACKSPACE: {
-                if (!value.empty())
-                    value.pop_back();
+                if (cursor > 0) {
+                    cursor--;
+                    str.erase(str.begin() + cursor);
+                }
+                break;
+            }
+
+            case CH_LEFT: {
+                cursor--;
+                break;
+            }
+            case CH_RIGHT: {
+                cursor++;
+                break;
+            }
+            case CH_HOME: {
+                cursor = 0;
+                break;
+            }
+            case CH_END: {
+                cursor = (int)str.size();
                 break;
             }
 
             default: {
-                if (ch >= ' ' && ch <= '~')
-                    value.push_back(ch);
+                if (ch >= ' ' && ch <= '~') {
+                    if (maxLen >= 0 && (int)str.size() < maxLen) {
+                        str.insert(str.begin() + cursor, ch);
+                        cursor++;
+                    }
+                }
                 break;
             }
         }

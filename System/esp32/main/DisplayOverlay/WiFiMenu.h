@@ -111,7 +111,7 @@ public:
             auto &item   = items.emplace_back(MenuItemType::subMenu, "Hostname " + wifi->getHostName());
             item.onEnter = [this]() {
                 std::string hostName = getWiFi()->getHostName();
-                if (editString("Enter new hostname", hostName) && !hostName.empty()) {
+                if (editString("Enter new hostname", hostName, 30) && !hostName.empty()) {
                     nvs_handle_t h;
                     if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
                         if (nvs_set_str(h, "hostname", hostName.c_str()) == ESP_OK) {
@@ -159,7 +159,7 @@ public:
                 auto &item   = addNetworkItem(info);
                 item.onEnter = [&]() {
                     std::string password;
-                    if (info.authMode == 'O' || editString("Enter password:", password)) {
+                    if (info.authMode == 'O' || editString("Enter password:", password, 64)) {
                         getWiFi()->joinNetwork(info.ssid, password);
                         updateMenu();
                     }
