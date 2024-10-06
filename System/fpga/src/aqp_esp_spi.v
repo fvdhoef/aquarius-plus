@@ -16,7 +16,7 @@ module aqp_esp_spi(
     output reg         spibm_wr_n,
     output reg         spibm_mreq_n,
     output reg         spibm_iorq_n,
-    output wire        spibm_busreq,
+    output wire        spibm_busreq_n,
 
     // Interface for core specific messages
     output wire        spi_msg_end,
@@ -121,24 +121,18 @@ module aqp_esp_spi(
     wire phi_rising  = !q_phi &&  ebus_phi;
 
     reg q_busreq = 1'b0;
-    assign spibm_busreq = q_busreq;
+    assign spibm_busreq_n = !q_busreq;
 
     localparam [7:0]
-        // CMD_RESET           = 8'h01,
-        // CMD_SET_KEYB_MATRIX = 8'h10,
-        // CMD_SET_HCTRL       = 8'h11,
-        // CMD_WRITE_KBBUF     = 8'h12,
         CMD_BUS_ACQUIRE     = 8'h20,
         CMD_BUS_RELEASE     = 8'h21,
         CMD_MEM_WRITE       = 8'h22,
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
         CMD_IO_READ         = 8'h25,
-        // CMD_ROM_WRITE       = 8'h30,
-        // CMD_SET_VIDMODE     = 8'h40,
-        CMD_OVL_TEXT          = 8'hF4,
-        CMD_OVL_FONT          = 8'hF5,
-        CMD_OVL_PALETTE       = 8'hF6;
+        CMD_OVL_TEXT        = 8'hF4,
+        CMD_OVL_FONT        = 8'hF5,
+        CMD_OVL_PALETTE     = 8'hF6;
         // CMD_GET_STATUS        = 8'hF7;
 
     // 20h/21h: Acquire/release bus

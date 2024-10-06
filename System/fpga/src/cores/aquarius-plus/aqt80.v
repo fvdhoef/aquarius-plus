@@ -16,6 +16,7 @@ module aqt80(
     output wire        iorq_n,      // should tristate when busak_n == 0
     output wire        rd_n,        // should tristate when busak_n == 0
     output wire        wr_n,        // should tristate when busak_n == 0
+    input  wire        wait_n,
 
     input  wire        busrq_n,
     output wire        busak_n,
@@ -72,7 +73,7 @@ module aqt80(
         .RESET_n(!reset),
         .CLK_n(clk),
         .CEN(phi_rising),
-        .WAIT_n(1'b1),
+        .WAIT_n(wait_n),
         .INT_n(int_n),
         .NMI_n(nmi_n),
         .BUSRQ_n(busrq_n),
