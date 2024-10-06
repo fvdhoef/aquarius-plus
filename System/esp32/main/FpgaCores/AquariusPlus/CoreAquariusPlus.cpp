@@ -106,26 +106,31 @@ public:
     void applySettings() {
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
-            if (nvs_get_u8(h, "videoTiming", &videoTimingMode) != ESP_OK) {
-                videoTimingMode = 0;
-            }
-
             uint8_t mouseDiv = 0;
             if (nvs_get_u8(h, "mouseDiv", &mouseDiv) == ESP_OK) {
                 mouseSensitivityDiv = mouseDiv;
+            }
+
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
+            if (nvs_get_u8(h, "videoTiming", &videoTimingMode) != ESP_OK) {
+                videoTimingMode = 0;
             }
 
             uint8_t val8 = 0;
             if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
                 useT80 = val8 != 0;
             }
+#endif
+
             if (nvs_get_u8(h, "bypassStart", &val8) == ESP_OK) {
                 bypassStartScreen = val8 != 0;
             }
 
             nvs_close(h);
         }
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         aqpSetVideoMode(videoTimingMode);
+#endif
         resetCore();
     }
 
@@ -194,6 +199,7 @@ public:
         fpga->spiSel(false);
     }
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
     void aqpAqcuireBus() {
         auto               fpga = getFPGA();
         RecursiveMutexLock lock(fpga->getMutex());
@@ -255,6 +261,7 @@ public:
         fpga->spiSel(false);
         return result[1];
     }
+#endif
 
     void keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) override {
         RecursiveMutexLock lock(mutex);
@@ -546,6 +553,7 @@ public:
         return -1;
     }
 
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
     void takeScreenshot(Menu &menu) {
         auto               fpga = getFPGA();
         RecursiveMutexLock lock(fpga->getMutex());
@@ -670,6 +678,7 @@ public:
             }
         }
     }
+#endif
 
     void addMainMenuItems(Menu &menu) override {
         {
@@ -679,6 +688,7 @@ public:
             };
         }
         menu.items.emplace_back(MenuItemType::separator);
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Screenshot (text)");
             item.onEnter = [this, &menu]() { takeScreenshot(menu); };
@@ -688,6 +698,7 @@ public:
             item.onEnter = [this, &menu]() { dumpCartridge(menu); };
         }
         menu.items.emplace_back(MenuItemType::separator);
+#endif
         {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Force turbo mode");
             item.setter = [this](int newVal) {
@@ -729,6 +740,7 @@ public:
             };
             item.getter = [this]() { return bypassStartScreen ? 1 : 0; };
         }
+#ifdef CONFIG_MACHINE_TYPE_AQPLUS
         {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Use external Z80");
             item.setter = [this, &menu](int newVal) {
@@ -768,6 +780,7 @@ public:
             };
         }
     }
+#endif
 };
 
 std::shared_ptr<FpgaCore> newCoreAquariusPlus() {
