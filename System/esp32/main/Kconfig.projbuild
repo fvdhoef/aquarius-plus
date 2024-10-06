@@ -25,4 +25,11 @@ menu "* Firmware settings *"
         default "aquarius-plus.bin"
         help
             Name of update file. Assumed to be the same for GitHub and SD card update.
+
+    config BYPASS_START_TIME_MS
+        int "Bypass start screen time (ms)"
+        default 3000
+        help
+            Time to wait after reset before sending an 'Enter' key press to bypass the Aquarius start screen.
+
 endmenu

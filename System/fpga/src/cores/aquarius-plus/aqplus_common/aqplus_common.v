@@ -189,7 +189,7 @@ module aqplus_common(
 
     reg [7:0] rddata;
     always @* begin
-        rddata = 8'h00;
+        rddata = 8'hFF;
         if (sel_mem_rom)              rddata = rddata_rom;
         if (sel_mem_tram)             rddata = rddata_tram;            // TRAM $3000-$37FF
         if (sel_mem_vram)             rddata = rddata_vram;

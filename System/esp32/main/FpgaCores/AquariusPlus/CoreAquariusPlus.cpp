@@ -31,12 +31,15 @@ enum {
 class CoreAquariusPlus : public FpgaCore {
 public:
     SemaphoreHandle_t mutex;
-    uint64_t          prevMatrix      = 0;
-    uint64_t          keybMatrix      = 0;
-    GamePadData       gamepads[2]     = {0};
-    uint8_t           videoTimingMode = 0;
-    bool              useT80          = false;
-    bool              forceTurbo      = false;
+    uint64_t          prevMatrix        = 0;
+    uint64_t          keybMatrix        = 0;
+    GamePadData       gamepads[2]       = {0};
+    uint8_t           videoTimingMode   = 0;
+    bool              useT80            = false;
+    bool              forceTurbo        = false;
+    bool              bypassStartScreen = false;
+    TimerHandle_t     bypassStartTimer  = nullptr;
+    bool              bypassStartCancel = false;
 
     // Mouse state
     bool    mousePresent = false;
@@ -48,11 +51,22 @@ public:
     uint8_t mouseSensitivityDiv = 4;
 
     CoreAquariusPlus() {
-        mutex = xSemaphoreCreateRecursiveMutex();
+        mutex            = xSemaphoreCreateRecursiveMutex();
+        bypassStartTimer = xTimerCreate("", pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS), pdFALSE, this, _onBypassStartTimer);
     }
 
     virtual ~CoreAquariusPlus() {
         vSemaphoreDelete(mutex);
+        if (bypassStartTimer)
+            xTimerDelete(bypassStartTimer, portMAX_DELAY);
+    }
+
+    static void _onBypassStartTimer(TimerHandle_t xTimer) { static_cast<CoreAquariusPlus *>(pvTimerGetTimerID(xTimer))->onBypassStartTimer(); }
+
+    void onBypassStartTimer() {
+        // 'Press' enter key to bypass the Aquarius start screen
+        if (!bypassStartCancel)
+            keyChar('\r', false);
     }
 
     bool loadBitstream(const void *data, size_t length) override {
@@ -95,6 +109,9 @@ public:
             if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
                 useT80 = val8 != 0;
             }
+            if (nvs_get_u8(h, "bypassStart", &val8) == ESP_OK) {
+                bypassStartScreen = val8 != 0;
+            }
 
             nvs_close(h);
         }
@@ -121,6 +138,11 @@ public:
         fpga->spiSel(false);
 
         forceTurbo = false;
+
+        bypassStartCancel = false;
+        if (bypassStartScreen) {
+            xTimerReset(bypassStartTimer, pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS));
+        }
     }
 
     void aqpForceTurbo(bool en) {
@@ -291,6 +313,8 @@ public:
     }
 
     void keyChar(uint8_t ch, bool isRepeat) override {
+        bypassStartCancel = true;
+
         RecursiveMutexLock lock(mutex);
         aqpWriteKeybBuffer(ch);
     }
@@ -483,6 +507,21 @@ public:
                 }
             };
             item.getter = [this]() { return mouseSensitivityDiv; };
+        }
+        {
+            auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Auto-bypass start screen");
+            item.setter = [this](int newVal) {
+                bypassStartScreen = (newVal != 0);
+
+                nvs_handle_t h;
+                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                    if (nvs_set_u8(h, "bypassStart", bypassStartScreen ? 1 : 0) == ESP_OK) {
+                        nvs_commit(h);
+                    }
+                    nvs_close(h);
+                }
+            };
+            item.getter = [this]() { return bypassStartScreen ? 1 : 0; };
         }
         {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Use external Z80");
