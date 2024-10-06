@@ -6,8 +6,8 @@ idf_component_register(
         "Bluetooth.cpp"
         "Keyboard.cpp"
         "FileServer.cpp"
-        "PowerLED.cpp"
         "XzDecompress.cpp"
+        "PowerLED.cpp"
 
         "DisplayOverlay/DisplayOverlay.cpp"
         "DisplayOverlay/Menu.cpp"

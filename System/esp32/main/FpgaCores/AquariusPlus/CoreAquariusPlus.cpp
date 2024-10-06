@@ -111,12 +111,12 @@ public:
                 mouseSensitivityDiv = mouseDiv;
             }
 
+            uint8_t val8 = 0;
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
             if (nvs_get_u8(h, "videoTiming", &videoTimingMode) != ESP_OK) {
                 videoTimingMode = 0;
             }
 
-            uint8_t val8 = 0;
             if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
                 useT80 = val8 != 0;
             }
@@ -779,8 +779,8 @@ public:
                 menu.setNeedsUpdate();
             };
         }
-    }
 #endif
+    }
 };
 
 std::shared_ptr<FpgaCore> newCoreAquariusPlus() {
