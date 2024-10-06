@@ -12,6 +12,16 @@
 #include "AqKeyboardDefs.h"
 
 enum {
+    IO_VCTRL    = 0xE0,
+    IO_VPALSEL  = 0xEA,
+    IO_VPALDATA = 0xEB,
+    IO_BANK0    = 0xF0,
+    IO_BANK1    = 0xF1,
+    IO_BANK2    = 0xF2,
+    IO_BANK3    = 0xF3,
+};
+
+enum {
     // Aq+ command
     CMD_RESET           = 0x01,
     CMD_FORCE_TURBO     = 0x02,
@@ -40,6 +50,8 @@ public:
     bool              bypassStartScreen = false;
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
+    uint8_t           savedBanks[4];
+    uint8_t           curBanks[4];
 
     // Mouse state
     bool    mousePresent = false;
@@ -182,6 +194,90 @@ public:
         uint8_t cmd[] = {CMD_SET_VIDMODE, mode};
         fpga->spiTx(cmd, sizeof(cmd));
         fpga->spiSel(false);
+    }
+
+    void aqpAqcuireBus() {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_BUS_ACQUIRE};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+    }
+
+    void aqpReleaseBus() {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_BUS_RELEASE};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+    }
+
+    void aqpWriteMem(uint16_t addr, uint8_t data) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_MEM_WRITE, (uint8_t)(addr & 0xFF), (uint8_t)(addr >> 8), data};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+    }
+
+    uint8_t aqpReadMem(uint16_t addr) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_MEM_READ, (uint8_t)(addr & 0xFF), (uint8_t)(addr >> 8)};
+        fpga->spiTx(cmd, sizeof(cmd));
+
+        uint8_t result[2];
+        fpga->spiRx(result, 2);
+        fpga->spiSel(false);
+        return result[1];
+    }
+
+    void aqpWriteIO(uint16_t addr, uint8_t data) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_IO_WRITE, (uint8_t)(addr & 0xFF), (uint8_t)(addr >> 8), data};
+        fpga->spiTx(cmd, sizeof(cmd));
+        fpga->spiSel(false);
+    }
+
+    uint8_t aqpReadIO(uint16_t addr) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+        fpga->spiSel(true);
+        uint8_t cmd[] = {CMD_IO_READ, (uint8_t)(addr & 0xFF), (uint8_t)(addr >> 8)};
+        fpga->spiTx(cmd, sizeof(cmd));
+
+        uint8_t result[2];
+        fpga->spiRx(result, 2);
+        fpga->spiSel(false);
+        return result[1];
+    }
+
+    void aqpSaveMemBanks() {
+        RecursiveMutexLock lock(mutex);
+        for (int i = 0; i < 4; i++) {
+            curBanks[i] = savedBanks[i] = aqpReadIO(IO_BANK0 + i);
+        }
+    }
+
+    void aqpRestoreMemBanks() {
+        RecursiveMutexLock lock(mutex);
+        for (int i = 0; i < 4; i++) {
+            aqpWriteIO(IO_BANK0 + i, savedBanks[i]);
+        }
+    }
+
+    void aqpSetMemBank(unsigned bank, uint8_t val) {
+        RecursiveMutexLock lock(mutex);
+        if (curBanks[bank] != val) {
+            aqpWriteIO(IO_BANK0 + bank, val);
+            curBanks[bank] = val;
+        }
     }
 
     void keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) override {
@@ -474,12 +570,151 @@ public:
         return -1;
     }
 
+    void takeScreenshot(Menu &menu) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+
+        menu.drawMessage("Taking screenshot");
+
+        std::vector<uint8_t> buf;
+
+        // Read text RAM
+        {
+            aqpAqcuireBus();
+            uint8_t vctrl = aqpReadIO(IO_VCTRL);
+            if (vctrl & 1) {
+                uint8_t vpalsel = aqpReadIO(IO_VPALSEL);
+                aqpSaveMemBanks();
+                aqpWriteIO(IO_BANK0, (3 << 6) | 0);
+
+                bool mode80 = (vctrl & 0x40) != 0;
+                buf.reserve(mode80 ? (4096 + 32 + 1) : (2048 + 32 + 1));
+
+                // Read text and color RAM
+                {
+                    if (mode80)
+                        aqpWriteIO(IO_VCTRL, vctrl & ~0x80);
+
+                    for (int i = 0; i < 2048; i++)
+                        buf.push_back(aqpReadMem(0x3000 + i));
+
+                    if (mode80) {
+                        aqpWriteIO(IO_VCTRL, vctrl | 0x80);
+                        for (int i = 0; i < 2048; i++)
+                            buf.push_back(aqpReadMem(0x3000 + i));
+                    }
+                }
+
+                // Read palette
+                for (int i = 0; i < 32; i++) {
+                    aqpWriteIO(IO_VPALSEL, i);
+                    buf.push_back(aqpReadIO(IO_VPALDATA));
+                }
+
+                // Save video mode
+                buf.push_back(vctrl & 0x61);
+
+                // Restore state
+                aqpWriteIO(IO_VPALSEL, vpalsel);
+                aqpWriteIO(IO_VCTRL, vctrl);
+                aqpRestoreMemBanks();
+            }
+            aqpReleaseBus();
+        }
+
+        if (!buf.empty()) {
+            std::string fileName = "screenshot.scr";
+            if (menu.editString("Enter filename for screenshot", fileName)) {
+                // Save cartridge contents to file
+                auto vfs = getSDCardVFS();
+                int  fd;
+                if ((fd = vfs->open(FO_WRONLY | FO_CREATE, fileName.c_str())) >= 0) {
+                    vfs->write(fd, buf.size(), buf.data());
+                    vfs->close(fd);
+                }
+            }
+        }
+    }
+
+    void dumpCartridge(Menu &menu) {
+        auto               fpga = getFPGA();
+        RecursiveMutexLock lock(fpga->getMutex());
+
+        menu.drawMessage("Reading cartridge");
+
+        std::vector<uint8_t> buf;
+        buf.reserve(16384);
+
+        // Read cartridge
+        {
+            aqpAqcuireBus();
+            aqpSaveMemBanks();
+
+            uint8_t vctrl = aqpReadIO(IO_VCTRL);
+            if (vctrl & 1) {
+                uint8_t vpalsel = aqpReadIO(IO_VPALSEL);
+                aqpWriteIO(IO_BANK0, 19);
+
+                for (int i = 0; i < 16384; i++)
+                    buf.push_back(aqpReadMem(i));
+
+                // Restore state
+                aqpWriteIO(IO_VPALSEL, vpalsel);
+                aqpWriteIO(IO_VCTRL, vctrl);
+            }
+
+            aqpRestoreMemBanks();
+            aqpReleaseBus();
+        }
+
+        // Check contents
+        bool hasData = false;
+        for (int i = 0; i < 16384; i++) {
+            if (buf[i] != 0xFF) {
+                hasData = true;
+                break;
+            }
+        }
+        if (!hasData) {
+            buf.clear();
+            menu.drawMessage("No cartridge found");
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        } else {
+            if (memcmp(buf.data(), buf.data() + 8192, 8192) == 0) {
+                // 8KB cartridge
+                buf.erase(buf.begin() + 8192, buf.end());
+            }
+        }
+
+        if (!buf.empty()) {
+            std::string fileName = "cart.rom";
+            if (menu.editString("Enter filename for cartridge", fileName)) {
+                // Save cartridge contents to file
+                auto vfs = getSDCardVFS();
+                int  fd;
+                if ((fd = vfs->open(FO_WRONLY | FO_CREATE, fileName.c_str())) >= 0) {
+                    vfs->write(fd, buf.size(), buf.data());
+                    vfs->close(fd);
+                }
+            }
+        }
+    }
+
     void addMainMenuItems(Menu &menu) override {
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Restart Aquarius+ (CTRL-ESC)");
             item.onEnter = [this]() {
                 resetCore();
             };
+        }
+        menu.items.emplace_back(MenuItemType::separator);
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Screenshot (text)");
+            item.onEnter = [this, &menu]() { takeScreenshot(menu); };
+        }
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Dump cartridge");
+            item.onEnter = [this, &menu]() { dumpCartridge(menu); };
         }
         menu.items.emplace_back(MenuItemType::separator);
         {
