@@ -61,10 +61,11 @@ public:
     bool editString(const std::string &title, std::string &value, int maxLen);
 
 protected:
-    void draw(int selectedRow);
+    void draw();
 
     bool exitMenu    = false;
     bool needsRedraw = true;
     bool needsUpdate = true;
     int  selectedRow = 0;
+    int  firstRow    = 0;
 };

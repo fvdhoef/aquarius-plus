@@ -2,18 +2,37 @@
 #include "DisplayOverlay.h"
 #include "Keyboard.h"
 
-void Menu::draw(int selectedRow) {
+void Menu::draw() {
     auto ovl = getDisplayOverlay();
     ovl->clearScreen();
 
+    int numRows = (int)items.size();
+
     int x      = (40 - width) / 2;
-    int height = 1 + (title.empty() ? 0 : 2) + items.size() + 1;
+    int height = std::min(23, 1 + (title.empty() ? 0 : 2) + numRows + 1);
     int y      = (25 - height) / 2;
+
+    int visibleRows = height - 2 - (title.empty() ? 0 : 2);
+
+    {
+        if (firstRow > selectedRow - 3) {
+            firstRow = std::max(0, selectedRow - 3);
+        }
+        if (selectedRow - firstRow >= visibleRows - 3) {
+            firstRow = selectedRow - visibleRows + 1 + 3;
+        }
+        if (firstRow + visibleRows > numRows) {
+            firstRow = numRows - visibleRows;
+        }
+    }
 
     {
         int selRow = selectedRow;
         if (selRow >= 0 && items[selRow].type == MenuItemType::separator)
             selRow = -1;
+        else {
+            selRow -= firstRow;
+        }
 
         ovl->drawBorder(
             x, y, width, height,
@@ -32,7 +51,7 @@ void Menu::draw(int selectedRow) {
         y += 2;
     }
 
-    for (int i = 0; i < (int)items.size(); i++) {
+    for (int i = firstRow, j = 0; i < numRows && j < visibleRows; i++, j++, y++) {
         auto attr = (selectedRow == i) ? attrSelected : attrNormal;
 
         auto &mi = items[i];
@@ -73,7 +92,7 @@ void Menu::draw(int selectedRow) {
             default: break;
         }
 
-        ovl->drawStr(x + 1, y + i, attr, str);
+        ovl->drawStr(x + 1, y, attr, str);
     }
 
     ovl->render();
@@ -102,6 +121,7 @@ void Menu::show() {
     needsUpdate = true;
     needsRedraw = true;
     selectedRow = 0;
+    firstRow    = 0;
 
     while (!exitMenu) {
         bool ovlVisible = ovl->isVisible();
@@ -115,12 +135,13 @@ void Menu::show() {
 
         if (needsUpdate) {
             onUpdate();
+            needsUpdate = false;
         }
 
         selectedRow = items.empty() ? -1 : (std::min(std::max(selectedRow, 0), (int)items.size() - 1));
 
         if (needsRedraw) {
-            draw(selectedRow);
+            draw();
             needsRedraw = false;
         }
 
