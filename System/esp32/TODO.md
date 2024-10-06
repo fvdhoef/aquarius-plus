@@ -5,7 +5,6 @@
     - Improve string editor
     - Improve menu to allow for scrolling
     - Improve drawMessage to allow for multiple lines of text
-    - Dump ROM descrambled
     - Hand controller emulation
   - Bluetooth
     - BLE keyboard support

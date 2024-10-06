@@ -50,8 +50,6 @@ public:
     bool              bypassStartScreen = false;
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
-    uint8_t           savedBanks[4];
-    uint8_t           curBanks[4];
 
     // Mouse state
     bool    mousePresent = false;
@@ -256,28 +254,6 @@ public:
         fpga->spiRx(result, 2);
         fpga->spiSel(false);
         return result[1];
-    }
-
-    void aqpSaveMemBanks() {
-        RecursiveMutexLock lock(mutex);
-        for (int i = 0; i < 4; i++) {
-            curBanks[i] = savedBanks[i] = aqpReadIO(IO_BANK0 + i);
-        }
-    }
-
-    void aqpRestoreMemBanks() {
-        RecursiveMutexLock lock(mutex);
-        for (int i = 0; i < 4; i++) {
-            aqpWriteIO(IO_BANK0 + i, savedBanks[i]);
-        }
-    }
-
-    void aqpSetMemBank(unsigned bank, uint8_t val) {
-        RecursiveMutexLock lock(mutex);
-        if (curBanks[bank] != val) {
-            aqpWriteIO(IO_BANK0 + bank, val);
-            curBanks[bank] = val;
-        }
     }
 
     void keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) override {
@@ -580,11 +556,13 @@ public:
 
         // Read text RAM
         {
+            // Get state
             aqpAqcuireBus();
-            uint8_t vctrl = aqpReadIO(IO_VCTRL);
+            uint8_t vctrl   = aqpReadIO(IO_VCTRL);
+            uint8_t vpalsel = aqpReadIO(IO_VPALSEL);
+            uint8_t bank0   = aqpReadIO(IO_BANK0);
+
             if (vctrl & 1) {
-                uint8_t vpalsel = aqpReadIO(IO_VPALSEL);
-                aqpSaveMemBanks();
                 aqpWriteIO(IO_BANK0, (3 << 6) | 0);
 
                 bool mode80 = (vctrl & 0x40) != 0;
@@ -613,12 +591,12 @@ public:
 
                 // Save video mode
                 buf.push_back(vctrl & 0x61);
-
-                // Restore state
-                aqpWriteIO(IO_VPALSEL, vpalsel);
-                aqpWriteIO(IO_VCTRL, vctrl);
-                aqpRestoreMemBanks();
             }
+
+            // Restore state
+            aqpWriteIO(IO_BANK0, bank0);
+            aqpWriteIO(IO_VPALSEL, vpalsel);
+            aqpWriteIO(IO_VCTRL, vctrl);
             aqpReleaseBus();
         }
 
@@ -647,23 +625,16 @@ public:
 
         // Read cartridge
         {
+            // Get state
             aqpAqcuireBus();
-            aqpSaveMemBanks();
+            uint8_t bank0 = aqpReadIO(IO_BANK0);
 
-            uint8_t vctrl = aqpReadIO(IO_VCTRL);
-            if (vctrl & 1) {
-                uint8_t vpalsel = aqpReadIO(IO_VPALSEL);
-                aqpWriteIO(IO_BANK0, 19);
+            aqpWriteIO(IO_BANK0, 19);
+            for (int i = 0; i < 16384; i++)
+                buf.push_back(aqpReadMem(i));
 
-                for (int i = 0; i < 16384; i++)
-                    buf.push_back(aqpReadMem(i));
-
-                // Restore state
-                aqpWriteIO(IO_VPALSEL, vpalsel);
-                aqpWriteIO(IO_VCTRL, vctrl);
-            }
-
-            aqpRestoreMemBanks();
+            // Restore state
+            aqpWriteIO(IO_BANK0, bank0);
             aqpReleaseBus();
         }
 
