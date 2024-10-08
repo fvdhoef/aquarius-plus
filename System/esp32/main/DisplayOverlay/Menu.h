@@ -34,6 +34,7 @@ public:
     std::string           title;
     int                   width;
     std::vector<MenuItem> items;
+    bool                  isRootMenu = false;
 
     virtual void onEnter() {}
     virtual void onExit() {}
@@ -59,6 +60,13 @@ public:
 
     void drawMessage(const char *msg);
     bool editString(const std::string &title, std::string &value, int maxLen);
+
+    int getHeight() {
+        return std::min(23, 1 + (title.empty() ? 0 : 2) + (int)items.size() + 1);
+    }
+    int getVisibleRows() {
+        return getHeight() - 2 - (title.empty() ? 0 : 2);
+    }
 
 protected:
     void draw();

@@ -12,7 +12,9 @@ enum class KeyLayout {
 
 class Keyboard {
 public:
-    virtual void updateKeys(uint8_t keys[14])                    = 0;
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+    virtual void updateKeys(uint64_t keys) = 0;
+#endif
     virtual void handleScancode(unsigned scanCode, bool keyDown) = 0;
 
     virtual int getKey(TickType_t ticksToWait) = 0;
@@ -129,7 +131,6 @@ enum ScanCode {
     SCANCODE_KP_PERIOD      = 99,
     SCANCODE_NONUSBACKSLASH = 100,
     SCANCODE_APPLICATION    = 101,
-    SCANCODE_ESP_MENU       = 103,
     SCANCODE_LCTRL          = 224,
     SCANCODE_LSHIFT         = 225,
     SCANCODE_LALT           = 226,

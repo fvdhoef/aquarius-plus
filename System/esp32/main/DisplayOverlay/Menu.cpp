@@ -6,13 +6,11 @@ void Menu::draw() {
     auto ovl = getDisplayOverlay();
     ovl->clearScreen();
 
-    int numRows = (int)items.size();
-
-    int x      = (40 - width) / 2;
-    int height = std::min(23, 1 + (title.empty() ? 0 : 2) + numRows + 1);
-    int y      = (25 - height) / 2;
-
-    int visibleRows = height - 2 - (title.empty() ? 0 : 2);
+    int numRows     = (int)items.size();
+    int x           = (40 - width) / 2;
+    int height      = getHeight();
+    int y           = (25 - height) / 2;
+    int visibleRows = getVisibleRows();
 
     {
         if (firstRow > selectedRow - 3) {
@@ -47,7 +45,12 @@ void Menu::draw() {
     y++;
 
     if (!title.empty()) {
-        ovl->drawStr(x + 1, y, DisplayOverlay::makeAttr(colTitleFg, colBg), title.c_str());
+        int x2 = x + 1;
+        if (!isRootMenu) {
+            ovl->drawStr(x2, y, DisplayOverlay::makeAttr(colTitleFg, colBg), "<");
+            x2 += 2;
+        }
+        ovl->drawStr(x2, y, DisplayOverlay::makeAttr(colTitleFg, colBg), title.c_str());
         y += 2;
     }
 
@@ -106,6 +109,8 @@ enum {
     CH_HOME      = 0x9B,
     CH_END       = 0x9A,
     CH_DELETE    = 0x7F,
+    CH_PGUP      = 0x8A,
+    CH_PGDN      = 0x8B,
     CH_ENTER     = '\r',
     CH_BACKSPACE = '\b',
     CH_ESC       = 3,
@@ -138,7 +143,14 @@ void Menu::show() {
             needsUpdate = false;
         }
 
-        selectedRow = items.empty() ? -1 : (std::min(std::max(selectedRow, 0), (int)items.size() - 1));
+        // Make sure selectedRow is valid
+        {
+            selectedRow = items.empty() ? -1 : (std::min(std::max(selectedRow, 0), (int)items.size() - 1));
+
+            while (selectedRow < (int)items.size() - 1 && items[selectedRow].type == MenuItemType::separator) {
+                selectedRow++;
+            }
+        }
 
         if (needsRedraw) {
             draw();
@@ -213,6 +225,16 @@ void Menu::show() {
                         }
                         default: break;
                     }
+                    break;
+                }
+
+                case CH_PGUP: {
+                    selectedRow = std::max(0, selectedRow - getVisibleRows());
+                    break;
+                }
+
+                case CH_PGDN: {
+                    selectedRow = std::min((int)items.size() - 1, selectedRow + getVisibleRows());
                     break;
                 }
 

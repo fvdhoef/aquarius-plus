@@ -11,10 +11,8 @@ public:
 
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
     // FPGA core interface
-    virtual void setKeysOverride(bool en)               = 0;
-    virtual void getKeys(uint8_t keys[14])              = 0;
-    virtual void setKeys(uint64_t keys)                 = 0;
-    virtual void setVolume(uint16_t volume, bool spkEn) = 0;
+    virtual uint64_t getKeys()                              = 0;
+    virtual void     setVolume(uint16_t volume, bool spkEn) = 0;
 #endif
 
     // Display overlay

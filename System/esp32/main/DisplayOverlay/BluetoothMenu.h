@@ -55,7 +55,7 @@ class BluetoothMenu : public Menu {
     BluetoothInfo bi;
 
 public:
-    BluetoothMenu() : Menu("", 38) {
+    BluetoothMenu() : Menu("Bluetooth", 38) {
     }
 
     MenuItem &addNetworkItem(const BtDevInfo &info) {

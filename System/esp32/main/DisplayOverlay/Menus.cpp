@@ -16,7 +16,9 @@ static EspSettingsMenu espSettingsMenu;
 //////////////////////////////////////////////////////////////////////////////
 class MainMenu : public Menu {
 public:
-    MainMenu() : Menu("", 38) {}
+    MainMenu() : Menu("", 38) {
+        isRootMenu = true;
+    }
 
     void onUpdate() override {
         setNeedsRedraw();

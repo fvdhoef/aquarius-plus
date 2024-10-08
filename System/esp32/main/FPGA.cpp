@@ -28,14 +28,12 @@ enum {
     CMD_SET_VIDMODE     = 0x40,
 
     // General commands
-    CMD_SET_KEYS_OVERRIDE = 0xF0, // MorphBook specific
-    CMD_GET_KEYS          = 0xF1, // MorphBook specific
-    CMD_SET_KEYS          = 0xF2, // MorphBook specific
-    CMD_SET_VOLUME        = 0xF3, // MorphBook specific
-    CMD_OVL_TEXT          = 0xF4,
-    CMD_OVL_FONT          = 0xF5,
-    CMD_OVL_PALETTE       = 0xF6,
-    CMD_GET_STATUS        = 0xF7,
+    CMD_GET_KEYS    = 0xF1, // MorphBook specific
+    CMD_SET_VOLUME  = 0xF3, // MorphBook specific
+    CMD_OVL_TEXT    = 0xF4,
+    CMD_OVL_FONT    = 0xF5,
+    CMD_OVL_PALETTE = 0xF6,
+    CMD_GET_STATUS  = 0xF7,
 };
 
 enum {
@@ -241,33 +239,19 @@ public:
     }
 
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
-    void setKeysOverride(bool en) override {
-        RecursiveMutexLock lock(mutex);
-        spiSel(true);
-        uint8_t cmd[] = {CMD_SET_KEYS_OVERRIDE, (uint8_t)(en ? 1 : 0)};
-        spiTx(cmd, sizeof(cmd));
-        spiSel(false);
-    }
+    uint64_t getKeys() override {
+        uint64_t result;
 
-    void getKeys(uint8_t keys[14]) override {
         RecursiveMutexLock lock(mutex);
         spiSel(true);
 
         uint8_t cmd[] = {CMD_GET_KEYS, 0};
         spiTx(cmd, sizeof(cmd));
-        spiRx(keys, 14);
+        spiRx(&result, sizeof(result));
 
         spiSel(false);
-    }
 
-    void setKeys(uint64_t keys) override {
-        RecursiveMutexLock lock(mutex);
-        spiSel(true);
-        uint8_t buf[9];
-        buf[0] = CMD_SET_KEYS;
-        memcpy(buf + 1, &keys, 8);
-        spiTx(buf, sizeof(buf));
-        spiSel(false);
+        return result;
     }
 
     void setVolume(uint16_t volume, bool spkEn) override {
@@ -333,9 +317,7 @@ public:
 
         if (status & STATUS_KEYB) {
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
-            uint8_t keys[14];
-            getKeys(keys);
-            getKeyboard()->updateKeys(keys);
+            getKeyboard()->updateKeys(getKeys());
 #endif
         }
     }

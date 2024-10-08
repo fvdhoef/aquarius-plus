@@ -55,7 +55,7 @@ class WiFiMenu : public Menu {
     NetworkInfo ni;
 
 public:
-    WiFiMenu() : Menu("", 38) {
+    WiFiMenu() : Menu("Wi-Fi", 38) {
     }
 
     MenuItem &addNetworkItem(const WiFiApInfo &info) {
