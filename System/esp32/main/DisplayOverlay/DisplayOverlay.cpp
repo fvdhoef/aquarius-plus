@@ -4,10 +4,11 @@
 
 class DisplayOverlayInt : public DisplayOverlay {
 public:
-    bool     overlayVisible = false;
-    Menu    *currentMenu    = nullptr;
-    uint16_t textBuf[1024];
-    uint16_t palette[16] = {0xF111, 0xFF11, 0xF1F1, 0xFFF1, 0xF22E, 0xFF1F, 0xF3CC, 0xFFFF, 0xFCCC, 0xF3BB, 0xFC2C, 0xF419, 0xFFF7, 0xF2D4, 0xFB22, 0x0333};
+    bool          overlayVisible = false;
+    Menu         *currentMenu    = nullptr;
+    uint16_t      textBuf[1024];
+    uint16_t      palette[16] = {0xF111, 0xFF11, 0xF1F1, 0xFFF1, 0xF22E, 0xFF1F, 0xF3CC, 0xFFFF, 0xFCCC, 0xF3BB, 0xFC2C, 0xF419, 0xFFF7, 0xF2D4, 0xFB22, 0x0333};
+    volatile bool doReinit    = false;
 
     void init() override {
         if (xTaskCreate(_task, "dispovl", 8192, this, 1, nullptr) != pdPASS) {
@@ -108,19 +109,31 @@ public:
         getFPGA()->setOverlayText(textBuf);
     }
 
+    void reinit() override {
+        doReinit = true;
+    }
+
+    bool shouldReinit() override {
+        return doReinit;
+    }
+
     void task() {
-        // Load font
-        extern const uint8_t ovlFontStart[] asm("_binary_ovl_font_chr_start");
-        getFPGA()->setOverlayFont(ovlFontStart);
-
-        overlayVisible = false;
-        setVisible(overlayVisible);
-
         while (1) {
-            getMainMenu()->show();
+            doReinit = false;
+
+            // Load font
+            extern const uint8_t ovlFontStart[] asm("_binary_ovl_font_chr_start");
+            getFPGA()->setOverlayFont(ovlFontStart);
 
             overlayVisible = false;
             setVisible(overlayVisible);
+
+            while (!doReinit) {
+                getMainMenu()->show();
+
+                overlayVisible = false;
+                setVisible(overlayVisible);
+            }
         }
     }
 };

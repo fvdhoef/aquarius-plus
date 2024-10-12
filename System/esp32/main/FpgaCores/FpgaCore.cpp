@@ -2,6 +2,7 @@
 #include "FPGA.h"
 
 #include "AquariusPlus/CoreAquariusPlus.h"
+#include "DisplayOverlay/DisplayOverlay.h"
 
 static const char *TAG = "FpgaCore";
 
@@ -29,5 +30,7 @@ std::shared_ptr<FpgaCore> loadFpgaCore(FpgaCoreType type, const void *data, size
         unloadFpgaCore();
         return nullptr;
     }
+
+    getDisplayOverlay()->reinit();
     return currentCore;
 }

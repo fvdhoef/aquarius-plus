@@ -128,7 +128,7 @@ void Menu::show() {
     selectedRow = 0;
     firstRow    = 0;
 
-    while (!exitMenu) {
+    while (!exitMenu && !getDisplayOverlay()->shouldReinit()) {
         bool ovlVisible = ovl->isVisible();
 
         auto curTicks = xTaskGetTickCount();

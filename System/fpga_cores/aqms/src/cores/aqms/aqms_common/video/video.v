@@ -40,6 +40,7 @@ module video(
     output reg   [3:0] vga_r,
     output reg   [3:0] vga_g,
     output reg   [3:0] vga_b,
+    output reg         vga_de,
     output reg         vga_hsync,
     output reg         vga_vsync);
 
@@ -260,7 +261,7 @@ module video(
     wire       vblank_irq_pulse;
     wire       next_line, hsync, vsync, border, blank;
 
-    video_timing video_timing(
+    ms_video_timing video_timing(
         .clk(video_clk),
         .left_col_blank(q_reg0_left_col_blank),
 
@@ -384,14 +385,16 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     always @(posedge(video_clk))
         if (q_blank) begin
-            vga_r <= 4'b0;
-            vga_g <= 4'b0;
-            vga_b <= 4'b0;
+            vga_r  <= 4'b0;
+            vga_g  <= 4'b0;
+            vga_b  <= 4'b0;
+            vga_de <= 1'b0;
 
         end else begin
-            vga_r <= {pal_r, pal_r};
-            vga_g <= {pal_g, pal_g};
-            vga_b <= {pal_b, pal_b};
+            vga_r  <= {pal_r, pal_r};
+            vga_g  <= {pal_g, pal_g};
+            vga_b  <= {pal_b, pal_b};
+            vga_de <= 1'b1;
         end
 
     always @(posedge video_clk) vga_hsync <= q_hsync;

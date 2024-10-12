@@ -2,7 +2,7 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module video_timing(
+module ms_video_timing(
     input  wire       clk,     // 25.175MHz (640x480)
     input  wire       left_col_blank,
 

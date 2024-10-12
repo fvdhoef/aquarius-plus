@@ -330,6 +330,15 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
+    wire [3:0] video_r;
+    wire [3:0] video_g;
+    wire [3:0] video_b;
+    wire       video_de;
+    wire       video_hsync;
+    wire       video_vsync;
+    wire       video_newframe = 1'b0;
+    wire       video_oddline = 1'b0;
+
     video video(
         .clk(clk),
         .reset(reset),
@@ -347,11 +356,12 @@ module aqp_top(
         .vcnt(video_vcnt),
         .hcnt(video_hcnt),
 
-        .vga_r(vga_r),
-        .vga_g(vga_g),
-        .vga_b(vga_b),
-        .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync));
+        .vga_r(video_r),
+        .vga_g(video_g),
+        .vga_b(video_b),
+        .vga_de(video_de),
+        .vga_hsync(video_hsync),
+        .vga_vsync(video_vsync));
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
@@ -402,9 +412,6 @@ module aqp_top(
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
     wire        spibm_busreq_n;
 
-    wire  [7:0] kbbuf_data;
-    wire        kbbuf_wren;
-
     assign spibm_en      = !spibm_busreq_n && !ebus_busack_n;
     assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
     assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
@@ -413,10 +420,33 @@ module aqp_top(
     assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
     assign ebus_busreq_n = !spibm_busreq_n ? 1'b0 : 1'bZ;
 
+    wire        spi_msg_end;
+    wire  [7:0] spi_cmd;
+    wire [63:0] spi_rxdata;
+
+    wire  [9:0] ovl_text_addr;
+    wire [15:0] ovl_text_wrdata;
+    wire        ovl_text_wr;
+
+    wire [10:0] ovl_font_addr;
+    wire  [7:0] ovl_font_wrdata;
+    wire        ovl_font_wr;
+
+    wire  [3:0] ovl_palette_addr;
+    wire [15:0] ovl_palette_wrdata;
+    wire        ovl_palette_wr;
+
     aqp_esp_spi esp_spi(
         .clk(clk),
         .reset(reset),
 
+        // Core specific
+        .reset_req(reset_req),
+        .keys(keys),
+        .hctrl1(spi_hctrl1),
+        .hctrl2(spi_hctrl2),
+
+        // Bus master interface
         .ebus_phi(ebus_phi),
 
         .spibm_a(spibm_a),
@@ -429,14 +459,25 @@ module aqp_top(
         .spibm_iorq_n(spibm_iorq_n),
         .spibm_busreq_n(spibm_busreq_n),
 
-        .reset_req(reset_req),
-        .keys(keys),
-        .hctrl1(spi_hctrl1),
-        .hctrl2(spi_hctrl2),
+        // Interface for core specific messages
+        .spi_msg_end(spi_msg_end),
+        .spi_cmd(spi_cmd),
+        .spi_rxdata(spi_rxdata),
 
-        .kbbuf_data(kbbuf_data),
-        .kbbuf_wren(kbbuf_wren),
+        // Display overlay interface
+        .ovl_text_addr(ovl_text_addr),
+        .ovl_text_wrdata(ovl_text_wrdata),
+        .ovl_text_wr(ovl_text_wr),
 
+        .ovl_font_addr(ovl_font_addr),
+        .ovl_font_wrdata(ovl_font_wrdata),
+        .ovl_font_wr(ovl_font_wr),
+
+        .ovl_palette_addr(ovl_palette_addr),
+        .ovl_palette_wrdata(ovl_palette_wrdata),
+        .ovl_palette_wr(ovl_palette_wr),
+
+        // ESP SPI slave interface
         .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),
         .esp_mosi(esp_mosi),
@@ -477,5 +518,44 @@ module aqp_top(
         // PWM audio output
         .audio_l(audio_l),
         .audio_r(audio_r));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Display overlay
+    //////////////////////////////////////////////////////////////////////////
+    aqp_overlay overlay(
+        // Core video interface
+        .video_clk(video_clk),
+        .video_r(video_r),
+        .video_g(video_g),
+        .video_b(video_b),
+        .video_de(video_de),
+        .video_hsync(video_hsync),
+        .video_vsync(video_vsync),
+        .video_newframe(video_newframe),
+        .video_oddline(video_oddline),
+        .video_mode(1'b1),
+
+        // Overlay interface
+        .ovl_clk(clk),
+
+        .ovl_text_addr(ovl_text_addr),
+        .ovl_text_wrdata(ovl_text_wrdata),
+        .ovl_text_wr(ovl_text_wr),
+
+        .ovl_font_addr(ovl_font_addr),
+        .ovl_font_wrdata(ovl_font_wrdata),
+        .ovl_font_wr(ovl_font_wr),
+
+        .ovl_palette_addr(ovl_palette_addr),
+        .ovl_palette_wrdata(ovl_palette_wrdata),
+        .ovl_palette_wr(ovl_palette_wr),
+
+        // VGA signals
+        .vga_r(vga_r),
+        .vga_g(vga_g),
+        .vga_b(vga_b),
+        .vga_hsync(vga_hsync),
+        .vga_vsync(vga_vsync)
+    );
 
 endmodule

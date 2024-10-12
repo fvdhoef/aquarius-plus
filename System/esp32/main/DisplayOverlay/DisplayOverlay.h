@@ -4,7 +4,9 @@
 
 class DisplayOverlay {
 public:
-    virtual void init() = 0;
+    virtual void init()         = 0;
+    virtual void reinit()       = 0;
+    virtual bool shouldReinit() = 0;
 
     virtual void clearScreen() = 0;
     virtual void drawBorder(
