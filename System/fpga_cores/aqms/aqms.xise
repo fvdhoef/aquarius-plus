@@ -17,7 +17,7 @@
   <files>
     <file xil_pn:name="src/util/reset_sync.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="56"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="9"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="5"/>
     </file>
     <file xil_pn:name="src/aqp_sysctrl.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="57"/>
@@ -30,7 +30,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="59"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="24"/>
     </file>
-    <file xil_pn:name="src/video/video.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/video.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="60"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="15"/>
     </file>
@@ -58,27 +58,27 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="63"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="12"/>
     </file>
-    <file xil_pn:name="src/video/video_timing.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/video_timing.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="67"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="6"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="8"/>
     </file>
     <file xil_pn:name="src/aqp_esp_spi.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="70"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="22"/>
     </file>
-    <file xil_pn:name="src/video/vram.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/vram.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="69"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="5"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="7"/>
     </file>
-    <file xil_pn:name="src/video/ram64x1d.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/ram64x1d.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="70"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="3"/>
     </file>
-    <file xil_pn:name="src/video/palette.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/palette.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="71"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="7"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="9"/>
     </file>
-    <file xil_pn:name="src/rom.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/rom.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="75"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="16"/>
     </file>
@@ -88,29 +88,29 @@
     </file>
     <file xil_pn:name="src/util/pulse2pulse.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="78"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="10"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="6"/>
     </file>
-    <file xil_pn:name="src/ram.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/ram.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="29"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="17"/>
     </file>
-    <file xil_pn:name="src/video/gfx.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/gfx.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="71"/>
-      <association xil_pn:name="Implementation" xil_pn:seqID="8"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="10"/>
     </file>
-    <file xil_pn:name="src/video/linebuf.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/linebuf.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="72"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="4"/>
     </file>
-    <file xil_pn:name="src/video/renderer.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/renderer.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="73"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="2"/>
     </file>
-    <file xil_pn:name="src/video/lineattrbuf.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/video/lineattrbuf.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="74"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="1"/>
     </file>
-    <file xil_pn:name="src/psg.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/aqms_common/psg.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="75"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="18"/>
     </file>

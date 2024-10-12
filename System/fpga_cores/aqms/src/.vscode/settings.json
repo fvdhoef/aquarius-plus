@@ -4,7 +4,11 @@
         ".",
         "util",
         "wrappers",
-        "video"
+
+        "cores/aqms",
+        "cores/aqms/wrappers",
+        "cores/aqms/aqms_common",
+        "cores/aqms/aqms_common/video"
     ],
     "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
 }
