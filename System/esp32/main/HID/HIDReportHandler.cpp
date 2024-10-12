@@ -15,39 +15,37 @@ HIDReportHandler::~HIDReportHandler() {
     }
 }
 
-bool HIDReportHandler::init(const HIDReportDescriptor::HIDCollection *collection) {
+bool HIDReportHandler::init(const HIDCollection *collection) {
     enumerateCollection(collection);
     return true;
 }
 
-void HIDReportHandler::enumerateCollection(const HIDReportDescriptor::HIDCollection *collection) {
-    const HIDReportDescriptor::HIDItem *item = collection->subItems;
-    while (item) {
-        if (item->type == HIDReportDescriptor::HIDItem::TCollection) {
-            enumerateCollection(static_cast<const HIDReportDescriptor::HIDCollection *>(item));
+void HIDReportHandler::enumerateCollection(const HIDCollection *collection) {
+    for (auto subItem : collection->subItems) {
+        if (subItem->itemType == HIDItem::ItemType::Collection) {
+            enumerateCollection(static_cast<const HIDCollection *>(subItem.get()));
 
         } else {
-            const HIDReportDescriptor::HIDField *field = static_cast<const HIDReportDescriptor::HIDField *>(item);
+            const HIDField *field = static_cast<const HIDField *>(subItem.get());
 
-            switch (field->type) {
-                case HIDReportDescriptor::HIDItem::TInputField: addInputField(*field); break;
-                case HIDReportDescriptor::HIDItem::TOutputField: addOutputField(*field); break;
-                case HIDReportDescriptor::HIDItem::TFeatureField: break;
+            switch (field->itemType) {
+                case HIDItem::ItemType::InputField: addInputField(*field); break;
+                case HIDItem::ItemType::OutputField: addOutputField(*field); break;
+                case HIDItem::ItemType::FeatureField: break;
                 default: break;
             }
         }
-        item = item->next;
     }
 }
 
-void HIDReportHandler::addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandler::addInputField(const HIDField &field) {
     if (field.reportID > 0)
         hasReportId = true;
 
     _addInputField(field);
 }
 
-void HIDReportHandler::addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandler::addOutputField(const HIDField &field) {
     _addOutputField(field);
 }
 
@@ -64,7 +62,7 @@ void HIDReportHandler::inputReport(const uint8_t *buf, size_t length) {
     _inputReport(reportId, buf, length);
 }
 
-void HIDReportHandler::_addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandler::_addInputField(const HIDField &field) {
     printf("Unhandled input field:");
     printf(
         " (reportId: %d) bit %d:%d - usage: %X:%X..%X (valid range: %d..%d) attributes: %X\n",
@@ -75,7 +73,7 @@ void HIDReportHandler::_addInputField(const HIDReportDescriptor::HIDField &field
         (unsigned)field.attributes);
 }
 
-void HIDReportHandler::_addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandler::_addOutputField(const HIDField &field) {
 #if 0
     printf("Unhandled output field:");
     printf(
@@ -137,58 +135,55 @@ int32_t HIDReportHandler::readBits(const void *buf, size_t bufLen, uint32_t bitO
 };
 
 HIDReportHandler *HIDReportHandler::getReportHandlersForDescriptor(const void *reportDescBuf, size_t reportDescLen) {
-    auto reportDescriptor = HIDReportDescriptor::parseReportDescriptor(reportDescBuf, reportDescLen);
+    // ESP_LOG_BUFFER_HEX(TAG, reportDescBuf, reportDescLen);
+
+    auto collections = parseReportDescriptor(reportDescBuf, reportDescLen);
 
     HIDReportHandler *reportHandlers = nullptr;
 
-    if (reportDescriptor) {
-        // reportDescriptor->dumpItems();
+    for (auto collection : collections) {
+        if (collection->collectionType != HIDCollection::CollectionType::Application)
+            continue;
 
-        HIDReportDescriptor::HIDItem *item = reportDescriptor->items;
-        while (item) {
-            if (item->type == HIDReportDescriptor::HIDItem::TCollection) {
-                HIDReportDescriptor::HIDCollection *collection = static_cast<HIDReportDescriptor::HIDCollection *>(item);
+        ESP_LOGI(TAG, "- Application collection %04X:%04X", collection->usagePage, collection->usage);
 
-                HIDReportHandler *reportHandler = NULL;
+        // collection->dump(false);
 
-                uint32_t usage = ((uint32_t)collection->usagePage << 16) | collection->usage;
-                switch (usage) {
-                    case 0x10002:
-                        ESP_LOGI(TAG, "Mouse detected");
-                        reportHandler = new HIDReportHandlerMouse();
-                        break;
+        HIDReportHandler *reportHandler = NULL;
 
-                    case 0x10005:
-                        ESP_LOGI(TAG, "Gamepad detected");
-                        reportHandler = new HIDReportHandlerGamepad();
-                        break;
+        uint32_t usage = ((uint32_t)collection->usagePage << 16) | collection->usage;
+        switch (usage) {
+            case 0x10002:
+                ESP_LOGI(TAG, "  -> Mouse detected");
+                reportHandler = new HIDReportHandlerMouse();
+                break;
 
-                    case 0x10006:
-                        ESP_LOGI(TAG, "Keyboard detected");
-                        reportHandler = new HIDReportHandlerKeyboard();
-                        break;
+            case 0x10005:
+                ESP_LOGI(TAG, "  -> Gamepad detected");
+                reportHandler = new HIDReportHandlerGamepad();
+                break;
 
-                    default:
-                        break;
-                }
+            case 0x10006:
+                ESP_LOGI(TAG, "  -> Keyboard detected");
+                reportHandler = new HIDReportHandlerKeyboard();
+                break;
 
-                if (reportHandler) {
-                    if (!reportHandler->init(collection)) {
-                        ESP_LOGE(TAG, "Could not init report handler.");
-                        delete reportHandler;
-                        reportHandler = NULL;
-                    }
-                }
-
-                if (reportHandler) {
-                    reportHandler->next = reportHandlers;
-                    reportHandlers      = reportHandler;
-                }
-            }
-            item = item->next;
+            default:
+                break;
         }
 
-        delete reportDescriptor;
+        if (reportHandler) {
+            if (!reportHandler->init(collection.get())) {
+                ESP_LOGE(TAG, "Could not init report handler.");
+                delete reportHandler;
+                reportHandler = NULL;
+            }
+        }
+
+        if (reportHandler) {
+            reportHandler->next = reportHandlers;
+            reportHandlers      = reportHandler;
+        }
     }
     return reportHandlers;
 }

@@ -18,7 +18,7 @@ HIDReportHandlerMouse::HIDReportHandlerMouse()
 HIDReportHandlerMouse::~HIDReportHandlerMouse() {
 }
 
-void HIDReportHandlerMouse::_addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerMouse::_addInputField(const HIDField &field) {
     if (field.usageMin == field.usageMax) {
         switch (field.usagePage) {
             case 1: {

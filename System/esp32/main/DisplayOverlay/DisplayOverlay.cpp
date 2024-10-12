@@ -10,7 +10,9 @@ public:
     uint16_t palette[16] = {0xF111, 0xFF11, 0xF1F1, 0xFFF1, 0xF22E, 0xFF1F, 0xF3CC, 0xFFFF, 0xFCCC, 0xF3BB, 0xFC2C, 0xF419, 0xFFF7, 0xF2D4, 0xFB22, 0x0333};
 
     void init() override {
-        xTaskCreate(_task, "dispovl", 8192, this, 1, nullptr);
+        if (xTaskCreate(_task, "dispovl", 8192, this, 1, nullptr) != pdPASS) {
+            ESP_LOGE("DisplayOverlay", "Error creating dispovl task");
+        }
     }
 
     static void _task(void *param) { static_cast<DisplayOverlayInt *>(param)->task(); }

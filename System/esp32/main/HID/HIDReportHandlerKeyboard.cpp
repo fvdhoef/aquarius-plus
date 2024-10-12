@@ -17,21 +17,23 @@ HIDReportHandlerKeyboard::HIDReportHandlerKeyboard()
 HIDReportHandlerKeyboard::~HIDReportHandlerKeyboard() {
 }
 
-void HIDReportHandlerKeyboard::_addInputField(const HIDReportDescriptor::HIDField &field) {
-    if (field.attributes & (1 << 1)) {
-        if (field.bitSize == 1 && field.usageMin >= 0xE0 && field.usageMin <= 0xE7) {
-            buttons[field.usageMin - 0xE0] = field.bitIdx;
-        }
-    } else {
-        if (field.arraySize <= maxKeyData) {
-            keyArrayIdx      = field.bitIdx;
-            keyArrayItemSize = field.bitSize;
-            keyArrayItems    = field.arraySize;
+void HIDReportHandlerKeyboard::_addInputField(const HIDField &field) {
+    if (field.usagePage == 7) {
+        if (field.attributes & (1 << 1)) {
+            if (field.bitSize == 1 && field.usageMin >= 0xE0 && field.usageMin <= 0xE7) {
+                buttons[field.usageMin - 0xE0] = field.bitIdx;
+            }
+        } else {
+            if (field.arraySize <= maxKeyData) {
+                keyArrayIdx      = field.bitIdx;
+                keyArrayItemSize = field.bitSize;
+                keyArrayItems    = field.arraySize;
+            }
         }
     }
 }
 
-void HIDReportHandlerKeyboard::_addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerKeyboard::_addOutputField(const HIDField &field) {
     if (field.bitSize == 1 && field.arraySize == 1 && field.usagePage == 8) {
         switch (field.usageMin) {
             case 1: ledNumLockIdx = field.bitIdx; break;
@@ -43,8 +45,8 @@ void HIDReportHandlerKeyboard::_addOutputField(const HIDReportDescriptor::HIDFie
 }
 
 void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
-    //	printf("HIDReportHandlerKeyboard::inputReport\n");
-    //	HexDump(buf, length);
+    // ESP_LOGI(TAG, "HIDReportHandlerKeyboard::inputReport %u", reportId);
+    // ESP_LOG_BUFFER_HEX(TAG, buf, length);
     // auto &aqkb = AqKeyboard::instance();
 
     if (keyArrayIdx < 0) {

@@ -23,10 +23,14 @@ public:
         usb_host_config_t hostCfg = {.intr_flags = ESP_INTR_FLAG_LEVEL1};
         ESP_ERROR_CHECK(usb_host_install(&hostCfg));
 
-        xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, 2, nullptr, 0);
+        if (xTaskCreatePinnedToCore(_taskUSBEvents, "USBEvents", 4096, this, 2, nullptr, 0) != pdPASS) {
+            ESP_LOGE(TAG, "Error creating USBEvents task");
+        }
 
         // Create class driver task
-        xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, 3, nullptr, 0);
+        if (xTaskCreatePinnedToCore(_taskClassDriver, "class", 4096, this, 3, nullptr, 0) != pdPASS) {
+            ESP_LOGE(TAG, "Error creating class task");
+        }
         vTaskDelay(10); // Short delay to let client task spin up
     }
 
@@ -90,7 +94,9 @@ public:
         };
         ESP_ERROR_CHECK(usb_host_client_register(&clientCfg, &clientHdl));
 
-        xTaskCreatePinnedToCore(_taskClient, "client", 8192, this, 3, &clientTask, 0);
+        if (xTaskCreatePinnedToCore(_taskClient, "client", 8192, this, 3, &clientTask, 0) != pdPASS) {
+            ESP_LOGE(TAG, "Error creating client task");
+        }
 
         while (1) {
             usb_host_client_handle_events(clientHdl, portMAX_DELAY);

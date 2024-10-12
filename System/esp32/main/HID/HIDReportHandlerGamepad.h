@@ -16,7 +16,7 @@ public:
     virtual ~HIDReportHandlerGamepad();
 
 private:
-    void _addInputField(const HIDReportDescriptor::HIDField &field) override;
+    void _addInputField(const HIDField &field) override;
     void _inputReport(uint8_t reportId, const uint8_t *buf, size_t length) override;
 
     int idxLSX = -1, sizeLSX = -1, minLSX, maxLSX;

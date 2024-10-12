@@ -8,7 +8,7 @@ public:
     virtual ~HIDReportHandlerMouse();
 
 protected:
-    void _addInputField(const HIDReportDescriptor::HIDField &field) override;
+    void _addInputField(const HIDField &field) override;
     void _inputReport(uint8_t reportId, const uint8_t *buf, size_t length) override;
 
     static const int maxButtons = 3;

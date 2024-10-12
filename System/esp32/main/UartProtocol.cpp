@@ -75,7 +75,9 @@ public:
         getHttpVFS()->init();
         getTcpVFS()->init();
 
-        xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
+        if (xTaskCreate(_uartEventTask, "uartEvent", 6144, this, 1, nullptr) != pdPASS) {
+            ESP_LOGE(TAG, "Error creating uartEvent task");
+        }
     }
 
     static void _uartEventTask(void *param) { static_cast<UartProtocolInt *>(param)->uartEventTask(); }

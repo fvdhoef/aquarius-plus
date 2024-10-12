@@ -24,7 +24,7 @@ HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
     idxAlloc.free(gamePadIdx);
 }
 
-void HIDReportHandlerGamepad::_addInputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerGamepad::_addInputField(const HIDField &field) {
     if (field.arraySize == 1) {
         // printf("usage: %02X:%02X\n", field.usagePage, field.usageMin);
 
