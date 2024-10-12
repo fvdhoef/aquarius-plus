@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module gfx(
     input  wire        clk,
     input  wire        reset,
@@ -35,15 +38,17 @@ module gfx(
     wire [4:0] wrdata;
     wire       wren;
 
-    reg linesel_r, linesel_next;
+    reg d_linesel, q_linesel;
+
+    wire [7:0] linebuf_rddata1;  // unused
 
     linebuf linebuf(
         .clk(clk),
 
-        .linesel(linesel_r),
+        .linesel(q_linesel),
 
         .idx1(wridx),
-        .rddata1(),
+        .rddata1(linebuf_rddata1),
         .wrdata1({3'b0, wrdata}),
         .wren1(wren),
 
@@ -63,27 +68,26 @@ module gfx(
         ST_PAT1    = 4'd7,
         ST_PAT2    = 4'd8;
 
-    reg   [7:0] vscroll_r,   vscroll_next;
-    reg   [7:0] hscroll_r,   hscroll_next;
+    reg   [7:0] d_vscroll,   q_vscroll;
+    reg   [7:0] d_hscroll,   q_hscroll;
+    reg   [5:0] d_col,       q_col;
+    reg  [12:0] d_vaddr,     q_vaddr;
+    reg   [3:0] d_state,     q_state;
+    reg   [3:0] d_nxtstate,  q_nxtstate;
+    reg  [15:0] d_map_entry, q_map_entry;
+    reg         d_busy,      q_busy;
+    reg   [6:0] d_spr_idx,   q_spr_idx;
+    reg   [7:0] d_spr_y,     q_spr_y;
+    reg   [3:0] d_spr_cnt,   q_spr_cnt;
 
-    reg   [5:0] col_r,       col_next;
-    reg  [12:0] vaddr_r,     vaddr_next;
-    reg   [3:0] state_r,     state_next;
-    reg   [3:0] nxtstate_r,  nxtstate_next;
-    reg  [15:0] map_entry_r, map_entry_next;
-    reg         busy_r,      busy_next;
-
-    reg   [6:0] spr_idx_r,   spr_idx_next;
-    reg   [7:0] spr_y_r,     spr_y_next;
-    reg   [3:0] spr_cnt_r,   spr_cnt_next;
-
-    wire  [4:0] column        = col_next[4:0];
-    wire  [7:0] vscroll2      = (column [4:3] == 2'b11 && vscroll_inhibit) ? 8'd0 : vscroll_r;
+    wire  [4:0] column        = d_col[4:0];
+    wire  [7:0] vscroll2      = (column [4:3] == 2'b11 && vscroll_inhibit) ? 8'd0 : q_vscroll;
     wire  [7:0] line_idx      = line;
     wire  [8:0] tline         = {1'b0, line_idx} + {1'b0, vscroll2};
-    wire  [4:0] row           = (tline[8:3] < 6'd28) ? tline[7:3] : (tline[8:3] - 6'd28);  // Handle 28 rows
+    wire  [5:0] row_minus28   = tline[8:3] - 6'd28;
+    wire  [4:0] row           = (tline[8:3] < 6'd28) ? tline[7:3] : row_minus28[4:0];  // Handle 28 rows
 
-    wire [15:0] map_entry     = map_entry_next;
+    wire [15:0] map_entry     = d_map_entry;
     wire  [8:0] tile_idx      = map_entry[8:0];
     wire        tile_hflip    = map_entry[9];
     wire        tile_vflip    = map_entry[10];
@@ -92,40 +96,40 @@ module gfx(
 
     wire [12:0] map_addr    = {base_nt, row, column};
     wire [12:0] pat_addr    = {tile_idx, (tile_vflip ? ~tline[2:0] : tline[2:0]), 1'b0};
-    wire [12:0] spr_addr_y  = {base_sprattr, 2'b0, spr_idx_r[5:1]};
-    wire [12:0] spr_addr_nx = {base_sprattr, 1'b1, spr_idx_r[5:0]};
+    wire [12:0] spr_addr_y  = {base_sprattr, 2'b0, q_spr_idx[5:1]};
+    wire [12:0] spr_addr_nx = {base_sprattr, 1'b1, q_spr_idx[5:0]};
 
-    assign vaddr = vaddr_next;
+    assign vaddr = d_vaddr;
 
     // Determine if sprite is on current line
     wire [3:0] spr_height  = (spr_h16 ? 4'd15 : 4'd7);
-    wire [7:0] ydiff       = line_idx - spr_y_r;
+    wire [7:0] ydiff       = line_idx - q_spr_y;
     wire       spr_on_line = (ydiff <= {4'd0, spr_height});
     wire [3:0] spr_line    = ydiff[3:0];
 
     //////////////////////////////////////////////////////////////////////////
     // Renderer
     //////////////////////////////////////////////////////////////////////////
-    reg  [7:0] render_idx_r,       render_idx_next;
-    reg [31:0] render_data_r,      render_data_next;
+    reg  [7:0] d_render_idx,       q_render_idx;
+    reg [31:0] d_render_data,      q_render_data;
+    reg        d_render_is_sprite, q_render_is_sprite;
+    reg        d_render_hflip,     q_render_hflip;
+    reg        d_render_palette,   q_render_palette;
+    reg        d_render_priority,  q_render_priority;
     reg        render_start;
-    reg        render_is_sprite_r, render_is_sprite_next;
-    reg        render_hflip_r,     render_hflip_next;
-    reg        render_palette_r,   render_palette_next;
-    reg        render_priority_r,  render_priority_next;
     wire       render_last_pixel;
     wire       render_busy;
 
     // Convert from bitplanes to chunky format
     wire [31:0] render_data = {
-        render_data_next[7], render_data_next[15], render_data_next[23], render_data_next[31], 
-        render_data_next[6], render_data_next[14], render_data_next[22], render_data_next[30], 
-        render_data_next[5], render_data_next[13], render_data_next[21], render_data_next[29], 
-        render_data_next[4], render_data_next[12], render_data_next[20], render_data_next[28], 
-        render_data_next[3], render_data_next[11], render_data_next[19], render_data_next[27], 
-        render_data_next[2], render_data_next[10], render_data_next[18], render_data_next[26], 
-        render_data_next[1], render_data_next[ 9], render_data_next[17], render_data_next[25], 
-        render_data_next[0], render_data_next[ 8], render_data_next[16], render_data_next[24] 
+        d_render_data[7], d_render_data[15], d_render_data[23], d_render_data[31], 
+        d_render_data[6], d_render_data[14], d_render_data[22], d_render_data[30], 
+        d_render_data[5], d_render_data[13], d_render_data[21], d_render_data[29], 
+        d_render_data[4], d_render_data[12], d_render_data[20], d_render_data[28], 
+        d_render_data[3], d_render_data[11], d_render_data[19], d_render_data[27], 
+        d_render_data[2], d_render_data[10], d_render_data[18], d_render_data[26], 
+        d_render_data[1], d_render_data[ 9], d_render_data[17], d_render_data[25], 
+        d_render_data[0], d_render_data[ 8], d_render_data[16], d_render_data[24] 
     };
 
     renderer renderer(
@@ -133,13 +137,13 @@ module gfx(
         .reset(reset),
 
         // Data interface
-        .render_idx(render_idx_r),
+        .render_idx(q_render_idx),
         .render_data(render_data),
         .render_start(render_start),
-        .is_sprite(render_is_sprite_r),
-        .hflip(render_hflip_r),
-        .palette(render_palette_r),
-        .priority(render_priority_r),
+        .is_sprite(q_render_is_sprite),
+        .hflip(q_render_hflip),
+        .palette(q_render_palette),
+        .render_priority(q_render_priority),
         .last_pixel(render_last_pixel),
         .spr_collision(spr_collision),
         .busy(render_busy),
@@ -152,200 +156,197 @@ module gfx(
     //////////////////////////////////////////////////////////////////////////
     // Data fetching
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] spr_y    = spr_idx_r[0] ? vdata[15:8] : vdata[7:0];
+    wire [7:0] spr_y    = q_spr_idx[0] ? vdata[15:8] : vdata[7:0];
     wire [7:0] spr_tile = vdata[15:8];
     wire [7:0] spr_x    = vdata[7:0];
 
     always @* begin
-        hscroll_next          = hscroll_r;
-        vscroll_next          = vscroll_r;
-
-        col_next              = col_r;
-        vaddr_next            = vaddr_r;
-        state_next            = state_r;
-        nxtstate_next         = nxtstate_r;
-        map_entry_next        = map_entry_r;
-        busy_next             = busy_r;
-        render_idx_next       = render_idx_r;
-        linesel_next          = linesel_r;
-        render_data_next      = render_data_r;
-        spr_idx_next          = spr_idx_r;
-        spr_y_next            = spr_y_r;
-        spr_cnt_next          = spr_cnt_r;
-        render_is_sprite_next = render_is_sprite_r;
-        render_hflip_next     = render_hflip_r;
-        render_palette_next   = render_palette_r;
-        render_priority_next  = render_priority_r;
-        render_start          = 1'b0;
-        spr_overflow          = 1'b0;
+        d_hscroll          = q_hscroll;
+        d_vscroll          = q_vscroll;
+        d_col              = q_col;
+        d_vaddr            = q_vaddr;
+        d_state            = q_state;
+        d_nxtstate         = q_nxtstate;
+        d_map_entry        = q_map_entry;
+        d_busy             = q_busy;
+        d_render_idx       = q_render_idx;
+        d_linesel          = q_linesel;
+        d_render_data      = q_render_data;
+        d_spr_idx          = q_spr_idx;
+        d_spr_y            = q_spr_y;
+        d_spr_cnt          = q_spr_cnt;
+        d_render_is_sprite = q_render_is_sprite;
+        d_render_hflip     = q_render_hflip;
+        d_render_palette   = q_render_palette;
+        d_render_priority  = q_render_priority;
+        render_start       = 1'b0;
+        spr_overflow       = 1'b0;
 
         if (start) begin
             if (hscroll_inhibit && line < 8'd16)
-                hscroll_next      = 8'd0;
+                d_hscroll = 8'd0;
             else
-                hscroll_next      = hscroll;
+                d_hscroll = hscroll;
 
             if (line == 8'd0)
-                vscroll_next      = vscroll;
+                d_vscroll = vscroll;
 
-            busy_next             = 1'b1;
-            linesel_next          = !linesel_r;
-            spr_idx_next          = 7'd0;
-            spr_cnt_next          = 4'd0;
+            d_busy         = 1'b1;
+            d_linesel      = !q_linesel;
+            d_spr_idx      = 7'd0;
+            d_spr_cnt      = 4'd0;
 
-            state_next            = ST_MAP1;
-            render_idx_next       = hscroll_next;
-            col_next              = 5'd0;
+            d_state        = ST_MAP1;
+            d_render_idx   = d_hscroll;
+            d_col          = 6'd0;
 
-        end else if (busy_r) begin
-            case (state_r)
+        end else if (q_busy) begin
+            case (q_state)
                 ST_DONE: begin
                 end
 
                 ST_MAP1: begin
-                    if (col_r[5]) begin
-                        state_next = ST_DONE;
-                        state_next = ST_SPR1;
+                    if (q_col[5]) begin
+                        d_state = ST_DONE;
+                        d_state = ST_SPR1;
                     end else begin
-                        vaddr_next = map_addr;
-                        state_next = ST_MAP2;
+                        d_vaddr = map_addr;
+                        d_state = ST_MAP2;
                     end
                 end
 
                 ST_MAP2: begin
-                    map_entry_next        = vdata;
+                    d_map_entry        = vdata;
 
-                    vaddr_next            = pat_addr;
+                    d_vaddr            = pat_addr;
 
-                    state_next            = ST_PAT1;
-                    nxtstate_next         = ST_MAP1;
-                    col_next              = col_r + 6'd1;
+                    d_state            = ST_PAT1;
+                    d_nxtstate         = ST_MAP1;
+                    d_col              = q_col + 6'd1;
 
-                    render_hflip_next     = tile_hflip;
-                    render_palette_next   = tile_palette;
-                    render_priority_next  = tile_priority;
-                    render_is_sprite_next = 1'b0;
+                    d_render_hflip     = tile_hflip;
+                    d_render_palette   = tile_palette;
+                    d_render_priority  = tile_priority;
+                    d_render_is_sprite = 1'b0;
                 end
 
                 ST_SPR1: begin
-                    if (spr_idx_r[6]) begin
-                        state_next = ST_DONE;
+                    if (q_spr_idx[6]) begin
+                        d_state = ST_DONE;
                     end else begin
-                        vaddr_next = spr_addr_y;
-                        state_next = ST_SPR2;
+                        d_vaddr = spr_addr_y;
+                        d_state = ST_SPR2;
                     end
                 end
 
                 ST_SPR2: begin
-                    spr_y_next = spr_y + 8'd1;
-                    vaddr_next = spr_addr_nx;
-                    state_next = ST_SPR3;
+                    d_spr_y = spr_y + 8'd1;
+                    d_vaddr = spr_addr_nx;
+                    d_state = ST_SPR3;
                 end
 
                 ST_SPR3: begin
-                    if (spr_y_r == 8'hD1) begin
+                    if (q_spr_y == 8'hD1) begin
                         // Terminator detected, skip remaining sprites
-                        state_next = ST_DONE;
+                        d_state = ST_DONE;
 
                     end else if (spr_on_line) begin
-                        if (spr_cnt_r == 4'd8) begin
+                        if (q_spr_cnt == 4'd8) begin
                             // Draw a maximum of 8 sprites on a line
-                            state_next   = ST_DONE;
+                            d_state      = ST_DONE;
                             spr_overflow = 1'b1;
                             
                         end else begin
                             // Draw sprite
-                            state_next   = ST_PAT1;
-                            spr_cnt_next = spr_cnt_r + 4'd1;
+                            d_state   = ST_PAT1;
+                            d_spr_cnt = q_spr_cnt + 4'd1;
                         end
 
                     end else begin
                         // Sprite not on this line, next
-                        state_next = ST_SPR1;
+                        d_state = ST_SPR1;
                     end
 
-                    nxtstate_next         = ST_SPR1;
+                    d_nxtstate         = ST_SPR1;
 
-                    vaddr_next[12]        = base_sprpat;
-                    vaddr_next[11:5]      = spr_tile[7:1];
-                    vaddr_next[4]         = spr_h16 ? spr_line[3] : spr_tile[0];
-                    vaddr_next[3:1]       = spr_line[2:0];
-                    vaddr_next[0]         = 1'b0;
+                    d_vaddr[12]        = base_sprpat;
+                    d_vaddr[11:5]      = spr_tile[7:1];
+                    d_vaddr[4]         = spr_h16 ? spr_line[3] : spr_tile[0];
+                    d_vaddr[3:1]       = spr_line[2:0];
+                    d_vaddr[0]         = 1'b0;
 
-                    render_idx_next       = spr_x;
-                    render_hflip_next     = 1'b0;
-                    render_palette_next   = 1'b1;
-                    render_priority_next  = 1'b0;
-                    render_is_sprite_next = 1'b1;
+                    d_render_idx       = spr_x;
+                    d_render_hflip     = 1'b0;
+                    d_render_palette   = 1'b1;
+                    d_render_priority  = 1'b0;
+                    d_render_is_sprite = 1'b1;
 
-                    spr_idx_next          = spr_idx_r + 7'd1;
+                    d_spr_idx          = q_spr_idx + 7'd1;
                 end
 
                 ST_PAT1: begin
-                    render_data_next[31:24] = vdata[ 7:0];
-                    render_data_next[23:16] = vdata[15:8];
-                    vaddr_next[0]           = 1'b1;
-                    state_next              = ST_PAT2;
+                    d_render_data[31:24] = vdata[ 7:0];
+                    d_render_data[23:16] = vdata[15:8];
+                    d_vaddr[0]           = 1'b1;
+                    d_state              = ST_PAT2;
                 end
 
                 ST_PAT2: begin
                     if (!render_busy || render_last_pixel) begin
-                        render_data_next[15:8] = vdata[ 7:0];
-                        render_data_next[7:0]  = vdata[15:8];
-                        render_start           = 1'b1;
-                        state_next             = nxtstate_r;
+                        d_render_data[15:8] = vdata[ 7:0];
+                        d_render_data[7:0]  = vdata[15:8];
+                        render_start        = 1'b1;
+                        d_state             = q_nxtstate;
                     end
                 end
 
+                default: d_state = ST_DONE;
             endcase
 
-            if (render_start) render_idx_next = render_idx_r + 8'd8;
-
+            if (render_start) d_render_idx = q_render_idx + 8'd8;
         end
     end
 
-    always @(posedge clk) begin
+    always @(posedge clk or posedge reset) begin
         if (reset) begin
-            hscroll_r          <= 8'd0;
-            vscroll_r          <= 8'd0;
-
-            col_r              <= 6'd0;
-            vaddr_r            <= 13'b0;
-            state_r            <= ST_DONE;
-            nxtstate_r         <= ST_DONE;
-            map_entry_r        <= 16'b0;
-            busy_r             <= 1'b0;
-            render_idx_r       <= 9'd0;
-            linesel_r          <= 1'b0;
-            render_data_r      <= 32'b0;
-            spr_idx_r          <= 7'b0;
-            spr_y_r            <= 8'b0;
-            spr_cnt_r          <= 4'b0;
-            render_is_sprite_r <= 1'b0;
-            render_hflip_r     <= 1'b0;
-            render_palette_r   <= 2'b0;
-            render_priority_r  <= 1'b0;
+            q_hscroll          <= 8'd0;
+            q_vscroll          <= 8'd0;
+            q_col              <= 6'd0;
+            q_vaddr            <= 13'b0;
+            q_state            <= ST_DONE;
+            q_nxtstate         <= ST_DONE;
+            q_map_entry        <= 16'b0;
+            q_busy             <= 1'b0;
+            q_render_idx       <= 8'd0;
+            q_linesel          <= 1'b0;
+            q_render_data      <= 32'b0;
+            q_spr_idx          <= 7'b0;
+            q_spr_y            <= 8'b0;
+            q_spr_cnt          <= 4'b0;
+            q_render_is_sprite <= 1'b0;
+            q_render_hflip     <= 1'b0;
+            q_render_palette   <= 1'b0;
+            q_render_priority  <= 1'b0;
 
         end else begin
-            hscroll_r          <= hscroll_next;
-            vscroll_r          <= vscroll_next;
-
-            col_r              <= col_next;
-            vaddr_r            <= vaddr_next;
-            state_r            <= state_next;
-            nxtstate_r         <= nxtstate_next;
-            map_entry_r        <= map_entry_next;
-            busy_r             <= busy_next;
-            render_idx_r       <= render_idx_next;
-            linesel_r          <= linesel_next;
-            render_data_r      <= render_data_next;
-            spr_idx_r          <= spr_idx_next;
-            spr_y_r            <= spr_y_next;
-            spr_cnt_r          <= spr_cnt_next;
-            render_is_sprite_r <= render_is_sprite_next;
-            render_hflip_r     <= render_hflip_next;
-            render_palette_r   <= render_palette_next;
-            render_priority_r  <= render_priority_next;
+            q_hscroll          <= d_hscroll;
+            q_vscroll          <= d_vscroll;
+            q_col              <= d_col;
+            q_vaddr            <= d_vaddr;
+            q_state            <= d_state;
+            q_nxtstate         <= d_nxtstate;
+            q_map_entry        <= d_map_entry;
+            q_busy             <= d_busy;
+            q_render_idx       <= d_render_idx;
+            q_linesel          <= d_linesel;
+            q_render_data      <= d_render_data;
+            q_spr_idx          <= d_spr_idx;
+            q_spr_y            <= d_spr_y;
+            q_spr_cnt          <= d_spr_cnt;
+            q_render_is_sprite <= d_render_is_sprite;
+            q_render_hflip     <= d_render_hflip;
+            q_render_palette   <= d_render_palette;
+            q_render_priority  <= d_render_priority;
         end
     end
 

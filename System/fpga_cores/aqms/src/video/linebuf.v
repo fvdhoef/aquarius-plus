@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module linebuf(
     input  wire        clk,
 
@@ -17,6 +20,8 @@ module linebuf(
     wire [7:0] lb_rddata2;
     assign rddata2 = lb_rddata2[4:0];
 
+    wire [0:0] ram_dopa, ram_dopb;  // unused
+
     RAMB16_S9_S9 #(
         .INIT_A(9'h000),                // Value of output RAM registers on Port A at startup
         .INIT_B(9'h000),                // Value of output RAM registers on Port B at startup
@@ -32,7 +37,7 @@ module linebuf(
         .SSRA(1'b0),
         .ADDRA(addr1),
         .DOA(rddata1),
-        .DOPA(),
+        .DOPA(ram_dopa),
         .DIA(wrdata1),
         .DIPA(1'b0),
         .ENA(1'b1),
@@ -42,7 +47,7 @@ module linebuf(
         .SSRB(1'b0),
         .ADDRB(addr2),
         .DOB(lb_rddata2),
-        .DOPB(),
+        .DOPB(ram_dopb),
         .DIB(8'b0),
         .DIPB(1'b0),
         .ENB(1'b1),

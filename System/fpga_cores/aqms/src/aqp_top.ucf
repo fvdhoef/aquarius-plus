@@ -55,7 +55,7 @@ NET "exp[5]"            LOC = P58;
 NET "exp[6]"            LOC = P57;
 NET "exp[7]"            LOC = P56;
 NET "exp[8]"            LOC = P51;
-NET "exp[9]"            LOC = P50;
+NET "has_z80"           LOC = P50;
 NET "vga_r[0]"          LOC = P29;
 NET "vga_r[1]"          LOC = P30;
 NET "vga_r[2]"          LOC = P32;
@@ -98,7 +98,7 @@ NET "hc2[6]"            LOC = P93;
 NET "hc2[7]"            LOC = P88;
 NET "hc2[8]"            LOC = P85;
 
-NET "ebus_int_n" PULLUP;
+NET "printer_in" PULLUP;
 
 NET "ebus_d[0]" PULLUP;
 NET "ebus_d[1]" PULLUP;
@@ -126,6 +126,12 @@ NET "hc2[4]" PULLUP;
 NET "hc2[5]" PULLUP;
 NET "hc2[6]" PULLUP;
 NET "hc2[7]" PULLUP;
+
+NET "has_z80"       PULLUP;
+NET "ebus_int_n"    PULLUP;
+NET "ebus_busreq_n" PULLUP;
+NET "ebus_busack_n" PULLUP;
+NET "ebus_reset_n"  PULLUP;
 
 NET "sysclk"            IOSTANDARD = LVTTL;
 NET "ebus_reset_n"      IOSTANDARD = LVTTL;
@@ -184,7 +190,7 @@ NET "exp[5]"            IOSTANDARD = LVTTL;
 NET "exp[6]"            IOSTANDARD = LVTTL;
 NET "exp[7]"            IOSTANDARD = LVTTL;
 NET "exp[8]"            IOSTANDARD = LVTTL;
-NET "exp[9]"            IOSTANDARD = LVTTL;
+NET "has_z80"           IOSTANDARD = LVTTL;
 NET "vga_r[0]"          IOSTANDARD = LVTTL;
 NET "vga_r[1]"          IOSTANDARD = LVTTL;
 NET "vga_r[2]"          IOSTANDARD = LVTTL;
@@ -227,9 +233,9 @@ NET "hc2[6]"            IOSTANDARD = LVTTL;
 NET "hc2[7]"            IOSTANDARD = LVTTL;
 NET "hc2[8]"            IOSTANDARD = LVTTL;
 
-NET "sysclk" TNM_NET = sysclk;
-NET "clk"    TNM_NET = clk28;
-NET "vclk"   TNM_NET = vclk;
+NET "sysclk"    TNM_NET = sysclk;
+NET "clk"       TNM_NET = clk28;
+NET "video_clk" TNM_NET = vclk;
 
 TIMESPEC TS_sysclk = PERIOD "sysclk" 14.31818 MHz HIGH 50%;
 TIMESPEC TS_clk    = PERIOD "clk28"  28.63636 MHz HIGH 50%;

@@ -1,18 +1,20 @@
-module clkctrl(
+`default_nettype none
+`timescale 1 ns / 1 ps
+
+module aqp_clkctrl(
     input  wire clk_in,
     output wire clk_out,
 
-    output wire vclk,
+    output wire video_clk,
     input  wire video_mode
 );
 
-`ifdef __ICARUS__
-    assign clk_out = clk_in;
-    assign vclk = clk_in;
-`else
     wire clk0;
     wire clk28;
     assign clk_out = clk28;
+
+    wire clk180, clk270, clk2x180, clk90, clkdv, clkfx, clkfx180, dcm_locked, psdone;    // unused
+    wire [7:0] status;  // unused
 
     // DCM to multiply the 14.31818MHz by 2 to 28.63636MHz
     wire clk2x;
@@ -35,8 +37,17 @@ module clkctrl(
     )
     dcm(
         .CLK0(clk0),
+        .CLK180(clk180),
+        .CLK270(clk270),
         .CLK2X(clk2x),
-        .LOCKED(),
+        .CLK2X180(clk2x180),
+        .CLK90(clk90),
+        .CLKDV(clkdv),
+        .CLKFX(clkfx),
+        .CLKFX180(clkfx180),
+        .LOCKED(dcm_locked),
+        .PSDONE(psdone),
+        .STATUS(status),
         .CLKFB(clk0),
         .CLKIN(clk_in),
         .DSSEN(1'b0),
@@ -49,6 +60,9 @@ module clkctrl(
 
     wire clk25;
     wire pllfb;
+
+    wire pll_clkout1, pll_clkout2, pll_clkout3, pll_clkout4, pll_clkout5;   // unused
+    wire pll_locked; // unused
 
     // PLL to synthesize 25.175MHz from the 28.63636MHz clock from the DCM
     PLL_BASE #(
@@ -83,12 +97,12 @@ module clkctrl(
     pll(
         .CLKFBOUT(pllfb),
         .CLKOUT0(clk25),
-        .CLKOUT1(),
-        .CLKOUT2(),
-        .CLKOUT3(),
-        .CLKOUT4(),
-        .CLKOUT5(),
-        .LOCKED(),
+        .CLKOUT1(pll_clkout1),
+        .CLKOUT2(pll_clkout2),
+        .CLKOUT3(pll_clkout3),
+        .CLKOUT4(pll_clkout4),
+        .CLKOUT5(pll_clkout5),
+        .LOCKED(pll_locked),
         .CLKFBIN(pllfb),
         .CLKIN(clk28),
         .RST(1'b0)
@@ -99,12 +113,10 @@ module clkctrl(
         .CLK_SEL_TYPE("SYNC")
     )
     clksel(
-        .O(vclk),
+        .O(video_clk),
         .I0(clk28),
         .I1(clk25),
         .S(video_mode)
     );
-
-`endif
 
 endmodule

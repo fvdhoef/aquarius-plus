@@ -1,4 +1,7 @@
-module top(
+`default_nettype none
+`timescale 1 ns / 1 ps
+
+module aqp_top(
     input  wire        sysclk,          // 14.31818MHz
 
     // Z80 bus interface
@@ -23,13 +26,14 @@ module top(
     output wire        audio_r,
 
     // Other
-    output wire        cassette_out,        // Unused
-    input  wire        cassette_in,         // Unused
-    output wire        printer_out,         // Unused
-    input  wire        printer_in,          // Unused
+    output wire        cassette_out,
+    input  wire        cassette_in,
+    output wire        printer_out,
+    input  wire        printer_in,
 
     // Misc
-    output wire  [9:0] exp,
+    output wire  [8:0] exp,
+    input  wire        has_z80,
 
     // Hand controller interface
     inout  wire  [8:0] hc1,
@@ -60,8 +64,7 @@ module top(
     assign ebus_cart_ce_n = 1'b1;
     assign cassette_out   = 1'b0;
     assign printer_out    = 1'b1;
-    assign exp            = 10'b0;
-    assign esp_notify     = 1'b0;
+    assign exp            = 9'b0;
 
     wire [15:0] spibm_a;
     wire  [7:0] spibm_wrdata;
@@ -80,19 +83,19 @@ module top(
     wire [7:0] video_hcnt;
     wire       video_irq;
 
-    reg startup_mode_r = 1'b1;
+    reg q_startup_mode = 1'b1;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
-    wire clk, vclk;
+    wire clk, video_clk;
     wire video_mode;
 
-    clkctrl clkctrl(
+    aqp_clkctrl clkctrl(
         .clk_in(sysclk),    // 14.31818MHz
         .clk_out(clk),      // 28.63636MHz
 
-        .vclk(vclk),        // 25.175MHz
+        .video_clk(video_clk),        // 25.175MHz
         .video_mode(1'b1)
     );
 
@@ -100,35 +103,38 @@ module top(
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
     wire reset;
+    wire ebus_phi_clken;
 
-    sysctrl sysctrl(
+    aqp_sysctrl sysctrl(
         .sysclk(clk),
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
 
         .turbo_mode(1'b0),
+        .turbo_unlimited(1'b0),
 
         .ebus_phi(ebus_phi),
+        .ebus_phi_clken(ebus_phi_clken),
         .reset(reset));
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
-    reg [4:0] reg_bank0_r;
-    reg [4:0] reg_bank1_r;
-    reg [4:0] reg_bank2_r;
-    reg [7:0] reg_ramctrl_r;
+    reg [4:0] q_reg_bank0;
+    reg [4:0] q_reg_bank1;
+    reg [4:0] q_reg_bank2;
+    reg [7:0] q_reg_ramctrl;
 
     // Select banking register based on upper address bits
     always @* begin
         ebus_ba = 5'b0;
 
         if (ebus_a[15:14] == 2'b00 && ebus_a >= 16'h400)
-            ebus_ba = reg_bank0_r;
+            ebus_ba = q_reg_bank0;
         else if (ebus_a[15:14] == 2'b01)
-            ebus_ba = reg_bank1_r;
+            ebus_ba = q_reg_bank1;
         else if (ebus_a[15:14] == 2'b10)
-            ebus_ba = reg_bank2_r;
+            ebus_ba = q_reg_bank2;
     end
 
     // Register data from external bus
@@ -140,13 +146,13 @@ module top(
     always @(posedge clk) ebus_wr_n_r <= {ebus_wr_n_r[1:0], ebus_wr_n};
     always @(posedge clk) ebus_rd_n_r <= {ebus_rd_n_r[1:0], ebus_rd_n};
 
-    wire bus_read       = ebus_rd_n_r[2:1] == 3'b10;
-    wire bus_read_done  = ebus_rd_n_r[2:1] == 3'b01;
-    wire bus_write      = ebus_wr_n_r[2:1] == 3'b10;
-    wire bus_write_done = ebus_wr_n_r[2:1] == 3'b01;
+    wire bus_read       = ebus_rd_n_r[2:1] == 2'b10;
+    wire bus_read_done  = ebus_rd_n_r[2:1] == 2'b01;
+    wire bus_write      = ebus_wr_n_r[2:1] == 2'b10;
+    wire bus_write_done = ebus_wr_n_r[2:1] == 2'b01;
 
     // Memory space decoding
-    wire sel_mem_introm = startup_mode_r && !ebus_mreq_n && ebus_a[15:14] == 2'b00;
+    wire sel_mem_introm = q_startup_mode && !ebus_mreq_n && ebus_a[15:14] == 2'b00;
     wire sel_mem_intram = !ebus_mreq_n && ebus_a[15:14] == 2'b11;
 
     wire sel_mem_bank2   = !ebus_mreq_n && ebus_a == 16'hFFFF;
@@ -156,8 +162,8 @@ module top(
 
     // IO space decoding
     wire [2:0] io_addr         = {ebus_a[7], ebus_a[6], ebus_a[0]};
-    wire       sel_io_espctrl  = startup_mode_r && !ebus_iorq_n && ebus_a[7:0] == 8'h10;
-    wire       sel_io_espdata  = startup_mode_r && !ebus_iorq_n && ebus_a[7:0] == 8'h11;
+    wire       sel_io_espctrl  = q_startup_mode && !ebus_iorq_n && ebus_a[7:0] == 8'h10;
+    wire       sel_io_espdata  = q_startup_mode && !ebus_iorq_n && ebus_a[7:0] == 8'h11;
     wire       sel_8bit        = sel_io_espctrl | sel_io_espdata;
 
     wire       sel_io_3f       = !sel_8bit && !ebus_iorq_n && io_addr == 3'b001;
@@ -170,11 +176,11 @@ module top(
     wire       sel_io_dd       = !sel_8bit && !ebus_iorq_n && io_addr == 3'b111;
 
     wire       sel_internal    = !ebus_iorq_n | sel_mem_intram | sel_mem_introm;
-    wire       allow_sel_mem   = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && startup_mode_r));
+    wire       allow_sel_mem   = !ebus_mreq_n && !sel_internal && (ebus_wr_n || (!ebus_wr_n && q_startup_mode));
     wire       sel_mem_ram     = allow_sel_mem;
 
     assign     ebus_ram_ce_n   = !sel_mem_ram;
-    assign     ebus_ram_we_n   = !(!ebus_wr_n && sel_mem_ram && startup_mode_r);
+    assign     ebus_ram_we_n   = !(!ebus_wr_n && sel_mem_ram && q_startup_mode);
 
     wire       ram_wren        = sel_mem_intram && bus_write;
     wire       io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
@@ -184,54 +190,50 @@ module top(
 
     // Generate rddone signal for video
     reg io_video_rddone;
-    reg io_video_reading_r;
+    reg q_io_video_reading;
     always @(posedge clk) begin
         io_video_rddone <= 1'b0;
-        if (io_video_rden) io_video_reading_r <= 1'b1;
-        if (io_video_reading_r && bus_read_done) begin
-            io_video_reading_r <= 1'b0;
+        if (io_video_rden) q_io_video_reading <= 1'b1;
+        if (q_io_video_reading && bus_read_done) begin
+            q_io_video_reading <= 1'b0;
             io_video_rddone <= 1'b1;
         end
     end
 
     // Generate wrdone signal for video
-    reg io_video_wrdone, io_video_writing_r;
+    reg io_video_wrdone, q_io_video_writing;
     always @(posedge clk) begin
         io_video_wrdone <= 1'b0;
-        if (io_video_wren) io_video_writing_r <= 1'b1;
-        if (io_video_writing_r && bus_write_done) begin
-            io_video_writing_r <= 1'b0;
+        if (io_video_wren) q_io_video_writing <= 1'b1;
+        if (q_io_video_writing && bus_write_done) begin
+            q_io_video_writing <= 1'b0;
             io_video_wrdone <= 1'b1;
         end
     end
 
     // Handle region detection at port $3F
-    reg [1:0] region_bits_r;
-    always @(posedge clk or posedge reset) begin
-        if (reset)
-            region_bits_r <= 2'b11;
-        else begin
-            if (sel_io_3f && bus_write) region_bits_r <= {wrdata[7], wrdata[5]};
-        end
-    end
+    reg [1:0] q_region_bits;
+    always @(posedge clk or posedge reset)
+        if (reset)                       q_region_bits <= 2'b11;
+        else if (sel_io_3f && bus_write) q_region_bits <= {wrdata[7], wrdata[5]};
 
     wire [7:0] port_dc, port_dd;
 
     reg [7:0] rddata;
     always @* begin
-        rddata <= 8'hFF;
+        rddata = 8'hFF;
 
-        if (sel_mem_introm)  rddata <= rddata_rom;
-        if (sel_mem_intram)  rddata <= rddata_ram;
+        if (sel_mem_introm)  rddata = rddata_rom;
+        if (sel_mem_intram)  rddata = rddata_ram;
 
-        if (sel_io_espctrl)  rddata <= rddata_espctrl;
-        if (sel_io_espdata)  rddata <= rddata_espdata;
-        if (sel_io_vcnt)     rddata <= video_vcnt;
-        if (sel_io_hcnt)     rddata <= video_hcnt;
-        if (sel_io_vdp_data) rddata <= rddata_io_video;
-        if (sel_io_vdp_ctrl) rddata <= rddata_io_video;
-        if (sel_io_dc)       rddata <= port_dc;
-        if (sel_io_dd)       rddata <= port_dd;
+        if (sel_io_espctrl)  rddata = rddata_espctrl;
+        if (sel_io_espdata)  rddata = rddata_espdata;
+        if (sel_io_vcnt)     rddata = video_vcnt;
+        if (sel_io_hcnt)     rddata = video_hcnt;
+        if (sel_io_vdp_data) rddata = rddata_io_video;
+        if (sel_io_vdp_ctrl) rddata = rddata_io_video;
+        if (sel_io_dc)       rddata = port_dc;
+        if (sel_io_dd)       rddata = port_dd;
     end
 
     wire   ebus_d_en  = !ebus_rd_n && sel_internal;
@@ -240,21 +242,20 @@ module top(
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            startup_mode_r <= 1'b1;
-
-            reg_bank0_r   <= 5'd0;
-            reg_bank1_r   <= 5'd1;
-            reg_bank2_r   <= 5'd2;
-            reg_ramctrl_r <= 8'd0;
+            q_startup_mode <= 1'b1;
+            q_reg_bank0    <= 5'd0;
+            q_reg_bank1    <= 5'd1;
+            q_reg_bank2    <= 5'd2;
+            q_reg_ramctrl  <= 8'd0;
 
         end else begin
             if (sel_mem_ramctrl && bus_write) begin
-                startup_mode_r <= 1'b0;
-                reg_ramctrl_r  <= wrdata;
+                q_startup_mode <= 1'b0;
+                q_reg_ramctrl  <= wrdata;
             end
-            if (sel_mem_bank0 && bus_write) reg_bank0_r <= wrdata[4:0];
-            if (sel_mem_bank1 && bus_write) reg_bank1_r <= wrdata[4:0];
-            if (sel_mem_bank2 && bus_write) reg_bank2_r <= wrdata[4:0];
+            if (sel_mem_bank0 && bus_write) q_reg_bank0 <= wrdata[4:0];
+            if (sel_mem_bank1 && bus_write) q_reg_bank1 <= wrdata[4:0];
+            if (sel_mem_bank2 && bus_write) q_reg_bank2 <= wrdata[4:0];
         end
     end
 
@@ -285,49 +286,53 @@ module top(
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
-    wire esp_txvalid = sel_io_espdata && bus_write;
-    wire esp_txbreak = sel_io_espctrl && bus_write && wrdata[7];
-    wire esp_txbusy;
+    wire [8:0] esp_tx_data = sel_io_espctrl ? 9'b100000000 : {1'b0, wrdata};
+    wire       esp_tx_wr   = bus_write && (sel_io_espdata || (sel_io_espctrl && wrdata[7]));
+    wire       esp_rx_rd   = bus_read  &&  sel_io_espdata;
+    wire       esp_tx_fifo_full;
+    wire [8:0] esp_rx_data;
+    wire       esp_rx_empty;
+    wire       esp_rx_fifo_overflow;
+    wire       esp_rx_framing_error;
 
-    wire esp_rxfifo_not_empty;
-    wire esp_rxfifo_read = sel_io_espdata && bus_read;
-    wire esp_rxfifo_overflow, esp_rx_framing_error, esp_rx_break;
+    reg q_esp_rx_fifo_overflow, q_esp_rx_framing_error;
 
-    reg [2:0] esp_ctrl_status_r;
     always @(posedge clk or posedge reset) begin
-        if (reset)
-            esp_ctrl_status_r <= 3'b0;
-        else begin
-            if (sel_io_espctrl && bus_write) esp_ctrl_status_r <= esp_ctrl_status_r & ~wrdata[4:2];
+        if (reset) begin
+            q_esp_rx_fifo_overflow <= 1'b0;
+            q_esp_rx_framing_error <= 1'b0;
+        end else begin
+            if (sel_io_espctrl && bus_write) begin
+                q_esp_rx_fifo_overflow <= q_esp_rx_fifo_overflow & ~wrdata[4];
+                q_esp_rx_framing_error <= q_esp_rx_framing_error & ~wrdata[3];
+            end
 
-            if (esp_rxfifo_overflow)  esp_ctrl_status_r[2] <= 1'b1;
-            if (esp_rx_framing_error) esp_ctrl_status_r[1] <= 1'b1;
-            if (esp_rx_break)         esp_ctrl_status_r[0] <= 1'b1;
+            if (esp_rx_fifo_overflow) q_esp_rx_fifo_overflow <= 1'b1;
+            if (esp_rx_framing_error) q_esp_rx_framing_error <= 1'b1;
         end
     end
 
-    assign rddata_espctrl = {3'b0, esp_ctrl_status_r, esp_txbusy, esp_rxfifo_not_empty};
+    assign rddata_espctrl = {3'b0, q_esp_rx_fifo_overflow, q_esp_rx_framing_error, esp_rx_data[8], esp_tx_fifo_full, !esp_rx_empty};
+    assign rddata_espdata = esp_rx_data[7:0];
 
-    esp_uart esp_uart(
-        .rst(reset),
+    aqp_esp_uart esp_uart(
         .clk(clk),
+        .reset(reset),
 
-        .tx_data(wrdata),
-        .tx_valid(esp_txvalid),
-        .tx_break(esp_txbreak),
-        .tx_busy(esp_txbusy),
+        .txfifo_data(esp_tx_data),
+        .txfifo_wr(esp_tx_wr),
+        .txfifo_full(esp_tx_fifo_full),
 
-        .rxfifo_data(rddata_espdata),
-        .rxfifo_not_empty(esp_rxfifo_not_empty),
-        .rxfifo_read(esp_rxfifo_read),
-        .rxfifo_overflow(esp_rxfifo_overflow),
+        .rxfifo_data(esp_rx_data),
+        .rxfifo_rd(esp_rx_rd),
+        .rxfifo_empty(esp_rx_empty),
+        .rxfifo_overflow(esp_rx_fifo_overflow),
         .rx_framing_error(esp_rx_framing_error),
-        .rx_break(esp_rx_break),
 
-        .uart_rxd(esp_rx),
-        .uart_txd(esp_tx),
-        .uart_cts(esp_cts),
-        .uart_rts(esp_rts));
+        .esp_rx(esp_rx),
+        .esp_tx(esp_tx),
+        .esp_cts(esp_cts),
+        .esp_rts(esp_rts));
 
     //////////////////////////////////////////////////////////////////////////
     // Video
@@ -336,7 +341,7 @@ module top(
         .clk(clk),
         .reset(reset),
 
-        .vclk(vclk),
+        .video_clk(video_clk),
 
         .io_portsel(ebus_a[0]),
         .io_rddata(rddata_io_video),
@@ -366,16 +371,16 @@ module top(
     assign hc2[8] = 1'b0;
 
     // Synchronize inputs
-    reg [7:0] hctrl1_r, hctrl1_rr;
-    reg [7:0] hctrl2_r, hctrl2_rr;
-    always @(posedge clk) hctrl1_r  <= hctrl1;
-    always @(posedge clk) hctrl1_rr <= hctrl1_r;
-    always @(posedge clk) hctrl2_r  <= hctrl2;
-    always @(posedge clk) hctrl2_rr <= hctrl2_r;
+    reg [7:0] q_hctrl1, q2_hctrl1;
+    reg [7:0] q_hctrl2, q2_hctrl2;
+    always @(posedge clk) q_hctrl1  <= hctrl1;
+    always @(posedge clk) q2_hctrl1 <= q_hctrl1;
+    always @(posedge clk) q_hctrl2  <= hctrl2;
+    always @(posedge clk) q2_hctrl2 <= q_hctrl2;
 
     // Combine data from ESP with data from handcontroller input
-    wire [7:0] hctrl1_data = hctrl1_rr & spi_hctrl1;
-    wire [7:0] hctrl2_data = hctrl2_rr & spi_hctrl2;
+    wire [7:0] hctrl1_data = q2_hctrl1 & spi_hctrl1;
+    wire [7:0] hctrl2_data = q2_hctrl2 & spi_hctrl2;
 
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
@@ -399,30 +404,25 @@ module top(
     wire joypad_b_up    = hctrl2_data[2];
 
     assign port_dc = {joypad_b_down, joypad_b_up, joypad_a_tr, joypad_a_tl, joypad_a_right, joypad_a_left, joypad_a_down, joypad_a_up};
-    assign port_dd = {region_bits_r, 2'b11, joypad_b_tr, joypad_b_tl, joypad_b_right, joypad_b_left};
+    assign port_dd = {q_region_bits, 2'b11, joypad_b_tr, joypad_b_tl, joypad_b_right, joypad_b_left};
 
     wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
-    wire        spibm_busreq;
+    wire        spibm_busreq_n;
 
     wire  [7:0] kbbuf_data;
     wire        kbbuf_wren;
 
-    assign spibm_en      = spibm_busreq && !ebus_busack_n;
+    assign spibm_en      = !spibm_busreq_n && !ebus_busack_n;
     assign ebus_a        = spibm_en ? spibm_a      : 16'bZ;
     assign ebus_rd_n     = spibm_en ? spibm_rd_n   : 1'bZ;
     assign ebus_wr_n     = spibm_en ? spibm_wr_n   : 1'bZ;
     assign ebus_mreq_n   = spibm_en ? spibm_mreq_n : 1'bZ;
     assign ebus_iorq_n   = spibm_en ? spibm_iorq_n : 1'bZ;
-    assign ebus_busreq_n = spibm_busreq ? 1'b0 : 1'bZ;
+    assign ebus_busreq_n = !spibm_busreq_n ? 1'b0 : 1'bZ;
 
-    spiregs spiregs(
+    aqp_esp_spi esp_spi(
         .clk(clk),
         .reset(reset),
-
-        .esp_ssel_n(esp_ssel_n),
-        .esp_sclk(esp_sclk),
-        .esp_mosi(esp_mosi),
-        .esp_miso(esp_miso),
 
         .ebus_phi(ebus_phi),
 
@@ -434,7 +434,7 @@ module top(
         .spibm_wr_n(spibm_wr_n),
         .spibm_mreq_n(spibm_mreq_n),
         .spibm_iorq_n(spibm_iorq_n),
-        .spibm_busreq(spibm_busreq),
+        .spibm_busreq_n(spibm_busreq_n),
 
         .reset_req(reset_req),
         .keys(keys),
@@ -445,7 +445,13 @@ module top(
         .kbbuf_data(kbbuf_data),
         .kbbuf_wren(kbbuf_wren),
 
-        .video_mode(video_mode));
+        .video_mode(video_mode),
+
+        .esp_ssel_n(esp_ssel_n),
+        .esp_sclk(esp_sclk),
+        .esp_mosi(esp_mosi),
+        .esp_miso(esp_miso),
+        .esp_notify(esp_notify));
 
     //////////////////////////////////////////////////////////////////////////
     // SN76489 PSG
@@ -469,9 +475,9 @@ module top(
     wire [15:0] left_data   = psg_sample;
     wire [15:0] right_data  = psg_sample;
 
-    pwm_dac pwm_dac(
-        .rst(reset),
+    aqp_pwm_dac pwm_dac(
         .clk(clk),
+        .reset(reset),
 
         // Sample input
         .next_sample(next_sample),

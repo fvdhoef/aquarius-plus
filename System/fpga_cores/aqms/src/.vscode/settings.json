@@ -1,0 +1,10 @@
+{
+    "verilog.linting.verilator.includePath": [
+        "lint_wrappers",
+        ".",
+        "util",
+        "wrappers",
+        "video"
+    ],
+    "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
+}

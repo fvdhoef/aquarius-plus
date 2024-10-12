@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module lineattrbuf(
     input  wire        clk,
     input  wire  [7:0] idx1,
@@ -18,13 +21,15 @@ module lineattrbuf(
         wren[idx1[7:4]] = wren1;
     end
 
+    wire [15:0] ram0_spo, ram1_spo; // unused
+
     generate
         genvar i;
         for (i=0; i<16; i=i+1) begin: lineattr_gen
             RAM16X1D ram0(
                 // Port 1
                 .WCLK(clk),
-                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(),
+                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(ram0_spo[i]),
                 .D(wrdata1[0]), .WE(wren[i]),
 
                 // Port 2
@@ -34,7 +39,7 @@ module lineattrbuf(
             RAM16X1D ram1(
                 // Port 1
                 .WCLK(clk),
-                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(),
+                .A3(idx1[3]), .A2(idx1[2]), .A1(idx1[1]), .A0(idx1[0]), .SPO(ram1_spo[i]),
                 .D(wrdata1[1]), .WE(wren[i]),
 
                 // Port 2

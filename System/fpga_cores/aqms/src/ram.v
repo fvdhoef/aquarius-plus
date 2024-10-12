@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module ram(
     input  wire        clk,
     input  wire [12:0] addr,
@@ -5,11 +8,11 @@ module ram(
     input  wire  [7:0] wrdata,
     input  wire        wren);
 
-    reg [7:0] ram [8191:0];
+    reg [7:0] mem [0:8191];
 
     always @(posedge clk) begin
-        if (wren) ram[addr] <= wrdata;
-        rddata <= ram[addr];
+        if (wren) mem[addr] <= wrdata;
+        rddata <= mem[addr];
     end
 
 endmodule

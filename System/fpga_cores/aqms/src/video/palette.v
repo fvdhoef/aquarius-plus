@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module palette(
     input  wire        clk,
     input  wire  [4:0] addr,
@@ -14,14 +17,16 @@ module palette(
     assign pal_g  = pal_color[3:2];
     assign pal_b  = pal_color[5:4];
 
+    wire [6:0] rddata;  // unused
+
     generate
         genvar i;
         for (i=0; i<6; i=i+1) begin: palram_gen
             ram64x1d palram(
                 .a_clk(clk),
                 .a_addr({1'b0, addr}),
-                .a_rddata(),
-                .a_wrdata(wrdata[i & 7]),
+                .a_rddata(rddata[i]),
+                .a_wrdata(wrdata[i]),
                 .a_wren(wren),
 
                 .b_addr({1'b0, palidx}),

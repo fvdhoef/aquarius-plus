@@ -1,3 +1,6 @@
+`default_nettype none
+`timescale 1 ns / 1 ps
+
 module ram64x1d(
     input  wire       a_clk,
     input  wire [5:0] a_addr,
@@ -18,17 +21,17 @@ module ram64x1d(
     wire b_rddata0, b_rddata1, b_rddata2, b_rddata3;
 
     always @* case (a_addr[5:4])
-        2'b00: a_rddata <= a_rddata0;
-        2'b01: a_rddata <= a_rddata1;
-        2'b10: a_rddata <= a_rddata2;
-        2'b11: a_rddata <= a_rddata3;
+        2'b00: a_rddata = a_rddata0;
+        2'b01: a_rddata = a_rddata1;
+        2'b10: a_rddata = a_rddata2;
+        2'b11: a_rddata = a_rddata3;
     endcase
 
     always @* case (b_addr[5:4])
-        2'b00: b_rddata <= b_rddata0;
-        2'b01: b_rddata <= b_rddata1;
-        2'b10: b_rddata <= b_rddata2;
-        2'b11: b_rddata <= b_rddata3;
+        2'b00: b_rddata = b_rddata0;
+        2'b01: b_rddata = b_rddata1;
+        2'b10: b_rddata = b_rddata2;
+        2'b11: b_rddata = b_rddata3;
     endcase
 
     RAM16X1D #(.INIT(INIT[15:0])) ram0(
