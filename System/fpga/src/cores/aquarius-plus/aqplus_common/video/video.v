@@ -41,7 +41,7 @@ module video(
     output reg         video_hsync,
     output reg         video_vsync,
     output wire        video_newframe,
-    output wire        video_oddline,
+    output reg         video_oddline,
 
     // Register $FD value
     output wire        reg_fd_val);
@@ -166,6 +166,7 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     wire [9:0] hpos;
     wire       hsync, hblank, hlast;
+    wire [9:0] vpos10;
     wire       vsync, vnext;
     wire       blank;
 
@@ -178,14 +179,17 @@ module video(
         .hblank(hblank),
         .hlast(hlast),
 
-        .vpos(vpos),
+        .vpos(vpos10),
         .vsync(vsync),
         .vblank(vblank),
         .vnext(vnext),
         .vnewframe(video_newframe),
-        .voddline(video_oddline),
 
         .blank(blank));
+
+    always @(posedge vclk) video_oddline <= vpos10[0];
+
+    assign vpos = vpos10[9] ? 8'd255 : vpos10[8:1];
 
     wire hborder = video_mode ? blank : (hpos < 10'd32 || hpos >= 10'd672);
     wire vborder = vpos < 8'd16 || vpos >= 8'd216;

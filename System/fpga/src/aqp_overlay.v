@@ -47,11 +47,11 @@ module aqp_overlay(
     wire       vsync, vnext;
     wire       blank;
 
-    wire [7:0] vpos;
+    wire [9:0] vpos10;
+    wire [7:0] vpos = vpos10[8:1];
     wire       vblank;
 
     wire       vnewframe;
-    wire       voddline;
 
     video_timing video_timing(
         .clk(vclk),
@@ -62,12 +62,11 @@ module aqp_overlay(
         .hblank(hblank),
         .hlast(hlast),
 
-        .vpos(vpos),
+        .vpos(vpos10),
         .vsync(vsync),
         .vblank(vblank),
         .vnext(vnext),
         .vnewframe(vnewframe),
-        .voddline(voddline),
 
         .blank(blank));
 
