@@ -66,15 +66,15 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="70"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="22"/>
     </file>
-    <file xil_pn:name="src/cores/aqms/aqms_common/video/vram.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/wrappers/vram.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="69"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="7"/>
     </file>
-    <file xil_pn:name="src/cores/aqms/aqms_common/video/ram64x1d.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/wrappers/ram64x1d.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="70"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="3"/>
     </file>
-    <file xil_pn:name="src/cores/aqms/aqms_common/video/palette.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/wrappers/palette.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="71"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="9"/>
     </file>
@@ -98,7 +98,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="71"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="10"/>
     </file>
-    <file xil_pn:name="src/cores/aqms/aqms_common/video/linebuf.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/wrappers/linebuf.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="72"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="4"/>
     </file>
@@ -106,7 +106,7 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="73"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="2"/>
     </file>
-    <file xil_pn:name="src/cores/aqms/aqms_common/video/lineattrbuf.v" xil_pn:type="FILE_VERILOG">
+    <file xil_pn:name="src/cores/aqms/wrappers/lineattrbuf.v" xil_pn:type="FILE_VERILOG">
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="74"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="1"/>
     </file>
