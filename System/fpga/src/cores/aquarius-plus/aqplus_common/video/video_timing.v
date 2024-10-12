@@ -20,49 +20,51 @@ module video_timing(
 
     output wire        blank);
 
-    // Sync mode on end of frame
-    reg q_mode = 0;
-    always @(posedge clk) if (vnext) q_mode <= mode;
-
-    //////////////////////////////////////////////////////////////////////////
-    // Horizontal timing
-    //////////////////////////////////////////////////////////////////////////
-    reg  [9:0] q_hcnt = 10'd0;
-
     wire [9:0] hcnt_blank  = q_mode ? 10'd640 : 10'd704;
     wire [9:0] hcnt_hsync1 = q_mode ? 10'd656 : 10'd746;
     wire [9:0] hcnt_hsync2 = q_mode ? 10'd752 : 10'd854;
     wire [9:0] hcnt_last   = q_mode ? 10'd799 : 10'd909;
+    wire [9:0] vcnt_blank  = 10'd480;
+    wire [9:0] vcnt_hsync1 = 10'd490;
+    wire [9:0] vcnt_hsync2 = 10'd491;
+    wire [9:0] vcnt_last   = 10'd524;
 
-    wire hcnt_done = (q_hcnt == hcnt_last);
+    // Sync mode on end of frame
+    reg q_mode = 0;
+    always @(posedge clk) if (vnewframe) q_mode <= mode;
+
+    //////////////////////////////////////////////////////////////////////////
+    // Horizontal timing
+    //////////////////////////////////////////////////////////////////////////
+    reg [9:0] q_hcnt = 10'd0;
+
+    assign hlast = (q_hcnt == hcnt_last);
 
     always @(posedge(clk))
-        if (hcnt_done) q_hcnt <= 10'd0;
-        else           q_hcnt <= q_hcnt + 10'd1;
+        if (hlast) q_hcnt <= 10'd0;
+        else       q_hcnt <= q_hcnt + 10'd1;
 
-    assign hpos    = q_hcnt;
-    assign hblank  = !(q_hcnt < hcnt_blank);
-    assign hsync   = !(q_hcnt >= hcnt_hsync1 && q_hcnt < hcnt_hsync2);
-    assign hlast   = hcnt_done;
+    assign hpos   = q_hcnt;
+    assign hblank = !(q_hcnt < hcnt_blank);
+    assign hsync  = !(q_hcnt >= hcnt_hsync1 && q_hcnt < hcnt_hsync2);
 
     //////////////////////////////////////////////////////////////////////////
     // Vertical timing
     //////////////////////////////////////////////////////////////////////////
     reg  [9:0] q_vcnt = 10'd0;
-    wire [8:0] vcnt = q_vcnt[9:1];
 
-    wire vcnt_done = hcnt_done && q_vcnt == 10'd524;
+    wire vcnt_done = hlast && q_vcnt == vcnt_last;
 
     always @(posedge(clk))
-        if (vcnt_done)      q_vcnt <= 10'd0;
-        else if (hcnt_done) q_vcnt <= q_vcnt + 10'd1;
+        if (vcnt_done)  q_vcnt <= 10'd0;
+        else if (hlast) q_vcnt <= q_vcnt + 10'd1;
 
-    assign vpos    = vcnt[7:0];
-    assign vsync   = !(vcnt == 9'd245);
-    assign vblank  = !(vcnt < 9'd240);
-    assign vnext   = q_vcnt[0] & hcnt_done;
+    assign vpos    = q_vcnt[8:1];
+    assign vblank  = !(q_vcnt < vcnt_blank);
+    assign vsync   = !(q_vcnt >= vcnt_hsync1 && q_vcnt <= vcnt_hsync2);
+    assign vnext   = q_vcnt[0] && hlast;
 
-    always @(posedge clk) vnewframe <= (vcnt == 9'd240) && hcnt_done;
+    always @(posedge clk) vnewframe <= (q_vcnt == vcnt_blank) && hlast;
     always @(posedge clk) voddline  <= q_vcnt[0];
 
     //////////////////////////////////////////////////////////////////////////

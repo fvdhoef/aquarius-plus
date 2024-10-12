@@ -60,7 +60,7 @@ module video_timing(
     assign vpos    = vcnt[7:0];
     assign vsync   = !(vcnt == 9'd245);
     assign vblank  = !(vcnt < 9'd240);
-    assign vnext   = q_vcnt[0] & hcnt_done;
+    assign vnext   = q_vcnt[0] && hcnt_done;
 
     always @(posedge clk) vnewframe <= (vcnt == 9'd240) && hcnt_done;
     always @(posedge clk) voddline  <= q_vcnt[0];
