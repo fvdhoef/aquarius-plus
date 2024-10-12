@@ -89,13 +89,12 @@ module aqp_top(
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
     wire clk, video_clk;
-    wire video_mode;
 
     aqp_clkctrl clkctrl(
-        .clk_in(sysclk),    // 14.31818MHz
-        .clk_out(clk),      // 28.63636MHz
+        .clk_in(sysclk),        // 14.31818MHz
+        .clk_out(clk),          // 28.63636MHz
 
-        .video_clk(video_clk),        // 25.175MHz
+        .video_clk(video_clk),  // 25.175MHz
         .video_mode(1'b1)
     );
 
@@ -262,16 +261,10 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // System ROM
     //////////////////////////////////////////////////////////////////////////
-    wire rom_p2_wren;
-
     rom rom(
         .clk(clk),
         .addr(ebus_a[12:0]),
-        .rddata(rddata_rom),
-
-        .p2_addr(spibm_a[12:0]),
-        .p2_wrdata(spibm_wrdata),
-        .p2_wren(rom_p2_wren));
+        .rddata(rddata_rom));
 
     //////////////////////////////////////////////////////////////////////////
     // System RAM
@@ -440,12 +433,9 @@ module aqp_top(
         .keys(keys),
         .hctrl1(spi_hctrl1),
         .hctrl2(spi_hctrl2),
-        .rom_p2_wren(rom_p2_wren),
 
         .kbbuf_data(kbbuf_data),
         .kbbuf_wren(kbbuf_wren),
-
-        .video_mode(video_mode),
 
         .esp_ssel_n(esp_ssel_n),
         .esp_sclk(esp_sclk),

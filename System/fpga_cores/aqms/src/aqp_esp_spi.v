@@ -22,12 +22,9 @@ module aqp_esp_spi(
     output reg  [63:0] keys,
     output reg   [7:0] hctrl1,
     output reg   [7:0] hctrl2,
-    output reg         rom_p2_wren,
     
     output reg   [7:0] kbbuf_data,
     output reg         kbbuf_wren,
-    
-    output wire        video_mode,
 
     // ESP SPI slave interface
     input  wire        esp_ssel_n,
@@ -116,9 +113,7 @@ module aqp_esp_spi(
         CMD_MEM_WRITE       = 8'h22,
         CMD_MEM_READ        = 8'h23,
         CMD_IO_WRITE        = 8'h24,
-        CMD_IO_READ         = 8'h25,
-        CMD_ROM_WRITE       = 8'h30,
-        CMD_SET_VIDMODE     = 8'h40;
+        CMD_IO_READ         = 8'h25;
 
     // 01h: Reset command
     always @(posedge clk) begin
@@ -161,15 +156,6 @@ module aqp_esp_spi(
         end
     end
 
-    // 40h: Set video mode
-    reg q_video_mode = 1'b0;
-    always @(posedge clk) begin
-        if (q_cmd == CMD_SET_VIDMODE && msg_end) begin
-            q_video_mode <= q_data[56];
-        end
-    end
-    assign video_mode = q_video_mode;
-
     localparam
         BST_IDLE   = 3'd0,
         BST_CYCLE0 = 3'd1,
@@ -180,8 +166,6 @@ module aqp_esp_spi(
     reg [2:0] q_bus_state = BST_IDLE;
 
     always @(posedge clk) begin
-        rom_p2_wren <= 1'b0;
-
         case (q_bus_state)
             BST_IDLE: begin
                 spibm_rd_n      <= 1'b1;
@@ -202,7 +186,6 @@ module aqp_esp_spi(
                         3'd3: begin
                             spibm_wrdata <= rxdata;
                             if (q_cmd == CMD_MEM_WRITE || q_cmd == CMD_IO_WRITE) q_bus_state <= BST_CYCLE0;
-                            if (q_cmd == CMD_ROM_WRITE) rom_p2_wren <= 1'b1;
                         end
 
                         default: begin end
