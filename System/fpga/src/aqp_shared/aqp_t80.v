@@ -1,7 +1,7 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module aqt80(
+module aqp_t80(
     input  wire        clk,
     input  wire        reset,
     input  wire        clken,
