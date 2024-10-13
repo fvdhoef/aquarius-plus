@@ -1,6 +1,3 @@
 `verilator_config
 lint_off -rule UNUSEDSIGNAL
-
-// lint_off -rule UNUSEDPARAM -file "video/mb_overlay.v"
-// lint_off -rule UNUSEDPARAM -file "video/mb_display.v"
 lint_off -file "lint_wrappers/*"
