@@ -186,6 +186,8 @@ module aqp_top(
     wire        spi_msg_end;
     wire  [7:0] spi_cmd;
     wire [63:0] spi_rxdata;
+    wire [63:0] spi_txdata;
+    wire        spi_txdata_valid;
 
     wire  [9:0] ovl_text_addr;
     wire [15:0] ovl_text_wrdata;
@@ -202,6 +204,23 @@ module aqp_top(
     aqp_esp_spi esp_spi(
         .clk(clk),
         .reset(reset),
+
+        // System information
+        .sysinfo_core_type(8'h01),
+        .sysinfo_flags({
+            1'b0,       // Core type 01 specific: unused
+            1'b0,       // Core type 01 specific: unused
+            1'b0,       // Core type 01 specific: unused
+            1'b0,       // Core type 01 specific: show force turbo mode
+            1'b0,       // Core type 01 specific: show Aquarius+ options
+            1'b0,       // Core type 01 specific: show video timing switch
+            1'b0,       // Core type 01 specific: show mouse support
+            has_z80     // Z80 present
+        }),
+        .sysinfo_version_major(8'h01),
+        .sysinfo_version_minor(8'h00),
+
+        .core_name("Master System   "),
 
         // Bus master interface
         .ebus_phi(ebus_phi),
@@ -220,6 +239,8 @@ module aqp_top(
         .spi_msg_end(spi_msg_end),
         .spi_cmd(spi_cmd),
         .spi_rxdata(spi_rxdata),
+        .spi_txdata(spi_txdata),
+        .spi_txdata_valid(spi_txdata_valid),
 
         // Display overlay interface
         .ovl_text_addr(ovl_text_addr),
@@ -316,6 +337,8 @@ module aqp_top(
         .spi_msg_end(spi_msg_end),
         .spi_cmd(spi_cmd),
         .spi_rxdata(spi_rxdata),
+        .spi_txdata(spi_txdata),
+        .spi_txdata_valid(spi_txdata_valid),
 
         // ESP UART interface
         .esp_tx_data(esp_tx_data),

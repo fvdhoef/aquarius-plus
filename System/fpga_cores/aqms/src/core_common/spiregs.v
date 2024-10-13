@@ -8,6 +8,8 @@ module spiregs(
     input  wire        spi_msg_end,
     input  wire  [7:0] spi_cmd,
     input  wire [63:0] spi_rxdata,
+    output wire [63:0] spi_txdata,
+    output wire        spi_txdata_valid,
 
     output reg         reset_req,
     output reg  [63:0] keys,
@@ -17,6 +19,9 @@ module spiregs(
     output wire        use_t80,
     input  wire        has_z80,
     output reg         force_turbo);
+
+    assign spi_txdata       = 64'b0;
+    assign spi_txdata_valid = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Commands

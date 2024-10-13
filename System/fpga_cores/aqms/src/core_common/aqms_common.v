@@ -45,6 +45,8 @@ module aqms_common(
     input  wire        spi_msg_end,
     input  wire  [7:0] spi_cmd,
     input  wire [63:0] spi_rxdata,
+    output wire [63:0] spi_txdata,
+    output wire        spi_txdata_valid,
 
     // ESP UART interface
     output wire  [8:0] esp_tx_data,   // if bit8 set: transmit break, ignore data
@@ -332,6 +334,8 @@ module aqms_common(
         .spi_msg_end(spi_msg_end),
         .spi_cmd(spi_cmd),
         .spi_rxdata(spi_rxdata),
+        .spi_txdata(spi_txdata),
+        .spi_txdata_valid(spi_txdata_valid),
 
         .reset_req(reset_req),
         .keys(keys),
