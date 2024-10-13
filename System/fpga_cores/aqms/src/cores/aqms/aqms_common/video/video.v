@@ -254,38 +254,72 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Video timing
     //////////////////////////////////////////////////////////////////////////
-    wire [7:0] hpos;
-    wire [7:0] vpos;
+    wire [9:0] hpos10;
+    wire [9:0] vpos10;
     wire [7:0] render_line;
-    wire       render_start;
+    reg        render_start;
     wire       vblank_irq_pulse;
     wire       vnext, hsync, vsync, border, blank;
+    wire       hblank;
 
-    wire hblank, hlast, vblank; // unused
+    wire hlast, vblank, vnewframe; // unused
 
-    ms_video_timing video_timing(
+    video_timing video_timing(
         .clk(video_clk),
         .mode(1'b1),
 
-        .left_col_blank(q_reg0_left_col_blank),
-
-        .hpos(hpos),
+        .hpos(hpos10),
         .hsync(hsync),
         .hblank(hblank),
         .hlast(hlast),
 
-        .vpos(vpos),
+        .vpos(vpos10),
         .vsync(vsync),
         .vblank(vblank),
         .vnext(vnext),
-
-        .render_line(render_line),
-        .render_start(render_start),
-        .vblank_irq_pulse(vblank_irq_pulse),
-
-        .border(border),
+        .vnewframe(vnewframe),
 
         .blank(blank));
+
+    wire   [8:0] hcnt9   = hpos10[9:1];
+    wire         hborder = !hblank && (hcnt9 < (q_reg0_left_col_blank ? 9'd40 : 9'd32) || hcnt9 >= 9'd288);
+    wire         hactive = !(hborder || hblank);
+    wire   [8:0] hpos9   = hactive ? (hcnt9 - 9'd32) : 9'b0;
+
+    wire   [7:0] hpos    = hpos9[7:0];
+
+    wire [8:0] vcnt9 = vpos10[9:1];
+
+    reg [8:0] vpos9;
+    wire [7:0] vpos = vpos9[7:0];
+    always @* begin
+        vpos9 = vcnt9 - 9'd24;
+        if (vcnt9 < 9'd24)
+            vpos9 = vcnt9 + 9'd232;
+        if (vcnt9 > 9'd242)
+            vpos9 = vcnt9 - 9'd30;
+    end
+
+    wire   vborder          = !vblank && (vcnt9 < 9'd24 || vcnt9 >= 9'd216);
+    wire   vactive          = !(vborder || vblank);
+    assign vblank_irq_pulse = vnext && vpos == 8'd192;
+
+    reg  [7:0] q_render_line  = 8'd0;
+    wire [8:0] d_render_line9 = vcnt9 - 9'd22;
+    wire [7:0] d_render_line  = d_render_line9[7:0];
+
+    always @(posedge (video_clk)) begin
+        render_start <= 1'b0;
+
+        if (vnext) begin
+            if (d_render_line <= 8'd192)
+                render_start <= 1'b1;
+            q_render_line <= d_render_line;
+        end
+    end
+    assign render_line = q_render_line;
+
+    assign border = hborder || vborder;
 
     assign vcnt = vpos;
     assign hcnt = hpos;
