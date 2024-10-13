@@ -5,12 +5,6 @@ module aqp_esp_spi(
     input  wire        clk,
     input  wire        reset,
 
-    // Core specific
-    output reg         reset_req,
-    output reg  [63:0] keys,
-    output reg   [7:0] hctrl1,
-    output reg   [7:0] hctrl2,
-
     // Bus master interface
     input  wire        ebus_phi,
 
@@ -23,7 +17,7 @@ module aqp_esp_spi(
     output reg         spibm_mreq_n,
     output reg         spibm_iorq_n,
     output wire        spibm_busreq_n,
-    
+
     // Interface for core specific messages
     output wire        spi_msg_end,
     output wire  [7:0] spi_cmd,
@@ -130,9 +124,6 @@ module aqp_esp_spi(
     assign spibm_busreq_n = !q_busreq;
 
     localparam [7:0]
-        CMD_RESET           = 8'h01,
-        CMD_SET_KEYB_MATRIX = 8'h10,
-        CMD_SET_HCTRL       = 8'h11,
         CMD_BUS_ACQUIRE     = 8'h20,
         CMD_BUS_RELEASE     = 8'h21,
         CMD_MEM_WRITE       = 8'h22,
@@ -143,26 +134,6 @@ module aqp_esp_spi(
         CMD_OVL_FONT        = 8'hF5,
         CMD_OVL_PALETTE     = 8'hF6;
         // CMD_GET_STATUS        = 8'hF7;
-
-    // 01h: Reset command
-    always @(posedge clk) begin
-        reset_req <= 1'b0;
-        if (q_cmd == CMD_RESET && msg_end) reset_req <= 1'b1;
-    end
-
-    // 10h: Set keyboard matrix
-    always @(posedge clk or posedge reset)
-        if (reset)
-            keys <= 64'hFFFFFFFFFFFFFFFF;
-        else if (q_cmd == CMD_SET_KEYB_MATRIX && msg_end)
-            keys <= q_data;
-
-    // 11h: Set hand controller
-    always @(posedge clk or posedge reset)
-        if (reset)
-            {hctrl2, hctrl1} <= 16'hFFFF;
-        else if (q_cmd == CMD_SET_HCTRL && msg_end)
-            {hctrl2, hctrl1} <= q_data[63:48];
 
     // 20h/21h: Acquire/release bus
     always @(posedge clk) begin

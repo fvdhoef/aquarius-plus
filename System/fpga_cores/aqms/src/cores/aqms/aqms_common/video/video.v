@@ -37,12 +37,14 @@ module video(
     output wire [7:0]  hcnt,
 
     // VGA output
-    output reg   [3:0] vga_r,
-    output reg   [3:0] vga_g,
-    output reg   [3:0] vga_b,
-    output reg         vga_de,
-    output reg         vga_hsync,
-    output reg         vga_vsync);
+    output reg   [3:0] video_r,
+    output reg   [3:0] video_g,
+    output reg   [3:0] video_b,
+    output reg         video_de,
+    output reg         video_hsync,
+    output reg         video_vsync,
+    output wire        video_newframe,
+    output reg         video_oddline);
 
     wire [7:0] vram_rddata;
 
@@ -262,7 +264,7 @@ module video(
     wire       vnext, hsync, vsync, border, blank;
     wire       hblank;
 
-    wire hlast, vblank, vnewframe; // unused
+    wire hlast, vblank; // unused
 
     video_timing video_timing(
         .clk(video_clk),
@@ -277,9 +279,11 @@ module video(
         .vsync(vsync),
         .vblank(vblank),
         .vnext(vnext),
-        .vnewframe(vnewframe),
+        .vnewframe(video_newframe),
 
         .blank(blank));
+
+    always @(posedge video_clk) video_oddline <= vpos10[0];
 
     wire   [8:0] hcnt9   = hpos10[9:1];
     wire         hborder = !hblank && (hcnt9 < (q_reg0_left_col_blank ? 9'd40 : 9'd32) || hcnt9 >= 9'd288);
@@ -428,19 +432,19 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     always @(posedge(video_clk))
         if (q_blank) begin
-            vga_r  <= 4'b0;
-            vga_g  <= 4'b0;
-            vga_b  <= 4'b0;
-            vga_de <= 1'b0;
+            video_r  <= 4'b0;
+            video_g  <= 4'b0;
+            video_b  <= 4'b0;
+            video_de <= 1'b0;
 
         end else begin
-            vga_r  <= {pal_r, pal_r};
-            vga_g  <= {pal_g, pal_g};
-            vga_b  <= {pal_b, pal_b};
-            vga_de <= 1'b1;
+            video_r  <= {pal_r, pal_r};
+            video_g  <= {pal_g, pal_g};
+            video_b  <= {pal_b, pal_b};
+            video_de <= 1'b1;
         end
 
-    always @(posedge video_clk) vga_hsync <= q_hsync;
-    always @(posedge video_clk) vga_vsync <= q_vsync;
+    always @(posedge video_clk) video_hsync <= q_hsync;
+    always @(posedge video_clk) video_vsync <= q_vsync;
 
 endmodule

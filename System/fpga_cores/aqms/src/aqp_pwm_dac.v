@@ -14,13 +14,14 @@ module aqp_pwm_dac(
     output reg         audio_l,
     output reg         audio_r);
 
-    reg [15:0] q_left_sample;
-    reg [15:0] q_right_sample;
+    reg [15:0] q_left_sample  = 16'd0;
+    reg [15:0] q_right_sample = 16'd0;
 
     always @(posedge clk) begin
         if (next_sample) begin
-            q_left_sample  <= left_data;
-            q_right_sample <= right_data;
+            // Convert to unsigned data
+            q_left_sample  <= {~left_data[15],  left_data[14:0]};
+            q_right_sample <= {~right_data[15], right_data[14:0]};
         end
     end
 
