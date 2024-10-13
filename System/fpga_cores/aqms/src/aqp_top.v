@@ -60,10 +60,7 @@ module aqp_top(
     output wire        esp_notify
 );
 
-    assign exp            = 9'b0;
-    assign ebus_cart_ce_n = 1'b1;
-    assign cassette_out   = 1'b0;
-    assign printer_out    = 1'b1;
+    assign exp = 9'b0;
 
     wire [15:0] spibm_a;
     wire  [7:0] spibm_wrdata;
@@ -167,13 +164,13 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
     //////////////////////////////////////////////////////////////////////////
-    wire  [7:0] hc1_in  = hc1[7:0];
-    wire  [7:0] hc1_out = 8'b0;
-    wire        hc1_oe  = 1'b0;
+    wire  [7:0] hc1_in = hc1[7:0];
+    wire  [7:0] hc1_out;
+    wire        hc1_oe;
 
-    wire  [7:0] hc2_in  = hc2[7:0];
-    wire  [7:0] hc2_out = 8'b0;
-    wire        hc2_oe  = 1'b0;
+    wire  [7:0] hc2_in = hc2[7:0];
+    wire  [7:0] hc2_out;
+    wire        hc2_oe;
 
     assign hc1[7:0] = hc1_oe ? hc1_out : 8'bZ;
     assign hc2[7:0] = hc2_oe ? hc2_out : 8'bZ;
@@ -338,6 +335,15 @@ module aqp_top(
         .hc1_in(hc1_in),
         .hc2_in(hc2_in)
     );
+
+    assign ebus_cart_ce_n = 1'b1;
+    assign cassette_out   = 1'b0;
+    assign printer_out    = 1'b1;
+
+    assign hc1_out = 8'b0;
+    assign hc1_oe  = 1'b0;
+    assign hc2_out = 8'b0;
+    assign hc2_oe  = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Display overlay
