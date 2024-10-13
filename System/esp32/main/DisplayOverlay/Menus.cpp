@@ -33,11 +33,11 @@ public:
             strftime(strftime_buf, sizeof(strftime_buf), "%Y-%m-%d %H:%M:%S", &timeinfo);
 
             char tmp[40];
-#ifdef CONFIG_MACHINE_TYPE_AQPLUS
-            snprintf(tmp, sizeof(tmp), "Aquarius+        %s", strftime_buf);
-#else
-            snprintf(tmp, sizeof(tmp), "MorphBook        %s", strftime_buf);
-#endif
+
+            CoreInfo coreInfo;
+            getFpgaCore()->getCoreInfo(&coreInfo);
+
+            snprintf(tmp, sizeof(tmp), "%-16s %s", coreInfo.name, strftime_buf);
             title = tmp;
         }
 

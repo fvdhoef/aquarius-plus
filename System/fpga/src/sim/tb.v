@@ -346,10 +346,27 @@ module tb();
 
     initial begin
         #2500
+        // esp_ssel_n <= 1'b0;
+        // spi_tx(8'h40);
+        // spi_tx(8'h01);
+        // esp_ssel_n <= 1'b1;
+
         esp_ssel_n <= 1'b0;
-        spi_tx(8'h40);
-        spi_tx(8'h01);
+        spi_tx(8'hF8);
+        spi_tx(8'h00);
+
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
+        spi_tx(8'h00);
         esp_ssel_n <= 1'b1;
+
+        @(posedge ebus_phi);
+
     end
 
     initial begin

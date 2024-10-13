@@ -129,6 +129,9 @@ public:
             setVisible(overlayVisible);
 
             while (!doReinit) {
+                CoreInfo coreInfo;
+                getFPGA()->getCoreInfo(&coreInfo);
+
                 getMainMenu()->show();
 
                 overlayVisible = false;

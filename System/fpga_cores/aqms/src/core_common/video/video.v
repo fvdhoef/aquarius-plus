@@ -266,7 +266,7 @@ module video(
 
     wire hlast, vblank; // unused
 
-    video_timing video_timing(
+    aqp_video_timing video_timing(
         .clk(video_clk),
         .mode(1'b1),
 

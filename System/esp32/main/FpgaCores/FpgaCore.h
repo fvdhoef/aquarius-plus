@@ -3,6 +3,7 @@
 #include "Common.h"
 #include "HIDReportHandlerGamepad.h"
 #include "DisplayOverlay/Menu.h"
+#include "FPGA.h"
 
 enum class FpgaCoreType {
     AquariusPlus,
@@ -21,6 +22,8 @@ public:
     virtual bool loadBitstream(const void *data, size_t length) = 0;
 
     virtual void addMainMenuItems(Menu &menu) = 0;
+
+    virtual void getCoreInfo(CoreInfo *coreInfo) = 0;
 };
 
 std::shared_ptr<FpgaCore> getFpgaCore();

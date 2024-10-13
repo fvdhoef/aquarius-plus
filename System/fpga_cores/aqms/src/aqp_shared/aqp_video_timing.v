@@ -2,7 +2,7 @@
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module video_timing(
+module aqp_video_timing(
     input  wire       clk,     // 25.175MHz (640x480) / 28.63636MHz (704x480)
     input  wire       mode,    // (mode 0=704x480, 1=640x480)
 

@@ -34,6 +34,9 @@ enum {
     CMD_OVL_FONT    = 0xF5,
     CMD_OVL_PALETTE = 0xF6,
     CMD_GET_STATUS  = 0xF7,
+    CMD_GET_SYSINFO = 0xF8,
+    CMD_GET_NAME1   = 0xF9,
+    CMD_GET_NAME2   = 0xFA,
 };
 
 enum {
@@ -262,6 +265,62 @@ public:
         spiSel(false);
     }
 #endif
+
+    bool getCoreInfo(CoreInfo *info) override {
+        RecursiveMutexLock lock(mutex);
+        uint8_t            rxData[8];
+
+        bool ok = false;
+
+        for (int i = 0; i < 10 && !ok; i++) {
+            // Sysinfo
+            {
+                uint8_t cmd[] = {CMD_GET_SYSINFO, 0};
+                spiSel(true);
+                spiTx(cmd, sizeof(cmd));
+                spiRx(rxData, 8);
+                spiSel(false);
+
+                info->coreType     = rxData[0];
+                info->flags        = rxData[1];
+                info->versionMajor = rxData[2];
+                info->versionMinor = rxData[3];
+
+                if (info->coreType == 0) {
+                    // FPGA not yet ready, wait a moment and try again
+                    vTaskDelay(pdMS_TO_TICKS(50));
+                    continue;
+                }
+                ok = true;
+            }
+
+            // Name1
+            {
+                uint8_t cmd[] = {CMD_GET_NAME1, 0};
+
+                spiSel(true);
+                spiTx(cmd, sizeof(cmd));
+                spiRx(info->name, 8);
+                spiSel(false);
+            }
+
+            // Name2
+            {
+                uint8_t cmd[] = {CMD_GET_NAME2, 0};
+
+                spiSel(true);
+                spiTx(cmd, sizeof(cmd));
+                spiRx(info->name + 8, 8);
+                spiSel(false);
+            }
+            info->name[16] = 0;
+        }
+
+        if (ok)
+            ESP_LOGI(TAG, "CoreInfo type=%02X flags=%02X version=%d.%02d name=%s", info->coreType, info->flags, info->versionMajor, info->versionMinor, info->name);
+
+        return ok;
+    }
 
     void setOverlayText(const uint16_t buf[1024]) override {
         RecursiveMutexLock lock(mutex);

@@ -53,7 +53,7 @@ module aqp_overlay(
 
     wire       vnewframe;
 
-    video_timing video_timing(
+    aqp_video_timing video_timing(
         .clk(vclk),
         .mode(video_mode),
 

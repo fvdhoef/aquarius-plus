@@ -38,6 +38,14 @@ enum {
     CMD_SET_VIDMODE     = 0x40,
 };
 
+enum {
+    FLAG_HAS_Z80       = (1 << 0),
+    FLAG_MOUSE_SUPPORT = (1 << 1),
+    FLAG_VIDEO_TIMING  = (1 << 2),
+    FLAG_AQPLUS        = (1 << 3),
+    FLAG_FORCE_TURBO   = (1 << 4),
+};
+
 class CoreAquariusPlus : public FpgaCore {
 public:
     SemaphoreHandle_t mutex;
@@ -50,6 +58,7 @@ public:
     bool              bypassStartScreen = false;
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
+    CoreInfo          coreInfo;
 
     // Mouse state
     bool    mousePresent = false;
@@ -97,13 +106,21 @@ public:
         } else {
             result = getFPGA()->loadBitstream(data, length);
         }
+
+        memset(&coreInfo, 0, sizeof(coreInfo));
         if (result) {
+            getFPGA()->getCoreInfo(&coreInfo);
+
             applySettings();
         }
         return result;
     }
 
     void applySettings() {
+        if ((coreInfo.flags & FLAG_HAS_Z80) == 0) {
+            useT80 = true;
+        }
+
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
             uint8_t mouseDiv = 0;
@@ -117,8 +134,10 @@ public:
                 videoTimingMode = 0;
             }
 
-            if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
-                useT80 = val8 != 0;
+            if (coreInfo.flags & FLAG_HAS_Z80) {
+                if (nvs_get_u8(h, "useT80", &val8) == ESP_OK) {
+                    useT80 = val8 != 0;
+                }
             }
 #endif
 
@@ -129,7 +148,8 @@ public:
             nvs_close(h);
         }
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
-        aqpSetVideoMode(videoTimingMode);
+        if (coreInfo.flags & FLAG_VIDEO_TIMING)
+            aqpSetVideoMode(videoTimingMode);
 #endif
         resetCore();
     }
@@ -689,17 +709,19 @@ public:
         }
         menu.items.emplace_back(MenuItemType::separator);
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
-        {
-            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Screenshot (text)");
-            item.onEnter = [this, &menu]() { takeScreenshot(menu); };
+        if (coreInfo.flags & FLAG_AQPLUS) {
+            {
+                auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Screenshot (text)");
+                item.onEnter = [this, &menu]() { takeScreenshot(menu); };
+            }
+            {
+                auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Dump cartridge");
+                item.onEnter = [this, &menu]() { dumpCartridge(menu); };
+            }
+            menu.items.emplace_back(MenuItemType::separator);
         }
-        {
-            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Dump cartridge");
-            item.onEnter = [this, &menu]() { dumpCartridge(menu); };
-        }
-        menu.items.emplace_back(MenuItemType::separator);
 #endif
-        {
+        if (coreInfo.flags & FLAG_FORCE_TURBO) {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Force turbo mode");
             item.setter = [this](int newVal) {
                 forceTurbo = (newVal != 0);
@@ -707,7 +729,7 @@ public:
             };
             item.getter = [this]() { return forceTurbo ? 1 : 0; };
         }
-        {
+        if (coreInfo.flags & FLAG_MOUSE_SUPPORT) {
             auto &item  = menu.items.emplace_back(MenuItemType::percentage, "Mouse sensitivity");
             item.setter = [this](int newVal) {
                 newVal = std::max(1, std::min(newVal, 8));
@@ -725,7 +747,7 @@ public:
             };
             item.getter = [this]() { return mouseSensitivityDiv; };
         }
-        {
+        if (coreInfo.flags & FLAG_AQPLUS) {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Auto-bypass start screen");
             item.setter = [this](int newVal) {
                 bypassStartScreen = (newVal != 0);
@@ -741,7 +763,7 @@ public:
             item.getter = [this]() { return bypassStartScreen ? 1 : 0; };
         }
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
-        {
+        if (coreInfo.flags & FLAG_HAS_Z80) {
             auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Use external Z80");
             item.setter = [this, &menu](int newVal) {
                 bool newUseT80 = (newVal == 0);
@@ -762,7 +784,7 @@ public:
             };
             item.getter = [this]() { return useT80 ? 0 : 1; };
         }
-        {
+        if (coreInfo.flags & FLAG_VIDEO_TIMING) {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, videoTimingMode ? "Video timing: 640x480" : "Video timing: 704x480");
             item.onEnter = [this, &menu]() {
                 videoTimingMode = (videoTimingMode == 0) ? 1 : 0;
@@ -780,6 +802,10 @@ public:
             };
         }
 #endif
+    }
+
+    void getCoreInfo(CoreInfo *_coreInfo) override {
+        *_coreInfo = coreInfo;
     }
 };
 

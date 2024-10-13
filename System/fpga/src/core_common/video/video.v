@@ -170,7 +170,7 @@ module video(
     wire       vsync, vnext;
     wire       blank;
 
-    video_timing video_timing(
+    aqp_video_timing video_timing(
         .clk(vclk),
         .mode(video_mode),
 

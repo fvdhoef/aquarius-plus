@@ -1,8 +1,8 @@
-// VGA video timing module - 704x480 visible (910x525 total)
+// VGA video timing module
 `default_nettype none
 `timescale 1 ns / 1 ps
 
-module video_timing(
+module aqp_video_timing(
     input  wire       clk,     // 25.175MHz (640x480) / 28.63636MHz (704x480)
     input  wire       mode,    // (mode 0=704x480, 1=640x480)
 
@@ -56,10 +56,10 @@ module video_timing(
         if (vlast)      q_vcnt <= 10'd0;
         else if (hlast) q_vcnt <= q_vcnt + 10'd1;
 
-    assign vpos    = q_vcnt;
-    assign vblank  = !(q_vcnt < vcnt_blank);
-    assign vsync   = !(q_vcnt >= vcnt_hsync1 && q_vcnt <= vcnt_hsync2);
-    assign vnext   = q_vcnt[0] && hlast;
+    assign vpos   = q_vcnt;
+    assign vblank = !(q_vcnt < vcnt_blank);
+    assign vsync  = !(q_vcnt >= vcnt_hsync1 && q_vcnt <= vcnt_hsync2);
+    assign vnext  = q_vcnt[0] && hlast;
 
     always @(posedge clk) vnewframe <= (q_vcnt == vcnt_blank) && hlast;
 

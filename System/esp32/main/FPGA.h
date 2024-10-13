@@ -2,12 +2,21 @@
 
 #include "Common.h"
 
+struct CoreInfo {
+    uint8_t coreType;
+    uint8_t flags;
+    uint8_t versionMajor;
+    uint8_t versionMinor;
+    char    name[17];
+};
+
 class FPGA {
 public:
     virtual void init() = 0;
 
     // FPGA configuration
     virtual bool loadBitstream(const void *data, size_t length) = 0;
+    virtual bool getCoreInfo(CoreInfo *info)                    = 0;
 
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
     // FPGA core interface
