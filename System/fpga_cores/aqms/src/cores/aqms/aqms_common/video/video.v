@@ -259,23 +259,32 @@ module video(
     wire [7:0] render_line;
     wire       render_start;
     wire       vblank_irq_pulse;
-    wire       next_line, hsync, vsync, border, blank;
+    wire       vnext, hsync, vsync, border, blank;
+
+    wire hblank, hlast, vblank; // unused
 
     ms_video_timing video_timing(
         .clk(video_clk),
+        .mode(1'b1),
+
         .left_col_blank(q_reg0_left_col_blank),
 
         .hpos(hpos),
+        .hsync(hsync),
+        .hblank(hblank),
+        .hlast(hlast),
+
         .vpos(vpos),
+        .vsync(vsync),
+        .vblank(vblank),
+        .vnext(vnext),
 
         .render_line(render_line),
         .render_start(render_start),
         .vblank_irq_pulse(vblank_irq_pulse),
 
-        .next_line(next_line),
-        .hsync(hsync),
-        .vsync(vsync),
         .border(border),
+
         .blank(blank));
 
     assign vcnt = vpos;
@@ -296,7 +305,7 @@ module video(
     always @(posedge (video_clk)) begin
         vid_line_irq_pend <= 1'b0;
 
-        if (next_line) begin
+        if (vnext) begin
             if (vpos <= 8'd192) begin
                 if (q_lineirq_cnt == 8'd0) begin
                     vid_line_irq_pend <= 1'b1;

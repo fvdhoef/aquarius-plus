@@ -4,46 +4,70 @@
 
 module ms_video_timing(
     input  wire       clk,     // 25.175MHz (640x480)
+    input  wire       mode,    // (mode 0=704x480, 1=640x480)
+
     input  wire       left_col_blank,
 
     output wire [7:0] hpos,
+    output wire       hsync,
+    output wire       hblank,
+    output wire       hlast,
+
     output wire [7:0] vpos,
+    output wire       vsync,
+    output wire       vblank,
+    output wire       vnext,
 
     output wire [7:0] render_line,
     output reg        render_start,
     output wire       vblank_irq_pulse,
 
-    output wire       next_line,
-    output wire       hsync,
-    output wire       vsync,
     output wire       border,
+
     output wire       blank);
+
+    reg q_mode = 0;
+
+    wire [9:0] hcnt_blank  = q_mode ? 10'd640 : 10'd704;
+    wire [9:0] hcnt_hsync1 = q_mode ? 10'd656 : 10'd746;
+    wire [9:0] hcnt_hsync2 = q_mode ? 10'd752 : 10'd854;
+    wire [9:0] hcnt_last   = q_mode ? 10'd799 : 10'd909;
+    wire [9:0] vcnt_blank  = 10'd480;
+    wire [9:0] vcnt_hsync1 = 10'd490;
+    wire [9:0] vcnt_hsync2 = 10'd491;
+    wire [9:0] vcnt_last   = 10'd524;
 
     //////////////////////////////////////////////////////////////////////////
     // Horizontal timing
     //////////////////////////////////////////////////////////////////////////
-    wire hlast;
-
     reg [9:0] q_hcnt = 10'd0;
-    always @(posedge(clk)) q_hcnt <= hlast ? 10'd0 : (q_hcnt + 10'd1);
+
+    assign hlast = (q_hcnt == hcnt_last);
+
+    always @(posedge(clk))
+        if (hlast) q_hcnt <= 10'd0;
+        else       q_hcnt <= q_hcnt + 10'd1;
 
     wire   [8:0] hcnt    = q_hcnt[9:1];
     wire   [8:0] hpos9   = hactive ? (hcnt - 9'd32) : 9'b0;
-    assign       hpos    = hpos9[7:0];
-    wire         hblank  = hcnt >= 9'd320;
+
+    assign hpos   = hpos9[7:0];
+    assign hblank = !(q_hcnt < hcnt_blank);
+    assign hsync  = !(q_hcnt >= hcnt_hsync1 && q_hcnt < hcnt_hsync2);
+
     wire         hborder = !hblank && (hcnt < (left_col_blank ? 9'd40 : 9'd32) || hcnt >= 9'd288);
     wire         hactive = !(hborder || hblank);
-    assign       hsync   = !(hcnt >= 9'd328 && hcnt < 9'd376);
-    assign       hlast   = q_hcnt == 10'd799;
 
     //////////////////////////////////////////////////////////////////////////
     // Vertical timing
     //////////////////////////////////////////////////////////////////////////
-    wire vlast;
+    reg [9:0] q_vcnt = 10'd0;
 
-    reg [9:0] q_vcnt = 10'd522;
+    wire vlast = hlast && q_vcnt == vcnt_last;
+
     always @(posedge(clk))
-        if (hlast) q_vcnt <= vlast ? 10'd0 : (q_vcnt + 10'd1);
+        if (vlast)      q_vcnt <= 10'd0;
+        else if (hlast) q_vcnt <= q_vcnt + 10'd1;
 
     wire [8:0] vcnt = q_vcnt[9:1];
 
@@ -57,13 +81,13 @@ module ms_video_timing(
             vpos9 = vcnt - 9'd30;
     end
 
-    wire   vblank           = vcnt >= 9'd240;
+    assign vblank = !(q_vcnt < vcnt_blank);
+    assign vsync  = !(q_vcnt >= vcnt_hsync1 && q_vcnt <= vcnt_hsync2);
+    assign vnext  = q_vcnt[0] && hlast;
+
     wire   vborder          = !vblank && (vcnt < 9'd24 || vcnt >= 9'd216);
     wire   vactive          = !(vborder || vblank);
-    assign vlast            = q_vcnt == 10'd523;
-    assign vsync            = !(vcnt == 9'd245);
-    assign next_line        = hlast && q_vcnt[0];
-    assign vblank_irq_pulse = next_line && vpos == 8'd192;
+    assign vblank_irq_pulse = vnext && vpos == 8'd192;
 
     //////////////////////////////////////////////////////////////////////////
     // Common
@@ -75,7 +99,7 @@ module ms_video_timing(
     always @(posedge (clk)) begin
         render_start <= 1'b0;
 
-        if (next_line) begin
+        if (vnext) begin
             if (d_render_line <= 8'd192)
                 render_start <= 1'b1;
             q_render_line <= d_render_line;
@@ -85,6 +109,14 @@ module ms_video_timing(
     assign render_line = q_render_line;
 
     assign border = hborder || vborder;
+
+
+    // Sync mode on end of frame
+    always @(posedge clk) if (vlast) q_mode <= mode;
+
+    //////////////////////////////////////////////////////////////////////////
+    // Blanking
+    //////////////////////////////////////////////////////////////////////////
     assign blank  = hblank  || vblank;
 
 endmodule
