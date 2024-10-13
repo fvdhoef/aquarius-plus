@@ -404,7 +404,7 @@ module aqp_top(
     wire        t80_int_n = ebus_int_n_pushpull;
     wire        t80_nmi_n = 1'b1;
 
-    aqt80 aqt80(
+    aqp_t80 aqp_t80(
         .clk(clk),
         .reset(reset || !use_t80),
         .clken(ebus_phi_clken),

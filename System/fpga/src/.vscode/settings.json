@@ -4,8 +4,8 @@
         ".",
         "aqp_shared",
         "wrappers",
-        "aqplus_common",
-        "aqplus_common/video"
+        "core_common",
+        "core_common/video"
     ],
     "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
 }

@@ -2,13 +2,10 @@
     "verilog.linting.verilator.includePath": [
         "lint_wrappers",
         ".",
-        "util",
+        "aqp_shared",
         "wrappers",
-
-        "cores/aqms",
-        "cores/aqms/wrappers",
-        "cores/aqms/aqms_common",
-        "cores/aqms/aqms_common/video"
+        "core_common",
+        "core_common/video"
     ],
     "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
 }
