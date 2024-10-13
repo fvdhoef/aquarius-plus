@@ -339,6 +339,7 @@ module video(
     // Line IRQ 
     //////////////////////////////////////////////////////////////////////////
     reg [7:0] q_lineirq_cnt;
+    reg       vid_line_irq_pend;
 
     always @(posedge (video_clk)) begin
         vid_line_irq_pend <= 1'b0;
@@ -361,7 +362,6 @@ module video(
     //////////////////////////////////////////////////////////////////////////
     // Synchronization of signal from video_clk to clk domain
     //////////////////////////////////////////////////////////////////////////
-    reg  vid_line_irq_pend;
     wire vid_spr_overflow;
     wire vid_spr_collision;
 
