@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM               Horoscope Loader
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM             Updated 18 APR 2024
+1003 REM             Updated 13 OCT 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -11,12 +11,14 @@
 1101 REM Setup system components
 1110 PRINT "Loading Horoscope..."
 
-1120 SET FAST ON
-1130 USE CHRSET  "data/horoscope.chr"
-1140 LOAD SCREEN "data/horoscope.scr"
-1150 LOAD PT3    "data/theme.pt3"
-1160 PLAY PT3
-1170 SET  PT3 LOOP ON
+1120 SCREEN 1
+1130 SET FAST ON
+1140 USE CHRSET  "data/horoscope.chr"
+1150 LOAD SCREEN "data/horoscope.scr"
+1160 LOAD PT3    "data/theme.pt3"
+1170 PLAY PT3
+1180 SET  PT3 LOOP ON
+1190 SET  PT3 FAST ON
 
 1200 _init
 1201 REM Initialize data structures
