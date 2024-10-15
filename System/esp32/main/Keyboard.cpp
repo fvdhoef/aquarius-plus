@@ -212,6 +212,7 @@ public:
 #endif
     uint8_t           modifiers = 0;
     QueueHandle_t     keyQueue;
+    QueueHandle_t     scanCodeQueue;
     uint8_t           repeat       = 0;
     unsigned          pressCounter = 0;
     uint8_t           keyMode      = 3;
@@ -221,8 +222,9 @@ public:
     uint8_t           composeFirst = 0;
 
     KeyboardInt() {
-        mutex    = xSemaphoreCreateRecursiveMutex();
-        keyQueue = xQueueCreate(128, 1);
+        mutex         = xSemaphoreCreateRecursiveMutex();
+        keyQueue      = xQueueCreate(128, 1);
+        scanCodeQueue = xQueueCreate(1, 1);
 
         auto timer = xTimerCreate("keyRepeat", pdMS_TO_TICKS(16), pdTRUE, this, _keyRepeatTimer);
         xTimerStart(timer, 0);
@@ -344,6 +346,10 @@ public:
         RecursiveMutexLock lock(mutex);
         repeat       = 0;
         pressCounter = 0;
+        if (keyDown) {
+            uint8_t val = scanCode;
+            xQueueSend(scanCodeQueue, &val, 0);
+        }
 
         // Keyboard layout handling
         processScancode(scanCode, keyDown);
@@ -621,6 +627,14 @@ public:
         return result;
     }
 
+    int waitScanCode() override {
+        uint8_t result;
+        xQueueReceive(scanCodeQueue, &result, 0);
+        if (!xQueueReceive(scanCodeQueue, &result, portMAX_DELAY))
+            return -1;
+        return result;
+    }
+
     void setKeyLayout(KeyLayout layout) override {
         curLayout = layout;
     }
@@ -675,4 +689,122 @@ public:
 Keyboard *getKeyboard() {
     static KeyboardInt obj;
     return &obj;
+}
+
+static const char *scanCodeNames[] = {
+    "A",         // 4
+    "B",         // 5
+    "C",         // 6
+    "D",         // 7
+    "E",         // 8
+    "F",         // 9
+    "G",         // 10
+    "H",         // 11
+    "I",         // 12
+    "J",         // 13
+    "K",         // 14
+    "L",         // 15
+    "M",         // 16
+    "N",         // 17
+    "O",         // 18
+    "P",         // 19
+    "Q",         // 20
+    "R",         // 21
+    "S",         // 22
+    "T",         // 23
+    "U",         // 24
+    "V",         // 25
+    "W",         // 26
+    "X",         // 27
+    "Y",         // 28
+    "Z",         // 29
+    "1",         // 30
+    "2",         // 31
+    "3",         // 32
+    "4",         // 33
+    "5",         // 34
+    "6",         // 35
+    "7",         // 36
+    "8",         // 37
+    "9",         // 38
+    "0",         // 39
+    "Enter",     // 40
+    "Escape",    // 41
+    "Backspace", // 42
+    "Tab",       // 43
+    "Space",     // 44
+    "-",         // 45
+    "=",         // 46
+    "[",         // 47
+    "]",         // 48
+    "\\",        // 49
+    "#",         // 50
+    ";",         // 51
+    "'",         // 52
+    "`",         // 53
+    ",",         // 54
+    ".",         // 55
+    "/",         // 56
+    "CapsLock",  // 57
+    "F1",        // 58
+    "F2",        // 59
+    "F3",        // 60
+    "F4",        // 61
+    "F5",        // 62
+    "F6",        // 63
+    "F7",        // 64
+    "F8",        // 65
+    "F9",        // 66
+    "F10",       // 67
+    "F11",       // 68
+    "F12",       // 69
+    "PrtScr",    // 70
+    "ScrollLk",  // 71
+    "Pause",     // 72
+    "Insert",    // 73
+    "Home",      // 74
+    "Page Up",   // 75
+    "Delete",    // 76
+    "End",       // 77
+    "Page Down", // 78
+    "Right",     // 79
+    "Left",      // 80
+    "Down",      // 81
+    "Up",        // 82
+    "NumLock",   // 83
+    "KP /",      // 84
+    "KP *",      // 85
+    "KP -",      // 86
+    "KP +",      // 87
+    "KP Enter",  // 88
+    "KP 1",      // 89
+    "KP 2",      // 90
+    "KP 3",      // 91
+    "KP 4",      // 92
+    "KP 5",      // 93
+    "KP 6",      // 94
+    "KP 7",      // 95
+    "KP 8",      // 96
+    "KP 9",      // 97
+    "KP 0",      // 98
+    "KP .",      // 99
+};
+
+static const char *scanCodeNames2[] = {
+    "Left Ctrl",   // 224
+    "Left Shift",  // 225
+    "Left Alt",    // 226
+    "Left GUI",    // 227
+    "Right Ctrl",  // 228
+    "Right SHIFT", // 229
+    "Right ALT",   // 230
+    "Right GUI",   // 231
+};
+
+const char *getScanCodeName(uint8_t scanCode) {
+    if (scanCode >= 4 && scanCode <= 99)
+        return scanCodeNames[scanCode - 4];
+    if (scanCode >= 224 && scanCode <= 231)
+        return scanCodeNames2[scanCode - 224];
+    return nullptr;
 }

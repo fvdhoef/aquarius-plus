@@ -8,6 +8,8 @@
 #include <nvs_flash.h>
 #include "XzDecompress.h"
 #include "DisplayOverlay/DisplayOverlay.h"
+#include "DisplayOverlay/GamepadKeyboardMappingMenu.h"
+#include "DisplayOverlay/GamepadHandControllerMappingMenu.h"
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -60,6 +62,27 @@ public:
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
     CoreInfo          coreInfo;
+    bool              enableGamepadKeyboardMapping        = false;
+    bool              enableGamepadHandControllerMapping  = true;
+    uint8_t           gamePadButtonScanCodes[16]          = {0};
+    uint8_t           gamePadButtonHandCtrlButtonIdxs[16] = {
+        [GCB_A_IDX]          = 1,
+        [GCB_B_IDX]          = 2,
+        [GCB_X_IDX]          = 3,
+        [GCB_Y_IDX]          = 4,
+        [GCB_VIEW_IDX]       = 0,
+        [GCB_GUIDE_IDX]      = 0,
+        [GCB_MENU_IDX]       = 0,
+        [GCB_LS_IDX]         = 0,
+        [GCB_RS_IDX]         = 0,
+        [GCB_LB_IDX]         = 5,
+        [GCB_RB_IDX]         = 6,
+        [GCB_DPAD_UP_IDX]    = 0,
+        [GCB_DPAD_DOWN_IDX]  = 0,
+        [GCB_DPAD_LEFT_IDX]  = 0,
+        [GCB_DPAD_RIGHT_IDX] = 0,
+        [GCB_SHARE_IDX]      = 0,
+    };
 
     // Mouse state
     bool    mousePresent = false;
@@ -432,22 +455,30 @@ public:
     }
 
     void gameCtrlUpdated() {
+        if (!enableGamepadHandControllerMapping)
+            return;
+
         // Update hand controller
         uint8_t handCtrl[2] = {0xFF, 0xFF};
 
+        static const uint8_t buttonMasks[] = {
+            (1 << 6),            // 1
+            (1 << 7) | (1 << 2), // 2
+            (1 << 7) | (1 << 5), // 3
+            (1 << 5),            // 4
+            (1 << 7) | (1 << 1), // 5
+            (1 << 7) | (1 << 0), // 6
+        };
+
         for (int i = 0; i < 2; i++) {
-            if (gamepads[i].buttons & GCB_A)
-                handCtrl[i] &= ~(1 << 6);
-            if (gamepads[i].buttons & GCB_B)
-                handCtrl[i] &= ~((1 << 7) | (1 << 2));
-            if (gamepads[i].buttons & GCB_X)
-                handCtrl[i] &= ~((1 << 7) | (1 << 5));
-            if (gamepads[i].buttons & GCB_Y)
-                handCtrl[i] &= ~((1 << 5));
-            if (gamepads[i].buttons & GCB_LB)
-                handCtrl[i] &= ~((1 << 7) | (1 << 1));
-            if (gamepads[i].buttons & GCB_RB)
-                handCtrl[i] &= ~((1 << 7) | (1 << 0));
+            for (int btnIdx = 0; btnIdx < 16; btnIdx++) {
+                if ((gamepads[i].buttons & (1 << btnIdx)) == 0)
+                    continue;
+
+                uint8_t button = gamePadButtonHandCtrlButtonIdxs[btnIdx];
+                if (button >= 1 && button <= 6)
+                    handCtrl[i] &= ~buttonMasks[button - 1];
+            }
 
             // Map D-pad on hand controller disc
             unsigned p = 0;
@@ -500,7 +531,6 @@ public:
                 default: break;
             }
         }
-
         aqpUpdateHandCtrl(handCtrl[0], handCtrl[1]);
     }
 
@@ -510,9 +540,8 @@ public:
 
         RecursiveMutexLock lock(mutex);
 
-        uint16_t pressed  = (~gamepads[idx].buttons & data.buttons);
-        uint16_t released = (gamepads[idx].buttons & ~data.buttons);
-        uint16_t changed  = (pressed | released);
+        uint16_t pressed = (~gamepads[idx].buttons & data.buttons);
+        uint16_t changed = (gamepads[idx].buttons ^ data.buttons);
 
         // printf("idx=%u pressed=%04X\n", idx, pressed);
 
@@ -527,17 +556,23 @@ public:
 
             if (getDisplayOverlay()->isVisible()) {
                 if (changed & GCB_DPAD_UP)
-                    kb->handleScancode(SCANCODE_UP, (pressed & GCB_DPAD_UP) != 0);
+                    kb->handleScancode(SCANCODE_UP, (data.buttons & GCB_DPAD_UP) != 0);
                 if (changed & GCB_DPAD_DOWN)
-                    kb->handleScancode(SCANCODE_DOWN, (pressed & GCB_DPAD_DOWN) != 0);
+                    kb->handleScancode(SCANCODE_DOWN, (data.buttons & GCB_DPAD_DOWN) != 0);
                 if (changed & GCB_DPAD_LEFT)
-                    kb->handleScancode(SCANCODE_LEFT, (pressed & GCB_DPAD_LEFT) != 0);
+                    kb->handleScancode(SCANCODE_LEFT, (data.buttons & GCB_DPAD_LEFT) != 0);
                 if (changed & GCB_DPAD_RIGHT)
-                    kb->handleScancode(SCANCODE_RIGHT, (pressed & GCB_DPAD_RIGHT) != 0);
+                    kb->handleScancode(SCANCODE_RIGHT, (data.buttons & GCB_DPAD_RIGHT) != 0);
                 if (changed & GCB_A)
-                    kb->handleScancode(SCANCODE_RETURN, (pressed & GCB_A) != 0);
+                    kb->handleScancode(SCANCODE_RETURN, (data.buttons & GCB_A) != 0);
                 if (changed & GCB_B)
-                    kb->handleScancode(SCANCODE_ESCAPE, (pressed & GCB_B) != 0);
+                    kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
+
+            } else if (enableGamepadKeyboardMapping) {
+                for (int i = 0; i < 16; i++) {
+                    if (gamePadButtonScanCodes[i] != 0 && changed & (1 << i))
+                        kb->handleScancode(gamePadButtonScanCodes[i], (data.buttons & (1 << i)) != 0);
+                }
             }
         }
 
@@ -738,6 +773,38 @@ public:
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Reset CPU (CTRL-ESC)");
             item.onEnter = [this]() {
                 resetCore();
+            };
+        }
+        menu.items.emplace_back(MenuItemType::separator);
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Keyboard to hand controller mapping");
+            item.onEnter = [this]() {
+            };
+        }
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Gamepad to hand controller mapping");
+            item.onEnter = [this]() {
+                GamepadHandControllerMappingMenu menu;
+                menu.enabled = enableGamepadHandControllerMapping;
+                memcpy(menu.buttonNumber, gamePadButtonHandCtrlButtonIdxs, sizeof(menu.buttonNumber));
+                menu.onChange = [this, &menu]() {
+                    enableGamepadHandControllerMapping = menu.enabled;
+                    memcpy(gamePadButtonHandCtrlButtonIdxs, menu.buttonNumber, sizeof(gamePadButtonHandCtrlButtonIdxs));
+                };
+                menu.show();
+            };
+        }
+        {
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Gamepad to keyboard mapping");
+            item.onEnter = [this]() {
+                GamepadKeyboardMappingMenu menu;
+                menu.enabled = enableGamepadKeyboardMapping;
+                memcpy(menu.buttonScanCodes, gamePadButtonScanCodes, sizeof(menu.buttonScanCodes));
+                menu.onChange = [this, &menu]() {
+                    enableGamepadKeyboardMapping = menu.enabled;
+                    memcpy(gamePadButtonScanCodes, menu.buttonScanCodes, sizeof(gamePadButtonScanCodes));
+                };
+                menu.show();
             };
         }
         menu.items.emplace_back(MenuItemType::separator);

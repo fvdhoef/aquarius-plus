@@ -18,6 +18,7 @@ public:
     virtual void handleScancode(unsigned scanCode, bool keyDown) = 0;
 
     virtual int getKey(TickType_t ticksToWait) = 0;
+    virtual int waitScanCode()                 = 0;
 
     virtual void        setKeyLayout(KeyLayout layout)     = 0;
     virtual KeyLayout   getKeyLayout()                     = 0;
@@ -152,3 +153,5 @@ enum {
     ModRAlt   = (1 << 6),
     ModRGui   = (1 << 7),
 };
+
+const char* getScanCodeName(uint8_t scanCode);
