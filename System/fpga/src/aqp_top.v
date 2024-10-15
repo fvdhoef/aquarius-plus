@@ -180,7 +180,7 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
-    assign spibm_en      = !spibm_busreq_n && !ebus_busack_n;
+    assign spibm_en      = !spibm_busreq_n && (!ebus_busack_n || !has_z80);
     assign ebus_busreq_n = !(use_t80 || !spibm_busreq_n);
 
     wire        spi_msg_end;
