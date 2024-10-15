@@ -9,6 +9,7 @@
 #include "SdCardUpdateMenu.h"
 #include "EspStatsMenu.h"
 #include "FileServer.h"
+#include "Keyboard.h"
 
 static WiFiMenu      wifiMenu;
 static BluetoothMenu btMenu;
@@ -93,11 +94,15 @@ public:
         {
             auto &item   = items.emplace_back(MenuItemType::subMenu, "Factory reset");
             item.onEnter = [&]() {
-                drawMessage("Erasing settings...");
-                ESP_ERROR_CHECK(nvs_flash_erase());
-                ESP_ERROR_CHECK(nvs_flash_init());
-                drawMessage("Restarting system...");
-                esp_restart();
+                drawMessage("Are you sure? (Type 'y' to continue)");
+                int ch = getKeyboard()->getKey(portMAX_DELAY);
+                if (ch == 'y') {
+                    drawMessage("Erasing settings...");
+                    ESP_ERROR_CHECK(nvs_flash_erase());
+                    ESP_ERROR_CHECK(nvs_flash_init());
+                    drawMessage("Restarting system...");
+                    esp_restart();
+                }
             };
         }
         items.emplace_back(MenuItemType::separator);

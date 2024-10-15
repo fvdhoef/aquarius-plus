@@ -65,6 +65,9 @@ public:
         auto fpgaCore = getFpgaCore();
         if (fpgaCore) {
             fpgaCore->addMainMenuItems(*this);
+            while (!items.empty() && items.back().type == MenuItemType::separator)
+                items.pop_back();
+
             items.emplace_back(MenuItemType::separator);
         }
 

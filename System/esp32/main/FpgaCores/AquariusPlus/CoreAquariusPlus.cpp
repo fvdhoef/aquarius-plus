@@ -702,7 +702,7 @@ public:
 
     void addMainMenuItems(Menu &menu) override {
         {
-            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Restart Aquarius+ (CTRL-ESC)");
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Reset CPU (CTRL-ESC)");
             item.onEnter = [this]() {
                 resetCore();
             };
@@ -778,7 +778,7 @@ public:
                         nvs_close(h);
                     }
 
-                    menu.drawMessage("Please restart Aquarius+");
+                    menu.drawMessage("Please reset CPU");
                     vTaskDelay(pdMS_TO_TICKS(1000));
                 }
             };
