@@ -7,6 +7,7 @@
 #include <math.h>
 #include <nvs_flash.h>
 #include "XzDecompress.h"
+#include "DisplayOverlay/DisplayOverlay.h"
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -508,6 +509,38 @@ public:
             return;
 
         RecursiveMutexLock lock(mutex);
+
+        uint16_t pressed  = (~gamepads[idx].buttons & data.buttons);
+        uint16_t released = (gamepads[idx].buttons & ~data.buttons);
+        uint16_t changed  = (pressed | released);
+
+        // printf("idx=%u pressed=%04X\n", idx, pressed);
+
+        if (idx == 0) {
+            auto kb = getKeyboard();
+            if (pressed & GCB_GUIDE) {
+                kb->handleScancode(SCANCODE_LCTRL, true);
+                kb->handleScancode(SCANCODE_TAB, true);
+                kb->handleScancode(SCANCODE_TAB, false);
+                kb->handleScancode(SCANCODE_LCTRL, false);
+            }
+
+            if (getDisplayOverlay()->isVisible()) {
+                if (changed & GCB_DPAD_UP)
+                    kb->handleScancode(SCANCODE_UP, (pressed & GCB_DPAD_UP) != 0);
+                if (changed & GCB_DPAD_DOWN)
+                    kb->handleScancode(SCANCODE_DOWN, (pressed & GCB_DPAD_DOWN) != 0);
+                if (changed & GCB_DPAD_LEFT)
+                    kb->handleScancode(SCANCODE_LEFT, (pressed & GCB_DPAD_LEFT) != 0);
+                if (changed & GCB_DPAD_RIGHT)
+                    kb->handleScancode(SCANCODE_RIGHT, (pressed & GCB_DPAD_RIGHT) != 0);
+                if (changed & GCB_A)
+                    kb->handleScancode(SCANCODE_RETURN, (pressed & GCB_A) != 0);
+                if (changed & GCB_B)
+                    kb->handleScancode(SCANCODE_ESCAPE, (pressed & GCB_B) != 0);
+            }
+        }
+
         gamepads[idx] = data;
         gameCtrlUpdated();
     }
