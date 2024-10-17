@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM                Biorhythm Module
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM              Updated 18 APR 2024
+1003 REM              Updated 16 OCT 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -13,7 +13,12 @@
 
 1100 _setup
 1101 REM Setup Biorhythm components
+
 1110 SET FAST ON
+1115 'CLS 2,0
+1116 SCREEN 1,3,,1,
+1117 LOAD BITMAP "data/red_back.bmp4"
+
 1120 USE CHRSET "data/horoscope.chr"
 1130 mu = pt3status
 1140 dd = 0
@@ -55,7 +60,8 @@
 1350 gosub _theDays
 
 1400 _resetInput
-1410 LOAD SCREEN "data/bioInput.scr" 
+1409 LOAD BITMAP "data/red_back.bmp4"
+1410 LOAD SCREEN "data/bioInput_blk.scr" 
 1420 gosub _refreshFields
 
 2000 _main
@@ -358,7 +364,7 @@
 6999 REM Chart Biorhythm
 7000 _chartBio
 7001 poke screen 11+(16*40),"Charting Biorhythm..."
-7002 poke color  11+(16*40),STRING$(21,126)
+7002 poke color  11+(16*40),STRING$(21,112)
 7003 gosub _checkFields
 7004 sd = 0         : REM Set birth date Datum
 7005 gosub _theDays
@@ -366,7 +372,8 @@
 7007 gosub _theDays
 7008 bd = dt(1,0)-1 : REM startBigDay
 
-7010 load screen "data/bioMatrix.scr"
+7009 load bitmap "data/grey_back.bmp4"
+7010 load screen "data/bioMatrix_blk.scr"
 7011 ye$ = right$(str$(dt(1,1)+10000),4)
 7012 poke screen 45,ye$
 7013 mo$ = right$(str$(dt(1,2) + 100),2)
@@ -391,27 +398,27 @@
 
 7200 REM Chart Physical
 7210 cp$ = CHR$(163)  : REM Top row bloxels char
-7220 pc  = 31         : REM Red on dark grey
+7220 pc  = 16         : REM Red on black
 7230 poke screen ((4+(ip))*40)+j,cp$
 7240 poke color  ((4+(ip))*40)+j,pc
 
 7300 REM Chart Emotional
 7310 ce$ = CHR$(172)  : REM Middle row bloxels char
-7320 ec  = 47         : REM Green on dark grey
+7320 ec  = 32         : REM Green on black
 7330 if peek screen$(((4+ie)*40)+j,1) = CHR$(163) then ce$ = CHR$(175)
-7340 if peek screen$(((4+ie)*40)+j,1) = CHR$(163) then ec  = 63
+7340 if peek screen$(((4+ie)*40)+j,1) = CHR$(163) then ec  = 48
 7350 poke screen ((4+(ie))*40)+j,ce$
 7360 poke color  ((4+(ie))*40)+j,ec
 
 7400 REM Chart Intellectual
 7410 ci$ = CHR$(240)  : REM Bottom row bloxels char
-7420 ic  = 79         : REM Blue on dark grey
+7420 ic  = 64         : REM Blue on black
 7430 if peek screen$(((4+ii)*40)+j,1) = CHR$(163) then ci$ = CHR$(243)
-7440 if peek screen$(((4+ii)*40)+j,1) = CHR$(163) then ic  = 95
+7440 if peek screen$(((4+ii)*40)+j,1) = CHR$(163) then ic  = 80
 7450 if peek screen$(((4+ii)*40)+j,1) = CHR$(172) then ci$ = CHR$(252)
-7460 if peek screen$(((4+ii)*40)+j,1) = CHR$(172) then ic  = 111
+7460 if peek screen$(((4+ii)*40)+j,1) = CHR$(172) then ic  = 96
 7470 if peek screen$(((4+ii)*40)+j,1) = CHR$(175) then ci$ = CHR$(255)
-7480 if peek screen$(((4+ii)*40)+j,1) = CHR$(175) then ic  = 127
+7480 if peek screen$(((4+ii)*40)+j,1) = CHR$(175) then ic  = 112
 7490 poke screen ((4+(ii))*40)+j,ci$
 7500 poke color  ((4+(ii))*40)+j,ic
 7510 dd = dd + 0.5
@@ -419,11 +426,12 @@
 7599 next j
 7600 poke screen 964,"Press any key to return to edit."
 7610 for i = 964 to 995
-7620 poke color  i,127
+7620 poke color  i,112
 7630 next i
 7640 pause
 
-7700 LOAD SCREEN "data/bioInput.scr"
+7700 LOAD BITMAP "data/red_back.bmp4"
+7701 LOAD SCREEN "data/bioInput_blk.scr"
 7710 gosub _refreshFields
 
 7999 goto _main
@@ -431,7 +439,7 @@
 8000 _about
 8001 REM Show About... pages
 8010 STASH SCREEN
-8020 LOAD SCREEN "data/bioAbout.scr"
+8020 LOAD SCREEN "data/bioAbout_blk.scr"
 8040 PAUSE
 8050 RESTORE SCREEN
 8060 return

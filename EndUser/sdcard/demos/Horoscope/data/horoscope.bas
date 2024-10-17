@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM                 Horoscope Menu
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM              Updated 13 OCT 2024
+1003 REM              Updated 16 OCT 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -17,6 +17,7 @@
 
 1100 _setup
 1101 REM Setup system components
+1110 SCREEN 1,0
 1159 REM Maintain PT3 Play status
 1160 mu = pt3status
 
@@ -25,7 +26,10 @@
 
 1900 _loadmenu
 1901 REM Load main menu assets
-1910 LOAD SCREEN "data/horomenu.scr"
+1910 CLS 2,0
+1920 SCREEN 1,3,,1,
+1930 LOAD BITMAP "data/red_back.bmp4"
+1940 LOAD SCREEN "data/horomenu_blk.scr"
 
 2000 _mainmenu
 2001 REM Main Menu loop
@@ -66,13 +70,14 @@
 
 3500 _biorhythm
 3501 REM Load Biorhythm program
-3510 LOAD SCREEN "data/bioLoad.scr"
+3510 LOAD SCREEN "data/bioLoad_blk.scr"
 3520 RUN "data/biorhythm.bas"
 3599 END
 
 4000 _about
 4001 REM Show About... pages
-4010 LOAD SCREEN "data/horoAbout.scr"
+4002 LOAD BITMAP "data/arcade.bmp4"
+4010 LOAD SCREEN "data/horoAbout_blk.scr"
 4020 PAUSE
 4030 goto _loadmenu
 
