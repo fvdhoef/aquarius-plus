@@ -8,8 +8,9 @@
 #include <nvs_flash.h>
 #include "XzDecompress.h"
 #include "DisplayOverlay/DisplayOverlay.h"
+#include "DisplayOverlay/KeyboardHandCtrlMappingMenu.h"
+#include "DisplayOverlay/GamepadHandCtrlMappingMenu.h"
 #include "DisplayOverlay/GamepadKeyboardMappingMenu.h"
-#include "DisplayOverlay/GamepadHandControllerMappingMenu.h"
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -54,7 +55,7 @@ public:
     SemaphoreHandle_t mutex;
     uint64_t          prevMatrix        = 0;
     uint64_t          keybMatrix        = 0;
-    GamePadData       gamepads[2]       = {0};
+    GamePadData       gamePads[2]       = {0};
     uint8_t           videoTimingMode   = 0;
     bool              useT80            = false;
     bool              forceTurbo        = false;
@@ -62,10 +63,23 @@ public:
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
     CoreInfo          coreInfo;
-    bool              enableGamepadKeyboardMapping        = false;
-    bool              enableGamepadHandControllerMapping  = true;
-    uint8_t           gamePadButtonScanCodes[16]          = {0};
-    uint8_t           gamePadButtonHandCtrlButtonIdxs[16] = {
+    bool              enableKeyboardHandCtrlMapping = false;
+    bool              enableGamePadHandCtrlMapping  = true;
+    bool              enableGamePadKeyboardMapping  = false;
+    uint8_t           gamePadButtonScanCodes[16]    = {0};
+    unsigned          keybHandCtrl1Pressed          = 0;
+    uint8_t           keybHandCtrl1                 = 0xFF;
+    uint8_t           gamePadHandCtrl[2]            = {0xFF, 0xFF};
+
+    uint8_t keyboardHandCtrlButtonScanCodes[6] = {
+        SCANCODE_INSERT,
+        SCANCODE_HOME,
+        SCANCODE_PAGEUP,
+        SCANCODE_DELETE,
+        SCANCODE_END,
+        SCANCODE_PAGEDOWN,
+    };
+    uint8_t gamePadButtonHandCtrlButtonIdxs[16] = {
         [GCB_A_IDX]          = 1,
         [GCB_B_IDX]          = 2,
         [GCB_X_IDX]          = 3,
@@ -307,8 +321,84 @@ public:
     }
 #endif
 
-    void keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) override {
+    bool handControllerEmulate(unsigned scanCode, bool keyDown) {
+        keybHandCtrl1 = 0xFF;
+        if (!enableKeyboardHandCtrlMapping)
+            return false;
+
+        bool result = true;
+
+        enum {
+            UP    = (1 << 0),
+            DOWN  = (1 << 1),
+            LEFT  = (1 << 2),
+            RIGHT = (1 << 3),
+            K1    = (1 << 4),
+            K2    = (1 << 5),
+            K3    = (1 << 6),
+            K4    = (1 << 7),
+            K5    = (1 << 8),
+            K6    = (1 << 9),
+        };
+
+        if (scanCode == SCANCODE_UP)
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | UP) : (keybHandCtrl1Pressed & ~UP);
+        else if (scanCode == SCANCODE_DOWN)
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | DOWN) : (keybHandCtrl1Pressed & ~DOWN);
+        else if (scanCode == SCANCODE_LEFT)
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | LEFT) : (keybHandCtrl1Pressed & ~LEFT);
+        else if (scanCode == SCANCODE_RIGHT)
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | RIGHT) : (keybHandCtrl1Pressed & ~RIGHT);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[0])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K1) : (keybHandCtrl1Pressed & ~K1);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[1])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K2) : (keybHandCtrl1Pressed & ~K2);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[2])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K3) : (keybHandCtrl1Pressed & ~K3);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[3])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K4) : (keybHandCtrl1Pressed & ~K4);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[4])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K5) : (keybHandCtrl1Pressed & ~K5);
+        else if (scanCode == keyboardHandCtrlButtonScanCodes[5])
+            keybHandCtrl1Pressed = keyDown ? (keybHandCtrl1Pressed | K6) : (keybHandCtrl1Pressed & ~K6);
+        else
+            result = false;
+
+        switch (keybHandCtrl1Pressed & 0xF) {
+            case LEFT: keybHandCtrl1 &= ~(1 << 3); break;
+            case UP | LEFT: keybHandCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+            case UP: keybHandCtrl1 &= ~(1 << 2); break;
+            case UP | RIGHT: keybHandCtrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+            case RIGHT: keybHandCtrl1 &= ~(1 << 1); break;
+            case DOWN | RIGHT: keybHandCtrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+            case DOWN: keybHandCtrl1 &= ~(1 << 0); break;
+            case DOWN | LEFT: keybHandCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+            default: break;
+        }
+        if (keybHandCtrl1Pressed & K1)
+            keybHandCtrl1 &= ~(1 << 6);
+        if (keybHandCtrl1Pressed & K2)
+            keybHandCtrl1 &= ~((1 << 7) | (1 << 2));
+        if (keybHandCtrl1Pressed & K3)
+            keybHandCtrl1 &= ~((1 << 7) | (1 << 5));
+        if (keybHandCtrl1Pressed & K4)
+            keybHandCtrl1 &= ~(1 << 5);
+        if (keybHandCtrl1Pressed & K5)
+            keybHandCtrl1 &= ~((1 << 7) | (1 << 1));
+        if (keybHandCtrl1Pressed & K6)
+            keybHandCtrl1 &= ~((1 << 7) | (1 << 0));
+
+        return result;
+    }
+
+    bool keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) override {
         RecursiveMutexLock lock(mutex);
+
+        // Hand controller emulation
+        if (handControllerEmulate(scanCode, keyDown)) {
+            updateHandCtrl();
+            return true;
+        }
 
         // Keyboard matrix emulation
         {
@@ -433,6 +523,7 @@ public:
             aqpUpdateKeybMatrix(tmpMatrix);
             prevMatrix = keybMatrix;
         }
+        return false;
     }
 
     void keyChar(uint8_t ch, bool isRepeat) override {
@@ -454,12 +545,16 @@ public:
         mouseWheel        = mouseWheel + dWheel;
     }
 
-    void gameCtrlUpdated() {
-        if (!enableGamepadHandControllerMapping)
-            return;
+    void updateHandCtrl() {
+        aqpUpdateHandCtrl(gamePadHandCtrl[0] & keybHandCtrl1, gamePadHandCtrl[1]);
+    }
 
-        // Update hand controller
-        uint8_t handCtrl[2] = {0xFF, 0xFF};
+    void gameCtrlUpdated() {
+        gamePadHandCtrl[0] = 0xFF;
+        gamePadHandCtrl[1] = 0xFF;
+
+        if (!enableGamePadHandCtrlMapping)
+            return;
 
         static const uint8_t buttonMasks[] = {
             (1 << 6),            // 1
@@ -472,36 +567,36 @@ public:
 
         for (int i = 0; i < 2; i++) {
             for (int btnIdx = 0; btnIdx < 16; btnIdx++) {
-                if ((gamepads[i].buttons & (1 << btnIdx)) == 0)
+                if ((gamePads[i].buttons & (1 << btnIdx)) == 0)
                     continue;
 
                 uint8_t button = gamePadButtonHandCtrlButtonIdxs[btnIdx];
                 if (button >= 1 && button <= 6)
-                    handCtrl[i] &= ~buttonMasks[button - 1];
+                    gamePadHandCtrl[i] &= ~buttonMasks[button - 1];
             }
 
             // Map D-pad on hand controller disc
             unsigned p = 0;
-            if ((gamepads[i].buttons & GCB_DPAD_UP) == GCB_DPAD_UP)
+            if ((gamePads[i].buttons & GCB_DPAD_UP) == GCB_DPAD_UP)
                 p = 13;
-            else if ((gamepads[i].buttons & (GCB_DPAD_UP | GCB_DPAD_RIGHT)) == (GCB_DPAD_UP | GCB_DPAD_RIGHT))
+            else if ((gamePads[i].buttons & (GCB_DPAD_UP | GCB_DPAD_RIGHT)) == (GCB_DPAD_UP | GCB_DPAD_RIGHT))
                 p = 15;
-            else if ((gamepads[i].buttons & GCB_DPAD_RIGHT) == GCB_DPAD_RIGHT)
+            else if ((gamePads[i].buttons & GCB_DPAD_RIGHT) == GCB_DPAD_RIGHT)
                 p = 1;
-            else if ((gamepads[i].buttons & (GCB_DPAD_DOWN | GCB_DPAD_RIGHT)) == (GCB_DPAD_DOWN | GCB_DPAD_RIGHT))
+            else if ((gamePads[i].buttons & (GCB_DPAD_DOWN | GCB_DPAD_RIGHT)) == (GCB_DPAD_DOWN | GCB_DPAD_RIGHT))
                 p = 3;
-            else if ((gamepads[i].buttons & GCB_DPAD_DOWN) == GCB_DPAD_DOWN)
+            else if ((gamePads[i].buttons & GCB_DPAD_DOWN) == GCB_DPAD_DOWN)
                 p = 5;
-            else if ((gamepads[i].buttons & (GCB_DPAD_DOWN | GCB_DPAD_LEFT)) == (GCB_DPAD_DOWN | GCB_DPAD_LEFT))
+            else if ((gamePads[i].buttons & (GCB_DPAD_DOWN | GCB_DPAD_LEFT)) == (GCB_DPAD_DOWN | GCB_DPAD_LEFT))
                 p = 7;
-            else if ((gamepads[i].buttons & GCB_DPAD_LEFT) == GCB_DPAD_LEFT)
+            else if ((gamePads[i].buttons & GCB_DPAD_LEFT) == GCB_DPAD_LEFT)
                 p = 9;
-            else if ((gamepads[i].buttons & (GCB_DPAD_UP | GCB_DPAD_LEFT)) == (GCB_DPAD_UP | GCB_DPAD_LEFT))
+            else if ((gamePads[i].buttons & (GCB_DPAD_UP | GCB_DPAD_LEFT)) == (GCB_DPAD_UP | GCB_DPAD_LEFT))
                 p = 11;
 
             {
-                float x = gamepads[i].lx / 128.0f;
-                float y = gamepads[i].ly / 128.0f;
+                float x = gamePads[i].lx / 128.0f;
+                float y = gamePads[i].ly / 128.0f;
 
                 float len   = sqrtf(x * x + y * y);
                 float angle = 0;
@@ -512,26 +607,27 @@ public:
             }
 
             switch (p) {
-                case 1: handCtrl[i] &= ~((1 << 1)); break;
-                case 2: handCtrl[i] &= ~((1 << 4) | (1 << 1)); break;
-                case 3: handCtrl[i] &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
-                case 4: handCtrl[i] &= ~((1 << 1) | (1 << 0)); break;
-                case 5: handCtrl[i] &= ~((1 << 0)); break;
-                case 6: handCtrl[i] &= ~((1 << 4) | (1 << 0)); break;
-                case 7: handCtrl[i] &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
-                case 8: handCtrl[i] &= ~((1 << 3) | (1 << 0)); break;
-                case 9: handCtrl[i] &= ~((1 << 3)); break;
-                case 10: handCtrl[i] &= ~((1 << 4) | (1 << 3)); break;
-                case 11: handCtrl[i] &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
-                case 12: handCtrl[i] &= ~((1 << 3) | (1 << 2)); break;
-                case 13: handCtrl[i] &= ~((1 << 2)); break;
-                case 14: handCtrl[i] &= ~((1 << 4) | (1 << 2)); break;
-                case 15: handCtrl[i] &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
-                case 16: handCtrl[i] &= ~((1 << 2) | (1 << 1)); break;
+                case 1: gamePadHandCtrl[i] &= ~((1 << 1)); break;
+                case 2: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 1)); break;
+                case 3: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
+                case 4: gamePadHandCtrl[i] &= ~((1 << 1) | (1 << 0)); break;
+                case 5: gamePadHandCtrl[i] &= ~((1 << 0)); break;
+                case 6: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 0)); break;
+                case 7: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
+                case 8: gamePadHandCtrl[i] &= ~((1 << 3) | (1 << 0)); break;
+                case 9: gamePadHandCtrl[i] &= ~((1 << 3)); break;
+                case 10: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 3)); break;
+                case 11: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
+                case 12: gamePadHandCtrl[i] &= ~((1 << 3) | (1 << 2)); break;
+                case 13: gamePadHandCtrl[i] &= ~((1 << 2)); break;
+                case 14: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 2)); break;
+                case 15: gamePadHandCtrl[i] &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
+                case 16: gamePadHandCtrl[i] &= ~((1 << 2) | (1 << 1)); break;
                 default: break;
             }
         }
-        aqpUpdateHandCtrl(handCtrl[0], handCtrl[1]);
+
+        updateHandCtrl();
     }
 
     void gamepadReport(unsigned idx, const GamePadData &data) override {
@@ -540,8 +636,8 @@ public:
 
         RecursiveMutexLock lock(mutex);
 
-        uint16_t pressed = (~gamepads[idx].buttons & data.buttons);
-        uint16_t changed = (gamepads[idx].buttons ^ data.buttons);
+        uint16_t pressed = (~gamePads[idx].buttons & data.buttons);
+        uint16_t changed = (gamePads[idx].buttons ^ data.buttons);
 
         // printf("idx=%u pressed=%04X\n", idx, pressed);
 
@@ -568,7 +664,7 @@ public:
                 if (changed & GCB_B)
                     kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
 
-            } else if (enableGamepadKeyboardMapping) {
+            } else if (enableGamePadKeyboardMapping) {
                 for (int i = 0; i < 16; i++) {
                     if (gamePadButtonScanCodes[i] != 0 && changed & (1 << i))
                         kb->handleScancode(gamePadButtonScanCodes[i], (data.buttons & (1 << i)) != 0);
@@ -576,7 +672,7 @@ public:
             }
         }
 
-        gamepads[idx] = data;
+        gamePads[idx] = data;
         gameCtrlUpdated();
     }
 
@@ -612,14 +708,14 @@ public:
             return;
         }
         up->txWrite(0);
-        up->txWrite(gamepads[idx].lx);
-        up->txWrite(gamepads[idx].ly);
-        up->txWrite(gamepads[idx].rx);
-        up->txWrite(gamepads[idx].ry);
-        up->txWrite(gamepads[idx].lt);
-        up->txWrite(gamepads[idx].rt);
-        up->txWrite(gamepads[idx].buttons & 0xFF);
-        up->txWrite(gamepads[idx].buttons >> 8);
+        up->txWrite(gamePads[idx].lx);
+        up->txWrite(gamePads[idx].ly);
+        up->txWrite(gamePads[idx].rx);
+        up->txWrite(gamePads[idx].ry);
+        up->txWrite(gamePads[idx].lt);
+        up->txWrite(gamePads[idx].rt);
+        up->txWrite(gamePads[idx].buttons & 0xFF);
+        up->txWrite(gamePads[idx].buttons >> 8);
     }
 
     int uartCommand(uint8_t cmd, const uint8_t *buf, size_t len) override {
@@ -777,18 +873,26 @@ public:
         }
         menu.items.emplace_back(MenuItemType::separator);
         {
-            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Keyboard to hand controller mapping");
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Keyboard to hand ctrl mapping");
             item.onEnter = [this]() {
+                KeyboardHandCtrlMappingMenu menu;
+                menu.enabled = enableKeyboardHandCtrlMapping;
+                memcpy(menu.buttonScanCodes, keyboardHandCtrlButtonScanCodes, sizeof(menu.buttonScanCodes));
+                menu.onChange = [this, &menu]() {
+                    enableKeyboardHandCtrlMapping = menu.enabled;
+                    memcpy(keyboardHandCtrlButtonScanCodes, menu.buttonScanCodes, sizeof(keyboardHandCtrlButtonScanCodes));
+                };
+                menu.show();
             };
         }
         {
-            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Gamepad to hand controller mapping");
+            auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Gamepad to hand ctrl mapping");
             item.onEnter = [this]() {
-                GamepadHandControllerMappingMenu menu;
-                menu.enabled = enableGamepadHandControllerMapping;
+                GamepadHandCtrlMappingMenu menu;
+                menu.enabled = enableGamePadHandCtrlMapping;
                 memcpy(menu.buttonNumber, gamePadButtonHandCtrlButtonIdxs, sizeof(menu.buttonNumber));
                 menu.onChange = [this, &menu]() {
-                    enableGamepadHandControllerMapping = menu.enabled;
+                    enableGamePadHandCtrlMapping = menu.enabled;
                     memcpy(gamePadButtonHandCtrlButtonIdxs, menu.buttonNumber, sizeof(gamePadButtonHandCtrlButtonIdxs));
                 };
                 menu.show();
@@ -798,10 +902,10 @@ public:
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Gamepad to keyboard mapping");
             item.onEnter = [this]() {
                 GamepadKeyboardMappingMenu menu;
-                menu.enabled = enableGamepadKeyboardMapping;
+                menu.enabled = enableGamePadKeyboardMapping;
                 memcpy(menu.buttonScanCodes, gamePadButtonScanCodes, sizeof(menu.buttonScanCodes));
                 menu.onChange = [this, &menu]() {
-                    enableGamepadKeyboardMapping = menu.enabled;
+                    enableGamePadKeyboardMapping = menu.enabled;
                     memcpy(gamePadButtonScanCodes, menu.buttonScanCodes, sizeof(gamePadButtonScanCodes));
                 };
                 menu.show();

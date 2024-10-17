@@ -63,7 +63,7 @@ public:
             }
 
             char tmp[37];
-            snprintf(tmp, sizeof(tmp), "%-8s %s", button.name, assigned);
+            snprintf(tmp, sizeof(tmp), "%-5s -> %s", button.name, assigned);
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [this, buttonIdx]() {
                 drawMessage("Press key or ESC to unassign");

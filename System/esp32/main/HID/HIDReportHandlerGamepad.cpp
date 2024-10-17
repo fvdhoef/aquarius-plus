@@ -18,9 +18,11 @@ HIDReportHandlerGamepad::HIDReportHandlerGamepad()
     memset(&lastData, 0, sizeof(lastData));
 
     gamePadIdx = idxAlloc.alloc();
+    ESP_LOGI(TAG, "Allocated game pad idx %d", gamePadIdx);
 }
 
 HIDReportHandlerGamepad::~HIDReportHandlerGamepad() {
+    ESP_LOGI(TAG, "Freeing game pad idx %d", gamePadIdx);
     idxAlloc.free(gamePadIdx);
 }
 

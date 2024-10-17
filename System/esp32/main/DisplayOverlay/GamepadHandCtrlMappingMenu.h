@@ -4,11 +4,11 @@
 #include "Keyboard.h"
 #include "GameCtrl.h"
 
-class GamepadHandControllerMappingMenu : public Menu {
+class GamepadHandCtrlMappingMenu : public Menu {
 public:
     std::function<void()> onChange;
 
-    GamepadHandControllerMappingMenu() : Menu("Gamepad to hand controller mapping", 38) {
+    GamepadHandCtrlMappingMenu() : Menu("Gamepad to hand ctrl mapping", 38) {
     }
 
     struct Button {
@@ -53,7 +53,7 @@ public:
             }
 
             char tmp[37];
-            snprintf(tmp, sizeof(tmp), "%-8s %s", button.name, assigned);
+            snprintf(tmp, sizeof(tmp), "%-5s -> %s", button.name, assigned);
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [this, buttonIdx]() {
                 drawMessage("Press 1-6 or ESC to unassign");

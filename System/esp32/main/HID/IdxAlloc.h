@@ -27,7 +27,7 @@ public:
             return;
 
         vTaskSuspendAll();
-        val |= (1 << idx);
+        val &= ~(1 << idx);
         xTaskResumeAll();
     }
 };

@@ -352,12 +352,25 @@ public:
         }
 
         // Keyboard layout handling
-        processScancode(scanCode, keyDown);
+        int ch = processScancode(scanCode, keyDown);
 
-        auto core = getFpgaCore();
-        if (core) {
-            if (!getDisplayOverlay()->isVisible() || !keyDown)
-                core->keyScancode(modifiers, scanCode, keyDown);
+        bool stopProcessing = false;
+        auto core           = getFpgaCore();
+        if (core && (!getDisplayOverlay()->isVisible() || !keyDown)) {
+            stopProcessing = core->keyScancode(modifiers, scanCode, keyDown);
+        }
+
+        if (!stopProcessing && ch > 0) {
+            if (ch != 0xFF) {
+                repeat = ch;
+
+                if (!getDisplayOverlay()->isVisible()) {
+                    auto core = getFpgaCore();
+                    if (core)
+                        core->keyChar(ch, false);
+                }
+            }
+            xQueueSend(keyQueue, &ch, 0);
         }
     }
 
@@ -476,7 +489,9 @@ public:
         return ch;
     }
 
-    void processScancode(unsigned scanCode, bool keyDown) {
+    int processScancode(unsigned scanCode, bool keyDown) {
+        int result = -1;
+
         // ESP_LOGI(TAG, "Key %3d %s", scanCode, keyDown ? "pressed" : "released");
         uint8_t prevLeds = leds;
 
@@ -599,18 +614,8 @@ public:
                 }
             }
 
-            if (ch > 0) {
-                if (ch != 0xFF) {
-                    repeat = ch;
-
-                    if (!getDisplayOverlay()->isVisible()) {
-                        auto core = getFpgaCore();
-                        if (core)
-                            core->keyChar(ch, false);
-                    }
-                }
-                xQueueSend(keyQueue, &ch, 0);
-            }
+            if (ch > 0)
+                result = ch;
 
             // printf("%c\n", ch);
         }
@@ -618,6 +623,7 @@ public:
         if (prevLeds != leds) {
             getUSBHost()->keyboardSetLeds(leds);
         }
+        return result;
     }
 
     int getKey(TickType_t ticksToWait) override {
@@ -796,8 +802,8 @@ static const char *scanCodeNames2[] = {
     "Left Alt",    // 226
     "Left GUI",    // 227
     "Right Ctrl",  // 228
-    "Right SHIFT", // 229
-    "Right ALT",   // 230
+    "Right Shift", // 229
+    "Right Alt",   // 230
     "Right GUI",   // 231
 };
 
