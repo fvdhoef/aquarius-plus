@@ -1,7 +1,7 @@
 # Aquarius+ System
 This directory contains:
 - [Schematic and PCB](pcb/)
-- [FPGA firmware](fpga/)
+- [FPGA firmware](fpga_cores/)
 - [ESP32 firmware](esp32/)
 - [ROM extensions source code](rom_src/aqplus_rom/)
 - [Emulator source code](emulator/)
