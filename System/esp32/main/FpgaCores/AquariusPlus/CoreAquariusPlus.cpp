@@ -135,8 +135,8 @@ public:
             auto                 fpgaImage = xzhDecompress(fpgaImageXzhStart, fpgaImageXzhEnd - fpgaImageXzhStart);
             result                         = getFPGA()->loadBitstream(fpgaImage.data(), fpgaImage.size());
 #else
-            extern const uint8_t fpgaImageStart[] asm("_binary_morphbook_impl1_bit_start");
-            extern const uint8_t fpgaImageEnd[] asm("_binary_morphbook_impl1_bit_end");
+            extern const uint8_t fpgaImageStart[] asm("_binary_morphbook_aqplus_impl1_bit_start");
+            extern const uint8_t fpgaImageEnd[] asm("_binary_morphbook_aqplus_impl1_bit_end");
             data   = fpgaImageStart;
             length = fpgaImageEnd - fpgaImageStart;
             result = getFPGA()->loadBitstream(data, length);
