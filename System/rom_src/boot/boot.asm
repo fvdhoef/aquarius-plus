@@ -26,6 +26,10 @@ BOOTSTUB_ADDR       equ $3880
     org     $C000
     ld      sp,$0
 
+    ; Disable video
+    xor     a
+    out     (IO_VCTRL), a
+
     ; Load character ROM
     ld      a,PAGE_CHARROM
     out     (IO_BANK2),a
@@ -48,6 +52,9 @@ BOOTSTUB_ADDR       equ $3880
     call    .set_palette
 
     ; Clear video RAM $3000-$37FF
+    in      a,(IO_BANK0)
+    or      a,BANK_READONLY | BANK_OVERLAY
+    out     (IO_BANK0),a
     xor     a
     ld      hl,$3000
     ld      (hl),a

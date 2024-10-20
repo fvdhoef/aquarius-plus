@@ -16,7 +16,7 @@ module rom(
         8'h05: rddata <= 8'h00;
         8'h06: rddata <= 8'h00;
         8'h07: rddata <= 8'h3E;
-        8'h08: rddata <= 8'h04;
+        8'h08: rddata <= 8'h06;
         8'h09: rddata <= 8'hD3;
         8'h0A: rddata <= 8'hFB;
         8'h0B: rddata <= 8'h3E;
