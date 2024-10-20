@@ -182,6 +182,10 @@ public:
             if (nvs_get_u8(h, "bypassStart", &val8) == ESP_OK) {
                 bypassStartScreen = val8 != 0;
             }
+            if (nvs_get_u8(h, "forceTurbo", &val8) == ESP_OK) {
+                forceTurbo = val8 != 0;
+                aqpForceTurbo(forceTurbo);
+            }
 
             nvs_close(h);
         }
@@ -933,6 +937,14 @@ public:
             item.setter = [this](int newVal) {
                 forceTurbo = (newVal != 0);
                 aqpForceTurbo(forceTurbo);
+
+                nvs_handle_t h;
+                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                    if (nvs_set_u8(h, "forceTurbo", forceTurbo ? 1 : 0) == ESP_OK) {
+                        nvs_commit(h);
+                    }
+                    nvs_close(h);
+                }
             };
             item.getter = [this]() { return forceTurbo ? 1 : 0; };
         }
