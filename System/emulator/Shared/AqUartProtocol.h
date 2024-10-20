@@ -50,24 +50,11 @@ public:
 
     void init();
 
-#ifdef EMULATOR
     void    writeCtrl(uint8_t data);
     void    writeData(uint8_t data);
     uint8_t readCtrl();
     uint8_t readData();
-#endif
 
-#ifndef EMULATOR
-    void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel);
-    void setMouseSensitivityDiv(uint8_t val) {
-        mouseSensitivityDiv = std::max((uint8_t)1, std::min((uint8_t)8, val));
-    }
-    uint8_t getMouseSensitivityDiv() {
-        return mouseSensitivityDiv;
-    }
-#endif
-
-#ifdef EMULATOR
     struct FileInfo {
         uint8_t     flags;
         std::string name;
@@ -80,17 +67,9 @@ public:
         unsigned    offset;
     };
     std::map<uint8_t, DirInfo> di;
-#endif
 
 private:
-#ifndef EMULATOR
-    static void _uartEventTask(void *);
-    void        uartEventTask();
-#endif
-
-#ifdef EMULATOR
     int txFifoRead();
-#endif
 
     void        txFifoWrite(uint8_t data);
     void        txFifoWrite(const void *buf, size_t length);
@@ -124,9 +103,6 @@ private:
     void cmdCloseAll();
     void cmdLoadFpga(const char *pathArg);
 
-#ifndef EMULATOR
-    QueueHandle_t uartQueue;
-#endif
     std::string currentPath;
     uint8_t     rxBuf[16 + 0x10000];
     unsigned    rxBufIdx;
@@ -136,17 +112,11 @@ private:
     int         deIdx[MAX_DDS];
     const char *newPath;
 
-#ifdef EMULATOR
     uint8_t  txBuf[0x10000 + 16];
     unsigned txBufWrIdx;
     unsigned txBufRdIdx;
     unsigned txBufCnt;
-#endif
 
-#ifndef EMULATOR
-    SemaphoreHandle_t mutexMouseData;
-    uint8_t           mouseSensitivityDiv = 4;
-#endif
     bool    mousePresent = false;
     float   mouseX       = 0;
     float   mouseY       = 0;
@@ -154,9 +124,6 @@ private:
     int     mouseWheel   = 0;
 
 public:
-#ifndef EMULATOR
-    SemaphoreHandle_t mutexGameCtrlData;
-#endif
     bool     gameCtrlPresent = false;
     int8_t   gameCtrlLX      = 0;
     int8_t   gameCtrlLY      = 0;
@@ -181,7 +148,5 @@ public:
     void gameCtrlUpdated();
 
 private:
-#ifdef EMULATOR
     friend class UI;
-#endif
 };

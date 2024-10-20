@@ -1,51 +1,39 @@
 #pragma once
 
 #include "Common.h"
-#include <driver/spi_master.h>
 
-enum {
-    IO_BANK0 = 0xF0,
-    IO_BANK1 = 0xF1,
-    IO_BANK2 = 0xF2,
-    IO_BANK3 = 0xF3,
+struct CoreInfo {
+    uint8_t coreType;
+    uint8_t flags;
+    uint8_t versionMajor;
+    uint8_t versionMinor;
+    char    name[17];
 };
 
 class FPGA {
-    FPGA();
-
 public:
-    static FPGA &instance();
+    virtual void init() = 0;
 
-    void init();
-    bool loadBitstream(const void *data, size_t length);
-    bool loadDefaultBitstream();
+    // FPGA configuration
+    virtual bool loadBitstream(const void *data, size_t length) = 0;
+    virtual bool getCoreInfo(CoreInfo *info)                    = 0;
 
-    void    aqpReset();
-    void    aqpUpdateKeybMatrix(uint64_t keyb_matrix);
-    void    aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2, TickType_t ticks_to_wait = portMAX_DELAY);
-    void    aqpWriteKeybBuffer(uint8_t ch);
-    void    aqpAqcuireBus();
-    void    aqpReleaseBus();
-    void    aqpWriteMem(uint16_t addr, uint8_t data);
-    uint8_t aqpReadMem(uint16_t addr);
-    void    aqpWriteIO(uint16_t addr, uint8_t data);
-    uint8_t aqpReadIO(uint16_t addr);
-    void    aqpSaveMemBanks();
-    void    aqpRestoreMemBanks();
-    void    aqpSetMemBank(unsigned bank, uint8_t val);
-    void    aqpSetVideoTimingMode(uint8_t mode);
+#ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
+    // FPGA core interface
+    virtual uint64_t getKeys()                              = 0;
+    virtual void     setVolume(uint16_t volume, bool spkEn) = 0;
+#endif
 
-private:
-    void fpgaTx(const void *data, size_t length);
-    void aqpSel(bool enable);
-    void aqpTx(int data0 = -1, int data1 = -1, int data2 = -1, int data3 = -1);
-    void aqpTx(const void *data, size_t length);
-    void aqpRx(void *buf, size_t length);
+    // Display overlay
+    virtual void setOverlayText(const uint16_t buf[1024])  = 0;
+    virtual void setOverlayFont(const uint8_t buf[2048])   = 0;
+    virtual void setOverlayPalette(const uint16_t buf[16]) = 0;
 
-    SemaphoreHandle_t   mutex;
-    spi_device_handle_t fpgaSpiDev;
-    spi_device_handle_t aqpSpiDev;
-
-    uint8_t saved_banks[4];
-    uint8_t cur_banks[4];
+    // To be used by core specific handlers
+    virtual SemaphoreHandle_t getMutex()                             = 0;
+    virtual void              spiSel(bool enable)                    = 0;
+    virtual void              spiTx(const void *data, size_t length) = 0;
+    virtual void              spiRx(void *buf, size_t length)        = 0;
 };
+
+FPGA *getFPGA();

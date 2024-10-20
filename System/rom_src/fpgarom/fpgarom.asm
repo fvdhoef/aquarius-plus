@@ -16,7 +16,7 @@ PAGE_BOOTBIN equ 51
     ld      sp,$0
 
     ; Enable turbo mode
-    ld      a,4
+    ld      a,6
     out     (IO_SYSCTRL),a
 
     ; Initialize ESP

@@ -79,12 +79,6 @@ public:
     uint8_t handCtrl_gameCtrl = 0xFF;
 
 private:
-#ifndef EMULATOR
-    SemaphoreHandle_t  mutex;
-    static void        keyRepeatTimer(void *arg);
-    esp_timer_handle_t periodic_timer;
-#endif
-
     KeyboardLayout kbLayout;
 
     unsigned handCtrl1Pressed = 0;

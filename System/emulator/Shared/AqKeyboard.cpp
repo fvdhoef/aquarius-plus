@@ -1,21 +1,8 @@
 #include "AqKeyboard.h"
 #include "AqKeyboardDefs.h"
-
-#ifdef EMULATOR
 #include <SDL.h>
 #include "EmuState.h"
 #include "Config.h"
-#else
-#include "FPGA.h"
-#include <esp_system.h>
-#include "USBHost.h"
-#include "MemDump.h"
-#include <nvs_flash.h>
-#endif
-
-#ifndef EMULATOR
-static const char *TAG = "keyboard";
-#endif
 
 #define FLAG_SHFT (1 << 7)
 #define FLAG_CTRL (1 << 6)
@@ -227,11 +214,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
                 repeat = code;
         }
         if (code > 0) {
-#ifdef EMULATOR
             emuState.kbBufWrite(code);
-#else
-            FPGA::instance().aqpWriteKeybBuffer(code);
-#endif
         }
 
     } else {
@@ -330,13 +313,7 @@ void KeyboardLayout::processScancode(unsigned scanCode, bool keyDown) {
 
             if (ch > 0) {
                 repeat = ch;
-
-#ifdef EMULATOR
                 emuState.kbBufWrite(ch);
-#else
-                FPGA::instance().aqpWriteKeybBuffer(ch);
-#endif
-                // printf("'%c' (%02x)\n", (ch >= ' ' && ch <= '~') ? ch : '.', ch);
             }
         }
     }
@@ -466,73 +443,12 @@ AqKeyboard &AqKeyboard::instance() {
 }
 
 void AqKeyboard::init() {
-#ifndef EMULATOR
-    mutex = xSemaphoreCreateRecursiveMutex();
-
-    const esp_timer_create_args_t periodic_timer_args = {
-        .callback              = &keyRepeatTimer,
-        .arg                   = (void *)this,
-        .name                  = "key_repeat",
-        .skip_unhandled_events = true,
-    };
-
-    ESP_ERROR_CHECK(esp_timer_create(&periodic_timer_args, &periodic_timer));
-    ESP_ERROR_CHECK(esp_timer_start_periodic(periodic_timer, 16666));
-#endif
 }
-
-#ifndef EMULATOR
-void AqKeyboard::keyRepeatTimer(void *arg) {
-    static_cast<AqKeyboard *>(arg)->repeatTimer();
-}
-#endif
 
 void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     // printf("%3d: %s\n", scanCode, keyDown ? "DOWN" : "UP");
-#ifndef EMULATOR
-    RecursiveMutexLock lock(mutex);
-#endif
     kbLayout.repeat       = 0;
     kbLayout.pressCounter = 0;
-
-#ifndef EMULATOR
-    // Special keys
-    {
-        uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
-        if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F12) {
-            MemDump::dumpCartridge();
-            return;
-        } else if (keyDown && scanCode == SCANCODE_PRINTSCREEN) {
-            MemDump::dumpScreen();
-            return;
-        } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F10) {
-            FPGA::instance().aqpSetVideoTimingMode(0);
-
-            nvs_handle_t h;
-            if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
-                if (nvs_set_u8(h, "videoTiming", 0) == ESP_OK) {
-                    nvs_commit(h);
-                }
-                nvs_close(h);
-            }
-
-            return;
-
-        } else if (combinedModifiers == KeyboardLayout::ModLGui && keyDown && scanCode == SCANCODE_F11) {
-            FPGA::instance().aqpSetVideoTimingMode(1);
-
-            nvs_handle_t h;
-            if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
-                if (nvs_set_u8(h, "videoTiming", 1) == ESP_OK) {
-                    nvs_commit(h);
-                }
-                nvs_close(h);
-            }
-
-            return;
-        }
-    }
-#endif
 
     // Hand controller emulation
     if (handController(scanCode, keyDown))
@@ -649,36 +565,19 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
         uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
         if (scanCode == SCANCODE_ESCAPE && keyDown) {
             if (combinedModifiers == KeyboardLayout::ModLCtrl) {
-#ifdef EMULATOR
                 emuState.reset();
-#else
-                FPGA::instance().aqpReset();
-#endif
             } else if (combinedModifiers == (KeyboardLayout::ModLShift | KeyboardLayout::ModLCtrl)) {
-#ifdef EMULATOR
                 emuState.reset();
-#else
-                // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
-                FPGA::instance().aqpAqcuireBus();
-                FPGA::instance().aqpReset();
-                esp_restart();
-#endif
             }
         }
     }
 
     if (ledStatus != kbLayout.leds) {
         ledStatus = kbLayout.leds;
-#ifndef EMULATOR
-        USBHost::instance().keyboardSetLeds(ledStatus);
-#endif
     }
 }
 
 void AqKeyboard::repeatTimer() {
-#ifndef EMULATOR
-    RecursiveMutexLock lock(mutex);
-#endif
     if ((keyMode & 1) == 0 || (keyMode & 4) == 0 || kbLayout.repeat == 0) {
         kbLayout.pressCounter = 0;
         return;
@@ -686,11 +585,7 @@ void AqKeyboard::repeatTimer() {
 
     kbLayout.pressCounter++;
     if (kbLayout.pressCounter > 15 && kbLayout.pressCounter % 3 == 0) {
-#ifdef EMULATOR
         emuState.kbBufWrite(kbLayout.repeat);
-#else
-        FPGA::instance().aqpWriteKeybBuffer(kbLayout.repeat);
-#endif
     }
 }
 
@@ -758,33 +653,22 @@ bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
 }
 
 void AqKeyboard::updateMatrix() {
-#ifndef EMULATOR
-    RecursiveMutexLock lock(mutex);
-#endif
     if (prevMatrix != keybMatrix) {
         // printf("keybMatrix: %016llx\n", keybMatrix);
 
         uint64_t tmpMatrix = ~keybMatrix;
 
-#ifdef EMULATOR
         memcpy(emuState.keybMatrix, &tmpMatrix, 8);
-#else
-        FPGA::instance().aqpUpdateKeybMatrix(tmpMatrix);
-#endif
         prevMatrix = keybMatrix;
     }
 
     uint8_t handCtrl1_merged = handCtrl1 & handCtrl_gameCtrl;
 
     if (prevHandCtrl1 != handCtrl1_merged || prevHandCtrl2 != handCtrl2) {
-#ifdef EMULATOR
         emuState.handCtrl1 = handCtrl1_merged;
         emuState.handCtrl2 = handCtrl2;
-#else
-        FPGA::instance().aqpUpdateHandCtrl(handCtrl1_merged, handCtrl2);
-#endif
-        prevHandCtrl1 = handCtrl1_merged;
-        prevHandCtrl2 = handCtrl2;
+        prevHandCtrl1      = handCtrl1_merged;
+        prevHandCtrl2      = handCtrl2;
     }
 }
 
@@ -793,29 +677,5 @@ void AqKeyboard::pressKey(unsigned char ch) {
         ch = '\r';
     }
 
-#ifdef EMULATOR
     emuState.kbBufWrite(ch);
-#else
-    if (ch == 0x1C) {
-        // Delay for 100ms
-        vTaskDelay(pdMS_TO_TICKS(100));
-        return;
-    }
-    if (ch == 0x1D) {
-        // Delay for 500ms
-        vTaskDelay(pdMS_TO_TICKS(500));
-        return;
-    }
-    if (ch == 0x1E) {
-        // Reset
-        FPGA::instance().aqpReset();
-        vTaskDelay(pdMS_TO_TICKS(500));
-        return;
-    }
-    if (ch > '~')
-        return;
-    FPGA::instance().aqpWriteKeybBuffer(ch);
-    vTaskDelay(pdMS_TO_TICKS(10));
-
-#endif
 }

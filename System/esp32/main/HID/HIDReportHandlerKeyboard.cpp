@@ -1,5 +1,5 @@
 #include "HIDReportHandlerKeyboard.h"
-#include "AqKeyboard.h"
+#include "Keyboard.h"
 
 static const char *TAG = "HIDReportHandlerKeyboard";
 
@@ -17,21 +17,23 @@ HIDReportHandlerKeyboard::HIDReportHandlerKeyboard()
 HIDReportHandlerKeyboard::~HIDReportHandlerKeyboard() {
 }
 
-void HIDReportHandlerKeyboard::_addInputField(const HIDReportDescriptor::HIDField &field) {
-    if (field.attributes & (1 << 1)) {
-        if (field.bitSize == 1 && field.usageMin >= 0xE0 && field.usageMin <= 0xE7) {
-            buttons[field.usageMin - 0xE0] = field.bitIdx;
-        }
-    } else {
-        if (field.arraySize <= maxKeyData) {
-            keyArrayIdx      = field.bitIdx;
-            keyArrayItemSize = field.bitSize;
-            keyArrayItems    = field.arraySize;
+void HIDReportHandlerKeyboard::_addInputField(const HIDField &field) {
+    if (field.usagePage == 7) {
+        if (field.attributes & (1 << 1)) {
+            if (field.bitSize == 1 && field.usageMin >= 0xE0 && field.usageMin <= 0xE7) {
+                buttons[field.usageMin - 0xE0] = field.bitIdx;
+            }
+        } else {
+            if (field.arraySize <= maxKeyData) {
+                keyArrayIdx      = field.bitIdx;
+                keyArrayItemSize = field.bitSize;
+                keyArrayItems    = field.arraySize;
+            }
         }
     }
 }
 
-void HIDReportHandlerKeyboard::_addOutputField(const HIDReportDescriptor::HIDField &field) {
+void HIDReportHandlerKeyboard::_addOutputField(const HIDField &field) {
     if (field.bitSize == 1 && field.arraySize == 1 && field.usagePage == 8) {
         switch (field.usageMin) {
             case 1: ledNumLockIdx = field.bitIdx; break;
@@ -43,9 +45,9 @@ void HIDReportHandlerKeyboard::_addOutputField(const HIDReportDescriptor::HIDFie
 }
 
 void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf, size_t length) {
-    //	printf("HIDReportHandlerKeyboard::inputReport\n");
-    //	HexDump(buf, length);
-    auto &aqkb = AqKeyboard::instance();
+    // ESP_LOGI(TAG, "HIDReportHandlerKeyboard::inputReport %u", reportId);
+    // ESP_LOG_BUFFER_HEX(TAG, buf, length);
+    // auto &aqkb = AqKeyboard::instance();
 
     if (keyArrayIdx < 0) {
         return;
@@ -93,10 +95,12 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
 
     // Process modifier key changes
     for (int i = 0; i < 8; i++) {
-        if (releasedModifiers & (1 << i))
-            aqkb.handleScancode(0xE0 + i, false);
-        if (pressedModifiers & (1 << i))
-            aqkb.handleScancode(0xE0 + i, true);
+        if (releasedModifiers & (1 << i)) {
+            getKeyboard()->handleScancode(0xE0 + i, false);
+        }
+        if (pressedModifiers & (1 << i)) {
+            getKeyboard()->handleScancode(0xE0 + i, true);
+        }
     }
 
     uint8_t prev, cur;
@@ -118,8 +122,9 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
             }
         }
 
-        if (keyReleased)
-            aqkb.handleScancode(prev, false);
+        if (keyReleased) {
+            getKeyboard()->handleScancode(prev, false);
+        }
     }
 
     // Check for key presses
@@ -139,15 +144,16 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
             }
         }
 
-        if (keyPressed)
-            aqkb.handleScancode(cur, true);
+        if (keyPressed) {
+            getKeyboard()->handleScancode(cur, true);
+        }
     }
 
     // Copy current key data to prev key data
     for (int i = 0; i < keyArrayItems; i++) {
         prevKeyData[i] = keyData[i];
     }
-    aqkb.updateMatrix();
+    // aqkb.updateMatrix();
 }
 
 uint8_t HIDReportHandlerKeyboard::outputReport(uint8_t leds) const {

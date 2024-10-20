@@ -1,4 +1,3 @@
-**/.vscode/settings.json
 .DS_Store
 *.lnk
 SDK/projects/game_galaxian/.vscode/c_cpp_properties.json

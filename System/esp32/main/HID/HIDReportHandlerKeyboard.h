@@ -2,6 +2,12 @@
 
 #include "HIDReportHandler.h"
 
+enum {
+    NUM_LOCK    = (1 << 0),
+    CAPS_LOCK   = (1 << 1),
+    SCROLL_LOCK = (1 << 2),
+};
+
 class HIDReportHandlerKeyboard : public HIDReportHandler {
 public:
     HIDReportHandlerKeyboard();
@@ -10,8 +16,8 @@ public:
     uint8_t outputReport(uint8_t leds) const;
 
 protected:
-    void _addInputField(const HIDReportDescriptor::HIDField &field) override;
-    void _addOutputField(const HIDReportDescriptor::HIDField &field) override;
+    void _addInputField(const HIDField &field) override;
+    void _addOutputField(const HIDField &field) override;
     void _inputReport(uint8_t reportId, const uint8_t *buf, size_t length) override;
 
     void compareKeyArrays(

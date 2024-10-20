@@ -1,27 +1,11 @@
 #include "AqUartProtocol.h"
-#include "SDCardVFS.h"
-#include "EspVFS.h"
-#include "HttpVFS.h"
-#include "TcpVFS.h"
+#include "VFS.h"
 #include "AqKeyboard.h"
 #include <algorithm>
 #include <time.h>
 #include <math.h>
-
-#ifndef EMULATOR
-#include <driver/uart.h>
-#include <esp_ota_ops.h>
-#include <esp_app_format.h>
-#include "FPGA.h"
-
-static const char *TAG = "AqUartProtocol";
-
-#define UART_NUM (UART_NUM_1)
-#define BUF_SIZE (1024)
-#else
 #include "EmuState.h"
 #include "Config.h"
-#endif
 
 enum {
     ESPCMD_RESET             = 0x01, // Indicate to ESP that system has been reset
@@ -59,11 +43,7 @@ enum {
 #define ESP_PREFIX "esp:"
 
 #if 0
-#ifdef EMULATOR
 #define DBGF(...) printf(__VA_ARGS__)
-#else
-#define DBGF(...) ESP_LOGI(TAG, __VA_ARGS__)
-#endif
 #else
 #define DBGF(...)
 #endif
@@ -88,42 +68,11 @@ AqUartProtocol &AqUartProtocol::instance() {
 }
 
 void AqUartProtocol::init() {
-#ifndef EMULATOR
-    mutexMouseData    = xSemaphoreCreateRecursiveMutex();
-    mutexGameCtrlData = xSemaphoreCreateRecursiveMutex();
-
-    // Initialize UART to FPGA
-    uart_config_t uart_config = {
-        .baud_rate           = 3579545,
-        .data_bits           = UART_DATA_8_BITS,
-        .parity              = UART_PARITY_DISABLE,
-        .stop_bits           = UART_STOP_BITS_1,
-        .flow_ctrl           = UART_HW_FLOWCTRL_CTS_RTS,
-        .rx_flow_ctrl_thresh = 122,
-        .source_clk          = UART_SCLK_DEFAULT,
-    };
-    ESP_ERROR_CHECK(uart_param_config(UART_NUM, &uart_config));
-    ESP_ERROR_CHECK(uart_set_pin(UART_NUM, IOPIN_ESP_RX, IOPIN_ESP_TX, IOPIN_ESP_CTS, IOPIN_ESP_RTS));
-
-    // Setup UART buffered IO with event queue
-    ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uartQueue, 0));
-    uart_pattern_queue_reset(UART_NUM, 20);
-
-    uint32_t baudrate;
-    ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
-    ESP_LOGI(TAG, "Actual baudrate: %lu", baudrate);
-#endif
-
-    EspVFS::instance().init();
-    HttpVFS::instance().init();
-    TcpVFS::instance().init();
-
-#ifndef EMULATOR
-    xTaskCreate(_uartEventTask, "uart_event_task", 6144, this, 1, nullptr);
-#endif
+    getEspVFS()->init();
+    getHttpVFS()->init();
+    getTcpVFS()->init();
 }
 
-#ifdef EMULATOR
 void AqUartProtocol::writeData(uint8_t data) {
     receivedByte(data);
 }
@@ -150,59 +99,7 @@ uint8_t AqUartProtocol::readCtrl() {
     }
     return result;
 }
-#endif
 
-#ifndef EMULATOR
-void AqUartProtocol::_uartEventTask(void *param) {
-    static_cast<AqUartProtocol *>(param)->uartEventTask();
-}
-
-void AqUartProtocol::uartEventTask() {
-    uart_event_t                  event;
-    std::array<uint8_t, BUF_SIZE> buf;
-
-    while (1) {
-        // Waiting for UART event.
-        if (xQueueReceive(uartQueue, (void *)&event, (TickType_t)portMAX_DELAY)) {
-            buf.fill(0);
-            switch (event.type) {
-                // UART data available
-                case UART_DATA:
-                    uart_read_bytes(UART_NUM, buf.data(), event.size, portMAX_DELAY);
-                    for (unsigned i = 0; i < event.size; i++) {
-                        receivedByte(buf[i]);
-                    }
-                    break;
-
-                // HW FIFO overflow detected
-                case UART_FIFO_OVF:
-                    ESP_LOGW(TAG, "HW FIFO overflow");
-                    uart_flush_input(UART_NUM);
-                    xQueueReset(uartQueue);
-                    break;
-
-                // UART ring buffer full
-                case UART_BUFFER_FULL:
-                    ESP_LOGW(TAG, "ring buffer full");
-                    uart_flush_input(UART_NUM);
-                    xQueueReset(uartQueue);
-                    break;
-
-                // UART RX break detected
-                case UART_BREAK:
-                    rxBufIdx = 0;
-                    break;
-
-                case UART_PARITY_ERR: ESP_LOGW(TAG, "UART parity error"); break;
-                case UART_FRAME_ERR: ESP_LOGW(TAG, "UART frame error"); break;
-                default: ESP_LOGW(TAG, "UART event type: %d", event.type); break;
-            }
-        }
-    }
-}
-#endif
-
-#ifdef EMULATOR
 int AqUartProtocol::txFifoRead() {
     int result = -1;
     if (txBufCnt > 0) {
@@ -214,12 +111,8 @@ int AqUartProtocol::txFifoRead() {
     }
     return result;
 }
-#endif
 
 void AqUartProtocol::txFifoWrite(uint8_t data) {
-#ifndef EMULATOR
-    uart_write_bytes(UART_NUM, &data, 1);
-#else
     if (txBufCnt >= sizeof(txBuf)) {
         return;
     }
@@ -229,18 +122,13 @@ void AqUartProtocol::txFifoWrite(uint8_t data) {
     if (txBufWrIdx >= sizeof(txBuf)) {
         txBufWrIdx = 0;
     }
-#endif
 }
 
 void AqUartProtocol::txFifoWrite(const void *buf, size_t length) {
-#ifndef EMULATOR
-    uart_write_bytes(UART_NUM, buf, length);
-#else
     auto p = (const uint8_t *)buf;
     while (length--) {
         txFifoWrite(*(p++));
     }
-#endif
 }
 
 void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string> &result) {
@@ -262,14 +150,14 @@ static bool startsWith(const std::string &s1, const std::string &s2, bool caseSe
 }
 
 std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
-    *vfs = &SDCardVFS::instance();
+    *vfs = getSDCardVFS();
 
     if (startsWith(path, "http://") || startsWith(path, "https://")) {
-        *vfs = &HttpVFS::instance();
+        *vfs = getHttpVFS();
         return path;
     }
     if (startsWith(path, "tcp://")) {
-        *vfs = &TcpVFS::instance();
+        *vfs = getTcpVFS();
         return path;
     }
 
@@ -278,7 +166,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string
         useCwd = false;
     } else if (startsWith(path, ESP_PREFIX)) {
         useCwd = false;
-        *vfs   = &EspVFS::instance();
+        *vfs   = getEspVFS();
         path   = path.substr(strlen(ESP_PREFIX));
     }
 
@@ -287,7 +175,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string
     if (useCwd) {
         if (startsWith(currentPath, ESP_PREFIX)) {
             splitPath(currentPath.substr(strlen(ESP_PREFIX)), parts);
-            *vfs = &EspVFS::instance();
+            *vfs = getEspVFS();
         } else {
             splitPath(currentPath, parts);
         }
@@ -596,17 +484,8 @@ void AqUartProtocol::cmdReset() {
 void AqUartProtocol::cmdVersion() {
     DBGF("VERSION");
 
-#ifdef EMULATOR
     extern const char *versionStr;
     const char        *p = versionStr;
-#else
-    const char            *p       = "Unknown";
-    const esp_partition_t *running = esp_ota_get_running_partition();
-    esp_app_desc_t         running_app_info;
-    if (esp_ota_get_partition_description(running, &running_app_info) == ESP_OK) {
-        p = running_app_info.version;
-    }
-#endif
     while (*p) {
         txFifoWrite(*(p++));
     }
@@ -645,11 +524,7 @@ void AqUartProtocol::cmdKeyMode(uint8_t mode) {
 
 void AqUartProtocol::cmdGetMouse() {
     DBGF("GETMOUSE");
-#ifndef EMULATOR
-    RecursiveMutexLock lock(mutexMouseData);
-#else
     mousePresent = Config::instance().enableMouse;
-#endif
 
     if (!mousePresent) {
         txFifoWrite(ERR_NOT_FOUND);
@@ -666,17 +541,11 @@ void AqUartProtocol::cmdGetMouse() {
     txFifoWrite((int8_t)std::max(-128, std::min(mouseWheel, 127)));
     mouseWheel = 0;
 
-#ifdef EMULATOR
     emuState.mouseHideTimeout = 1.0f;
-#endif
 }
 
 void AqUartProtocol::cmdGetGameCtrl(uint8_t idx) {
     DBGF("GETGAMECTRL");
-#ifndef EMULATOR
-    RecursiveMutexLock lock(mutexGameCtrlData);
-#endif
-
     if (idx != 0 || !gameCtrlPresent) {
         txFifoWrite(ERR_NOT_FOUND);
         return;
@@ -725,13 +594,11 @@ void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
         fds[fd]   = vfs_fd;
         txFifoWrite(fd);
 
-#ifdef EMULATOR
         FileInfo tmp;
         tmp.flags  = flags;
         tmp.name   = pathArg;
         tmp.offset = 0;
         fi.insert(std::make_pair(fd, tmp));
-#endif
     }
 }
 
@@ -746,12 +613,10 @@ void AqUartProtocol::cmdClose(uint8_t fd) {
     txFifoWrite(fdVfs[fd]->close(fds[fd]));
     fdVfs[fd] = nullptr;
 
-#ifdef EMULATOR
     auto it = fi.find(fd);
     if (it != fi.end()) {
         fi.erase(it);
     }
-#endif
 }
 
 void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
@@ -771,9 +636,7 @@ void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
         txFifoWrite((result >> 8) & 0xFF);
         txFifoWrite(rxBuf, result);
 
-#ifdef EMULATOR
         fi[fd].offset += result;
-#endif
     }
 }
 
@@ -799,9 +662,7 @@ void AqUartProtocol::cmdReadLine(uint8_t fd, uint16_t size) {
         }
         txFifoWrite(0);
 
-#ifdef EMULATOR
         fi[fd].offset = fdVfs[fd]->tell(fds[fd]);
-#endif
     }
 }
 
@@ -821,9 +682,7 @@ void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
         txFifoWrite((result >> 0) & 0xFF);
         txFifoWrite((result >> 8) & 0xFF);
 
-#ifdef EMULATOR
         fi[fd].offset += result;
-#endif
     }
 }
 
@@ -837,9 +696,7 @@ void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
 
     txFifoWrite(fdVfs[fd]->seek(fds[fd], offset));
 
-#ifdef EMULATOR
     fi[fd].offset = fdVfs[fd]->tell(fds[fd]);
-#endif
 }
 
 void AqUartProtocol::cmdTell(uint8_t fd) {
@@ -957,12 +814,10 @@ void AqUartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t 
         deIdx[dd]  = skip_count;
         txFifoWrite(dd);
 
-#ifdef EMULATOR
         DirInfo tmp;
         tmp.name   = pathArg;
         tmp.offset = 0;
         di.insert(std::make_pair(dd, tmp));
-#endif
     }
 }
 
@@ -976,12 +831,10 @@ void AqUartProtocol::cmdCloseDir(uint8_t dd) {
     deCtxs[dd] = nullptr;
     txFifoWrite(0);
 
-#ifdef EMULATOR
     auto it = di.find(dd);
     if (it != di.end()) {
         di.erase(it);
     }
-#endif
 }
 
 void AqUartProtocol::cmdReadDir(uint8_t dd) {
@@ -1012,9 +865,7 @@ void AqUartProtocol::cmdReadDir(uint8_t dd) {
     txFifoWrite(de.filename.c_str(), de.filename.size());
     txFifoWrite(0);
 
-#ifdef EMULATOR
     di[dd].offset++;
-#endif
 }
 
 void AqUartProtocol::cmdDelete(const char *pathArg) {
@@ -1071,7 +922,7 @@ void AqUartProtocol::cmdChDir(const char *pathArg) {
     int         result = vfs->stat(path, &st);
     if (result == 0) {
         if (st.st_mode & S_IFDIR) {
-            if (vfs == &EspVFS::instance()) {
+            if (vfs == getEspVFS()) {
                 currentPath = std::string(ESP_PREFIX) + path;
             } else {
                 currentPath = path;
@@ -1141,10 +992,8 @@ void AqUartProtocol::cmdCloseAll() {
     closeAllDescriptors();
     txFifoWrite(0);
 
-#ifdef EMULATOR
     fi.clear();
     di.clear();
-#endif
 }
 
 void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
@@ -1184,34 +1033,10 @@ void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
         txFifoWrite(0);
 
         printf("Loading bitstream: %s (%u bytes)\n", pathArg, (unsigned)st.st_size);
-
-#ifndef EMULATOR
-        bool ok = FPGA::instance().loadBitstream(buf, st.st_size);
-        if (!ok) {
-            printf("Failed! Loading default bitstream\n");
-
-            // Restore Aq+ firmware
-            FPGA::instance().loadBitstream(buf, st.st_size);
-        }
-        cmdCloseAll();
-#endif
     }
 
     free(buf);
 }
-
-#ifndef EMULATOR
-void AqUartProtocol::mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel) {
-    RecursiveMutexLock lock(mutexMouseData);
-
-    float sensitivity = 1.0f / (float)mouseSensitivityDiv;
-    mouseX            = std::max(0.0f, std::min(319.0f, mouseX + (float)(dx * sensitivity)));
-    mouseY            = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
-    mouseButtons      = buttonMask;
-    mousePresent      = true;
-    mouseWheel        = mouseWheel + dWheel;
-}
-#endif
 
 void AqUartProtocol::gameCtrlUpdated() {
     // Update hand controller

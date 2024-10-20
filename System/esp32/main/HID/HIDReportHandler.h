@@ -17,10 +17,10 @@ public:
     HIDReportHandler(Type type);
     virtual ~HIDReportHandler();
 
-    virtual bool init(const HIDReportDescriptor::HIDCollection *collection);
+    virtual bool init(const HIDCollection *collection);
 
-    void addInputField(const HIDReportDescriptor::HIDField &field);
-    void addOutputField(const HIDReportDescriptor::HIDField &field);
+    void addInputField(const HIDField &field);
+    void addOutputField(const HIDField &field);
     void inputReport(const uint8_t *buf, size_t length);
 
     HIDReportHandler *next        = nullptr;
@@ -28,11 +28,11 @@ public:
     bool              hasReportId = false;
 
 protected:
-    virtual void _addInputField(const HIDReportDescriptor::HIDField &field);
-    virtual void _addOutputField(const HIDReportDescriptor::HIDField &field);
+    virtual void _addInputField(const HIDField &field);
+    virtual void _addOutputField(const HIDField &field);
     virtual void _inputReport(uint8_t reportId, const uint8_t *buf, size_t length) = 0;
 
-    void enumerateCollection(const HIDReportDescriptor::HIDCollection *collection);
+    void enumerateCollection(const HIDCollection *collection);
 
     int32_t readBits(const void *buf, size_t bufLen, uint32_t bitOffset, uint32_t bitLength, bool signExtend);
 };

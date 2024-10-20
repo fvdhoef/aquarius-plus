@@ -34,7 +34,7 @@ LFLAGS      += `pkg-config --libs sdl2`
 endif
 
 FLAGS       += -D_BSD_SOURCE -D_DEFAULT_SOURCE -pedantic
-FLAGS       += -Wall -Wextra -Wshadow -Winit-self -Wfloat-conversion -Wmissing-include-dirs
+FLAGS       += -Wall -Wextra -Wshadow -Winit-self -Wfloat-conversion -Wmissing-include-dirs -Wno-unused-parameter
 CFLAGS      += -Werror=implicit-function-declaration
 BUILD_DIR   ?= build
 

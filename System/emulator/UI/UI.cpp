@@ -6,7 +6,7 @@
 #include "Video.h"
 #include "AqKeyboard.h"
 #include "AqUartProtocol.h"
-#include "SDCardVFS.h"
+#include "VFS.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
 #include "imgui.h"
@@ -26,10 +26,10 @@ void UI::start(
 
     auto &config = Config::instance();
 
-    emuState.typeInStr = typeInStr;
+    emuState.typeInStr  = typeInStr;
     emuState.stopOnHalt = config.stopOnHalt;
     AqUartProtocol::instance().init();
-    SDCardVFS::instance().init(config.sdCardPath);
+    initSDCardVFS(config.sdCardPath);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -260,7 +260,7 @@ void UI::mainLoop() {
                     if (path) {
                         config.sdCardPath = path;
                         stripTrailingSlashes(config.sdCardPath);
-                        SDCardVFS::instance().init(config.sdCardPath);
+                        initSDCardVFS(config.sdCardPath);
                     }
                 }
                 std::string ejectLabel = "Eject SD card";
@@ -269,7 +269,7 @@ void UI::mainLoop() {
                 }
                 if (ImGui::MenuItem(ejectLabel.c_str(), "", false, !config.sdCardPath.empty())) {
                     config.sdCardPath.clear();
-                    SDCardVFS::instance().init("");
+                    initSDCardVFS("");
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Load cartridge ROM...", "")) {
@@ -373,8 +373,8 @@ void UI::mainLoop() {
                     ImGui::MenuItem("Watch", "", &config.showWatch);
                     ImGui::MenuItem("ESP info", "", &config.showEspInfo);
                     if (ImGui::MenuItem("Stop on HALT instruction", "", &config.stopOnHalt)) {
-			    emuState.stopOnHalt = config.stopOnHalt;
-		    }
+                        emuState.stopOnHalt = config.stopOnHalt;
+                    }
                     ImGui::Separator();
 
                     if (ImGui::MenuItem("Clear memory (0x00) & reset Aquarius+", "")) {

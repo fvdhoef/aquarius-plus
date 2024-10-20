@@ -1,8 +1,26 @@
 idf_component_register(
     SRCS
         "main.cpp"
+        "Common.cpp"
         "FPGA.cpp"
-        "MemDump.cpp"
+        "WiFi.cpp"
+        "Bluetooth.cpp"
+        "Keyboard.cpp"
+        "FileServer.cpp"
+        "XzDecompress.cpp"
+        "PowerLED.cpp"
+
+        "DisplayOverlay/DisplayOverlay.cpp"
+        "DisplayOverlay/Menu.cpp"
+        "DisplayOverlay/Menus.cpp"
+        "DisplayOverlay/GitHubUpdateMenu.cpp"
+        "DisplayOverlay/SdCardUpdateMenu.cpp"
+
+        "HID/HIDReportDescriptor.cpp"
+        "HID/HIDReportHandler.cpp"
+        "HID/HIDReportHandlerKeyboard.cpp"
+        "HID/HIDReportHandlerMouse.cpp"
+        "HID/HIDReportHandlerGamepad.cpp"
 
         "USB/USBHost.cpp"
         "USB/USBDevice.cpp"
@@ -13,60 +31,29 @@ idf_component_register(
         "fatfs/ffsystem.c"
         "fatfs/ffunicode.c"
 
-        "HID/HIDReportDescriptor.cpp"
-        "HID/HIDReportHandler.cpp"
-        "HID/HIDReportHandlerKeyboard.cpp"
-        "HID/HIDReportHandlerMouse.cpp"
-        "HID/HIDReportHandlerGamepad.cpp"
+        "UartProtocol.cpp"
+        "VFS/EspVFS.cpp"
+        "VFS/SDCardVFS.cpp"
+        "VFS/HttpVFS.cpp"
+        "VFS/TcpVFS.cpp"
 
-        # Files shared between emulator and ESP32
-        "../../emulator/Shared/AqKeyboard.cpp"
-        "../../emulator/Shared/AqUartProtocol.cpp"
-        "../../emulator/Shared/EspSettingsConsole.cpp"
-        "../../emulator/Shared/VFS/VFS.cpp"
-        "../../emulator/Shared/VFS/EspVFS.cpp"
-        "../../emulator/Shared/VFS/SDCardVFS.cpp"
-        "../../emulator/Shared/VFS/HttpVFS.cpp"
-        "../../emulator/Shared/VFS/TcpVFS.cpp"
-
-        "FileServer.cpp"
-        "PowerLED.cpp"
-        "WiFi.cpp"
-        "BLE.cpp"
+        "FpgaCores/FpgaCore.cpp"
+        "FpgaCores/AquariusPlus/CoreAquariusPlus.cpp"
 
     INCLUDE_DIRS
         "."
-        "../../emulator/Shared"
-        "../../emulator/Shared/VFS"
-        "fatfs"
         "HID"
+        "VFS"
         "USB"
-
-    REQUIRES
-        "driver"
-        "log"
-        "esp_event"
-        "esp_timer"
-        "esp_rom"
-        "esp-tls"
-        "nvs_flash"
-        "esp_wifi"
-        "esp_http_client"
-        "esp_http_server"
-        "esp_https_ota"
-        "json"
-        "app_update"
-        "usb"
-        "sdmmc"
-        # "fatfs"
-        "bt"
+        "fatfs"
+        "FpgaCores"
+        "FpgaCores/AquariusPlus"
 
     EMBED_FILES
-        "../../fpga/top.bit"
+        "assets/ovl_font.chr"
         "../../rom_src/romfs.bin"
-
-    EMBED_TXTFILES
-        "Assets/root_certificates"
+        "assets/aqp_top.bit.xzh"
+        "assets/root_certificates.xzh"
 )
 
 target_compile_options(${COMPONENT_LIB} PRIVATE -Wno-missing-field-initializers)

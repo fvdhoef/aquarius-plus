@@ -1,4 +1,3 @@
-10 SET FNKEY 10 TO \"RUN\"/aqds/aqds.aqx\"\r"
-20 SET FNKEY 11 TO \"CD\"/cpm\":RUN\"gocpm.aqx\"\r"
-30 SET FNKEY 12 TO \"RUN\"esp:settings\"\r"
-40 NEW
+10 SET FNKEY 1 TO \"RUN\"/aqds/aqds.aqx\"\r"
+20 SET FNKEY 2 TO \"CD\"/cpm\":RUN\"gocpm.aqx\"\r"
+30 NEW
