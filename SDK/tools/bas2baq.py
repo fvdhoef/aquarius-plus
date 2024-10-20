@@ -33,19 +33,44 @@
 #-----------------------------------------------------------------------------
 
 import argparse
+from os import path
+import re
 import struct
 import sys
-import re
 from xmlrpc.client import TRANSPORT_ERROR
 
 parser = argparse.ArgumentParser(
     description="Convert text file to Aquarius BASIC .BAS file"
 )
-parser.add_argument("input", help="Input file", type=argparse.FileType("r"))
-parser.add_argument("output", help="Output file", type=argparse.FileType("wb"))
+parser.add_argument("input", type=str, help="Input file")
+parser.add_argument("output", type=str, nargs="?", help="Output file")
 
 args = parser.parse_args()
 
+input_spec = args.input
+output_spec= args.output
+
+input_base, input_ext = path.splitext(input_spec)
+if not input_ext: input_ext = ".bas"
+input_name = input_base + input_ext
+
+if output_spec: output_base, output_ext = path.splitext(output_spec)
+else: output_base, output_ext = input_base, ""
+if not output_ext: output_ext = ".baq"
+output_name = output_base + output_ext
+
+try: 
+    input_file = open(input_name, "r")
+except OSError as err:
+    print(input_name+":", err.strerror)
+    exit(err.errno)
+  
+try:
+    output_file = open(output_name, "wb")    
+except OSError as err:
+    print(output_name+":", err.strerror)
+    exit(err.errno)
+  
 tokens = {
     0x80: "END",
     0x81: "FOR",
@@ -122,36 +147,124 @@ tokens = {
     0xC8: "RIGHT$",
     0xC9: "MID$",
     0xCA: "POINT",
-    # Start of supplemental USB BASIC commands
-    # 0xD4: "<reserved>",
+    # Start of plusBASIC keywords
+    0xCB: "XOR",
+    0xCC: "PUT",
+    0xCD: "GET",
+    0xCE: "DRAW",
+   #0xCF:
+    0xD0: "LINE",
+    0xD1: "SWAP",
+    0xD2: "DOKE",
+    0xD3: "TIME",
+    0xD4: "EDIT",
     0xD5: "CLS",
     0xD6: "LOCATE",
     0xD7: "OUT",
     0xD8: "PSG",
-    # 0xD9: "<reserved>",
+    0xD9: "MOUSE",
     0xDA: "CALL",
     0xDB: "LOAD",
     0xDC: "SAVE",
     0xDD: "DIR",
-    # 0xDE: "<reserved>",
+    0xDE: "MKDIR",
     0xDF: "DEL",
     0xE0: "CD",
     0xE1: "IN",
     0xE2: "JOY",
     0xE3: "HEX$",
+    0xE4: "RENAME",
+    0xE5: "DATE", 
+    0xE6: "DEC",
+    0xE7: "MOD",
+    0xE8: "DEEK",
+    0xE9: "ERR",
+    0xEA: "STRING",
+    0xEB: "BIT",
+   #0xEC:
+    0xED: "EVAL",
+    0xEE: "PAUSE",
+    0xEF: "ELSE",
+    0xF0: "TILE",
+    0xF1: "RGB",
+    0xF2: "MAP",
+    0xF3: "FILE",
+    0xF4: "RESUME",
+    0xF5: "COL",
+    0xF6: "SCREEN",
+    0xF7: "SET",
+    0xF8: "WRITE",
+    0xF9: "USE",
+    0xFA: "OPEN",
+    0xFB: "CLOSE"
+   #0xFC:
+   #0xFD:
 }
 
+xprefix = 0xFE
+xtokens = {
+    0x80: "ATTR",        
+    0x81: "PALETTE",          
+    0x82: "OFF",               
+   #0x83 Unused (DATA) 
+    0x84: "SPRITE",      
+    0x85: "CHR",              
+    0x86: "KEY",              
+    0x87: "DEX",               
+    0x88: "FAST",               
+    0x89: "TEXT",               
+    0x8A: "ARGS",               
+    0x8B: "SAMPLE",               
+    0x8C: "TRACK",
+    0x8D: "PIXEL",
+   #0x8E Unused (REM)
+    0x8F: "NAME",
+    0x90: "RESET",
+    0x91: "EXT",
+    0x92: "VER",
+    0x93: "FILL",
+    0x94: "COMPARE",
+    0x95: "PLAY",
+    0x96: "APPEND",
+    0x97: "TRIM",
+    0x98: "STASH",         
+    0x99: "TRO",                       
+    0x9A: "BREAK",                     
+    0x9B: "LOOP",                     
+    0x9C: "STR",          
+    0x9D: "VAR",          
+    0x9E: "ERASE",
+    0x9F: "SPLIT",
+    0xA0: "PAD",
+    0xA1: "WORD",           
+    0xA2: "CLIP",           
+    0xA3: "PTR",       
+    0xA4: "STATUS",
+    0xA5: "BYTE",
+    0xA6: "CAQ",
+    0xA7: "MEM",
+    0xA8: "JOIN",
+    0xA9: "WAIT",
+    0xAA: "CUR",
+    0xAB: "HEX",
+    0xAC: "BIN",
+    0xAD: "MIN",
+    0xAE: "MAX",
+    0xAF: "UPR",
+    0xB0: "LWR",
+    0xB1: "SPEED"
+}
 
 def error(idx, message):
-    print(f"{args.input.name}:{idx+1} {message}", file=sys.stderr)
-    exit(1)
+    print(f"{input_name}:{idx+1} {message}", file=sys.stderr)
+    sys.exit(128)
 
 
 # Write header
-args.output.write(
+output_file.write(
     12 * b"\xFF"
     + b"\x00"
-    + (args.input.name.upper() + "      ")[0:6].encode()
+    + "AQPLUS".encode()
     + 12 * b"\xFF"
     + b"\x00"
 )
@@ -161,7 +274,7 @@ last_linenr = -1
 addr = 0x3903
 
 # Tokenize lines
-for idx, line in enumerate(args.input.readlines()):
+for idx, line in enumerate(input_file.readlines()):
     line = line.strip()
     if not line:
         continue
@@ -173,22 +286,26 @@ for idx, line in enumerate(args.input.readlines()):
     linenr = int(result.group(1))
     line = result.group(2).strip()
 
-    if linenr < last_linenr or linenr > 65000:
+    if linenr <= last_linenr or linenr > 65000:
         error(idx, "Invalid line number")
 
     buf = bytearray()
     buf += struct.pack("<H", linenr)
 
+    in_chr = False
     in_str = False
     in_rem = False
 
     while len(line) > 0:
         upper = line.upper()
 
-        if line[0] == '"':
+        if line[0] == '"' and not in_chr:
             in_str = not in_str
 
-        if not (in_str or in_rem) and line[0] != " ":
+        if line[0] == "'" and not in_str:
+            in_chr = not in_chr
+
+        if not (in_str or in_chr or in_rem) and line[0] != " ":
             found = False
             for (token, keyword) in tokens.items():
                 if upper.startswith(keyword):
@@ -196,7 +313,7 @@ for idx, line in enumerate(args.input.readlines()):
                     line = line[len(keyword) :]
                     found = True
 
-                    if keyword == "REM":
+                    if keyword in ["REM", "DATA"]:
                         in_rem = True
 
                     break
@@ -204,7 +321,22 @@ for idx, line in enumerate(args.input.readlines()):
             if found:
                 continue
 
-        buf.append(line[0].encode()[0])
+            for (token, keyword) in xtokens.items():
+                if upper.startswith(keyword):
+                    buf.append(xprefix)
+                    buf.append(token)
+                    line = line[len(keyword) :]
+                    found = True
+                    break
+
+            if found:
+                continue
+
+            buf.append(upper[0].encode()[0])
+
+        else:
+            buf.append(line[0].encode()[0])
+        
         line = line[1:]
 
     buf.append(0)
@@ -213,6 +345,11 @@ for idx, line in enumerate(args.input.readlines()):
     addr += len(buf)
     last_linenr = linenr
 
-    args.output.write(buf)
+    output_file.write(buf)
 
-args.output.write(struct.pack("<H", 0))
+output_file.write(struct.pack("<H", 0))
+    
+# Write trailer
+output_file.write(
+    15 *  b"\x00"
+)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 #-----------------------------------------------------------------------------
 # Copyright (C) 2022 Frank van den Hoef
+# Modifications (C) 2023 Curtis F Kaylor
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions are met:
@@ -119,23 +120,112 @@ tokens = {
     0xC8: "RIGHT$",
     0xC9: "MID$",
     0xCA: "POINT",
-    # Start of supplemental USB BASIC commands
-    # 0xD4: "<reserved>",
+    # Start of plusBASIC keywords
+    0xCB: "XOR",
+    0xCC: "PUT",
+    0xCD: "GET",
+    0xCE: "DRAW",
+   #0xCF:
+    0xD0: "LINE",
+    0xD1: "SWAP",
+    0xD2: "DOKE",
+    0xD3: "TIME",
+    0xD4: "EDIT",
     0xD5: "CLS",
     0xD6: "LOCATE",
     0xD7: "OUT",
     0xD8: "PSG",
-    # 0xD9: "<reserved>",
+    0xD9: "MOUSE",
     0xDA: "CALL",
     0xDB: "LOAD",
     0xDC: "SAVE",
     0xDD: "DIR",
-    # 0xDE: "<reserved>",
+    0xDE: "MKDIR",
     0xDF: "DEL",
     0xE0: "CD",
     0xE1: "IN",
     0xE2: "JOY",
     0xE3: "HEX$",
+    0xE4: "RENAME",
+    0xE5: "DATE", 
+    0xE6: "DEC",
+    0xE7: "MOD",
+    0xE8: "DEEK",
+    0xE9: "ERR",
+    0xEA: "STRING",
+    0xEB: "BIT",
+   #0xEC:
+    0xED: "EVAL",
+    0xEE: "PAUSE",
+    0xEF: "ELSE",
+    0xF0: "TILE",
+    0xF1: "RGB",
+    0xF2: "MAP",
+    0xF3: "FILE",
+    0xF4: "RESUME",
+    0xF5: "COL",
+    0xF6: "SCREEN",
+    0xF7: "SET",
+    0xF8: "WRITE",
+    0xF9: "USE",
+    0xFA: "OPEN",
+    0xFB: "CLOSE"
+   #0xFC:
+   #0xFD:
+}
+
+xprefix = 0xFE
+xtokens = {
+    0x80: "ATTR",        
+    0x81: "PALETTE",          
+    0x82: "OFF",               
+   #0x83 Unused (DATA) 
+    0x84: "SPRITE",      
+    0x85: "CHR",              
+    0x86: "KEY",              
+    0x87: "DEX",               
+    0x88: "FAST",               
+    0x89: "TEXT",               
+    0x8A: "ARGS",               
+    0x8B: "SAMPLE",               
+    0x8C: "TRACK",
+    0x8D: "PIXEL",
+   #0x8E Unused (REM)
+    0x8F: "NAME",
+    0x90: "RESET",
+    0x91: "EXT",
+    0x92: "VER",
+    0x93: "FILL",
+    0x94: "COMPARE",
+    0x95: "PLAY",
+    0x96: "APPEND",
+    0x97: "TRIM",
+    0x98: "STASH",         
+    0x99: "TRO",                       
+    0x9A: "BREAK",                     
+    0x9B: "LOOP",                     
+    0x9C: "STR",          
+    0x9D: "VAR",          
+    0x9E: "ERASE",
+    0x9F: "SPLIT",
+    0xA0: "PAD",
+    0xA1: "WORD",           
+    0xA2: "CLIP",           
+    0xA3: "PTR",       
+    0xA4: "STATUS",
+    0xA5: "BYTE",
+    0xA6: "CAQ",
+    0xA7: "MEM",
+    0xA8: "JOIN",
+    0xA9: "WAIT",
+    0xAA: "CUR",
+    0xAB: "HEX",
+    0xAC: "BIN",
+    0xAD: "MIN",
+    0xAE: "MAX",
+    0xAF: "UPR",
+    0xB0: "LWR",
+    0xB1: "SPEED"
 }
 
 with open(args.input, "rb") as f:
@@ -146,7 +236,7 @@ with open(args.input, "rb") as f:
             if data[i] != 0xFF:
                 return False
         if data[12] != 0:
-            return False
+                return False
         for i in range(19, 31):
             if data[i] != 0xFF:
                 return False
@@ -176,9 +266,16 @@ with open(args.input, "rb") as f:
             if ch & 0x80 == 0:
                 linedata.append(data[idx])
             else:
-                tokenVal = tokens.get(ch)
+                if ch == xprefix:
+                    idx += 1
+                    ch = data[idx]
+                    tokenVal = xtokens.get(ch)
+                    tokenType = "extended "
+                else:
+                    tokenVal = tokens.get(ch)
+                    tokenType = ""
                 if tokenVal == None:
-                    print(f"Unknown token: 0x{ch:02X}")
+                    print(f"Unknown "+tokenType+"token: 0x{ch:02X}")
                 linedata += tokenVal.encode()
             idx += 1
         idx += 1
