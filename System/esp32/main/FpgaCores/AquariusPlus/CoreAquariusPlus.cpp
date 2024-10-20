@@ -210,11 +210,14 @@ public:
         fpga->spiTx(cmd, sizeof(cmd));
         fpga->spiSel(false);
 
-        forceTurbo = false;
+        {
+            RecursiveMutexLock lock(mutex);
+            forceTurbo        = false;
+            bypassStartCancel = false;
 
-        bypassStartCancel = false;
-        if (bypassStartScreen) {
-            xTimerReset(bypassStartTimer, pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS));
+            if (bypassStartScreen) {
+                xTimerReset(bypassStartTimer, pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS));
+            }
         }
     }
 
@@ -509,9 +512,11 @@ public:
             if (scanCode == SCANCODE_ESCAPE && keyDown) {
                 if (combinedModifiers == ModLCtrl) {
                     resetCore();
+                    return true;
                 } else if (combinedModifiers == (ModLShift | ModLCtrl)) {
                     // CTRL-SHIFT-ESCAPE -> reset ESP32 (somewhat equivalent to power cycle)
                     esp_restart();
+                    return true;
                 }
             }
         }
@@ -527,9 +532,8 @@ public:
     }
 
     void keyChar(uint8_t ch, bool isRepeat) override {
-        bypassStartCancel = true;
-
         RecursiveMutexLock lock(mutex);
+        bypassStartCancel = true;
         aqpWriteKeybBuffer(ch);
     }
 
