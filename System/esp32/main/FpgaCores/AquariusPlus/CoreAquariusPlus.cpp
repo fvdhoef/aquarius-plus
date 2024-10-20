@@ -212,7 +212,6 @@ public:
 
         {
             RecursiveMutexLock lock(mutex);
-            forceTurbo        = false;
             bypassStartCancel = false;
 
             if (bypassStartScreen) {
