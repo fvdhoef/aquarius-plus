@@ -50,3 +50,26 @@ public:
 private:
     SemaphoreHandle_t mutex;
 };
+
+// trim from left
+static inline std::string ltrim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    std::string result = s;
+    result.erase(0, result.find_first_not_of(t));
+    return result;
+}
+
+// trim from right
+static inline std::string rtrim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    std::string result = s;
+    result.erase(result.find_last_not_of(t) + 1);
+    return result;
+}
+
+// trim from left & right
+static inline std::string trim(const std::string &s, const char *t = " \t\n\r\f\v") {
+    return ltrim(rtrim(s, t), t);
+}
+
+void splitPath(const std::string &path, std::vector<std::string> &result);
+bool startsWith(const std::string &s1, const std::string &s2, bool caseSensitive = false);
+bool createPath(const std::string &path);

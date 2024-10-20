@@ -7,6 +7,8 @@
 class GamepadHandCtrlMappingMenu : public Menu {
 public:
     std::function<void()> onChange;
+    std::function<void()> onLoad;
+    std::function<void()> onSave;
 
     GamepadHandCtrlMappingMenu() : Menu("Gamepad to hand ctrl mapping", 38) {
     }
@@ -39,6 +41,15 @@ public:
             auto &item  = items.emplace_back(MenuItemType::onOff, "Enable");
             item.setter = [this](int newVal) { enabled = newVal != 0; onChange(); };
             item.getter = [this]() { return enabled; };
+        }
+        items.emplace_back(MenuItemType::separator);
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Load preset");
+            item.onEnter = [this]() { onLoad(); setNeedsUpdate(); };
+        }
+        {
+            auto &item   = items.emplace_back(MenuItemType::subMenu, "Save preset");
+            item.onEnter = [this]() { onSave(); };
         }
         items.emplace_back(MenuItemType::separator);
 

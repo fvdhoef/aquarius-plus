@@ -314,6 +314,8 @@ public:
                 spiSel(false);
             }
             info->name[16] = 0;
+
+            snprintf(info->name, sizeof(info->name), "%s", trim(info->name).c_str());
         }
 
         if (ok)

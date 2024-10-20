@@ -11,6 +11,7 @@
 #include "DisplayOverlay/KeyboardHandCtrlMappingMenu.h"
 #include "DisplayOverlay/GamepadHandCtrlMappingMenu.h"
 #include "DisplayOverlay/GamepadKeyboardMappingMenu.h"
+#include "DisplayOverlay/FileListMenu.h"
 
 #include "CoreAquariusPlus.h"
 #include "AqKeyboardDefs.h"
@@ -148,7 +149,6 @@ public:
         memset(&coreInfo, 0, sizeof(coreInfo));
         if (result) {
             getFPGA()->getCoreInfo(&coreInfo);
-
             applySettings();
         }
         return result;
@@ -875,6 +875,46 @@ public:
     }
 #endif
 
+    std::string getPresetPath(std::string presetType) {
+        return std::string("/config/esp32/") + coreInfo.name + "/" + presetType;
+    }
+
+    void savePreset(Menu &menu, std::string presetType, const void *buf, size_t size) {
+        std::string presetName;
+        if (menu.editString("Enter preset name", presetName, 32)) {
+            presetName = trim(presetName, " \t\n\r\f\v/\\");
+
+            if (!presetName.empty()) {
+                auto vfs = getSDCardVFS();
+
+                std::string path = getPresetPath(presetType);
+                if (createPath(path)) {
+                    path += "/" + presetName;
+
+                    int fd = vfs->open(FO_WRONLY | FO_CREATE, path);
+                    if (fd >= 0) {
+                        vfs->write(fd, size, buf);
+                        vfs->close(fd);
+                    }
+                }
+            }
+        }
+    }
+    void loadPreset(std::string presetType, void *buf, size_t size) {
+        FileListMenu menu;
+        menu.title    = "Select preset";
+        menu.path     = getPresetPath(presetType);
+        menu.onSelect = [buf, size](const std::string &path) {
+            auto vfs = getSDCardVFS();
+            int  fd  = vfs->open(FO_RDONLY, path);
+            if (fd >= 0) {
+                vfs->read(fd, size, buf);
+                vfs->close(fd);
+            }
+        };
+        menu.show();
+    }
+
     void addMainMenuItems(Menu &menu) override {
         {
             auto &item   = menu.items.emplace_back(MenuItemType::subMenu, "Reset CPU (CTRL-ESC)");
@@ -893,6 +933,8 @@ public:
                     enableKeyboardHandCtrlMapping = menu.enabled;
                     memcpy(keyboardHandCtrlButtonScanCodes, menu.buttonScanCodes, sizeof(keyboardHandCtrlButtonScanCodes));
                 };
+                menu.onSave = [this, &menu]() { savePreset(menu, "map_kb_hc", menu.buttonScanCodes, sizeof(menu.buttonScanCodes)); };
+                menu.onLoad = [this, &menu]() { loadPreset("map_kb_hc", menu.buttonScanCodes, sizeof(menu.buttonScanCodes)); menu.onChange(); };
                 menu.show();
             };
         }
@@ -906,6 +948,8 @@ public:
                     enableGamePadHandCtrlMapping = menu.enabled;
                     memcpy(gamePadButtonHandCtrlButtonIdxs, menu.buttonNumber, sizeof(gamePadButtonHandCtrlButtonIdxs));
                 };
+                menu.onSave = [this, &menu]() { savePreset(menu, "map_gp_hc", menu.buttonNumber, sizeof(menu.buttonNumber)); };
+                menu.onLoad = [this, &menu]() { loadPreset("map_gp_hc", menu.buttonNumber, sizeof(menu.buttonNumber)); menu.onChange(); };
                 menu.show();
             };
         }
@@ -919,6 +963,8 @@ public:
                     enableGamePadKeyboardMapping = menu.enabled;
                     memcpy(gamePadButtonScanCodes, menu.buttonScanCodes, sizeof(gamePadButtonScanCodes));
                 };
+                menu.onSave = [this, &menu]() { savePreset(menu, "map_gp_kb", menu.buttonScanCodes, sizeof(menu.buttonScanCodes)); };
+                menu.onLoad = [this, &menu]() { loadPreset("map_gp_kb", menu.buttonScanCodes, sizeof(menu.buttonScanCodes)); menu.onChange(); };
                 menu.show();
             };
         }

@@ -6,25 +6,6 @@
 #include <esp_https_ota.h>
 #include <nvs_flash.h>
 
-// trim from left
-static inline std::string ltrim(const std::string &s, const char *t = " \t\n\r\f\v") {
-    std::string result = s;
-    result.erase(0, result.find_first_not_of(t));
-    return result;
-}
-
-// trim from right
-static inline std::string rtrim(const std::string &s, const char *t = " \t\n\r\f\v") {
-    std::string result = s;
-    result.erase(result.find_last_not_of(t) + 1);
-    return result;
-}
-
-// trim from left & right
-static inline std::string trim(const std::string &s, const char *t = " \t\n\r\f\v") {
-    return ltrim(rtrim(s, t), t);
-}
-
 static esp_err_t http_evt_cb(esp_http_client_event_t *evt) {
     if (evt->event_id == HTTP_EVENT_ON_HEADER) {
         if (strcasecmp(evt->header_key, "Location") == 0) {

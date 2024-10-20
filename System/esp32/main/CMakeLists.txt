@@ -1,6 +1,7 @@
 idf_component_register(
     SRCS
         "main.cpp"
+        "Common.cpp"
         "FPGA.cpp"
         "WiFi.cpp"
         "Bluetooth.cpp"
