@@ -270,7 +270,7 @@ void Menu::drawMessage(const char *msg) {
     ovl->render();
 }
 
-bool Menu::editString(const std::string &title, std::string &str, int maxLen) {
+bool Menu::editString(const std::string &title, std::string &str, int maxLen, bool isPassword) {
     auto keyboard = getKeyboard();
     auto ovl      = getDisplayOverlay();
 
@@ -306,7 +306,14 @@ bool Menu::editString(const std::string &title, std::string &str, int maxLen) {
         ovl->drawBorder(x, y, width, height, colBorder, colBg);
         ovl->drawStr(x + 1, y + 1, DisplayOverlay::makeAttr(colTitleFg, colBg), title.c_str());
         ovl->fill(x + 1, y + 3, width - 2, 1, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg));
-        ovl->drawStr(x + 1, y + 3, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg), str.substr(firstIdx, maxWidthShown).c_str());
+        {
+            auto subStr = str.substr(firstIdx, maxWidthShown);
+            if (isPassword) {
+                for (auto &ch : subStr)
+                    ch = '*';
+            }
+            ovl->drawStr(x + 1, y + 3, DisplayOverlay::makeAttr(colSelectedFg, colSelectedBg), subStr.c_str());
+        }
         ovl->setAttr(x + 1 + cursor - firstIdx, y + 3, DisplayOverlay::makeAttr(colSelectedBg, colSelectedFg));
         ovl->render();
 

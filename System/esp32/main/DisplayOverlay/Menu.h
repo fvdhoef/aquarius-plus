@@ -59,7 +59,7 @@ public:
     void setExitMenu() { exitMenu = true; }
 
     void drawMessage(const char *msg);
-    bool editString(const std::string &title, std::string &value, int maxLen);
+    bool editString(const std::string &title, std::string &value, int maxLen, bool isPassword = false);
 
     int getHeight() {
         return std::min(23, 1 + (title.empty() ? 0 : 2) + (int)items.size() + 1);

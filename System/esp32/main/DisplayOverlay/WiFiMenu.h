@@ -159,7 +159,7 @@ public:
                 auto &item   = addNetworkItem(info);
                 item.onEnter = [&]() {
                     std::string password;
-                    if (info.authMode == 'O' || editString("Enter password:", password, 64)) {
+                    if (info.authMode == 'O' || editString("Enter password:", password, 64, true)) {
                         getWiFi()->joinNetwork(info.ssid, password);
                         updateMenu();
                     }
