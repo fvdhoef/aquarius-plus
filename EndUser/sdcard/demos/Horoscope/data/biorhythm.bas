@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM                Biorhythm Module
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM              Updated 16 OCT 2024
+1003 REM              Updated 20 OCT 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -20,7 +20,7 @@
 1117 LOAD BITMAP "data/red_back.bmp4"
 
 1120 USE CHRSET "data/horoscope.chr"
-1130 mu = pt3status
+1130 mu = trackstatus
 1140 dd = 0
 
 1159 REM Leap Year function
@@ -447,8 +447,8 @@
 8100 _toggleMu
 8101 REM Toggle Music
 8110 mu = NOT mu
-8120 if     mu then RESUME PT3
-8130 if not mu then PAUSE  PT3
+8120 if     mu then RESUME TRACK
+8130 if not mu then PAUSE  TRACK
 8140 RETURN
 
 8200 _refreshFields
@@ -587,7 +587,7 @@
 9801 REM Closeout system and reset
 9810 save "data/dtBio.arry",*dt
 9820 save "data/nmBio.arry",*nm$
-9830 STOP PT3
+9830 STOP TRACK
 9840 SET FAST OFF
 9850 USE CHRSET 0
 

@@ -1,6 +1,7 @@
 1 LOAD"data/aqtitle.scr",12288
-2 LOAD"data/aquarius.saq",@32,0
-4 PLAY SAMPLE @32,0
+2 LOAD"data/aquarius.saq",@40,0
+3 SET FAST OFF
+4 PLAY SAMPLE @40,0
 5 GOTO 60
 6 PSG 8,15,9,15,10,15:REM abc vol 15
 10 PSG 0,148,1,1:REM Db4 in a
@@ -75,14 +76,13 @@
 2001 FOR I=1TO1000:NEXT:RETURN
 3000 REM Animation GFX01
 3100 REM 8-frame Animation
-3110 LOAD"data/aqgfx01a.scr",12288
+3110 LOAD "data/aqgfx01a.scr",12288
 3115 GOSUB 3300
-3120 LOAD"data/aqgfx01b.scr",12288
+3120 LOAD "data/aqgfx01b.scr",12288
 3125 GOSUB 3300
-3130 LOAD"data/aqgfx01c.scr",12288
+3130 LOAD "data/aqgfx01c.scr",12288
 3135 GOSUB 3300
-3140 LOAD"data/aqgfx01d.scr",12288
-
+3140 LOAD "data/aqgfx01d.scr",12288
 3145 GOSUB 3300
 3150 LOAD"data/aqgfx01e.scr",12288
 3155 GOSUB 3300

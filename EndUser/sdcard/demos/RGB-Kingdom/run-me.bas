@@ -1,28 +1,26 @@
 10 REM RGB Kingdom Slideshow
-15 LOAD"data/color-title.scr",12288
-20 IF INKEY$="" GOTO 20
+15 LOAD SCREEN "data/color-title.scr"
+20 PAUSE
+30 SCREEN 0,3
 100 REM Set mem map to VRAM
-120 LOAD"data/rgb_000000.bm4",@20,0
-121 GOSUB 1150
-122 LOAD"data/rgb_ffffff.bm4",@20,0
-123 GOSUB 1150
-124 LOAD"data/rgb_ff0000.bm4",@20,0
-125 GOSUB 1150
-126 LOAD"data/rgb_0000ff.bm4",@20,0
-127 GOSUB 1150
-128 LOAD"data/rgb_00ff00.bm4",@20,0
-129 GOSUB 1150
-130 LOAD"data/rgb_00ffff.bm4",@20,0
-131 GOSUB 1150
-132 LOAD"data/rgb_ffff00.bm4",@20,0
-133 GOSUB 1150
-134 LOAD"data/rgb_ff00ff.bm4",@20,0
-135 GOSUB 1150
+120 LOAD BITMAP "data/rgb_000000.bm4"
+121 PAUSE
+122 LOAD BITMAP "data/rgb_ffffff.bm4"
+123 PAUSE
+124 LOAD BITMAP "data/rgb_ff0000.bm4"
+125 PAUSE
+126 LOAD BITMAP "data/rgb_0000ff.bm4"
+127 PAUSE
+128 LOAD BITMAP "data/rgb_00ff00.bm4"
+129 PAUSE
+130 LOAD BITMAP "data/rgb_00ffff.bm4"
+131 PAUSE
+132 LOAD BITMAP "data/rgb_ffff00.bm4"
+133 PAUSE
+134 LOAD BITMAP "data/rgb_ff00ff.bm4"
+135 PAUSE
+996 CLS
+997 SCREEN 1,0
 998 CLS
 999 END
-1000 REM Loops and Subroutines
-1150 SET PALETTE 1 TO PEEK$(@20,16000+I,32)
-1160 SCREEN 0,3,0,0,0:REM Set Video Reg to Color BM
-1170 PAUSE
-1180 SCREEN 0,0,0,0,0
-1190 RETURN
+

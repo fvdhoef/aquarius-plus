@@ -1,7 +1,7 @@
 1000 REM ----------------------------------------------
 1001 REM                 Horoscope Menu
 1002 REM     by Sean P. Harrington, sph@1stage.com
-1003 REM              Updated 16 OCT 2024
+1003 REM              Updated 20 OCT 2024
 1004 REM ----------------------------------------------
 1005 REM     Based on the Horoscope Arcade Machine
 1006 REM               (c) 1975 by Ramtek
@@ -18,8 +18,8 @@
 1100 _setup
 1101 REM Setup system components
 1110 SCREEN 1,0
-1159 REM Maintain PT3 Play status
-1160 mu = pt3status
+1159 REM Maintain Track Play status
+1160 mu = trackstatus
 
 1200 _init
 1201 REM Initialize data structures
@@ -86,13 +86,13 @@
 5000 _toggleMu
 5001 REM Toggle Music
 5010 mu = NOT mu
-5020 if     mu then RESUME PT3
-5030 if not mu then PAUSE  PT3
+5020 if     mu then RESUME TRACK
+5030 if not mu then PAUSE  TRACK
 5040 goto _mainmenu
 
 9000 _closeout
 9001 REM Closeout system and reset
-9010 STOP PT3
+9010 STOP TRACK
 9020 SET FAST OFF
 9030 USE CHRSET 0
 
