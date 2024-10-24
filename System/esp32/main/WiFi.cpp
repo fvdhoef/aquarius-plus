@@ -5,6 +5,7 @@
 #include <nvs_flash.h>
 #include <esp_sntp.h>
 #include <esp_tls.h>
+#include <mdns.h>
 
 #include "XzDecompress.h"
 
@@ -64,12 +65,12 @@ public:
         netIf = esp_netif_create_default_wifi_sta();
 
         // Set hostname
+        char         hostName[32] = CONFIG_LWIP_LOCAL_HOSTNAME;
         nvs_handle_t h;
         if (nvs_open("settings", NVS_READONLY, &h) == ESP_OK) {
-            char   hostname[32];
-            size_t len = sizeof(hostname);
-            if (nvs_get_str(h, "hostname", hostname, &len) == ESP_OK) {
-                esp_netif_set_hostname(netIf, hostname);
+            size_t len = sizeof(hostName);
+            if (nvs_get_str(h, "hostname", hostName, &len) == ESP_OK) {
+                esp_netif_set_hostname(netIf, hostName);
             }
             nvs_close(h);
         }
@@ -81,6 +82,18 @@ public:
         // Restore config from NVS
         loadEnabled();
         loadKnownAPs();
+
+        // Start mDNS
+        {
+            esp_err_t err = mdns_init();
+            if (err) {
+                ESP_LOGE(TAG, "mDNS Init failed: %d", err);
+            } else {
+                ESP_LOGI(TAG, "Setting mDNS hostname to '%s'", hostName);
+                mdns_hostname_set(hostName);
+                mdns_instance_name_set("Aquarius+");
+            }
+        }
 
         // Start WiFi if previously enabled
         if (enabled) {
