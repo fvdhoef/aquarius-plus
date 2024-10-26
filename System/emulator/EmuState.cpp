@@ -28,27 +28,28 @@ EmuState::EmuState() {
 
 void EmuState::reset() {
     // Reset registers
-    videoCtrl         = 0;
-    videoScrX         = 0;
-    videoScrY         = 0;
-    videoSprSel       = 0;
-    videoPalSel       = 0;
-    videoLine         = 0;
-    audioDAC          = 0;
-    videoIrqLine      = 0;
-    irqMask           = 0;
-    irqStatus         = 0;
-    bankRegs[0]       = 0xC0 | 0;
-    bankRegs[1]       = 33;
-    bankRegs[2]       = 34;
-    bankRegs[3]       = 19;
-    ay1Addr           = 0;
-    ay2Addr           = 0;
-    sysCtrlDisableExt = false;
-    sysCtrlAyDisable  = false;
-    sysCtrlTurbo      = false;
-    soundOutput       = false;
-    cpmRemap          = false;
+    videoCtrl             = 0;
+    videoScrX             = 0;
+    videoScrY             = 0;
+    videoSprSel           = 0;
+    videoPalSel           = 0;
+    videoLine             = 0;
+    audioDAC              = 0;
+    videoIrqLine          = 0;
+    irqMask               = 0;
+    irqStatus             = 0;
+    bankRegs[0]           = 0xC0 | 0;
+    bankRegs[1]           = 33;
+    bankRegs[2]           = 34;
+    bankRegs[3]           = 19;
+    ay1Addr               = 0;
+    ay2Addr               = 0;
+    sysCtrlDisableExt     = false;
+    sysCtrlAyDisable      = false;
+    sysCtrlTurbo          = false;
+    sysCtrlTurboUnlimited = false;
+    soundOutput           = false;
+    cpmRemap              = false;
 
     Z80RESET(&z80ctx);
     ay1.reset();
@@ -138,11 +139,11 @@ int EmuState::cpuEmulate() {
 unsigned EmuState::emulate() {
     unsigned resultFlags = 0;
 
-    int delta = cpuEmulate();
-    if (emuState.sysCtrlTurbo) {
-        if (emuMode != EmuState::Em_Halted)
-            delta += cpuEmulate();
-        delta /= 2;
+    int delta = 0;
+    {
+        int deltaDiv = (emuState.sysCtrlTurbo) ? (emuState.sysCtrlTurboUnlimited ? 4 : 2) : 1;
+        for (int i = 0; i < deltaDiv; i++) delta += cpuEmulate();
+        delta /= deltaDiv;
     }
 
     int prevLineHalfCycles = lineHalfCycles;
@@ -434,6 +435,7 @@ uint8_t EmuState::ioRead(uint16_t addr, bool triggerBp) {
 
         case 0xFA: return emuState.kbBufRead();
         case 0xFB: return (
+            (emuState.sysCtrlTurboUnlimited ? (1 << 3) : 0) |
             (emuState.sysCtrlTurbo ? (1 << 2) : 0) |
             (emuState.sysCtrlAyDisable ? (1 << 1) : 0) |
             (emuState.sysCtrlDisableExt ? (1 << 0) : 0));
@@ -533,9 +535,10 @@ void EmuState::ioWrite(uint16_t addr, uint8_t data, bool triggerBp) {
             return;
 
         case 0xFB:
-            emuState.sysCtrlDisableExt = (data & (1 << 0)) != 0;
-            emuState.sysCtrlAyDisable  = (data & (1 << 1)) != 0;
-            emuState.sysCtrlTurbo      = (data & (1 << 2)) != 0;
+            emuState.sysCtrlDisableExt     = (data & (1 << 0)) != 0;
+            emuState.sysCtrlAyDisable      = (data & (1 << 1)) != 0;
+            emuState.sysCtrlTurbo          = (data & (1 << 2)) != 0;
+            emuState.sysCtrlTurboUnlimited = (data & (1 << 3)) != 0;
             return;
 
         case 0xFC: emuState.soundOutput = (data & 1) != 0; break;

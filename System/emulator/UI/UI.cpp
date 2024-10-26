@@ -1172,11 +1172,13 @@ void UI::wndIoRegs(bool *p_open) {
         }
         if (ImGui::CollapsingHeader("Other")) {
             uint8_t sysctrl =
-                ((emuState.sysCtrlTurbo ? (1 << 2) : 0) |
+                ((emuState.sysCtrlTurboUnlimited ? (1 << 3) : 0) |
+                 (emuState.sysCtrlTurbo ? (1 << 2) : 0) |
                  (emuState.sysCtrlAyDisable ? (1 << 1) : 0) |
                  (emuState.sysCtrlDisableExt ? (1 << 0) : 0));
             ImGui::Text(
-                "$FB SYSCTRL: $%02X %s%s%s", sysctrl,
+                "$FB SYSCTRL: $%02X %s%s%s%s", sysctrl,
+                sysctrl & 8 ? "[UNLIMITED]" : "",
                 sysctrl & 4 ? "[TURBO]" : "",
                 sysctrl & 2 ? "[AYDIS]" : "",
                 sysctrl & 1 ? "[EXTDIS]" : "");

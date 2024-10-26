@@ -144,34 +144,35 @@ struct EmuState {
 
     // Stop the CPU when a HALT
     // instruction is executed.
-    bool     stopOnHalt       = false;
+    bool stopOnHalt = false;
 
     // IO space
-    uint8_t  videoCtrl        = 0;      // $E0   : Video control register
-    uint16_t videoScrX        = 0;      // $E1/E2: Tile map horizontal scroll register
-    uint8_t  videoScrY        = 0;      // $E3   : Tile map horizontal scroll register
-    uint8_t  videoSprSel      = 0;      // $E4   : Sprite select
-    uint16_t videoSprX[64]    = {0};    // $E5/E6: Sprite X-position
-    uint8_t  videoSprY[64]    = {0};    // $E7   : Sprite Y-position
-    uint16_t videoSprIdx[64]  = {0};    // $E8/E9: Sprite tile index
-    uint8_t  videoSprAttr[64] = {0};    // $E9   : Sprite attributes
-    uint8_t  videoPalSel      = 0;      // $EA   : Palette entry select
-    uint16_t videoPalette[64] = {0};    // $EB   : Video palette
-    uint16_t videoLine        = 0;      // $EC   : Current line number
-    uint8_t  audioDAC         = 0;      // $EC   : Audio DAC sample
-    uint8_t  videoIrqLine     = 0;      // $ED   : Line number at which to generate IRQ
-    uint8_t  irqMask          = 0;      // $EE   : Interrupt mask register
-    uint8_t  irqStatus        = 0;      // $EF   : Interrupt status register
-    uint8_t  bankRegs[4]      = {0};    // $F0-F3: Banking registers
-    AY8910   ay1;                       // $F6/F7: AY-3-8910 emulation state
-    uint8_t  ay1Addr = 0;               // $F7   : AY-3-8910: Selected address to access via data register
-    AY8910   ay2;                       // $F8/F9: AY-3-8910 emulation state
-    uint8_t  ay2Addr           = 0;     // $F9   : AY-3-8910: Selected address to access via data register
-    bool     sysCtrlDisableExt = false; // $FB<0>: Disable access to extended registers
-    bool     sysCtrlAyDisable  = false; // $FB<1>: Disable AY PSGs
-    bool     sysCtrlTurbo      = false; // $FB<2>: Turbo mode
-    bool     soundOutput       = false; // $FC<1>: Cassette/Sound output
-    bool     cpmRemap          = false; // $FD<1>: Remap memory for CP/M
+    uint8_t  videoCtrl        = 0;          // $E0   : Video control register
+    uint16_t videoScrX        = 0;          // $E1/E2: Tile map horizontal scroll register
+    uint8_t  videoScrY        = 0;          // $E3   : Tile map horizontal scroll register
+    uint8_t  videoSprSel      = 0;          // $E4   : Sprite select
+    uint16_t videoSprX[64]    = {0};        // $E5/E6: Sprite X-position
+    uint8_t  videoSprY[64]    = {0};        // $E7   : Sprite Y-position
+    uint16_t videoSprIdx[64]  = {0};        // $E8/E9: Sprite tile index
+    uint8_t  videoSprAttr[64] = {0};        // $E9   : Sprite attributes
+    uint8_t  videoPalSel      = 0;          // $EA   : Palette entry select
+    uint16_t videoPalette[64] = {0};        // $EB   : Video palette
+    uint16_t videoLine        = 0;          // $EC   : Current line number
+    uint8_t  audioDAC         = 0;          // $EC   : Audio DAC sample
+    uint8_t  videoIrqLine     = 0;          // $ED   : Line number at which to generate IRQ
+    uint8_t  irqMask          = 0;          // $EE   : Interrupt mask register
+    uint8_t  irqStatus        = 0;          // $EF   : Interrupt status register
+    uint8_t  bankRegs[4]      = {0};        // $F0-F3: Banking registers
+    AY8910   ay1;                           // $F6/F7: AY-3-8910 emulation state
+    uint8_t  ay1Addr = 0;                   // $F7   : AY-3-8910: Selected address to access via data register
+    AY8910   ay2;                           // $F8/F9: AY-3-8910 emulation state
+    uint8_t  ay2Addr               = 0;     // $F9   : AY-3-8910: Selected address to access via data register
+    bool     sysCtrlDisableExt     = false; // $FB<0>: Disable access to extended registers
+    bool     sysCtrlAyDisable      = false; // $FB<1>: Disable AY PSGs
+    bool     sysCtrlTurbo          = false; // $FB<2>: Turbo mode
+    bool     sysCtrlTurboUnlimited = false; // $FB<3>: Turbo unlimited mode
+    bool     soundOutput           = false; // $FC<1>: Cassette/Sound output
+    bool     cpmRemap              = false; // $FD<1>: Remap memory for CP/M
 
     // Memory space
     uint8_t screenRam[2048];     // $3000-33FF: Screen RAM for text mode
