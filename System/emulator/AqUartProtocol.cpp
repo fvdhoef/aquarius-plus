@@ -149,6 +149,14 @@ static bool startsWith(const std::string &s1, const std::string &s2, bool caseSe
     }
 }
 
+#ifndef _WIN32
+static inline std::string toUpper(std::string s) {
+    for (auto &ch : s)
+        ch = toupper(ch);
+    return s;
+}
+#endif
+
 std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
     *vfs = getSDCardVFS();
 
@@ -212,6 +220,23 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string
     // Compose resolved path
     std::string result;
     for (auto &part : parts) {
+
+#ifndef _WIN32
+        // Handle case-sensitive host file systems
+        auto curPartUpper = toUpper(part);
+        if (*vfs == getSDCardVFS()) {
+            auto [deResult, deCtx] = (*vfs)->direnum(result, 0);
+            if (deResult == 0) {
+                for (auto &dee : *deCtx) {
+                    if (toUpper(dee.filename) == curPartUpper) {
+                        part = dee.filename;
+                        break;
+                    }
+                }
+            }
+        }
+#endif
+
         if (!result.empty())
             result += '/';
         result += part;
