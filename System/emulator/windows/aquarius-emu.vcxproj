@@ -34,12 +34,12 @@
     <ClCompile Include="..\lodepng\lodepng.cpp" />
     <ClCompile Include="..\libz80\z80.c" />
     <ClCompile Include="..\main.cpp" />
-    <ClCompile Include="..\Shared\AqKeyboard.cpp" />
-    <ClCompile Include="..\Shared\AqUartProtocol.cpp" />
-    <ClCompile Include="..\Shared\VFS\EspVFS.cpp" />
-    <ClCompile Include="..\Shared\VFS\SDCardVFS.cpp" />
-    <ClCompile Include="..\Shared\VFS\HttpVFS.cpp" />
-    <ClCompile Include="..\Shared\VFS\TcpVFS.cpp" />
+    <ClCompile Include="..\AqKeyboard.cpp" />
+    <ClCompile Include="..\AqUartProtocol.cpp" />
+    <ClCompile Include="..\VFS\EspVFS.cpp" />
+    <ClCompile Include="..\VFS\SDCardVFS.cpp" />
+    <ClCompile Include="..\VFS\HttpVFS.cpp" />
+    <ClCompile Include="..\VFS\TcpVFS.cpp" />
     <ClCompile Include="..\tinyfiledialogs.cpp" />
     <ClCompile Include="..\UI\AssemblyListing.cpp" />
     <ClCompile Include="..\UI\MemoryEditor.cpp" />
@@ -66,10 +66,10 @@
     <ClInclude Include="..\libz80\z80.h" />
     <ClInclude Include="..\Queue.h" />
     <ClInclude Include="..\settings_caq.h" />
-    <ClInclude Include="..\Shared\AqKeyboard.h" />
-    <ClInclude Include="..\Shared\AqKeyboardDefs.h" />
-    <ClInclude Include="..\Shared\AqUartProtocol.h" />
-    <ClInclude Include="..\Shared\VFS\VFS.h" />
+    <ClInclude Include="..\AqKeyboard.h" />
+    <ClInclude Include="..\AqKeyboardDefs.h" />
+    <ClInclude Include="..\AqUartProtocol.h" />
+    <ClInclude Include="..\VFS\VFS.h" />
     <ClInclude Include="..\tinyfiledialogs.h" />
     <ClInclude Include="..\UI\AssemblyListing.h" />
     <ClInclude Include="..\UI\MemoryEditor.h" />
@@ -138,25 +138,25 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\Shared\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(ProjectDir)\SDL2-2.0.20\lib\x86</LibraryPath>
     <ExecutablePath>$(VC_ExecutablePath_x86);$(CommonExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\Shared\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x86);$(WindowsSDK_LibraryPath_x86);$(ProjectDir)\SDL2-2.0.20\lib\x86</LibraryPath>
     <ExecutablePath>$(VC_ExecutablePath_x86);$(CommonExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\Shared\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)\SDL2-2.0.20\lib\x64</LibraryPath>
     <ExecutablePath>$(VC_ExecutablePath_x64);$(CommonExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\Shared\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(ProjectDir)\SDL2-2.0.20\include;$(ProjectDir)\..\libz80;$(ProjectDir)\..\Shared;$(ProjectDir)\..\VFS;$(ProjectDir)\..\UI;$(ProjectDir)\..\imgui;$(ProjectDir)\..\lodepng;$(ProjectDir)\..;$(ProjectDir)\</IncludePath>
     <LibraryPath>$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64);$(ProjectDir)\SDL2-2.0.20\lib\x64</LibraryPath>
     <ExecutablePath>$(VC_ExecutablePath_x64);$(CommonExecutablePath)</ExecutablePath>
   </PropertyGroup>
