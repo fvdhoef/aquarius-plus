@@ -24,7 +24,18 @@ BOOTSTUB_ADDR       equ $3880
 ; Entry point
 ;-----------------------------------------------------------------------------
     org     $C000
+    jp      _start                ; $C000 - Normal boot - checks for harware cartridge
+    jp      _softcart             ; $C003 - Checks for cart image in bank [A]
+
+_softcart:
+    ld      (bank3_page),a
+    jr      _boot
+
+_start:
+    ld      a,PAGE_CART
+_boot
     ld      sp,$0
+    push    af
 
     ; Disable video
     xor     a
@@ -69,10 +80,10 @@ BOOTSTUB_ADDR       equ $3880
     ; Check for cartridge
     ld      a,PAGE_CART_NONSCRAM
     out     (IO_BANK1),a
-    ld      a,PAGE_CART
+    pop     af
     out     (IO_BANK2),a
-
     ld      de,$A010+1
+
     ld      hl,cart_crtsig-1
 .1: dec     de
     dec     de
@@ -119,6 +130,11 @@ BOOTSTUB_ADDR       equ $3880
     ldir
 
 .descramble_done:
+
+    ld      a,(bank3_page)
+    or      BANK_READONLY
+    ld      (bank3_page),a
+    
     ; Load S2 ROM for highest compatibility with cartridge games
     ld      hl,fn_sysrom_s2_bin
     call    load_sysrom
