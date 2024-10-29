@@ -29,7 +29,8 @@ extern EmuState emuState;
 
 struct EmuState {
     EmuState();
-    void reset();
+    void coldReset();
+    void warmReset();
     bool loadCartridgeROM(const std::string &path);
     void keyboardTypeIn();
 
@@ -171,6 +172,7 @@ struct EmuState {
     bool     sysCtrlAyDisable      = false; // $FB<1>: Disable AY PSGs
     bool     sysCtrlTurbo          = false; // $FB<2>: Turbo mode
     bool     sysCtrlTurboUnlimited = false; // $FB<3>: Turbo unlimited mode
+    bool     sysCtrlWarmBoot       = false; // $FB<7>: R0:Cold boot, R1:Warm boot
     bool     soundOutput           = false; // $FC<1>: Cassette/Sound output
     bool     cpmRemap              = false; // $FD<1>: Remap memory for CP/M
 

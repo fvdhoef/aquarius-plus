@@ -565,9 +565,9 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
         uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
         if (scanCode == SCANCODE_ESCAPE && keyDown) {
             if (combinedModifiers == KeyboardLayout::ModLCtrl) {
-                emuState.reset();
+                emuState.warmReset();
             } else if (combinedModifiers == (KeyboardLayout::ModLShift | KeyboardLayout::ModLCtrl)) {
-                emuState.reset();
+                emuState.coldReset();
             }
         }
     }

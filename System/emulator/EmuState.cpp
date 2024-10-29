@@ -26,7 +26,7 @@ EmuState::EmuState() {
     z80ctx.memWrite = _memWrite;
 }
 
-void EmuState::reset() {
+void EmuState::coldReset() {
     // Reset registers
     videoCtrl             = 0;
     videoScrX             = 0;
@@ -50,6 +50,7 @@ void EmuState::reset() {
     sysCtrlTurboUnlimited = false;
     soundOutput           = false;
     cpmRemap              = false;
+    sysCtrlWarmBoot       = false;
 
     Z80RESET(&z80ctx);
     ay1.reset();
@@ -57,6 +58,11 @@ void EmuState::reset() {
     kbBufReset();
 
     emuMode = Em_Running;
+}
+
+void EmuState::warmReset() {
+    coldReset();
+    sysCtrlWarmBoot = true;
 }
 
 int EmuState::cpuEmulate() {
@@ -435,6 +441,7 @@ uint8_t EmuState::ioRead(uint16_t addr, bool triggerBp) {
 
         case 0xFA: return emuState.kbBufRead();
         case 0xFB: return (
+            (emuState.sysCtrlWarmBoot ? (1 << 7) : 0) |
             (emuState.sysCtrlTurboUnlimited ? (1 << 3) : 0) |
             (emuState.sysCtrlTurbo ? (1 << 2) : 0) |
             (emuState.sysCtrlAyDisable ? (1 << 1) : 0) |
@@ -539,6 +546,8 @@ void EmuState::ioWrite(uint16_t addr, uint8_t data, bool triggerBp) {
             emuState.sysCtrlAyDisable      = (data & (1 << 1)) != 0;
             emuState.sysCtrlTurbo          = (data & (1 << 2)) != 0;
             emuState.sysCtrlTurboUnlimited = (data & (1 << 3)) != 0;
+            if ((data & (1 << 7)) != 0)
+                emuState.warmReset();
             return;
 
         case 0xFC: emuState.soundOutput = (data & 1) != 0; break;

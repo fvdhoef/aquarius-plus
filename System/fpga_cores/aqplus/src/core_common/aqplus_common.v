@@ -106,6 +106,17 @@ module aqplus_common(
     assign turbo           = force_turbo || q_sysctrl_turbo;
     assign turbo_unlimited = force_turbo || q_sysctrl_turbo_unlimited;
 
+    wire        spi_reset_req;
+    wire        reset_req_cold;
+    reg         q_sysctrl_warm_boot = 1'b0;
+    reg         q_sysctrl_reset_req = 1'b0;
+
+    always @(posedge clk) if (reset_req) begin
+        q_sysctrl_warm_boot <= !reset_req_cold;
+    end
+
+    assign reset_req = spi_reset_req || q_sysctrl_reset_req;
+
     //////////////////////////////////////////////////////////////////////////
     // Synchronize cassette and printer input
     //////////////////////////////////////////////////////////////////////////
@@ -207,7 +218,7 @@ module aqplus_common(
         if (sel_io_ay8910)            rddata = rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata = rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_kbbuf)             rddata = rddata_kbbuf;                                   // IO $FA
-        if (sel_io_sysctrl)           rddata = {1'b0, 3'b0, q_sysctrl_turbo_unlimited, q_sysctrl_turbo, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
+        if (sel_io_sysctrl)           rddata = {q_sysctrl_warm_boot, 3'b0, q_sysctrl_turbo_unlimited, q_sysctrl_turbo, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
         if (sel_io_cassette)          rddata = {7'b0, !q_cassette_in[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata = {7'b0, reg_fd_val};                             // IO $FD
         if (sel_io_printer)           rddata = {7'b0, q_printer_in[2]};                        // IO $FE
@@ -253,6 +264,8 @@ module aqplus_common(
                 q_sysctrl_dis_regs        <= wrdata[0];
             end
         end
+
+    always @(posedge clk) q_sysctrl_reset_req <= (sel_io_sysctrl && bus_write && wrdata[7]);
 
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
@@ -375,7 +388,8 @@ module aqplus_common(
         .spi_txdata(spi_txdata),
         .spi_txdata_valid(spi_txdata_valid),
 
-        .reset_req(reset_req),
+        .reset_req(spi_reset_req),
+        .reset_req_cold(reset_req_cold),
         .keys(keys),
         .hctrl1(spi_hctrl1),
         .hctrl2(spi_hctrl2),

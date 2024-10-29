@@ -82,8 +82,8 @@ _boot
     out     (IO_BANK1),a
     pop     af
     out     (IO_BANK2),a
-    ld      de,$A010+1
 
+    ld      de,$A010+1
     ld      hl,cart_crtsig-1
 .1: dec     de
     dec     de

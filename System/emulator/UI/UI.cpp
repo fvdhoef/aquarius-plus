@@ -79,7 +79,7 @@ void UI::start(
 
     // Initialize emulator
     Audio::instance().init();
-    emuState.reset();
+    emuState.coldReset();
     Audio::instance().start();
     AqKeyboard::instance().init();
 
@@ -122,7 +122,7 @@ void UI::mainLoop() {
                     }
                     // We decode CTRL-ESCAPE in this weird way to allow the sequence ESCAPE and then CTRL to be used on Windows.
                     if (escapePressed && !event.key.repeat && event.type == SDL_KEYDOWN && (event.key.keysym.mod & KMOD_LCTRL)) {
-                        emuState.reset();
+                        emuState.warmReset();
                         break;
                     }
 
@@ -277,20 +277,23 @@ void UI::mainLoop() {
                     char       *romFile            = tinyfd_openFileDialog("Open ROM file", "", 1, lFilterPatterns, "ROM files", 0);
                     if (romFile) {
                         if (emuState.loadCartridgeROM(romFile)) {
-                            emuState.reset();
+                            emuState.coldReset();
                         }
                     }
                 }
                 if (ImGui::MenuItem("Eject cartridge", "", false, emuState.cartridgeInserted)) {
                     emuState.cartridgeInserted = false;
-                    emuState.reset();
+                    emuState.coldReset();
                 }
                 ImGui::Separator();
                 ImGui::MenuItem("Enable sound", "", &config.enableSound);
                 ImGui::MenuItem("Enable mouse", "", &config.enableMouse);
                 ImGui::Separator();
-                if (ImGui::MenuItem("Reset Aquarius+", "")) {
-                    emuState.reset();
+                if (ImGui::MenuItem("Reset Aquarius+ (warm)", "")) {
+                    emuState.warmReset();
+                }
+                if (ImGui::MenuItem("Reset Aquarius+ (cold)", "")) {
+                    emuState.coldReset();
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Quit", "")) {
@@ -383,7 +386,7 @@ void UI::mainLoop() {
                         memset(emuState.mainRam, 0, sizeof(emuState.mainRam));
                         memset(emuState.videoRam, 0, sizeof(emuState.videoRam));
                         memset(emuState.charRam, 0, sizeof(emuState.charRam));
-                        emuState.reset();
+                        emuState.warmReset();
                     }
                     if (ImGui::MenuItem("Clear memory (0xA5) & reset Aquarius+", "")) {
                         memset(emuState.screenRam, 0xA5, sizeof(emuState.screenRam));
@@ -391,7 +394,7 @@ void UI::mainLoop() {
                         memset(emuState.mainRam, 0xA5, sizeof(emuState.mainRam));
                         memset(emuState.videoRam, 0xA5, sizeof(emuState.videoRam));
                         memset(emuState.charRam, 0xA5, sizeof(emuState.charRam));
-                        emuState.reset();
+                        emuState.warmReset();
                     }
 
                     ImGui::Separator();

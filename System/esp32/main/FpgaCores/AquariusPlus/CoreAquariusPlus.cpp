@@ -71,6 +71,7 @@ public:
     unsigned          keybHandCtrl1Pressed          = 0;
     uint8_t           keybHandCtrl1                 = 0xFF;
     uint8_t           gamePadHandCtrl[2]            = {0xFF, 0xFF};
+    bool              warmReset                     = false;
 
     uint8_t keyboardHandCtrlButtonScanCodes[6] = {
         SCANCODE_INSERT,
@@ -209,10 +210,17 @@ public:
         auto               fpga = getFPGA();
         RecursiveMutexLock lock(fpga->getMutex());
         fpga->spiSel(true);
-        uint8_t resetCfg = useT80 ? 1 : 0;
-        uint8_t cmd[]    = {CMD_RESET, resetCfg};
+        uint8_t resetCfg = 0;
+        if (useT80)
+            resetCfg |= 1;
+        if (!warmReset)
+            resetCfg |= 2;
+
+        uint8_t cmd[] = {CMD_RESET, resetCfg};
         fpga->spiTx(cmd, sizeof(cmd));
         fpga->spiSel(false);
+
+        warmReset = true;
 
         {
             RecursiveMutexLock lock(mutex);
