@@ -29,7 +29,7 @@ void UI::start(
     emuState.typeInStr  = typeInStr;
     emuState.stopOnHalt = config.stopOnHalt;
     AqUartProtocol::instance().init();
-    initSDCardVFS(config.sdCardPath);
+    setSDCardPath(config.sdCardPath);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -262,7 +262,7 @@ void UI::mainLoop() {
                     if (path) {
                         config.sdCardPath = path;
                         stripTrailingSlashes(config.sdCardPath);
-                        initSDCardVFS(config.sdCardPath);
+                        setSDCardPath(config.sdCardPath);
                     }
                 }
                 std::string ejectLabel = "Eject SD card";
@@ -271,7 +271,7 @@ void UI::mainLoop() {
                 }
                 if (ImGui::MenuItem(ejectLabel.c_str(), "", false, !config.sdCardPath.empty())) {
                     config.sdCardPath.clear();
-                    initSDCardVFS("");
+                    setSDCardPath("");
                 }
                 ImGui::Separator();
                 if (ImGui::MenuItem("Load cartridge ROM...", "")) {

@@ -20,7 +20,7 @@ public:
     SDCardVFS() {
     }
 
-    void init(const std::string &_basePath) {
+    void setBasePath(const std::string &_basePath) {
         // printf("Settings SD card directory: '%s'\n", _basePath.c_str());
 
         basePath = _basePath;
@@ -376,6 +376,6 @@ VFS *getSDCardVFS() {
     return &obj;
 }
 
-void initSDCardVFS(const std::string &basePath) {
-    static_cast<SDCardVFS *>(getSDCardVFS())->init(basePath);
+void setSDCardPath(const std::string &basePath) {
+    static_cast<SDCardVFS *>(getSDCardVFS())->setBasePath(basePath);
 }

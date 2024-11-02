@@ -82,7 +82,7 @@ public:
     virtual int stat(const std::string &path, struct stat *st) { return ERR_OTHER; }
 };
 
-void initSDCardVFS(const std::string &basePath);
+void setSDCardPath(const std::string &basePath);
 
 VFS *getSDCardVFS();
 VFS *getEspVFS();
