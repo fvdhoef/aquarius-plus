@@ -241,7 +241,7 @@ void UI::mainLoop() {
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
-        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
+        ImGui::DockSpaceOverViewport(0, ImGui::GetMainViewport(), ImGuiDockNodeFlags_PassthruCentralNode);
 
         // Safe-guard for misbehaving video drivers that don't lock on v-sync
         auto ticks = SDL_GetTicks64();
@@ -491,7 +491,7 @@ void UI::mainLoop() {
             }
         }
 
-        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData());
+        ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
         SDL_RenderPresent(renderer);
 
         if (first)
@@ -927,7 +927,7 @@ void UI::wndScreen(bool *p_open) {
             const ImVec2 p1(canvas_p0.x + dst.x + dst.w, canvas_p0.y + dst.y + dst.h);
 
             ImDrawList *draw_list = ImGui::GetWindowDrawList();
-            draw_list->AddImage(texture, p0, p1, {0, 0}, {1, 1});
+            draw_list->AddImage((ImTextureID)texture, p0, p1, {0, 0}, {1, 1});
 
             ImGuiIO &io  = ImGui::GetIO();
             auto     pos = (io.MousePos - p0) / (p1 - p0) * ImVec2(VIDEO_WIDTH / 2, VIDEO_HEIGHT) - ImVec2(16, 16);
