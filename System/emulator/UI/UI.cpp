@@ -250,6 +250,8 @@ void UI::mainLoop() {
             AqKeyboard::instance().repeatTimer();
         }
 
+        renderScreen();
+
         ImVec2 menuBarSize;
         if (ImGui::BeginMainMenuBar()) {
             menuBarSize = ImGui::GetWindowSize();
@@ -494,10 +496,10 @@ void UI::mainLoop() {
         ImGui_ImplSDLRenderer2_RenderDrawData(ImGui::GetDrawData(), renderer);
         SDL_RenderPresent(renderer);
 
-        if (first)
+        if (first) {
             ImGui::SetWindowFocus("Screen");
-
-        first = false;
+            first = false;
+        }
     }
 }
 
@@ -636,8 +638,6 @@ void UI::emulate() {
                 if (emuState.emuMode != EmuState::Em_Running)
                     break;
 
-                if (flags & ERF_RENDER_SCREEN)
-                    renderScreen();
                 if (flags & ERF_NEW_AUDIO_SAMPLE)
                     break;
             }
@@ -677,8 +677,6 @@ void UI::emulate() {
                 emuState.video.drawLine();
             }
             emuState.videoLine = line;
-
-            renderScreen();
         }
     }
 
