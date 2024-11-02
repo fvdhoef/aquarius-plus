@@ -710,6 +710,7 @@ void UI::wndCpuState(bool *p_open) {
     if (open) {
         ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Halted ? (ImVec4)ImColor(192, 0, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
         ImGui::BeginDisabled(emuState.emuMode != EmuState::Em_Running);
+        ImGui::SetNextItemShortcut(ImGuiMod_Shift | ImGuiKey_F5, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Tooltip);
         if (ImGui::Button("Halt")) {
             emuState.emuMode = EmuState::Em_Halted;
         }
@@ -718,11 +719,14 @@ void UI::wndCpuState(bool *p_open) {
 
         ImGui::BeginDisabled(emuState.emuMode == EmuState::Em_Running);
         ImGui::SameLine();
+
+        ImGui::SetNextItemShortcut(ImGuiKey_F11, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Tooltip);
         if (ImGui::Button("Step Into")) {
             emuState.emuMode = EmuState::Em_Step;
         }
         ImGui::SameLine();
 
+        ImGui::SetNextItemShortcut(ImGuiKey_F10, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Tooltip);
         if (ImGui::Button("Step Over")) {
             int tmpBreakpoint = -1;
 
@@ -770,6 +774,7 @@ void UI::wndCpuState(bool *p_open) {
         }
 
         ImGui::SameLine();
+        ImGui::SetNextItemShortcut(ImGuiMod_Shift | ImGuiKey_F10, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Tooltip);
         if (ImGui::Button("Step Out")) {
             emuState.haltAfterRet = 0;
             emuState.emuMode      = EmuState::Em_Running;
@@ -777,6 +782,7 @@ void UI::wndCpuState(bool *p_open) {
         ImGui::SameLine();
 
         ImGui::PushStyleColor(ImGuiCol_Button, emuState.emuMode == EmuState::Em_Running ? (ImVec4)ImColor(0, 128, 0) : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+        ImGui::SetNextItemShortcut(ImGuiKey_F5, ImGuiInputFlags_RouteGlobal | ImGuiInputFlags_Tooltip);
         if (ImGui::Button("Go")) {
             emuState.emuMode = EmuState::Em_Running;
         }
