@@ -23,12 +23,24 @@ cp build/ota_data_initial.bin $NAME/
 cp build/flash_args $NAME/
 
 # Windows batch file
-echo "esptool.py --chip esp32s3 -p COM3 write_flash `cat build/flash_args | tr '\n' ' '`" > $NAME/write.bat
+cat <<EOT > $NAME/write.bat
+IF [%1]==[] GOTO BLANK
+esptool --chip esp32s3 -p COM%1 write_flash `cat build/flash_args | tr '\n' ' '`
+ECHO Done!
+GOTO DONE
+
+:BLANK
+ECHO Usage "write.bat 3" where 3 is the COM port (i.e. COM3).
+
+:DONE
+EOT
 unix2dos $NAME/write.bat
 
 # macOS/Linux shell script
-echo "#!/bin/sh" > $NAME/write.sh
-echo "esptool.py --chip esp32s3 write_flash `cat build/flash_args | tr '\n' ' '`" >> $NAME/write.sh
+cat <<EOT > $NAME/write.sh
+#!/bin/sh
+esptool.py --chip esp32s3 write_flash `cat build/flash_args | tr '\n' ' '`
+EOT
 chmod +x $NAME/write.sh
 
 # Create ZIP file

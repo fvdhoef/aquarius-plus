@@ -5,5 +5,8 @@
     - Improve drawMessage to allow for multiple lines of text
   - Bluetooth
     - Bug: Bluetooth forgets bonding (Sean)
+  - Allow toggling on/off settings by pressing Enter
+  - Option for disabling guide button to access overlay
+  - Allow navigating menu with analog stick in addition to dpad
 - FPGA
   - FIFO based sample playback
