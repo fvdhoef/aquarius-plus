@@ -24,10 +24,15 @@ PAGE_BOOTBIN equ 51
     call    esp_cmd
 
     ; Open file
+    ld      hl,.altname
+    call    esp_open
+    jr      z,.loadfile
+
     ld      hl,.filename
     call    esp_open
 
     ; Read max $3000 bytes to $C000
+.loadfile:
     ld      hl,$C000
     ld      de,$3000
     call    esp_read_bytes
@@ -40,6 +45,9 @@ PAGE_BOOTBIN equ 51
 
 .err:
     jp      .err
+
+.altname:
+    db "/boot.bin",0
 
 .filename:
     db "esp:boot.bin",0
