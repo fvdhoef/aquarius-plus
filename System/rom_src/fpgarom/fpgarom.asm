@@ -15,6 +15,11 @@ PAGE_BOOTBIN equ 51
     out     (IO_BANK3),a
     ld      sp,$0
 
+    ; Save IO_SYSCTRL boot bit
+    in      a,(IO_SYSCTRL)
+    and     SYSCTRL_WRMBOOT   ; Z = Cold boot, NZ = Warm boot
+    push    af
+
     ; Enable turbo mode
     ld      a,6
     out     (IO_SYSCTRL),a
@@ -39,6 +44,9 @@ PAGE_BOOTBIN equ 51
 
     ; Close file
     call    esp_close
+
+    ; Get original IO_SYSCTRL into H
+    pop     hl
 
     ; Jump to entry point
     jp      $C000
