@@ -5,6 +5,7 @@
 ;-----------------------------------------------------------------------------
 
 PAGE_CART           equ 19
+PAGE_VIDEORAM       equ 20
 PAGE_CHARROM        equ 21
 
 PAGE_MAINRAM0       equ 56
@@ -49,6 +50,35 @@ _boot
     xor     a
     out     (IO_VCTRL), a
 
+    ; Init palettes
+    ld      b,0
+    ld      hl,default_palette
+    call    .set_palette
+ifdef splash
+    ld      hl,splash_palette
+else
+    ld      hl,default_palette
+endif
+    call    .set_palette
+    ld      hl,default_palette
+    call    .set_palette
+    ld      hl,default_palette
+    call    .set_palette
+
+ifdef splash
+    ; Clear Video RAM
+    ld      a,PAGE_VIDEORAM
+    call    fill_page_zero
+    ; Copy Splash Screen into Video RAM
+    ld      hl,splash_data
+    ld      de,$4000+splash_offset
+    ld      bc,splash_palette-splash_data
+    ldir
+    ; Display Splash Screen
+    ld      a,6
+    out     (IO_VCTRL), a
+endif
+
     ; Load character ROM
     ld      a,PAGE_CHARROM
     out     (IO_BANK2),a
@@ -59,18 +89,8 @@ _boot
     call    esp_read_bytes
     call    esp_close
 
-    ; Init palettes
-    ld      b,0
-    ld      hl,default_palette
-    call    .set_palette
-    ld      hl,default_palette
-    call    .set_palette
-    ld      hl,default_palette
-    call    .set_palette
-    ld      hl,default_palette
-    call    .set_palette
 
-    ; Clear video RAM $3000-$37FF
+    ; Clear Screen RAM $3000-$37FF
     in      a,(IO_BANK0)
     or      a,BANK_READONLY | BANK_OVERLAY
     out     (IO_BANK0),a
@@ -81,16 +101,13 @@ _boot
     ld      bc,$800-1
     ldir
 
-    ld      a,1
-    ld      ($3400),a
-
     pop     af                ; AF = Boot mode
     jp      nz,warm_boot      ; If Warm boot
 
     ; Set up cartridge / sysrom checks
     ld      a,PAGE_CART_NONSCRAM
     out     (IO_BANK1),a
-    pop     af          
+    pop     af
     out     (IO_BANK2),a
 
     ; Check for sysrom
@@ -129,8 +146,20 @@ _boot
     dec     b
     jr      nz,.2
     xor     (hl)
-    jp      z,.descramble_done
+    jp      nz,.descramble_cart
+    
+    ; Copy unencrypted cartridge to RAM
+    ld      hl,$8000
+    ld      de,$4000
+    ld      bc,$4000
+    ldir
 
+    ld      a,PAGE_CART_NONSCRAM
+    ld      (bank3_page),a
+
+    jr      .descramble_done
+
+.descramble_cart:
     ; Descramble ROM with XOR value in A
     ld      b,a
     ld      a,PAGE_CART_NONSCRAM
@@ -153,7 +182,7 @@ _boot
     ld      bc,16
     ldir
 
-.descramble_done:
+.descramble_done
 
     ld      a,(bank3_page)
     or      BANK_READONLY
@@ -187,6 +216,7 @@ _boot
 no_cart:
 
 .load_sysrom:
+
     ; Try to load system ROM from SD card
     ld      hl,fn_sysrom_sdcard_bin
     call    load_sysrom
@@ -256,9 +286,6 @@ copy_sysrom:
     ld      de,$0000
     ld      bc,$3000
     ldir
-    
-    ;ld      a,PAGE_SYSROM_OV
-    ;out     (IO_BANK0),a
 
 clear_ram_start:
 
@@ -270,9 +297,8 @@ clear_ram_start:
     call    fill_page_zero
     inc     a
     call    fill_page_zero
-    
-    jr      _start_sysrom
 
+    jr      _start_sysrom
 
 warm_boot:
     ld      a,PAGE_CART_NSRO
@@ -297,7 +323,7 @@ start_sysrom:
     ; Init video mode
     ld      a, 1
     out     (IO_VCTRL), a
-    
+
     ld      a,(bank3_page)
     jp      BOOTSTUB_ADDR
 
@@ -368,5 +394,16 @@ bootstub_end:
 ; esp functions
 ;-----------------------------------------------------------------------------
     include "esp.asm"
+
+ifdef splash
+;-----------------------------------------------------------------------------
+; splash screen
+;-----------------------------------------------------------------------------
+    include "splash.inc"
+splash_data:
+    incbin  "splash.bin"
+splash_palette:
+    incbin  "splash.palt"
+endif
 
     end
