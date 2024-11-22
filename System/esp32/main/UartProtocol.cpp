@@ -457,9 +457,22 @@ public:
     }
     void cmdGetGameCtrl(uint8_t idx) {
         DBGF("GETGAMECTRL(idx=%u)", idx);
-        // FIXME
-        txStart();
-        txWrite(ERR_NOT_FOUND);
+        GamePadData data;
+        if (!getFpgaCore()->getGamePadData(idx, data)) {
+            txStart();
+            txWrite(ERR_NOT_FOUND);
+        } else {
+            txStart();
+            txWrite(0);
+            txWrite(data.lx);
+            txWrite(data.ly);
+            txWrite(data.rx);
+            txWrite(data.ry);
+            txWrite(data.lt);
+            txWrite(data.rt);
+            txWrite(data.buttons & 0xFF);
+            txWrite(data.buttons >> 8);
+        }
     }
     void cmdOpen(uint8_t flags, const char *pathArg) {
         DBGF("OPEN(flags=0x%02X, path='%s')", flags, pathArg);

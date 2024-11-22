@@ -695,6 +695,15 @@ public:
         gameCtrlUpdated();
     }
 
+    bool getGamePadData(unsigned idx, GamePadData &data) {
+        if (idx > 1)
+            return false;
+
+        RecursiveMutexLock lock(mutex);
+        data = gamePads[idx];
+        return true;
+    }
+
     void cmdGetMouse() {
         // DBGF("GETMOUSE()");
 

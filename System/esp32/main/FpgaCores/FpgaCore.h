@@ -23,7 +23,8 @@ public:
 
     virtual void addMainMenuItems(Menu &menu) = 0;
 
-    virtual void getCoreInfo(CoreInfo *coreInfo) = 0;
+    virtual void getCoreInfo(CoreInfo *coreInfo)             = 0;
+    virtual bool getGamePadData(unsigned idx, GamePadData &data) = 0;
 };
 
 std::shared_ptr<FpgaCore> getFpgaCore();
