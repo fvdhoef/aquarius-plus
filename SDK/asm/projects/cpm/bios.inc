@@ -120,6 +120,7 @@ _chk03:     defs    16      ; Check vector 3
 ; Initialize
 ;-----------------------------------------------------------------------------
 _init:
+
     ; Set video mode to 80-columns mode text with remapped border character
     ld      a,$61
     out     (IO_VCTRL),a
@@ -135,6 +136,7 @@ _init:
     ld      a,7
     call    esp_send_byte
     call    esp_get_byte
+
 
     ret
 
@@ -228,6 +230,41 @@ _load_cpm:
     out     (IO_BANK0),a
     ret
 
+
+;-----------------------------------------------------------------------------
+; REBOOT - Cold start from boot.bin after Ctrl-Esc
+;-----------------------------------------------------------------------------
+_reboot:
+
+    ld      a,63            
+    out     (IO_BANK3),a    ; Clear R/O set by boot.bin on Ctrl-Esc
+    ld      sp,$0           ; Setup a stack
+
+    ld      a,$E1           ; Clear Color RAM
+    ld      c,$8F
+    call    .cls
+    ld      a,$61           ; Clear Screen RAM
+    ld      c,$20
+    call    .cls
+   
+    ld      a,60            
+    out     (IO_BANK0),a    ; Clear R/O and Overlay set by boot.bin on Ctrl-Esc
+
+    call    _load_cpm       ; Load CCP from TMP_BUFFER
+    call    reset_termvars  ; Reset cursor position
+    jr      _start
+
+.cls
+    out     (IO_VCTRL),a    
+    ld      a,c
+    ld      hl,$3000          
+    ld      (hl),a
+    ld      de,$3001
+    ld      bc,2047
+    ldir
+    ret
+
+
 ;-----------------------------------------------------------------------------
 ; BOOT - Cold start routine
 ;-----------------------------------------------------------------------------
@@ -235,6 +272,7 @@ _boot:
     ld      sp,$0           ; Setup a stack
     call    _save_cpm       ; Save CP/M for later reloading by warm boot
 
+_start:
     ; Clear user memory
     ld      hl,$0
     ld      bc,ccp
@@ -242,6 +280,7 @@ _boot:
     call    memset
 
     call    _init           ; Initialize
+
     ld      bc,.bootstr     ; Boot message
     call    PRTMESG
     jr      _go_cpm
@@ -256,6 +295,8 @@ _boot:
 ; of a floppy disc or extra memory.
 ;-----------------------------------------------------------------------------
 _wboot:
+    cp      $BF             ; If restarted from boot.bin
+    jr      z,_reboot       ;   Do full boot
     ld      sp,$0           ; Setup a stack
     call    _load_cpm       ; Load CP/M
     call    _init           ; Initialize

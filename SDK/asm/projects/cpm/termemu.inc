@@ -21,6 +21,14 @@ _in_escape:     defb 0
 _loadcur_y:     defb 0
 _loadcur_x:     defb 0
 
+reset_termvars:
+    ld      hl,TEXTBASE
+    ld      (_text_addr),hl
+    xor     a
+    ld      (_column),a
+    ld      (_row),a
+    ret
+
 ;-----------------------------------------------------------------------------
 ; Hide cursor
 ;-----------------------------------------------------------------------------
