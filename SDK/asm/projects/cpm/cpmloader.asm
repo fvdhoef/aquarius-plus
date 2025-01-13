@@ -41,7 +41,7 @@ main:
     out     (IO_VCTRL),a
 
     ; Map RAM in bank 3
-    ld      a,35
+    ld      a,63              ; Matches BASIC page mapping
     out     (IO_BANK3),a
 
     ; Clear bank 3
@@ -57,7 +57,7 @@ main:
     ldir
 
     ; Map RAM in bank 0
-    ld      a,32
+    ld      a,60              ; Matches BASIC page mapping
     out     (IO_BANK0),a
 
     ; Jump to CP/M BIOS

@@ -201,30 +201,30 @@ _setdisk:
     ret
 
 ;-----------------------------------------------------------------------------
-; Copy CP/M to page 36 so it can be reloaded by _load_cpm.
+; Copy CP/M to TMP_BUFFER so it can be reloaded by _load_cpm.
 ;-----------------------------------------------------------------------------
 _save_cpm:
-    ld      a,36
+    ld      a,50              ; TMP_BUFFER
     out     (IO_BANK0),a
     ld      de,$0
     ld      hl,ccp
     ld      bc,bios-ccp
     ldir
-    ld      a,32
+    ld      a,60              ; Matches BASIC page mapping
     out     (IO_BANK0),a
     ret
 
 ;-----------------------------------------------------------------------------
-; Load CP/M from page 36
+; Load CP/M from TMP_BUFFER
 ;-----------------------------------------------------------------------------
 _load_cpm:
-    ld      a,36
+    ld      a,50
     out     (IO_BANK0),a
     ld      de,ccp
     ld      hl,0
     ld      bc,bios-ccp
     ldir
-    ld      a,32
+    ld      a,60              ; Matches BASIC page mapping
     out     (IO_BANK0),a
     ret
 
