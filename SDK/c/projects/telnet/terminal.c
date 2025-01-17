@@ -352,7 +352,7 @@ static void cursor_set(int x, int y) {
         x = 0;
     else if (x > COLUMNS - 1)
         x = COLUMNS - 1;
-    else if (y < 0)
+    if (y < 0)
         y = 0;
     else if (y > ROWS - 1)
         y = ROWS - 1;
