@@ -33,13 +33,17 @@ BOOTSTUB_ADDR       equ $3880
 
 _softcart:
     ld      (bank3_page),a
+    ld      b,0
     jr      _boot
 
 _start:
     ld      a,PAGE_CART
+    ld      c,IO_SYSCTRL
+    in      b,(c)
 _boot
     ld      sp,$0
     push    af                ; Stack = Cart page
+    push    bc
 
     ; Enable unlimited turbo mode
     ld      a,6
@@ -100,7 +104,8 @@ endif
     ld      bc,$800-1
     ldir
 
-    in      a,(IO_SYSCTRL)
+    ; Check warm boot flag
+    pop     af
     and     $80
     jp      nz,warm_boot      ; If Warm boot
 
