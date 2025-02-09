@@ -40,7 +40,6 @@ _start:
 _boot
     ld      sp,$0
     push    af                ; Stack = Cart page
-    push    hl                ; Stack = Boot mode
 
     ; Enable unlimited turbo mode
     ld      a,6
@@ -101,7 +100,8 @@ endif
     ld      bc,$800-1
     ldir
 
-    pop     af                ; AF = Boot mode
+    in      a,(IO_SYSCTRL)
+    and     $80
     jp      nz,warm_boot      ; If Warm boot
 
     ; Set up cartridge / sysrom checks
