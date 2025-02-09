@@ -60,6 +60,7 @@ public:
     uint8_t           videoTimingMode   = 0;
     bool              useT80            = false;
     bool              forceTurbo        = false;
+    bool              gamepadNavigation = false;
     bool              bypassStartScreen = false;
     TimerHandle_t     bypassStartTimer  = nullptr;
     bool              bypassStartCancel = false;
@@ -186,6 +187,9 @@ public:
             if (nvs_get_u8(h, "forceTurbo", &val8) == ESP_OK) {
                 forceTurbo = val8 != 0;
                 aqpForceTurbo(forceTurbo);
+            }
+            if (nvs_get_u8(h, "gamepadNav", &val8) == ESP_OK) {
+                gamepadNavigation = val8 != 0;
             }
 
             nvs_close(h);
@@ -661,29 +665,34 @@ public:
         // printf("idx=%u pressed=%04X\n", idx, pressed);
 
         if (idx == 0) {
-            auto kb = getKeyboard();
-            if (pressed & GCB_GUIDE) {
-                kb->handleScancode(SCANCODE_LCTRL, true);
-                kb->handleScancode(SCANCODE_TAB, true);
-                kb->handleScancode(SCANCODE_TAB, false);
-                kb->handleScancode(SCANCODE_LCTRL, false);
+            bool overlayVisible = getDisplayOverlay()->isVisible();
+            auto kb             = getKeyboard();
+
+            if (gamepadNavigation) {
+                if (pressed & GCB_GUIDE) {
+                    kb->handleScancode(SCANCODE_LCTRL, true);
+                    kb->handleScancode(SCANCODE_TAB, true);
+                    kb->handleScancode(SCANCODE_TAB, false);
+                    kb->handleScancode(SCANCODE_LCTRL, false);
+                }
+
+                if (overlayVisible) {
+                    if (changed & GCB_DPAD_UP)
+                        kb->handleScancode(SCANCODE_UP, (data.buttons & GCB_DPAD_UP) != 0);
+                    if (changed & GCB_DPAD_DOWN)
+                        kb->handleScancode(SCANCODE_DOWN, (data.buttons & GCB_DPAD_DOWN) != 0);
+                    if (changed & GCB_DPAD_LEFT)
+                        kb->handleScancode(SCANCODE_LEFT, (data.buttons & GCB_DPAD_LEFT) != 0);
+                    if (changed & GCB_DPAD_RIGHT)
+                        kb->handleScancode(SCANCODE_RIGHT, (data.buttons & GCB_DPAD_RIGHT) != 0);
+                    if (changed & GCB_A)
+                        kb->handleScancode(SCANCODE_RETURN, (data.buttons & GCB_A) != 0);
+                    if (changed & GCB_B)
+                        kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
+                }
             }
 
-            if (getDisplayOverlay()->isVisible()) {
-                if (changed & GCB_DPAD_UP)
-                    kb->handleScancode(SCANCODE_UP, (data.buttons & GCB_DPAD_UP) != 0);
-                if (changed & GCB_DPAD_DOWN)
-                    kb->handleScancode(SCANCODE_DOWN, (data.buttons & GCB_DPAD_DOWN) != 0);
-                if (changed & GCB_DPAD_LEFT)
-                    kb->handleScancode(SCANCODE_LEFT, (data.buttons & GCB_DPAD_LEFT) != 0);
-                if (changed & GCB_DPAD_RIGHT)
-                    kb->handleScancode(SCANCODE_RIGHT, (data.buttons & GCB_DPAD_RIGHT) != 0);
-                if (changed & GCB_A)
-                    kb->handleScancode(SCANCODE_RETURN, (data.buttons & GCB_A) != 0);
-                if (changed & GCB_B)
-                    kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
-
-            } else if (enableGamePadKeyboardMapping) {
+            if (!overlayVisible && enableGamePadKeyboardMapping) {
                 for (int i = 0; i < 16; i++) {
                     if (gamePadButtonScanCodes[i] != 0 && changed & (1 << i))
                         kb->handleScancode(gamePadButtonScanCodes[i], (data.buttons & (1 << i)) != 0);
@@ -984,6 +993,21 @@ public:
                 menu.onLoad = [this, &menu]() { loadPreset("map_gp_kb", menu.buttonScanCodes, sizeof(menu.buttonScanCodes)); menu.onChange(); };
                 menu.show();
             };
+        }
+        {
+            auto &item  = menu.items.emplace_back(MenuItemType::onOff, "Navigate menu using gamepad");
+            item.setter = [this](int newVal) {
+                gamepadNavigation = (newVal != 0);
+
+                nvs_handle_t h;
+                if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
+                    if (nvs_set_u8(h, "gamepadNav", gamepadNavigation ? 1 : 0) == ESP_OK) {
+                        nvs_commit(h);
+                    }
+                    nvs_close(h);
+                }
+            };
+            item.getter = [this]() { return gamepadNavigation ? 1 : 0; };
         }
         menu.items.emplace_back(MenuItemType::separator);
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
