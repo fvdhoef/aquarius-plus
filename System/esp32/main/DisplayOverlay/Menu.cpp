@@ -242,8 +242,12 @@ void Menu::show() {
                     auto &mi = items[selectedRow];
                     // printf("Enter on row:%d '%s' has_onEnter:%d\n", selectedRow, mi.name.c_str(), (bool)mi.onEnter);
 
-                    if (mi.onEnter)
+                    if (mi.onEnter) {
                         mi.onEnter();
+                    } else if (mi.type == MenuItemType::onOff) {
+                        if (mi.getter && mi.setter)
+                            mi.setter(mi.getter() ? 0 : 1);
+                    }
                     break;
                 }
             }
