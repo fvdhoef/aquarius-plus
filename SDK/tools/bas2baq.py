@@ -42,11 +42,13 @@ from xmlrpc.client import TRANSPORT_ERROR
 parser = argparse.ArgumentParser(
     description="Convert text file to Aquarius BASIC .BAS file"
 )
+parser.add_argument("-p", action="store_true", help="Generate TOK file")
 parser.add_argument("input", type=str, help="Input file")
 parser.add_argument("output", type=str, nargs="?", help="Output file")
 
 args = parser.parse_args()
 
+tok = args.p
 input_spec = args.input
 output_spec= args.output
 
@@ -56,7 +58,9 @@ input_name = input_base + input_ext
 
 if output_spec: output_base, output_ext = path.splitext(output_spec)
 else: output_base, output_ext = input_base, ""
-if not output_ext: output_ext = ".baq"
+if not output_ext: 
+    if tok: output_ext = ".baq"
+    else: output_ext = ".baq"
 output_name = output_base + output_ext
 
 try: 
@@ -252,22 +256,37 @@ xtokens = {
     0xAE: "MAX",
     0xAF: "UPR",
     0xB0: "LWR",
-    0xB1: "SPEED"
+    0xB1: "SPEED",
+    0xB2: "LONG",
+    0xB3: "FLOAT",
+    0xB4: "PATH",
+    0xB5: "DUMP",
+    0xB6: "BORDER",
+    0xB7: "CHECK"
 }
 
 def error(idx, message):
-    print(f"{input_name}:{idx+1} {message}", file=sys.stderr)
+    spc = "    "
+    fmsg = f"* {input_name}:{idx+1} {message} *"
+    bar = "*" * len(fmsg)
+    print("", file=sys.stderr)
+    print(spc+bar, file=sys.stderr)
+    print(spc+fmsg, file=sys.stderr)
+    print(spc+bar, file=sys.stderr)
     sys.exit(128)
 
 
 # Write header
-output_file.write(
-    12 * b"\xFF"
-    + b"\x00"
-    + "AQPLUS".encode()
-    + 12 * b"\xFF"
-    + b"\x00"
-)
+if tok:
+      output_file.write(b"\x00")
+else:
+    output_file.write(
+        12 * b"\xFF"
+        + b"\x00"
+        + "AQPLUS".encode()
+        + 12 * b"\xFF"
+        + b"\x00"
+    )
 
 
 last_linenr = -1
@@ -350,6 +369,7 @@ for idx, line in enumerate(input_file.readlines()):
 output_file.write(struct.pack("<H", 0))
     
 # Write trailer
-output_file.write(
-    15 *  b"\x00"
-)
+if not tok:
+    output_file.write(
+        15 *  b"\x00"
+    )

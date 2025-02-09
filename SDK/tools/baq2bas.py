@@ -225,7 +225,14 @@ xtokens = {
     0xAE: "MAX",
     0xAF: "UPR",
     0xB0: "LWR",
-    0xB1: "SPEED"
+    0xB1: "SPEED",
+    0xB2: "LONG",
+    0xB3: "FLOAT",
+    0xB4: "PATH"
+    0xB4: "PATH",
+    0xB5: "DUMP",
+    0xB6: "BORDER",
+    0xB7: "CHECK"
 }
 
 with open(args.input, "rb") as f:
@@ -246,11 +253,13 @@ with open(args.input, "rb") as f:
         print(f"Embedded filename: {data[13:19].decode()}")
         return True
 
-    if not check_header():
-        print("Incorrect format")
-        exit(1)
-
-    idx = 32
+    if data[0] == 0x00:
+        idx = 1
+    else:
+        if not check_header():
+            print("Incorrect format")
+            exit(1)
+        idx = 32
 
     while True:
         (nextline) = struct.unpack("<H", data[idx : idx + 2])[0]
