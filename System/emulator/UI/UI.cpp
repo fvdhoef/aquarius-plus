@@ -97,8 +97,9 @@ void UI::start(
 }
 
 void UI::mainLoop() {
-    ImGuiIO &io     = ImGui::GetIO();
-    auto    &config = Config::instance();
+    ImGuiIO &io         = ImGui::GetIO();
+    auto    &platformIO = ImGui::GetPlatformIO();
+    auto    &config     = Config::instance();
 
     bool showAppAbout   = false;
     bool showDemoWindow = false;
@@ -355,7 +356,7 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Keyboard")) {
                 ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config.handCtrlEmulation);
                 if (ImGui::MenuItem("Paste text from clipboard", "")) {
-                    emuState.typeInStr = io.GetClipboardTextFn(nullptr);
+                    emuState.typeInStr = platformIO.Platform_GetClipboardTextFn(ImGui::GetCurrentContext());
                 }
                 ImGui::Separator();
                 for (int i = 0; i < (int)KeyLayout::Count; i++) {
