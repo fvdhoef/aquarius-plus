@@ -343,6 +343,9 @@ _game_select:
     call    _dir_up
     jr      .input
 .select:
+    ld      a,(_page_lines)
+    or      a
+    jr      z,.input
     call    _select_entry
     ld      a,(_dirent_attr)
     bit     0,a

@@ -322,6 +322,9 @@ module aqms_common(
     wire [7:0] hctrl1_data = q2_hctrl1 & spi_hctrl1;
     wire [7:0] hctrl2_data = q2_hctrl2 & spi_hctrl2;
 
+    wire spi_reset_req;
+    assign reset_req = spi_reset_req || (hctrl1_data == 8'b00011101);   // Button 1+3+5
+
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
     //////////////////////////////////////////////////////////////////////////
@@ -337,7 +340,7 @@ module aqms_common(
         .spi_txdata(spi_txdata),
         .spi_txdata_valid(spi_txdata_valid),
 
-        .reset_req(reset_req),
+        .reset_req(spi_reset_req),
         .keys(keys),
         .hctrl1(spi_hctrl1),
         .hctrl2(spi_hctrl2),
