@@ -32,6 +32,7 @@ public:
     int  wndHeight           = 0;
     bool enableSound         = true;
     bool enableMouse         = true;
+    bool fontScale2x         = false;
     bool handCtrlEmulation   = false;
     bool showMemEdit         = false;
     bool showCpuState        = false;

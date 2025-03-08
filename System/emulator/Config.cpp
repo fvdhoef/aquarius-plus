@@ -64,6 +64,7 @@ void Config::load() {
         wndHeight               = getIntValue(root, "wndHeight", VIDEO_HEIGHT * 2);
         enableSound             = getBoolValue(root, "enableSound", true);
         enableMouse             = getBoolValue(root, "enableMouse", true);
+        fontScale2x             = getBoolValue(root, "fontScale2x", false);
         emuState.enableDebugger = getBoolValue(root, "enableDebugger", false);
 
         displayScaling = (DisplayScaling)getIntValue(root, "displayScaling", (int)DisplayScaling::Linear);
@@ -81,7 +82,7 @@ void Config::load() {
         showCpuTrace        = getBoolValue(root, "showCpuTrace", false);
         showWatch           = getBoolValue(root, "showWatch", false);
         showEspInfo         = getBoolValue(root, "showEspInfo", false);
-        stopOnHalt	    = getBoolValue(root, "stopOnHalt", false);
+        stopOnHalt          = getBoolValue(root, "stopOnHalt", false);
 
         memEditMemSelect = getIntValue(root, "memEditMemSelect", 0);
 
@@ -144,6 +145,7 @@ void Config::save() {
     cJSON_AddNumberToObject(root, "wndHeight", wndHeight);
     cJSON_AddBoolToObject(root, "enableSound", enableSound);
     cJSON_AddBoolToObject(root, "enableMouse", enableMouse);
+    cJSON_AddBoolToObject(root, "fontScale2x", fontScale2x);
     cJSON_AddBoolToObject(root, "enableDebugger", emuState.enableDebugger);
 
     cJSON_AddNumberToObject(root, "displayScaling", (int)displayScaling);

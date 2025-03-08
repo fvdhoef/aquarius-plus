@@ -239,6 +239,8 @@ void UI::mainLoop() {
 
         AqKeyboard::instance().setScrollLock(config.handCtrlEmulation);
 
+        io.FontGlobalScale = config.fontScale2x ? 2 : 1;
+
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
         ImGui::NewFrame();
@@ -351,6 +353,8 @@ void UI::mainLoop() {
                 if (ImGui::MenuItem("Scaling: Integer", "", config.displayScaling == DisplayScaling::Integer)) {
                     config.displayScaling = DisplayScaling::Integer;
                 }
+                ImGui::Separator();
+                ImGui::MenuItem("Font scale 2x", "", &config.fontScale2x);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Keyboard")) {
