@@ -20,7 +20,7 @@ struct file_ctx {
 extern struct file_ctx *cur_file_ctx;
 extern char             basename[32];
 extern const char      *filename_cb;
-extern char             tmpbuf[256];
+extern char             tmpbuf[260];
 
 void error(const char *fmt, ...);
 void error_out_of_memory(void);

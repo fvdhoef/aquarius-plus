@@ -15,6 +15,7 @@ OBJS        := $(S_OBJS) $(C_OBJS)
 
 CFLAGS      += -mz80 --opt-code-speed
 CFLAGS      += $(addprefix -I,$(INC_DIRS))
+CFLAGS      += --max-allocs-per-node 30000
 
 .PHONY: all clean run
 

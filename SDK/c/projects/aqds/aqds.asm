@@ -53,7 +53,7 @@ _entry:
     ld      (_irqmask),a
 
     ; Enable turbo mode
-    ld      a,$4
+    ld      a,$C
     out     (IO_SYSCTRL),a
 
     ; Save important memory state

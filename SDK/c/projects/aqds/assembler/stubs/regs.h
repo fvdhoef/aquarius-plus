@@ -6,16 +6,14 @@
 #define IOREG(ioaddr, name) \
     static __sfr __at ioaddr name
 #else
-#define IOREG(ioaddr, name) \
-    static unsigned char name
+#define IOREG(ioaddr, name)
 #endif
 
 #ifdef __SDCC
 #define IOREG16(ioaddr, name) \
     static __sfr __banked __at ioaddr name
 #else
-#define IOREG16(ioaddr, name) \
-    static unsigned char name
+#define IOREG16(ioaddr, name)
 #endif
 
 IOREG(0xE0, IO_VCTRL);

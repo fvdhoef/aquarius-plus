@@ -8,7 +8,7 @@ struct file_ctx       *cur_file_ctx;
 
 char        basename[32];
 const char *filename_cb;
-char        tmpbuf[256];
+char        tmpbuf[260];
 
 void exit_program(void) {
 #ifdef __SDCC

@@ -26,6 +26,13 @@ all:
 	zmac -I $(AQPLUS_SDK)/asm/inc --zmac -c -n aqds.asm --oo cim,lst
 	mv zout/aqds.cim zout/$(OUTFILE)
 
+clean:
+	make -C editor clean
+	make -C fileman clean
+	make -C assembler clean
+	make -C compiler clean
+	rm -rf zout
+
 run_emu: all
 	@echo Copying files to $(AQPLUS_EMU_DISK)
 	@mkdir -p $(AQPLUS_EMU_DISK)/aqds
