@@ -5,8 +5,7 @@ module video(
     input  wire        clk,
     input  wire        reset,
 
-    input  wire        vclk,            // 28.63636MHz (video_mode = 0) or 25.175MHz (video_mode = 1)
-    input  wire        video_mode,
+    input  wire        vclk,
 
     // IO register interface
     input  wire  [3:0] io_addr,
@@ -172,7 +171,7 @@ module video(
 
     aqp_video_timing video_timing(
         .clk(vclk),
-        .mode(video_mode),
+        .mode(1'b1),
 
         .hpos(hpos),
         .hsync(hsync),
@@ -191,7 +190,7 @@ module video(
 
     assign vpos = vpos10[9] ? 8'd255 : vpos10[8:1];
 
-    wire hborder = video_mode ? blank : (hpos < 10'd32 || hpos >= 10'd672);
+    wire hborder = blank;
     wire vborder = vpos < 8'd16 || vpos >= 8'd216;
 
     reg [9:0] q_hpos, q2_hpos;
@@ -359,7 +358,7 @@ module video(
     wire [5:0] linebuf_data;
     reg  [8:0] q_linebuf_rdidx;
 
-    always @(posedge vclk) q_linebuf_rdidx <= video_mode ? hpos[9:1] : (hpos[9:1] - 9'd16);
+    always @(posedge vclk) q_linebuf_rdidx <= hpos[9:1];
 
     reg q_hborder, q2_hborder;
     always @(posedge vclk) q_hborder  <= hborder;

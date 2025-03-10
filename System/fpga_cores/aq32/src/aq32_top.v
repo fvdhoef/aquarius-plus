@@ -60,7 +60,13 @@ module aq32_top(
     output wire        esp_notify
 );
 
-    assign exp = 9'b0;
+    assign exp          = 9'b0;
+    assign hc1[7:0]     = 8'bZ;
+    assign hc2[7:0]     = 8'bZ;
+    assign hc1[8]       = 1'b0;
+    assign hc2[8]       = 1'b0;
+    assign cassette_out = 1'b0;
+    assign printer_out  = 1'b0;
 
     wire  [7:0] ebus_d_out;
     wire        ebus_d_oe;
@@ -69,14 +75,11 @@ module aq32_top(
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
     wire clk, video_clk;
-    wire video_mode;
 
     aqp_clkctrl clkctrl(
-        .clk_in(sysclk),    // 14.31818MHz
-        .clk_out(clk),      // 28.63636MHz
-
-        .video_clk(video_clk),
-        .video_mode(video_mode)
+        .clk_in(sysclk),        // 14.31818MHz
+        .clk_out(clk),          // 28.63636MHz
+        .video_clk(video_clk)   // 25.175MHz
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -146,22 +149,6 @@ module aq32_top(
         .esp_tx(esp_tx),
         .esp_cts(esp_cts),
         .esp_rts(esp_rts));
-
-    //////////////////////////////////////////////////////////////////////////
-    // Hand controller interface
-    //////////////////////////////////////////////////////////////////////////
-    wire  [7:0] hc1_in = hc1[7:0];
-    wire  [7:0] hc1_out;
-    wire        hc1_oe;
-
-    wire  [7:0] hc2_in = hc2[7:0];
-    wire  [7:0] hc2_out;
-    wire        hc2_oe;
-
-    assign hc1[7:0] = hc1_oe ? hc1_out : 8'bZ;
-    assign hc2[7:0] = hc2_oe ? hc2_out : 8'bZ;
-    assign hc1[8]   = 1'b0;
-    assign hc2[8]   = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
@@ -298,7 +285,6 @@ module aq32_top(
         .video_vsync(video_vsync),
         .video_newframe(video_newframe),
         .video_oddline(video_oddline),
-        .video_mode(video_mode),
 
         // Audio output
         .audio_l(common_audio_l),
@@ -319,22 +305,7 @@ module aq32_top(
         .esp_rx_rd(esp_rx_rd),
         .esp_rx_empty(esp_rx_empty),
         .esp_rx_fifo_overflow(esp_rx_fifo_overflow),
-        .esp_rx_framing_error(esp_rx_framing_error),
-
-        // Other
-        .cassette_out(cassette_out),
-        .cassette_in(cassette_in),
-        .printer_out(printer_out),
-        .printer_in(printer_in),
-
-        // Hand controller interface
-        .hc1_in(hc1_in),
-        .hc1_out(hc1_out),
-        .hc1_oe(hc1_oe),
-
-        .hc2_in(hc2_in),
-        .hc2_out(hc2_out),
-        .hc2_oe(hc2_oe)
+        .esp_rx_framing_error(esp_rx_framing_error)
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -351,7 +322,7 @@ module aq32_top(
         .video_vsync(video_vsync),
         .video_newframe(video_newframe),
         .video_oddline(video_oddline),
-        .video_mode(video_mode),
+        .video_mode(1'b1),
 
         // Overlay interface
         .ovl_clk(clk),

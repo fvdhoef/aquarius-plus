@@ -5,8 +5,7 @@ module aqp_clkctrl(
     input  wire clk_in,
     output wire clk_out,
 
-    output wire video_clk,
-    input  wire video_mode
+    output wire video_clk
 );
 
     wire clk0;
@@ -96,7 +95,7 @@ module aqp_clkctrl(
     )
     pll(
         .CLKFBOUT(pllfb),
-        .CLKOUT0(clk25),
+        .CLKOUT0(video_clk),
         .CLKOUT1(pll_clkout1),
         .CLKOUT2(pll_clkout2),
         .CLKOUT3(pll_clkout3),
@@ -106,17 +105,6 @@ module aqp_clkctrl(
         .CLKFBIN(pllfb),
         .CLKIN(clk28),
         .RST(1'b0)
-    );
-
-    // Clock buffer to switch without glitches between 28.63636MHz and 25.175MHz clock
-    BUFGMUX #(
-        .CLK_SEL_TYPE("SYNC")
-    )
-    clksel(
-        .O(video_clk),
-        .I0(clk28),
-        .I1(clk25),
-        .S(video_mode)
     );
 
 endmodule

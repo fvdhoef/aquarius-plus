@@ -34,7 +34,6 @@ module aqplus_common(
     output wire        video_vsync,
     output wire        video_newframe,
     output wire        video_oddline,
-    output wire        video_mode,
 
     // Audio output
     output reg  [15:0] audio_l,
@@ -55,22 +54,7 @@ module aqplus_common(
     output wire        esp_rx_rd,
     input  wire        esp_rx_empty,
     input  wire        esp_rx_fifo_overflow,
-    input  wire        esp_rx_framing_error,
-
-    // Other
-    output reg         cassette_out,
-    input  wire        cassette_in,
-    output reg         printer_out,
-    input  wire        printer_in,
-
-    // Hand controller interface
-    input  wire  [7:0] hc1_in,
-    output wire  [7:0] hc1_out,
-    output wire        hc1_oe,
-
-    input  wire  [7:0] hc2_in,
-    output wire  [7:0] hc2_out,
-    output wire        hc2_oe
+    input  wire        esp_rx_framing_error
 );
 
     wire        reg_fd_val;
@@ -105,15 +89,6 @@ module aqplus_common(
     end
 
     assign reset_req = spi_reset_req || q_sysctrl_reset_req;
-
-    //////////////////////////////////////////////////////////////////////////
-    // Synchronize cassette and printer input
-    //////////////////////////////////////////////////////////////////////////
-    reg [2:0] q_cassette_in;
-    always @(posedge clk) q_cassette_in <= {q_cassette_in[1:0], cassette_in};
-
-    reg [2:0] q_printer_in;
-    always @(posedge clk) q_printer_in <= {q_printer_in[1:0], printer_in};
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
@@ -208,9 +183,7 @@ module aqplus_common(
         if (sel_io_ay8910_2)          rddata = rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_kbbuf)             rddata = rddata_kbbuf;                                   // IO $FA
         if (sel_io_sysctrl)           rddata = {q_sysctrl_warm_boot, 5'b0, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
-        if (sel_io_cassette)          rddata = {7'b0, !q_cassette_in[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata = {7'b0, reg_fd_val};                             // IO $FD
-        if (sel_io_printer)           rddata = {7'b0, q_printer_in[2]};                        // IO $FE
         if (sel_io_keyb_r_scramble_w) rddata = rddata_keyboard;                                // IO $FF
     end
 
@@ -230,9 +203,7 @@ module aqplus_common(
             q_reg_bank3               <= {2'b00, 6'd0};
             q_sysctrl_dis_regs        <= 1'b0;
             q_sysctrl_dis_psgs        <= 1'b0;
-            cassette_out              <= 1'b0;
             q_reg_cpm_remap           <= 1'b0;
-            printer_out               <= 1'b0;
 
         end else begin
             if (sel_io_audio_dac     && bus_write) q_audio_dac     <= wrdata;
@@ -240,9 +211,7 @@ module aqplus_common(
             if (sel_io_bank1         && bus_write) q_reg_bank1     <= wrdata;
             if (sel_io_bank2         && bus_write) q_reg_bank2     <= wrdata;
             if (sel_io_bank3         && bus_write) q_reg_bank3     <= wrdata;
-            if (sel_io_cassette      && bus_write) cassette_out    <= wrdata[0];
             if (sel_io_vsync_r_cpm_w && bus_write) q_reg_cpm_remap <= wrdata[0];
-            if (sel_io_printer       && bus_write) printer_out     <= wrdata[0];
 
             if (sel_io_sysctrl && bus_write) begin
                 q_sysctrl_dis_psgs        <= wrdata[1];
@@ -301,7 +270,6 @@ module aqplus_common(
         .reset(reset),
 
         .vclk(video_clk),
-        .video_mode(video_mode),
 
         .io_addr(ebus_a[3:0]),
         .io_rddata(rddata_io_video),
@@ -336,26 +304,6 @@ module aqplus_common(
         .reg_fd_val(reg_fd_val));
 
     //////////////////////////////////////////////////////////////////////////
-    // Hand controller interface
-    //////////////////////////////////////////////////////////////////////////
-    wire [7:0] spi_hctrl1, spi_hctrl2;
-
-    wire [7:0] hctrl1 = hc1_in[7:0];
-    wire [7:0] hctrl2 = hc2_in[7:0];
-
-    // Synchronize inputs
-    reg [7:0] q_hctrl1, q2_hctrl1;
-    reg [7:0] q_hctrl2, q2_hctrl2;
-    always @(posedge clk) q_hctrl1  <= hctrl1;
-    always @(posedge clk) q2_hctrl1 <= q_hctrl1;
-    always @(posedge clk) q_hctrl2  <= hctrl2;
-    always @(posedge clk) q2_hctrl2 <= q_hctrl2;
-
-    // Combine data from ESP with data from handcontroller input
-    wire [7:0] hctrl1_data = q2_hctrl1 & spi_hctrl1;
-    wire [7:0] hctrl2_data = q2_hctrl2 & spi_hctrl2;
-
-    //////////////////////////////////////////////////////////////////////////
     // SPI interface
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
@@ -376,13 +324,9 @@ module aqplus_common(
         .reset_req(spi_reset_req),
         .reset_req_cold(reset_req_cold),
         .keys(keys),
-        .hctrl1(spi_hctrl1),
-        .hctrl2(spi_hctrl2),
 
         .kbbuf_data(kbbuf_data),
-        .kbbuf_wren(kbbuf_wren),
-
-        .video_mode(video_mode));
+        .kbbuf_wren(kbbuf_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // Keyboard
@@ -423,12 +367,10 @@ module aqplus_common(
     wire [9:0] ay8910_ch_a,   ay8910_ch_b,   ay8910_ch_c;
     wire [9:0] ay8910_2_ch_a, ay8910_2_ch_b, ay8910_2_ch_c;
 
-    wire [9:0] beep = cassette_out ? 10'd1023 : 10'd0;
-
-    wire [7:0] ay8190_2_ioa_out_data;
-    wire       ay8190_2_ioa_oe;
-    wire [7:0] ay8190_2_iob_out_data;
-    wire       ay8190_2_iob_oe;
+    wire [7:0] ay8190_1_ioa_out_data, ay8190_2_ioa_out_data;
+    wire       ay8190_1_ioa_oe,       ay8190_2_ioa_oe;
+    wire [7:0] ay8190_1_iob_out_data, ay8190_2_iob_out_data;
+    wire       ay8190_1_iob_oe,       ay8190_2_iob_oe;
 
     ay8910 ay8910(
         .clk(clk),
@@ -439,13 +381,13 @@ module aqplus_common(
         .wrdata(wrdata),
         .rddata(rddata_ay8910),
 
-        .ioa_in_data(hctrl1_data),
-        .ioa_out_data(hc1_out),
-        .ioa_oe(hc1_oe),
+        .ioa_in_data(8'h00),
+        .ioa_out_data(ay8190_1_ioa_out_data),
+        .ioa_oe(ay8190_1_ioa_oe),
 
-        .iob_in_data(hctrl2_data),
-        .iob_out_data(hc2_out),
-        .iob_oe(hc2_oe),
+        .iob_in_data(8'h00),
+        .iob_out_data(ay8190_1_iob_out_data),
+        .iob_oe(ay8190_1_iob_oe),
 
         .ch_a(ay8910_ch_a),
         .ch_b(ay8910_ch_b),
@@ -476,12 +418,12 @@ module aqplus_common(
     wire [13:0] mix_l =
         {2'b0, ay8910_ch_a,   1'b0} + {2'b0, ay8910_ch_b,   1'b0} + {4'b0, ay8910_ch_c  } +
         {2'b0, ay8910_2_ch_a, 1'b0} + {2'b0, ay8910_2_ch_b, 1'b0} + {4'b0, ay8910_2_ch_c} +
-        {2'b0, q_audio_dac,   4'b0} + {4'b0, beep};
+        {2'b0, q_audio_dac,   4'b0};
 
     wire [13:0] mix_r =
         {4'b0, ay8910_ch_a  }     + {2'b0, ay8910_ch_b,   1'b0} + {2'b0, ay8910_ch_c,   1'b0} +
         {4'b0, ay8910_2_ch_a}     + {2'b0, ay8910_2_ch_b, 1'b0} + {2'b0, ay8910_2_ch_c, 1'b0} +
-        {2'b0, q_audio_dac, 4'b0} + {4'b0, beep};
+        {2'b0, q_audio_dac, 4'b0};
 
     always @(posedge clk) audio_l <= {~mix_l[13], mix_l[12:0], 2'b0};
     always @(posedge clk) audio_r <= {~mix_r[13], mix_r[12:0], 2'b0};

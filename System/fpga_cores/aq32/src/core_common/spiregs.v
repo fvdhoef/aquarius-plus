@@ -14,13 +14,9 @@ module spiregs(
     output reg         reset_req,
     output reg         reset_req_cold,
     output reg  [63:0] keys,
-    output reg   [7:0] hctrl1,
-    output reg   [7:0] hctrl2,
 
     output reg   [7:0] kbbuf_data,
-    output reg         kbbuf_wren,
-
-    output wire        video_mode);
+    output reg         kbbuf_wren);
 
     assign spi_txdata       = 64'b0;
     assign spi_txdata_valid = 1'b0;
@@ -31,9 +27,7 @@ module spiregs(
     localparam
         CMD_RESET           = 8'h01,
         CMD_SET_KEYB_MATRIX = 8'h10,
-        CMD_SET_HCTRL       = 8'h11,
-        CMD_WRITE_KBBUF     = 8'h12,
-        CMD_SET_VIDMODE     = 8'h40;
+        CMD_WRITE_KBBUF     = 8'h12;
 
     // 01h: Reset command
     always @(posedge clk) begin
@@ -53,13 +47,6 @@ module spiregs(
         else if (spi_cmd == CMD_SET_KEYB_MATRIX && spi_msg_end)
             keys <= spi_rxdata;
 
-    // 11h: Set handcontrollers
-    always @(posedge clk or posedge reset)
-        if (reset)
-            {hctrl2, hctrl1} <= 16'hFFFF;
-        else if (spi_cmd == CMD_SET_HCTRL && spi_msg_end)
-            {hctrl2, hctrl1} <= spi_rxdata[63:48];
-
     // 12h: Write keyboard buffer
     always @(posedge clk or posedge reset)
         if (reset) begin
@@ -72,14 +59,5 @@ module spiregs(
                 kbbuf_wren <= 1'b1;
             end
         end
-
-    // 40h: Set video mode
-    reg q_video_mode = 1'b0;
-    always @(posedge clk) begin
-        if (spi_cmd == CMD_SET_VIDMODE && spi_msg_end) begin
-            q_video_mode <= spi_rxdata[56];
-        end
-    end
-    assign video_mode = q_video_mode;
 
 endmodule
