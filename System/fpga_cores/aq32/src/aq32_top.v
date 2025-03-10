@@ -62,13 +62,6 @@ module aq32_top(
 
     assign exp = 9'b0;
 
-    wire [15:0] spibm_a;
-    wire  [7:0] spibm_wrdata;
-    wire        spibm_wrdata_en;
-    wire        spibm_en;
-    wire        spibm_rd_n, spibm_wr_n, spibm_mreq_n, spibm_iorq_n;
-    wire        spibm_busreq_n;
-
     wire  [7:0] ebus_d_out;
     wire        ebus_d_oe;
 
@@ -90,8 +83,6 @@ module aq32_top(
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
     wire reset_req;
-    wire turbo;
-    wire turbo_unlimited;
     wire ebus_phi_clken;
     wire reset;
 
@@ -99,9 +90,6 @@ module aq32_top(
         .sysclk(clk),
         .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
-
-        .turbo_mode(turbo),
-        .turbo_unlimited(turbo_unlimited),
 
         .ebus_phi(ebus_phi),
         .ebus_phi_clken(ebus_phi_clken),
@@ -178,8 +166,7 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
-    assign spibm_en      = !spibm_busreq_n && (!ebus_busack_n || !has_z80);
-    assign ebus_busreq_n = spibm_busreq_n;
+    assign ebus_busreq_n = 1'b0;
 
     wire        spi_msg_end;
     wire  [7:0] spi_cmd;
@@ -213,25 +200,12 @@ module aq32_top(
             1'b1,       // Core type 01 specific: show Aquarius+ options
             1'b1,       // Core type 01 specific: show video timing switch
             1'b1,       // Core type 01 specific: show mouse support
-            has_z80     // Z80 present
+            1'b0        // Z80 present
         }),
         .sysinfo_version_major(8'h00),
         .sysinfo_version_minor(8'h01),
 
         .core_name("Aquarius32      "),
-
-        // Bus master interface
-        .ebus_phi(ebus_phi),
-
-        .spibm_a(spibm_a),
-        .spibm_rddata(ebus_d),
-        .spibm_wrdata(spibm_wrdata),
-        .spibm_wrdata_en(spibm_wrdata_en),
-        .spibm_rd_n(spibm_rd_n),
-        .spibm_wr_n(spibm_wr_n),
-        .spibm_mreq_n(spibm_mreq_n),
-        .spibm_iorq_n(spibm_iorq_n),
-        .spibm_busreq_n(spibm_busreq_n),
 
         // Interface for core specific messages
         .spi_msg_end(spi_msg_end),
@@ -296,7 +270,6 @@ module aq32_top(
         .reset(reset),
 
         .reset_req(reset_req),
-        .has_z80(has_z80),
 
         // Bus interface
         .ebus_a(ebus_a),
@@ -353,8 +326,6 @@ module aq32_top(
         .cassette_in(cassette_in),
         .printer_out(printer_out),
         .printer_in(printer_in),
-        .turbo(turbo),
-        .turbo_unlimited(turbo_unlimited),
 
         // Hand controller interface
         .hc1_in(hc1_in),
@@ -408,15 +379,11 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // Bus logic
     //////////////////////////////////////////////////////////////////////////
-    assign ebus_a      = spibm_en ? spibm_a      : 16'bZ;
-    assign ebus_rd_n   = spibm_en ? spibm_rd_n   : 1'bZ;
-    assign ebus_wr_n   = spibm_en ? spibm_wr_n   : 1'bZ;
-    assign ebus_mreq_n = spibm_en ? spibm_mreq_n : 1'bZ;
-    assign ebus_iorq_n = spibm_en ? spibm_iorq_n : 1'bZ;
-
-    assign ebus_d =
-        (spibm_en && spibm_wrdata_en) ? spibm_wrdata :
-        (ebus_d_oe                    ? ebus_d_out   :
-                                        8'bZ);
+    assign ebus_a      = 16'bZ;
+    assign ebus_rd_n   = 1'bZ;
+    assign ebus_wr_n   = 1'bZ;
+    assign ebus_mreq_n = 1'bZ;
+    assign ebus_iorq_n = 1'bZ;
+    assign ebus_d      = ebus_d_oe ? ebus_d_out : 8'bZ;
 
 endmodule

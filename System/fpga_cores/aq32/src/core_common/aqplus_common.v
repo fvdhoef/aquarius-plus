@@ -6,7 +6,6 @@ module aqplus_common(
     input  wire        reset,
 
     output wire        reset_req,
-    input  wire        has_z80,
 
     // Bus interface
     input  wire [15:0] ebus_a,
@@ -63,8 +62,6 @@ module aqplus_common(
     input  wire        cassette_in,
     output reg         printer_out,
     input  wire        printer_in,
-    output wire        turbo,
-    output wire        turbo_unlimited,
 
     // Hand controller interface
     input  wire  [7:0] hc1_in,
@@ -97,13 +94,6 @@ module aqplus_common(
     reg   [7:0] q_reg_bank2;             // IO $F2
     reg   [7:0] q_reg_bank3;             // IO $F3
     reg         q_reg_cpm_remap;         // IO $FD:W
-
-    wire        force_turbo;
-    reg         q_sysctrl_turbo;
-    reg         q_sysctrl_turbo_unlimited;
-
-    assign turbo           = force_turbo || q_sysctrl_turbo;
-    assign turbo_unlimited = force_turbo || q_sysctrl_turbo_unlimited;
 
     wire        spi_reset_req;
     wire        reset_req_cold;
@@ -217,7 +207,7 @@ module aqplus_common(
         if (sel_io_ay8910)            rddata = rddata_ay8910;                                  // IO $F6/F7
         if (sel_io_ay8910_2)          rddata = rddata_ay8910_2;                                // IO $F8/F9
         if (sel_io_kbbuf)             rddata = rddata_kbbuf;                                   // IO $FA
-        if (sel_io_sysctrl)           rddata = {q_sysctrl_warm_boot, 3'b0, q_sysctrl_turbo_unlimited, q_sysctrl_turbo, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
+        if (sel_io_sysctrl)           rddata = {q_sysctrl_warm_boot, 5'b0, q_sysctrl_dis_psgs, q_sysctrl_dis_regs}; // IO $FB
         if (sel_io_cassette)          rddata = {7'b0, !q_cassette_in[2]};                      // IO $FC
         if (sel_io_vsync_r_cpm_w)     rddata = {7'b0, reg_fd_val};                             // IO $FD
         if (sel_io_printer)           rddata = {7'b0, q_printer_in[2]};                        // IO $FE
@@ -240,8 +230,6 @@ module aqplus_common(
             q_reg_bank3               <= {2'b00, 6'd0};
             q_sysctrl_dis_regs        <= 1'b0;
             q_sysctrl_dis_psgs        <= 1'b0;
-            q_sysctrl_turbo           <= 1'b0;
-            q_sysctrl_turbo_unlimited <= 1'b0;
             cassette_out              <= 1'b0;
             q_reg_cpm_remap           <= 1'b0;
             printer_out               <= 1'b0;
@@ -257,8 +245,6 @@ module aqplus_common(
             if (sel_io_printer       && bus_write) printer_out     <= wrdata[0];
 
             if (sel_io_sysctrl && bus_write) begin
-                q_sysctrl_turbo_unlimited <= wrdata[3];
-                q_sysctrl_turbo           <= wrdata[2];
                 q_sysctrl_dis_psgs        <= wrdata[1];
                 q_sysctrl_dis_regs        <= wrdata[0];
             end
@@ -396,8 +382,6 @@ module aqplus_common(
         .kbbuf_data(kbbuf_data),
         .kbbuf_wren(kbbuf_wren),
 
-        .has_z80(has_z80),
-        .force_turbo(force_turbo),
         .video_mode(video_mode));
 
     //////////////////////////////////////////////////////////////////////////

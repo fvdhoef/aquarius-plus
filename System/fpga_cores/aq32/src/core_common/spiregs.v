@@ -20,8 +20,6 @@ module spiregs(
     output reg   [7:0] kbbuf_data,
     output reg         kbbuf_wren,
 
-    input  wire        has_z80,
-    output wire        force_turbo,
     output wire        video_mode);
 
     assign spi_txdata       = 64'b0;
@@ -32,7 +30,6 @@ module spiregs(
     //////////////////////////////////////////////////////////////////////////
     localparam
         CMD_RESET           = 8'h01,
-        CMD_FORCE_TURBO     = 8'h02,
         CMD_SET_KEYB_MATRIX = 8'h10,
         CMD_SET_HCTRL       = 8'h11,
         CMD_WRITE_KBBUF     = 8'h12,
@@ -48,14 +45,6 @@ module spiregs(
             // q_use_t80      <= spi_rxdata[56];
         end
     end
-
-    // 02h: Force turbo command
-    reg q_force_turbo = 0;
-    assign force_turbo = q_force_turbo;
-    always @(posedge clk)
-        if (spi_cmd == CMD_FORCE_TURBO && spi_msg_end) begin
-            q_force_turbo <= spi_rxdata[56];
-        end
 
     // 10h: Set keyboard matrix
     always @(posedge clk or posedge reset)
