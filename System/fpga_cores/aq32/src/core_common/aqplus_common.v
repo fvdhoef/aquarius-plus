@@ -6,7 +6,6 @@ module aqplus_common(
     input  wire        reset,
 
     output wire        reset_req,
-    output wire        use_t80,
     input  wire        has_z80,
 
     // Bus interface
@@ -258,7 +257,7 @@ module aqplus_common(
             if (sel_io_printer       && bus_write) printer_out     <= wrdata[0];
 
             if (sel_io_sysctrl && bus_write) begin
-                q_sysctrl_turbo_unlimited <= wrdata[3] && use_t80;
+                q_sysctrl_turbo_unlimited <= wrdata[3];
                 q_sysctrl_turbo           <= wrdata[2];
                 q_sysctrl_dis_psgs        <= wrdata[1];
                 q_sysctrl_dis_regs        <= wrdata[0];
@@ -397,7 +396,6 @@ module aqplus_common(
         .kbbuf_data(kbbuf_data),
         .kbbuf_wren(kbbuf_wren),
 
-        .use_t80(use_t80),
         .has_z80(has_z80),
         .force_turbo(force_turbo),
         .video_mode(video_mode));

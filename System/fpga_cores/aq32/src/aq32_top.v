@@ -72,8 +72,6 @@ module aq32_top(
     wire  [7:0] ebus_d_out;
     wire        ebus_d_oe;
 
-    wire        use_t80;
-
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
@@ -103,7 +101,7 @@ module aq32_top(
         .reset_req(reset_req),
 
         .turbo_mode(turbo),
-        .turbo_unlimited(turbo_unlimited && use_t80),
+        .turbo_unlimited(turbo_unlimited),
 
         .ebus_phi(ebus_phi),
         .ebus_phi_clken(ebus_phi_clken),
@@ -126,8 +124,8 @@ module aq32_top(
     always @(posedge clk) q_ebus_wr_n <= {q_ebus_wr_n[1:0], ebus_wr_n};
     always @(posedge clk) q_ebus_rd_n <= {q_ebus_rd_n[1:0], ebus_rd_n};
 
-    wire bus_read  = (use_t80 ? q_ebus_rd_n[1:0] : q_ebus_rd_n[2:1]) == 2'b10;
-    wire bus_write = (use_t80 ? q_ebus_wr_n[1:0] : q_ebus_wr_n[2:1]) == 2'b10;
+    wire bus_read  = q_ebus_rd_n[2:1] == 2'b10;
+    wire bus_write = q_ebus_wr_n[2:1] == 2'b10;
     wire common_ebus_stb = (bus_read || bus_write);
 
     //////////////////////////////////////////////////////////////////////////
@@ -181,7 +179,7 @@ module aq32_top(
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
     assign spibm_en      = !spibm_busreq_n && (!ebus_busack_n || !has_z80);
-    assign ebus_busreq_n = !(use_t80 || !spibm_busreq_n);
+    assign ebus_busreq_n = spibm_busreq_n;
 
     wire        spi_msg_end;
     wire  [7:0] spi_cmd;
@@ -217,10 +215,10 @@ module aq32_top(
             1'b1,       // Core type 01 specific: show mouse support
             has_z80     // Z80 present
         }),
-        .sysinfo_version_major(8'h01),
-        .sysinfo_version_minor(8'h00),
+        .sysinfo_version_major(8'h00),
+        .sysinfo_version_minor(8'h01),
 
-        .core_name("Aquarius+       "),
+        .core_name("Aquarius32      "),
 
         // Bus master interface
         .ebus_phi(ebus_phi),
@@ -298,7 +296,6 @@ module aq32_top(
         .reset(reset),
 
         .reset_req(reset_req),
-        .use_t80(use_t80),
         .has_z80(has_z80),
 
         // Bus interface
@@ -409,62 +406,17 @@ module aq32_top(
     );
 
     //////////////////////////////////////////////////////////////////////////
-    // T80 core
-    //////////////////////////////////////////////////////////////////////////
-    wire [15:0] t80_addr;        // should tristate when busak_n == 0
-    wire  [7:0] t80_dq_out;
-    wire  [7:0] t80_dq_in = ebus_d;
-    wire        t80_dq_oe;
-
-    wire        t80_mreq_n;      // should tristate when busak_n == 0
-    wire        t80_iorq_n;      // should tristate when busak_n == 0
-    wire        t80_rd_n;        // should tristate when busak_n == 0
-    wire        t80_wr_n;        // should tristate when busak_n == 0
-    wire        t80_wait_n = 1'b1;
-
-    wire        t80_busrq_n = spibm_busreq_n;
-    wire        t80_busak_n;
-
-    wire        t80_int_n = ebus_int_n_pushpull;
-    wire        t80_nmi_n = 1'b1;
-
-    aqp_t80 aqp_t80(
-        .clk(clk),
-        .reset(reset || !use_t80),
-        .clken(ebus_phi_clken),
-        .phi(ebus_phi),
-
-        .addr(t80_addr),        // should tristate when busak_n == 0
-        .dq_out(t80_dq_out),
-        .dq_in(t80_dq_in),
-        .dq_oe(t80_dq_oe),
-
-        .mreq_n(t80_mreq_n),    // should tristate when busak_n == 0
-        .iorq_n(t80_iorq_n),    // should tristate when busak_n == 0
-        .rd_n(t80_rd_n),        // should tristate when busak_n == 0
-        .wr_n(t80_wr_n),        // should tristate when busak_n == 0
-        .wait_n(t80_wait_n),
-
-        .busrq_n(t80_busrq_n),
-        .busak_n(t80_busak_n),
-
-        .int_n(t80_int_n),
-        .nmi_n(t80_nmi_n)
-    );
-
-    //////////////////////////////////////////////////////////////////////////
     // Bus logic
     //////////////////////////////////////////////////////////////////////////
-    assign ebus_a      = spibm_en ? spibm_a      : (use_t80 ? t80_addr   : 16'bZ);
-    assign ebus_rd_n   = spibm_en ? spibm_rd_n   : (use_t80 ? t80_rd_n   : 1'bZ);
-    assign ebus_wr_n   = spibm_en ? spibm_wr_n   : (use_t80 ? t80_wr_n   : 1'bZ);
-    assign ebus_mreq_n = spibm_en ? spibm_mreq_n : (use_t80 ? t80_mreq_n : 1'bZ);
-    assign ebus_iorq_n = spibm_en ? spibm_iorq_n : (use_t80 ? t80_iorq_n : 1'bZ);
+    assign ebus_a      = spibm_en ? spibm_a      : 16'bZ;
+    assign ebus_rd_n   = spibm_en ? spibm_rd_n   : 1'bZ;
+    assign ebus_wr_n   = spibm_en ? spibm_wr_n   : 1'bZ;
+    assign ebus_mreq_n = spibm_en ? spibm_mreq_n : 1'bZ;
+    assign ebus_iorq_n = spibm_en ? spibm_iorq_n : 1'bZ;
 
     assign ebus_d =
         (spibm_en && spibm_wrdata_en) ? spibm_wrdata :
-        (use_t80 && t80_dq_oe         ? t80_dq_out   :
         (ebus_d_oe                    ? ebus_d_out   :
-                                        8'bZ));
+                                        8'bZ);
 
 endmodule

@@ -20,7 +20,6 @@ module spiregs(
     output reg   [7:0] kbbuf_data,
     output reg         kbbuf_wren,
 
-    output wire        use_t80,
     input  wire        has_z80,
     output wire        force_turbo,
     output wire        video_mode);
@@ -40,15 +39,13 @@ module spiregs(
         CMD_SET_VIDMODE     = 8'h40;
 
     // 01h: Reset command
-    reg q_use_t80 = 0;
-    assign use_t80 = has_z80 ? q_use_t80 : 1'b1;
     always @(posedge clk) begin
         reset_req      <= 1'b0;
         reset_req_cold <= 1'b0;
         if (spi_cmd == CMD_RESET && spi_msg_end) begin
             reset_req      <= 1'b1;
             reset_req_cold <= spi_rxdata[57];
-            q_use_t80      <= spi_rxdata[56];
+            // q_use_t80      <= spi_rxdata[56];
         end
     end
 
