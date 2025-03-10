@@ -3,7 +3,6 @@
 
 module aqp_sysctrl(
     input  wire sysclk,
-    inout  wire ebus_reset_n,
     input  wire reset_req,
 
     output wire ebus_phi,
@@ -43,9 +42,6 @@ module aqp_sysctrl(
 
 `endif
 
-    // Tristate reset output
-    assign ebus_reset_n = ext_reset ? 1'b0 : 1'bZ;
-
     //////////////////////////////////////////////////////////////////////////
     // Generate internal reset signal
     //////////////////////////////////////////////////////////////////////////
@@ -53,7 +49,7 @@ module aqp_sysctrl(
 
     // Synchronize external reset to internal clock
     reset_sync ext_reset_sync(
-        .async_rst_in(!ebus_reset_n),
+        .async_rst_in(ext_reset),
         .clk(sysclk),
         .reset_out(ext_reset_synced));
 

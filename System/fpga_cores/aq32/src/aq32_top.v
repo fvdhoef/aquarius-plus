@@ -60,16 +60,37 @@ module aq32_top(
     output wire        esp_notify
 );
 
-    assign exp          = 9'b0;
-    assign hc1[7:0]     = 8'bZ;
-    assign hc2[7:0]     = 8'bZ;
-    assign hc1[8]       = 1'b0;
-    assign hc2[8]       = 1'b0;
-    assign cassette_out = 1'b0;
-    assign printer_out  = 1'b0;
+    assign exp            = 9'b0;
+    assign hc1[7:0]       = 8'bZ;
+    assign hc2[7:0]       = 8'bZ;
+    assign hc1[8]         = 1'b0;
+    assign hc2[8]         = 1'b0;
+    assign cassette_out   = 1'b0;
+    assign printer_out    = 1'b0;
+    assign ebus_cart_ce_n = 1'b1;
+    assign ebus_reset_n   = 1'bZ;
+    assign ebus_wr_n      = 1'b1;
+    assign ebus_a[15:14]  = 2'bZ;
+    assign ebus_mreq_n    = 1'b1;
+    assign ebus_iorq_n    = 1'b1;
+    assign ebus_int_n     = 1'bZ;
 
-    wire  [7:0] ebus_d_out;
-    wire        ebus_d_oe;
+    wire [18:0] ram_a;
+    wire        ram_ce_n;
+    wire        ram_we_n;
+    wire        ram_oe_n;
+
+    assign ebus_a[13:0]  = ram_a[13:0];
+    assign ebus_ba       = ram_a[18:14];
+    assign ebus_ram_ce_n = ram_ce_n;
+    assign ebus_ram_we_n = ram_we_n;
+    assign ebus_rd_n     = ram_oe_n;
+
+    assign ram_a    = 19'b0;
+    assign ram_ce_n = 1'b1;
+    assign ram_we_n = 1'b1;
+    assign ram_oe_n = 1'b1;
+    // ebus_d
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -85,13 +106,12 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
-    wire reset_req;
+    wire reset_req = 1'b0;
     wire ebus_phi_clken;
     wire reset;
 
     aqp_sysctrl sysctrl(
         .sysclk(clk),
-        .ebus_reset_n(ebus_reset_n),
         .reset_req(reset_req),
 
         .ebus_phi(ebus_phi),
@@ -101,9 +121,6 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
     //////////////////////////////////////////////////////////////////////////
-    wire ebus_int_n_pushpull;
-
-    assign ebus_int_n = !ebus_int_n_pushpull ? 1'b0 : 1'bZ;
 
     // Register data from external bus
     reg [7:0] ebus_d_in;
@@ -150,6 +167,10 @@ module aq32_top(
         .esp_cts(esp_cts),
         .esp_rts(esp_rts));
 
+    assign esp_tx_data = 9'b0;
+    assign esp_tx_wr   = 1'b0;
+    assign esp_rx_rd   = 1'b0;
+
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
@@ -172,6 +193,9 @@ module aq32_top(
     wire  [3:0] ovl_palette_addr;
     wire [15:0] ovl_palette_wrdata;
     wire        ovl_palette_wr;
+
+    assign spi_txdata       = 64'b0;
+    assign spi_txdata_valid = 1'b0;
 
     aqp_esp_spi esp_spi(
         .clk(clk),
@@ -240,8 +264,11 @@ module aq32_top(
         .audio_l(audio_l),
         .audio_r(audio_r));
 
+    assign common_audio_l = 16'd0;
+    assign common_audio_r = 16'd0;
+
     //////////////////////////////////////////////////////////////////////////
-    // Core common
+    // Video
     //////////////////////////////////////////////////////////////////////////
     wire [3:0] video_r;
     wire [3:0] video_g;
@@ -252,31 +279,47 @@ module aq32_top(
     wire       video_newframe;
     wire       video_oddline;
 
-    aqplus_common common(
+    wire [7:0] rddata_tram;             // MEM $3000-$37FF
+    wire [7:0] rddata_chram;
+    wire [7:0] rddata_vram;
+    wire [7:0] rddata_rom;
+
+    wire [7:0] rddata_io_video;         // IO $E0-$EF
+    wire       video_irq;
+    wire       reg_fd_val;
+    wire       io_video_wren = 1'b0;
+    wire [7:0] wrdata        = 8'b0;
+    wire       tram_wren     = 1'b0;
+    wire       chram_wren    = 1'b0;
+    wire       vram_wren     = 1'b0;
+
+    video video(
         .clk(clk),
         .reset(reset),
 
-        .reset_req(reset_req),
+        .vclk(video_clk),
 
-        // Bus interface
-        .ebus_a(ebus_a),
-        .ebus_d_in(ebus_d_in),
-        .ebus_d_out(ebus_d_out),
-        .ebus_d_oe(ebus_d_oe),
-        .ebus_rd_n(ebus_rd_n),
-        .ebus_wr_n(ebus_wr_n),
-        .ebus_mreq_n(ebus_mreq_n),
-        .ebus_iorq_n(ebus_iorq_n),
-        .ebus_int_n(ebus_int_n_pushpull),
-        .ebus_ba(ebus_ba),
-        .ebus_ram_ce_n(ebus_ram_ce_n),
-        .ebus_cart_ce_n(ebus_cart_ce_n),
-        .ebus_ram_we_n(ebus_ram_we_n),
+        .io_addr(ebus_a[3:0]),
+        .io_rddata(rddata_io_video),
+        .io_wrdata(wrdata),
+        .io_wren(io_video_wren),
+        .irq(video_irq),
 
-        .ebus_stb(common_ebus_stb),
+        .tram_addr(ebus_a[10:0]),
+        .tram_rddata(rddata_tram),
+        .tram_wrdata(wrdata),
+        .tram_wren(tram_wren),
 
-        // Video output
-        .video_clk(video_clk),
+        .chram_addr(ebus_a[10:0]),
+        .chram_rddata(rddata_chram),
+        .chram_wrdata(wrdata),
+        .chram_wren(chram_wren),
+
+        .vram_addr(ebus_a[13:0]),
+        .vram_rddata(rddata_vram),
+        .vram_wrdata(wrdata),
+        .vram_wren(vram_wren),
+
         .video_r(video_r),
         .video_g(video_g),
         .video_b(video_b),
@@ -286,27 +329,7 @@ module aq32_top(
         .video_newframe(video_newframe),
         .video_oddline(video_oddline),
 
-        // Audio output
-        .audio_l(common_audio_l),
-        .audio_r(common_audio_r),
-
-        // ESP SPI interface
-        .spi_msg_end(spi_msg_end),
-        .spi_cmd(spi_cmd),
-        .spi_rxdata(spi_rxdata),
-        .spi_txdata(spi_txdata),
-        .spi_txdata_valid(spi_txdata_valid),
-
-        // ESP UART interface
-        .esp_tx_data(esp_tx_data),
-        .esp_tx_wr(esp_tx_wr),
-        .esp_tx_fifo_full(esp_tx_fifo_full),
-        .esp_rx_data(esp_rx_data),
-        .esp_rx_rd(esp_rx_rd),
-        .esp_rx_empty(esp_rx_empty),
-        .esp_rx_fifo_overflow(esp_rx_fifo_overflow),
-        .esp_rx_framing_error(esp_rx_framing_error)
-    );
+        .reg_fd_val(reg_fd_val));
 
     //////////////////////////////////////////////////////////////////////////
     // Display overlay
@@ -346,15 +369,5 @@ module aq32_top(
         .vga_hsync(vga_hsync),
         .vga_vsync(vga_vsync)
     );
-
-    //////////////////////////////////////////////////////////////////////////
-    // Bus logic
-    //////////////////////////////////////////////////////////////////////////
-    assign ebus_a      = 16'bZ;
-    assign ebus_rd_n   = 1'bZ;
-    assign ebus_wr_n   = 1'bZ;
-    assign ebus_mreq_n = 1'bZ;
-    assign ebus_iorq_n = 1'bZ;
-    assign ebus_d      = ebus_d_oe ? ebus_d_out : 8'bZ;
 
 endmodule

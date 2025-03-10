@@ -19,7 +19,6 @@ module aqplus_common(
     output wire        ebus_int_n,
     output wire  [4:0] ebus_ba,
     output wire        ebus_ram_ce_n,   // 512KB RAM
-    output wire        ebus_cart_ce_n,  // Cartridge
     output wire        ebus_ram_we_n,
 
     input  wire        ebus_stb,
@@ -157,12 +156,10 @@ module aqplus_common(
         sel_io_espctrl | sel_io_espdata | sel_io_ay8910 | sel_io_ay8910_2 | sel_io_kbbuf | sel_io_sysctrl |
         sel_io_cassette | sel_io_vsync_r_cpm_w | sel_io_printer | sel_io_keyb_r_scramble_w;
 
-    wire sel_mem_cart    = !ebus_mreq_n && !sel_internal && reg_bank_page[5:2] == 4'b0100;          // Page 16-19
     wire sel_mem_ram     = !ebus_mreq_n && !sel_internal && reg_bank_page[5];                       // Page 32-63
 
     assign ebus_ram_we_n  = !(sel_mem_ram && !ebus_wr_n && (!reg_bank_ro || sel_mem_sysram));
     assign ebus_ram_ce_n  = !sel_mem_ram;
-    assign ebus_cart_ce_n = !sel_mem_cart;
 
     reg [7:0] rddata;
     always @* begin
