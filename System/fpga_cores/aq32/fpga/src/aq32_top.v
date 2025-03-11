@@ -193,7 +193,7 @@ module aq32_top(
     always @* begin
         cpu_wait = 0;
         if (sram_ctrl_strobe) cpu_wait = sram_ctrl_wait;
-        if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[31:11] != cpu_addr[31:11];
+        if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[10:2] != cpu_addr[10:2];
     end
 
     always @* begin

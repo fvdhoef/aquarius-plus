@@ -1,197 +1,340 @@
 onerror {resume}
+quietly virtual signal -install /tb/top_inst { (context /tb/top_inst )&{ebus_ba , ebus_a[13:0] }} sram_addr
 quietly WaveActivateNextPane {} 0
-add wave -noupdate /tb/top_inst/sysctrl/ebus_phi
-add wave -noupdate /tb/top_inst/sysctrl/ebus_phi_clken
-add wave -noupdate -expand -group aqp_top /tb/top_inst/sysclk
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_reset_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_phi
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/ebus_a
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/ebus_d
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_rd_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_wr_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_mreq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_iorq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_int_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_busreq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_busack_n
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/ebus_ba
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_ram_ce_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_cart_ce_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_ram_we_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/audio_l
-add wave -noupdate -expand -group aqp_top /tb/top_inst/audio_r
-add wave -noupdate -expand -group aqp_top /tb/top_inst/cassette_out
-add wave -noupdate -expand -group aqp_top /tb/top_inst/cassette_in
-add wave -noupdate -expand -group aqp_top /tb/top_inst/printer_out
-add wave -noupdate -expand -group aqp_top /tb/top_inst/printer_in
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/exp
-add wave -noupdate -expand -group aqp_top /tb/top_inst/has_z80
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc1
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc2
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/vga_r
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/vga_g
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/vga_b
-add wave -noupdate -expand -group aqp_top /tb/top_inst/vga_hsync
-add wave -noupdate -expand -group aqp_top /tb/top_inst/vga_vsync
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_tx
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rts
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_cts
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_ssel_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_sclk
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_mosi
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_miso
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_notify
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/spibm_a
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/spibm_wrdata
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_wrdata_en
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_en
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_rd_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_wr_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_mreq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_iorq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spibm_busreq
-add wave -noupdate -expand -group aqp_top /tb/top_inst/use_t80
-add wave -noupdate -expand -group aqp_top /tb/top_inst/clk
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_clk
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_mode
-add wave -noupdate -expand -group aqp_top /tb/top_inst/reset_req
-add wave -noupdate -expand -group aqp_top /tb/top_inst/turbo
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_phi_clken
-add wave -noupdate -expand -group aqp_top /tb/top_inst/reset
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_int_n_pushpull
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/ebus_d_out
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ebus_d_oe
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/ebus_d_in
-add wave -noupdate -expand -group aqp_top /tb/top_inst/q_ebus_wr_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/q_ebus_rd_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/bus_read
-add wave -noupdate -expand -group aqp_top /tb/top_inst/bus_write
-add wave -noupdate -expand -group aqp_top /tb/top_inst/common_ebus_stb
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/esp_tx_data
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_tx_wr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_tx_fifo_full
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx_data
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx_rd
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx_empty
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx_fifo_overflow
-add wave -noupdate -expand -group aqp_top /tb/top_inst/esp_rx_framing_error
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc1_in
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/hc1_out
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc1_oe
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc2_in
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/hc2_out
-add wave -noupdate -expand -group aqp_top /tb/top_inst/hc2_oe
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spi_msg_end
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spi_cmd
-add wave -noupdate -expand -group aqp_top /tb/top_inst/spi_rxdata
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_text_addr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_text_wrdata
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_text_wr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_font_addr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_font_wrdata
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_font_wr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_palette_addr
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_palette_wrdata
-add wave -noupdate -expand -group aqp_top /tb/top_inst/ovl_palette_wr
-add wave -noupdate -expand -group aqp_top -radix decimal /tb/top_inst/common_audio_l
-add wave -noupdate -expand -group aqp_top -radix decimal /tb/top_inst/common_audio_r
-add wave -noupdate -expand -group aqp_top /tb/top_inst/turbo_unlimited
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/video_r
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/video_g
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/video_b
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_de
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_hsync
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_vsync
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_newframe
-add wave -noupdate -expand -group aqp_top /tb/top_inst/video_oddline
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/t80_addr
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/t80_dq_out
-add wave -noupdate -expand -group aqp_top -radix hexadecimal /tb/top_inst/t80_dq_in
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_dq_oe
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_mreq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_iorq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_rd_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_wr_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_busrq_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_busak_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_int_n
-add wave -noupdate -expand -group aqp_top /tb/top_inst/t80_nmi_n
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/clk
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/mode
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/hpos
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/hsync
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/hblank
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/hlast
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/vpos
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/vsync
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/vblank
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/vnext
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/vnewframe
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/voddline
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/blank
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/q_mode
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/q_hcnt
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/hcnt_blank
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/hcnt_hsync1
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/hcnt_hsync2
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/hcnt_last
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/hcnt_done
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/q_vcnt
-add wave -noupdate -group video_timing -radix unsigned /tb/top_inst/common/video/video_timing/vcnt
-add wave -noupdate -group video_timing /tb/top_inst/common/video/video_timing/vcnt_done
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/t80/IR
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/t80/ACC
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/clk
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/reset
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/clken
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/phi
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/addr
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/dq_out
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/dq_in
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/dq_oe
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/mreq_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/iorq_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/rd_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/wr_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/stb
-add wave -noupdate -expand -group aqt80 /tb/top_inst/common_ebus_stb
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/busrq_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/busak_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/int_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/nmi_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/q_phi
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/phi_rising
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/phi_falling
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/q_mreq
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/q_read
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/MReq_Inhibit
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/Req_Inhibit
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/IORQ_t1
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/IORQ_t2
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/IORQ_int
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/IORQ_int_inhibit
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/WR_t2
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_iorq
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_noread
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_write
-add wave -noupdate -expand -group aqt80 -radix unsigned /tb/top_inst/aqt80/t80_mc
-add wave -noupdate -expand -group aqt80 -radix unsigned /tb/top_inst/aqt80/t80_ts
-add wave -noupdate -expand -group aqt80 -radix hexadecimal /tb/top_inst/aqt80/q_t80_di
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_int_cycle_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_m1_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/t80_rfsh_n
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/mreq_rw
-add wave -noupdate -expand -group aqt80 /tb/top_inst/aqt80/iorq_rw
-add wave -noupdate -expand -group SRAM -radix hexadecimal /tb/sram/A
-add wave -noupdate -expand -group SRAM -radix hexadecimal /tb/sram/IO
-add wave -noupdate -expand -group SRAM /tb/sram/CE_n
-add wave -noupdate -expand -group SRAM /tb/sram/OE_n
-add wave -noupdate -expand -group SRAM /tb/sram/WE_n
+add wave -noupdate -expand -group Top /tb/top_inst/sysclk
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_reset_n
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_phi
+add wave -noupdate -expand -group Top /tb/top_inst/sram_addr
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_d
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_rd_n
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_ram_ce_n
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_ram_we_n
+add wave -noupdate -expand -group Top /tb/top_inst/audio_l
+add wave -noupdate -expand -group Top /tb/top_inst/audio_r
+add wave -noupdate -expand -group Top /tb/top_inst/vga_r
+add wave -noupdate -expand -group Top /tb/top_inst/vga_g
+add wave -noupdate -expand -group Top /tb/top_inst/vga_b
+add wave -noupdate -expand -group Top /tb/top_inst/vga_hsync
+add wave -noupdate -expand -group Top /tb/top_inst/vga_vsync
+add wave -noupdate -expand -group Top /tb/top_inst/esp_tx
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rts
+add wave -noupdate -expand -group Top /tb/top_inst/esp_cts
+add wave -noupdate -expand -group Top /tb/top_inst/esp_ssel_n
+add wave -noupdate -expand -group Top /tb/top_inst/esp_sclk
+add wave -noupdate -expand -group Top /tb/top_inst/esp_mosi
+add wave -noupdate -expand -group Top /tb/top_inst/esp_miso
+add wave -noupdate -expand -group Top /tb/top_inst/esp_notify
+add wave -noupdate -expand -group Top /tb/top_inst/video_clk
+add wave -noupdate -expand -group Top -color Gold /tb/top_inst/clk
+add wave -noupdate -expand -group Top /tb/top_inst/reset_req
+add wave -noupdate -expand -group Top /tb/top_inst/ebus_phi_clken
+add wave -noupdate -expand -group Top /tb/top_inst/reset
+add wave -noupdate -expand -group Top -color Gold /tb/top_inst/cpu_addr
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_wrdata
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_bytesel
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_wren
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_cache_op
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_strobe
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_wait
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_rddata
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_error
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_m_mode
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_tlb_miss
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_asid
+add wave -noupdate -expand -group Top /tb/top_inst/cpu_irq
+add wave -noupdate -expand -group Top /tb/top_inst/sram_a
+add wave -noupdate -expand -group Top /tb/top_inst/sram_ctrl_strobe
+add wave -noupdate -expand -group Top /tb/top_inst/sram_ctrl_wait
+add wave -noupdate -expand -group Top /tb/top_inst/sram_ctrl_rddata
+add wave -noupdate -expand -group Top -color Gold /tb/top_inst/bootrom_strobe
+add wave -noupdate -expand -group Top -color Gold /tb/top_inst/bootrom_rddata
+add wave -noupdate -expand -group Top /tb/top_inst/q_cpu_addr
+add wave -noupdate -expand -group Top /tb/top_inst/esp_tx_data
+add wave -noupdate -expand -group Top /tb/top_inst/esp_tx_wr
+add wave -noupdate -expand -group Top /tb/top_inst/esp_tx_fifo_full
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx_data
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx_rd
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx_empty
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx_fifo_overflow
+add wave -noupdate -expand -group Top /tb/top_inst/esp_rx_framing_error
+add wave -noupdate -expand -group Top /tb/top_inst/spi_msg_end
+add wave -noupdate -expand -group Top /tb/top_inst/spi_cmd
+add wave -noupdate -expand -group Top /tb/top_inst/spi_rxdata
+add wave -noupdate -expand -group Top /tb/top_inst/spi_txdata
+add wave -noupdate -expand -group Top /tb/top_inst/spi_txdata_valid
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_text_addr
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_text_wrdata
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_text_wr
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_font_addr
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_font_wrdata
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_font_wr
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_palette_addr
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_palette_wrdata
+add wave -noupdate -expand -group Top /tb/top_inst/ovl_palette_wr
+add wave -noupdate -expand -group Top /tb/top_inst/common_audio_l
+add wave -noupdate -expand -group Top /tb/top_inst/common_audio_r
+add wave -noupdate -expand -group Top /tb/top_inst/video_r
+add wave -noupdate -expand -group Top /tb/top_inst/video_g
+add wave -noupdate -expand -group Top /tb/top_inst/video_b
+add wave -noupdate -expand -group Top /tb/top_inst/video_de
+add wave -noupdate -expand -group Top /tb/top_inst/video_hsync
+add wave -noupdate -expand -group Top /tb/top_inst/video_vsync
+add wave -noupdate -expand -group Top /tb/top_inst/video_newframe
+add wave -noupdate -expand -group Top /tb/top_inst/video_oddline
+add wave -noupdate -expand -group Top /tb/top_inst/rddata_tram
+add wave -noupdate -expand -group Top /tb/top_inst/rddata_chram
+add wave -noupdate -expand -group Top /tb/top_inst/rddata_vram
+add wave -noupdate -expand -group Top /tb/top_inst/rddata_rom
+add wave -noupdate -expand -group Top /tb/top_inst/rddata_io_video
+add wave -noupdate -expand -group Top /tb/top_inst/video_irq
+add wave -noupdate -expand -group Top /tb/top_inst/reg_fd_val
+add wave -noupdate -expand -group Top /tb/top_inst/io_video_wren
+add wave -noupdate -expand -group Top /tb/top_inst/wrdata
+add wave -noupdate -expand -group Top /tb/top_inst/tram_wren
+add wave -noupdate -expand -group Top /tb/top_inst/chram_wren
+add wave -noupdate -expand -group Top /tb/top_inst/vram_wren
+add wave -noupdate -group Bootrom /tb/top_inst/bootrom/clk
+add wave -noupdate -group Bootrom /tb/top_inst/bootrom/addr
+add wave -noupdate -group Bootrom /tb/top_inst/bootrom/rddata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/clk
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/reset
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_addr
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_wrdata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_bytesel
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_wren
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_strobe
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_wait
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/bus_rddata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/sram_a
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/sram_ce_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/sram_oe_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/sram_we_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/sram_dq
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_state
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_state
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_sram_a
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_sram_a
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_sram_we_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_sram_we_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_sram_oe_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_sram_oe_n
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_bus_wait
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_bus_wait
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_bus_rddata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_bus_rddata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_dq_wrdata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_dq_wrdata
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/d_dq_oe
+add wave -noupdate -group {SRAM controller} /tb/top_inst/sram_ctrl/q_dq_oe
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/clk
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/reset
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_wrdata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_bytesel
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_wren
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_cache_op
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_strobe
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_wait
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_rddata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_error
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/cpu_tlb_miss
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/cpu_m_mode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/cpu_asid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/irq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_pc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_pc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_instr
+add wave -noupdate -expand -group CPU -color Gold /tb/top_inst/cpu/q_instr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_exec_first
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_exec_first
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_state
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_state
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_m_mode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_m_mode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_rsv_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_rsv_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_rsv_valid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_rsv_valid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_wrdata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_wrdata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_bytesel
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_bytesel
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_wren
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_wren
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_cache_op
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_cache_op
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_stb
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_stb
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_bus_m_mode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_bus_m_mode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mstatus_mie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mstatus_mie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mstatus_mpie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mstatus_mpie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mstatus_mpp
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mstatus_mpp
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mstatus_mprv
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mstatus_mprv
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mtvec
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mtvec
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mscratch
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mscratch
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mepc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mepc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mcause_irq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mcause_irq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mcause_code
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mcause_code
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mtval
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mtval
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_masid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_masid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/d_mcycle
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_mcycle
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/opcode
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/funct3
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/funct7
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rs1_idx
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rs2_idx
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rd_idx
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/imm_i
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/imm_s
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/imm_b
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/imm_u
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/imm_j
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/csr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_lui
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_auipc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_jal
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_jalr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_branch
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_load
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_store
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_alu_imm
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_alu_reg
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_system
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_atomic
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_zaamo
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_lrw
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_scw
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_fence
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_cbo
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_ecall
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_ebreak
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mret
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_csr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_valid_instruction
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rd_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rd_wr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/regfile
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rs1_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rs2_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/rs2_data_s
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg0_zero
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg1_ra
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg2_sp
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg3_gp
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg4_tp
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg5_t0
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg6_t1
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg7_t2
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg8_s0_fp
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg9_s1
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg10_a0
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg11_a1
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg12_a2
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg13_a3
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg14_a4
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg15_a5
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg16_a6
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg17_a7
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg18_s2
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg19_s3
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg20_s4
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg21_s5
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg22_s6
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg23_s7
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg24_s8
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg25_s9
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg26_s10
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg27_s11
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg28_t3
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg29_t4
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg30_t5
+add wave -noupdate -expand -group CPU -group Registers /tb/top_inst/cpu/reg31_t6
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/i
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/l_operand
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/r_operand
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shamt
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/alu_add
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/alu_sub
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_eq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_lt
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_ltu
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl0
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl1
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl2
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl4
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl8
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shl16
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr_msb
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr0
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr1
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr2
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr4
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr8
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/shr16
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/mult_l
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/mult_r
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/mult_result
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mul_div
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_div_rem
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/div_done
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/div_quotient
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/div_remainder
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/div_busy
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/div_start
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/alu_result
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/load_store_addr
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/do_branch
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/lb_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/lh_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/load_data
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/bus_rddata_s
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mstatus
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mie
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mtvec
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mscratch
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mepc
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mcause
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mtval
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mip
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_masid
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mcycle
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/is_mcycleh
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/mstatus
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/csr_rdata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/csr_operand
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/csr_wdata
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/csr_write
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/q_irq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/irq_code
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/irq_pending
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/pc_plus4
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/pc_plus_imm
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/do_trap
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/trap_is_irq
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/trap_code
+add wave -noupdate -expand -group CPU /tb/top_inst/cpu/trap_mtval
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {1850760 ps} 0} {{Cursor 2} {639277345 ps} 0}
+WaveRestoreCursors {{Cursor 1} {1712392 ps} 0}
 quietly wave cursor active 1
-configure wave -namecolwidth 411
+configure wave -namecolwidth 249
 configure wave -valuecolwidth 100
 configure wave -justifyvalue left
 configure wave -signalnamewidth 0
@@ -203,7 +346,6 @@ configure wave -gridoffset 0
 configure wave -gridperiod 1
 configure wave -griddelta 40
 configure wave -timeline 0
-configure wave -timelineunits ps
+configure wave -timelineunits ns
 update
-WaveRestoreZoom {0 ps} {13256250 ps}
-bookmark add wave bookmark0 {{0 ps} {212100032 ps}} 0
+WaveRestoreZoom {1647763 ps} {1852843 ps}

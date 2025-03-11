@@ -29,7 +29,7 @@ module bootrom(
 for i in range(0, len(data), 4):
     val = struct.unpack_from("<I", data, i)[0]
     print(
-        f"        9'h{i:03X}:  rddata <= 32'h{val:08X};",
+        f"        9'h{i//4:03X}:  rddata <= 32'h{val:08X};",
         file=f,
     )
 print("        default: rddata <= 32'h00000000;", file=f)
