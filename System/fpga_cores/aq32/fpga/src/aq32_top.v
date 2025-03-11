@@ -101,7 +101,6 @@ module aq32_top(
         .ebus_phi_clken(ebus_phi_clken),
         .reset(reset));
 
-
     //////////////////////////////////////////////////////////////////////////
     // CPU
     //////////////////////////////////////////////////////////////////////////
@@ -120,7 +119,7 @@ module aq32_top(
 
     wire [15:0] cpu_irq = {16'b0};
 
-    cpu cpu(
+    cpu #(.VEC_RESET(32'hFFFFF800)) cpu(
         .clk(clk),
         .reset(reset),
 
@@ -140,6 +139,16 @@ module aq32_top(
 
         // Interrupt input
         .irq(cpu_irq));
+
+    //////////////////////////////////////////////////////////////////////////
+    // Boot ROM
+    //////////////////////////////////////////////////////////////////////////
+    wire [31:0] bootrom_rddata;
+
+    bootrom bootrom(
+        .clk(clk),
+        .addr(cpu_addr[10:2]),
+        .rddata(bootrom_rddata));
 
     //////////////////////////////////////////////////////////////////////////
     // SRAM controller
@@ -170,22 +179,27 @@ module aq32_top(
         .sram_ce_n(ebus_ram_ce_n),
         .sram_oe_n(ebus_rd_n),
         .sram_we_n(ebus_ram_we_n),
-        .sram_dq(ebus_d)
-    );
+        .sram_dq(ebus_d));
 
     //////////////////////////////////////////////////////////////////////////
     // CPU bus interconnect
     //////////////////////////////////////////////////////////////////////////
     assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'hFFF, 1'b0};
+    wire   bootrom_strobe   = cpu_strobe && cpu_addr[31:11] == {20'hFFFFF, 1'b1};
+
+    reg [31:0] q_cpu_addr;
+    always @(posedge clk) q_cpu_addr <= cpu_addr;
 
     always @* begin
         cpu_wait = 0;
         if (sram_ctrl_strobe) cpu_wait = sram_ctrl_wait;
+        if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[31:11] != cpu_addr[31:11];
     end
 
     always @* begin
         cpu_rddata = 0;
         if (sram_ctrl_strobe) cpu_rddata = sram_ctrl_rddata;
+        if (bootrom_strobe)   cpu_rddata = bootrom_rddata;
     end
 
     assign cpu_error    = 0;
