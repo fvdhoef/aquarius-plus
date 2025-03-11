@@ -182,30 +182,6 @@ module aq32_top(
         .sram_dq(ebus_d));
 
     //////////////////////////////////////////////////////////////////////////
-    // CPU bus interconnect
-    //////////////////////////////////////////////////////////////////////////
-    assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'hFFF, 1'b0};
-    wire   bootrom_strobe   = cpu_strobe && cpu_addr[31:11] == {20'hFFFFF, 1'b1};
-
-    reg [31:0] q_cpu_addr;
-    always @(posedge clk) q_cpu_addr <= cpu_addr;
-
-    always @* begin
-        cpu_wait = 0;
-        if (sram_ctrl_strobe) cpu_wait = sram_ctrl_wait;
-        if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[10:2] != cpu_addr[10:2];
-    end
-
-    always @* begin
-        cpu_rddata = 0;
-        if (sram_ctrl_strobe) cpu_rddata = sram_ctrl_rddata;
-        if (bootrom_strobe)   cpu_rddata = bootrom_rddata;
-    end
-
-    assign cpu_error    = 0;
-    assign cpu_tlb_miss = 0;
-
-    //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
     //////////////////////////////////////////////////////////////////////////
     wire [8:0] esp_tx_data;
@@ -348,19 +324,23 @@ module aq32_top(
     wire       video_newframe;
     wire       video_oddline;
 
-    wire [7:0] rddata_tram;             // MEM $3000-$37FF
-    wire [7:0] rddata_chram;
-    wire [7:0] rddata_vram;
-    wire [7:0] rddata_rom;
-
-    wire [7:0] rddata_io_video;         // IO $E0-$EF
     wire       video_irq;
     wire       reg_fd_val;
-    wire       io_video_wren = 1'b0;
-    wire [7:0] wrdata        = 8'b0;
-    wire       tram_wren     = 1'b0;
-    wire       chram_wren    = 1'b0;
-    wire       vram_wren     = 1'b0;
+
+    wire       io_video_strobe;
+    wire       tram_strobe;
+    wire       chram_strobe;
+    wire       vram_strobe;
+
+    wire       io_video_wren = cpu_wren && io_video_strobe;
+    wire       tram_wren     = cpu_wren && tram_strobe;
+    wire       chram_wren    = cpu_wren && chram_strobe;
+    wire       vram_wren     = cpu_wren && vram_strobe;
+
+    wire [7:0] rddata_tram;
+    wire [7:0] rddata_chram;
+    wire [7:0] rddata_vram;
+    wire [7:0] rddata_io_video;
 
     video video(
         .clk(clk),
@@ -368,25 +348,25 @@ module aq32_top(
 
         .vclk(video_clk),
 
-        .io_addr(ebus_a[3:0]),
+        .io_addr(cpu_addr[3:0]),
         .io_rddata(rddata_io_video),
-        .io_wrdata(wrdata),
+        .io_wrdata(cpu_wrdata[7:0]),
         .io_wren(io_video_wren),
         .irq(video_irq),
 
-        .tram_addr(ebus_a[10:0]),
+        .tram_addr(cpu_addr[10:0]),
         .tram_rddata(rddata_tram),
-        .tram_wrdata(wrdata),
+        .tram_wrdata(cpu_wrdata[7:0]),
         .tram_wren(tram_wren),
 
-        .chram_addr(ebus_a[10:0]),
+        .chram_addr(cpu_addr[10:0]),
         .chram_rddata(rddata_chram),
-        .chram_wrdata(wrdata),
+        .chram_wrdata(cpu_wrdata[7:0]),
         .chram_wren(chram_wren),
 
-        .vram_addr(ebus_a[13:0]),
+        .vram_addr(cpu_addr[13:0]),
         .vram_rddata(rddata_vram),
-        .vram_wrdata(wrdata),
+        .vram_wrdata(cpu_wrdata[7:0]),
         .vram_wren(vram_wren),
 
         .video_r(video_r),
@@ -438,5 +418,41 @@ module aq32_top(
         .vga_hsync(vga_hsync),
         .vga_vsync(vga_vsync)
     );
+
+    //////////////////////////////////////////////////////////////////////////
+    // CPU bus interconnect
+    //////////////////////////////////////////////////////////////////////////
+    assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'hFFF, 1'b0};
+    assign tram_strobe      = cpu_strobe && cpu_addr[31:12] == {20'hFF000};
+    assign chram_strobe     = cpu_strobe && cpu_addr[31:11] == {20'hFF100, 1'b0};
+    assign vram_strobe      = cpu_strobe && cpu_addr[31:14] == {16'hFF20, 2'b00};
+    assign io_video_strobe  = cpu_strobe && cpu_addr[31:14] == {16'hFF30, 2'b00};
+    wire   bootrom_strobe   = cpu_strobe && cpu_addr[31:11] == {20'hFFFFF, 1'b1};
+
+    reg [31:0] q_cpu_addr;
+    always @(posedge clk) q_cpu_addr <= cpu_addr;
+
+    always @* begin
+        cpu_wait = 0;
+        if (sram_ctrl_strobe) cpu_wait = sram_ctrl_wait;
+        if (tram_strobe)      cpu_wait = !cpu_wren && q_cpu_addr[11:0] != cpu_addr[11:0];
+        if (chram_strobe)     cpu_wait = !cpu_wren && q_cpu_addr[10:0] != cpu_addr[10:0];
+        if (vram_strobe)      cpu_wait = !cpu_wren && q_cpu_addr[13:0] != cpu_addr[13:0];
+        if (io_video_strobe)  cpu_wait = !cpu_wren && q_cpu_addr[13:0] != cpu_addr[13:0];
+        if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[10:2] != cpu_addr[10:2];
+    end
+
+    always @* begin
+        cpu_rddata = 0;
+        if (sram_ctrl_strobe) cpu_rddata = sram_ctrl_rddata;
+        if (tram_strobe)      cpu_rddata = {rddata_tram,     rddata_tram,     rddata_tram,     rddata_tram};
+        if (chram_strobe)     cpu_rddata = {rddata_chram,    rddata_chram,    rddata_chram,    rddata_chram};
+        if (vram_strobe)      cpu_rddata = {rddata_vram,     rddata_vram,     rddata_vram,     rddata_vram};
+        if (io_video_strobe)  cpu_rddata = {rddata_io_video, rddata_io_video, rddata_io_video, rddata_io_video};
+        if (bootrom_strobe)   cpu_rddata = bootrom_rddata;
+    end
+
+    assign cpu_error    = 0;
+    assign cpu_tlb_miss = 0;
 
 endmodule
