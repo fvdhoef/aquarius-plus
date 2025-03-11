@@ -4,6 +4,8 @@
         ".",
         "aqp_shared",
         "wrappers",
+        "cpu",
+        "mem",
         "core_common",
         "core_common/video"
     ],

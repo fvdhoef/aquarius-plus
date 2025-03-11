@@ -21,6 +21,13 @@ module is61c5128as(
 
     reg  [7:0] mem [0:524287];
 
+    // FH: Put some initial data in SRAM
+    reg [18:0] mytmp;
+    initial begin
+        for (mytmp = 0; mytmp < 1024*10; mytmp = mytmp + 1)
+            mem[mytmp] = mytmp[7:0];
+    end
+
     wire [7:0] dout = mem[A];
     wire       r_en =  WE_n && !CE_n && !OE_n;     // WE=1, CE=0, OE=0  Read
     wire       w_en = !WE_n && !CE_n;             // WE=0, CE=0  OE=x  Write

@@ -75,23 +75,6 @@ module aq32_top(
     assign ebus_iorq_n    = 1'b1;
     assign ebus_int_n     = 1'bZ;
 
-    wire [18:0] ram_a;
-    wire        ram_ce_n;
-    wire        ram_we_n;
-    wire        ram_oe_n;
-
-    assign ebus_a[13:0]  = ram_a[13:0];
-    assign ebus_ba       = ram_a[18:14];
-    assign ebus_ram_ce_n = ram_ce_n;
-    assign ebus_ram_we_n = ram_we_n;
-    assign ebus_rd_n     = ram_oe_n;
-
-    assign ram_a    = 19'b0;
-    assign ram_ce_n = 1'b1;
-    assign ram_we_n = 1'b1;
-    assign ram_oe_n = 1'b1;
-    // ebus_d
-
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
@@ -118,23 +101,95 @@ module aq32_top(
         .ebus_phi_clken(ebus_phi_clken),
         .reset(reset));
 
+
     //////////////////////////////////////////////////////////////////////////
-    // Bus interface
+    // CPU
     //////////////////////////////////////////////////////////////////////////
+    wire [31:0] cpu_addr;
+    wire [31:0] cpu_wrdata;
+    wire  [3:0] cpu_bytesel;
+    wire        cpu_wren;
+    wire  [1:0] cpu_cache_op;
+    wire        cpu_strobe;
+    reg         cpu_wait;
+    reg  [31:0] cpu_rddata;
+    wire        cpu_error;
+    wire        cpu_m_mode;
+    wire        cpu_tlb_miss;
+    wire  [5:0] cpu_asid;
 
-    // Register data from external bus
-    reg [7:0] ebus_d_in;
-    always @(posedge clk) if (!ebus_wr_n) ebus_d_in <= ebus_d;
+    wire [15:0] cpu_irq = {16'b0};
 
-    // Synchronize RD#/WR# signals for when using external Z80
-    reg [2:0] q_ebus_wr_n;
-    reg [2:0] q_ebus_rd_n;
-    always @(posedge clk) q_ebus_wr_n <= {q_ebus_wr_n[1:0], ebus_wr_n};
-    always @(posedge clk) q_ebus_rd_n <= {q_ebus_rd_n[1:0], ebus_rd_n};
+    cpu cpu(
+        .clk(clk),
+        .reset(reset),
 
-    wire bus_read  = q_ebus_rd_n[2:1] == 2'b10;
-    wire bus_write = q_ebus_wr_n[2:1] == 2'b10;
-    wire common_ebus_stb = (bus_read || bus_write);
+        // Bus interface
+        .bus_addr(cpu_addr),
+        .bus_wrdata(cpu_wrdata),
+        .bus_bytesel(cpu_bytesel),
+        .bus_wren(cpu_wren),
+        .bus_cache_op(cpu_cache_op),
+        .bus_strobe(cpu_strobe),
+        .bus_wait(cpu_wait),
+        .bus_rddata(cpu_rddata),
+        .bus_error(cpu_error),
+        .cpu_tlb_miss(cpu_tlb_miss),
+        .cpu_m_mode(cpu_m_mode),
+        .cpu_asid(cpu_asid),
+
+        // Interrupt input
+        .irq(cpu_irq));
+
+    //////////////////////////////////////////////////////////////////////////
+    // SRAM controller
+    //////////////////////////////////////////////////////////////////////////
+    wire [18:0] sram_a;
+    wire        sram_ctrl_strobe;
+    wire        sram_ctrl_wait;
+    wire [31:0] sram_ctrl_rddata;
+
+    assign ebus_a[13:0]  = sram_a[13:0];
+    assign ebus_ba       = sram_a[18:14];
+
+    sram_ctrl sram_ctrl(
+        .clk(clk),
+        .reset(reset),
+
+        // Command interface
+        .bus_addr(cpu_addr[18:2]),
+        .bus_wrdata(cpu_wrdata),
+        .bus_bytesel(cpu_bytesel),
+        .bus_wren(cpu_wren),
+        .bus_strobe(sram_ctrl_strobe),
+        .bus_wait(sram_ctrl_wait),
+        .bus_rddata(sram_ctrl_rddata),
+
+        // SRAM interface
+        .sram_a(sram_a),
+        .sram_ce_n(ebus_ram_ce_n),
+        .sram_oe_n(ebus_rd_n),
+        .sram_we_n(ebus_ram_we_n),
+        .sram_dq(ebus_d)
+    );
+
+    //////////////////////////////////////////////////////////////////////////
+    // CPU bus interconnect
+    //////////////////////////////////////////////////////////////////////////
+    assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'hFFF, 1'b0};
+
+    always @* begin
+        cpu_wait = 0;
+        if (sram_ctrl_strobe) cpu_wait = sram_ctrl_wait;
+    end
+
+    always @* begin
+        cpu_rddata = 0;
+        if (sram_ctrl_strobe) cpu_rddata = sram_ctrl_rddata;
+    end
+
+    assign cpu_error    = 0;
+    assign cpu_tlb_miss = 0;
 
     //////////////////////////////////////////////////////////////////////////
     // ESP32 UART
