@@ -207,9 +207,9 @@ module aq32_top(
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: unused
-            1'b1,       // Core type 01 specific: show force turbo mode
-            1'b1,       // Core type 01 specific: show Aquarius+ options
-            1'b1,       // Core type 01 specific: show video timing switch
+            1'b0,       // Core type 01 specific: show force turbo mode
+            1'b0,       // Core type 01 specific: show Aquarius+ options
+            1'b0,       // Core type 01 specific: show video timing switch
             1'b1,       // Core type 01 specific: show mouse support
             1'b0        // Z80 present
         }),
