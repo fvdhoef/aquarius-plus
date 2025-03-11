@@ -12,15 +12,9 @@ module cpu #(
     output wire [31:0] bus_wrdata,
     output wire  [3:0] bus_bytesel,
     output wire        bus_wren,
-    output wire  [1:0] bus_cache_op,    // 00:Normal operation, 01:Flush, 10:Clean, 11:Invalidate
     output wire        bus_strobe,
     input  wire        bus_wait,
     input  wire [31:0] bus_rddata,
-    input  wire        bus_error,
-    input  wire        cpu_tlb_miss,
-
-    output wire        cpu_m_mode,      // Machine mode
-    output wire  [5:0] cpu_asid,
 
     // Interrupt input
     input  wire [15:0] irq);
@@ -33,42 +27,35 @@ module cpu #(
 
     localparam [4:0]
         TrapInstrAddrMisaligned = 5'd0,
-        TrapInstrAccessFault    = 5'd1,
+     // TrapInstrAccessFault    = 5'd1,
         TrapIllegalInstruction  = 5'd2,
         TrapBreakpoint          = 5'd3,
         TrapLoadAddrMisaligned  = 5'd4,
-        TrapLoadAccessFault     = 5'd5,
+     // TrapLoadAccessFault     = 5'd5,
         TrapStoreAddrMisaligned = 5'd6,
-        TrapStoreAccessFault    = 5'd7,
-        TrapEcallU              = 5'd8,
+     // TrapStoreAccessFault    = 5'd7,
+     // TrapEcallU              = 5'd8,
      // TrapEcallS              = 5'd9,
-        TrapEcallM              = 5'd11,
-        TrapInstrPageFault      = 5'd12,
-        TrapLoadPageFault       = 5'd13,
-        TrapStorePageFault      = 5'd15;
+        TrapEcallM              = 5'd11;
+     // TrapInstrPageFault      = 5'd12,
+     // TrapLoadPageFault       = 5'd13,
+     // TrapStorePageFault      = 5'd15;
 
     reg [31:0] d_pc,            q_pc;
     reg [31:0] d_instr,         q_instr;
     reg        d_exec_first,    q_exec_first;
     reg  [1:0] d_state,         q_state;
-    reg        d_m_mode,        q_m_mode;
-    reg [31:0] d_rsv_addr,      q_rsv_addr;
-    reg        d_rsv_valid,     q_rsv_valid;
 
     // Bus interface
     reg [31:0] d_addr,          q_addr;
     reg [31:0] d_wrdata,        q_wrdata;
     reg  [3:0] d_bytesel,       q_bytesel;
     reg        d_wren,          q_wren;
-    reg  [1:0] d_cache_op,      q_cache_op;  
     reg        d_stb,           q_stb;
-    reg        d_bus_m_mode,    q_bus_m_mode;   // Effective priviledge level on bus
 
     // CSRs
     reg        d_mstatus_mie,   q_mstatus_mie;  // 0x300 Machine status register:  <3> Machine interrupt enable
     reg        d_mstatus_mpie,  q_mstatus_mpie; // 0x300 Machine status register:  <7> Machine pre-trap interrupt enable
-    reg        d_mstatus_mpp,   q_mstatus_mpp;  // 0x300 Machine status register: <12> Machine previous privilege mode
-    reg        d_mstatus_mprv,  q_mstatus_mprv; // 0x300 Machine status register: <17> Modify priviledge
     reg [15:0] d_mie,           q_mie;          // 0x304 Machine interrupt-enable register
     reg [31:0] d_mtvec,         q_mtvec;        // 0x305 Machine trap-handler base address
     reg [31:0] d_mscratch,      q_mscratch;     // 0x340 Scratch register for machine trap handlers
@@ -76,18 +63,12 @@ module cpu #(
     reg        d_mcause_irq,    q_mcause_irq;   // 0x342 Machine trap cause
     reg  [4:0] d_mcause_code,   q_mcause_code;  // 0x342 Machine trap cause
     reg [31:0] d_mtval,         q_mtval;        // 0x343 Machine bad address or instruction
-    reg  [5:0] d_masid,         q_masid;        // 0x7C0 Address space identifier
-    reg [63:0] d_mcycle,        q_mcycle;       // 0xB00/0xB80 Machine cycle counter
 
     assign bus_addr     = q_addr;
     assign bus_wrdata   = q_wrdata;
     assign bus_bytesel  = q_bytesel;
     assign bus_wren     = q_wren;
-    assign bus_cache_op = q_cache_op;
     assign bus_strobe   = q_stb;
-
-    assign cpu_m_mode   = q_bus_m_mode;
-    assign cpu_asid     = q_masid;
 
     //////////////////////////////////////////////////////////////////////////
     // Instruction decoding
@@ -115,12 +96,7 @@ module cpu #(
     wire is_alu_imm = (opcode == 7'b0010011); // regfile[rd_idx] = regfile[rs1_idx] <alu_op> imm_i
     wire is_alu_reg = (opcode == 7'b0110011); // regfile[rd_idx] = regfile[rs1_idx] <alu_op> regfile[rs2_idx]
     wire is_system  = (opcode == 7'b1110011); // ECALL/EBREAK
-    wire is_atomic  = (opcode == 7'b0101111 && funct3 == 3'b010); // Atomic instructions (funct7 will select function)
-    wire is_zaamo   = is_atomic && !funct7[3];
-    wire is_lrw     = is_atomic && funct7[6:2] == 5'b00010;
-    wire is_scw     = is_atomic && funct7[6:2] == 5'b00011;
     wire is_fence   = (funct3 == 3'b000 && opcode == 7'b0001111);                   // FENCE/PAUSE
-    wire is_cbo     = (funct3 == 3'b010 && rd_idx == 5'd0 && opcode == 7'b0001111); // CBO
 
     wire is_ecall  = is_system && q_instr[31:7] == 25'b0000000_00000_00000_000_00000;
     wire is_ebreak = is_system && q_instr[31:7] == 25'b0000000_00001_00000_000_00000;
@@ -138,9 +114,9 @@ module cpu #(
         is_alu_imm ||
         is_alu_reg ||
         is_fence   ||
-        is_atomic  ||
-        ( q_m_mode && (is_system || is_cbo)) ||
-        (!q_m_mode && (is_ecall || is_ebreak));   // In user mode only allow ecall/ebreak system instructions
+        is_system  ||
+        is_ecall   ||
+        is_ebreak;
 
     //////////////////////////////////////////////////////////////////////////
     // Register file
@@ -354,20 +330,12 @@ module cpu #(
     wire is_mtval    = (csr == 12'h343);    // Machine bad address or instruction
     wire is_mip      = (csr == 12'h344);    // Machine interrupt pending
 
-    // Custom CSR
-    wire is_masid    = (csr == 12'h7C0);    // Address space identifier
-
-    // Machine Counter/Timers
-    wire is_mcycle   = (csr == 12'hB00);    // Machine cycle counter
-    wire is_mcycleh  = (csr == 12'hB80);    // Upper 32 bits of mcycle
-
     // mstatus register
     reg [31:0] mstatus;
     always @* begin
         mstatus     = 0;
-        mstatus[17] = q_mstatus_mprv;
-        mstatus[12] = q_mstatus_mpp;
-        mstatus[11] = q_mstatus_mpp;
+        mstatus[12] = 1;
+        mstatus[11] = 1;
         mstatus[7]  = q_mstatus_mpie;
         mstatus[3]  = q_mstatus_mie;
     end
@@ -384,9 +352,6 @@ module cpu #(
         if (is_mcause)    csr_rdata = {q_mcause_irq, 26'b0, q_mcause_code};
         if (is_mtval)     csr_rdata = q_mtval;
         if (is_mip)       csr_rdata = {irq, 16'b0};
-        if (is_masid)     csr_rdata = {26'b0, q_masid};
-        if (is_mcycle)    csr_rdata = q_mcycle[31:0];
-        if (is_mcycleh)   csr_rdata = q_mcycle[63:32];
     end
 
     wire [31:0] csr_operand = funct3[2] ? {27'd0, rs1_idx} : rs1_data;
@@ -443,14 +408,12 @@ module cpu #(
             rd_data = pc_plus_imm;
         else if (is_jal || is_jalr)
             rd_data = pc_plus4;
-        else if (is_load || is_zaamo || is_lrw)
+        else if (is_load)
             rd_data = load_data;
         else if (is_alu_imm || is_alu_reg)
             rd_data = alu_result;
         else if (is_csr)
             rd_data = csr_rdata;
-        else if (is_scw)
-            rd_data = (q_rsv_valid && q_rsv_addr == rs1_data) ? 32'b0 : 32'b1;
     end
 
     reg        do_trap;
@@ -484,9 +447,7 @@ module cpu #(
             d_addr       = {newpc[31:2], 2'b00};
             d_bytesel    = 4'b1111;
             d_wren       = 0;
-            d_cache_op   = 0;
             d_stb        = 1;
-            d_bus_m_mode = d_m_mode;
         end
     endtask
 
@@ -495,22 +456,15 @@ module cpu #(
         d_instr        = q_instr;
         d_exec_first   = 0;
         d_state        = q_state;
-        d_m_mode       = q_m_mode;
-        d_rsv_addr     = q_rsv_addr;
-        d_rsv_valid    = q_rsv_valid;
 
         d_addr         = q_addr;
         d_wrdata       = q_wrdata;
         d_bytesel      = q_bytesel;
         d_wren         = q_wren;
         d_stb          = q_stb;
-        d_bus_m_mode   = q_bus_m_mode;
-        d_cache_op     = q_cache_op;
 
         d_mstatus_mie  = q_mstatus_mie;
         d_mstatus_mpie = q_mstatus_mpie;
-        d_mstatus_mpp  = q_mstatus_mpp;
-        d_mstatus_mprv = q_mstatus_mprv;
         d_mie          = q_mie;
         d_mtvec        = q_mtvec;
         d_mscratch     = q_mscratch;
@@ -518,8 +472,6 @@ module cpu #(
         d_mcause_irq   = q_mcause_irq;
         d_mcause_code  = q_mcause_code;
         d_mtval        = q_mtval;
-        d_masid        = q_masid;
-        d_mcycle       = q_mcycle + 64'd1;
 
         rd_wr          = 0;
         div_start      = 0;
@@ -533,14 +485,10 @@ module cpu #(
             StFetch: begin
                 if (!bus_wait) begin
                     d_wren     = 0;
-                    d_cache_op = 0;
                     d_stb      = 0;
 
                     if (irq_pending && q_mstatus_mie) begin
                         trap(1, {1'b1, irq_code}, 0);
-
-                    end else if (bus_error) begin
-                        trap(0, cpu_tlb_miss ? TrapInstrPageFault : TrapInstrAccessFault, q_addr);
 
                     end else begin
                         d_state      = StExec;
@@ -558,15 +506,11 @@ module cpu #(
                     if (is_ebreak)
                         trap(0, TrapBreakpoint, 0);
                     else if (is_ecall)
-                        trap(0, q_m_mode ? TrapEcallM : TrapEcallU, 0);
+                        trap(0, TrapEcallM, 0);
 
                 end else if (is_mret) begin
                     d_mstatus_mie  = q_mstatus_mpie;
                     d_mstatus_mpie = 1;
-                    if (!q_mstatus_mpp)
-                        d_mstatus_mprv = 0;
-                    d_m_mode       = q_mstatus_mpp;
-                    d_mstatus_mpp  = 0;
 
                     fetch(q_mepc);
 
@@ -582,9 +526,7 @@ module cpu #(
                     d_state      = is_load ? StMemRd : StMemWr;
                     d_addr       = load_store_addr;
                     d_wren       = is_store;
-                    d_cache_op   = 0;
                     d_stb        = 1;
-                    d_bus_m_mode = (q_m_mode && q_mstatus_mprv) ? q_mstatus_mpp : q_m_mode;
 
                     if (funct3[1])          // SW
                         d_wrdata = rs2_data;
@@ -608,55 +550,6 @@ module cpu #(
                         end
                     end
 
-                end else if (is_cbo) begin
-                    d_state      = StMemRd;
-                    d_addr       = rs1_data;
-                    d_wren       = 0;
-                    d_cache_op   = ~q_instr[21:20];
-                    d_stb        = 1;
-                    d_bus_m_mode = (q_m_mode && q_mstatus_mprv) ? q_mstatus_mpp : q_m_mode;
-
-                end else if (is_zaamo) begin
-                    d_state      = StMemRd;
-                    d_addr       = rs1_data;
-                    d_wren       = 0;
-                    d_cache_op   = 0;
-                    d_stb        = 1;
-                    d_bus_m_mode = (q_m_mode && q_mstatus_mprv) ? q_mstatus_mpp : q_m_mode;
-
-                end else if (is_lrw) begin
-                    if (rs1_data[1:0] != 0)
-                        trap(0, TrapLoadAddrMisaligned, rs1_data);
-
-                    // LR.W
-                    d_state       = StMemRd;
-                    d_addr        = rs1_data;
-                    d_rsv_addr    = rs1_data;
-                    d_rsv_valid   = 1;
-                    d_cache_op    = 0;
-                    d_stb         = 1;
-                    d_bus_m_mode  = (q_m_mode && q_mstatus_mprv) ? q_mstatus_mpp : q_m_mode;
-
-                end else if (is_scw) begin
-                    if (rs1_data[1:0] != 0)
-                        trap(0, TrapStoreAddrMisaligned, rs1_data);
-
-                    d_rsv_valid = 0;
-                    rd_wr       = 1;
-
-                    if (q_rsv_valid && q_rsv_addr == rs1_data) begin
-                        d_state      = StMemWr;
-                        d_addr       = rs1_data;
-                        d_wren       = 1;
-                        d_cache_op   = 0;
-                        d_stb        = 1;
-                        d_bus_m_mode = (q_m_mode && q_mstatus_mprv) ? q_mstatus_mpp : q_m_mode;
-                        d_wrdata     = rs2_data;
-                        d_bytesel    = 4'b1111;
-                    end else begin
-                        fetch(pc_plus4);
-                    end
-
                 end else begin
                     if (is_lui || is_auipc || is_jal || is_jalr || is_alu_imm || is_alu_reg || is_system)
                         rd_wr = 1;
@@ -664,8 +557,6 @@ module cpu #(
                     // CSR write handling
                     if (csr_write) begin
                         if (is_mstatus) begin
-                            d_mstatus_mprv = csr_wdata[17];
-                            d_mstatus_mpp  = csr_wdata[12];
                             d_mstatus_mpie = csr_wdata[7];
                             d_mstatus_mie  = csr_wdata[3];
                         end
@@ -681,9 +572,6 @@ module cpu #(
                         end
 
                         if (is_mtval)    d_mtval         = csr_wdata;
-                        if (is_masid)    d_masid         = csr_wdata[5:0];
-                        if (is_mcycle)   d_mcycle[31:0]  = csr_wdata;
-                        if (is_mcycleh)  d_mcycle[63:32] = csr_wdata;
                     end
 
                     if (is_jal || do_branch) fetch(pc_plus_imm);
@@ -695,53 +583,19 @@ module cpu #(
             StMemRd: begin
                 if (!bus_wait) begin
                     d_wren     = 0;
-                    d_cache_op = 0;
                     d_stb      = 0;
 
-                    if (bus_error) begin
-                        trap(0, cpu_tlb_miss ? TrapLoadPageFault : TrapLoadAccessFault, q_addr);
-                    end else begin
-                        rd_wr = 1;
+                    rd_wr = 1;
 
-                        if (is_zaamo) begin
-                            // Calculate value and write back to memory
-                            d_wren     = 1;
-                            d_cache_op = 0;
-                            d_stb      = 1;
-                            d_bytesel  = 4'b1111;
-                            d_state    = StMemWr;
-
-                            case (funct7[6:2])
-                                5'b00000: d_wrdata = rs2_data + bus_rddata;                             // AMOADD.W
-                                5'b00001: d_wrdata = rs2_data;                                          // AMOSWAP.W
-                                5'b00100: d_wrdata = rs2_data ^ bus_rddata;                             // AMOXOR.W
-                                5'b01000: d_wrdata = rs2_data | bus_rddata;                             // AMOOR.W
-                                5'b01100: d_wrdata = rs2_data & bus_rddata;                             // AMOAND.W
-                                5'b10000: d_wrdata = rs2_data_s < bus_rddata_s ? rs2_data : bus_rddata; // AMOMIN.W
-                                5'b10100: d_wrdata = rs2_data_s > bus_rddata_s ? rs2_data : bus_rddata; // AMOMAX.W
-                                5'b11000: d_wrdata = rs2_data   < bus_rddata   ? rs2_data : bus_rddata; // AMOMINU.W
-                                5'b11100: d_wrdata = rs2_data   > bus_rddata   ? rs2_data : bus_rddata; // AMOMAXU.W
-                                default:  trap(0, TrapIllegalInstruction, 0);                           // Invalid instruction
-                            endcase
-
-                        end else begin
-                            fetch(pc_plus4);
-                        end
-                    end
+                    fetch(pc_plus4);
                 end
             end
 
             StMemWr: begin
                 if (!bus_wait) begin
                     d_wren     = 0;
-                    d_cache_op = 0;
                     d_stb      = 0;
-
-                    if (bus_error) begin
-                        trap(0, cpu_tlb_miss ? TrapStorePageFault : TrapStoreAccessFault, q_addr);
-                    end else begin
-                        fetch(pc_plus4);
-                    end
+                    fetch(pc_plus4);
                 end
             end
 
@@ -749,11 +603,8 @@ module cpu #(
         endcase
 
         if (do_trap) begin
-            d_m_mode       = 1;
-            d_mstatus_mpp  = q_m_mode;
             d_mstatus_mpie = q_mstatus_mie;
             d_mstatus_mie  = 0;
-            d_rsv_valid    = 0;
 
             d_mepc[31:2]   = q_pc[31:2];
             d_mcause_irq   = trap_is_irq;
@@ -770,22 +621,15 @@ module cpu #(
             q_instr        <= 0;
             q_exec_first   <= 0;
             q_state        <= StFetch;
-            q_m_mode       <= 1;     // Start in machine mode
-            q_rsv_addr     <= 0;
-            q_rsv_valid    <= 0;
 
             q_addr         <= VEC_RESET;
             q_wrdata       <= 0;
             q_bytesel      <= 4'b1111;
             q_wren         <= 0;
-            q_cache_op     <= 0;
             q_stb          <= 1;
-            q_bus_m_mode   <= 1;
 
             q_mstatus_mie  <= 0;
             q_mstatus_mpie <= 0;
-            q_mstatus_mpp  <= 1;
-            q_mstatus_mprv <= 0;
             q_mie          <= 0;
             q_mtvec        <= 0;
             q_mscratch     <= 0;
@@ -793,30 +637,21 @@ module cpu #(
             q_mcause_irq   <= 0;
             q_mcause_code  <= 0;
             q_mtval        <= 0;
-            q_masid        <= 0;
-            q_mcycle       <= 0;
 
         end else begin
             q_pc           <= d_pc;
             q_instr        <= d_instr;
             q_exec_first   <= d_exec_first;
             q_state        <= d_state;
-            q_m_mode       <= d_m_mode;
-            q_rsv_addr     <= d_rsv_addr;
-            q_rsv_valid    <= d_rsv_valid;
 
             q_addr         <= d_addr;
             q_wrdata       <= d_wrdata;
             q_bytesel      <= d_bytesel;
             q_wren         <= d_wren;
-            q_cache_op     <= d_cache_op;
             q_stb          <= d_stb;
-            q_bus_m_mode   <= d_bus_m_mode;
 
             q_mstatus_mie  <= d_mstatus_mie;
             q_mstatus_mpie <= d_mstatus_mpie;
-            q_mstatus_mpp  <= d_mstatus_mpp;
-            q_mstatus_mprv <= d_mstatus_mprv;
             q_mie          <= d_mie;
             q_mtvec        <= d_mtvec;
             q_mscratch     <= d_mscratch;
@@ -824,8 +659,6 @@ module cpu #(
             q_mcause_irq   <= d_mcause_irq;
             q_mcause_code  <= d_mcause_code;
             q_mtval        <= d_mtval;
-            q_masid        <= d_masid;
-            q_mcycle       <= d_mcycle;
         end
 
 endmodule

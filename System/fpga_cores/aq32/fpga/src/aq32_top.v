@@ -7,12 +7,12 @@ module aq32_top(
     // Z80 bus interface
     inout  wire        ebus_reset_n,
     output wire        ebus_phi,        // 3.579545MHz
-    inout  wire [15:0] ebus_a,
+    output wire [15:0] ebus_a,
     inout  wire  [7:0] ebus_d,
-    inout  wire        ebus_rd_n,
-    inout  wire        ebus_wr_n,
-    inout  wire        ebus_mreq_n,
-    inout  wire        ebus_iorq_n,
+    output wire        ebus_rd_n,
+    output wire        ebus_wr_n,
+    output wire        ebus_mreq_n,
+    output wire        ebus_iorq_n,
     output wire        ebus_int_n,      // Open-drain output
     output wire        ebus_busreq_n,   // Open-drain output
     input  wire        ebus_busack_n,
@@ -74,6 +74,7 @@ module aq32_top(
     assign ebus_mreq_n    = 1'b1;
     assign ebus_iorq_n    = 1'b1;
     assign ebus_int_n     = 1'bZ;
+    assign ebus_busreq_n  = 1'b0;
 
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
@@ -108,14 +109,9 @@ module aq32_top(
     wire [31:0] cpu_wrdata;
     wire  [3:0] cpu_bytesel;
     wire        cpu_wren;
-    wire  [1:0] cpu_cache_op;
     wire        cpu_strobe;
     reg         cpu_wait;
     reg  [31:0] cpu_rddata;
-    wire        cpu_error;
-    wire        cpu_m_mode;
-    wire        cpu_tlb_miss;
-    wire  [5:0] cpu_asid;
 
     wire [15:0] cpu_irq = {16'b0};
 
@@ -128,14 +124,9 @@ module aq32_top(
         .bus_wrdata(cpu_wrdata),
         .bus_bytesel(cpu_bytesel),
         .bus_wren(cpu_wren),
-        .bus_cache_op(cpu_cache_op),
         .bus_strobe(cpu_strobe),
         .bus_wait(cpu_wait),
         .bus_rddata(cpu_rddata),
-        .bus_error(cpu_error),
-        .cpu_tlb_miss(cpu_tlb_miss),
-        .cpu_m_mode(cpu_m_mode),
-        .cpu_asid(cpu_asid),
 
         // Interrupt input
         .irq(cpu_irq));
@@ -219,8 +210,6 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
-    assign ebus_busreq_n = 1'b0;
-
     wire        spi_msg_end;
     wire  [7:0] spi_cmd;
     wire [63:0] spi_rxdata;
@@ -451,8 +440,5 @@ module aq32_top(
         if (io_video_strobe)  cpu_rddata = {rddata_io_video, rddata_io_video, rddata_io_video, rddata_io_video};
         if (bootrom_strobe)   cpu_rddata = bootrom_rddata;
     end
-
-    assign cpu_error    = 0;
-    assign cpu_tlb_miss = 0;
 
 endmodule
