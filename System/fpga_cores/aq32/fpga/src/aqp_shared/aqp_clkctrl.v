@@ -95,7 +95,7 @@ module aqp_clkctrl(
     )
     pll(
         .CLKFBOUT(pllfb),
-        .CLKOUT0(video_clk),
+        .CLKOUT0(clk25),
         .CLKOUT1(pll_clkout1),
         .CLKOUT2(pll_clkout2),
         .CLKOUT3(pll_clkout3),
@@ -106,5 +106,7 @@ module aqp_clkctrl(
         .CLKIN(clk28),
         .RST(1'b0)
     );
+
+    BUFG bufg_25(.I(clk25), .O(video_clk));
 
 endmodule

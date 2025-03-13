@@ -16,8 +16,8 @@ module video(
 
     // Text RAM interface
     input  wire [10:0] tram_addr,
-    output wire  [7:0] tram_rddata,
-    input  wire  [7:0] tram_wrdata,
+    output wire [15:0] tram_rddata,
+    input  wire [15:0] tram_wrdata,
     input  wire        tram_wren,
 
     // Char RAM interface
@@ -26,10 +26,17 @@ module video(
     input  wire  [7:0] chram_wrdata,
     input  wire        chram_wren,
 
+    // Palette RAM interface
+    input  wire  [5:0] pal_addr,
+    output wire [15:0] pal_rddata,
+    input  wire [15:0] pal_wrdata,
+    input  wire        pal_wren,
+
     // Video RAM interface
-    input  wire [13:0] vram_addr,
-    output wire  [7:0] vram_rddata,
-    input  wire  [7:0] vram_wrdata,
+    input  wire [11:0] vram_addr,
+    output wire [31:0] vram_rddata,
+    input  wire [31:0] vram_wrdata,
+    input  wire  [3:0] vram_bytesel,
     input  wire        vram_wren,
 
     // VGA output
@@ -67,7 +74,6 @@ module video(
     reg        q_vctrl_text_enable;     // IO $E0 [0]
     reg  [8:0] q_vscrx;                 // IO $E1/2
     reg  [7:0] q_vscry;                 // IO $E3
-    reg  [6:0] q_vpalsel;               // IO $EA
     reg  [7:0] q_virqline;              // IO $ED
     reg        q_irqmask_line;          // IO $EE [0]
     reg        q_irqmask_vblank;        // IO $EE [1]
@@ -91,8 +97,6 @@ module video(
     wire sel_io_vscrx_l  = (io_addr == 4'h1);
     wire sel_io_vscrx_h  = (io_addr == 4'h2);
     wire sel_io_vscry    = (io_addr == 4'h3);
-    wire sel_io_vpalsel  = (io_addr == 4'hA);
-    wire sel_io_vpaldata = (io_addr == 4'hB);
     wire sel_io_vline    = (io_addr == 4'hC);
     wire sel_io_virqline = (io_addr == 4'hD);
     wire sel_io_irqmask  = (io_addr == 4'hE);
@@ -104,8 +108,6 @@ module video(
         if (sel_io_vscrx_l)  io_rddata = q_vscrx[7:0];                             // IO $E1
         if (sel_io_vscrx_h)  io_rddata = {7'b0, q_vscrx[8]};                       // IO $E2
         if (sel_io_vscry)    io_rddata = q_vscry;                                  // IO $E3
-        if (sel_io_vpalsel)  io_rddata = {1'b0, q_vpalsel};                        // IO $EA
-        if (sel_io_vpaldata) io_rddata = rddata_vpaldata;                          // IO $EB
         if (sel_io_vline)    io_rddata = vpos;                                     // IO $EC
         if (sel_io_virqline) io_rddata = q_virqline;                               // IO $ED
         if (sel_io_irqmask)  io_rddata = {6'b0, q_irqmask_line, q_irqmask_vblank}; // IO $EE
@@ -123,7 +125,6 @@ module video(
             q_vctrl_text_enable    <= 1'b0;
             q_vscrx                <= 9'b0;
             q_vscry                <= 8'b0;
-            q_vpalsel              <= 7'b0;
             q_virqline             <= 8'b0;
             q_irqmask_line         <= 1'b0;
             q_irqmask_vblank       <= 1'b0;
@@ -144,7 +145,6 @@ module video(
                 if (sel_io_vscrx_l)  q_vscrx[7:0] <= io_wrdata;
                 if (sel_io_vscrx_h)  q_vscrx[8]   <= io_wrdata[0];
                 if (sel_io_vscry)    q_vscry      <= io_wrdata;
-                if (sel_io_vpalsel)  q_vpalsel    <= io_wrdata[6:0];
                 if (sel_io_virqline) q_virqline   <= io_wrdata;
                 if (sel_io_irqmask) begin
                     q_irqmask_line   <= io_wrdata[1];
@@ -255,12 +255,11 @@ module video(
     // Text RAM
     //////////////////////////////////////////////////////////////////////////
     wire [15:0] textram_rddata;
-    wire [11:0] tram_p1_addr = q_vctrl_80_columns ? {tram_addr[10:0], q_vctrl_tram_page} : {q_vctrl_tram_page, tram_addr[9:0], tram_addr[10]};
 
     textram textram(
         // First port - CPU access
         .p1_clk(clk),
-        .p1_addr(tram_p1_addr),
+        .p1_addr(tram_addr),
         .p1_rddata(tram_rddata),
         .p1_wrdata(tram_wrdata),
         .p1_wren(tram_wren),
@@ -345,6 +344,7 @@ module video(
         .p1_addr(vram_addr),
         .p1_rddata(vram_rddata),
         .p1_wrdata(vram_wrdata),
+        .p1_bytesel(vram_bytesel),
         .p1_wren(vram_wren),
 
         // Second port - Video access
@@ -432,10 +432,10 @@ module video(
 
     palette palette(
         .clk(clk),
-        .addr(q_vpalsel),
-        .rddata(rddata_vpaldata),
-        .wrdata(io_wrdata),
-        .wren(io_wren && sel_io_vpaldata),
+        .addr(pal_addr),
+        .rddata(pal_rddata),
+        .wrdata(pal_wrdata),
+        .wren(pal_wren),
 
         .palidx(pixel_colidx),
         .pal_r(pal_r),

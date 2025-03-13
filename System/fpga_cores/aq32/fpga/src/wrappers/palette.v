@@ -3,9 +3,9 @@
 
 module palette(
     input  wire        clk,
-    input  wire  [6:0] addr,
-    output wire  [7:0] rddata,
-    input  wire  [7:0] wrdata,
+    input  wire  [5:0] addr,
+    output wire [15:0] rddata,
+    input  wire [15:0] wrdata,
     input  wire        wren,
 
     input  wire  [5:0] palidx,
@@ -19,7 +19,7 @@ module palette(
     };
 
     wire [11:0] pal_rddata, pal_color;
-    assign rddata = addr[0] ? {4'h0, pal_rddata[11:8]} : pal_rddata[7:0];
+    assign rddata = {4'h0, pal_rddata};
     assign pal_r  = pal_color[11:8];
     assign pal_g  = pal_color[7:4];
     assign pal_b  = pal_color[3:0];
@@ -55,10 +55,10 @@ module palette(
             
             palram(
                 .a_clk(clk),
-                .a_addr(addr[6:1]),
+                .a_addr(addr),
                 .a_rddata(pal_rddata[i]),
-                .a_wrdata(wrdata[i & 7]),
-                .a_wren((i < 8) ? palram_wren_l : palram_wren_h),
+                .a_wrdata(wrdata[i]),
+                .a_wren(wren),
 
                 .b_addr(palidx),
                 .b_rddata(pal_color[i]));

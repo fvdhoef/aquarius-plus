@@ -253,17 +253,11 @@ NET "hc2[6]"            IOSTANDARD = LVTTL;
 NET "hc2[7]"            IOSTANDARD = LVTTL;
 NET "hc2[8]"            IOSTANDARD = LVTTL;
 
-NET "sysclk"    TNM_NET = sysclk;
 NET "clk"       TNM_NET = clk28;
 NET "video_clk" TNM_NET = vclk;
 
-TIMESPEC TS_sysclk = PERIOD "sysclk" 14.31818 MHz HIGH 50%;
-TIMESPEC TS_clk    = PERIOD "clk28"  28.63636 MHz HIGH 50%;
-TIMESPEC TS_vclk   = PERIOD "vclk"   28.63636 MHz HIGH 50%;
+TIMESPEC TS_clk    = PERIOD "clk28" 28.63636 MHz HIGH 50%;
+TIMESPEC TS_vclk   = PERIOD "vclk"  25.175   MHz HIGH 50%;
 
-TIMESPEC ts1 = FROM "sysclk" TO "clk28"  TIG;
-TIMESPEC ts2 = FROM "sysclk" TO "vclk"   TIG;
-TIMESPEC ts3 = FROM "clk28"  TO "sysclk" TIG;
 TIMESPEC ts4 = FROM "clk28"  TO "vclk"   TIG;
-TIMESPEC ts5 = FROM "vclk"   TO "sysclk" TIG;
 TIMESPEC ts6 = FROM "vclk"   TO "clk28"  TIG;
