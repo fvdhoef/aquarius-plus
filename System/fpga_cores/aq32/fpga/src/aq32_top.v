@@ -76,6 +76,9 @@ module aq32_top(
     assign ebus_int_n     = 1'bZ;
     assign ebus_busreq_n  = 1'b0;
 
+    wire        spi_reset_req;
+    wire        reset_req_cold;
+
     //////////////////////////////////////////////////////////////////////////
     // Clock synthesizer
     //////////////////////////////////////////////////////////////////////////
@@ -90,7 +93,7 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // System controller (reset and clock generation)
     //////////////////////////////////////////////////////////////////////////
-    wire reset_req = 1'b0;
+    wire reset_req = spi_reset_req;
     wire ebus_phi_clken;
     wire reset;
 
@@ -278,6 +281,29 @@ module aq32_top(
         .esp_mosi(esp_mosi),
         .esp_miso(esp_miso),
         .esp_notify(esp_notify));
+
+
+    wire [63:0] keys;
+
+    wire  [7:0] kbbuf_data;
+    wire        kbbuf_wren;
+
+    spiregs spiregs(
+        .clk(clk),
+        .reset(reset),
+
+        .spi_msg_end(spi_msg_end),
+        .spi_cmd(spi_cmd),
+        .spi_rxdata(spi_rxdata),
+        .spi_txdata(spi_txdata),
+        .spi_txdata_valid(spi_txdata_valid),
+
+        .reset_req(spi_reset_req),
+        .reset_req_cold(reset_req_cold),
+        .keys(keys),
+
+        .kbbuf_data(kbbuf_data),
+        .kbbuf_wren(kbbuf_wren));
 
     //////////////////////////////////////////////////////////////////////////
     // PWM DAC

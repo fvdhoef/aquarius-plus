@@ -146,6 +146,10 @@
       <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="33"/>
       <association xil_pn:name="Implementation" xil_pn:seqID="25"/>
     </file>
+    <file xil_pn:name="src/core_common/spiregs.v" xil_pn:type="FILE_VERILOG">
+      <association xil_pn:name="BehavioralSimulation" xil_pn:seqID="84"/>
+      <association xil_pn:name="Implementation" xil_pn:seqID="84"/>
+    </file>
   </files>
 
   <properties>
