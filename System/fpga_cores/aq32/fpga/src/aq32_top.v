@@ -206,10 +206,6 @@ module aq32_top(
         .esp_cts(esp_cts),
         .esp_rts(esp_rts));
 
-    assign esp_tx_data = 9'b0;
-    assign esp_tx_wr   = 1'b0;
-    assign esp_rx_rd   = 1'b0;
-
     //////////////////////////////////////////////////////////////////////////
     // ESP SPI slave interface
     //////////////////////////////////////////////////////////////////////////
@@ -340,15 +336,12 @@ module aq32_top(
     wire       video_oddline;
 
     wire       video_irq;
-    wire       reg_fd_val;
 
-    wire       io_video_strobe;
     wire       tram_strobe;
     wire       chram_strobe;
     wire       pal_strobe;
     wire       vram_strobe;
 
-    wire       io_video_wren = cpu_wren && io_video_strobe;
     wire       tram_wren     = cpu_wren && tram_strobe;
     wire       chram_wren    = cpu_wren && chram_strobe;
     wire       pal_wren      = cpu_wren && pal_strobe;
@@ -358,7 +351,20 @@ module aq32_top(
     wire  [7:0] rddata_chram;
     wire [15:0] rddata_pal;
     wire [31:0] rddata_vram;
-    wire  [7:0] rddata_io_video;
+
+    reg        q_vctrl_tram_page;
+    reg        q_vctrl_80_columns;
+    reg        q_vctrl_border_remap;
+    reg        q_vctrl_text_priority;
+    reg        q_vctrl_sprites_enable;
+    reg  [1:0] q_vctrl_gfx_mode;
+    reg        q_vctrl_text_enable;
+    reg  [8:0] q_vscrx;
+    reg  [7:0] q_vscry;
+    wire [7:0] vline;
+    reg  [7:0] q_virqline;
+
+    wire irq_line, irq_vblank;
 
     video video(
         .clk(clk),
@@ -366,11 +372,20 @@ module aq32_top(
 
         .vclk(video_clk),
 
-        .io_addr(cpu_addr[3:0]),
-        .io_rddata(rddata_io_video),
-        .io_wrdata(cpu_wrdata[7:0]),
-        .io_wren(io_video_wren),
-        .irq(video_irq),
+        .vctrl_tram_page(q_vctrl_tram_page),
+        .vctrl_80_columns(q_vctrl_80_columns),
+        .vctrl_border_remap(q_vctrl_border_remap),
+        .vctrl_text_priority(q_vctrl_text_priority),
+        .vctrl_sprites_enable(q_vctrl_sprites_enable),
+        .vctrl_gfx_mode(q_vctrl_gfx_mode),
+        .vctrl_text_enable(q_vctrl_text_enable),
+        .vscrx(q_vscrx),
+        .vscry(q_vscry),
+        .vline(vline),
+        .virqline(q_virqline),
+
+        .irq_line(irq_line),
+        .irq_vblank(irq_vblank),
 
         .tram_addr(cpu_addr[11:1]),
         .tram_rddata(rddata_tram),
@@ -400,9 +415,7 @@ module aq32_top(
         .video_hsync(video_hsync),
         .video_vsync(video_vsync),
         .video_newframe(video_newframe),
-        .video_oddline(video_oddline),
-
-        .reg_fd_val(reg_fd_val));
+        .video_oddline(video_oddline));
 
     //////////////////////////////////////////////////////////////////////////
     // Display overlay
@@ -450,9 +463,11 @@ module aq32_top(
     assign tram_strobe      = cpu_strobe && cpu_addr[31:12] == {20'hFF000};
     assign chram_strobe     = cpu_strobe && cpu_addr[31:11] == {20'hFF100, 1'b0};
     assign vram_strobe      = cpu_strobe && cpu_addr[31:14] == {16'hFF20, 2'b00};
-    assign io_video_strobe  = cpu_strobe && cpu_addr[31:14] == {16'hFF30, 2'b00};
     assign pal_strobe       = cpu_strobe && cpu_addr[31:14] == {16'hFF40, 2'b00};
+    wire   regs_strobe      = cpu_strobe && cpu_addr[31:14] == {16'hFF50, 2'b00};
     wire   bootrom_strobe   = cpu_strobe && cpu_addr[31:11] == {20'hFFFFF, 1'b1};
+
+    reg [31:0] regs_rddata;
 
     reg [31:0] q_cpu_addr;
     always @(posedge clk) q_cpu_addr <= cpu_addr;
@@ -463,8 +478,6 @@ module aq32_top(
         if (tram_strobe)      cpu_wait = !cpu_wren && q_cpu_addr[11:0] != cpu_addr[11:0];
         if (chram_strobe)     cpu_wait = !cpu_wren && q_cpu_addr[10:0] != cpu_addr[10:0];
         if (vram_strobe)      cpu_wait = !cpu_wren && q_cpu_addr[13:0] != cpu_addr[13:0];
-        if (io_video_strobe)  cpu_wait = !cpu_wren && q_cpu_addr[13:0] != cpu_addr[13:0];
-        if (pal_strobe)       cpu_wait = 0;
         if (bootrom_strobe)   cpu_wait = !cpu_wren && q_cpu_addr[10:2] != cpu_addr[10:2];
     end
 
@@ -474,9 +487,78 @@ module aq32_top(
         if (tram_strobe)      cpu_rddata = {rddata_tram,     rddata_tram};
         if (chram_strobe)     cpu_rddata = {rddata_chram,    rddata_chram,    rddata_chram,    rddata_chram};
         if (vram_strobe)      cpu_rddata = rddata_vram;
-        if (io_video_strobe)  cpu_rddata = {rddata_io_video, rddata_io_video, rddata_io_video, rddata_io_video};
         if (pal_strobe)       cpu_rddata = {rddata_pal,      rddata_pal};
         if (bootrom_strobe)   cpu_rddata = bootrom_rddata;
+        if (regs_strobe)      cpu_rddata = regs_rddata;
+    end
+
+    //////////////////////////////////////////////////////////////////////////
+    // Registers
+    //////////////////////////////////////////////////////////////////////////
+    wire sel_reg_espctrl  = regs_strobe && (cpu_addr[7:2] == 6'h00);
+    wire sel_reg_espdata  = regs_strobe && (cpu_addr[7:2] == 6'h01);
+    wire sel_reg_vctrl    = regs_strobe && (cpu_addr[7:2] == 6'h02);
+    wire sel_reg_vscrx    = regs_strobe && (cpu_addr[7:2] == 6'h03);
+    wire sel_reg_vscry    = regs_strobe && (cpu_addr[7:2] == 6'h04);
+    wire sel_reg_vline    = regs_strobe && (cpu_addr[7:2] == 6'h05);
+    wire sel_reg_virqline = regs_strobe && (cpu_addr[7:2] == 6'h06);
+
+    reg q_esp_rx_fifo_overflow, q_esp_rx_framing_error;
+
+    always @* begin
+        regs_rddata = 0;
+        if (sel_reg_espctrl)  regs_rddata = {27'b0, q_esp_rx_fifo_overflow, q_esp_rx_framing_error, 1'b0, esp_tx_fifo_full, !esp_rx_empty};
+        if (sel_reg_espdata)  regs_rddata = {23'b0, esp_rx_data};
+        if (sel_reg_vctrl)    regs_rddata = {24'b0, q_vctrl_tram_page, q_vctrl_80_columns, q_vctrl_border_remap, q_vctrl_text_priority, q_vctrl_sprites_enable, q_vctrl_gfx_mode, q_vctrl_text_enable};
+        if (sel_reg_vscrx)    regs_rddata = {23'b0, q_vscrx};
+        if (sel_reg_vscry)    regs_rddata = {24'b0, q_vscry};
+        if (sel_reg_vline)    regs_rddata = {24'b0, vline};
+        if (sel_reg_virqline) regs_rddata = {24'b0, q_virqline};
+    end
+
+    assign esp_tx_data = cpu_wrdata[8:0];
+    assign esp_tx_wr   =  cpu_wren && sel_reg_espdata;
+    assign esp_rx_rd   = !cpu_wren && sel_reg_espdata;
+
+    always @(posedge clk or posedge reset) begin
+        if (reset) begin
+            q_esp_rx_fifo_overflow <= 0;
+            q_esp_rx_framing_error <= 0;
+
+            q_vctrl_tram_page      <= 0;
+            q_vctrl_80_columns     <= 0;
+            q_vctrl_border_remap   <= 0;
+            q_vctrl_text_priority  <= 0;
+            q_vctrl_sprites_enable <= 0;
+            q_vctrl_gfx_mode       <= 0;
+            q_vctrl_text_enable    <= 0;
+            q_vscrx                <= 0;
+            q_vscry                <= 0;
+            q_virqline             <= 0;
+
+        end else begin
+            if (cpu_wren) begin
+                if (sel_reg_espctrl) begin
+                    q_esp_rx_fifo_overflow <= q_esp_rx_fifo_overflow & ~cpu_wrdata[4];
+                    q_esp_rx_framing_error <= q_esp_rx_framing_error & ~cpu_wrdata[3];
+                end
+                if (sel_reg_vctrl) begin
+                    q_vctrl_tram_page      <= cpu_wrdata[7];
+                    q_vctrl_80_columns     <= cpu_wrdata[6];
+                    q_vctrl_border_remap   <= cpu_wrdata[5];
+                    q_vctrl_text_priority  <= cpu_wrdata[4];
+                    q_vctrl_sprites_enable <= cpu_wrdata[3];
+                    q_vctrl_gfx_mode       <= cpu_wrdata[2:1];
+                    q_vctrl_text_enable    <= cpu_wrdata[0];
+                end
+                if (sel_reg_vscrx) q_vscrx    <= cpu_wrdata[8:0];
+                if (sel_reg_vscry) q_vscry    <= cpu_wrdata[7:0];
+                if (sel_reg_vscry) q_virqline <= cpu_wrdata[7:0];
+            end
+
+            if (esp_rx_fifo_overflow) q_esp_rx_fifo_overflow <= 1'b1;
+            if (esp_rx_framing_error) q_esp_rx_framing_error <= 1'b1;
+        end
     end
 
 endmodule

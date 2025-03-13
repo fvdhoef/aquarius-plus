@@ -7,12 +7,21 @@ module video(
 
     input  wire        vclk,
 
-    // IO register interface
-    input  wire  [3:0] io_addr,
-    output reg   [7:0] io_rddata,
-    input  wire  [7:0] io_wrdata,
-    input  wire        io_wren,
-    output wire        irq,
+    // Register interface
+    input  wire        vctrl_tram_page,
+    input  wire        vctrl_80_columns,
+    input  wire        vctrl_border_remap,
+    input  wire        vctrl_text_priority,
+    input  wire        vctrl_sprites_enable,
+    input  wire  [1:0] vctrl_gfx_mode,
+    input  wire        vctrl_text_enable,
+    input  wire  [8:0] vscrx,
+    input  wire  [7:0] vscry,
+    output wire  [7:0] vline,
+    input  wire  [7:0] virqline,
+
+    output wire        irq_line,
+    output wire        irq_vblank,
 
     // Text RAM interface
     input  wire [10:0] tram_addr,
@@ -47,10 +56,7 @@ module video(
     output reg         video_hsync,
     output reg         video_vsync,
     output wire        video_newframe,
-    output reg         video_oddline,
-
-    // Register $FD value
-    output wire        reg_fd_val);
+    output reg         video_oddline);
 
     // Sync reset to vclk domain
     wire vclk_reset;
@@ -59,106 +65,19 @@ module video(
     wire [7:0] vpos;
     wire       vblank;
 
+    assign vline = vpos;
+
     reg q_vblank;
     always @(posedge vclk) q_vblank <= vblank;
 
-    wire [7:0] rddata_vpaldata;
     wire [7:0] rddata_sprattr;
 
-    reg        q_vctrl_tram_page;       // IO $E0 [7]
-    reg        q_vctrl_80_columns;      // IO $E0 [6]
-    reg        q_vctrl_border_remap;    // IO $E0 [5]
-    reg        q_vctrl_text_priority;   // IO $E0 [4]
-    reg        q_vctrl_sprites_enable;  // IO $E0 [3]
-    reg  [1:0] q_vctrl_gfx_mode;        // IO $E0 [2:1]
-    reg        q_vctrl_text_enable;     // IO $E0 [0]
-    reg  [8:0] q_vscrx;                 // IO $E1/2
-    reg  [7:0] q_vscry;                 // IO $E3
-    reg  [7:0] q_virqline;              // IO $ED
-    reg        q_irqmask_line;          // IO $EE [0]
-    reg        q_irqmask_vblank;        // IO $EE [1]
-    reg        q_irqstat_line;          // IO $EF [0]
-    reg        q_irqstat_vblank;        // IO $EF [1]
-
-    wire irqline_match = (vpos == q_virqline);
+    wire irqline_match = (vpos == virqline);
     reg q_irqline_match;
     always @(posedge vclk) q_irqline_match <= irqline_match;
 
-    wire irq_line, irq_vblank;
     pulse2pulse p2p_irq_line(  .in_clk(vclk), .in_pulse(!q_irqline_match && irqline_match), .out_clk(clk), .out_pulse(irq_line));
     pulse2pulse p2p_irq_vblank(.in_clk(vclk), .in_pulse(!q_vblank        && vblank),        .out_clk(clk), .out_pulse(irq_vblank));
-
-    assign irq = ({q_irqstat_line, q_irqstat_vblank} & {q_irqmask_line, q_irqmask_vblank}) != 2'b00;
-
-    //////////////////////////////////////////////////////////////////////////
-    // IO registers
-    //////////////////////////////////////////////////////////////////////////
-    wire sel_io_vctrl    = (io_addr == 4'h0);
-    wire sel_io_vscrx_l  = (io_addr == 4'h1);
-    wire sel_io_vscrx_h  = (io_addr == 4'h2);
-    wire sel_io_vscry    = (io_addr == 4'h3);
-    wire sel_io_vline    = (io_addr == 4'hC);
-    wire sel_io_virqline = (io_addr == 4'hD);
-    wire sel_io_irqmask  = (io_addr == 4'hE);
-    wire sel_io_irqstat  = (io_addr == 4'hF);
-
-    always @* begin
-        io_rddata = rddata_sprattr;
-        if (sel_io_vctrl)    io_rddata = {q_vctrl_tram_page, q_vctrl_80_columns, q_vctrl_border_remap, q_vctrl_text_priority, q_vctrl_sprites_enable, q_vctrl_gfx_mode, q_vctrl_text_enable};
-        if (sel_io_vscrx_l)  io_rddata = q_vscrx[7:0];                             // IO $E1
-        if (sel_io_vscrx_h)  io_rddata = {7'b0, q_vscrx[8]};                       // IO $E2
-        if (sel_io_vscry)    io_rddata = q_vscry;                                  // IO $E3
-        if (sel_io_vline)    io_rddata = vpos;                                     // IO $EC
-        if (sel_io_virqline) io_rddata = q_virqline;                               // IO $ED
-        if (sel_io_irqmask)  io_rddata = {6'b0, q_irqmask_line, q_irqmask_vblank}; // IO $EE
-        if (sel_io_irqstat)  io_rddata = {6'b0, q_irqstat_line, q_irqstat_vblank}; // IO $EF
-    end
-
-    always @(posedge clk or posedge reset)
-        if (reset) begin
-            q_vctrl_tram_page      <= 1'b0;
-            q_vctrl_80_columns     <= 1'b0;
-            q_vctrl_border_remap   <= 1'b0;
-            q_vctrl_text_priority  <= 1'b0;
-            q_vctrl_sprites_enable <= 1'b0;
-            q_vctrl_gfx_mode       <= 2'b0;
-            q_vctrl_text_enable    <= 1'b0;
-            q_vscrx                <= 9'b0;
-            q_vscry                <= 8'b0;
-            q_virqline             <= 8'b0;
-            q_irqmask_line         <= 1'b0;
-            q_irqmask_vblank       <= 1'b0;
-            q_irqstat_line         <= 1'b0;
-            q_irqstat_vblank       <= 1'b0;
-
-        end else begin
-            if (io_wren) begin
-                if (sel_io_vctrl) begin
-                    q_vctrl_tram_page      <= io_wrdata[7];
-                    q_vctrl_80_columns     <= io_wrdata[6];
-                    q_vctrl_border_remap   <= io_wrdata[5];
-                    q_vctrl_text_priority  <= io_wrdata[4];
-                    q_vctrl_sprites_enable <= io_wrdata[3];
-                    q_vctrl_gfx_mode       <= io_wrdata[2:1];
-                    q_vctrl_text_enable    <= io_wrdata[0];
-                end
-                if (sel_io_vscrx_l)  q_vscrx[7:0] <= io_wrdata;
-                if (sel_io_vscrx_h)  q_vscrx[8]   <= io_wrdata[0];
-                if (sel_io_vscry)    q_vscry      <= io_wrdata;
-                if (sel_io_virqline) q_virqline   <= io_wrdata;
-                if (sel_io_irqmask) begin
-                    q_irqmask_line   <= io_wrdata[1];
-                    q_irqmask_vblank <= io_wrdata[0];
-                end
-                if (sel_io_irqstat) begin
-                    q_irqstat_line   <= q_irqstat_line   & !io_wrdata[1];
-                    q_irqstat_vblank <= q_irqstat_vblank & !io_wrdata[0];
-                end
-            end
-
-            if (irq_line)   q_irqstat_line   <= 1'b1;
-            if (irq_vblank) q_irqstat_vblank <= 1'b1;
-        end
 
     //////////////////////////////////////////////////////////////////////////
     // Video timing
@@ -217,11 +136,11 @@ module video(
 
     wire        next_row         = (vpos >= 8'd23) && vnext && (vpos[2:0] == 3'd7);
     wire [10:0] d_row_addr       = q_row_addr + (q_mode80 ? 11'd80 : 11'd40);
-    wire [10:0] border_char_addr = q_vctrl_border_remap ? (q_mode80 ? 11'h7FF : 11'h3FF) : 11'h0;
+    wire [10:0] border_char_addr = vctrl_border_remap ? (q_mode80 ? 11'h7FF : 11'h3FF) : 11'h0;
 
     always @(posedge(vclk))
         if (vblank) begin
-            q_mode80 <= q_vctrl_80_columns;
+            q_mode80   <= vctrl_80_columns;
             q_row_addr <= 11'd0;
         end else if (next_row) begin
             q_row_addr <= d_row_addr;
@@ -246,7 +165,7 @@ module video(
             d_char_addr = q_char_addr + 11'd1;
 
         if (!q_mode80)
-            d_char_addr[10] = q_vctrl_tram_page;
+            d_char_addr[10] = vctrl_tram_page;
     end
 
     always @(posedge(vclk)) q_char_addr <= d_char_addr;
@@ -314,10 +233,10 @@ module video(
         // First port - CPU access
         .clk(clk),
         .reset(reset),
-        .io_addr(io_addr),
+        .io_addr(4'b0), //io_addr),
         .io_rddata(rddata_sprattr),
-        .io_wrdata(io_wrdata),
-        .io_wren(io_wren),
+        .io_wrdata(8'b0),   //io_wrdata),
+        .io_wren(1'b0),     //io_wren),
 
         // Second port - Video access
         .spr_sel(spr_sel),
@@ -372,10 +291,10 @@ module video(
         .reset(vclk_reset),
 
         // Register values
-        .gfx_mode(q_vctrl_gfx_mode),
-        .sprites_enable(q_vctrl_sprites_enable),
-        .scrx(q_vscrx),
-        .scry(q_vscry),
+        .gfx_mode(vctrl_gfx_mode),
+        .sprites_enable(vctrl_sprites_enable),
+        .scrx(vscrx),
+        .scry(vscry),
 
         // Sprite attribute interface
         .spr_sel(spr_sel),
@@ -407,20 +326,18 @@ module video(
     reg  [5:0] pixel_colidx;
     wire       active = !vborder && !q2_hborder;
 
-    assign reg_fd_val = !vborder;
-
     always @* begin
         pixel_colidx = 6'b0;
         if (!active) begin
-            if (q_vctrl_text_enable)
+            if (vctrl_text_enable)
                 pixel_colidx = {2'b0, text_colidx};
 
         end else begin
-            if (q_vctrl_text_enable && !q_vctrl_text_priority)
+            if (vctrl_text_enable && !vctrl_text_priority)
                 pixel_colidx = {2'b0, text_colidx};
-            if (!q_vctrl_text_enable || q_vctrl_text_priority || linebuf_data[3:0] != 4'd0)
+            if (!vctrl_text_enable || vctrl_text_priority || linebuf_data[3:0] != 4'd0)
                 pixel_colidx = linebuf_data;
-            if (q_vctrl_text_enable && q_vctrl_text_priority && text_colidx != 4'd0)
+            if (vctrl_text_enable && vctrl_text_priority && text_colidx != 4'd0)
                 pixel_colidx = {2'b0, text_colidx};
         end
     end
