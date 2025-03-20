@@ -77,9 +77,7 @@ static bool operator<(const ble_addr_t &lhs, const ble_addr_t &rhs) {
 }
 
 class BluetoothInt : public Bluetooth {
-
-    bool enabled  = false;
-    bool scanning = false;
+    bool enabled = false;
 
     KnownDevice                            knownDevices[MAX_KNOWN_DEVICES];
     SemaphoreHandle_t                      mutex;
@@ -128,7 +126,7 @@ public:
         if (!enabled)
             return;
 
-        if (!scanning)
+        if (!ble_gap_disc_active())
             startScan();
 
         auto now = xTaskGetTickCount();
@@ -260,7 +258,7 @@ public:
 
     void startScan() {
         RecursiveMutexLock lock(mutex);
-        if (scanning) {
+        if (ble_gap_disc_active()) {
             // Already scanning
             return;
         }
@@ -283,9 +281,7 @@ public:
             .filter_duplicates = 0,
         };
 
-        if ((rc = ble_gap_disc(ownAddrType, BLE_HS_FOREVER, &discParams, _onGapEvent, nullptr)) == 0) {
-            scanning = true;
-        } else {
+        if ((rc = ble_gap_disc(ownAddrType, BLE_HS_FOREVER, &discParams, _onGapEvent, nullptr)) != 0) {
             ESP_LOGE(TAG, "Error initiating GAP discovery procedure; rc=%d", rc);
         }
     }
@@ -295,10 +291,10 @@ public:
 
         const char *typeStr = "";
         switch (addr.type) {
-            case BLE_OWN_ADDR_PUBLIC: typeStr = "public"; break;
-            case BLE_OWN_ADDR_RANDOM: typeStr = "random"; break;
-            case BLE_OWN_ADDR_RPA_PUBLIC_DEFAULT: typeStr = "rpa_public"; break;
-            case BLE_OWN_ADDR_RPA_RANDOM_DEFAULT: typeStr = "rpa_random"; break;
+            case BLE_ADDR_PUBLIC: typeStr = "public"; break;
+            case BLE_ADDR_RANDOM: typeStr = "random"; break;
+            case BLE_ADDR_PUBLIC_ID: typeStr = "public_id"; break;
+            case BLE_ADDR_RANDOM_ID: typeStr = "random_id"; break;
             default: typeStr = "?"; break;
         }
 
@@ -313,6 +309,9 @@ public:
     }
 
     void onGapExtDiscovery(const struct ble_gap_ext_disc_desc &eventInfo) {
+        if (ble_gap_conn_active())
+            return;
+
         if ((eventInfo.props & BLE_HCI_ADV_CONN_MASK) == 0)
             // Not connectable
             return;
@@ -448,7 +447,7 @@ public:
         for (int i = 0; i < MAX_KNOWN_DEVICES; i++) {
             if (knownDevices[i].isUnused())
                 break;
-            if (memcmp(&addr, &knownDevices[i].addr, sizeof(addr)) == 0)
+            if (memcmp(addr.val, knownDevices[i].addr.val, sizeof(addr.val)) == 0)
                 return i;
         }
         return -1;
@@ -458,14 +457,15 @@ public:
         RecursiveMutexLock lock(mutex);
 
         // Stop scanning
-        if (scanning) {
+        if (ble_gap_disc_active()) {
             auto ret = ble_gap_disc_cancel();
             if (ret != 0) {
                 ESP_LOGE(TAG, "Failed to cancel scan: %d", ret);
                 return;
             }
-            scanning = false;
         }
+
+        ESP_LOGI(TAG, "Connecting to %s", toString(addr).c_str());
 
         // Connect
         uint8_t own_addr_type;
@@ -483,16 +483,14 @@ public:
 
     void onGapDiscoveryComplete(int reason) {
         ESP_LOGI(TAG, "onGapDiscoveryComplete %d", reason);
-        RecursiveMutexLock lock(mutex);
-        scanning = false;
     }
     void onGapConnect(int status, uint16_t connHandle) {
         ESP_LOGI(TAG, "onGapConnect status=%d connHandle=%u", status, connHandle);
         RecursiveMutexLock lock(mutex);
 
+        // Resume scanning
         startScan();
 
-        // Resume scanning
         if (status != 0) {
             // Connection attempt failed; resume scanning.
             ESP_LOGE(TAG, "Connection failed, status=%d", status);
@@ -925,20 +923,30 @@ public:
         return 0;
     }
 
+    void onGapDataLenChg(uint16_t connHandle, uint16_t maxTxOctets, uint16_t maxTxTime, uint16_t maxRxOctets, uint16_t maxRxTime) {
+        ESP_LOGI(TAG, "onGapDataLenChg connHandle=%u maxTxOctets=%u maxTxTime=%u maxRxOctets=%u maxRxTime=%u", connHandle, maxTxOctets, maxTxTime, maxRxOctets, maxRxTime);
+    }
+
+    void onGapLinkEstab(int status, uint16_t connHandle) {
+        ESP_LOGI(TAG, "onGapLinkEstab status=%d connHandle=%u", status, connHandle);
+    }
+
     int onGapEvent(struct ble_gap_event *event) {
         switch (event->type) {
-            case BLE_GAP_EVENT_DISC: ESP_LOGE(TAG, "BLE_GAP_EVENT_DISC should not happen"); return 0;
-            case BLE_GAP_EVENT_DISC_COMPLETE: onGapDiscoveryComplete(event->disc_complete.reason); return 0;
-            case BLE_GAP_EVENT_EXT_DISC: onGapExtDiscovery(event->ext_disc); return 0;
+            case BLE_GAP_EVENT_CONN_UPDATE_REQ: onGapConnUpdateReq(event->conn_update_req.peer_params, event->conn_update_req.self_params, event->conn_update_req.conn_handle); return 0;
+            case BLE_GAP_EVENT_CONN_UPDATE: onGapConnUpdate(event->conn_update.status, event->conn_update.conn_handle); return 0;
             case BLE_GAP_EVENT_CONNECT: onGapConnect(event->connect.status, event->connect.conn_handle); return 0;
+            case BLE_GAP_EVENT_DATA_LEN_CHG: onGapDataLenChg(event->data_len_chg.conn_handle, event->data_len_chg.max_tx_octets, event->data_len_chg.max_tx_time, event->data_len_chg.max_rx_octets, event->data_len_chg.max_rx_time); return 0;
+            case BLE_GAP_EVENT_DISC_COMPLETE: onGapDiscoveryComplete(event->disc_complete.reason); return 0;
+            case BLE_GAP_EVENT_DISC: ESP_LOGE(TAG, "BLE_GAP_EVENT_DISC should not happen"); return 0;
             case BLE_GAP_EVENT_DISCONNECT: onGapDisconnect(event->disconnect.reason, event->disconnect.conn); return 0;
             case BLE_GAP_EVENT_ENC_CHANGE: onGapEncryptionChange(event->enc_change.status, event->enc_change.conn_handle); return 0;
-            case BLE_GAP_EVENT_NOTIFY_RX: onGapNotifyReceived(event->notify_rx.conn_handle, event->notify_rx.attr_handle, event->notify_rx.indication != 0, event->notify_rx.om); return 0;
-            case BLE_GAP_EVENT_REPEAT_PAIRING: return onGapRepeatPairing(event->repeat_pairing);
-            case BLE_GAP_EVENT_CONN_UPDATE: onGapConnUpdate(event->conn_update.status, event->conn_update.conn_handle); return 0;
-            case BLE_GAP_EVENT_CONN_UPDATE_REQ: onGapConnUpdateReq(event->conn_update_req.peer_params, event->conn_update_req.self_params, event->conn_update_req.conn_handle); return 0;
+            case BLE_GAP_EVENT_EXT_DISC: onGapExtDiscovery(event->ext_disc); return 0;
             case BLE_GAP_EVENT_L2CAP_UPDATE_REQ: onGapL2CapUpdateReq(event->conn_update_req.peer_params, event->conn_update_req.self_params, event->conn_update_req.conn_handle); return 0;
+            case BLE_GAP_EVENT_NOTIFY_RX: onGapNotifyReceived(event->notify_rx.conn_handle, event->notify_rx.attr_handle, event->notify_rx.indication != 0, event->notify_rx.om); return 0;
             case BLE_GAP_EVENT_PARING_COMPLETE: onGapPairingComplete(event->pairing_complete.status, event->pairing_complete.conn_handle); return 0;
+            case BLE_GAP_EVENT_REPEAT_PAIRING: return onGapRepeatPairing(event->repeat_pairing);
+            case BLE_GAP_EVENT_LINK_ESTAB: onGapLinkEstab(event->link_estab.status, event->link_estab.conn_handle); return 0;
             // case BLE_GAP_EVENT_PASSKEY_ACTION: onGapPassKeyAction(&event->passkey.params, event->passkey.conn_handle); return 0;
             default: {
                 ESP_LOGW(TAG, "Unhandled gap event: %d", event->type);
@@ -1041,6 +1049,8 @@ public:
     }
 
     bool addDevice(const BleAddr &_addr, const std::string &name) override {
+        ESP_LOGW(TAG, "addDevice %s '%s'", toString(*reinterpret_cast<const ble_addr_t *>(&_addr)).c_str(), name.c_str());
+
         RecursiveMutexLock lock(mutex);
         ble_addr_t         addr = *reinterpret_cast<const ble_addr_t *>(&_addr);
 
@@ -1082,6 +1092,8 @@ public:
     }
 
     void forgetDevice(const BleAddr &_addr) override {
+        ESP_LOGW(TAG, "forgetDevice %s", toString(*reinterpret_cast<const ble_addr_t *>(&_addr)).c_str());
+
         RecursiveMutexLock lock(mutex);
         ble_addr_t         addr = *reinterpret_cast<const ble_addr_t *>(&_addr);
 
