@@ -27,6 +27,7 @@ module video(
     input  wire [10:0] tram_addr,
     output wire [15:0] tram_rddata,
     input  wire [15:0] tram_wrdata,
+    input  wire  [1:0] tram_bytesel,
     input  wire        tram_wren,
 
     // Char RAM interface
@@ -181,6 +182,7 @@ module video(
         .p1_addr(tram_addr),
         .p1_rddata(tram_rddata),
         .p1_wrdata(tram_wrdata),
+        .p1_bytesel(tram_bytesel),
         .p1_wren(tram_wren),
 
         // Second port - Video access

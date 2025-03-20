@@ -1,0 +1,4 @@
+build/
+.vscode/
+sdcard.bin
+diskimg.bin

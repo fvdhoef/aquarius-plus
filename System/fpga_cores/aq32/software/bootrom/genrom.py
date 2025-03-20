@@ -10,7 +10,7 @@ f = args.output
 
 # Read input file
 data = args.input.read()
-
+data = data.ljust((len(data) + 3) & ~3, b"\x00")
 
 print(
     """`default_nettype none

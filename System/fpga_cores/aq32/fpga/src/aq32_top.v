@@ -390,6 +390,7 @@ module aq32_top(
         .tram_addr(cpu_addr[11:1]),
         .tram_rddata(rddata_tram),
         .tram_wrdata(cpu_wrdata[15:0]),
+        .tram_bytesel(cpu_bytesel[3:2] | cpu_bytesel[1:0]),
         .tram_wren(tram_wren),
 
         .chram_addr(cpu_addr[10:0]),
@@ -459,7 +460,7 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // CPU bus interconnect
     //////////////////////////////////////////////////////////////////////////
-    assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'hFFF, 1'b0};
+    assign sram_ctrl_strobe = cpu_strobe && cpu_addr[31:19] == {12'h000, 1'b0};
     assign tram_strobe      = cpu_strobe && cpu_addr[31:12] == {20'hFF000};
     assign chram_strobe     = cpu_strobe && cpu_addr[31:11] == {20'hFF100, 1'b0};
     assign vram_strobe      = cpu_strobe && cpu_addr[31:14] == {16'hFF20, 2'b00};

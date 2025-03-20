@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.13)
 
-project(bootrom VERSION 0.1 LANGUAGES C CXX ASM)
+project(aq32rom VERSION 0.1 LANGUAGES C CXX ASM)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(EXECNAME bootrom)
+set(EXECNAME aq32rom)
 
 set(APPLE FALSE)
 set(CMAKE_C_COMPILER riscv64-elf-gcc)
@@ -34,7 +34,6 @@ add_custom_command(
     COMMAND riscv64-elf-objdump -t ${EXECNAME}.elf | expand -t36 | tail -n +5 | sort > dump_symbols.txt
     COMMAND riscv64-elf-size -A ${EXECNAME}.elf
     COMMAND riscv64-elf-size -G ${EXECNAME}.elf
-    COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/genrom.py ${EXECNAME}.bin ${CMAKE_CURRENT_SOURCE_DIR}/../../fpga/src/bootrom.v
 )
 
 target_compile_options(${PROJECT_NAME} PRIVATE -Os -g)
