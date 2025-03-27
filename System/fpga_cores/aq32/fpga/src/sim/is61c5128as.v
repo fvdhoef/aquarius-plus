@@ -26,6 +26,10 @@ module is61c5128as(
     initial begin
         for (mytmp = 0; mytmp < 1024*10; mytmp = mytmp + 1)
             mem[mytmp] = mytmp[7:0];
+        mem[262144] = 8'h11;
+        mem[262145] = 8'h22;
+        mem[262146] = 8'h33;
+        mem[262147] = 8'h44;
     end
 
     wire [7:0] dout = mem[A];

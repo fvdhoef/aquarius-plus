@@ -147,11 +147,39 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     // SRAM controller
     //////////////////////////////////////////////////////////////////////////
-    wire [18:0] sram_a;
     wire        sram_ctrl_strobe;
     wire        sram_ctrl_wait;
     wire [31:0] sram_ctrl_rddata;
 
+    wire [16:0] sram_m_addr;
+    wire [31:0] sram_m_wrdata;
+    wire        sram_m_wren;
+    wire        sram_m_strobe;
+    wire        sram_m_wait;
+    wire [31:0] sram_m_rddata;
+
+    sram_cache sram_cache(
+        .clk(clk),
+        .reset(reset),
+
+        // Slave bus interface (from CPU)
+        .s_addr(cpu_addr[18:2]),
+        .s_wrdata(cpu_wrdata),
+        .s_bytesel(cpu_bytesel),
+        .s_wren(cpu_wren),
+        .s_strobe(sram_ctrl_strobe),
+        .s_wait(sram_ctrl_wait),
+        .s_rddata(sram_ctrl_rddata),
+
+        // Memory command interface
+        .m_addr(sram_m_addr),
+        .m_wrdata(sram_m_wrdata),
+        .m_wren(sram_m_wren),
+        .m_strobe(sram_m_strobe),
+        .m_wait(sram_m_wait),
+        .m_rddata(sram_m_rddata));
+
+    wire [18:0] sram_a;
     assign ebus_a[13:0]  = sram_a[13:0];
     assign ebus_ba       = sram_a[18:14];
 
@@ -160,13 +188,13 @@ module aq32_top(
         .reset(reset),
 
         // Command interface
-        .bus_addr(cpu_addr[18:2]),
-        .bus_wrdata(cpu_wrdata),
-        .bus_bytesel(cpu_bytesel),
-        .bus_wren(cpu_wren),
-        .bus_strobe(sram_ctrl_strobe),
-        .bus_wait(sram_ctrl_wait),
-        .bus_rddata(sram_ctrl_rddata),
+        .bus_addr(sram_m_addr),
+        .bus_wrdata(sram_m_wrdata),
+        .bus_bytesel(4'b1111),
+        .bus_wren(sram_m_wren),
+        .bus_strobe(sram_m_strobe),
+        .bus_wait(sram_m_wait),
+        .bus_rddata(sram_m_rddata),
 
         // SRAM interface
         .sram_a(sram_a),

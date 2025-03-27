@@ -17,6 +17,35 @@ module tb_sram_ctrl;
     wire        bus_wait;
     wire [31:0] bus_rddata;
 
+
+    wire [16:0] sram_m_addr;
+    wire [31:0] sram_m_wrdata;
+    wire        sram_m_wren;
+    wire        sram_m_strobe;
+    wire        sram_m_wait;
+    wire [31:0] sram_m_rddata;
+
+    sram_cache sram_cache(
+        .clk(clk),
+        .reset(reset),
+
+        // Slave bus interface (from CPU)
+        .s_addr(bus_addr),
+        .s_wrdata(bus_wrdata),
+        .s_bytesel(bus_bytesel),
+        .s_wren(bus_wren),
+        .s_strobe(bus_strobe),
+        .s_wait(bus_wait),
+        .s_rddata(bus_rddata),
+
+        // Memory command interface
+        .m_addr(sram_m_addr),
+        .m_wrdata(sram_m_wrdata),
+        .m_wren(sram_m_wren),
+        .m_strobe(sram_m_strobe),
+        .m_wait(sram_m_wait),
+        .m_rddata(sram_m_rddata));
+
     wire [18:0] sram_a;
     wire        sram_ce_n;
     wire        sram_oe_n;
@@ -28,13 +57,13 @@ module tb_sram_ctrl;
         .reset(reset),
 
         // Command interface
-        .bus_addr(bus_addr),
-        .bus_wrdata(bus_wrdata),
-        .bus_bytesel(bus_bytesel),
-        .bus_wren(bus_wren),
-        .bus_strobe(bus_strobe),
-        .bus_wait(bus_wait),
-        .bus_rddata(bus_rddata),
+        .bus_addr(sram_m_addr),
+        .bus_wrdata(sram_m_wrdata),
+        .bus_bytesel(4'b1111),
+        .bus_wren(sram_m_wren),
+        .bus_strobe(sram_m_strobe),
+        .bus_wait(sram_m_wait),
+        .bus_rddata(sram_m_rddata),
 
         // SRAM interface
         .sram_a(sram_a),
@@ -125,7 +154,10 @@ module tb_sram_ctrl;
         while (bus_wait) @(posedge clk);
         bus_strobe  = 0;
 
-        bus_addr = 1;
+        bus_addr    = 17'h10000;
+        bus_wrdata  = 32'h55AA1234;
+        bus_bytesel = 4'b1111;
+        bus_wren    = 1;
 
         bus_strobe  = 1;
         @(posedge clk);
