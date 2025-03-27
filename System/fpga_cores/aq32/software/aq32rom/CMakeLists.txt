@@ -58,6 +58,9 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 
 target_sources(${PROJECT_NAME} PRIVATE
     start.S
-    boot.c
+    main.c
     file_io.c
+    console.c
+    lib.c
+    printf.c
 )

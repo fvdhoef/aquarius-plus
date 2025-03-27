@@ -18,5 +18,5 @@ reset_handler:
     add     t0, t0, 4
 2:  bltu    t0, t1, 1b
 
-    la      t0, boot
+    la      t0, main
     jr      t0
