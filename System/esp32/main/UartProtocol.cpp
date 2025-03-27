@@ -64,8 +64,7 @@ public:
         ESP_ERROR_CHECK(uart_set_pin(UART_NUM, IOPIN_UART_TX, IOPIN_UART_RX, IOPIN_UART_RTS, IOPIN_UART_CTS));
 
         // Setup UART buffered IO with event queue
-        ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 20, &uartQueue, 0));
-        uart_pattern_queue_reset(UART_NUM, 20);
+        ESP_ERROR_CHECK(uart_driver_install(UART_NUM, BUF_SIZE * 2, BUF_SIZE * 2, 256, &uartQueue, 0));
 
         uint32_t baudrate;
         ESP_ERROR_CHECK(uart_get_baudrate(UART_NUM, &baudrate));
@@ -92,9 +91,10 @@ public:
                 buf.fill(0);
                 switch (event.type) {
                     // UART data available
-                    case UART_DATA:
-                        uart_read_bytes(UART_NUM, buf.data(), event.size, portMAX_DELAY);
-                        for (unsigned i = 0; i < event.size; i++) {
+                    case UART_DATA: {
+                        int len = uart_read_bytes(UART_NUM, buf.data(), event.size, portMAX_DELAY);
+                        assert(len >= 0);
+                        for (unsigned i = 0; i < len; i++) {
                             auto val = buf[i];
                             if (val == 0x7E) {
                                 // Start of frame
@@ -115,6 +115,7 @@ public:
                             receivedByte(val);
                         }
                         break;
+                    }
 
                     // HW FIFO overflow detected
                     case UART_FIFO_OVF:
