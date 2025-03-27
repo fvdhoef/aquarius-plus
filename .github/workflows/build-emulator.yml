@@ -98,7 +98,6 @@ jobs:
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
           path: |
-            System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
             System/emulator/windows/x64/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
       - name: Release
         uses: softprops/action-gh-release@v1
@@ -106,7 +105,6 @@ jobs:
         with:
           prerelease: true
           files: |
-            System/emulator/windows/Installer/Release/AquariusPlusEmu*.msi
             System/emulator/windows/x64/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
 
   build-sdcard:
