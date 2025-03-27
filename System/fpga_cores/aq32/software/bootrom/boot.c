@@ -1,52 +1,82 @@
 #include "regs.h"
-#include "esp.h"
-#include "file_io.h"
+
+static void esp_send_byte(uint8_t val) {
+    while (REGS->ESP_CTRL & 2) {
+    }
+    REGS->ESP_DATA = val;
+}
+
+static uint8_t esp_get_byte(void) {
+    while ((REGS->ESP_CTRL & 1) == 0) {
+    }
+    return REGS->ESP_DATA;
+}
+
+static void esp_cmd(uint8_t cmd) {
+    while (REGS->ESP_CTRL & 1) {
+        (void)REGS->ESP_DATA;
+    }
+
+    while (REGS->ESP_CTRL & 2) {
+    }
+    REGS->ESP_DATA = 0x100;
+    esp_send_byte(cmd);
+}
+
+static int esp_open(const char *path, uint8_t flags) {
+    esp_cmd(ESPCMD_OPEN);
+    esp_send_byte(flags);
+
+    const uint8_t *p = (const uint8_t *)path;
+    while (1) {
+        uint8_t val = *(p++);
+        esp_send_byte(val);
+        if (val == 0)
+            break;
+    }
+    return (int8_t)esp_get_byte();
+}
+
+static int esp_read(int fd, void *buf, uint16_t length) {
+    esp_cmd(ESPCMD_READ);
+    esp_send_byte(fd);
+    esp_send_byte(length & 0xFF);
+    esp_send_byte(length >> 8);
+    int16_t result = (int8_t)esp_get_byte();
+    if (result < 0) {
+        return result;
+    }
+    result = esp_get_byte();
+    result |= esp_get_byte() << 8;
+
+    uint16_t count = result;
+    uint8_t *p     = buf;
+    while (count--) {
+        *(p++) = esp_get_byte();
+    }
+    return result;
+}
+
+static int esp_close(int fd) {
+    esp_cmd(ESPCMD_CLOSE);
+    esp_send_byte(fd);
+    return (int8_t)esp_get_byte();
+}
 
 // called from start.S
 void boot(void) {
-    TRAM[0]     = 'A' | 0x0300;
-    REGS->VCTRL = 1;
-
-    // int err_addr = -1;
-
-    // volatile uint32_t *p = (volatile uint32_t *)0x1000;
-    // for (unsigned i = 0; i < 64; i++)
-    //     p[i] = i;
-
-    // for (unsigned i = 0; i < 64; i++) {
-    //     if (p[i] != i) {
-    //         err_addr = i;
-    //         break;
-    //     }
-    // }
-
-    // if (err_addr >= 0) {
-    //     TRAM[0] = 'E' | 0x0300;
-    //     TRAM[1] = ((((uintptr_t)err_addr >> 24) & 0xF) + '0') | 0x0300;
-    //     TRAM[2] = ((((uintptr_t)err_addr >> 16) & 0xF) + '0') | 0x0300;
-    //     TRAM[3] = ((((uintptr_t)err_addr >> 8) & 0xF) + '0') | 0x0300;
-    //     TRAM[4] = ((((uintptr_t)err_addr >> 0) & 0xF) + '0') | 0x0300;
-
-    // } else {
-    //     TRAM[0] = 'S' | 0x0300;
-    // }
-
-    // // CHRAM[0] = 0xFF;
-    // TRAM[1] = 'B' | 0x0300;
-
-    // REGS->VCTRL = 1;
-
     esp_cmd(ESPCMD_RESET);
-    TRAM[0] = 'B' | 0x0300;
-    int fd  = esp_open("aq32.rom", FO_RDONLY);
-    TRAM[0] = 'C' | 0x0300;
-
+    int fd = esp_open("aq32.rom", FO_RDONLY);
     if (fd >= 0) {
-        esp_read(fd, (void *)0, 0x4000);
+        uint8_t *addr = (uint8_t *)0x80000000;
+        while (1) {
+            int count = esp_read(fd, addr, 0x8000);
+            if (count <= 0)
+                break;
+            addr += count;
+        }
         esp_close(fd);
-        __asm __volatile("jr zero");
+        ((void (*)())0x80000000)();
     }
-
-    TRAM[0] = 'D' | 0x0300;
     while (1);
 }

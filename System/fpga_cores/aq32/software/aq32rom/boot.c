@@ -4,7 +4,8 @@
 
 // called from start.S
 void boot(void) {
-    // CHRAM[0] = 0xFF;
+    REGS->VCTRL = 0x61;
+
     int i     = 0;
     TRAM[i++] = 'B' | 0x0300;
     TRAM[i++] = 'l' | 0x0300;

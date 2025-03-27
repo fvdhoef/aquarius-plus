@@ -1,6 +1,6 @@
 MEMORY {
     rom (rx)  : ORIGIN = 0xFFFFF800, LENGTH = 0x00000800  /*   2k */
-    ram (rwx) : ORIGIN = 0x00000000, LENGTH = 0x00080000  /* 512k */
+    ram (rwx) : ORIGIN = 0xFF200000, LENGTH = 0x00004000  /*  16k */
 }
 
 PROVIDE(__ram_end = ORIGIN(ram) + LENGTH(ram));

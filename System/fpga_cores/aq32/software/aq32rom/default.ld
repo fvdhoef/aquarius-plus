@@ -1,5 +1,5 @@
 MEMORY {
-    ram (rwx) : ORIGIN = 0x00000000, LENGTH = 0x00080000  /* 512k */
+    ram (rwx) : ORIGIN = 0x80000000, LENGTH = 0x00080000  /* 512k */
 }
 
 PROVIDE(__ram_end = ORIGIN(ram) + LENGTH(ram));
@@ -42,7 +42,7 @@ SECTIONS {
     .tdata : ALIGN(8) {
         PROVIDE( __tls_base = . );
 	    *(.tdata .tdata.* .gnu.linkonce.td.*)
-    } >ram
+    } > ram
 
     .bss : ALIGN(8) {
         *(.sbss*)
