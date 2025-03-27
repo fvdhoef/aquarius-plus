@@ -77,14 +77,13 @@ jobs:
           fetch-depth: 0
       - name: Get all Git tags
         run: git fetch --tags -f
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v2
       - name: Build app for release
         run: |
           $VERSION=git describe
           echo "const char *versionStr = ""$VERSION"";" > System\emulator\Version.cpp
-          $VSPATH=& "${Env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere" -property installationPath
-          $DEVENV_COM="$VSPATH\Common7\IDE\devenv.com"
-          & $DEVENV_COM System\emulator\windows\Installer\Installer.vdproj /Build Release
-          Rename-Item System\emulator\windows\Installer\Release\AquariusPlusEmu_Installer.msi AquariusPlusEmu-Windows-$VERSION.msi
+          msbuild System\emulator\windows\aquarius-emu.sln -t:rebuild -p:Configuration=Release
       - name: Creating release directory structure
         run: |
           $VERSION=git describe

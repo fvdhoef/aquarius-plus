@@ -239,7 +239,7 @@ void UI::mainLoop() {
 
         AqKeyboard::instance().setScrollLock(config.handCtrlEmulation);
 
-        io.FontGlobalScale = config.fontScale2x ? 2 : 1;
+        io.FontGlobalScale = config.fontScale2x ? 2.0f : 1.0f;
 
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
