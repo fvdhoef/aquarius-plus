@@ -45,6 +45,8 @@ public:
         items.emplace_back(MenuItemType::subMenu, tmp);
         snprintf(tmp, sizeof(tmp), "Time   :%s", running_app_info.time);
         items.emplace_back(MenuItemType::subMenu, tmp);
+        snprintf(tmp, sizeof(tmp), "ESP-IDF:%s", (const char *)running_app_info.idf_ver);
+        items.emplace_back(MenuItemType::subMenu, tmp);
     }
 };
 
