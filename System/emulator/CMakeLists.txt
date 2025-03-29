@@ -77,6 +77,7 @@ if (MSVC)
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE
         windows/Resource.rc
     )
+    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE /SUBSYSTEM:WINDOWS)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2.lib)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2main.lib)
 endif()
