@@ -55,16 +55,28 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     imgui/imgui_widgets.cpp
 
     lodepng/lodepng.cpp
-
-
 )
 
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-psabi -Wno-unused-parameter)
+if (LINUX)
+    find_package(PkgConfig)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic -Wno-psabi -Wno-unused-parameter)
 
-find_package(PkgConfig)
+    # Add SDL includes/library/options
+    find_package(SDL2 REQUIRED)
+    target_link_libraries(${CMAKE_PROJECT_NAME} ${SDL2_LIBRARIES})
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE ${SDL2_CFLAGS_OTHER})
+endif()
 
-# Add SDL includes/library/options
-find_package(SDL2 REQUIRED)
-target_link_libraries(${CMAKE_PROJECT_NAME} ${SDL2_LIBRARIES})
-target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${SDL2_INCLUDE_DIRS})
-target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE ${SDL2_CFLAGS_OTHER})
+if (MSVC)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3 /WX)
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
+        windows
+        windows/SDL2-2.0.20/include
+    )
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
+        windows/Resource.rc
+    )
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2.lib)
+    target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2main.lib)
+endif()

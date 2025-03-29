@@ -105,17 +105,17 @@ private:
 
     std::string currentPath;
     uint8_t     rxBuf[16 + 0x10000];
-    unsigned    rxBufIdx;
+    unsigned    rxBufIdx = 0;
     VFS        *fdVfs[MAX_FDS];
     uint8_t     fds[MAX_FDS];
     DirEnumCtx  deCtxs[MAX_DDS];
     int         deIdx[MAX_DDS];
-    const char *newPath;
+    const char *newPath = nullptr;
 
     uint8_t  txBuf[0x10000 + 16];
-    unsigned txBufWrIdx;
-    unsigned txBufRdIdx;
-    unsigned txBufCnt;
+    unsigned txBufWrIdx = 0;
+    unsigned txBufRdIdx = 0;
+    unsigned txBufCnt   = 0;
 
     bool    mousePresent = false;
     float   mouseX       = 0;
