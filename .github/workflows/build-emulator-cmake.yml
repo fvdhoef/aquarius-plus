@@ -99,7 +99,7 @@ jobs:
           echo "const char *versionStr = ""$VERSION"";" > System\emulator\Version.cpp
           cmake -S System\emulator -B System\emulator\build
           msbuild System\emulator\build\aqplus-emu.sln -t:rebuild -p:Configuration=Release
-      - name: Creating release directory structure
+      - name: Creating release directory structure for portable version
         run: |
           $VERSION=git describe
           mkdir System\emulator\build\Release\AquariusPlusEmu
@@ -108,12 +108,20 @@ jobs:
           xcopy /E /I EndUser\sdcard System\emulator\build\Release\AquariusPlusEmu\sdcard
           cd System\emulator\build\Release
           Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-portable-$VERSION.zip
+      - name: Creating installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
+        with: System/emulator/windows/AquariusPlusEmu.iss
+      - name: Rename installer
+        run: |
+          $VERSION=git describe
+          move System/emulator/windows/Output/AquariusPlusEmu-Windows-x64.exe System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-$VERSION.exe
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
           path: |
             System/emulator/build/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
+            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-*.exe
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -121,6 +129,7 @@ jobs:
           prerelease: true
           files: |
             System/emulator/build/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
+            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-*.exe
 
   build-sdcard:
     name: Build SD card ZIP
