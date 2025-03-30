@@ -67,7 +67,7 @@ public:
         }
         {
             char tmp[40];
-            snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", getKeyboard()->getKeyLayoutName(getKeyboard()->getKeyLayout()).c_str());
+            snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", Keyboard::instance()->getKeyLayoutName(Keyboard::instance()->getKeyLayout()).c_str());
 
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [&]() {
@@ -95,7 +95,7 @@ public:
             auto &item   = items.emplace_back(MenuItemType::subMenu, "Factory reset");
             item.onEnter = [&]() {
                 drawMessage("Are you sure? (Type 'y' to continue)");
-                int ch = getKeyboard()->getKey(portMAX_DELAY);
+                int ch = Keyboard::instance()->getKey(portMAX_DELAY);
                 if (ch == 'y') {
                     drawMessage("Erasing settings...");
                     ESP_ERROR_CHECK(nvs_flash_erase());

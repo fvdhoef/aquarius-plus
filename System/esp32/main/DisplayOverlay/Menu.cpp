@@ -117,7 +117,7 @@ enum {
 };
 
 void Menu::show() {
-    auto keyboard = getKeyboard();
+    auto keyboard = Keyboard::instance();
     auto ovl      = getDisplayOverlay();
 
     auto prevTicks = xTaskGetTickCount();
@@ -275,7 +275,7 @@ void Menu::drawMessage(const char *msg) {
 }
 
 bool Menu::editString(const std::string &title, std::string &str, int maxLen, bool isPassword) {
-    auto keyboard = getKeyboard();
+    auto keyboard = Keyboard::instance();
     auto ovl      = getDisplayOverlay();
 
     int width  = 38;

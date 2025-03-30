@@ -12,6 +12,8 @@ enum class KeyLayout {
 
 class Keyboard {
 public:
+    static Keyboard *instance();
+
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
     virtual void updateKeys(uint64_t keys) = 0;
 #endif
@@ -29,8 +31,6 @@ public:
 
     virtual void pressKey(uint8_t ch) = 0;
 };
-
-Keyboard *getKeyboard();
 
 enum ScanCode {
     SCANCODE_UNKNOWN        = 0,
@@ -154,4 +154,4 @@ enum {
     ModRGui   = (1 << 7),
 };
 
-const char* getScanCodeName(uint8_t scanCode);
+const char *getScanCodeName(uint8_t scanCode);

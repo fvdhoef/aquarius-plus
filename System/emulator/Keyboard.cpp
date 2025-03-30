@@ -4,8 +4,11 @@
 #include "EmuState.h"
 #include "Config.h"
 
-#define FLAG_SHFT (1 << 7)
-#define FLAG_CTRL (1 << 6)
+enum {
+    LedNumLock    = (1 << 0),
+    LedCapsLock   = (1 << 1),
+    LedScrollLock = (1 << 2),
+};
 
 struct ComposeCombo {
     const char *combo;
@@ -530,22 +533,22 @@ void Keyboard::handleScancode(unsigned scanCode, bool keyDown) {
                 keybMatrix &= ~(1ULL << key);
         }
 
-        if (kbLayout.modifiers & (KeyboardLayout::ModLShift | KeyboardLayout::ModRShift))
+        if (kbLayout.modifiers & (ModLShift | ModRShift))
             keybMatrix |= (1ULL << KEY_SHIFT);
         else
             keybMatrix &= ~(1ULL << KEY_SHIFT);
 
-        if (kbLayout.modifiers & (KeyboardLayout::ModLAlt | KeyboardLayout::ModRAlt))
+        if (kbLayout.modifiers & (ModLAlt | ModRAlt))
             keybMatrix |= (1ULL << KEY_ALT);
         else
             keybMatrix &= ~(1ULL << KEY_ALT);
 
-        if (kbLayout.modifiers & (KeyboardLayout::ModLCtrl | KeyboardLayout::ModRCtrl))
+        if (kbLayout.modifiers & (ModLCtrl | ModRCtrl))
             keybMatrix |= (1ULL << KEY_CTRL);
         else
             keybMatrix &= ~(1ULL << KEY_CTRL);
 
-        if (kbLayout.modifiers & (KeyboardLayout::ModLGui | KeyboardLayout::ModRGui))
+        if (kbLayout.modifiers & (ModLGui | ModRGui))
             keybMatrix |= (1ULL << KEY_GUI);
         else
             keybMatrix &= ~(1ULL << KEY_GUI);
@@ -564,9 +567,9 @@ void Keyboard::handleScancode(unsigned scanCode, bool keyDown) {
     {
         uint8_t combinedModifiers = (kbLayout.modifiers & 0xF) | (kbLayout.modifiers >> 4);
         if (scanCode == SCANCODE_ESCAPE && keyDown) {
-            if (combinedModifiers == KeyboardLayout::ModLCtrl) {
+            if (combinedModifiers == ModLCtrl) {
                 emuState.warmReset();
-            } else if (combinedModifiers == (KeyboardLayout::ModLShift | KeyboardLayout::ModLCtrl)) {
+            } else if (combinedModifiers == (ModLShift | ModLCtrl)) {
                 emuState.coldReset();
             }
         }

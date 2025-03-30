@@ -68,7 +68,7 @@ public:
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [this, buttonIdx]() {
                 drawMessage("Press 1-6 or ESC to unassign");
-                int ch = getKeyboard()->getKey(portMAX_DELAY);
+                int ch = Keyboard::instance()->getKey(portMAX_DELAY);
                 if (ch == 3) {
                     buttonNumber[buttonIdx] = 0;
                 } else if (ch >= '1' && ch <= '6') {

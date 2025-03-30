@@ -96,10 +96,10 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
     // Process modifier key changes
     for (int i = 0; i < 8; i++) {
         if (releasedModifiers & (1 << i)) {
-            getKeyboard()->handleScancode(0xE0 + i, false);
+            Keyboard::instance()->handleScancode(0xE0 + i, false);
         }
         if (pressedModifiers & (1 << i)) {
-            getKeyboard()->handleScancode(0xE0 + i, true);
+            Keyboard::instance()->handleScancode(0xE0 + i, true);
         }
     }
 
@@ -123,7 +123,7 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
         }
 
         if (keyReleased) {
-            getKeyboard()->handleScancode(prev, false);
+            Keyboard::instance()->handleScancode(prev, false);
         }
     }
 
@@ -145,7 +145,7 @@ void HIDReportHandlerKeyboard::_inputReport(uint8_t reportId, const uint8_t *buf
         }
 
         if (keyPressed) {
-            getKeyboard()->handleScancode(cur, true);
+            Keyboard::instance()->handleScancode(cur, true);
         }
     }
 

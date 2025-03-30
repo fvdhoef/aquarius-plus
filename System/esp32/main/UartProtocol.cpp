@@ -452,7 +452,7 @@ public:
     }
     void cmdKeyMode(uint8_t mode) {
         DBGF("KEYMODE(mode=0x%02X)", mode);
-        getKeyboard()->setKeyMode(mode);
+        Keyboard::instance()->setKeyMode(mode);
         txStart();
         txWrite(0);
     }

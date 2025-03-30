@@ -378,7 +378,7 @@ public:
 
         if (status & STATUS_KEYB) {
 #ifdef CONFIG_MACHINE_TYPE_MORPHBOOK
-            getKeyboard()->updateKeys(getKeys());
+            Keyboard::instance()->updateKeys(getKeys());
 #endif
         }
     }

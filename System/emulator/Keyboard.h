@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Common.h"
-#include <map>
 
 enum class KeyLayout {
     US = 0,
@@ -25,22 +24,6 @@ enum {
 
 class KeyboardLayout {
 public:
-    enum {
-        LedNumLock    = (1 << 0),
-        LedCapsLock   = (1 << 1),
-        LedScrollLock = (1 << 2),
-    };
-    enum {
-        ModLCtrl  = (1 << 0),
-        ModLShift = (1 << 1),
-        ModLAlt   = (1 << 2),
-        ModLGui   = (1 << 3),
-        ModRCtrl  = (1 << 4),
-        ModRShift = (1 << 5),
-        ModRAlt   = (1 << 6),
-        ModRGui   = (1 << 7),
-    };
-
     void processScancode(unsigned scanCode, bool keyDown);
 
     uint8_t layoutUS(unsigned scanCode);
@@ -57,13 +40,16 @@ public:
 };
 
 class Keyboard {
+public:
+    virtual void handleScancode(unsigned scanCode, bool keyDown);
+
+private:
     Keyboard();
 
 public:
     static Keyboard *instance();
 
     void init();
-    void handleScancode(unsigned scanCode, bool keyDown);
     void pressKey(unsigned char ch);
     void updateMatrix();
     bool scrollLockOn() {
@@ -206,22 +192,13 @@ enum ScanCode {
     NUM_SCANCODES           = 512,
 };
 
-enum KeyMod {
-    KEYMOD_NONE   = 0x0000,
-    KEYMOD_LSHIFT = 0x0001,
-    KEYMOD_RSHIFT = 0x0002,
-    KEYMOD_LCTRL  = 0x0040,
-    KEYMOD_RCTRL  = 0x0080,
-    KEYMOD_LALT   = 0x0100,
-    KEYMOD_RALT   = 0x0200,
-    KEYMOD_LGUI   = 0x0400,
-    KEYMOD_RGUI   = 0x0800,
-    KEYMOD_NUM    = 0x1000,
-    KEYMOD_CAPS   = 0x2000,
-    KEYMOD_MODE   = 0x4000,
-    KEYMOD_SCROLL = 0x8000,
-    KEYMOD_CTRL   = KEYMOD_LCTRL | KEYMOD_RCTRL,
-    KEYMOD_SHIFT  = KEYMOD_LSHIFT | KEYMOD_RSHIFT,
-    KEYMOD_ALT    = KEYMOD_LALT | KEYMOD_RALT,
-    KEYMOD_GUI    = KEYMOD_LGUI | KEYMOD_RGUI,
+enum {
+    ModLCtrl  = (1 << 0),
+    ModLShift = (1 << 1),
+    ModLAlt   = (1 << 2),
+    ModLGui   = (1 << 3),
+    ModRCtrl  = (1 << 4),
+    ModRShift = (1 << 5),
+    ModRAlt   = (1 << 6),
+    ModRGui   = (1 << 7),
 };

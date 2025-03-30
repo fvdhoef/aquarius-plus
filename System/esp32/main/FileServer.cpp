@@ -565,7 +565,7 @@ public:
             }
 
             // Write buffer to keyboard
-            auto kb = getKeyboard();
+            auto kb = Keyboard::instance();
             for (unsigned i = 0; i < received; i++) {
                 kb->pressKey(tmp[i]);
             }

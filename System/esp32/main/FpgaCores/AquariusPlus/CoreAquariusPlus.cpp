@@ -666,7 +666,7 @@ public:
 
         if (idx == 0) {
             bool overlayVisible = getDisplayOverlay()->isVisible();
-            auto kb             = getKeyboard();
+            auto kb             = Keyboard::instance();
 
             if (gamepadNavigation) {
                 if (pressed & GCB_GUIDE) {

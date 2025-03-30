@@ -692,7 +692,7 @@ public:
     }
 };
 
-Keyboard *getKeyboard() {
+Keyboard *Keyboard::instance() {
     static KeyboardInt obj;
     return &obj;
 }

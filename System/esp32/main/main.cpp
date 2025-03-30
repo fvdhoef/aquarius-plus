@@ -48,7 +48,7 @@ void app_main(void) {
 
             uint8_t kblayout = 0;
             if (nvs_get_u8(h, "kblayout", &kblayout) == ESP_OK) {
-                getKeyboard()->setKeyLayout((KeyLayout)kblayout);
+                Keyboard::instance()->setKeyLayout((KeyLayout)kblayout);
             }
             nvs_close(h);
         }

@@ -11,19 +11,19 @@ public:
 
     void onEnter() override {
         for (int i = 0; i < (int)KeyLayout::Count; i++)
-            addLayout(getKeyboard()->getKeyLayoutName((KeyLayout)i).c_str(), (KeyLayout)i);
+            addLayout(Keyboard::instance()->getKeyLayoutName((KeyLayout)i).c_str(), (KeyLayout)i);
     }
 
     void addLayout(const char *title, KeyLayout keyLayout) {
         auto &item   = items.emplace_back(MenuItemType::subMenu, title);
         item.onEnter = [this, keyLayout]() {
-            getKeyboard()->setKeyLayout(keyLayout);
+            Keyboard::instance()->setKeyLayout(keyLayout);
 
             // Save layout to flash
             {
                 nvs_handle_t h;
                 if (nvs_open("settings", NVS_READWRITE, &h) == ESP_OK) {
-                    if (nvs_set_u8(h, "kblayout", (unsigned)getKeyboard()->getKeyLayout()) == ESP_OK) {
+                    if (nvs_set_u8(h, "kblayout", (unsigned)Keyboard::instance()->getKeyLayout()) == ESP_OK) {
                         nvs_commit(h);
                     }
                     nvs_close(h);

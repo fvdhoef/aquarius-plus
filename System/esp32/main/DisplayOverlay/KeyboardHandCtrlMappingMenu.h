@@ -49,8 +49,8 @@ public:
             auto &item   = items.emplace_back(MenuItemType::subMenu, tmp);
             item.onEnter = [this, i]() {
                 drawMessage("Press key or ESC to unassign");
-                int scanCode = getKeyboard()->waitScanCode();
-                getKeyboard()->getKey(pdMS_TO_TICKS(100));
+                int scanCode = Keyboard::instance()->waitScanCode();
+                Keyboard::instance()->getKey(pdMS_TO_TICKS(100));
                 if (scanCode == SCANCODE_ESCAPE) {
                     buttonScanCodes[i] = 0;
                 } else {
