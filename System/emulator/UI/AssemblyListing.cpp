@@ -19,7 +19,7 @@ static inline void trim(std::string &s) {
 }
 
 AssemblyListing::AssemblyListing() {
-    auto cfgPath = Config::instance().asmListingPath;
+    auto cfgPath = Config::instance()->asmListingPath;
     if (!cfgPath.empty()) {
         load(cfgPath);
     }
@@ -181,7 +181,7 @@ void AssemblyListing::load(const std::string &_path) {
             l.file = mainFileName;
         }
 
-        Config::instance().asmListingPath = path;
+        Config::instance()->asmListingPath = path;
 
     } catch (...) {
         clear();
@@ -191,7 +191,7 @@ void AssemblyListing::load(const std::string &_path) {
 void AssemblyListing::clear() {
     lines.clear();
     path.clear();
-    Config::instance().asmListingPath.clear();
+    Config::instance()->asmListingPath.clear();
     symbolsAddrStr.clear();
     symbolsStrAddr.clear();
 }

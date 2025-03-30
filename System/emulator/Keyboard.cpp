@@ -1,4 +1,4 @@
-#include "AqKeyboard.h"
+#include "Keyboard.h"
 #include "AqKeyboardDefs.h"
 #include <SDL.h>
 #include "EmuState.h"
@@ -434,18 +434,18 @@ uint8_t KeyboardLayout::layoutDE(unsigned scanCode) {
     return ch;
 }
 
-AqKeyboard::AqKeyboard() {
+Keyboard::Keyboard() {
 }
 
-AqKeyboard &AqKeyboard::instance() {
-    static AqKeyboard obj;
-    return obj;
+Keyboard *Keyboard::instance() {
+    static Keyboard obj;
+    return &obj;
 }
 
-void AqKeyboard::init() {
+void Keyboard::init() {
 }
 
-void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
+void Keyboard::handleScancode(unsigned scanCode, bool keyDown) {
     // printf("%3d: %s\n", scanCode, keyDown ? "DOWN" : "UP");
     kbLayout.repeat       = 0;
     kbLayout.pressCounter = 0;
@@ -577,7 +577,7 @@ void AqKeyboard::handleScancode(unsigned scanCode, bool keyDown) {
     }
 }
 
-void AqKeyboard::repeatTimer() {
+void Keyboard::repeatTimer() {
     if ((keyMode & 1) == 0 || (keyMode & 4) == 0 || kbLayout.repeat == 0) {
         kbLayout.pressCounter = 0;
         return;
@@ -589,7 +589,7 @@ void AqKeyboard::repeatTimer() {
     }
 }
 
-bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
+bool Keyboard::handController(unsigned scanCode, bool keyDown) {
     handCtrl1 = 0xFF;
     if ((ledStatus & SCROLL_LOCK) == 0) {
         handCtrl1Pressed = 0;
@@ -652,7 +652,7 @@ bool AqKeyboard::handController(unsigned scanCode, bool keyDown) {
     return result;
 }
 
-void AqKeyboard::updateMatrix() {
+void Keyboard::updateMatrix() {
     if (prevMatrix != keybMatrix) {
         // printf("keybMatrix: %016llx\n", keybMatrix);
 
@@ -672,7 +672,7 @@ void AqKeyboard::updateMatrix() {
     }
 }
 
-void AqKeyboard::pressKey(unsigned char ch) {
+void Keyboard::pressKey(unsigned char ch) {
     if (ch == '\n') {
         ch = '\r';
     }

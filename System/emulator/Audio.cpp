@@ -3,9 +3,9 @@
 Audio::Audio() {
 }
 
-Audio &Audio::instance() {
+Audio *Audio::instance() {
     static Audio obj;
-    return obj;
+    return &obj;
 }
 
 void Audio::init() {

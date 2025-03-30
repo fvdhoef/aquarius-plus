@@ -26,8 +26,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 )
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-    AqKeyboard.cpp
-    AqUartProtocol.cpp
+    Keyboard.cpp
+    UartProtocol.cpp
     Audio.cpp
     AY8910.cpp
     Config.cpp

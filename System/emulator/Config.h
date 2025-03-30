@@ -13,7 +13,7 @@ class Config {
     Config();
 
 public:
-    static Config &instance();
+    static Config *instance();
 
     void init(const std::string &appDataPath);
 

@@ -4,8 +4,8 @@
 #include "EmuState.h"
 
 #include "Video.h"
-#include "AqKeyboard.h"
-#include "AqUartProtocol.h"
+#include "Keyboard.h"
+#include "UartProtocol.h"
 #include "VFS.h"
 
 #define IMGUI_DEFINE_MATH_OPERATORS
@@ -24,12 +24,12 @@ void UI::start(
     const std::string &cartRomPath,
     const std::string &typeInStr) {
 
-    auto &config = Config::instance();
+    auto config = Config::instance();
 
     emuState.typeInStr  = typeInStr;
-    emuState.stopOnHalt = config.stopOnHalt;
-    AqUartProtocol::instance().init();
-    setSDCardPath(config.sdCardPath);
+    emuState.stopOnHalt = config->stopOnHalt;
+    UartProtocol::instance()->init();
+    setSDCardPath(config->sdCardPath);
 
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER) != 0) {
         SDL_Log("Unable to initialize SDL: %s", SDL_GetError());
@@ -42,7 +42,7 @@ void UI::start(
     }
 
     // Create main window
-    window = SDL_CreateWindow("Aquarius+ emulator", config.wndPosX, config.wndPosY, config.wndWidth, config.wndHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
+    window = SDL_CreateWindow("Aquarius+ emulator", config->wndPosX, config->wndPosY, config->wndWidth, config->wndHeight, SDL_WINDOW_SHOWN | SDL_WINDOW_ALLOW_HIGHDPI | SDL_WINDOW_RESIZABLE);
     if (window == nullptr) {
         fprintf(stderr, "SDL_CreateWindow Error: %s\n", SDL_GetError());
         SDL_Quit();
@@ -75,13 +75,13 @@ void UI::start(
     ImGui_ImplSDL2_InitForSDLRenderer(window, renderer);
     ImGui_ImplSDLRenderer2_Init(renderer);
 
-    ImGui::LoadIniSettingsFromMemory(config.imguiConf.c_str());
+    ImGui::LoadIniSettingsFromMemory(config->imguiConf.c_str());
 
     // Initialize emulator
-    Audio::instance().init();
+    Audio::instance()->init();
     emuState.coldReset();
-    Audio::instance().start();
-    AqKeyboard::instance().init();
+    Audio::instance()->start();
+    Keyboard::instance()->init();
 
     // Run main loop
     mainLoop();
@@ -99,7 +99,7 @@ void UI::start(
 void UI::mainLoop() {
     ImGuiIO &io         = ImGui::GetIO();
     auto    &platformIO = ImGui::GetPlatformIO();
-    auto    &config     = Config::instance();
+    auto     config     = Config::instance();
 
     bool showAppAbout   = false;
     bool showDemoWindow = false;
@@ -133,8 +133,8 @@ void UI::mainLoop() {
 
                     if (allowTyping) {
                         if (!event.key.repeat && event.key.keysym.scancode <= 255) {
-                            AqKeyboard::instance().handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
-                            AqKeyboard::instance().updateMatrix();
+                            Keyboard::instance()->handleScancode(event.key.keysym.scancode, event.type == SDL_KEYDOWN);
+                            Keyboard::instance()->updateMatrix();
                         }
                     }
                     break;
@@ -142,20 +142,19 @@ void UI::mainLoop() {
 
                 case SDL_MOUSEWHEEL: {
                     if (!io.WantCaptureMouse) {
-                        auto &aqp = AqUartProtocol::instance();
-                        aqp.mouseWheel += event.wheel.y;
+                        UartProtocol::instance()->mouseWheel += event.wheel.y;
                     }
                     break;
                 }
 
                 case SDL_WINDOWEVENT: {
                     if (event.window.event == SDL_WINDOWEVENT_MOVED) {
-                        config.wndPosX = event.window.data1;
-                        config.wndPosY = event.window.data2;
+                        config->wndPosX = event.window.data1;
+                        config->wndPosY = event.window.data2;
 
                     } else if (event.window.event == SDL_WINDOWEVENT_RESIZED) {
-                        config.wndWidth  = event.window.data1;
-                        config.wndHeight = event.window.data2;
+                        config->wndWidth  = event.window.data1;
+                        config->wndHeight = event.window.data2;
                     }
                     break;
                 }
@@ -164,7 +163,7 @@ void UI::mainLoop() {
                     if (!gameCtrl) {
                         gameCtrlIdx = event.cdevice.which;
                         gameCtrl    = SDL_GameControllerOpen(gameCtrlIdx);
-                        AqUartProtocol::instance().gameCtrlReset(true);
+                        UartProtocol::instance()->gameCtrlReset(true);
                     }
                     break;
                 }
@@ -173,30 +172,30 @@ void UI::mainLoop() {
                         SDL_GameControllerClose(gameCtrl);
                         gameCtrl    = nullptr;
                         gameCtrlIdx = -1;
-                        AqUartProtocol::instance().gameCtrlReset(false);
+                        UartProtocol::instance()->gameCtrlReset(false);
                     }
                     break;
                 }
 
                 case SDL_CONTROLLERAXISMOTION: {
-                    auto &aqp = AqUartProtocol::instance();
+                    auto aqp = UartProtocol::instance();
                     switch (event.caxis.axis) {
-                        case SDL_CONTROLLER_AXIS_LEFTX: aqp.gameCtrlLX = event.caxis.value / 256; break;
-                        case SDL_CONTROLLER_AXIS_LEFTY: aqp.gameCtrlLY = event.caxis.value / 256; break;
-                        case SDL_CONTROLLER_AXIS_RIGHTX: aqp.gameCtrlRX = event.caxis.value / 256; break;
-                        case SDL_CONTROLLER_AXIS_RIGHTY: aqp.gameCtrlRY = event.caxis.value / 256; break;
-                        case SDL_CONTROLLER_AXIS_TRIGGERLEFT: aqp.gameCtrlLT = event.caxis.value / 128; break;
-                        case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: aqp.gameCtrlRT = event.caxis.value / 128; break;
+                        case SDL_CONTROLLER_AXIS_LEFTX: aqp->gameCtrlLX = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_LEFTY: aqp->gameCtrlLY = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_RIGHTX: aqp->gameCtrlRX = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_RIGHTY: aqp->gameCtrlRY = event.caxis.value / 256; break;
+                        case SDL_CONTROLLER_AXIS_TRIGGERLEFT: aqp->gameCtrlLT = event.caxis.value / 128; break;
+                        case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: aqp->gameCtrlRT = event.caxis.value / 128; break;
                     }
-                    aqp.gameCtrlUpdated();
+                    aqp->gameCtrlUpdated();
                     break;
                 }
                 case SDL_CONTROLLERBUTTONDOWN:
                 case SDL_CONTROLLERBUTTONUP: {
                     if (event.cbutton.button < 16) {
-                        auto &aqp           = AqUartProtocol::instance();
-                        aqp.gameCtrlButtons = (aqp.gameCtrlButtons & ~(1 << event.cbutton.button)) | ((event.cbutton.state & 1) << event.cbutton.button);
-                        aqp.gameCtrlUpdated();
+                        auto aqp             = UartProtocol::instance();
+                        aqp->gameCtrlButtons = (aqp->gameCtrlButtons & ~(1 << event.cbutton.button)) | ((event.cbutton.state & 1) << event.cbutton.button);
+                        aqp->gameCtrlUpdated();
                     }
                     break;
                 }
@@ -212,7 +211,7 @@ void UI::mainLoop() {
 
         // Emulate
         {
-            int bufsToRender = Audio::instance().bufsToRender();
+            int bufsToRender = Audio::instance()->bufsToRender();
             if (bufsToRender == 0)
                 continue;
 
@@ -233,13 +232,13 @@ void UI::mainLoop() {
         }
 
         if (io.WantSaveIniSettings) {
-            config.imguiConf       = ImGui::SaveIniSettingsToMemory();
+            config->imguiConf      = ImGui::SaveIniSettingsToMemory();
             io.WantSaveIniSettings = false;
         }
 
-        AqKeyboard::instance().setScrollLock(config.handCtrlEmulation);
+        Keyboard::instance()->setScrollLock(config->handCtrlEmulation);
 
-        io.FontGlobalScale = config.fontScale2x ? 2.0f : 1.0f;
+        io.FontGlobalScale = config->fontScale2x ? 2.0f : 1.0f;
 
         ImGui_ImplSDLRenderer2_NewFrame();
         ImGui_ImplSDL2_NewFrame();
@@ -250,7 +249,7 @@ void UI::mainLoop() {
         auto ticks = SDL_GetTicks64();
         if (ticks - lastKeyRepeatCall > 16) {
             lastKeyRepeatCall = ticks;
-            AqKeyboard::instance().repeatTimer();
+            Keyboard::instance()->repeatTimer();
         }
 
         renderScreen();
@@ -263,17 +262,17 @@ void UI::mainLoop() {
                 if (ImGui::MenuItem("Select SD card directory...", "")) {
                     auto path = tinyfd_selectFolderDialog("Select SD card directory", nullptr);
                     if (path) {
-                        config.sdCardPath = path;
-                        stripTrailingSlashes(config.sdCardPath);
-                        setSDCardPath(config.sdCardPath);
+                        config->sdCardPath = path;
+                        stripTrailingSlashes(config->sdCardPath);
+                        setSDCardPath(config->sdCardPath);
                     }
                 }
                 std::string ejectLabel = "Eject SD card";
-                if (!config.sdCardPath.empty()) {
-                    ejectLabel += " (" + config.sdCardPath + ")";
+                if (!config->sdCardPath.empty()) {
+                    ejectLabel += " (" + config->sdCardPath + ")";
                 }
-                if (ImGui::MenuItem(ejectLabel.c_str(), "", false, !config.sdCardPath.empty())) {
-                    config.sdCardPath.clear();
+                if (ImGui::MenuItem(ejectLabel.c_str(), "", false, !config->sdCardPath.empty())) {
+                    config->sdCardPath.clear();
                     setSDCardPath("");
                 }
                 ImGui::Separator();
@@ -291,8 +290,8 @@ void UI::mainLoop() {
                     emuState.coldReset();
                 }
                 ImGui::Separator();
-                ImGui::MenuItem("Enable sound", "", &config.enableSound);
-                ImGui::MenuItem("Enable mouse", "", &config.enableMouse);
+                ImGui::MenuItem("Enable sound", "", &config->enableSound);
+                ImGui::MenuItem("Enable mouse", "", &config->enableMouse);
                 ImGui::Separator();
                 if (ImGui::MenuItem("Reset Aquarius+ (warm)", "")) {
                     emuState.warmReset();
@@ -344,21 +343,21 @@ void UI::mainLoop() {
                     }
                 }
                 ImGui::Separator();
-                if (ImGui::MenuItem("Scaling: Nearest Neighbor", "", config.displayScaling == DisplayScaling::NearestNeighbor)) {
-                    config.displayScaling = DisplayScaling::NearestNeighbor;
+                if (ImGui::MenuItem("Scaling: Nearest Neighbor", "", config->displayScaling == DisplayScaling::NearestNeighbor)) {
+                    config->displayScaling = DisplayScaling::NearestNeighbor;
                 }
-                if (ImGui::MenuItem("Scaling: Linear", "", config.displayScaling == DisplayScaling::Linear)) {
-                    config.displayScaling = DisplayScaling::Linear;
+                if (ImGui::MenuItem("Scaling: Linear", "", config->displayScaling == DisplayScaling::Linear)) {
+                    config->displayScaling = DisplayScaling::Linear;
                 }
-                if (ImGui::MenuItem("Scaling: Integer", "", config.displayScaling == DisplayScaling::Integer)) {
-                    config.displayScaling = DisplayScaling::Integer;
+                if (ImGui::MenuItem("Scaling: Integer", "", config->displayScaling == DisplayScaling::Integer)) {
+                    config->displayScaling = DisplayScaling::Integer;
                 }
                 ImGui::Separator();
-                ImGui::MenuItem("Font scale 2x", "", &config.fontScale2x);
+                ImGui::MenuItem("Font scale 2x", "", &config->fontScale2x);
                 ImGui::EndMenu();
             }
             if (ImGui::BeginMenu("Keyboard")) {
-                ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config.handCtrlEmulation);
+                ImGui::MenuItem("Cursor keys & F1-F6 emulate hand controller (ScrLk)", "", &config->handCtrlEmulation);
                 if (ImGui::MenuItem("Paste text from clipboard", "")) {
                     emuState.typeInStr = platformIO.Platform_GetClipboardTextFn(ImGui::GetCurrentContext());
                 }
@@ -374,16 +373,16 @@ void UI::mainLoop() {
             if (ImGui::BeginMenu("Debug")) {
                 ImGui::MenuItem("Enable debugger", "", &emuState.enableDebugger);
                 if (emuState.enableDebugger) {
-                    ImGui::MenuItem("Memory editor", "", &config.showMemEdit);
-                    ImGui::MenuItem("CPU state", "", &config.showCpuState);
-                    ImGui::MenuItem("IO Registers", "", &config.showIoRegsWindow);
-                    ImGui::MenuItem("Breakpoints", "", &config.showBreakpoints);
-                    ImGui::MenuItem("Assembly listing", "", &config.showAssemblyListing);
-                    ImGui::MenuItem("CPU trace", "", &config.showCpuTrace);
-                    ImGui::MenuItem("Watch", "", &config.showWatch);
-                    ImGui::MenuItem("ESP info", "", &config.showEspInfo);
-                    if (ImGui::MenuItem("Stop on HALT instruction", "", &config.stopOnHalt)) {
-                        emuState.stopOnHalt = config.stopOnHalt;
+                    ImGui::MenuItem("Memory editor", "", &config->showMemEdit);
+                    ImGui::MenuItem("CPU state", "", &config->showCpuState);
+                    ImGui::MenuItem("IO Registers", "", &config->showIoRegsWindow);
+                    ImGui::MenuItem("Breakpoints", "", &config->showBreakpoints);
+                    ImGui::MenuItem("Assembly listing", "", &config->showAssemblyListing);
+                    ImGui::MenuItem("CPU trace", "", &config->showCpuTrace);
+                    ImGui::MenuItem("Watch", "", &config->showWatch);
+                    ImGui::MenuItem("ESP info", "", &config->showEspInfo);
+                    if (ImGui::MenuItem("Stop on HALT instruction", "", &config->stopOnHalt)) {
+                        emuState.stopOnHalt = config->stopOnHalt;
                     }
                     ImGui::Separator();
 
@@ -425,7 +424,7 @@ void UI::mainLoop() {
         }
 
         if (emuState.emuMode == EmuState::Em_Halted) {
-            config.showCpuState = true;
+            config->showCpuState = true;
         }
 
         if (emuState.enableDebugger) {
@@ -435,22 +434,22 @@ void UI::mainLoop() {
         }
 
         if (emuState.enableDebugger) {
-            if (config.showMemEdit)
-                wndMemEdit(&config.showMemEdit);
-            if (config.showCpuState)
-                wndCpuState(&config.showCpuState);
-            if (config.showIoRegsWindow)
-                wndIoRegs(&config.showIoRegsWindow);
-            if (config.showBreakpoints)
-                wndBreakpoints(&config.showBreakpoints);
-            if (config.showAssemblyListing)
-                wndAssemblyListing(&config.showAssemblyListing);
-            if (config.showCpuTrace)
-                wndCpuTrace(&config.showCpuTrace);
-            if (config.showWatch)
-                wndWatch(&config.showWatch);
-            if (config.showEspInfo)
-                wndEspInfo(&config.showEspInfo);
+            if (config->showMemEdit)
+                wndMemEdit(&config->showMemEdit);
+            if (config->showCpuState)
+                wndCpuState(&config->showCpuState);
+            if (config->showIoRegsWindow)
+                wndIoRegs(&config->showIoRegsWindow);
+            if (config->showBreakpoints)
+                wndBreakpoints(&config->showBreakpoints);
+            if (config->showAssemblyListing)
+                wndAssemblyListing(&config->showAssemblyListing);
+            if (config->showCpuTrace)
+                wndCpuTrace(&config->showCpuTrace);
+            if (config->showWatch)
+                wndWatch(&config->showWatch);
+            if (config->showEspInfo)
+                wndEspInfo(&config->showEspInfo);
         }
         if (showAppAbout)
             wndAbout(&showAppAbout);
@@ -488,10 +487,10 @@ void UI::mainLoop() {
                     (io.MouseDown[1] ? 2 : 0) |
                     (io.MouseDown[2] ? 4 : 0);
 
-                auto &aqp        = AqUartProtocol::instance();
-                aqp.mouseX       = (float)mx;
-                aqp.mouseY       = (float)my;
-                aqp.mouseButtons = buttonMask;
+                auto aqp          = UartProtocol::instance();
+                aqp->mouseX       = (float)mx;
+                aqp->mouseY       = (float)my;
+                aqp->mouseButtons = buttonMask;
 
                 if (hideMouse)
                     ImGui::SetMouseCursor(ImGuiMouseCursor_None);
@@ -536,10 +535,10 @@ void UI::renderScreen() {
 }
 
 SDL_Rect UI::calcRenderPos(int w, int h, int menuHeight) {
-    auto &config = Config::instance();
+    auto config = Config::instance();
 
     int sw, sh;
-    if (config.displayScaling == DisplayScaling::Integer && w >= VIDEO_WIDTH && h >= VIDEO_HEIGHT * 2) {
+    if (config->displayScaling == DisplayScaling::Integer && w >= VIDEO_WIDTH && h >= VIDEO_HEIGHT * 2) {
         // Retain aspect ratio
         int w1 = (w / VIDEO_WIDTH) * VIDEO_WIDTH;
         int h1 = (w1 * (VIDEO_HEIGHT * 2)) / VIDEO_WIDTH;
@@ -567,7 +566,7 @@ SDL_Rect UI::calcRenderPos(int w, int h, int menuHeight) {
             sw = (int)((float)w);
             sh = (int)((float)sw / aspect);
         }
-        SDL_SetTextureScaleMode(texture, config.displayScaling == DisplayScaling::NearestNeighbor ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
+        SDL_SetTextureScaleMode(texture, config->displayScaling == DisplayScaling::NearestNeighbor ? SDL_ScaleModeNearest : SDL_ScaleModeLinear);
     }
 
     SDL_Rect dst;
@@ -604,14 +603,14 @@ void UI::emulate() {
     // Emulation is performed in sync with the audio. This function will run
     // for the time needed to fill 1 audio buffer, which is about 1/60 of a
     // second.
-    auto &config = Config::instance();
+    auto config = Config::instance();
     if (!emuState.enableDebugger) {
         // Always run when not debugging
         emuState.emuMode = EmuState::Em_Running;
     }
 
     // Get a buffer from audio subsystem.
-    auto abuf = Audio::instance().getBuffer();
+    auto abuf = Audio::instance()->getBuffer();
     if (abuf == NULL) {
         // No buffer available, don't emulate for now.
         return;
@@ -649,7 +648,7 @@ void UI::emulate() {
             if (emuState.emuMode != EmuState::Em_Running)
                 break;
 
-            if (config.enableSound && emuSpeed == 1) {
+            if (config->enableSound && emuSpeed == 1) {
                 float al = emuState.audioLeft / 65535.0f;
                 float ar = emuState.audioRight / 65535.0f;
                 float l  = dcBlockLeft.filter(al);
@@ -686,7 +685,7 @@ void UI::emulate() {
     }
 
     // Return buffer to audio subsystem.
-    Audio::instance().putBuffer(abuf);
+    Audio::instance()->putBuffer(abuf);
 }
 
 void UI::wndAbout(bool *p_open) {
@@ -965,11 +964,11 @@ void UI::wndScreen(bool *p_open) {
                     ImGui::SetMouseCursor(ImGuiMouseCursor_None);
             }
             if (update) {
-                auto &aqp        = AqUartProtocol::instance();
-                aqp.mouseX       = (float)mx;
-                aqp.mouseY       = (float)my;
-                aqp.mouseButtons = buttonMask;
-                aqp.mouseWheel += (int)io.MouseWheel;
+                auto aqp          = UartProtocol::instance();
+                aqp->mouseX       = (float)mx;
+                aqp->mouseY       = (float)my;
+                aqp->mouseButtons = buttonMask;
+                aqp->mouseWheel += (int)io.MouseWheel;
             }
         }
         allowTyping = ImGui::IsWindowFocused();
@@ -1091,33 +1090,33 @@ void UI::wndMemEdit(bool *p_open) {
         }
     }
 
-    auto &config = Config::instance();
-    if (config.memEditMemSelect < 0 || config.memEditMemSelect > (int)memAreas.size()) {
+    auto config = Config::instance();
+    if (config->memEditMemSelect < 0 || config->memEditMemSelect > (int)memAreas.size()) {
         // Invalid setting, reset to 0
-        config.memEditMemSelect = 0;
+        config->memEditMemSelect = 0;
     }
 
     MemoryEditor::Sizes s;
-    memEdit.calcSizes(s, memAreas[config.memEditMemSelect].size, 0);
+    memEdit.calcSizes(s, memAreas[config->memEditMemSelect].size, 0);
     ImGui::SetNextWindowSize(ImVec2(s.windowWidth, s.windowWidth * 0.60f), ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSizeConstraints(ImVec2(s.windowWidth, 150.0f), ImVec2(s.windowWidth, FLT_MAX));
 
     if (ImGui::Begin("Memory editor", p_open, ImGuiWindowFlags_NoScrollbar)) {
-        if (ImGui::BeginCombo("Memory select", memAreas[config.memEditMemSelect].name.c_str(), ImGuiComboFlags_HeightLargest)) {
+        if (ImGui::BeginCombo("Memory select", memAreas[config->memEditMemSelect].name.c_str(), ImGuiComboFlags_HeightLargest)) {
             for (int i = 0; i < (int)memAreas.size(); i++) {
-                if (ImGui::Selectable(memAreas[i].name.c_str(), config.memEditMemSelect == i)) {
-                    config.memEditMemSelect = i;
+                if (ImGui::Selectable(memAreas[i].name.c_str(), config->memEditMemSelect == i)) {
+                    config->memEditMemSelect = i;
                 }
             }
             ImGui::EndCombo();
         }
         ImGui::Separator();
 
-        memEdit.readFn  = (config.memEditMemSelect == 0) ? z80memRead : nullptr;
-        memEdit.writeFn = (config.memEditMemSelect == 0) ? z80memWrite : nullptr;
-        memEdit.drawContents(memAreas[config.memEditMemSelect].data, memAreas[config.memEditMemSelect].size, 0);
+        memEdit.readFn  = (config->memEditMemSelect == 0) ? z80memRead : nullptr;
+        memEdit.writeFn = (config->memEditMemSelect == 0) ? z80memWrite : nullptr;
+        memEdit.drawContents(memAreas[config->memEditMemSelect].data, memAreas[config->memEditMemSelect].size, 0);
         if (memEdit.contentsWidthChanged) {
-            memEdit.calcSizes(s, memAreas[config.memEditMemSelect].size, 0);
+            memEdit.calcSizes(s, memAreas[config->memEditMemSelect].size, 0);
             ImGui::SetWindowSize(ImVec2(s.windowWidth, ImGui::GetWindowSize().y));
         }
     }
@@ -1350,10 +1349,10 @@ void UI::addrPopup(uint16_t addr) {
             listingReloaded();
         }
         if (ImGui::MenuItem("Show in memory editor")) {
-            auto &config            = Config::instance();
-            config.showMemEdit      = true;
-            config.memEditMemSelect = 0;
-            memEdit.gotoAddr        = addr;
+            auto config              = Config::instance();
+            config->showMemEdit      = true;
+            config->memEditMemSelect = 0;
+            memEdit.gotoAddr         = addr;
             ImGui::CloseCurrentPopup();
         }
         if (ImGui::BeginMenu("Add watch")) {
@@ -1717,7 +1716,7 @@ void UI::wndEspInfo(bool *p_open) {
     bool open = ImGui::Begin("ESP info", p_open, 0);
     if (open) {
         ImGui::SeparatorText("Current path");
-        auto &curPath = AqUartProtocol::instance().currentPath;
+        auto &curPath = UartProtocol::instance()->currentPath;
         ImGui::Text("%s", curPath.empty() ? "/" : curPath.c_str());
         ImGui::SeparatorText("File descriptors");
         if (ImGui::BeginTable("Table", 4, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersV | ImGuiTableFlags_BordersOuter)) {
@@ -1728,7 +1727,7 @@ void UI::wndEspInfo(bool *p_open) {
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableHeadersRow();
 
-            for (auto &entry : AqUartProtocol::instance().fi) {
+            for (auto &entry : UartProtocol::instance()->fi) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", entry.first);
@@ -1750,7 +1749,7 @@ void UI::wndEspInfo(bool *p_open) {
             ImGui::TableSetupScrollFreeze(0, 1);
             ImGui::TableHeadersRow();
 
-            for (auto &entry : AqUartProtocol::instance().di) {
+            for (auto &entry : UartProtocol::instance()->di) {
                 ImGui::TableNextRow();
                 ImGui::TableNextColumn();
                 ImGui::Text("%u", entry.first);

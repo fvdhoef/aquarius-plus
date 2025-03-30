@@ -362,7 +362,7 @@ const char *MemoryEditor::formatBinary(const uint8_t *buf, int width) const {
 
 // [Internal]
 void MemoryEditor::drawPreviewData(size_t addr, const ImU8 *mem_data, size_t mem_size, ImGuiDataType data_type, DataFormat data_format, char *out_buf, size_t out_buf_size) const {
-    uint8_t buf[8];
+    uint8_t buf[16];
     size_t  elem_size = dataTypeGetSize(data_type);
     size_t  size      = addr + elem_size > mem_size ? mem_size - addr : elem_size;
     if (readFn)

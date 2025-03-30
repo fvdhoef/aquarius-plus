@@ -1,14 +1,14 @@
 #include "Config.h"
 #include "cJSON.h"
 #include "EmuState.h"
-#include "AqKeyboard.h"
+#include "Keyboard.h"
 
 Config::Config() {
 }
 
-Config &Config::instance() {
+Config *Config::instance() {
     static Config obj;
-    return obj;
+    return &obj;
 }
 
 void Config::init(const std::string &_appDataPath) {

@@ -1,7 +1,7 @@
 #include "EmuState.h"
 #include <stdlib.h>
-#include "AqUartProtocol.h"
-#include "AqKeyboard.h"
+#include "UartProtocol.h"
+#include "Keyboard.h"
 #include "fpgarom.h"
 
 EmuState emuState;
@@ -245,7 +245,7 @@ void EmuState::keyboardTypeIn() {
     if (emuState.kbBufCnt < 16 && !typeInStr.empty()) {
         char ch = typeInStr.front();
         typeInStr.erase(typeInStr.begin());
-        AqKeyboard::instance().pressKey(ch);
+        Keyboard::instance()->pressKey(ch);
     }
 }
 
@@ -413,8 +413,8 @@ uint8_t EmuState::ioRead(uint16_t addr, bool triggerBp) {
             case 0xF1: return emuState.bankRegs[1];
             case 0xF2: return emuState.bankRegs[2];
             case 0xF3: return emuState.bankRegs[3];
-            case 0xF4: return AqUartProtocol::instance().readCtrl();
-            case 0xF5: return AqUartProtocol::instance().readData();
+            case 0xF4: return UartProtocol::instance()->readCtrl();
+            case 0xF5: return UartProtocol::instance()->readData();
         }
     }
 
@@ -514,8 +514,8 @@ void EmuState::ioWrite(uint16_t addr, uint8_t data, bool triggerBp) {
             case 0xF1: emuState.bankRegs[1] = data; return;
             case 0xF2: emuState.bankRegs[2] = data; return;
             case 0xF3: emuState.bankRegs[3] = data; return;
-            case 0xF4: AqUartProtocol::instance().writeCtrl(data); return;
-            case 0xF5: AqUartProtocol::instance().writeData(data); return;
+            case 0xF4: UartProtocol::instance()->writeCtrl(data); return;
+            case 0xF5: UartProtocol::instance()->writeData(data); return;
             case 0xFA: emuState.kbBufReset(); return;
         }
     }

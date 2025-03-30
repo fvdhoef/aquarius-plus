@@ -14,6 +14,11 @@ struct FileEntry {
 };
 #pragma pack(pop)
 
+struct OpenFile {
+    const FileEntry *fe     = nullptr;
+    unsigned         offset = 0;
+};
+
 static const FileEntry *findFile(const std::string &_path) {
     // Skip leading slashes
     auto idx = _path.find_first_not_of('/');
@@ -36,11 +41,6 @@ static const FileEntry *findFile(const std::string &_path) {
     return nullptr;
 }
 
-struct OpenFile {
-    const FileEntry *fe;
-    unsigned         offset;
-};
-
 class EspVFS : public VFS {
 public:
     OpenFile openFile;
@@ -48,10 +48,10 @@ public:
     EspVFS() {
     }
 
-    void init() {
+    void init() override {
     }
 
-    int open(uint8_t flags, const std::string &_path) {
+    int open(uint8_t flags, const std::string &_path) override {
         (void)flags;
 
         // Skip leading slashes
@@ -60,8 +60,6 @@ public:
             idx = _path.size();
         }
         auto path = _path.substr(idx);
-
-        // printf("esp_open(%u, \"%s\")\n", flags, path.c_str());
 
         auto fe = findFile(_path);
         if (!fe)
@@ -75,7 +73,7 @@ public:
         return 0;
     }
 
-    int read(int fd, size_t size, void *buf) {
+    int read(int fd, size_t size, void *buf) override {
         if (fd == 0) {
             int remaining = openFile.fe->fsize - openFile.offset;
             if ((int)size > remaining) {
@@ -84,17 +82,16 @@ public:
             memcpy(buf, romfs_start + openFile.fe->offset + openFile.offset, size);
             openFile.offset += (int)size;
             return (int)size;
-
         } else {
             return ERR_PARAM;
         }
     }
 
-    int write(int fd, size_t size, const void *buf) {
+    int write(int fd, size_t size, const void *buf) override {
         return ERR_WRITE_PROTECTED;
     }
 
-    int seek(int fd, size_t offset) {
+    int seek(int fd, size_t offset) override {
         if (fd != 0 || !openFile.fe)
             return ERR_PARAM;
 
@@ -105,20 +102,20 @@ public:
         return 0;
     }
 
-    int tell(int fd) {
+    int tell(int fd) override {
         if (fd != 0 || !openFile.fe)
             return ERR_PARAM;
         return openFile.offset;
     }
 
-    int close(int fd) {
+    int close(int fd) override {
         if (fd == 0) {
             openFile.fe = NULL;
         }
         return 0;
     }
 
-    std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags) {
+    std::pair<int, DirEnumCtx> direnum(const std::string &path, uint8_t flags) override {
         (void)path;
         if (flags & DE_FLAG_MODE83)
             return std::make_pair(ERR_PARAM, nullptr);
@@ -137,7 +134,7 @@ public:
         return std::make_pair(0, result);
     }
 
-    int stat(const std::string &_path, struct stat *st) {
+    int stat(const std::string &_path, struct stat *st) override {
         // Skip leading slashes
         auto idx = _path.find_first_not_of('/');
         if (idx == std::string::npos) {

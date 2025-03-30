@@ -36,8 +36,8 @@ int main(int argc, char *argv[]) {
     }
 #endif
 
-    auto &config = Config::instance();
-    config.init(appDataPath);
+    auto config = Config::instance();
+    config->init(appDataPath);
 
     std::string cartRomPath;
     std::string typeInStr;
@@ -58,12 +58,12 @@ int main(int argc, char *argv[]) {
                 char pathbuf[1024];
                 auto path = _fullpath(pathbuf, optarg, sizeof(pathbuf));
                 if (path) {
-                    config.sdCardPath = path;
+                    config->sdCardPath = path;
                 }
 #else
                 auto path = realpath(optarg, nullptr);
                 if (path) {
-                    config.sdCardPath = path;
+                    config->sdCardPath = path;
                     free(path);
                 }
 #endif
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "Options:\n");
         fprintf(stderr, "-h          This help screen\n");
         fprintf(stderr, "-c <path>   Set cartridge ROM path\n");
-        fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", config.sdCardPath.c_str());
+        fprintf(stderr, "-u <path>   SD card base path (default: %s)\n", config->sdCardPath.c_str());
         fprintf(stderr, "-t <string> Type in string.\n");
         fprintf(stderr, "\n");
         exit(1);
@@ -106,7 +106,7 @@ int main(int argc, char *argv[]) {
         cartRomPath,
         typeInStr);
 
-    Config::instance().save();
+    config->save();
 
     return 0;
 }

@@ -12,7 +12,7 @@ class Audio {
     Audio();
 
 public:
-    static Audio &instance();
+    static Audio *instance();
 
     void     init();
     void     start();

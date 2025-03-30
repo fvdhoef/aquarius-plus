@@ -1,6 +1,6 @@
-#include "AqUartProtocol.h"
+#include "UartProtocol.h"
 #include "VFS.h"
-#include "AqKeyboard.h"
+#include "Keyboard.h"
 #include <algorithm>
 #include <time.h>
 #include <math.h>
@@ -48,7 +48,7 @@ enum {
 #define DBGF(...)
 #endif
 
-AqUartProtocol::AqUartProtocol() {
+UartProtocol::UartProtocol() {
     rxBufIdx = 0;
     for (int i = 0; i < MAX_FDS; i++) {
         fdVfs[i] = nullptr;
@@ -60,30 +60,30 @@ AqUartProtocol::AqUartProtocol() {
     }
 }
 
-AqUartProtocol &AqUartProtocol::instance() {
-    static AqUartProtocol *obj = nullptr;
+UartProtocol *UartProtocol::instance() {
+    static UartProtocol *obj = nullptr;
     if (obj == nullptr)
-        obj = new AqUartProtocol();
-    return *obj;
+        obj = new UartProtocol();
+    return obj;
 }
 
-void AqUartProtocol::init() {
+void UartProtocol::init() {
     getEspVFS()->init();
     getHttpVFS()->init();
     getTcpVFS()->init();
 }
 
-void AqUartProtocol::writeData(uint8_t data) {
+void UartProtocol::writeData(uint8_t data) {
     receivedByte(data);
 }
 
-void AqUartProtocol::writeCtrl(uint8_t data) {
+void UartProtocol::writeCtrl(uint8_t data) {
     if (data & 0x80) {
         rxBufIdx = 0;
     }
 }
 
-uint8_t AqUartProtocol::readData() {
+uint8_t UartProtocol::readData() {
     int data = txFifoRead();
     if (data < 0) {
         printf("esp32_read_data - Empty!\n");
@@ -92,7 +92,7 @@ uint8_t AqUartProtocol::readData() {
     return data;
 }
 
-uint8_t AqUartProtocol::readCtrl() {
+uint8_t UartProtocol::readCtrl() {
     uint8_t result = 0;
     if (txBufCnt > 0) {
         result |= 1;
@@ -100,7 +100,7 @@ uint8_t AqUartProtocol::readCtrl() {
     return result;
 }
 
-int AqUartProtocol::txFifoRead() {
+int UartProtocol::txFifoRead() {
     int result = -1;
     if (txBufCnt > 0) {
         result = txBuf[txBufRdIdx++];
@@ -112,7 +112,7 @@ int AqUartProtocol::txFifoRead() {
     return result;
 }
 
-void AqUartProtocol::txFifoWrite(uint8_t data) {
+void UartProtocol::txFifoWrite(uint8_t data) {
     if (txBufCnt >= sizeof(txBuf)) {
         return;
     }
@@ -124,14 +124,14 @@ void AqUartProtocol::txFifoWrite(uint8_t data) {
     }
 }
 
-void AqUartProtocol::txFifoWrite(const void *buf, size_t length) {
+void UartProtocol::txFifoWrite(const void *buf, size_t length) {
     auto p = (const uint8_t *)buf;
     while (length--) {
         txFifoWrite(*(p++));
     }
 }
 
-void AqUartProtocol::splitPath(const std::string &path, std::vector<std::string> &result) {
+void UartProtocol::splitPath(const std::string &path, std::vector<std::string> &result) {
     const char *delimiters = "/\\";
     size_t      start;
     size_t      end = 0;
@@ -157,7 +157,7 @@ static inline std::string toUpper(std::string s) {
 }
 #endif
 
-std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
+std::string UartProtocol::resolvePath(std::string path, VFS **vfs, std::string *wildCard) {
     *vfs = getSDCardVFS();
 
     if (startsWith(path, "http://") || startsWith(path, "https://")) {
@@ -244,7 +244,7 @@ std::string AqUartProtocol::resolvePath(std::string path, VFS **vfs, std::string
     return result;
 }
 
-void AqUartProtocol::closeAllDescriptors() {
+void UartProtocol::closeAllDescriptors() {
     // Close any open descriptors
     for (int i = 0; i < MAX_FDS; i++) {
         if (fdVfs[i] != nullptr) {
@@ -257,13 +257,13 @@ void AqUartProtocol::closeAllDescriptors() {
     }
 }
 
-void AqUartProtocol::receivedByte(uint8_t data) {
+void UartProtocol::receivedByte(uint8_t data) {
     if (rxBufIdx == 0 && data == 0) {
         // Ignore zero-bytes after break
         return;
     }
 
-    // printf("AqUartProtocol::receivedByte %02X\n", data);
+    // printf("UartProtocol::receivedByte %02X\n", data);
 
     rxBuf[rxBufIdx] = data;
     if (rxBufIdx < sizeof(rxBuf) - 1) {
@@ -501,12 +501,12 @@ void AqUartProtocol::receivedByte(uint8_t data) {
     }
 }
 
-void AqUartProtocol::cmdReset() {
+void UartProtocol::cmdReset() {
     closeAllDescriptors();
     currentPath.clear();
 }
 
-void AqUartProtocol::cmdVersion() {
+void UartProtocol::cmdVersion() {
     DBGF("VERSION");
 
     extern const char *versionStr;
@@ -517,7 +517,7 @@ void AqUartProtocol::cmdVersion() {
     txFifoWrite(0);
 }
 
-void AqUartProtocol::cmdGetDateTime(uint8_t type) {
+void UartProtocol::cmdGetDateTime(uint8_t type) {
     DBGF("GETDATETIME");
     if (type != 0) {
         txFifoWrite(ERR_PARAM);
@@ -541,15 +541,15 @@ void AqUartProtocol::cmdGetDateTime(uint8_t type) {
     return;
 }
 
-void AqUartProtocol::cmdKeyMode(uint8_t mode) {
+void UartProtocol::cmdKeyMode(uint8_t mode) {
     setKeyMode(mode);
     txFifoWrite(0);
     return;
 }
 
-void AqUartProtocol::cmdGetMouse() {
+void UartProtocol::cmdGetMouse() {
     DBGF("GETMOUSE");
-    mousePresent = Config::instance().enableMouse;
+    mousePresent = Config::instance()->enableMouse;
 
     if (!mousePresent) {
         txFifoWrite(ERR_NOT_FOUND);
@@ -569,7 +569,7 @@ void AqUartProtocol::cmdGetMouse() {
     emuState.mouseHideTimeout = 1.0f;
 }
 
-void AqUartProtocol::cmdGetGameCtrl(uint8_t idx) {
+void UartProtocol::cmdGetGameCtrl(uint8_t idx) {
     DBGF("GETGAMECTRL");
     if (idx != 0 || !gameCtrlPresent) {
         txFifoWrite(ERR_NOT_FOUND);
@@ -586,7 +586,7 @@ void AqUartProtocol::cmdGetGameCtrl(uint8_t idx) {
     txFifoWrite(gameCtrlButtons >> 8);
 }
 
-void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
+void UartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
     DBGF("OPEN: flags: 0x%02X '%s'\n", flags, pathArg);
 
     // Find free file descriptor
@@ -627,7 +627,7 @@ void AqUartProtocol::cmdOpen(uint8_t flags, const char *pathArg) {
     }
 }
 
-void AqUartProtocol::cmdClose(uint8_t fd) {
+void UartProtocol::cmdClose(uint8_t fd) {
     DBGF("CLOSE fd: %d\n", fd);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -644,7 +644,7 @@ void AqUartProtocol::cmdClose(uint8_t fd) {
     }
 }
 
-void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
+void UartProtocol::cmdRead(uint8_t fd, uint16_t size) {
     DBGF("READ fd: %d  size: %u\n", fd, size);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -665,7 +665,7 @@ void AqUartProtocol::cmdRead(uint8_t fd, uint16_t size) {
     }
 }
 
-void AqUartProtocol::cmdReadLine(uint8_t fd, uint16_t size) {
+void UartProtocol::cmdReadLine(uint8_t fd, uint16_t size) {
     DBGF("READLINE fd: %d  size: %u\n", fd, size);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -691,7 +691,7 @@ void AqUartProtocol::cmdReadLine(uint8_t fd, uint16_t size) {
     }
 }
 
-void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
+void UartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
     DBGF("WRITE fd: %d  size: %u\n", fd, size);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -711,7 +711,7 @@ void AqUartProtocol::cmdWrite(uint8_t fd, uint16_t size, const void *data) {
     }
 }
 
-void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
+void UartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
     DBGF("SEEK fd: %d  offset: %u\n", fd, (unsigned)offset);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -724,7 +724,7 @@ void AqUartProtocol::cmdSeek(uint8_t fd, uint32_t offset) {
     fi[fd].offset = fdVfs[fd]->tell(fds[fd]);
 }
 
-void AqUartProtocol::cmdTell(uint8_t fd) {
+void UartProtocol::cmdTell(uint8_t fd) {
     DBGF("TELL fd: %d\n", fd);
 
     if (fd >= MAX_FDS || fdVfs[fd] == nullptr) {
@@ -783,7 +783,7 @@ static bool wildcardMatch(const std::string &text, const std::string &pattern) {
     return (textPos == (int)text.size() && patternPos == (int)pattern.size());
 }
 
-void AqUartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t skip_count) {
+void UartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t skip_count) {
     DBGF("OPENDIR: '%s'\n", pathArg);
 
     // Find free directory descriptor
@@ -846,7 +846,7 @@ void AqUartProtocol::cmdOpenDirExt(const char *pathArg, uint8_t flags, uint16_t 
     }
 }
 
-void AqUartProtocol::cmdCloseDir(uint8_t dd) {
+void UartProtocol::cmdCloseDir(uint8_t dd) {
     DBGF("CLOSEDIR dd: %d\n", dd);
 
     if (dd >= MAX_DDS || deCtxs[dd] == nullptr) {
@@ -862,7 +862,7 @@ void AqUartProtocol::cmdCloseDir(uint8_t dd) {
     }
 }
 
-void AqUartProtocol::cmdReadDir(uint8_t dd) {
+void UartProtocol::cmdReadDir(uint8_t dd) {
     DBGF("READDIR dd: %d\n", dd);
 
     if (dd >= MAX_DDS || deCtxs[dd] == nullptr) {
@@ -893,7 +893,7 @@ void AqUartProtocol::cmdReadDir(uint8_t dd) {
     di[dd].offset++;
 }
 
-void AqUartProtocol::cmdDelete(const char *pathArg) {
+void UartProtocol::cmdDelete(const char *pathArg) {
     DBGF("DELETE %s\n", pathArg);
 
     VFS *vfs  = nullptr;
@@ -905,7 +905,7 @@ void AqUartProtocol::cmdDelete(const char *pathArg) {
     txFifoWrite(vfs->delete_(path));
 }
 
-void AqUartProtocol::cmdRename(const char *oldArg, const char *newArg) {
+void UartProtocol::cmdRename(const char *oldArg, const char *newArg) {
     DBGF("RENAME %s -> %s\n", oldArg, newArg);
 
     VFS *vfs1     = nullptr;
@@ -920,7 +920,7 @@ void AqUartProtocol::cmdRename(const char *oldArg, const char *newArg) {
     txFifoWrite(vfs1->rename(_oldPath, _newPath));
 }
 
-void AqUartProtocol::cmdMkDir(const char *pathArg) {
+void UartProtocol::cmdMkDir(const char *pathArg) {
     DBGF("MKDIR %s\n", pathArg);
 
     VFS *vfs  = nullptr;
@@ -932,7 +932,7 @@ void AqUartProtocol::cmdMkDir(const char *pathArg) {
     txFifoWrite(vfs->mkdir(path));
 }
 
-void AqUartProtocol::cmdChDir(const char *pathArg) {
+void UartProtocol::cmdChDir(const char *pathArg) {
     DBGF("CHDIR %s\n", pathArg);
 
     // Compose full path
@@ -959,7 +959,7 @@ void AqUartProtocol::cmdChDir(const char *pathArg) {
     txFifoWrite(result);
 }
 
-void AqUartProtocol::cmdStat(const char *pathArg) {
+void UartProtocol::cmdStat(const char *pathArg) {
     DBGF("STAT %s\n", pathArg);
 
     VFS *vfs  = nullptr;
@@ -999,7 +999,7 @@ void AqUartProtocol::cmdStat(const char *pathArg) {
     txFifoWrite((st.st_size >> 24) & 0xFF);
 }
 
-void AqUartProtocol::cmdGetCwd() {
+void UartProtocol::cmdGetCwd() {
     DBGF("GETCWD\n");
 
     txFifoWrite(0);
@@ -1012,7 +1012,7 @@ void AqUartProtocol::cmdGetCwd() {
     txFifoWrite(0);
 }
 
-void AqUartProtocol::cmdCloseAll() {
+void UartProtocol::cmdCloseAll() {
     DBGF("CLOSEALL\n");
     closeAllDescriptors();
     txFifoWrite(0);
@@ -1021,7 +1021,7 @@ void AqUartProtocol::cmdCloseAll() {
     di.clear();
 }
 
-void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
+void UartProtocol::cmdLoadFpga(const char *pathArg) {
     DBGF("LOADFPGA\n");
 
     VFS *vfs  = nullptr;
@@ -1063,7 +1063,7 @@ void AqUartProtocol::cmdLoadFpga(const char *pathArg) {
     free(buf);
 }
 
-void AqUartProtocol::gameCtrlUpdated() {
+void UartProtocol::gameCtrlUpdated() {
     // Update hand controller
     uint8_t handCtrl = 0xFF;
 
@@ -1133,7 +1133,7 @@ void AqUartProtocol::gameCtrlUpdated() {
         }
     }
 
-    auto &aqk             = AqKeyboard::instance();
-    aqk.handCtrl_gameCtrl = handCtrl;
-    aqk.updateMatrix();
+    auto aqk               = Keyboard::instance();
+    aqk->handCtrl_gameCtrl = handCtrl;
+    aqk->updateMatrix();
 }

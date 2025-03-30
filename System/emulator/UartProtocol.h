@@ -42,11 +42,11 @@ enum GameCtrlBtnIdx {
     GCB_SHARE      = (1 << GCB_SHARE_IDX),
 };
 
-class AqUartProtocol {
-    AqUartProtocol();
+class UartProtocol {
+    UartProtocol();
 
 public:
-    static AqUartProtocol &instance();
+    static UartProtocol *instance();
 
     void init();
 

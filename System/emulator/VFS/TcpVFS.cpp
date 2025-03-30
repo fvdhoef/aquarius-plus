@@ -10,9 +10,9 @@
 
 class TcpVFS : public VFS {
 public:
-    bool in_use[MAX_FDS] = {0};
+    bool inUse[MAX_FDS]   = {0};
 #ifndef _WIN32
-    int sockets[MAX_FDS] = {0};
+    int  sockets[MAX_FDS] = {0};
 #else
     SOCKET sockets[MAX_FDS] = {0};
 #endif
@@ -20,7 +20,7 @@ public:
     TcpVFS() {
     }
 
-    void init() {
+    void init() override {
 #ifdef _WIN32
         WSADATA wsaData;
         WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -35,7 +35,7 @@ public:
         }
     }
 
-    int open(uint8_t flags, const std::string &_path) {
+    int open(uint8_t flags, const std::string &_path) override {
         (void)flags;
         printf("TCP open: %s\n", _path.c_str());
 
@@ -61,7 +61,7 @@ public:
         // Find free file descriptor
         int fd = -1;
         for (int i = 0; i < MAX_FDS; i++) {
-            if (!in_use[i]) {
+            if (!inUse[i]) {
                 fd = i;
                 break;
             }
@@ -139,15 +139,15 @@ public:
         }
 
         // Success!
-        in_use[fd]  = true;
+        inUse[fd]   = true;
         sockets[fd] = sock;
         return fd;
     }
 
-    int read(int fd, size_t size, void *buf) {
+    int read(int fd, size_t size, void *buf) override {
         // printf("TCP read: %d  size: %u\n", fd, (unsigned)size);
 
-        if (fd >= MAX_FDS || !in_use[fd])
+        if (fd >= MAX_FDS || !inUse[fd])
             return ERR_PARAM;
         auto sock = sockets[fd];
 
@@ -185,10 +185,10 @@ public:
         return len;
     }
 
-    int write(int fd, size_t size, const void *buf) {
+    int write(int fd, size_t size, const void *buf) override {
         // printf("TCP write: %d  size: %u\n", fd, (unsigned)size);
 
-        if (fd >= MAX_FDS || !in_use[fd])
+        if (fd >= MAX_FDS || !inUse[fd])
             return ERR_PARAM;
         auto sock = sockets[fd];
 
@@ -217,17 +217,17 @@ public:
         return (int)size;
     }
 
-    int close(int fd) {
+    int close(int fd) override {
         printf("TCP close: %d\n", fd);
 
-        if (fd >= MAX_FDS || !in_use[fd])
+        if (fd >= MAX_FDS || !inUse[fd])
             return ERR_PARAM;
 #ifndef _WIN32
         ::close(sockets[fd]);
 #else
         ::closesocket(sockets[fd]);
 #endif
-        in_use[fd]  = false;
+        inUse[fd]   = false;
         sockets[fd] = -1;
 
         return 0;
