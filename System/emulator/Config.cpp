@@ -69,7 +69,7 @@ void Config::load() {
 
         displayScaling = (DisplayScaling)getIntValue(root, "displayScaling", (int)DisplayScaling::Linear);
 
-        setKeyLayout((KeyLayout)getIntValue(root, "keyLayout", 0));
+        Keyboard::instance()->setKeyLayout((KeyLayout)getIntValue(root, "keyLayout", 0));
 
         handCtrlEmulation = getBoolValue(root, "handCtrlEmulation", false);
 
@@ -150,7 +150,7 @@ void Config::save() {
 
     cJSON_AddNumberToObject(root, "displayScaling", (int)displayScaling);
 
-    cJSON_AddNumberToObject(root, "keyLayout", (int)getKeyLayout());
+    cJSON_AddNumberToObject(root, "keyLayout", (int)Keyboard::instance()->getKeyLayout());
 
     cJSON_AddBoolToObject(root, "handCtrlEmulation", handCtrlEmulation);
 

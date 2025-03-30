@@ -542,7 +542,7 @@ void UartProtocol::cmdGetDateTime(uint8_t type) {
 }
 
 void UartProtocol::cmdKeyMode(uint8_t mode) {
-    setKeyMode(mode);
+    Keyboard::instance()->setKeyMode(mode);
     txFifoWrite(0);
     return;
 }

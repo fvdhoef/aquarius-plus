@@ -10,75 +10,32 @@ enum class KeyLayout {
     Count,
 };
 
-void        setKeyLayout(KeyLayout layout);
-KeyLayout   getKeyLayout();
-std::string getKeyLayoutName(KeyLayout layout);
-void        setKeyMode(uint8_t mode);
-uint8_t     getKeyMode();
-
 enum {
     NUM_LOCK    = (1 << 0),
     CAPS_LOCK   = (1 << 1),
     SCROLL_LOCK = (1 << 2),
 };
 
-class KeyboardLayout {
-public:
-    void processScancode(unsigned scanCode, bool keyDown);
-
-    uint8_t layoutUS(unsigned scanCode);
-    uint8_t layoutUK(unsigned scanCode);
-    uint8_t layoutFR(unsigned scanCode);
-    uint8_t layoutDE(unsigned scanCode);
-    uint8_t compose(uint8_t first, uint8_t second);
-
-    uint8_t  modifiers    = 0;
-    uint8_t  leds         = 0;
-    uint8_t  composeFirst = 0;
-    uint8_t  repeat       = 0;
-    unsigned pressCounter = 0;
-};
-
 class Keyboard {
-public:
-    virtual void handleScancode(unsigned scanCode, bool keyDown);
-
-private:
-    Keyboard();
-
 public:
     static Keyboard *instance();
 
-    void init();
-    void pressKey(unsigned char ch);
-    void updateMatrix();
-    bool scrollLockOn() {
-        return (ledStatus != 0xFF) && (ledStatus & SCROLL_LOCK);
-    }
-    void setScrollLock(bool value) {
-        if (ledStatus == 0xFF)
-            ledStatus = 0;
-        ledStatus = (ledStatus & ~SCROLL_LOCK) | (value ? SCROLL_LOCK : 0);
-    }
-    void repeatTimer();
+    virtual void handleScancode(unsigned scanCode, bool keyDown) = 0;
+
+    virtual void        setKeyLayout(KeyLayout layout)     = 0;
+    virtual KeyLayout   getKeyLayout()                     = 0;
+    virtual std::string getKeyLayoutName(KeyLayout layout) = 0;
+
+    virtual void    setKeyMode(uint8_t mode) = 0;
+    virtual uint8_t getKeyMode()             = 0;
+
+    virtual void pressKey(uint8_t ch) = 0;
+
+    virtual void updateMatrix()            = 0;
+    virtual void setScrollLock(bool value) = 0;
+    virtual void repeatTimer()             = 0;
 
     uint8_t handCtrl_gameCtrl = 0xFF;
-
-private:
-    KeyboardLayout kbLayout;
-
-    unsigned handCtrl1Pressed = 0;
-    uint64_t prevMatrix       = 0;
-    uint64_t keybMatrix       = 0;
-    uint8_t  prevHandCtrl1    = 0xFF;
-    uint8_t  prevHandCtrl2    = 0xFF;
-    uint8_t  handCtrl1        = 0xFF;
-    uint8_t  handCtrl2        = 0xFF;
-    uint8_t  ledStatus        = 0;
-
-    bool handController(unsigned scanCode, bool keyDown);
-
-    static const uint8_t scanCodeLut[];
 };
 
 enum ScanCode {

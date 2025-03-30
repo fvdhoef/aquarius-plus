@@ -81,7 +81,6 @@ void UI::start(
     Audio::instance()->init();
     emuState.coldReset();
     Audio::instance()->start();
-    Keyboard::instance()->init();
 
     // Run main loop
     mainLoop();
@@ -364,9 +363,9 @@ void UI::mainLoop() {
                 ImGui::Separator();
                 for (int i = 0; i < (int)KeyLayout::Count; i++) {
                     char tmp[64];
-                    snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", getKeyLayoutName((KeyLayout)i).c_str());
-                    if (ImGui::MenuItem(tmp, "", getKeyLayout() == (KeyLayout)i))
-                        setKeyLayout((KeyLayout)i);
+                    snprintf(tmp, sizeof(tmp), "Keyboard layout: %s", Keyboard::instance()->getKeyLayoutName((KeyLayout)i).c_str());
+                    if (ImGui::MenuItem(tmp, "", Keyboard::instance()->getKeyLayout() == (KeyLayout)i))
+                        Keyboard::instance()->setKeyLayout((KeyLayout)i);
                 }
                 ImGui::EndMenu();
             }
@@ -1152,7 +1151,7 @@ void UI::wndIoRegs(bool *p_open) {
             ImGui::Text("$F3 BANK3: $%02X - page:%u%s%s", emuState.bankRegs[3], emuState.bankRegs[3] & 0x3F, emuState.bankRegs[3] & 0x80 ? " RO" : "", emuState.bankRegs[3] & 0x40 ? " OVL" : "");
         }
         if (ImGui::CollapsingHeader("Key buffer")) {
-            auto keyMode = getKeyMode();
+            auto keyMode = Keyboard::instance()->getKeyMode();
 
             {
                 uint8_t val = emuState.kbBufCnt == 0 ? 0 : emuState.kbBuf[emuState.kbBufRdIdx];
