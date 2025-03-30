@@ -1,8 +1,8 @@
 on:
   workflow_dispatch:
-  # push:
-  #   tags:
-  #     - "V*.*"
+  push:
+    tags:
+      - "V*.*"
 
 name: Build Aquarius+ emulator (CMake)
 run-name: Aquarius+ emulator ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
