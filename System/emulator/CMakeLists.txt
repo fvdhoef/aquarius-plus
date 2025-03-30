@@ -10,6 +10,10 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+if (APPLE)
+    set(CMAKE_OSX_ARCHITECTURES "x86_64;arm64" CACHE STRING "" FORCE)
+endif()
+
 add_executable(${CMAKE_PROJECT_NAME})
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
@@ -68,15 +72,28 @@ if (LINUX)
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE ${SDL2_CFLAGS_OTHER})
 endif()
 
+if (APPLE)
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/macos/AquariusPlusEmu.app/Contents/Frameworks/SDL2.framework)
+    target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE -F${CMAKE_SOURCE_DIR}/macos/AquariusPlusEmu.app/Contents/Frameworks)
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/macos/AquariusPlusEmu.app/Contents/Frameworks/SDL2.framework/Headers)
+    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE -F${CMAKE_CURRENT_SOURCE_DIR}/macos/AquariusPlusEmu.app/Contents/Frameworks -framework SDL2 -Wl,-rpath,@executable_path/../Frameworks/)
+
+    add_custom_command(
+        TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
+        COMMAND rm -rf ${CMAKE_BINARY_DIR}/AquariusPlusEmu.app
+        COMMAND cp -r ${CMAKE_CURRENT_SOURCE_DIR}/macos/AquariusPlusEmu.app ${CMAKE_BINARY_DIR}
+        COMMAND mkdir -p ${CMAKE_BINARY_DIR}/AquariusPlusEmu.app/Contents/MacOS/
+        COMMAND cp ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME} ${CMAKE_BINARY_DIR}/AquariusPlusEmu.app/Contents/MacOS/aquarius_emu
+    )
+endif()
+
 if (MSVC)
     target_compile_options(${CMAKE_PROJECT_NAME} PRIVATE /W3 /WX)
     target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
         windows
         windows/SDL2-2.0.20/include
     )
-    target_sources(${CMAKE_PROJECT_NAME} PRIVATE
-        windows/Resource.rc
-    )
+    target_sources(${CMAKE_PROJECT_NAME} PRIVATE windows/Resource.rc)
     target_link_options(${CMAKE_PROJECT_NAME} PRIVATE /SUBSYSTEM:WINDOWS)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2.lib)
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/windows/SDL2-2.0.20/lib/x64/SDL2main.lib)
