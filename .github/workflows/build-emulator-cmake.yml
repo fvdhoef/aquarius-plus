@@ -115,14 +115,14 @@ jobs:
       - name: Rename installer
         run: |
           $VERSION=git describe
-          move System/emulator/windows/Output/AquariusPlusEmu-Windows-x64.exe System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-$VERSION.exe
+          move System/emulator/windows/Output/AquariusPlusEmu-Windows-x64.exe System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-installer-$VERSION.exe
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
           path: |
             System/emulator/build/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
-            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-*.exe
+            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-installer-*.exe
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
@@ -130,7 +130,7 @@ jobs:
           prerelease: true
           files: |
             System/emulator/build/Release/AquariusPlusEmu-Windows-x64-portable-*.zip
-            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-*.exe
+            System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-installer-*.exe
 
   build-sdcard:
     name: Build SD card ZIP
