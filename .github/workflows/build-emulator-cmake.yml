@@ -108,9 +108,10 @@ jobs:
           xcopy /E /I EndUser\sdcard System\emulator\build\Release\AquariusPlusEmu\sdcard
           cd System\emulator\build\Release
           Compress-Archive -Path AquariusPlusEmu -Destination AquariusPlusEmu-Windows-x64-portable-$VERSION.zip
-      - name: Creating installer
-        uses: Minionguyjpro/Inno-Setup-Action@v1.2.2
-        with: System/emulator/windows/AquariusPlusEmu.iss
+      - name: Creating Inno Setup installer
+        uses: Minionguyjpro/Inno-Setup-Action@v1.2.5
+        with:
+          path: System/emulator/windows/AquariusPlusEmu.iss
       - name: Rename installer
         run: |
           $VERSION=git describe
