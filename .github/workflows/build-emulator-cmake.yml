@@ -23,7 +23,6 @@ jobs:
           echo "const char *versionStr = \"`git describe`\";" > System/emulator/Version.cpp
           cmake -DCMAKE_BUILD_TYPE=Release -S System/emulator -B System/emulator/build -G Ninja
           ninja -C System/emulator/build
-          make -C System/emulator
       - name: Creating release directory structure
         run: |
           cd System/emulator/build
