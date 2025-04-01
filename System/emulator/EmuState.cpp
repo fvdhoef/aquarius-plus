@@ -3,6 +3,7 @@
 #include "UartProtocol.h"
 #include "Keyboard.h"
 #include "fpgarom.h"
+#include "FpgaCore.h"
 
 EmuState emuState;
 
@@ -24,6 +25,8 @@ EmuState::EmuState() {
     z80ctx.ioWrite  = _ioWrite;
     z80ctx.memRead  = _memRead;
     z80ctx.memWrite = _memWrite;
+
+    loadFpgaCore(FpgaCoreType::AquariusPlus);
 }
 
 void EmuState::coldReset() {

@@ -235,7 +235,7 @@ void UI::mainLoop() {
             io.WantSaveIniSettings = false;
         }
 
-        Keyboard::instance()->setScrollLock(config->handCtrlEmulation);
+        // Keyboard::instance()->setScrollLock(config->handCtrlEmulation);
 
         io.FontGlobalScale = config->fontScale2x ? 2.0f : 1.0f;
 
@@ -246,9 +246,9 @@ void UI::mainLoop() {
 
         // Safe-guard for misbehaving video drivers that don't lock on v-sync
         auto ticks = SDL_GetTicks64();
-        if (ticks - lastKeyRepeatCall > 16) {
+        if (ticks - lastKeyRepeatCall >= 16) {
             lastKeyRepeatCall = ticks;
-            Keyboard::instance()->repeatTimer();
+            Keyboard::instance()->keyRepeatTimer();
         }
 
         renderScreen();

@@ -23,6 +23,8 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     UI
     VFS
     libz80
+    FpgaCores
+    FpgaCores/AquariusPlus
 )
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
@@ -47,6 +49,9 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     VFS/HttpVFS.cpp
     VFS/SDCardVFS.cpp
     VFS/TcpVFS.cpp
+
+    FpgaCores/FpgaCore.cpp
+    FpgaCores/AquariusPlus/CoreAquariusPlus.cpp
 
     libz80/z80.c
 

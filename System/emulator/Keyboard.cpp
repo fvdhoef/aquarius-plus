@@ -1,4 +1,5 @@
 #include "Keyboard.h"
+#include "FpgaCore.h"
 #include "AqKeyboardDefs.h"
 #include <SDL.h>
 #include "EmuState.h"
@@ -145,21 +146,20 @@ static ComposeCombo composeCombos[] = {
 
 class KeyboardInt : public Keyboard {
 public:
-    uint8_t   modifiers        = 0;
-    uint8_t   repeat           = 0;
-    unsigned  pressCounter     = 0;
-    uint8_t   keyMode          = 3;
-    KeyLayout curLayout        = KeyLayout::US;
-    uint8_t   leds             = 0;
-    uint8_t   composeFirst     = 0;
-    unsigned  handCtrl1Pressed = 0;
-    uint64_t  prevMatrix       = 0;
-    uint64_t  keybMatrix       = 0;
-    uint8_t   prevHandCtrl1    = 0xFF;
-    uint8_t   prevHandCtrl2    = 0xFF;
-    uint8_t   handCtrl1        = 0xFF;
-    uint8_t   handCtrl2        = 0xFF;
-    uint8_t   ledStatus        = 0;
+    uint8_t   modifiers    = 0;
+    uint8_t   repeat       = 0;
+    unsigned  pressCounter = 0;
+    uint8_t   keyMode      = 3;
+    KeyLayout curLayout    = KeyLayout::US;
+    uint8_t   leds         = 0;
+    uint8_t   composeFirst = 0;
+
+    uint64_t prevMatrix    = 0;
+    uint64_t keybMatrix    = 0;
+    uint8_t  prevHandCtrl1 = 0xFF;
+    uint8_t  prevHandCtrl2 = 0xFF;
+    uint8_t  handCtrl1     = 0xFF;
+    uint8_t  handCtrl2     = 0xFF;
 
     KeyboardInt() {
     }
@@ -172,217 +172,52 @@ public:
         return keyMode;
     }
 
-    void setScrollLock(bool value) override {
-        if (ledStatus == 0xFF)
-            ledStatus = 0;
-        ledStatus = (ledStatus & ~SCROLL_LOCK) | (value ? SCROLL_LOCK : 0);
+    void keyRepeatTimer() override {
+        if (repeat == 0) {
+            pressCounter = 0;
+            return;
+        }
+
+        pressCounter++;
+        if (pressCounter > 30 && pressCounter % 3 == 0) {
+            if ((keyMode & 4) != 0 /*&& !getDisplayOverlay()->isVisible()*/) {
+                auto core = getFpgaCore();
+                if (core)
+                    core->keyChar(repeat, true);
+            }
+        }
     }
 
     void handleScancode(unsigned scanCode, bool keyDown) override {
         // printf("%3d: %s\n", scanCode, keyDown ? "DOWN" : "UP");
         repeat       = 0;
         pressCounter = 0;
-
-        // Hand controller emulation
-        if (handController(scanCode, keyDown))
-            return;
+        if (keyDown) {
+            // uint8_t val = scanCode;
+            // xQueueSend(scanCodeQueue, &val, 0);
+        }
 
         // Keyboard layout handling
-        processScancode(scanCode, keyDown);
+        int ch = processScancode(scanCode, keyDown);
 
-        // Keyboard matrix emulation
-        {
-            int key = -1;
-            switch (scanCode) {
-                case SCANCODE_EQUALS: key = KEY_EQUALS; break;
-                case SCANCODE_BACKSPACE: key = KEY_BACKSPACE; break;
-                case SCANCODE_APOSTROPHE: key = KEY_COLON; break;
-                case SCANCODE_RETURN: key = KEY_RETURN; break;
-                case SCANCODE_SEMICOLON: key = KEY_SEMICOLON; break;
-                case SCANCODE_PERIOD: key = KEY_PERIOD; break;
-                case SCANCODE_INSERT: key = KEY_INSERT; break;
-                case SCANCODE_DELETE: key = KEY_DELETE; break;
-                case SCANCODE_MINUS: key = KEY_MINUS; break;
-                case SCANCODE_SLASH: key = KEY_SLASH; break;
-                case SCANCODE_0: key = KEY_0; break;
-                case SCANCODE_P: key = KEY_P; break;
-                case SCANCODE_L: key = KEY_L; break;
-                case SCANCODE_COMMA: key = KEY_COMMA; break;
-                case SCANCODE_UP: key = KEY_UP; break;
-                case SCANCODE_RIGHT: key = KEY_RIGHT; break;
-                case SCANCODE_9: key = KEY_9; break;
-                case SCANCODE_O: key = KEY_O; break;
-                case SCANCODE_K: key = KEY_K; break;
-                case SCANCODE_M: key = KEY_M; break;
-                case SCANCODE_N: key = KEY_N; break;
-                case SCANCODE_J: key = KEY_J; break;
-                case SCANCODE_LEFT: key = KEY_LEFT; break;
-                case SCANCODE_DOWN: key = KEY_DOWN; break;
-                case SCANCODE_8: key = KEY_8; break;
-                case SCANCODE_I: key = KEY_I; break;
-                case SCANCODE_7: key = KEY_7; break;
-                case SCANCODE_U: key = KEY_U; break;
-                case SCANCODE_H: key = KEY_H; break;
-                case SCANCODE_B: key = KEY_B; break;
-                case SCANCODE_HOME: key = KEY_HOME; break;
-                case SCANCODE_END: key = KEY_END; break;
-                case SCANCODE_6: key = KEY_6; break;
-                case SCANCODE_Y: key = KEY_Y; break;
-                case SCANCODE_G: key = KEY_G; break;
-                case SCANCODE_V: key = KEY_V; break;
-                case SCANCODE_C: key = KEY_C; break;
-                case SCANCODE_F: key = KEY_F; break;
-                case SCANCODE_PAGEUP: key = KEY_PGUP; break;
-                case SCANCODE_PAGEDOWN: key = KEY_PGDN; break;
-                case SCANCODE_5: key = KEY_5; break;
-                case SCANCODE_T: key = KEY_T; break;
-                case SCANCODE_4: key = KEY_4; break;
-                case SCANCODE_R: key = KEY_R; break;
-                case SCANCODE_D: key = KEY_D; break;
-                case SCANCODE_X: key = KEY_X; break;
-                case SCANCODE_PAUSE: key = KEY_PAUSE; break;
-                case SCANCODE_PRINTSCREEN: key = KEY_PRTSCR; break;
-                case SCANCODE_3: key = KEY_3; break;
-                case SCANCODE_E: key = KEY_E; break;
-                case SCANCODE_S: key = KEY_S; break;
-                case SCANCODE_Z: key = KEY_Z; break;
-                case SCANCODE_SPACE: key = KEY_SPACE; break;
-                case SCANCODE_A: key = KEY_A; break;
-                case SCANCODE_APPLICATION: key = KEY_MENU; break;
-                case SCANCODE_TAB: key = KEY_TAB; break;
-                case SCANCODE_2: key = KEY_2; break;
-                case SCANCODE_W: key = KEY_W; break;
-                case SCANCODE_1: key = KEY_1; break;
-                case SCANCODE_Q: key = KEY_Q; break;
-                default: break;
-            }
-            if (key >= 0) {
-                if (keyDown)
-                    keybMatrix |= (1ULL << key);
-                else
-                    keybMatrix &= ~(1ULL << key);
-            }
+        bool stopProcessing = false;
+        auto core           = getFpgaCore();
+        if (core /*&& (!getDisplayOverlay()->isVisible() || !keyDown)*/) {
+            stopProcessing = core->keyScancode(modifiers, scanCode, keyDown);
+        }
 
-            if (modifiers & (ModLShift | ModRShift))
-                keybMatrix |= (1ULL << KEY_SHIFT);
-            else
-                keybMatrix &= ~(1ULL << KEY_SHIFT);
+        if (!stopProcessing && ch > 0) {
+            if (ch != 0xFF) {
+                repeat = ch;
 
-            if (modifiers & (ModLAlt | ModRAlt))
-                keybMatrix |= (1ULL << KEY_ALT);
-            else
-                keybMatrix &= ~(1ULL << KEY_ALT);
-
-            if (modifiers & (ModLCtrl | ModRCtrl))
-                keybMatrix |= (1ULL << KEY_CTRL);
-            else
-                keybMatrix &= ~(1ULL << KEY_CTRL);
-
-            if (modifiers & (ModLGui | ModRGui))
-                keybMatrix |= (1ULL << KEY_GUI);
-            else
-                keybMatrix &= ~(1ULL << KEY_GUI);
-
-            // Handle ESCAPE as if CTRL-C is pressed
-            if (scanCode == SCANCODE_ESCAPE) {
-                if (keyDown) {
-                    keybMatrix |= (1ULL << KEY_C) | (1ULL << KEY_CTRL);
-                } else {
-                    keybMatrix &= ~((1ULL << KEY_C) | (1ULL << KEY_CTRL));
+                // if (!getDisplayOverlay()->isVisible())
+                {
+                    auto core = getFpgaCore();
+                    if (core)
+                        core->keyChar(ch, false);
                 }
             }
         }
-
-        // Special keys
-        {
-            uint8_t combinedModifiers = (modifiers & 0xF) | (modifiers >> 4);
-            if (scanCode == SCANCODE_ESCAPE && keyDown) {
-                if (combinedModifiers == ModLCtrl) {
-                    emuState.warmReset();
-                } else if (combinedModifiers == (ModLShift | ModLCtrl)) {
-                    emuState.coldReset();
-                }
-            }
-        }
-
-        if (ledStatus != leds) {
-            ledStatus = leds;
-        }
-    }
-
-    void repeatTimer() override {
-        if ((keyMode & 1) == 0 || (keyMode & 4) == 0 || repeat == 0) {
-            pressCounter = 0;
-            return;
-        }
-
-        pressCounter++;
-        if (pressCounter > 15 && pressCounter % 3 == 0) {
-            emuState.kbBufWrite(repeat);
-        }
-    }
-
-    bool handController(unsigned scanCode, bool keyDown) {
-        handCtrl1 = 0xFF;
-        if ((ledStatus & SCROLL_LOCK) == 0) {
-            handCtrl1Pressed = 0;
-            return false;
-        }
-
-        bool result = true;
-
-        enum {
-            UP    = (1 << 0),
-            DOWN  = (1 << 1),
-            LEFT  = (1 << 2),
-            RIGHT = (1 << 3),
-            K1    = (1 << 4),
-            K2    = (1 << 5),
-            K3    = (1 << 6),
-            K4    = (1 << 7),
-            K5    = (1 << 8),
-            K6    = (1 << 9),
-        };
-
-        switch (scanCode) {
-            case SCANCODE_UP: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | UP) : (handCtrl1Pressed & ~UP); break;
-            case SCANCODE_DOWN: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | DOWN) : (handCtrl1Pressed & ~DOWN); break;
-            case SCANCODE_LEFT: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | LEFT) : (handCtrl1Pressed & ~LEFT); break;
-            case SCANCODE_RIGHT: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | RIGHT) : (handCtrl1Pressed & ~RIGHT); break;
-            case SCANCODE_F1: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K1) : (handCtrl1Pressed & ~K1); break;
-            case SCANCODE_F2: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K2) : (handCtrl1Pressed & ~K2); break;
-            case SCANCODE_F3: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K3) : (handCtrl1Pressed & ~K3); break;
-            case SCANCODE_F4: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K4) : (handCtrl1Pressed & ~K4); break;
-            case SCANCODE_F5: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K5) : (handCtrl1Pressed & ~K5); break;
-            case SCANCODE_F6: handCtrl1Pressed = (keyDown) ? (handCtrl1Pressed | K6) : (handCtrl1Pressed & ~K6); break;
-            default: result = false;
-        }
-
-        switch (handCtrl1Pressed & 0xF) {
-            case LEFT: handCtrl1 &= ~(1 << 3); break;
-            case UP | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 2)); break;
-            case UP: handCtrl1 &= ~(1 << 2); break;
-            case UP | RIGHT: handCtrl1 &= ~((1 << 4) | (1 << 2) | (1 << 1)); break;
-            case RIGHT: handCtrl1 &= ~(1 << 1); break;
-            case DOWN | RIGHT: handCtrl1 &= ~((1 << 4) | (1 << 1) | (1 << 0)); break;
-            case DOWN: handCtrl1 &= ~(1 << 0); break;
-            case DOWN | LEFT: handCtrl1 &= ~((1 << 4) | (1 << 3) | (1 << 0)); break;
-            default: break;
-        }
-        if (handCtrl1Pressed & K1)
-            handCtrl1 &= ~(1 << 6);
-        if (handCtrl1Pressed & K2)
-            handCtrl1 &= ~((1 << 7) | (1 << 2));
-        if (handCtrl1Pressed & K3)
-            handCtrl1 &= ~((1 << 7) | (1 << 5));
-        if (handCtrl1Pressed & K4)
-            handCtrl1 &= ~(1 << 5);
-        if (handCtrl1Pressed & K5)
-            handCtrl1 &= ~((1 << 7) | (1 << 1));
-        if (handCtrl1Pressed & K6)
-            handCtrl1 &= ~((1 << 7) | (1 << 0));
-
-        return result;
     }
 
     void updateMatrix() override {
@@ -402,24 +237,6 @@ public:
             emuState.handCtrl2 = handCtrl2;
             prevHandCtrl1      = handCtrl1_merged;
             prevHandCtrl2      = handCtrl2;
-        }
-    }
-
-    void pressKey(uint8_t ch) override {
-        if (ch == '\n') {
-            ch = '\r';
-        }
-
-        emuState.kbBufWrite(ch);
-    }
-
-    std::string getKeyLayoutName(KeyLayout layout) override {
-        switch (layout) {
-            default: return "Unknown";
-            case KeyLayout::US: return "US";
-            case KeyLayout::UK: return "UK";
-            case KeyLayout::FR: return "FR/BE (AZERTY)";
-            case KeyLayout::DE: return "DE (QWERTZ)";
         }
     }
 
@@ -538,8 +355,10 @@ public:
         return ch;
     }
 
-    void processScancode(unsigned scanCode, bool keyDown) {
-        repeat = 0;
+    int processScancode(unsigned scanCode, bool keyDown) {
+        int result = -1;
+
+        uint8_t prevLeds = leds;
 
         // Keep track of pressed modifier keys
         if (scanCode == SCANCODE_LCTRL)
@@ -565,126 +384,110 @@ public:
         if (scanCode == SCANCODE_SCROLLLOCK && keyDown)
             leds ^= LedScrollLock;
 
-        if ((keyMode & 1) == 0) {
-            return;
+        if (keyDown) {
+            uint8_t ch = 0;
+            switch (curLayout) {
+                default:
+                case KeyLayout::US: ch = layoutUS(scanCode); break;
+                case KeyLayout::UK: ch = layoutUK(scanCode); break;
+                case KeyLayout::FR: ch = layoutFR(scanCode); break;
+                case KeyLayout::DE: ch = layoutDE(scanCode); break;
+            }
+            // printf("%d\n", scanCode);
+
+            if (scanCode == SCANCODE_TAB && (modifiers & ModLCtrl))
+                ch = 0xFF;
+
+            if (
+                ch == 0 &&
+                scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
+                scanCode != SCANCODE_SCROLLLOCK &&
+                scanCode != SCANCODE_NUMLOCK) {
+                static const uint8_t lut[] = {
+                    0x80, // SCANCODE_F1
+                    0x81, // SCANCODE_F2
+                    0x82, // SCANCODE_F3
+                    0x83, // SCANCODE_F4
+                    0x84, // SCANCODE_F5
+                    0x85, // SCANCODE_F6
+                    0x86, // SCANCODE_F7
+                    0x87, // SCANCODE_F8
+                    0x90, // SCANCODE_F9
+                    0x91, // SCANCODE_F10
+                    0x92, // SCANCODE_F11
+                    0x93, // SCANCODE_F12
+                    0x88, // SCANCODE_PRINTSCREEN
+                    0,    // SCANCODE_SCROLLLOCK
+                    0x89, // SCANCODE_PAUSE
+                    0x9D, // SCANCODE_INSERT
+                    0x9B, // SCANCODE_HOME
+                    0x8A, // SCANCODE_PAGEUP
+                    0x7F, // SCANCODE_DELETE
+                    0x9A, // SCANCODE_END
+                    0x8B, // SCANCODE_PAGEDOWN
+                    0x8E, // SCANCODE_RIGHT
+                    0x9E, // SCANCODE_LEFT
+                    0x9F, // SCANCODE_DOWN
+                    0x8F, // SCANCODE_UP
+                    0,    // SCANCODE_NUMLOCK
+                    '/',  // SCANCODE_KP_DIVIDE
+                    '*',  // SCANCODE_KP_MULTIPLY
+                    '-',  // SCANCODE_KP_MINUS
+                    '+',  // SCANCODE_KP_PLUS
+                    '\r', // SCANCODE_KP_ENTER
+                    '1',  // SCANCODE_KP_1
+                    '2',  // SCANCODE_KP_2
+                    '3',  // SCANCODE_KP_3
+                    '4',  // SCANCODE_KP_4
+                    '5',  // SCANCODE_KP_5
+                    '6',  // SCANCODE_KP_6
+                    '7',  // SCANCODE_KP_7
+                    '8',  // SCANCODE_KP_8
+                    '9',  // SCANCODE_KP_9
+                    '0',  // SCANCODE_KP_0
+                    '.',  // SCANCODE_KP_PERIOD
+                };
+                ch = lut[scanCode - SCANCODE_F1];
+            }
+
+            if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
+                if (ch == '@') {
+                    ch = 0x80;
+                } else if (ch >= 'a' && ch <= 'z') {
+                    ch = ch - 'a' + 1;
+                } else if (ch >= 'A' && ch <= '_') {
+                    ch = ch - 'A' + 1;
+                }
+            }
+
+            if (leds & LedCapsLock) {
+                if (ch >= 'a' && ch <= 'z') {
+                    ch = (ch - 'a') + 'A';
+                } else if (ch >= 'A' && ch <= 'Z') {
+                    ch = (ch - 'A') + 'a';
+                }
+            }
+
+            if (ch > 0) {
+                if (composeFirst > 0) {
+                    ch           = compose(composeFirst, ch);
+                    composeFirst = 0;
+
+                } else if (modifiers & ModLAlt) {
+                    composeFirst = ch;
+                    ch           = 0;
+                }
+            }
+
+            if (ch > 0)
+                result = ch;
+
+            // printf("%c\n", ch);
         }
-        if ((keyMode & 2) == 0) {
-            uint8_t code = 0;
-            if (scanCode <= 0x6F) {
-                code = scanCode;
-            } else if (scanCode >= SCANCODE_LCTRL && scanCode <= SCANCODE_RGUI) {
-                code = scanCode - SCANCODE_LCTRL + 0x70;
-            }
-            if (code && keyDown) {
-                code |= 0x80;
 
-                if (scanCode <= 0x6F && scanCode != SCANCODE_CAPSLOCK && scanCode != SCANCODE_NUMLOCK && scanCode != SCANCODE_SCROLLLOCK)
-                    repeat = code;
-            }
-            if (code > 0) {
-                emuState.kbBufWrite(code);
-            }
-
-        } else {
-            if (keyDown) {
-                uint8_t ch = 0;
-                // printf("%d\n", scanCode);
-
-                switch (curLayout) {
-                    default:
-                    case KeyLayout::US: ch = layoutUS(scanCode); break;
-                    case KeyLayout::UK: ch = layoutUK(scanCode); break;
-                    case KeyLayout::FR: ch = layoutFR(scanCode); break;
-                    case KeyLayout::DE: ch = layoutDE(scanCode); break;
-                }
-
-                if (
-                    ch == 0 &&
-                    scanCode >= SCANCODE_F1 && scanCode <= SCANCODE_KP_PERIOD &&
-                    scanCode != SCANCODE_SCROLLLOCK &&
-                    scanCode != SCANCODE_NUMLOCK) {
-                    static const uint8_t lut[] = {
-                        0x80, // SCANCODE_F1
-                        0x81, // SCANCODE_F2
-                        0x82, // SCANCODE_F3
-                        0x83, // SCANCODE_F4
-                        0x84, // SCANCODE_F5
-                        0x85, // SCANCODE_F6
-                        0x86, // SCANCODE_F7
-                        0x87, // SCANCODE_F8
-                        0x90, // SCANCODE_F9
-                        0x91, // SCANCODE_F10
-                        0x92, // SCANCODE_F11
-                        0x93, // SCANCODE_F12
-                        0x88, // SCANCODE_PRINTSCREEN
-                        0,    // SCANCODE_SCROLLLOCK
-                        0x89, // SCANCODE_PAUSE
-                        0x9D, // SCANCODE_INSERT
-                        0x9B, // SCANCODE_HOME
-                        0x8A, // SCANCODE_PAGEUP
-                        0x7F, // SCANCODE_DELETE
-                        0x9A, // SCANCODE_END
-                        0x8B, // SCANCODE_PAGEDOWN
-                        0x8E, // SCANCODE_RIGHT
-                        0x9E, // SCANCODE_LEFT
-                        0x9F, // SCANCODE_DOWN
-                        0x8F, // SCANCODE_UP
-                        0,    // SCANCODE_NUMLOCK
-                        '/',  // SCANCODE_KP_DIVIDE
-                        '*',  // SCANCODE_KP_MULTIPLY
-                        '-',  // SCANCODE_KP_MINUS
-                        '+',  // SCANCODE_KP_PLUS
-                        '\r', // SCANCODE_KP_ENTER
-                        '1',  // SCANCODE_KP_1
-                        '2',  // SCANCODE_KP_2
-                        '3',  // SCANCODE_KP_3
-                        '4',  // SCANCODE_KP_4
-                        '5',  // SCANCODE_KP_5
-                        '6',  // SCANCODE_KP_6
-                        '7',  // SCANCODE_KP_7
-                        '8',  // SCANCODE_KP_8
-                        '9',  // SCANCODE_KP_9
-                        '0',  // SCANCODE_KP_0
-                        '.',  // SCANCODE_KP_PERIOD
-                    };
-                    ch = lut[scanCode - SCANCODE_F1];
-                }
-
-                if ((modifiers & (ModLCtrl | ModRCtrl)) != 0) {
-                    if (ch == '@') {
-                        ch = 0x80;
-                    } else if (ch >= 'a' && ch <= 'z') {
-                        ch = ch - 'a' + 1;
-                    } else if (ch >= 'A' && ch <= '_') {
-                        ch = ch - 'A' + 1;
-                    }
-                }
-
-                if (leds & LedCapsLock) {
-                    if (ch >= 'a' && ch <= 'z') {
-                        ch = (ch - 'a') + 'A';
-                    } else if (ch >= 'A' && ch <= 'Z') {
-                        ch = (ch - 'A') + 'a';
-                    }
-                }
-
-                if (ch > 0) {
-                    if (composeFirst > 0) {
-                        ch           = compose(composeFirst, ch);
-                        composeFirst = 0;
-
-                    } else if (modifiers & ModLAlt) {
-                        composeFirst = ch;
-                        ch           = 0;
-                    }
-                }
-
-                if (ch > 0) {
-                    repeat = ch;
-                    emuState.kbBufWrite(ch);
-                }
-            }
+        if (prevLeds != leds) {
         }
+        return result;
     }
 
     void setKeyLayout(KeyLayout layout) override {
@@ -694,9 +497,169 @@ public:
     KeyLayout getKeyLayout() override {
         return curLayout;
     }
+
+    std::string getKeyLayoutName(KeyLayout layout) override {
+        switch (layout) {
+            default: return "Unknown";
+            case KeyLayout::US: return "US";
+            case KeyLayout::UK: return "UK";
+            case KeyLayout::FR: return "FR/BE (AZERTY)";
+            case KeyLayout::DE: return "DE (QWERTZ)";
+        }
+    }
+
+    void pressKey(uint8_t ch) override {
+        auto core = getFpgaCore();
+        if (!core)
+            return;
+
+        if (ch == '\n') {
+            ch = '\r';
+        }
+
+        if (ch == 0x1C) {
+            // Delay for 100ms
+            // vTaskDelay(pdMS_TO_TICKS(100));
+            return;
+        }
+        if (ch == 0x1D) {
+            // Delay for 500ms
+            // vTaskDelay(pdMS_TO_TICKS(500));
+            return;
+        }
+        if (ch == 0x1E) {
+            // Reset
+            core->resetCore();
+            // vTaskDelay(pdMS_TO_TICKS(500));
+            return;
+        }
+        if (ch > '~')
+            return;
+
+        core->keyChar(ch, false);
+        // vTaskDelay(pdMS_TO_TICKS(10));
+    }
 };
 
 Keyboard *Keyboard::instance() {
     static KeyboardInt obj;
     return &obj;
+}
+
+static const char *scanCodeNames[] = {
+    "A",         // 4
+    "B",         // 5
+    "C",         // 6
+    "D",         // 7
+    "E",         // 8
+    "F",         // 9
+    "G",         // 10
+    "H",         // 11
+    "I",         // 12
+    "J",         // 13
+    "K",         // 14
+    "L",         // 15
+    "M",         // 16
+    "N",         // 17
+    "O",         // 18
+    "P",         // 19
+    "Q",         // 20
+    "R",         // 21
+    "S",         // 22
+    "T",         // 23
+    "U",         // 24
+    "V",         // 25
+    "W",         // 26
+    "X",         // 27
+    "Y",         // 28
+    "Z",         // 29
+    "1",         // 30
+    "2",         // 31
+    "3",         // 32
+    "4",         // 33
+    "5",         // 34
+    "6",         // 35
+    "7",         // 36
+    "8",         // 37
+    "9",         // 38
+    "0",         // 39
+    "Enter",     // 40
+    "Escape",    // 41
+    "Backspace", // 42
+    "Tab",       // 43
+    "Space",     // 44
+    "-",         // 45
+    "=",         // 46
+    "[",         // 47
+    "]",         // 48
+    "\\",        // 49
+    "#",         // 50
+    ";",         // 51
+    "'",         // 52
+    "`",         // 53
+    ",",         // 54
+    ".",         // 55
+    "/",         // 56
+    "CapsLock",  // 57
+    "F1",        // 58
+    "F2",        // 59
+    "F3",        // 60
+    "F4",        // 61
+    "F5",        // 62
+    "F6",        // 63
+    "F7",        // 64
+    "F8",        // 65
+    "F9",        // 66
+    "F10",       // 67
+    "F11",       // 68
+    "F12",       // 69
+    "PrtScr",    // 70
+    "ScrollLk",  // 71
+    "Pause",     // 72
+    "Insert",    // 73
+    "Home",      // 74
+    "Page Up",   // 75
+    "Delete",    // 76
+    "End",       // 77
+    "Page Down", // 78
+    "Right",     // 79
+    "Left",      // 80
+    "Down",      // 81
+    "Up",        // 82
+    "NumLock",   // 83
+    "KP /",      // 84
+    "KP *",      // 85
+    "KP -",      // 86
+    "KP +",      // 87
+    "KP Enter",  // 88
+    "KP 1",      // 89
+    "KP 2",      // 90
+    "KP 3",      // 91
+    "KP 4",      // 92
+    "KP 5",      // 93
+    "KP 6",      // 94
+    "KP 7",      // 95
+    "KP 8",      // 96
+    "KP 9",      // 97
+    "KP 0",      // 98
+    "KP .",      // 99
+};
+
+static const char *scanCodeNames2[] = {
+    "Left Ctrl",   // 224
+    "Left Shift",  // 225
+    "Left Alt",    // 226
+    "Left GUI",    // 227
+    "Right Ctrl",  // 228
+    "Right Shift", // 229
+    "Right Alt",   // 230
+    "Right GUI",   // 231
+};
+
+const char *getScanCodeName(uint8_t scanCode) {
+    if (scanCode >= 4 && scanCode <= 99)
+        return scanCodeNames[scanCode - 4];
+    if (scanCode >= 224 && scanCode <= 231)
+        return scanCodeNames2[scanCode - 224];
+    return nullptr;
 }

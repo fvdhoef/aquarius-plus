@@ -10,12 +10,6 @@ enum class KeyLayout {
     Count,
 };
 
-enum {
-    NUM_LOCK    = (1 << 0),
-    CAPS_LOCK   = (1 << 1),
-    SCROLL_LOCK = (1 << 2),
-};
-
 class Keyboard {
 public:
     static Keyboard *instance();
@@ -31,9 +25,8 @@ public:
 
     virtual void pressKey(uint8_t ch) = 0;
 
-    virtual void updateMatrix()            = 0;
-    virtual void setScrollLock(bool value) = 0;
-    virtual void repeatTimer()             = 0;
+    virtual void updateMatrix() = 0;
+    virtual void keyRepeatTimer()  = 0;
 
     uint8_t handCtrl_gameCtrl = 0xFF;
 };
@@ -159,3 +152,5 @@ enum {
     ModRAlt   = (1 << 6),
     ModRGui   = (1 << 7),
 };
+
+const char *getScanCodeName(uint8_t scanCode);
