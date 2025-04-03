@@ -191,12 +191,6 @@ public:
 
     void aqpWriteKeybBuffer(uint8_t ch) {
         emuState.kbBufWrite(ch);
-        // auto               fpga = getFPGA();
-        // RecursiveMutexLock lock(fpga->getMutex());
-        // fpga->spiSel(true);
-        // uint8_t cmd[] = {CMD_WRITE_KBBUF, ch};
-        // fpga->spiTx(cmd, sizeof(cmd));
-        // fpga->spiSel(false);
     }
 
     void resetCore() override {
@@ -214,23 +208,12 @@ public:
     }
 
     void aqpUpdateKeybMatrix(uint64_t keybMatrix) {
-        // auto               fpga = getFPGA();
-        // RecursiveMutexLock lock(fpga->getMutex());
-        // fpga->spiSel(true);
-        // uint8_t cmd[9];
-        // cmd[0] = CMD_SET_KEYB_MATRIX;
-        // memcpy(&cmd[1], &keybMatrix, 8);
-        // fpga->spiTx(cmd, sizeof(cmd));
-        // fpga->spiSel(false);
+        memcpy(&emuState.keybMatrix, &keybMatrix, 8);
     }
 
     void aqpUpdateHandCtrl(uint8_t hctrl1, uint8_t hctrl2) {
-        // auto               fpga = getFPGA();
-        // RecursiveMutexLock lock(fpga->getMutex());
-        // fpga->spiSel(true);
-        // uint8_t cmd[] = {CMD_SET_HCTRL, hctrl1, hctrl2};
-        // fpga->spiTx(cmd, sizeof(cmd));
-        // fpga->spiSel(false);
+        emuState.handCtrl1 = hctrl1;
+        emuState.handCtrl2 = hctrl2;
     }
 
     void aqpSetVideoMode(uint8_t mode) {
