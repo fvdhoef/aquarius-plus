@@ -3,7 +3,7 @@
 #include "Keyboard.h"
 #include "UartProtocol.h"
 #include "VFS.h"
-// #include "GameCtrl.h"
+#include "GameCtrl.h"
 #include <math.h>
 // #include <nvs_flash.h>
 // #include "XzDecompress.h"
@@ -95,6 +95,8 @@ public:
     uint8_t mouseSensitivityDiv = 4;
 
     CoreAquariusPlus() {
+        memset(gamePads, 0, sizeof(gamePads));
+
         gamePadButtonHandCtrlButtonIdxs[GCB_A_IDX]          = 1;
         gamePadButtonHandCtrlButtonIdxs[GCB_B_IDX]          = 2;
         gamePadButtonHandCtrlButtonIdxs[GCB_X_IDX]          = 3;
@@ -113,11 +115,6 @@ public:
         gamePadButtonHandCtrlButtonIdxs[GCB_SHARE_IDX]      = 0;
 
         memset(&coreInfo, 0, sizeof(coreInfo));
-        coreInfo.coreType     = 1;
-        coreInfo.flags        = 0x1E;
-        coreInfo.versionMajor = 1;
-        coreInfo.versionMinor = 0;
-        snprintf(coreInfo.name, sizeof(coreInfo.name), "Aquarius+");
 
         // mutex            = xSemaphoreCreateRecursiveMutex();
         // bypassStartTimer = xTimerCreate("", pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS), pdFALSE, this, _onBypassStartTimer);
@@ -138,6 +135,12 @@ public:
     // }
 
     bool loadBitstream(const void *data, size_t length) override {
+        coreInfo.coreType     = 1;
+        coreInfo.flags        = 0x1E;
+        coreInfo.versionMajor = 1;
+        coreInfo.versionMinor = 0;
+        snprintf(coreInfo.name, sizeof(coreInfo.name), "Aquarius+");
+
         return true;
     }
 
@@ -187,6 +190,7 @@ public:
     }
 
     void aqpWriteKeybBuffer(uint8_t ch) {
+        emuState.kbBufWrite(ch);
         // auto               fpga = getFPGA();
         // RecursiveMutexLock lock(fpga->getMutex());
         // fpga->spiSel(true);
@@ -448,16 +452,16 @@ public:
     void keyChar(uint8_t ch, bool isRepeat) override {
         // RecursiveMutexLock lock(mutex);
         bypassStartCancel = true;
-        emuState.kbBufWrite(ch);
+        aqpWriteKeybBuffer(ch);
     }
 
-    void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel) override {
+    void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel, bool absPos) override {
         // RecursiveMutexLock lock(mutex);
         // printf("mouse %d %d %d %d\n", dx, dy, buttonMask, dWheel);
 
         float sensitivity = 1.0f / (float)mouseSensitivityDiv;
-        mouseX            = std::max(0.0f, std::min(319.0f, mouseX + (float)(dx * sensitivity)));
-        mouseY            = std::max(0.0f, std::min(199.0f, mouseY + (float)(dy * sensitivity)));
+        mouseX            = std::max(0.0f, std::min(319.0f, absPos ? dx : (mouseX + (float)(dx * sensitivity))));
+        mouseY            = std::max(0.0f, std::min(199.0f, absPos ? dy : (mouseY + (float)(dy * sensitivity))));
         mouseButtons      = buttonMask;
         mousePresent      = true;
         mouseWheel        = mouseWheel + dWheel;
@@ -545,59 +549,59 @@ public:
             }
         }
 
-        // updateHandCtrl();
+        updateHandCtrl();
     }
 
-    // void gamepadReport(unsigned idx, const GamePadData &data) override {
-    //     if (idx > 1)
-    //         return;
+    void gamepadReport(unsigned idx, const GamePadData &data) override {
+        if (idx > 1)
+            return;
 
-    //     RecursiveMutexLock lock(mutex);
+        // RecursiveMutexLock lock(mutex);
 
-    //     uint16_t pressed = (~gamePads[idx].buttons & data.buttons);
-    //     uint16_t changed = (gamePads[idx].buttons ^ data.buttons);
+        uint16_t pressed = (~gamePads[idx].buttons & data.buttons);
+        uint16_t changed = (gamePads[idx].buttons ^ data.buttons);
 
-    //     // printf("idx=%u pressed=%04X\n", idx, pressed);
+        // printf("idx=%u pressed=%04X\n", idx, pressed);
 
-    //     if (idx == 0) {
-    //         bool overlayVisible = getDisplayOverlay()->isVisible();
-    //         auto kb             = Keyboard::instance();
+        if (idx == 0) {
+            bool overlayVisible = false; // getDisplayOverlay()->isVisible();
+            auto kb             = Keyboard::instance();
 
-    //         if (gamepadNavigation) {
-    //             if (pressed & GCB_GUIDE) {
-    //                 kb->handleScancode(SCANCODE_LCTRL, true);
-    //                 kb->handleScancode(SCANCODE_TAB, true);
-    //                 kb->handleScancode(SCANCODE_TAB, false);
-    //                 kb->handleScancode(SCANCODE_LCTRL, false);
-    //             }
+            if (gamepadNavigation) {
+                if (pressed & GCB_GUIDE) {
+                    kb->handleScancode(SCANCODE_LCTRL, true);
+                    kb->handleScancode(SCANCODE_TAB, true);
+                    kb->handleScancode(SCANCODE_TAB, false);
+                    kb->handleScancode(SCANCODE_LCTRL, false);
+                }
 
-    //             if (overlayVisible) {
-    //                 if (changed & GCB_DPAD_UP)
-    //                     kb->handleScancode(SCANCODE_UP, (data.buttons & GCB_DPAD_UP) != 0);
-    //                 if (changed & GCB_DPAD_DOWN)
-    //                     kb->handleScancode(SCANCODE_DOWN, (data.buttons & GCB_DPAD_DOWN) != 0);
-    //                 if (changed & GCB_DPAD_LEFT)
-    //                     kb->handleScancode(SCANCODE_LEFT, (data.buttons & GCB_DPAD_LEFT) != 0);
-    //                 if (changed & GCB_DPAD_RIGHT)
-    //                     kb->handleScancode(SCANCODE_RIGHT, (data.buttons & GCB_DPAD_RIGHT) != 0);
-    //                 if (changed & GCB_A)
-    //                     kb->handleScancode(SCANCODE_RETURN, (data.buttons & GCB_A) != 0);
-    //                 if (changed & GCB_B)
-    //                     kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
-    //             }
-    //         }
+                if (overlayVisible) {
+                    if (changed & GCB_DPAD_UP)
+                        kb->handleScancode(SCANCODE_UP, (data.buttons & GCB_DPAD_UP) != 0);
+                    if (changed & GCB_DPAD_DOWN)
+                        kb->handleScancode(SCANCODE_DOWN, (data.buttons & GCB_DPAD_DOWN) != 0);
+                    if (changed & GCB_DPAD_LEFT)
+                        kb->handleScancode(SCANCODE_LEFT, (data.buttons & GCB_DPAD_LEFT) != 0);
+                    if (changed & GCB_DPAD_RIGHT)
+                        kb->handleScancode(SCANCODE_RIGHT, (data.buttons & GCB_DPAD_RIGHT) != 0);
+                    if (changed & GCB_A)
+                        kb->handleScancode(SCANCODE_RETURN, (data.buttons & GCB_A) != 0);
+                    if (changed & GCB_B)
+                        kb->handleScancode(SCANCODE_ESCAPE, (data.buttons & GCB_B) != 0);
+                }
+            }
 
-    //         if (!overlayVisible && enableGamePadKeyboardMapping) {
-    //             for (int i = 0; i < 16; i++) {
-    //                 if (gamePadButtonScanCodes[i] != 0 && changed & (1 << i))
-    //                     kb->handleScancode(gamePadButtonScanCodes[i], (data.buttons & (1 << i)) != 0);
-    //             }
-    //         }
-    //     }
+            if (!overlayVisible && enableGamePadKeyboardMapping) {
+                for (int i = 0; i < 16; i++) {
+                    if (gamePadButtonScanCodes[i] != 0 && changed & (1 << i))
+                        kb->handleScancode(gamePadButtonScanCodes[i], (data.buttons & (1 << i)) != 0);
+                }
+            }
+        }
 
-    //     gamePads[idx] = data;
-    //     gameCtrlUpdated();
-    // }
+        gamePads[idx] = data;
+        gameCtrlUpdated();
+    }
 
     bool getGamePadData(unsigned idx, GamePadData &data) {
         if (idx > 1)
@@ -608,66 +612,68 @@ public:
         return true;
     }
 
-    // void cmdGetMouse() {
-    //     // DBGF("GETMOUSE()");
+    void cmdGetMouse() {
+        // DBGF("GETMOUSE()");
 
-    //     auto up = getUartProtocol();
-    //     up->txStart();
-    //     if (!mousePresent) {
-    //         up->txWrite(ERR_NOT_FOUND);
-    //         return;
-    //     }
+        auto up = UartProtocol::instance();
+        up->txStart();
+        if (!mousePresent) {
+            up->txWrite(ERR_NOT_FOUND);
+            return;
+        }
 
-    //     up->txWrite(0);
+        up->txWrite(0);
 
-    //     uint16_t x = (uint16_t)mouseX;
-    //     uint8_t  y = (uint8_t)mouseY;
-    //     up->txWrite(x & 0xFF);
-    //     up->txWrite(x >> 8);
-    //     up->txWrite(y);
-    //     up->txWrite(mouseButtons);
-    //     up->txWrite((int8_t)std::max(-128, std::min(mouseWheel, 127)));
-    //     mouseWheel = 0;
-    // }
+        uint16_t x = (uint16_t)mouseX;
+        uint8_t  y = (uint8_t)mouseY;
+        up->txWrite(x & 0xFF);
+        up->txWrite(x >> 8);
+        up->txWrite(y);
+        up->txWrite(mouseButtons);
+        up->txWrite((int8_t)std::max(-128, std::min(mouseWheel, 127)));
+        mouseWheel = 0;
 
-    // void cmdGetGameCtrl(uint8_t idx) {
-    //     // DBGF("GETGAMECTRL");
+        emuState.mouseHideTimeout = 1.0f;
+    }
 
-    //     auto up = getUartProtocol();
-    //     up->txStart();
-    //     if (idx > 1) {
-    //         up->txWrite(ERR_NOT_FOUND);
-    //         return;
-    //     }
-    //     up->txWrite(0);
-    //     up->txWrite(gamePads[idx].lx);
-    //     up->txWrite(gamePads[idx].ly);
-    //     up->txWrite(gamePads[idx].rx);
-    //     up->txWrite(gamePads[idx].ry);
-    //     up->txWrite(gamePads[idx].lt);
-    //     up->txWrite(gamePads[idx].rt);
-    //     up->txWrite(gamePads[idx].buttons & 0xFF);
-    //     up->txWrite(gamePads[idx].buttons >> 8);
-    // }
+    void cmdGetGameCtrl(uint8_t idx) {
+        // DBGF("GETGAMECTRL");
 
-    // int uartCommand(uint8_t cmd, const uint8_t *buf, size_t len) override {
-    //     RecursiveMutexLock lock(mutex);
-    //     switch (cmd) {
-    //         case ESPCMD_GETMOUSE: {
-    //             cmdGetMouse();
-    //             return 1;
-    //         }
-    //         case ESPCMD_GETGAMECTRL: {
-    //             if (len == 1) {
-    //                 cmdGetGameCtrl(buf[0]);
-    //                 return 1;
-    //             }
-    //             return 0;
-    //         }
-    //         default: break;
-    //     }
-    //     return -1;
-    // }
+        auto up = UartProtocol::instance();
+        up->txStart();
+        if (idx > 1) {
+            up->txWrite(ERR_NOT_FOUND);
+            return;
+        }
+        up->txWrite(0);
+        up->txWrite(gamePads[idx].lx);
+        up->txWrite(gamePads[idx].ly);
+        up->txWrite(gamePads[idx].rx);
+        up->txWrite(gamePads[idx].ry);
+        up->txWrite(gamePads[idx].lt);
+        up->txWrite(gamePads[idx].rt);
+        up->txWrite(gamePads[idx].buttons & 0xFF);
+        up->txWrite(gamePads[idx].buttons >> 8);
+    }
+
+    int uartCommand(uint8_t cmd, const uint8_t *buf, size_t len) override {
+        // RecursiveMutexLock lock(mutex);
+        switch (cmd) {
+            case ESPCMD_GETMOUSE: {
+                cmdGetMouse();
+                return 1;
+            }
+            case ESPCMD_GETGAMECTRL: {
+                if (len == 1) {
+                    cmdGetGameCtrl(buf[0]);
+                    return 1;
+                }
+                return 0;
+            }
+            default: break;
+        }
+        return -1;
+    }
 
 #ifdef CONFIG_MACHINE_TYPE_AQPLUS
     void takeScreenshot(Menu &menu) {

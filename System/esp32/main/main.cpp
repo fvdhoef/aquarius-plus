@@ -58,7 +58,7 @@ void app_main(void) {
     getUSBHost()->init();
     getWiFi()->init();
     getBluetooth()->init();
-    getUartProtocol()->init();
+    UartProtocol::instance()->init();
 
     {
         bool         fileServerOn = false;

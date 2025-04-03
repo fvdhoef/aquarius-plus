@@ -54,9 +54,9 @@ enum {
 class CoreAquariusPlus : public FpgaCore {
 public:
     SemaphoreHandle_t mutex;
-    uint64_t          prevMatrix        = 0;
-    uint64_t          keybMatrix        = 0;
-    GamePadData       gamePads[2]       = {0};
+    uint64_t          prevMatrix = 0;
+    uint64_t          keybMatrix = 0;
+    GamePadData       gamePads[2];
     uint8_t           videoTimingMode   = 0;
     bool              useT80            = false;
     bool              forceTurbo        = false;
@@ -82,24 +82,7 @@ public:
         SCANCODE_END,
         SCANCODE_PAGEDOWN,
     };
-    uint8_t gamePadButtonHandCtrlButtonIdxs[16] = {
-        [GCB_A_IDX]          = 1,
-        [GCB_B_IDX]          = 2,
-        [GCB_X_IDX]          = 3,
-        [GCB_Y_IDX]          = 4,
-        [GCB_VIEW_IDX]       = 0,
-        [GCB_GUIDE_IDX]      = 0,
-        [GCB_MENU_IDX]       = 0,
-        [GCB_LS_IDX]         = 0,
-        [GCB_RS_IDX]         = 0,
-        [GCB_LB_IDX]         = 5,
-        [GCB_RB_IDX]         = 6,
-        [GCB_DPAD_UP_IDX]    = 0,
-        [GCB_DPAD_DOWN_IDX]  = 0,
-        [GCB_DPAD_LEFT_IDX]  = 0,
-        [GCB_DPAD_RIGHT_IDX] = 0,
-        [GCB_SHARE_IDX]      = 0,
-    };
+    uint8_t gamePadButtonHandCtrlButtonIdxs[16];
 
     // Mouse state
     bool    mousePresent = false;
@@ -111,6 +94,27 @@ public:
     uint8_t mouseSensitivityDiv = 4;
 
     CoreAquariusPlus() {
+        memset(gamePads, 0, sizeof(gamePads));
+
+        gamePadButtonHandCtrlButtonIdxs[GCB_A_IDX]          = 1;
+        gamePadButtonHandCtrlButtonIdxs[GCB_B_IDX]          = 2;
+        gamePadButtonHandCtrlButtonIdxs[GCB_X_IDX]          = 3;
+        gamePadButtonHandCtrlButtonIdxs[GCB_Y_IDX]          = 4;
+        gamePadButtonHandCtrlButtonIdxs[GCB_VIEW_IDX]       = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_GUIDE_IDX]      = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_MENU_IDX]       = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_LS_IDX]         = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_RS_IDX]         = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_LB_IDX]         = 5;
+        gamePadButtonHandCtrlButtonIdxs[GCB_RB_IDX]         = 6;
+        gamePadButtonHandCtrlButtonIdxs[GCB_DPAD_UP_IDX]    = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_DPAD_DOWN_IDX]  = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_DPAD_LEFT_IDX]  = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_DPAD_RIGHT_IDX] = 0;
+        gamePadButtonHandCtrlButtonIdxs[GCB_SHARE_IDX]      = 0;
+
+        memset(&coreInfo, 0, sizeof(coreInfo));
+
         mutex            = xSemaphoreCreateRecursiveMutex();
         bypassStartTimer = xTimerCreate("", pdMS_TO_TICKS(CONFIG_BYPASS_START_TIME_MS), pdFALSE, this, _onBypassStartTimer);
     }
@@ -716,7 +720,7 @@ public:
     void cmdGetMouse() {
         // DBGF("GETMOUSE()");
 
-        auto up = getUartProtocol();
+        auto up = UartProtocol::instance();
         up->txStart();
         if (!mousePresent) {
             up->txWrite(ERR_NOT_FOUND);
@@ -738,7 +742,7 @@ public:
     void cmdGetGameCtrl(uint8_t idx) {
         // DBGF("GETGAMECTRL");
 
-        auto up = getUartProtocol();
+        auto up = UartProtocol::instance();
         up->txStart();
         if (idx > 1) {
             up->txWrite(ERR_NOT_FOUND);

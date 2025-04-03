@@ -12,10 +12,10 @@ struct CoreInfo {
 };
 
 struct GamePadData {
-    int8_t   lx = 0, ly = 0;
-    int8_t   rx = 0, ry = 0;
-    uint8_t  lt = 0, rt = 0;
-    uint16_t buttons = 0;
+    int8_t   lx, ly;
+    int8_t   rx, ry;
+    uint8_t  lt, rt;
+    uint16_t buttons;
 };
 
 enum class FpgaCoreType {
@@ -27,7 +27,7 @@ public:
     virtual void resetCore() {}
     virtual bool keyScancode(uint8_t modifiers, unsigned scanCode, bool keyDown) { return false; }
     virtual void keyChar(uint8_t ch, bool isRepeat) {}
-    virtual void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel) {}
+    virtual void mouseReport(int dx, int dy, uint8_t buttonMask, int dWheel, bool absPos = false) {}
     virtual void gamepadReport(unsigned idx, const GamePadData &data) {}
 
     virtual int uartCommand(uint8_t cmd, const uint8_t *buf, size_t len) { return -1; }

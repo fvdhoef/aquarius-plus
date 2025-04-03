@@ -67,6 +67,3 @@ enum {
     KEY_ALT       = 62, // Alt
     KEY_GUI       = 63, // Gui
 };
-
-#define KEY_MOD_MASK ((1ULL << KEY_SHIFT) | (1ULL << KEY_CTRL) | (1ULL << KEY_ALT) | (1ULL << KEY_GUI))
-#define KEY_MASK     (~KEY_MOD_MASK)

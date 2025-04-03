@@ -38,6 +38,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     tinyfiledialogs.cpp
     Version.cpp
     Video.cpp
+    Common.cpp
 
     cJSON.c
 

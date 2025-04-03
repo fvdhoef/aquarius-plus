@@ -2,13 +2,7 @@
 
 #include "HIDReportHandler.h"
 #include "IdxAlloc.h"
-
-struct GamePadData {
-    int8_t   lx, ly;
-    int8_t   rx, ry;
-    uint8_t  lt, rt;
-    uint16_t buttons;
-};
+#include "FpgaCore.h"
 
 class HIDReportHandlerGamepad : public HIDReportHandler {
 public:

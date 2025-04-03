@@ -33,6 +33,8 @@ enum {
 
 class UartProtocol {
 public:
+    static UartProtocol *instance();
+
     virtual void init() = 0;
 
     // Only to be called from command handler
@@ -40,5 +42,3 @@ public:
     virtual void txWrite(uint8_t data)                   = 0;
     virtual void txWrite(const void *buf, size_t length) = 0;
 };
-
-UartProtocol *getUartProtocol();

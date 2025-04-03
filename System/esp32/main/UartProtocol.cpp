@@ -247,7 +247,7 @@ public:
                     uint8_t     fd   = rxBuf[1];
                     unsigned    size = rxBuf[2] | (rxBuf[3] << 8);
                     const void *buf  = &rxBuf[4];
-                    if (rxBufIdx == 4 + size) {
+                    if (rxBufIdx == (int)(4 + size)) {
                         cmdWrite(fd, size, buf);
                         rxBufIdx = 0;
                     }
@@ -292,10 +292,10 @@ public:
             }
             case ESPCMD_OPENDIREXT: {
                 if (data == 0 && rxBufIdx >= 5) {
-                    uint8_t     flags      = rxBuf[1];
-                    uint16_t    skip_count = rxBuf[2] | (rxBuf[3] << 8);
-                    const char *pathArg    = (const char *)&rxBuf[4];
-                    cmdOpenDirExt(pathArg, flags, skip_count);
+                    uint8_t     flags     = rxBuf[1];
+                    uint16_t    skipCount = rxBuf[2] | (rxBuf[3] << 8);
+                    const char *pathArg   = (const char *)&rxBuf[4];
+                    cmdOpenDirExt(pathArg, flags, skipCount);
                     rxBufIdx = 0;
                 }
                 break;
@@ -1002,9 +1002,9 @@ public:
     }
 };
 
-UartProtocol *getUartProtocol() {
+UartProtocol *UartProtocol::instance() {
     static UartProtocolInt *obj = nullptr;
-    if (!obj) {
+    if (obj == nullptr) {
         obj = new UartProtocolInt();
         assert(obj != nullptr);
     }

@@ -1,7 +1,7 @@
 #pragma once
 
 #if _WIN32
-#    define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #endif
 
 #include <stddef.h>
@@ -29,29 +29,29 @@
 #include <sys/stat.h>
 
 #ifdef __APPLE__
-#    include <pwd.h>
-#    include <uuid/uuid.h>
+#include <pwd.h>
+#include <uuid/uuid.h>
 #endif
 
 #if _WIN32
-#    include "getopt.h"
-#    include <direct.h>
-#    include <io.h>
-#    define strdup _strdup
-#    define unlink _unlink
-#    define rmdir _rmdir
-#    define lseek _lseek
-#    define mkdir _mkdir
-#    define strncasecmp _strnicmp
-#    define strcasecmp _stricmp
+#include "getopt.h"
+#include <direct.h>
+#include <io.h>
+#define strdup      _strdup
+#define unlink      _unlink
+#define rmdir       _rmdir
+#define lseek       _lseek
+#define mkdir       _mkdir
+#define strncasecmp _strnicmp
+#define strcasecmp  _stricmp
 #else
-#    include <unistd.h>
-#    include <pwd.h>
+#include <unistd.h>
+#include <pwd.h>
 #endif
 
 #define CPU_FREQ (3579545)
 
-#define VIDEO_WIDTH (704)
+#define VIDEO_WIDTH  (704)
 #define VIDEO_HEIGHT (240)
 
 static inline void stripTrailingSlashes(std::string &path) {
@@ -80,3 +80,6 @@ static inline std::string fmtstr(const char *fmt, ...) {
 
     return result;
 }
+
+void splitPath(const std::string &path, std::vector<std::string> &result);
+bool startsWith(const std::string &s1, const std::string &s2, bool caseSensitive = false);

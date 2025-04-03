@@ -1,9 +1,15 @@
 #pragma once
 
 #include "Common.h"
-#include "HIDReportHandlerGamepad.h"
 #include "DisplayOverlay/Menu.h"
 #include "FPGA.h"
+
+struct GamePadData {
+    int8_t   lx, ly;
+    int8_t   rx, ry;
+    uint8_t  lt, rt;
+    uint16_t buttons;
+};
 
 enum class FpgaCoreType {
     AquariusPlus,
@@ -23,7 +29,7 @@ public:
 
     virtual void addMainMenuItems(Menu &menu) = 0;
 
-    virtual void getCoreInfo(CoreInfo *coreInfo)             = 0;
+    virtual void getCoreInfo(CoreInfo *coreInfo)                 = 0;
     virtual bool getGamePadData(unsigned idx, GamePadData &data) = 0;
 };
 

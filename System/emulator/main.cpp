@@ -101,12 +101,7 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
 
-    UI ui;
-    ui.start(
-        cartRomPath,
-        typeInStr);
-
+    UI::instance()->start(cartRomPath, typeInStr);
     config->save();
-
     return 0;
 }
