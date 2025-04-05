@@ -13,4 +13,6 @@ mv tmp.h ../emulator/romfs_contents.h
 sed 's/unsigned int.*$//' ../emulator/romfs_contents.h > tmp.h
 mv tmp.h ../emulator/romfs_contents.h
 
+cp romfs.bin ../esp32/main/assets/
+
 echo Done.
