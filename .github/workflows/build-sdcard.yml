@@ -4,8 +4,8 @@ on:
     tags:
       - "V*.*"
 
-name: Build SD card archive
-run-name: SD card archive ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
+name: Build Aquarius+ SD card archive
+run-name: Aquarius+ SD card archive ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
 
 jobs:
   build-sdcard:
