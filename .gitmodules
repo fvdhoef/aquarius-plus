@@ -10,3 +10,6 @@
 [submodule "System/fpga_cores"]
 	path = System/fpga_cores
 	url = https://github.com/aquarius-plus/aquarius-plus-fpga-cores.git
+[submodule "System/pcb"]
+	path = System/pcb
+	url = https://github.com/aquarius-plus/aquarius-plus-pcb.git
