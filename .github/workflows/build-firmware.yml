@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          submodules: true
       - name: Get all Git tags
         run: git fetch --tags -f
       - name: Installing dependencies
