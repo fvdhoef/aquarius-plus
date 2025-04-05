@@ -1,3 +1,0 @@
-To use ImageMagick to convert a BW bitmap...
-
-magick filename.png -depth 1 GRAY:out.bin

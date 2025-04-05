@@ -16,3 +16,6 @@
 [submodule "SDK"]
 	path = SDK
 	url = https://github.com/aquarius-plus/aquarius-plus-sdk.git
+[submodule "EndUser/sdcard"]
+	path = EndUser/sdcard
+	url = https://github.com/aquarius-plus/aquarius-plus-sdcard.git
