@@ -1,3 +1,0 @@
-`verilator_config
-lint_off -rule UNUSEDSIGNAL
-lint_off -file "lint_wrappers/*"
