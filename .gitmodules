@@ -13,3 +13,6 @@
 [submodule "System/pcb"]
 	path = System/pcb
 	url = https://github.com/aquarius-plus/aquarius-plus-pcb.git
+[submodule "SDK"]
+	path = SDK
+	url = https://github.com/aquarius-plus/aquarius-plus-sdk.git
