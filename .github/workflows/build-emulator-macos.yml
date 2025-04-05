@@ -1,0 +1,44 @@
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "V*.*"
+
+name: Build Aquarius+ emulator for macOS
+run-name: Aquarius+ emulator for macOS ${{ github.ref_name }} ${{ github.event.repository.pushed_at }}
+
+jobs:
+  build-macos:
+    name: Build macOS emulator
+    runs-on: macos-latest
+    steps:
+      - name: Checking out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: true
+      - name: Get all Git tags
+        run: git fetch --tags -f
+      - name: Building macOS emulator
+        run: |
+          echo "const char *versionStr = \"`git describe`\";" > System/emulator/Version.cpp
+          cmake -DCMAKE_BUILD_TYPE=Release -S System/emulator -B System/emulator/build -G Ninja
+          ninja -C System/emulator/build
+      - name: Creating release directory structure
+        run: |
+          cd System/emulator/build
+          mkdir AquariusPlusEmu
+          cp -r AquariusPlusEmu.app AquariusPlusEmu/
+          cp -r ../../../EndUser/sdcard AquariusPlusEmu/
+          zip -rq AquariusPlusEmu-macOS-`git describe`.zip AquariusPlusEmu
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: AquariusPlusEmu-macOS-${{ github.ref_name }}
+          path: System/emulator/build/AquariusPlusEmu-macOS-*.zip
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          prerelease: true
+          files: System/emulator/build/AquariusPlusEmu-macOS-*.zip
