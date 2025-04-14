@@ -26,9 +26,10 @@ jobs:
           sudo apt-get install zip
       - name: Building ZIP files
         run: |
+          VERSION=$(git describe)
           cd EndUser
           mv sdcard AquariusPlusDisk
-          zip -r AquariusPlusDisk-`git describe`.zip AquariusPlusDisk
+          zip -r AquariusPlusDisk-${VERSION}.zip AquariusPlusDisk
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:

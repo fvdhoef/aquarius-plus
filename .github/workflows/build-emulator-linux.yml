@@ -31,11 +31,12 @@ jobs:
           ninja -C System/emulator/build
       - name: Creating release directory structure
         run: |
+          VERSION=$(git describe)
           cd System/emulator/build
           mkdir AquariusPlusEmu
           cp aqplus-emu AquariusPlusEmu/
           cp -r ../../../EndUser/sdcard AquariusPlusEmu/
-          zip -rq AquariusPlusEmu-Linux-`git describe`.zip AquariusPlusEmu
+          zip -rq AquariusPlusEmu-Linux-${VERSION}.zip AquariusPlusEmu
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
