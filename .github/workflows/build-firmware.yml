@@ -32,7 +32,9 @@ jobs:
           path: "System/esp32"
       - name: Build release
         run: |
+          VERSION=$(git describe)
           cd System/esp32; ./do_release.sh nobuild
+          mv AquariusPlus-Firmware-*.zip AquariusPlus-Firmware-${VERSION}.zip
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
