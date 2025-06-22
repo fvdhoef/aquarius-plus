@@ -19,3 +19,6 @@
 [submodule "EndUser/sdcard"]
 	path = EndUser/sdcard
 	url = https://github.com/aquarius-plus/aquarius-plus-sdcard.git
+[submodule "System/docs/wiki"]
+	path = System/docs/wiki
+	url = https://github.com/fvdhoef/aquarius-plus.wiki.git
