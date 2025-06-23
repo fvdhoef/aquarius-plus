@@ -34,17 +34,17 @@ jobs:
         run: |
           VERSION=$(git describe)
           cd System/esp32; ./do_release.sh nobuild
-          mv AquariusPlus-Firmware-*.zip AquariusPlus-Firmware-${VERSION}.zip
+          mv AquariusPlus-Firmware-*.zip ../AquariusPlus-Firmware-${VERSION}.zip
       - name: Upload Artifact
         uses: actions/upload-artifact@v4
         with:
           name: Firmware_${{ github.ref_name }}
-          path: System/esp32/AquariusPlus-Firmware-*.zip
+          path: System/AquariusPlus-Firmware-*.zip
       - name: Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')
         with:
           prerelease: true
           files: |
-            System/esp32/AquariusPlus-Firmware-*.zip
+            System/AquariusPlus-Firmware-*.zip
             System/esp32/build/aquarius-plus.bin
