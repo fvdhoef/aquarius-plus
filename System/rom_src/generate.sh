@@ -2,6 +2,12 @@
 
 set -e
 
+if [[ $(date +%s -r root_certs) -lt $(date +%s --date="7 days ago") ]]
+then
+curl -o root_certs https://ccadb.my.salesforce-sites.com/mozilla/IncludedRootsPEMTxt?TrustBitsInclude=Websites
+dos2unix root_certs
+fi
+
 make -C fpgarom
 make -C boot
 
@@ -15,7 +21,8 @@ romfsgen/romfsgen.py \
     assets/sysrom_s2.bin \
     plusbasic/plusBasic/zout/sysrom.bin \
     plusbasic/plusBasic/zout/ptplay.bin \
-    aqplus.core
+    aqplus.core \
+    root_certs
 
 rm -rf aqplus.core
 
