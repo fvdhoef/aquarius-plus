@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
+from datetime import datetime, timezone
 import argparse
+import lzma
 import pathlib
 import struct
-from datetime import datetime, timezone
 
 parser = argparse.ArgumentParser(prog="romfsgen", description="Generate romfs file")
 parser.add_argument("output")
@@ -26,23 +27,43 @@ try:
         date = ((dt.year - 1980) << 9) | (dt.month << 5) | dt.day
         time = (dt.hour << 11) | (dt.minute << 4) | (dt.second // 2)
 
-        file = (path, path.name.encode() + b"\0", offset, st.st_size, date, time)
+        with open(file, "rb") as f:
+            data = f.read()
+
+        data = lzma.compress(
+            data,
+            format=lzma.FORMAT_XZ,
+            check=lzma.CHECK_NONE,
+            filters=[
+                {
+                    "id": lzma.FILTER_LZMA2,
+                    "dict_size": 8192,
+                    "preset": 6 | lzma.PRESET_EXTREME,
+                }
+            ],
+        )
+
+        file = (path, path.name.encode() + b"\0", offset, st.st_size, date, time, data)
         files.append(file)
 
-        offset += st.st_size
-        hdr_size += 1 + 4 + 4 + 4 + len(file[1])
+        offset += len(data)  # st.st_size
+        hdr_size += 1 + 4 + 4 + 2 + 2 + 4 + len(file[1])
+
+    for f in files:
+        print(f[0:6])
 
     with open(args.output, "wb") as f:
         for file in files:
             record = bytearray()
             record.extend(
                 struct.pack(
-                    "<BIIHH",
-                    1 + 4 + 4 + 4 + len(file[1]),  # Size of record
+                    "<BIIHHI",
+                    1 + 4 + 4 + 2 + 2 + 4 + len(file[1]),  # Size of record
                     file[2] + hdr_size,  # Offset to file contents
                     file[3],  # File size
                     file[4],  # File date
                     file[5],  # File time
+                    len(file[6]),  # Compressed file size
                 )
             )
             record.extend(file[1])
@@ -53,8 +74,7 @@ try:
 
         # Output content of files
         for file in files:
-            with open(file[0], "rb") as fi:
-                f.write(fi.read())
+            f.write(file[6])
 
 except Exception as e:
     print(e)

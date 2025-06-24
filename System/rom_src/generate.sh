@@ -5,7 +5,19 @@ set -e
 make -C fpgarom
 make -C boot
 
-romfsgen/romfsgen.py romfs.bin boot/zout/boot.bin assets/default.chr assets/latin1b.chr assets/sysrom_s2.bin plusbasic/plusBasic/zout/sysrom.bin plusbasic/plusBasic/zout/ptplay.bin
+cp ../fpga_cores/aqplus/aqp_top.bit aqplus.core
+
+romfsgen/romfsgen.py \
+    romfs.bin \
+    boot/zout/boot.bin \
+    assets/default.chr \
+    assets/latin1b.chr \
+    assets/sysrom_s2.bin \
+    plusbasic/plusBasic/zout/sysrom.bin \
+    plusbasic/plusBasic/zout/ptplay.bin \
+    aqplus.core
+
+rm -rf aqplus.core
 
 ROMFS_H=../emulator/esp32/romfs_contents.h
 xxd -i -n romfs_start romfs.bin > $ROMFS_H
