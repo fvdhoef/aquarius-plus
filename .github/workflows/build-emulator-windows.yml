@@ -45,7 +45,7 @@ jobs:
           $VERSION=git describe
           move System/emulator/windows/Output/AquariusPlusEmu-Windows-x64.exe System/emulator/windows/Output/AquariusPlusEmu-Windows-x64-installer-$VERSION.exe
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AquariusPlusEmu-Windows-x64-${{ github.ref_name }}
           path: |

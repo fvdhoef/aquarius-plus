@@ -31,7 +31,7 @@ jobs:
           mv sdcard AquariusPlusDisk
           zip -r AquariusPlusDisk-${VERSION}.zip AquariusPlusDisk
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AquariusPlusDisk-${{ github.ref_name }}
           path: EndUser/AquariusPlusDisk-*.zip

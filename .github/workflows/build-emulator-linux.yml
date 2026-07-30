@@ -38,7 +38,7 @@ jobs:
           cp -r ../../../EndUser/sdcard AquariusPlusEmu/
           zip -rq AquariusPlusEmu-Linux-${VERSION}.zip AquariusPlusEmu
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: AquariusPlusEmu-Linux-${{ github.ref_name }}
           path: System/emulator/build/AquariusPlusEmu-Linux-*.zip

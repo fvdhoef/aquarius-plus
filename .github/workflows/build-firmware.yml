@@ -36,7 +36,7 @@ jobs:
           cd System/esp32; ./do_release.sh nobuild
           mv AquariusPlus-Firmware-*.zip ../AquariusPlus-Firmware-${VERSION}.zip
       - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Firmware_${{ github.ref_name }}
           path: System/AquariusPlus-Firmware-*.zip
