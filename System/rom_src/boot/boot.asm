@@ -15,6 +15,7 @@ PAGE_MAINRAM3       equ 59
 PAGE_SYSROM0        equ 60
 PAGE_SYSROM1        equ 61
 PAGE_SYSROM2        equ 62
+PAGE_SYSROM3        equ 63
 PAGE_CART_NONSCRAM  equ 63
 
 PAGE_CART_NSRO      equ PAGE_CART_NONSCRAM | BANK_READONLY
@@ -129,6 +130,10 @@ endif
 
     ; Check for cartridge
 .cart
+    ; Disable Turbo Mode while reading cart
+    ld      a,0
+    out     (IO_SYSCTRL),a
+
     ld      de,$A010+1
     ld      hl,cart_crtsig-1
 .1: dec     de
@@ -188,6 +193,9 @@ endif
     ldir
 
 .descramble_done
+    ; Reenable Turbo Mode
+    ld      a,6
+    out     (IO_SYSCTRL),a
 
     ld      a,(bank3_page)
     or      BANK_READONLY
@@ -284,6 +292,11 @@ fill_mem:
     ret
 
 copy_sysrom:
+    ; Reenable unlimited turbo ode
+    ld      a,6
+    out     (IO_SYSCTRL),a
+
+
     ld      a,PAGE_SYSROM0
     out     (IO_BANK0),a
 
@@ -361,6 +374,10 @@ load_sysrom:
     ld      hl,$4000
     ld      de,$8000
     call    esp_read_bytes
+    ld      a,PAGE_SYSROM3
+    out     (IO_BANK2),a
+    ld      hl,$4000
+    ld      de,$8000
     call    esp_close
     xor     0
     ret
