@@ -438,7 +438,7 @@ public:
         video.videoLine      = 0;
 
         for (unsigned aidx = 0; aidx < numSamples; aidx++) {
-            int speedMultiplier  = forceTurbo ? 4 : (sysCtrlTurbo ? (sysCtrlTurboUnlimited ? 4 : 2) : 1);
+            int speedMultiplier  = forceTurbo ? 4 : (sysCtrlTurbo ? (sysCtrlTurboUnlimited ? 8 : 2) : 1);
             int hcyclesPerSample = HCYCLES_PER_SAMPLE * speedMultiplier;
             int hcyclesPerLine   = HCYCLES_PER_LINE * speedMultiplier;
 
