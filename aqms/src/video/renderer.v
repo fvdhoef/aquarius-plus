@@ -43,14 +43,14 @@ module renderer(
 
     reg [3:0] pixel_data;
     always @* case (d_datasel ^ (d_hflip ? 3'b111 : 3'b000))
-        3'b000: pixel_data = d_render_data[31:28];
-        3'b001: pixel_data = d_render_data[27:24];
-        3'b010: pixel_data = d_render_data[23:20];
-        3'b011: pixel_data = d_render_data[19:16];
-        3'b100: pixel_data = d_render_data[15:12];
-        3'b101: pixel_data = d_render_data[11:8];
-        3'b110: pixel_data = d_render_data[7:4];
-        3'b111: pixel_data = d_render_data[3:0];
+        3'd0: pixel_data = d_render_data[31:28];
+        3'd1: pixel_data = d_render_data[27:24];
+        3'd2: pixel_data = d_render_data[23:20];
+        3'd3: pixel_data = d_render_data[19:16];
+        3'd4: pixel_data = d_render_data[15:12];
+        3'd5: pixel_data = d_render_data[11: 8];
+        3'd6: pixel_data = d_render_data[ 7: 4];
+        3'd7: pixel_data = d_render_data[ 3: 0];
     endcase
 
     wire [1:0] lab_wrdata = {q_is_sprite, (q_priority && (wrdata[3:0] != 4'd0))};
@@ -70,21 +70,21 @@ module renderer(
         d_palette     = q_palette;
         d_wridx       = q_wridx;
         d_wrdata      = q_wrdata;
-        d_wren        = 1'b0;
+        d_wren        = 0;
         d_datasel     = q_datasel;
         d_busy        = q_busy;
-        d_last_pixel  = 1'b0;
+        d_last_pixel  = 0;
         d_is_sprite   = q_is_sprite;
         d_hflip       = q_hflip;
         d_priority    = q_priority;
-        spr_collision = 1'b0;
+        spr_collision = 0;
 
         if (render_start) begin
             d_render_data = render_data;
             d_palette     = palette;
-            d_datasel     = 3'b0;
-            d_wren        = 1'b1;
-            d_busy        = 1'b1;
+            d_datasel     = 0;
+            d_wren        = 1;
+            d_busy        = 1;
             d_wridx       = render_idx;
             d_is_sprite   = is_sprite;
             d_hflip       = hflip;
@@ -92,15 +92,15 @@ module renderer(
 
         end else if (q_busy) begin
             d_datasel = q_datasel + 3'd1;
-            d_wren    = 1'b1;
+            d_wren    = 1;
             d_wridx   = q_wridx + 8'd1;
 
             if (q_datasel == 3'd7) begin
-                d_busy = 1'b0;
-                d_wren = 1'b0;
+                d_busy = 0;
+                d_wren = 0;
             end
             if (q_datasel == 3'd6) begin
-                d_last_pixel = 1'b1;
+                d_last_pixel = 1;
             end
         end
 
@@ -110,27 +110,27 @@ module renderer(
         if (d_is_sprite) begin
             // Don't render transparent sprite pixels
             if (pixel_data == 4'd0 || lab_is_sprite || lab_priority)
-                d_wren = 1'b0;
+                d_wren = 0;
 
             // Check for collision
             if (pixel_data != 4'd0 && lab_is_sprite)
-                spr_collision = 1'b1;
+                spr_collision = 1;
         end
     end
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            q_render_data <= 32'b0;
-            q_palette     <= 1'b0;
-            q_wridx       <= 8'd0;
-            q_wrdata      <= 5'b0;
-            q_wren        <= 1'b0;
-            q_datasel     <= 3'b0;
-            q_busy        <= 1'b0;
-            q_last_pixel  <= 1'b0;
-            q_is_sprite   <= 1'b0;
-            q_hflip       <= 1'b0;
-            q_priority    <= 1'b0;
+            q_render_data <= 0;
+            q_palette     <= 0;
+            q_wridx       <= 0;
+            q_wrdata      <= 0;
+            q_wren        <= 0;
+            q_datasel     <= 0;
+            q_busy        <= 0;
+            q_last_pixel  <= 0;
+            q_is_sprite   <= 0;
+            q_hflip       <= 0;
+            q_priority    <= 0;
 
         end else begin
             q_render_data <= d_render_data;

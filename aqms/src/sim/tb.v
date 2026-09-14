@@ -18,7 +18,7 @@ module tb();
     reg         q_ebus_mreq_n = 1'b1;
     reg         q_ebus_iorq_n = 1'b1;
 
-    reg         ebus_busack_n = 1'bZ;
+    reg         ebus_busack_n = 0;
 
     wire        ebus_phi;
     wire        ebus_reset_n;

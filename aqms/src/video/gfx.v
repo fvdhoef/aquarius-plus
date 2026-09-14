@@ -309,24 +309,24 @@ module gfx(
 
     always @(posedge clk or posedge reset) begin
         if (reset) begin
-            q_hscroll          <= 8'd0;
-            q_vscroll          <= 8'd0;
-            q_col              <= 6'd0;
-            q_vaddr            <= 13'b0;
+            q_hscroll          <= 0;
+            q_vscroll          <= 0;
+            q_col              <= 0;
+            q_vaddr            <= 0;
             q_state            <= ST_DONE;
             q_nxtstate         <= ST_DONE;
-            q_map_entry        <= 16'b0;
-            q_busy             <= 1'b0;
-            q_render_idx       <= 8'd0;
-            q_linesel          <= 1'b0;
-            q_render_data      <= 32'b0;
-            q_spr_idx          <= 7'b0;
-            q_spr_y            <= 8'b0;
-            q_spr_cnt          <= 4'b0;
-            q_render_is_sprite <= 1'b0;
-            q_render_hflip     <= 1'b0;
-            q_render_palette   <= 1'b0;
-            q_render_priority  <= 1'b0;
+            q_map_entry        <= 0;
+            q_busy             <= 0;
+            q_render_idx       <= 0;
+            q_linesel          <= 0;
+            q_render_data      <= 0;
+            q_spr_idx          <= 0;
+            q_spr_y            <= 0;
+            q_spr_cnt          <= 0;
+            q_render_is_sprite <= 0;
+            q_render_hflip     <= 0;
+            q_render_palette   <= 0;
+            q_render_priority  <= 0;
 
         end else begin
             q_hscroll          <= d_hscroll;
