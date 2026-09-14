@@ -62,9 +62,9 @@ module aqp_sysctrl(
     //////////////////////////////////////////////////////////////////////////
     reg       q_phi     = 1'b0;
     reg       q2_phi    = 1'b0;
-    reg [1:0] q_phi_div = 2'd0;
+    reg [2:0] q_phi_div = 3'd0;
 
-    wire [1:0] toggle_val = turbo_mode ? (turbo_unlimited ? 2'd0 : 2'd1) : 2'd3;
+    wire [2:0] toggle_val = turbo_mode ? (turbo_unlimited ? 3'd0 : 3'd3) : 3'd7;
 
     assign ebus_phi = q2_phi;
 
@@ -78,7 +78,7 @@ module aqp_sysctrl(
             ebus_phi_clken <= 1;
 
         end else begin
-            q_phi_div <= q_phi_div + 2'd1;
+            q_phi_div <= q_phi_div + 3'd1;
         end
     end
 

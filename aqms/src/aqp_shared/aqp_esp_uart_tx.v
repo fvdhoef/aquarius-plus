@@ -12,10 +12,10 @@ module aqp_esp_uart_tx(
     output wire        tx_busy);
 
     // Bit-timing
-    reg [2:0] q_clk_cnt = 3'd0;
-    always @(posedge clk) q_clk_cnt <= q_clk_cnt + 3'd1;
+    reg [3:0] q_clk_cnt = 4'd0;
+    always @(posedge clk) q_clk_cnt <= q_clk_cnt + 4'd1;
 
-    wire next_bit = q_clk_cnt == 3'd0;
+    wire next_bit = q_clk_cnt == 4'd0;
 
     // Shift out serial data
     reg [8:0] q_tx_shift;

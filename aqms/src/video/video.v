@@ -29,7 +29,6 @@ module video(
     output reg   [7:0] io_rddata,
     input  wire  [7:0] io_wrdata,
     input  wire        io_wren,
-    input  wire        io_wrdone,
     input  wire        io_rddone,
     output wire        irq,
 
@@ -47,6 +46,9 @@ module video(
     output reg         video_oddline);
 
     wire [7:0] vram_rddata;
+
+    reg q_io_wren;
+    always @(posedge clk) q_io_wren <= io_wren;
 
     //////////////////////////////////////////////////////////////////////////
     // Register interface
@@ -74,7 +76,7 @@ module video(
 
     wire       ctrl_rddone = io_rddone &&  io_portsel;
     wire       data_rddone = io_rddone && !io_portsel;
-    wire       data_wrdone = io_wrdone && !io_portsel;
+    wire       data_wrdone = q_io_wren && !io_portsel;
 
     wire       vram_wren    = data_write && q_vdp_code != 2'd3;
     wire       palette_wren = data_write && q_vdp_code == 2'd3;

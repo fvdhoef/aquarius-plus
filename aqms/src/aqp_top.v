@@ -81,7 +81,7 @@ module aqp_top(
 
     aqp_clkctrl clkctrl(
         .clk_in     ( sysclk     ),     // 14.31818MHz
-        .clk_out    ( clk        ),     // 28.63636MHz
+        .clk_out    ( clk        ),     // 57.27272MHz
 
         .video_clk  ( video_clk  ),
         .video_mode ( video_mode )
@@ -140,7 +140,7 @@ module aqp_top(
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: alternate baud rate
-            1'b0,       // Core type 01 specific: show force turbo mode
+            1'b1,       // Core type 01 specific: show force turbo mode
             1'b0,       // Core type 01 specific: show Aquarius+ options
             1'b0,       // Core type 01 specific: show video timing switch
             1'b0,       // Core type 01 specific: show mouse support
@@ -230,25 +230,25 @@ module aqp_top(
 
     wire [7:0] video_vcnt;
     wire [7:0] video_hcnt;
-    wire       video_irq;
 
+    reg        q_startup_mode;
     reg  [4:0] q_reg_bank0;
     reg  [4:0] q_reg_bank1;
     reg  [4:0] q_reg_bank2;
     reg  [7:0] q_reg_ramctrl;
 
     wire       force_turbo;
-    reg        q_sysctrl_turbo           = 1'b0;
-    reg        q_sysctrl_turbo_unlimited = 1'b0;
+    // reg        q_sysctrl_turbo           = 1'b0;
+    // reg        q_sysctrl_turbo_unlimited = 1'b0;
 
-    assign turbo           = force_turbo || q_sysctrl_turbo;
-    assign turbo_unlimited = force_turbo || q_sysctrl_turbo_unlimited;
+    assign turbo           = force_turbo || q_startup_mode; // q_sysctrl_turbo;
+    assign turbo_unlimited = force_turbo || q_startup_mode; // q_sysctrl_turbo_unlimited;
 
     wire       spi_reset_req;
+    wire       hctrl_reset_req;
+    wire       reset_req_cold;
 
-    reg q_startup_mode;
-
-    assign reset_req = spi_reset_req || (hctrl1_data == 8'b00011101);   // Button 1+3+5
+    assign reset_req = spi_reset_req || hctrl_reset_req;
 
     //////////////////////////////////////////////////////////////////////////
     // Bus interface
@@ -266,9 +266,6 @@ module aqp_top(
     wire [7:0] wrdata;
 
     wire bus_read_done;
-    wire bus_write_done;
-    wire bus_read;
-    wire bus_write;
     wire bus_read2;
     wire bus_write2;
 
@@ -302,11 +299,11 @@ module aqp_top(
     wire       allow_sel_mem   = mreq && !sel_internal && (ebus_wr_n || (!ebus_wr_n && q_startup_mode));
     wire       sel_mem_ram     = allow_sel_mem;
 
-    wire       ram_wren        = sel_mem_intram && bus_write;
-    wire       io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write;
-    wire       io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read;
+    wire       ram_wren        = sel_mem_intram && bus_write2;
+    wire       io_video_wren   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_write2;
+    wire       io_video_rden   = (sel_io_vdp_data || sel_io_vdp_ctrl) && bus_read2;
 
-    wire       io_psg_wren     = sel_io_psg && bus_write;
+    wire       io_psg_wren     = sel_io_psg && bus_write2;
 
     // Generate rddone signal for video
     reg io_video_rddone;
@@ -320,22 +317,11 @@ module aqp_top(
         end
     end
 
-    // Generate wrdone signal for video
-    reg io_video_wrdone, q_io_video_writing;
-    always @(posedge clk) begin
-        io_video_wrdone <= 1'b0;
-        if (io_video_wren) q_io_video_writing <= 1'b1;
-        if (q_io_video_writing && bus_write_done) begin
-            q_io_video_writing <= 1'b0;
-            io_video_wrdone <= 1'b1;
-        end
-    end
-
     // Handle region detection at port $3F
     reg [1:0] q_region_bits;
     always @(posedge clk or posedge reset)
-        if (reset)                       q_region_bits <= 2'b11;
-        else if (sel_io_3f && bus_write) q_region_bits <= {wrdata[7], wrdata[5]};
+        if (reset)                        q_region_bits <= 2'b11;
+        else if (sel_io_3f && bus_write2) q_region_bits <= {wrdata[7], wrdata[5]};
 
     wire [7:0] port_dc, port_dd;
 
@@ -355,7 +341,9 @@ module aqp_top(
         if (sel_io_dd)                rddata = port_dd;
     end
 
-    always @(posedge clk or posedge reset) begin
+    wire video_irq;
+
+    always @(posedge clk or posedge reset)
         if (reset) begin
             q_startup_mode <= 1'b1;
             q_reg_bank0    <= 5'd0;
@@ -364,15 +352,16 @@ module aqp_top(
             q_reg_ramctrl  <= 8'd0;
 
         end else begin
-            if (sel_mem_ramctrl && bus_write) begin
-                q_startup_mode <= 1'b0;
-                q_reg_ramctrl  <= wrdata;
+            if (bus_write2) begin
+                if (sel_mem_ramctrl) begin
+                    q_startup_mode <= 1'b0;
+                    q_reg_ramctrl  <= wrdata;
+                end
+                if (sel_mem_bank0) q_reg_bank0 <= wrdata[4:0];
+                if (sel_mem_bank1) q_reg_bank1 <= wrdata[4:0];
+                if (sel_mem_bank2) q_reg_bank2 <= wrdata[4:0];
             end
-            if (sel_mem_bank0 && bus_write) q_reg_bank0 <= wrdata[4:0];
-            if (sel_mem_bank1 && bus_write) q_reg_bank1 <= wrdata[4:0];
-            if (sel_mem_bank2 && bus_write) q_reg_bank2 <= wrdata[4:0];
         end
-    end
 
     assign cassette_out   = 1'b0;
     assign printer_out    = 1'b1;
@@ -456,6 +445,7 @@ module aqp_top(
     //////////////////////////////////////////////////////////////////////////
     // Video
     //////////////////////////////////////////////////////////////////////////
+
     video video(
         .clk            ( clk             ),
         .reset          ( reset           ),
@@ -466,7 +456,6 @@ module aqp_top(
         .io_rddata      ( rddata_io_video ),
         .io_wrdata      ( wrdata          ),
         .io_wren        ( io_video_wren   ),
-        .io_wrdone      ( io_video_wrdone ),
         .io_rddone      ( io_video_rddone ),
         .irq            ( video_irq       ),
 
@@ -516,10 +505,17 @@ module aqp_top(
     wire [7:0] hctrl1_data = q2_hctrl1 & spi_hctrl1;
     wire [7:0] hctrl2_data = q2_hctrl2 & spi_hctrl2;
 
+    assign hctrl_reset_req = (hctrl1_data == 8'b00011101);   // Button 1+3+5
+
     //////////////////////////////////////////////////////////////////////////
     // SPI interface
     //////////////////////////////////////////////////////////////////////////
     wire [63:0] keys;
+
+    wire  [7:0] kbbuf_data;
+    wire        kbbuf_wren;
+
+    wire        video_mode_unused;
 
     spiregs spiregs(
         .clk              ( clk              ),
@@ -532,13 +528,18 @@ module aqp_top(
         .spi_txdata_valid ( spi_txdata_valid ),
 
         .reset_req        ( spi_reset_req    ),
+        .reset_req_cold   ( reset_req_cold   ),
         .keys             ( keys             ),
         .hctrl1           ( spi_hctrl1       ),
         .hctrl2           ( spi_hctrl2       ),
 
+        .kbbuf_data       ( kbbuf_data       ),
+        .kbbuf_wren       ( kbbuf_wren       ),
+
         .use_t80          ( use_t80          ),
         .has_z80          ( has_z80          ),
-        .force_turbo      ( force_turbo      )
+        .force_turbo      ( force_turbo      ),
+        .video_mode       ( video_mode_unused )
     );
 
     assign video_mode = 1;
@@ -704,14 +705,15 @@ module aqp_top(
     reg [7:0] ebus_d_in;
     always @(posedge clk) if (!ebus_wr_n) ebus_d_in <= ebus_d;
 
-    assign bus_read       = q_ebus_rd_n[2:1] == 2'b10;
-    assign bus_read_done  = q_ebus_rd_n[2:1] == 2'b01;
-    assign bus_write      = q_ebus_wr_n[2:1] == 2'b10;
-    assign bus_write_done = q_ebus_wr_n[2:1] == 2'b01;
+    wire   bus_read   = (use_t80 ? q_ebus_rd_n[1:0] : q_ebus_rd_n[2:1]) == 2'b10;
+    wire   bus_write  = (use_t80 ? q_ebus_wr_n[1:0] : q_ebus_wr_n[2:1]) == 2'b10;
+    wire   ebus_stb   = (bus_read || bus_write);
+
+    assign bus_read_done  = (use_t80 ? q_ebus_rd_n[1:0] : q_ebus_rd_n[2:1]) == 2'b01;
 
     assign wrdata     = ebus_d_in;
-    assign bus_read2  = bus_read;
-    assign bus_write2 = bus_write;
+    assign bus_read2  = !ebus_rd_n && ebus_stb;    //  q_ebus_rd_n[2:1] == 2'b10;
+    assign bus_write2 = !ebus_wr_n && ebus_stb;    //  q_ebus_wr_n[2:1] == 2'b10;
     assign iorq       = !ebus_iorq_n;
     assign mreq       = !ebus_mreq_n;
 

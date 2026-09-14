@@ -11,7 +11,7 @@
 // 7 (111): Noise attenuation
 //
 // Update frequency:
-//  7 6 5 4 3 2 1 0    7 6 5 4 3 2 1 0 
+//  7 6 5 4 3 2 1 0    7 6 5 4 3 2 1 0
 // +-+---+-+-------+  +-+-+-----------+
 // |1|r r|0| F[9:6]|  |0|X|   F[5:0]  |
 // +-+---+-+-------+  +-+-+-----------+
@@ -71,7 +71,7 @@ module psg(
             q_noise_fb           <= 1'b0;
             q_noise_use_ch3_freq <= 1'b0;
             q_reset_lfsr         <= 1'b1;
-            
+
         end else begin
             q_reset_lfsr <= 1'b0;
 
@@ -110,11 +110,11 @@ module psg(
     end
 
     //////////////////////////////////////////////////////////////////////////
-    // Clock divider (/256)
+    // Clock divider (/512)
     //////////////////////////////////////////////////////////////////////////
-    reg [7:0] q_div = 8'd0;
-    always @(posedge clk) q_div <= q_div + 8'd1;
-    wire tick = (q_div == 8'd0);
+    reg [8:0] q_div = 0;
+    always @(posedge clk) q_div <= q_div + 9'd1;
+    wire tick = (q_div == 9'd0);
 
     //////////////////////////////////////////////////////////////////////////
     // Sound generation
@@ -176,7 +176,7 @@ module psg(
             end
 
             if (q_reset_lfsr) q_noise_lfsr <= 16'h4000;
-        
+
         end
     end
 
