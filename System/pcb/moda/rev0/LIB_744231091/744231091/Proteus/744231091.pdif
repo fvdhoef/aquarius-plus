@@ -1,0 +1,147 @@
+;Proteus Design Interchange Format
+(PDIF
+ (vendor "SamacSys Limited")
+ (version 1 0)
+ (library
+  (part "744231091"
+   (description "Common Mode Line Filter CNSW 0805 90Ohm Wurth WE-CNSW SMD Series Wire-wound SMD Inductor with a Ferrite Core,  /-25% Bifilar, Winding Symmetry 370mA Idc")
+   (family "IND")
+   (package "WE-CNSW_08058")
+   (attribute "Datasheet Link" "http://componentsearchengine.com/Datasheets/1/744231091.pdf")
+   (attribute "Manufacturer_Name" "Wurth Elektronik")
+   (attribute "Manufacturer_Part_Number" "744231091")
+   (attribute "Mouser Part Number" "710-744231091")
+   (attribute "Mouser Price/Stock" "https://www.mouser.co.uk/ProductDetail/Wurth-Elektronik/744231091?qs=PGXP4M47uW7beLYOUbZm8Q%3D%3D")
+   (attribute "Arrow Part Number" "")
+   (attribute "Arrow Price/Stock" "")
+   (gate
+    (symbol "744231091")
+    (pin "1" 1 PS)
+    (pin "2" 2 PS)
+    (pin "4" 3 PS)
+    (pin "3" 4 PS)
+   )
+  )
+  (symbol "744231091"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 200 100) (pt 600 100) (pt 600 -200) (pt 200 -200) (pt 200 100) (closed))
+   )
+   (terminal
+    (body (symbol "PIN") (pt 0 -100) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 0 0) (rot 0) (mir 0) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 800 0) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+   (terminal
+    (body (symbol "PIN") (pt 800 -100) (rot 0) (mir X) (visible true))
+    (name (pt 230 0) (rot 0) (just MIDDLE LEFT) (visible true))
+    (number (pt 140 20) (rot 0) (just BOTTOM RIGHT) (visible true)))
+  )
+  (symbol "PIN"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 0 0) (pt 200 0))))
+  (symbol "PINSHORT"
+   (units THOU)
+   (origin (pt 0 0))
+   (graphic
+    (stroke 10)
+    (path (pt 0 0) (pt 100 0))))
+  (package "WE-CNSW_08058"
+   (units MM)
+   (layer TASM
+    (graphic
+     (stroke 0.07)
+     (path
+      (closed false)
+      (pt 0.4 0.85)
+      (pt 0.4 -0.85))))
+   (layer TASM
+    (graphic
+     (stroke 0.07)
+     (path
+      (closed false)
+      (pt -0.4 0.85)
+      (pt -0.4 -0.85))))
+   (layer TASM
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt -0.6246 -1.2874)
+      (pt -0.6246 1.2635))))
+   (layer TASM
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt -0.6246 1.2635)
+      (pt 0.6251 1.2635))))
+   (layer TASM
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt 0.6251 1.2635)
+      (pt 0.6251 -1.2826))))
+   (layer TASM
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt 0.6203 -1.2874)
+      (pt -0.6246 -1.2874))))
+   (layer OCCA
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt -0.8 1.5)
+      (pt -0.8 -1.5))))
+   (layer OCCA
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt -0.8 -1.5)
+      (pt 0.8 -1.5))))
+   (layer OCCA
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt 0.8 -1.5)
+      (pt 0.8 1.5))))
+   (layer OCCA
+    (graphic
+     (stroke 0.127)
+     (path
+      (closed false)
+      (pt 0.8 1.5)
+      (pt -0.8 1.5))))
+   (leg 1 (pt -0.4 -0.85) (padstack 0))
+   (leg 2 (pt -0.4 0.85) (padstack 0))
+   (leg 3 (pt 0.4 0.85) (padstack 0))
+   (leg 4 (pt 0.4 -0.85) (padstack 0))
+   (padstack 0
+    (plated false)
+    (pad (layer TCOP) (rectf 0.4 0.9 0 0 90))
+   )
+   (model "744231091.stp"
+    (euler 180 0 -90)
+    (offset 0 0 0.8100000023841858)
+   )
+  )
+ )
+)

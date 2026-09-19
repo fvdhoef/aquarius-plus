@@ -1,0 +1,5 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "KiCad")(type "KiCad")(uri "${KIPRJMOD}/LIB_744231091/744231091/KiCad")(options "")(descr ""))
+  (lib (name "aquarius-plus")(type "KiCad")(uri "${KIPRJMOD}/aquarius-plus.pretty")(options "")(descr ""))
+)

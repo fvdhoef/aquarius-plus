@@ -1,0 +1,11 @@
+FILE_TYPE = MULTI_PHYS_TABLE;
+
+PART '744231091'
+CLASS = DISCRETE
+{========================================================================================}
+:"MANUFACTURER_NAME", "MANUFACTURER_PART_NUMBER"= "PART_NUMBER", "JEDEC_TYPE", "PACK_TYPE", "MOUSER_PART_NUMBER", "MOUSER_PRICE/STOCK", "ARROW_PART_NUMBER", "ARROW_PRICE/STOCK", "DESCRIPTION", "DATASHEET";
+{========================================================================================}
+ "Wurth Elektronik", "744231091" (!) = "", "WE-CNSW_08058", "Other", "710-744231091", "https://www.mouser.co.uk/ProductDetail/Wurth-Elektronik/744231091?qs=PGXP4M47uW7beLYOUbZm8Q%3D%3D", "", "", "Common Mode Line Filter CNSW 0805 90Ohm Wurth WE-CNSW SMD Series Wire-wound SMD Inductor with a Ferrite Core,  /-25% Bifilar, Winding Symmetry 370mA Idc", "http://componentsearchengine.com/Datasheets/1/744231091.pdf"
+END_PART
+
+END.
