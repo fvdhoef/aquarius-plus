@@ -1,0 +1,45 @@
+6 KK = 16384
+7 SN = KK + 10
+8 CL = KK + 20
+9 CB = KK + 30
+10 HC = KK + 40
+11 HO = KK + 50
+12 LO = KK + 60
+13 MI = KK + 70
+15 PA$ = "data/"
+20 LOAD PA$+"drumkit.bin",16384
+21 LOAD PA$+"kick.bin",20480
+30 LOAD PA$+"kick.bin",$5000
+40 LOAD PA$+"snare.bin",$5800
+50 LOAD PA$+"claps.bin",$6400
+60 LOAD PA$+"cowbell.bin",$7000
+70 LOAD PA$+"hihatc.bin",$7800
+80 LOAD PA$+"hihato.bin",$8000
+90 LOAD PA$+"lotom.bin",$8C00
+100 LOAD PA$+"midtom.bin",$9800
+120 CLS
+125 PRINT "Press the below key for :"
+130 PRINT "1 Kick"
+140 PRINT "2 Snare"
+150 PRINT "3 Claps"
+160 PRINT "4 HiHat Closed"
+170 PRINT "5 HiHat Open"
+180 PRINT "6 Lo Tom"
+190 PRINT "7 Mid Tom"
+200 PRINT "8 Cowbell"
+210 PRINT "--------------"
+220 PRINT "Q Quit"
+1000 A$=INKEY$
+1010 IF A$="1" THEN CALL KK
+1020 IF A$="2" THEN CALL SN
+1030 IF A$="3" THEN CALL CL
+1040 IF A$="4" THEN CALL HC
+1050 IF A$="5" THEN CALL HO
+1060 IF A$="6" THEN CALL LO
+1070 IF A$="7" THEN CALL MI
+1080 IF A$="8" THEN CALL CB
+1090 IF A$="Q" THEN GOTO 9000
+1100 IF A$="q" THEN GOTO 9000
+1110 GOTO 1000
+9000 CLS
+9999 END
