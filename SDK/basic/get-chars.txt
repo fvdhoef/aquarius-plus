@@ -1,0 +1,9 @@
+1000 REM Save Current Character RAM
+1010 REM Get BANK3 Page and save to A
+1020 A=IN(243)
+1030 REM Set BANK3 Page to CHARRAM
+1040 OUT 243,21
+1050 REM SAVE CHARRAM data from $C000 to $07FF
+1060 SAVE "this.chr",-16384,2048
+1070 REM Set BANK3 Page to original
+1080 OUT 243,A

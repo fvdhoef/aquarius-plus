@@ -1,0 +1,45 @@
+#asm
+;    include "/sdk/asm/inc/basic_stub.inc"
+    include "../../../../../../../EndUser/sdcard/sdk/asm/inc/basic_stub.inc"
+main:
+    jp      _main
+#endasm
+
+
+#include "inc.h"
+
+//#define MAX_LEN2 (16 + 1)
+
+// Hello there
+
+/* Multi line
+         comment */
+
+#asm
+label:
+    jr      label
+#endasm
+
+// 0x4387
+// 1234
+// '\\'123
+// "Hello world!"
+
+#define BLA     (16 + 1)
+#define MAX_LEN (16 + BLA)
+
+int a = MAX_LEN;
+char b = 'A';
+
+dinges(int a, int b, char c) {
+    int result = a + b + c;
+
+    return result;
+}
+
+main() {
+//    dinges();
+    a = (b + (2 * -a)) & 1;
+    a = (a && b) || 5;
+    a = dinges(1,2,3);
+}

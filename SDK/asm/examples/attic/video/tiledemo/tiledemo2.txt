@@ -1,0 +1,31 @@
+1000 REM AqPlus Tile Scroll Demo
+1009 REM Set starting tile positions
+1010 X=0:Y=0
+1011 REM Set Tilemap HScroll Registers
+1012 M=225:N=226
+1100 REM Get BANK3 Page and save to A
+1101 A=IN(243)
+1109 REM Set BANK3 to Page 20, VRAM
+1110 OUT 243,20
+1120 REM Load tile data into $C000/-16384
+1130 LOAD "tiledata.bin",-16384
+1140 REM Set palette loop
+1150 FOR I=0TO31
+1159 REM Update VPALSEL
+1160 OUT 234,I
+1164 REM Update VPALDATA
+1165 OUT 235,PEEK(-4096+I)
+1170 NEXT
+1179 REM Set VCTRL to 64x32 tilemap mode
+1180 OUT 224,2
+1181 REM Scroll tileset
+1185 X=X+1:IFX>511THENX=0
+1186 Q=XAND255:R=X/256:OUTM,Q:OUTN,R
+1187 REM Uncomment next 2 lines for diag
+1188 REM Y=Y+1:IFY>255THENY=0
+1189 REM OUT227,Y
+1190 IF INKEY$="" GOTO 1185
+1199 REM Set VCTRL to text mode
+1200 OUT 224,1
+1201 REM Set BANK3 to original state
+1202 OUT 243,A

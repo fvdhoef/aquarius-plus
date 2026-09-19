@@ -1,0 +1,17 @@
+1000 REM Save Current Character RAM
+1010 REM Get BANK3 Page and save to A
+1020 A=IN(243)
+1030 REM Set BANK3 Page to CHARRAM
+1040 OUT 243,21
+1050 REM SAVE CHARRAM data from $C000 to $07FF
+1060 SAVE "this.chr",-16384,2048
+1070 REM Set BANK3 to VRAM
+1080 OUT 243,20
+1090 REM Load BLANK Bitmap file
+1100 LOAD "blank.bit",-16384
+1110 REM Load BLACK on CYAN Color file
+1120 LOAD "color-fill.col",-8192
+1130 REM Load original CHARRAM data
+1140 LOAD "this.chr",-16384
+1150 REM Set Graphics Mode (VCTRL) to BITMAP + TEXT
+1160 OUT 224,5

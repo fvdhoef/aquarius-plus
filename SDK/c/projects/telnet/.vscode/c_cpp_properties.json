@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "name": "Aquarius+",
+      "includePath": [
+        "${env:AQPLUS_SDK}/c/include",
+        "${workspaceFolder}/**"
+      ],
+      "defines": [],
+      "cStandard": "c17"
+    }
+  ],
+  "version": 4
+}
