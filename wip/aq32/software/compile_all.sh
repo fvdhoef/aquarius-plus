@@ -8,7 +8,7 @@ for i in $PROJECTS; do
     cmake -S $i -B $i/build -G Ninja
     ninja -C $i/build
 
-    cp $i/build/$i.aq32 ../../../../EndUser/sdcard/cores/aq32/
+    cp $i/build/$i.aq32 ~/Projects/aquarius-plus/EndUser/sdcard/cores/aq32/
 done
 
-cp -f basic/help/content/basic.hlp ../../../../EndUser/sdcard/cores/aq32/
+cp -f basic/help/content/basic.hlp ~/Projects/aquarius-plus/EndUser/sdcard/cores/aq32/
