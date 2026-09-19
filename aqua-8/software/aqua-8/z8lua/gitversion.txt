@@ -1,0 +1,3 @@
+Based on https://github.com/samhocevar/z8lua.git commit 8575dfbc524003c869c0aa05e109819302c576f9 on pico8 branch
+
+With 32-bit compatibility changes from: https://github.com/DavidVentura/z8lua commit c31d858e4567bdb5779dc51303b6c85e71ce1f2a on pico8 branch
