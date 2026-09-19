@@ -91,8 +91,8 @@ module aq32_top(
     //////////////////////////////////////////////////////////////////////////
     wire clk;
     aqp_clkctrl clkctrl(
-        .clk_in(sysclk),        // 14.31818MHz
-        .clk_out(clk)           // 25.175MHz
+        .clk_in     ( sysclk     ),    // 14.31818MHz
+        .clk_out    ( clk        )     // 25.175MHz
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -102,11 +102,12 @@ module aq32_top(
     wire reset;
 
     aqp_sysctrl sysctrl(
-        .sysclk(clk),
-        .reset_req(reset_req),
+        .sysclk    ( clk       ),
+        .reset_req ( reset_req ),
 
-        .ebus_phi(ebus_phi),
-        .reset(reset));
+        .ebus_phi  ( ebus_phi  ),
+        .reset     ( reset     )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Time tick generation (1ms)
@@ -177,22 +178,23 @@ module aq32_top(
         .IRQ_USED(32'h001F0080),
         .IRQ_LATCHING(32'h00030000)
     ) cpu(
-        .clk(clk),
-        .reset(reset),
+        .clk         ( clk         ),
+        .reset       ( reset       ),
 
-        .mtime(q_mtime),
+        .mtime       ( q_mtime     ),
 
         // Bus interface
-        .bus_addr(cpu_addr),
-        .bus_wrdata(cpu_wrdata),
-        .bus_bytesel(cpu_bytesel),
-        .bus_wren(cpu_wren),
-        .bus_strobe(cpu_strobe),
-        .bus_wait(cpu_wait),
-        .bus_rddata(cpu_rddata),
+        .bus_addr    ( cpu_addr    ),
+        .bus_wrdata  ( cpu_wrdata  ),
+        .bus_bytesel ( cpu_bytesel ),
+        .bus_wren    ( cpu_wren    ),
+        .bus_strobe  ( cpu_strobe  ),
+        .bus_wait    ( cpu_wait    ),
+        .bus_rddata  ( cpu_rddata  ),
 
         // Interrupt input
-        .irq(cpu_irq));
+        .irq         ( cpu_irq     )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Boot ROM
@@ -200,9 +202,10 @@ module aq32_top(
     wire [31:0] bootrom_rddata;
 
     bootrom bootrom(
-        .clk(clk),
-        .addr(cpu_addr[10:2]),
-        .rddata(bootrom_rddata));
+        .clk    ( clk            ),
+        .addr   ( cpu_addr[10:2] ),
+        .rddata ( bootrom_rddata )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // SRAM controller
@@ -224,50 +227,51 @@ module aq32_top(
     assign ebus_ba      = ebus_sram_a[18:14];
 
     sram_ctrl sram_ctrl(
-        .clk(clk),
-        .reset(reset),
+        .clk         ( clk            ),
+        .reset       ( reset          ),
 
         // Command interface
-        .bus_addr(sram_m_addr),
-        .bus_wrdata(sram_m_wrdata),
-        .bus_bytesel(sram_m_bytesel),
-        .bus_wren(sram_m_wren),
-        .bus_strobe(sram_m_strobe),
-        .bus_wait(sram_m_wait),
-        .bus_rddata(sram_m_rddata),
+        .bus_addr    ( sram_m_addr    ),
+        .bus_wrdata  ( sram_m_wrdata  ),
+        .bus_bytesel ( sram_m_bytesel ),
+        .bus_wren    ( sram_m_wren    ),
+        .bus_strobe  ( sram_m_strobe  ),
+        .bus_wait    ( sram_m_wait    ),
+        .bus_rddata  ( sram_m_rddata  ),
 
         // SRAM interface
-        .sram_a(ebus_sram_a),
-        .sram_ce_n(ebus_ram_ce_n),
-        .sram_oe_n(ebus_rd_n),
-        .sram_we_n(ebus_ram_we_n),
-        .sram_dq(ebus_d));
-
+        .sram_a      ( ebus_sram_a    ),
+        .sram_ce_n   ( ebus_ram_ce_n  ),
+        .sram_oe_n   ( ebus_rd_n      ),
+        .sram_we_n   ( ebus_ram_we_n  ),
+        .sram_dq     ( ebus_d         )
+    );
 
 `define USE_CACHE
 `ifdef USE_CACHE
     assign sram_m_bytesel = 4'b1111;
 
     sram_cache sram_cache(
-        .clk(clk),
-        .reset(reset),
+        .clk       ( clk            ),
+        .reset     ( reset          ),
 
         // Slave bus interface (from CPU)
-        .s_addr(cpu_addr[18:2]),
-        .s_wrdata(cpu_wrdata),
-        .s_bytesel(cpu_bytesel),
-        .s_wren(cpu_wren),
-        .s_strobe(sram_strobe),
-        .s_wait(sram_wait),
-        .s_rddata(sram_rddata),
+        .s_addr    ( cpu_addr[18:2] ),
+        .s_wrdata  ( cpu_wrdata     ),
+        .s_bytesel ( cpu_bytesel    ),
+        .s_wren    ( cpu_wren       ),
+        .s_strobe  ( sram_strobe    ),
+        .s_wait    ( sram_wait      ),
+        .s_rddata  ( sram_rddata    ),
 
         // Memory command interface
-        .m_addr(sram_m_addr),
-        .m_wrdata(sram_m_wrdata),
-        .m_wren(sram_m_wren),
-        .m_strobe(sram_m_strobe),
-        .m_wait(sram_m_wait),
-        .m_rddata(sram_m_rddata));
+        .m_addr    ( sram_m_addr    ),
+        .m_wrdata  ( sram_m_wrdata  ),
+        .m_wren    ( sram_m_wren    ),
+        .m_strobe  ( sram_m_strobe  ),
+        .m_wait    ( sram_m_wait    ),
+        .m_rddata  ( sram_m_rddata  )
+    );
 
 `else
 
@@ -292,21 +296,22 @@ module aq32_top(
     wire        esp_rx_empty;
 
     aqp_esp_uart esp_uart(
-        .clk(clk),
-        .reset(reset),
+        .clk          ( clk              ),
+        .reset        ( reset            ),
 
-        .txfifo_data(cpu_wrdata[8:0]),
-        .txfifo_wr(esp_tx_wr),
-        .txfifo_full(esp_tx_fifo_full),
+        .txfifo_data  ( cpu_wrdata[8:0]  ),
+        .txfifo_wr    ( esp_tx_wr        ),
+        .txfifo_full  ( esp_tx_fifo_full ),
 
-        .rxfifo_data(esp_rx_data),
-        .rxfifo_rd(esp_rx_rd),
-        .rxfifo_empty(esp_rx_empty),
+        .rxfifo_data  ( esp_rx_data      ),
+        .rxfifo_rd    ( esp_rx_rd        ),
+        .rxfifo_empty ( esp_rx_empty     ),
 
-        .esp_rx(esp_rx),
-        .esp_tx(esp_tx),
-        .esp_cts(esp_cts),
-        .esp_rts(esp_rts));
+        .esp_rx       ( esp_rx           ),
+        .esp_tx       ( esp_tx           ),
+        .esp_cts      ( esp_cts          ),
+        .esp_rts      ( esp_rts          )
+    );
 
     assign irq_uart = !esp_rx_empty;
 
@@ -335,12 +340,12 @@ module aq32_top(
     assign spi_txdata_valid = 1'b0;
 
     aqp_esp_spi esp_spi(
-        .clk(clk),
-        .reset(reset),
+        .clk                   ( clk                ),
+        .reset                 ( reset              ),
 
         // System information
-        .sysinfo_core_type(8'h02),
-        .sysinfo_flags({
+        .sysinfo_core_type     ( 8'h02              ),
+        .sysinfo_flags         ({
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: unused
             1'b0,       // Core type 01 specific: unused
@@ -350,37 +355,38 @@ module aq32_top(
             1'b1,       // Core type 01 specific: show mouse support
             1'b0        // Z80 present
         }),
-        .sysinfo_version_major(8'h00),
-        .sysinfo_version_minor(8'h01),
+        .sysinfo_version_major ( 8'h00              ),
+        .sysinfo_version_minor ( 8'h01              ),
 
-        .core_name("Aquarius32      "),
+        .core_name             ( "Aquarius32      " ),
 
         // Interface for core specific messages
-        .spi_msg_end(spi_msg_end),
-        .spi_cmd(spi_cmd),
-        .spi_rxdata(spi_rxdata),
-        .spi_txdata(spi_txdata),
-        .spi_txdata_valid(spi_txdata_valid),
+        .spi_msg_end           ( spi_msg_end        ),
+        .spi_cmd               ( spi_cmd            ),
+        .spi_rxdata            ( spi_rxdata         ),
+        .spi_txdata            ( spi_txdata         ),
+        .spi_txdata_valid      ( spi_txdata_valid   ),
 
         // Display overlay interface
-        .ovl_text_addr(ovl_text_addr),
-        .ovl_text_wrdata(ovl_text_wrdata),
-        .ovl_text_wr(ovl_text_wr),
+        .ovl_text_addr         ( ovl_text_addr      ),
+        .ovl_text_wrdata       ( ovl_text_wrdata    ),
+        .ovl_text_wr           ( ovl_text_wr        ),
 
-        .ovl_font_addr(ovl_font_addr),
-        .ovl_font_wrdata(ovl_font_wrdata),
-        .ovl_font_wr(ovl_font_wr),
+        .ovl_font_addr         ( ovl_font_addr      ),
+        .ovl_font_wrdata       ( ovl_font_wrdata    ),
+        .ovl_font_wr           ( ovl_font_wr        ),
 
-        .ovl_palette_addr(ovl_palette_addr),
-        .ovl_palette_wrdata(ovl_palette_wrdata),
-        .ovl_palette_wr(ovl_palette_wr),
+        .ovl_palette_addr      ( ovl_palette_addr   ),
+        .ovl_palette_wrdata    ( ovl_palette_wrdata ),
+        .ovl_palette_wr        ( ovl_palette_wr     ),
 
         // ESP SPI slave interface
-        .esp_ssel_n(esp_ssel_n),
-        .esp_sclk(esp_sclk),
-        .esp_mosi(esp_mosi),
-        .esp_miso(esp_miso),
-        .esp_notify(esp_notify));
+        .esp_ssel_n            ( esp_ssel_n         ),
+        .esp_sclk              ( esp_sclk           ),
+        .esp_mosi              ( esp_mosi           ),
+        .esp_miso              ( esp_miso           ),
+        .esp_notify            ( esp_notify         )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Hand controller interface
@@ -418,25 +424,25 @@ module aq32_top(
     wire        kbbuf_wren;
 
     spiregs spiregs(
-        .clk(clk),
-        .reset(reset),
+        .clk              ( clk              ),
+        .reset            ( reset            ),
 
-        .spi_msg_end(spi_msg_end),
-        .spi_cmd(spi_cmd),
-        .spi_rxdata(spi_rxdata),
-        .spi_txdata(spi_txdata),
-        .spi_txdata_valid(spi_txdata_valid),
+        .spi_msg_end      ( spi_msg_end      ),
+        .spi_cmd          ( spi_cmd          ),
+        .spi_rxdata       ( spi_rxdata       ),
+        .spi_txdata       ( spi_txdata       ),
+        .spi_txdata_valid ( spi_txdata_valid ),
 
-        .reset_req(spi_reset_req),
-        .reset_req_cold(reset_req_cold),
-        .keys(keys),
-        .hctrl1(spi_hctrl1),
-        .hctrl2(spi_hctrl2),
-        .gamepad1(gamepad1),
-        .gamepad2(gamepad2),
+        .reset_req        ( spi_reset_req    ),
+        .reset_req_cold   ( reset_req_cold   ),
+        .keys             ( keys             ),
+        .hctrl1           ( spi_hctrl1       ),
+        .hctrl2           ( spi_hctrl2       ),
+        .gamepad1         ( gamepad1         ),
+        .gamepad2         ( gamepad2         ),
 
-        .kbbuf_data(kbbuf_data),
-        .kbbuf_wren(kbbuf_wren));
+        .kbbuf_data       ( kbbuf_data       ),
+        .kbbuf_wren       ( kbbuf_wren       ));
 
     //////////////////////////////////////////////////////////////////////////
     // Keyboard buffer
@@ -448,15 +454,15 @@ module aq32_top(
     wire        kbbuf_empty;
 
     kbbuf kbbuf(
-        .clk(clk),
-        .rst(kbbuf_rst),
+        .clk      ( clk          ),
+        .rst      ( kbbuf_rst    ),
 
-        .wrdata(kbbuf_data),
-        .wr_en(kbbuf_wren),
+        .wrdata   ( kbbuf_data   ),
+        .wr_en    ( kbbuf_wren   ),
 
-        .rddata(kbbuf_rddata),
-        .rd_en(kbbuf_rden),
-        .rd_empty(kbbuf_empty)
+        .rddata   ( kbbuf_rddata ),
+        .rd_en    ( kbbuf_rden   ),
+        .rd_empty ( kbbuf_empty  )
     );
 
     assign irq_keybuf = !kbbuf_empty;
@@ -471,18 +477,18 @@ module aq32_top(
     wire [15:0] pcm_audio_r;
 
     pcm pcm(
-        .clk(clk),
-        .reset(reset),
+        .clk        ( clk                    ),
+        .reset      ( reset                  ),
 
-        .bus_addr(cpu_addr[3:2]),
-        .bus_wrdata(cpu_wrdata),
-        .bus_wren(pcm_strobe && cpu_wren),
-        .bus_rddata(pcm_rddata),
+        .bus_addr   ( cpu_addr[3:2]          ),
+        .bus_wrdata ( cpu_wrdata             ),
+        .bus_wren   ( pcm_strobe && cpu_wren ),
+        .bus_rddata ( pcm_rddata             ),
 
-        .irq(irq_pcm),
+        .irq        ( irq_pcm                ),
 
-        .audio_l(pcm_audio_l),
-        .audio_r(pcm_audio_r)
+        .audio_l    ( pcm_audio_l            ),
+        .audio_r    ( pcm_audio_r            )
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -495,17 +501,17 @@ module aq32_top(
     wire [15:0] fmsynth_audio_r;
 
     fmsynth fmsynth(
-        .clk(clk),
-        .reset(reset),
+        .clk        ( clk                        ),
+        .reset      ( reset                      ),
 
-        .bus_addr(cpu_addr[9:2]),
-        .bus_wrdata(cpu_wrdata),
-        .bus_wren(fmsynth_strobe && cpu_wren),
-        .bus_rddata(fmsynth_rddata),
-        .bus_wait(fmsynth_wait),
+        .bus_addr   ( cpu_addr[9:2]              ),
+        .bus_wrdata ( cpu_wrdata                 ),
+        .bus_wren   ( fmsynth_strobe && cpu_wren ),
+        .bus_rddata ( fmsynth_rddata             ),
+        .bus_wait   ( fmsynth_wait               ),
 
-        .audio_l(fmsynth_audio_l),
-        .audio_r(fmsynth_audio_r)
+        .audio_l    ( fmsynth_audio_l            ),
+        .audio_r    ( fmsynth_audio_r            )
     );
 
     //////////////////////////////////////////////////////////////////////////
@@ -534,17 +540,18 @@ module aq32_top(
     end
 
     aqp_pwm_dac pwm_dac(
-        .clk(clk),
-        .reset(reset),
+        .clk         ( clk            ),
+        .reset       ( reset          ),
 
         // Sample input
-        .next_sample(1'b1),
-        .left_data(common_audio_l),
-        .right_data(common_audio_r),
+        .next_sample ( 1'b1           ),
+        .left_data   ( common_audio_l ),
+        .right_data  ( common_audio_r ),
 
         // PWM audio output
-        .audio_l(audio_l),
-        .audio_r(audio_r));
+        .audio_l     ( audio_l        ),
+        .audio_r     ( audio_r        )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Video
@@ -624,100 +631,101 @@ module aq32_top(
         {4'b0, vram_rddata[11: 8], 4'b0, vram_rddata[15:12], 4'b0, vram_rddata[ 3: 0], 4'b0, vram_rddata[ 7: 4]};
 
     video video(
-        .clk(clk),
-        .reset(reset),
+        .clk                ( clk                    ),
+        .reset              ( reset                  ),
 
-        .reg_bm_wrap(q_vctrl_bm_wrap),
-        .reg_layer2_enable(q_vctrl_layer2_enable),
-        .reg_sprites_enable(q_vctrl_sprites_enable),
-        .reg_gfx_tilemode(q_vctrl_gfx_tilemode),
-        .reg_gfx_enable(q_vctrl_gfx_enable),
-        .reg_text_priority(q_vctrl_text_priority),
-        .reg_text_mode80(q_vctrl_text_mode80),
-        .reg_text_enable(q_vctrl_text_enable),
-        .reg_layer1_scrx(q_l1_scrx),
-        .reg_layer1_scry(q_l1_scry),
-        .reg_layer2_scrx(q_l2_scrx),
-        .reg_layer2_scry(q_l2_scry),
-        .reg_irqline(q_virqline),
-        .vline(vline),
+        .reg_bm_wrap        ( q_vctrl_bm_wrap        ),
+        .reg_layer2_enable  ( q_vctrl_layer2_enable  ),
+        .reg_sprites_enable ( q_vctrl_sprites_enable ),
+        .reg_gfx_tilemode   ( q_vctrl_gfx_tilemode   ),
+        .reg_gfx_enable     ( q_vctrl_gfx_enable     ),
+        .reg_text_priority  ( q_vctrl_text_priority  ),
+        .reg_text_mode80    ( q_vctrl_text_mode80    ),
+        .reg_text_enable    ( q_vctrl_text_enable    ),
+        .reg_layer1_scrx    ( q_l1_scrx              ),
+        .reg_layer1_scry    ( q_l1_scry              ),
+        .reg_layer2_scrx    ( q_l2_scrx              ),
+        .reg_layer2_scry    ( q_l2_scry              ),
+        .reg_irqline        ( q_virqline             ),
+        .vline              ( vline                  ),
 
-        .sprattr_addr(cpu_addr[10:2]),
-        .sprattr_rddata(sprattr_rddata),
-        .sprattr_wrdata(cpu_wrdata),
-        .sprattr_wren(sprattr_wren),
+        .sprattr_addr       ( cpu_addr[10:2]         ),
+        .sprattr_rddata     ( sprattr_rddata         ),
+        .sprattr_wrdata     ( cpu_wrdata             ),
+        .sprattr_wren       ( sprattr_wren           ),
 
-        .irq_line(irq_line),
-        .irq_vblank(irq_vblank),
+        .irq_line           ( irq_line               ),
+        .irq_vblank         ( irq_vblank             ),
 
-        .tram_addr(cpu_addr[12:2]),
-        .tram_rddata(tram_rddata),
-        .tram_wrdata(cpu_wrdata),
-        .tram_bytesel(cpu_bytesel),
-        .tram_wren(tram_wren),
+        .tram_addr          ( cpu_addr[12:2]         ),
+        .tram_rddata        ( tram_rddata            ),
+        .tram_wrdata        ( cpu_wrdata             ),
+        .tram_bytesel       ( cpu_bytesel            ),
+        .tram_wren          ( tram_wren              ),
 
-        .chram_addr(cpu_addr[10:0]),
-        .chram_rddata(chram_rddata),
-        .chram_wrdata(cpu_wrdata[7:0]),
-        .chram_wren(chram_wren),
+        .chram_addr         ( cpu_addr[10:0]         ),
+        .chram_rddata       ( chram_rddata           ),
+        .chram_wrdata       ( cpu_wrdata[7:0]        ),
+        .chram_wren         ( chram_wren             ),
 
-        .pal_addr(cpu_addr[7:1]),
-        .pal_rddata(pal_rddata),
-        .pal_wrdata(cpu_wrdata[11:0]),
-        .pal_wren(pal_wren),
+        .pal_addr           ( cpu_addr[7:1]          ),
+        .pal_rddata         ( pal_rddata             ),
+        .pal_wrdata         ( cpu_wrdata[11:0]       ),
+        .pal_wren           ( pal_wren               ),
 
-        .vram_addr(vram_addr),
-        .vram_wrdata(vram_wrdata),
-        .vram_wrsel(vram_wrsel),
-        .vram_wren(vram_wren),
-        .vram_rddata(vram_rddata),
+        .vram_addr          ( vram_addr              ),
+        .vram_wrdata        ( vram_wrdata            ),
+        .vram_wrsel         ( vram_wrsel             ),
+        .vram_wren          ( vram_wren              ),
+        .vram_rddata        ( vram_rddata            ),
 
-        .video_r(video_r),
-        .video_g(video_g),
-        .video_b(video_b),
-        .video_de(video_de),
-        .video_hsync(video_hsync),
-        .video_vsync(video_vsync),
-        .video_newframe(video_newframe),
-        .video_oddline(video_oddline));
+        .video_r            ( video_r                ),
+        .video_g            ( video_g                ),
+        .video_b            ( video_b                ),
+        .video_de           ( video_de               ),
+        .video_hsync        ( video_hsync            ),
+        .video_vsync        ( video_vsync            ),
+        .video_newframe     ( video_newframe         ),
+        .video_oddline      ( video_oddline          )
+    );
 
     //////////////////////////////////////////////////////////////////////////
     // Display overlay
     //////////////////////////////////////////////////////////////////////////
     aqp_overlay overlay(
         // Core video interface
-        .video_clk(clk),
-        .video_r(video_r),
-        .video_g(video_g),
-        .video_b(video_b),
-        .video_de(video_de),
-        .video_hsync(video_hsync),
-        .video_vsync(video_vsync),
-        .video_newframe(video_newframe),
-        .video_oddline(video_oddline),
-        .video_mode(1'b1),
+        .video_clk          ( clk                ),
+        .video_r            ( video_r            ),
+        .video_g            ( video_g            ),
+        .video_b            ( video_b            ),
+        .video_de           ( video_de           ),
+        .video_hsync        ( video_hsync        ),
+        .video_vsync        ( video_vsync        ),
+        .video_newframe     ( video_newframe     ),
+        .video_oddline      ( video_oddline      ),
+        .video_mode         ( 1'b1               ),
 
         // Overlay interface
-        .ovl_clk(clk),
+        .ovl_clk            ( clk                ),
 
-        .ovl_text_addr(ovl_text_addr),
-        .ovl_text_wrdata(ovl_text_wrdata),
-        .ovl_text_wr(ovl_text_wr),
+        .ovl_text_addr      ( ovl_text_addr      ),
+        .ovl_text_wrdata    ( ovl_text_wrdata    ),
+        .ovl_text_wr        ( ovl_text_wr        ),
 
-        .ovl_font_addr(ovl_font_addr),
-        .ovl_font_wrdata(ovl_font_wrdata),
-        .ovl_font_wr(ovl_font_wr),
+        .ovl_font_addr      ( ovl_font_addr      ),
+        .ovl_font_wrdata    ( ovl_font_wrdata    ),
+        .ovl_font_wr        ( ovl_font_wr        ),
 
-        .ovl_palette_addr(ovl_palette_addr),
-        .ovl_palette_wrdata(ovl_palette_wrdata),
-        .ovl_palette_wr(ovl_palette_wr),
+        .ovl_palette_addr   ( ovl_palette_addr   ),
+        .ovl_palette_wrdata ( ovl_palette_wrdata ),
+        .ovl_palette_wr     ( ovl_palette_wr     ),
 
         // VGA signals
-        .vga_r(vga_r),
-        .vga_g(vga_g),
-        .vga_b(vga_b),
-        .vga_hsync(vga_hsync),
-        .vga_vsync(vga_vsync)
+        .vga_r              ( vga_r              ),
+        .vga_g              ( vga_g              ),
+        .vga_b              ( vga_b              ),
+        .vga_hsync          ( vga_hsync          ),
+        .vga_vsync          ( vga_vsync          )
     );
 
     //////////////////////////////////////////////////////////////////////////

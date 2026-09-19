@@ -22,7 +22,7 @@ module aqp_clkctrl(
         .CLKIN_PERIOD(69.841274),
         .CLKOUT_PHASE_SHIFT("NONE"),
         .CLK_FEEDBACK("1X"),
-        .DESKEW_ADJUST("SYSTEM_SYNCHRONOUS"), 
+        .DESKEW_ADJUST("SYSTEM_SYNCHRONOUS"),
         .DFS_FREQUENCY_MODE("LOW"),
         .DLL_FREQUENCY_MODE("LOW"),
         .DSS_MODE("NONE"),
@@ -49,7 +49,7 @@ module aqp_clkctrl(
         .DSSEN(1'b0),
         .PSCLK(1'b0),
         .PSEN(1'b0),
-        .PSINCDEC(1'b0), 
+        .PSINCDEC(1'b0),
         .RST(1'b0)
     );
     BUFG bufg_28(.I(clk2x), .O(clk28));
