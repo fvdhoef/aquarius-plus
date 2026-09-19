@@ -1,0 +1,14 @@
+STR$, VAL Functions
+STR$ returns a string representation of a number.
+VAL converts a string representation of a number to a number.
+
+*STR$(numeric-expression)*
+*VAL(stringexpression$)*
+
+    @ *numeric-expression*    Any numeric expression.
+    @ *stringexpression$*     A string representation of a number.
+
+Example:
+    PRINT "Decimal 65 is represented in hexadecimal as ";
+    PRINT "&H" + LTRIM$(STR$(41))
+    PRINT VAL(RIGHT$("Microsoft 1990", 4))

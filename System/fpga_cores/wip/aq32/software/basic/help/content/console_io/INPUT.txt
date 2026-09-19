@@ -1,0 +1,46 @@
+INPUT, LINE INPUT Statements
+INPUT reads input from the keyboard or a file. LINE INPUT reads a line of
+up to 255 characters from the keyboard or a file.
+
+*INPUT [;] ["prompt"{; | ,}] variablelist*
+*LINE INPUT [;] ["prompt";] variable$*
+*INPUT #filenumber%, variablelist*
+*LINE INPUT #filenumber%, variable$*
+
+    @ *prompt*          An optional literal string that is displayed before
+                      the user enters data. A semicolon after prompt appends
+                      a question mark to the prompt string.
+    @ *variablelist*    One or more variables, separated by commas, in which
+                      data entered from the keyboard or read from a file is
+                      stored. Variable names can consist of up to 40
+                      characters and must begin with a letter. Valid
+                      characters are A-Z, 0-9, and period (.).
+    @ *variable$*       Holds a line of characters entered from the keyboard
+                      or read from a file.
+    @ *filenumber%*     The number of an open file.
+
+    @ INPUT uses a comma as a separator between entries.
+      LINE INPUT reads all characters up to a carriage return.
+    @ For keyboard input, a semicolon immediately after INPUT keeps the
+      cursor on the same line after the user presses the Enter key.
+
+Example:
+    CLS
+    OPEN "LIST" FOR OUTPUT AS #1
+    DO
+        INPUT "   NAME:       ", Name$  'Read entries from the keyboard.
+        INPUT "   AGE:        ", Age$
+        WRITE #1, Name$, Age$
+        INPUT "Add another entry"; R$
+    LOOP WHILE UCASE$(R$) = "Y"
+    CLOSE #1
+    'Echo the file back.
+    OPEN "LIST" FOR INPUT AS #1
+    CLS
+    PRINT "Entries in file:": PRINT
+    DO WHILE NOT EOF(1)
+        LINE INPUT #1, REC$  'Read entries from the file.
+        PRINT REC$           'Print the entries on the screen.
+    LOOP
+    CLOSE #1
+    KILL "LIST"

@@ -1,0 +1,10 @@
+RESUME Statement
+Resumes program execution after an error-handling routine.
+
+*RESUME [{line | NEXT}]*
+
+    @ line    The label or number of the line where execution resumes. If
+              line is 0 or omitted, execution resumes with the statement
+              that caused the error.
+    @ NEXT    Resumes execution at the statement following the statement
+              that caused the error.

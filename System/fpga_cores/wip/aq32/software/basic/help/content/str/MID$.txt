@@ -1,0 +1,16 @@
+MID$ Function and Statement
+The MID$ function returns part of a string (a substring).
+
+*MID$(stringexpression$,start%[,length%])*
+
+    @ *stringexpression$*    The string from which the MID$ function returns
+                           a substring. It can be any string expression.
+    @ *start%*               The position of the first character in the
+                           substring being returned.
+    @ *length%*              The number of characters in the substring. If the
+                           length is omitted, MID$ returns all characters to
+                           the right of the start position.
+
+Example:
+    a$ = "Where is Paris?"
+    PRINT MID$(a$, 10, 5)       'Output is:  Paris

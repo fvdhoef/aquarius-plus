@@ -1,0 +1,52 @@
+DATA, READ, RESTORE Statements
+DATA specifies values to be read by subsequent READ statements.
+READ reads those values and assigns them to variables.
+RESTORE allows READ to reread values in specified DATA statements.
+
+See below for the *READ #* statement to read from files.
+
+*DATA constant[,constant]...*
+*READ variablelist*
+*RESTORE [line]*
+
+    @ *constant*        One or more numeric or string constants specifying
+                      the data to be read. String constants containing
+                      commas, colons, or leading or trailing spaces are
+                      enclosed in quotation marks (" ").
+    @ *variablelist*    One or more variables, separated by commas, that are
+                      assigned data values. Variable names can consist of up
+                      to 40 characters and must begin with a letter. Valid
+                      characters are A-Z, 0-9, and period (.).
+    @ *line*            The label or line number of a DATA statement. If line
+                      is omitted, the next READ statement reads values in
+                      the first DATA statement in the program.
+
+    @ DATA statements can be entered only at the module level. They cannot
+      be used in procedures.
+
+Example:
+    FOR i% = 1 TO 3
+        READ a%, b$
+        PRINT a%, b$
+        RESTORE
+    NEXT i%
+    DATA 1, "Repeat"
+
+
+*READ [#]filenumber%, variablelist*
+
+    @ *filenumber%*       The number of an open file.
+    @ *variablelist*      One or more variables, separated by commas, that are
+                        assigned data read from the file. When assigning data
+                        to a string variable, the current size of the string
+                        variable is used as read length.
+
+    @ READ reads the items from the file in their binary form.
+      Use INPUT # instead to read ASCII representations.
+
+Example:
+
+    OPEN "data.bin" FOR INPUT AS f%
+    e$ = SPACE$(100)
+    READ #f%, a%, b&, c!, d#, e$
+    CLOSE f%

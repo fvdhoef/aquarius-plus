@@ -1,0 +1,11 @@
+WIDTH Statement
+Change the number of screen-display columns and rows.
+
+*WIDTH [columns%]*
+
+    @ *columns%*        The desired width in columns. Screen display width
+                      must be 40 or 80 columns.
+
+Example:
+    WIDTH 40
+    WIDTH 80

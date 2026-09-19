@@ -1,0 +1,10 @@
+KILL Statement
+Deletes a file from disk.
+
+*KILL filespec$*
+
+    @ filespec$    Identifies the file to delete.
+
+Example:
+    INPUT "File to delete: "; f$
+    KILL f$

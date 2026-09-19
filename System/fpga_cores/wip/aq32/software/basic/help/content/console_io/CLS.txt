@@ -1,0 +1,12 @@
+CLS Statement
+Clears the screen.
+
+*CLS [{0 | 1 | 2}]*
+
+    CLS      Clears either the text or graphics viewport. If a graphics
+             viewport has been set (using VIEW), clears only the graphics
+             viewport. Otherwise, clears the text viewport or entire screen.
+    CLS 0    Clears the screen of all text and graphics.
+    CLS 1    Clears the graphics viewport or the entire screen if no graphics
+             viewport has been set.
+    CLS 2    Clears the text viewport.

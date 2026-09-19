@@ -1,0 +1,9 @@
+{
+    "verilog.linting.verilator.includePath": [
+        "lint_wrappers",
+        ".",
+        "platform",
+        "wrappers"
+    ],
+    "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
+}

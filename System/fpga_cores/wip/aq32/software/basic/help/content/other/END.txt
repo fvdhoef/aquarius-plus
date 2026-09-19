@@ -1,0 +1,13 @@
+END Statement
+Ends a program, procedure, block, or user-defined data type.
+
+*END [{FUNCTION | IF}]*
+
+    @ *FUNCTION*    Ends a FUNCTION procedure definition.
+    @ *IF*          Ends a block IF...THEN...ELSE statement.
+
+    @ If no argument is supplied, END ends the program and closes all files.
+
+Example:
+    PRINT "Game over."
+    END

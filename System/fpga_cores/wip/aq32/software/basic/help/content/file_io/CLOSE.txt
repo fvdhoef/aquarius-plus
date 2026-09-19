@@ -1,0 +1,19 @@
+CLOSE Statement
+Closes one or more open files.
+
+*CLOSE [[#]filenumber%[,[#]filenumber%]...]*
+
+  @ *filenumber%*    The number of an open file.
+
+  @ CLOSE with no arguments closes all open files.
+
+Example:
+    CLS
+    INPUT "Enter filename: ", n$
+    f% = OPEN n$ FOR OUTPUT
+    PRINT #f%, "This is saved to the file."
+    CLOSE
+    f% = OPEN n$ FOR INPUT
+    INPUT #f%, a$
+    PRINT "Read from file: "; a$
+    CLOSE

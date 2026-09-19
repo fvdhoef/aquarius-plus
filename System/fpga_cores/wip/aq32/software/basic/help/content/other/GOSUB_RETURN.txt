@@ -1,0 +1,27 @@
+GOSUB, RETURN Statements
+Branches to and returns from a subroutine.
+
+*GOSUB line1*
+*.*
+*.*
+*.*
+*RETURN [line2]*
+
+    @ *line1*    The label or line number of the first line of the subroutine.
+    @ *line2*    The label or line number where the subroutine returns.
+
+    @ If you don't supply a label or line number for RETURN, the program
+      continues execution at the statement following the GOSUB (for
+      subroutine calls) or where an event occurred (for event handling).
+    @ SUB and CALL statements provide a better alternative to GOSUB
+      subroutines.
+
+Example:
+    FOR i% = 1 TO 20
+        GOSUB Square
+    NEXT
+    END
+
+    Square:
+    PRINT i%, i% * i%
+    RETURN

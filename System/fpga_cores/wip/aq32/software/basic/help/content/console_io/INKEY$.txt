@@ -1,0 +1,15 @@
+INKEY$ Function
+Reads a character from the keyboard.
+
+*INKEY$*
+
+    @ INKEY$ returns a null string if there is no character to return.
+    @ For standard keys, INKEY$ returns a 1-byte string containing the
+      character read.
+    @ For extended keys, INKEY$ returns a 2-byte string made up of the null
+      character (ASCII 0) and the keyboard scan code.
+
+Example:
+    PRINT "Press Esc to exit..."
+    DO
+    LOOP UNTIL INKEY$ = CHR$(27)    '27 is the ASCII code for Esc.

@@ -1,0 +1,21 @@
+ATN, COS, SIN, TAN Functions
+ATN returns the arctangent of a specified numeric expression.
+COS, SIN, and TAN return the cosine, sine, and tangent of a specified angle.
+
+*ATN(numeric-expression)*
+*COS(angle)*
+*SIN(angle)*
+*TAN(angle)*
+
+    @ *numeric-expression*    The ratio between the sides of a right triangle.
+    @ *angle*                 An angle expressed in radians.
+
+    @ The ATN function returns an angle in radians.
+    @ To convert from degrees to radians, multiply degrees by (PI / 180).
+
+Example:
+    PI=3.141592654
+    PRINT ATN(TAN(PI/4.0)), PI/4.0    'Output is:  .7853981635  .7853981635
+    PRINT (COS(180 \* (PI / 180)))     'Output is:  -1
+    PRINT (SIN(90 \* (PI / 180)))      'Output is:  1
+    PRINT (TAN(45 \* (PI / 180)))      'Output is:  1.000000000205103

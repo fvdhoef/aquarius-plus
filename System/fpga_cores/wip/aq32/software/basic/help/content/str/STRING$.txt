@@ -1,0 +1,14 @@
+STRING$ Function
+Returns a string of a specified length made up of a repeating character.
+
+*STRING$(length%,{ascii-code% | stringexpression$})*
+
+    @ *length%*              The length of the string.
+    @ *ascii-code%*          The ASCII code of the repeating character.
+    @ *stringexpression$*    Any string expression. STRING$ fills the string
+                           with the first character in stringexpression$.
+
+Example:
+    PRINT STRING$(5, "-");
+    PRINT "Hello";
+    PRINT STRING$(5, "-")

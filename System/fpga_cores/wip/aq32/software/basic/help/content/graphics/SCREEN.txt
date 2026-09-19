@@ -1,0 +1,21 @@
+Sets the screen mode.
+
+*SCREEN mode%*
+
+    @ *mode%*           Sets the screen mode.
+
+
+| Mode | Text en | Text 80 | Text priority | Gfx mode |
+| ---: | :-----: | :-----: | :-----------: | :------: |
+|    0 |    X    |         |               |   Off    |
+|    1 |    X    |    X    |               |   Off    |
+|    2 |         |         |               |  Bitmap  |
+|    3 |    X    |         |               |  Bitmap  |
+|    4 |    X    |         |       X       |  Bitmap  |
+|    5 |    X    |    X    |               |  Bitmap  |
+|    6 |    X    |    X    |       X       |  Bitmap  |
+|    7 |         |         |               |   Tile   |
+|    8 |    X    |         |               |   Tile   |
+|    9 |    X    |         |       X       |   Tile   |
+|   10 |    X    |    X    |               |   Tile   |
+|   11 |    X    |    X    |       X       |   Tile   |

@@ -1,0 +1,15 @@
+INPUT$ Function
+Returns a string of characters read from a specified file.
+
+*INPUT$(n,[#]filenumber%)*
+
+    @ n              The number of characters (bytes) to read.
+    @ filenumber%    The number of an open file.
+
+Example:
+    OPEN "TEST.DAT" FOR OUTPUT AS #f%
+    PRINT #f%, "The text"
+    CLOSE
+    OPEN "TEST.DAT" FOR INPUT AS #f%
+    PRINT INPUT$(3, #f%)        'Print first 3 characters.
+    CLOSE

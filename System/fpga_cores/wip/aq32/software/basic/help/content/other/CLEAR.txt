@@ -1,0 +1,11 @@
+CLEAR Statement
+Closes all files, releases file buffers, clears all common variables, sets
+numeric variables and arrays to zero, sets string variables to null, and
+initializes the stack. Optionally, CLEAR also changes the size of the stack.
+
+*CLEAR [,,stack&]*
+
+    @ *stack&*    Sets the size (in bytes) of stack space for your program.
+
+Example:
+    CLEAR ,,2000

@@ -1,0 +1,13 @@
+LEN Function
+Returns the number of characters in a string or the number of bytes
+required to store a variable.
+
+*LEN(stringexpression$)*
+*LEN(variable)*
+
+    @ *stringexpression$*    Any string expression.
+    @ *variable*             Any nonstring variable.
+
+Example:
+    a$ = "Microsoft QBasic"
+    PRINT LEN(a$)

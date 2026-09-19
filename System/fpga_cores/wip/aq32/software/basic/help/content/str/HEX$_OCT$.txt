@@ -1,0 +1,16 @@
+HEX$, OCT$ Functions
+HEX$ returns a hexadecimal string representation of a number.
+OCT$ returns an octal string representation of a number.
+
+*HEX$(numeric-expression&)*
+*OCT$(numeric-expression&)*
+
+    @ *numeric-expression&*    Any numeric expression. The expression is
+                             rounded to an integer or long integer before it
+                             is evaluated.
+
+Example:
+    INPUT x
+    a$ = HEX$ (x)
+    b$ = OCT$ (x)
+    PRINT x; "decimal is "; a$; " hexadecimal and "; b$; " in octal."

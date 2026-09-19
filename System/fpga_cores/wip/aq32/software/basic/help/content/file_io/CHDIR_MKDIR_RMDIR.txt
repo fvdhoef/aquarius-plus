@@ -1,0 +1,22 @@
+CHDIR, MKDIR, RMDIR Statements
+
+CHDIR changes a drive's default directory. MKDIR creates a subdirectory.
+RMDIR removes a subdirectory. FILES displays the contents of the current
+directory or a specified directory.
+
+*CHDIR pathname$*
+*MKDIR pathname$*
+*RMDIR pathname$*
+*FILES [filespec$]*
+
+    @ *pathname$*    The path of the new default directory, subdirectory to
+                   create, or subdirectory to remove.
+    @ *filespec$*    A filename or path (may include a drive and DOS wildcard
+                   characters). If you don't specify a filespec$, FILES
+                   displays all files in the current directory.
+
+Example:
+    MKDIR "/TEMP/TEST"
+    CHDIR "/TEMP"
+    FILES
+    RMDIR "TEST"

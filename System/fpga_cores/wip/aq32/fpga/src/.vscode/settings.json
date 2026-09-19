@@ -1,0 +1,13 @@
+{
+    "verilog.linting.verilator.includePath": [
+        "lint_wrappers",
+        ".",
+        "aqp_shared",
+        "wrappers",
+        "cpu",
+        "mem",
+        "video",
+        "audio"
+    ],
+    "verilog.linting.verilator.arguments": "-Wall verilator.vlt"
+}

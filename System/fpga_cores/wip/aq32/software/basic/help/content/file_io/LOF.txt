@@ -1,0 +1,12 @@
+LOF Function
+Returns the length of a file in bytes.
+
+*LOF(filenumber%)*
+
+    @ *filenumber%*    The number of an open file.
+
+Example:
+    INPUT "Enter filename: "; n$
+    OPEN n$ FOR BINARY AS f%
+    PRINT "File length = "; LOF(f%)
+    CLOSE

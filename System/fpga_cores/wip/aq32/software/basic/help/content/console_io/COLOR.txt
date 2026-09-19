@@ -1,0 +1,7 @@
+COLOR Statement
+Sets the screen display colors.
+
+*COLOR [foreground%] [,background%]*
+
+    @ *foreground%*    A number (0-15) that sets the foreground screen color.
+    @ *background%*    A number (0-15) that sets the background screen color.

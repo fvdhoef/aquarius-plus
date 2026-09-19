@@ -1,0 +1,21 @@
+PRINT Statement
+PRINT writes data to the screen or to a file.
+
+*PRINT [#filenumber%,] [expressionlist] [{; | ,}]*
+
+    @ *filenumber%*       The number of an open file. If you don't specify a
+                        file number, PRINT writes to the screen.
+    @ *expressionlist*    A list of one or more numeric or string expressions
+                        to print.
+    @ *{; | ,}*           Determines where the next output begins:
+                          ; means print immediately after the last value.
+                          , means print at the start of the next print zone.
+                            Print zones are 14 characters wide.
+
+Example:
+    f% = OPEN "TEST.DAT" FOR OUTPUT
+    PRINT #f%, 12.12345
+    CLOSE
+    f% = OPEN "TEST.DAT" FOR INPUT
+    INPUT #f%, a$
+    PRINT a$

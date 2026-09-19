@@ -1,0 +1,11 @@
+WRITE Statement
+Writes data to an open file.
+
+*WRITE [#]filenumber%, variablelist*
+
+    @ *filenumber%*       The number of an open file.
+    @ *expressionlist*    One or more variables, separated by commas,
+                        whose values are written to the file.
+
+    @ WRITE writes the items to the file in their binary form.
+      Use PRINT # instead to write them in textual form.

@@ -1,0 +1,19 @@
+FOR...NEXT Statement
+Repeats a block of statements a specified number of times.
+
+*FOR counter = start TO end [STEP increment]*
+    *[statementblock]*
+*NEXT*
+
+    @ *counter*          A numeric variable used as the loop counter.
+    @ *start* and *end*    The initial and final values of the counter.
+    @ *increment*        The amount the counter is changed each time through
+                       the loop.
+
+Example:
+    FOR i% = 1 TO 15
+        PRINT i%
+    NEXT
+    FOR i% = 7 to -6 STEP -3
+        PRINT i%
+    NEXT

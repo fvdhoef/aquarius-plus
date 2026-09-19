@@ -1,0 +1,14 @@
+LEFT$, RIGHT$ Functions
+Return a specified number of leftmost or rightmost characters in a string.
+
+*LEFT$(stringexpression$,n%)*
+*RIGHT$(stringexpression$,n%)*
+
+    @ *stringexpression$*    Any string expression.
+    @ *n%*                   The number of characters to return, beginning
+                           with the leftmost or rightmost string character.
+
+Example:
+    a$ = "Microsoft QBasic"
+    PRINT LEFT$(a$, 5)     'Output is:  Micro
+    PRINT RIGHT$(a$, 5)    'Output is:  Basic

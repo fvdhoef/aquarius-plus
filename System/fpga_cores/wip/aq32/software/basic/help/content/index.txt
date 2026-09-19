@@ -1,0 +1,119 @@
+BASIC Help Index
+
+  <ABS Function|ABS>
+  <AND Operator|AND>
+  <ASC Function|ASC>
+  <ATN Function|ATN>
+
+  <Boolean Operators|XOR>
+
+  <CDBL   Function|CDBL>
+  <CHR$   Function|CHR>
+  <CINT   Function|CINT>
+  <CLEAR  Statement|CLEAR>
+  <CLNG   Function|CLNG>
+  <CLOSE  Statement|CLOSE>
+  <CLS    Statement|CLS>
+  <COLOR  Statement|COLOR>
+  <COS    Function|COS>
+  <CSNG   Function|CSNG>
+  <CSRLIN Function|CSRLIN>
+  <CVD    Function|CVD>
+  <CVI    Function|CVI>
+  <CVL    Function|CVL>
+  <CVS    Function|CVS>
+
+  <DATA   Statement|DATA>
+  <DEFDBL Statement|DEFDBL>
+  <DEFINT Statement|DEFINT>
+  <DEFLNG Statement|DEFLNG>
+  <DEFSNG Statement|DEFSNG>
+  <DEFSTR Statement|DEFSTR>
+  <DIM    Statement|DIM>
+
+  <ELSE   Keyword|ELSE>
+  <ELSEIF Keyword|ELSEIF>
+  <END    Statement|END>
+  <EOF    Function|EOF>
+  <EQV    Operator|EQV>
+  <ERASE  Statement|ERASE>
+  <ERL    Function|ERL>
+  <ERR    Function|ERR>
+  <ERROR  Statement|ERROR>
+  <EXP    Function|EXP>
+
+  <FIX Function|FIX>
+  <FOR Statement|FOR>
+
+  <GOSUB Statement|GOSUB>
+  <GOTO  Statement|GOTO>
+
+  <HEX$ Function|HEX$>
+
+  <IF     Statement|IF>
+  <IMP    Operator|IMP>
+  <INKEY$ Function|INKEY$>
+  <INPUT  Statement|INPUT>
+  <INPUT$ Function|INPUT$>
+  <INSTR  Function|INSTR>
+  <INT    Function|INT>
+
+  <KILL   Statement|KILL>
+
+  <LEFT$  Function|LEFT$>
+  <LEN    Function|LEN>
+  <LET    Statement|LET>
+  <LOCATE Statement|LOCATE>
+  <LOF    Function|LOF>
+  <LOG    Function|LOG>
+
+  <MID$ Function|MID$>
+  <MKD$ Function|MKD$>
+  <MKI$ Function|MKI$>
+  <MKL$ Function|MKL$>
+  <MKS$ Function|MKS$>
+  <MOD  Operator|MOD>
+
+  <NEXT Keyword|NEXT>
+  <NOT  Operator|NOT>
+
+  <OCT$ Function|OCT$>
+  <OPEN Statement|OPEN>
+  <OR   Operator|OR>
+
+  <POS   Function|POS>
+  <PRINT Statement|PRINT>
+
+  <RANDOMIZE Statement|RANDOMIZE>
+  <READ      Statement|READ>
+  <REM       Statement|REM>
+  <RESTORE   Statement|RESTORE>
+  <RESUME    Statement|RESUME>
+  <RETURN    Statement|RETURN>
+  <RIGHT$    Function|RIGHT$>
+  <RND       Function|RND>
+
+  <SEEK    Function and Statement|SEEK>
+  <SGN     Function|SGN>
+  <SIN     Function|SIN>
+  <SPACE$  Function|SPACE$>
+  <SPC     Function|SPC>
+  <SQR     Function|SQR>
+  <STEP    Keyword|STEP>
+  <STR$    Function|STR$>
+  <STRING$ Function|STRING$>
+  <SWAP    Function|SWAP>
+
+  <TAB  Function|TAB>
+  <TAN  Function|TAN>
+  <THEN Keyword|THEN>
+  <TO   Keyword|TO>
+
+  <VAL Function|VAL>
+
+  <WEND  Keyword|WEND>
+  <WHILE Statement|WHILE>
+  <WIDTH Statement|WIDTH>
+  <WRITE Statement|WRITE>
+
+  <XOR Operator|XOR>

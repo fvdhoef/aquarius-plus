@@ -1,0 +1,14 @@
+INSTR Function
+Returns the position of the first occurrence of a string in another string.
+
+*INSTR([start%,]stringexpression1$,stringexpression2$)*
+
+    @ *start%*                Sets the character position where the search
+                            begins. If start% is omitted, INSTR starts at
+                            position 1.
+    @ *stringexpression1$*    The string to search.
+    @ *stringexpression2$*    The string to look for.
+
+Example:
+    a$ = "Microsoft QBasic"
+    PRINT "String position ="; INSTR(1, a$, "QBasic")

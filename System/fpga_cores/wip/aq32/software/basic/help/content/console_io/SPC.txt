@@ -1,0 +1,10 @@
+SPC Function
+Skips a specified number of spaces in a PRINT statement.
+
+*SPC(n%)*
+
+    @ *n%*    The number of spaces to skip; a value in the range
+            0 through 32,767.
+
+Example:
+    PRINT "Text1"; SPC(10); "Text2"

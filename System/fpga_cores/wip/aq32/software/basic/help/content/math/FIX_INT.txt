@@ -1,0 +1,12 @@
+FIX, INT Functions
+FIX truncates a floating-point expression to its integer portion.
+INT returns the largest integer less than or equal to a numeric expression.
+
+*FIX(numeric-expression)*
+*INT(numeric-expression)*
+
+    @ *numeric-expression*    Any numeric expression.
+
+Example:
+    PRINT FIX(12.49), FIX(12.54)    'Output is:  12  12
+    PRINT INT(12.54), INT(-99.4)    'Output is:  12  -100

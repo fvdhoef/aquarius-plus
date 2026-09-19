@@ -1,0 +1,27 @@
+IF...THEN...ELSE Statement
+Executes a statement or statement block depending on specified conditions.
+
+*IF condition1 THEN*
+*    [statementblock-1]*
+*[ELSEIF condition2 THEN*
+*    [statementblock-2]]...*
+*[ELSE*
+*    [statementblock-n]]*
+*END IF*
+
+*IF condition THEN statements [ELSE statements]*
+
+    @ *condition1*          Any expression that can be evaluated as
+      *condition2*          true (nonzero) or false (zero).
+    @ *statementblock-1*    One or more statements on one or more lines.
+      *statementblock-2*
+      *statementblock-n*
+    @ *statements*          One or more statements, separated by colons.
+
+Example:
+    INPUT "1 or 2? ", i%
+    IF i% = 1 OR i% = 2 THEN
+        PRINT "OK"
+    ELSE
+        PRINT "Out of range"
+    END IF

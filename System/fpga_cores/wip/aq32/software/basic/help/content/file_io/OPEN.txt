@@ -1,0 +1,20 @@
+OPEN Statement
+Opens a file.
+
+OPEN path$ FOR mode* AS variable%
+
+  @ *variable%*    Variable receiving file number.
+  @ *path$*        The path of the file to be opened.
+  @ *mode*         One of the following file modes:
+
+                 @ *INPUT* opens file for input only.
+                 @ *OUTPUT* opens file for output only.
+                 @ *RANDOM* opens file for both input and output.
+                 @ *APPEND* opens file for output and set write pointer to
+                   end of file.
+
+Example:
+    OPEN "test.txt" FOR INPUT AS f%
+    LINE INPUT #f%, ln$
+    PRINT ln$
+    CLOSE #f%

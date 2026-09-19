@@ -1,0 +1,22 @@
+RANDOMIZE Statement, RND Function
+RANDOMIZE initializes the random-number generator.
+RND returns a single-precision random number between 0 and 1.
+
+*RANDOMIZE [seed%]*
+*RND[(n#)]*
+
+    @ *seed%*    A number used to initialize the random-number generator.
+               If omitted, RANDOMIZE prompts for it.
+    @ *n#*       A value that sets how RND generates the next random number:
+
+               n#                             RND returns
+               ===========================    ===========================
+               Less than 0                    The same number for any n#
+               Greater than 0 (or omitted)    The next random number
+               0                              The last number generated
+
+Example:
+    RANDOMIZE TIMER
+    x% = INT(RND * 6) + 1
+    y% = INT(RND * 6) + 1
+    PRINT "Roll of two dice: die 1 ="; x%; "and die 2 ="; y%

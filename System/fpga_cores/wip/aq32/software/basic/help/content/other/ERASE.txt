@@ -1,0 +1,15 @@
+ERASE Statement
+Frees memory used by array. After freeing the array it loses its dimensions.
+You must redeclare the array's dimensions with DIM before using it again,
+otherwise it will default to the default array dimensions.
+
+*ERASE arrayname [,arrayname]...*
+
+    @ *arrayname*    The name of an array.
+
+Example:
+    DIM a%(0)
+    a%(0) = 6
+    PRINT "Before: "; a%(0)
+    ERASE a%
+    PRINT "After: "; a%(0)

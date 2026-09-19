@@ -1,0 +1,10 @@
+SEEK Function and Statement
+The SEEK function returns the current file position.
+The SEEK statement sets the file position for the next read or write.
+
+*SEEK(filenumber%)*
+*SEEK [#]filenumber%, position&*
+
+    @ *filenumber%*    The number of an open file.
+    @ *position&*      The position where the next read or write occurs.
+                     The first byte is at position 1.

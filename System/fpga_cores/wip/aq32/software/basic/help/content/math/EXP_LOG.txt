@@ -1,0 +1,13 @@
+EXP, LOG Functions
+EXP returns e raised to a specified power, where e is the base of natural
+logarithms. LOG returns the natural logarithm of a numeric expression.
+
+*EXP(numeric-expression)*
+*LOG(numeric-expression)*
+
+    @ *numeric-expression*   For EXP, a number less than or equal to 88.02969.
+                           For LOG, any positive numeric expression.
+
+Example:
+    PRINT EXP(0), EXP(1)         'Output is:  1  2.718282
+    PRINT LOG(1), LOG(EXP(1))    'Output is:  0  1

@@ -1,0 +1,13 @@
+LET Statement
+Assigns the value of an expression to a variable.
+
+*[LET] variable=expression*
+
+    @ *variable*      Any variable. Variable names can consist of up to 40
+                    characters and must begin with a letter. Valid characters
+                    are A-Z, 0-9, and period (.).
+    @ *expression*    Any expression that provides a value to assign.
+
+    @ Use of the optional LET keyword is not recommended. The
+      variable=expression assignment statement performs the same action
+      with or without LET.

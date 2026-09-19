@@ -1,0 +1,13 @@
+ABS, SGN Functions
+ABS returns the absolute value of a number.
+SGN returns a value indicating the sign of a numeric expression (1 if the
+expression is positive, 0 if it is zero, or -1 if it is negative).
+
+*ABS(numeric-expression)*
+*SGN(numeric-expression)*
+
+    @ *numeric-expression*    Any numeric expression.
+
+Example:
+    PRINT ABS(45.5 - 100!)           'Output is:  54.5
+    PRINT SGN(1), SGN(-1), SGN(0)    'Output is:  1  -1  0

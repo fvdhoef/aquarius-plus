@@ -1,0 +1,19 @@
+REM Statement
+Allows explanatory remarks to be inserted in a program.
+
+*REM remark*
+*' remark*
+
+    @ *remark*    Any text.
+
+    @ Remarks are ignored when the program runs unless they contain
+      metacommands.
+    @ A remark can be inserted on a line after an executable statement if it
+      is preceded by the single-quote (') form of REM or if REM is preceded
+      by a colon (:).
+
+Example:
+    REM    This is a comment.
+    '      This is also a comment.
+    PRINT "Test1"       'This is a comment after a PRINT statement.
+    PRINT "Test2" :  REM This is also a comment after a PRINT statement.

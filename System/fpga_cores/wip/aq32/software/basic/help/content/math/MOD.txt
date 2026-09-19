@@ -1,0 +1,11 @@
+MOD Arithmetic Operator
+Divides one number by another and returns the remainder.
+
+*numeric-expression1 MOD numeric-expression2*
+
+    @ *numeric-expression1*    Any numeric expressions. Real numbers are
+      *numeric-expression2*    rounded to integers.
+
+Example:
+    PRINT 19 MOD 6.7    'QBasic rounds 6.7 to 7, then divides.
+                        'Output is:  5

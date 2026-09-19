@@ -1,0 +1,12 @@
+SPACE$ Function
+Returns a string of spaces.
+
+*SPACE$(n%)*
+
+    @ *n%*    The number of spaces you want in the string.
+
+Example:
+    FOR i% = 1 TO 5
+        x$ = SPACE$(i%)
+        PRINT x$; i%
+    NEXT i%

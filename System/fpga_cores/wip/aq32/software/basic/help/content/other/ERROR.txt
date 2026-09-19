@@ -1,0 +1,9 @@
+ERROR Statement
+Simulates an occurrence of a Basic error or a user-defined error.
+
+*ERROR expression%*
+
+    @ *expression%*    The error code of a Basic or user-defined error; a
+                     value in the range 1 through 255. To define your own
+                     error, use a value that isn't listed in the Basic
+                     <Run-Time Error Codes> table.

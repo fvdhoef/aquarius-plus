@@ -1,0 +1,14 @@
+WHILE...WEND Statement
+Executes a series of statements as long as a specified condition is true.
+
+*WHILE condition*
+*.*
+*.*
+*.*
+*WEND*
+
+    @ *condition*    A numeric expression that Basic evaluates as true
+                   (nonzero) or false (zero).
+
+    @ DO...LOOP provides a better way to execute statements in a
+      program loop.

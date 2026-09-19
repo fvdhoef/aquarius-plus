@@ -1,0 +1,10 @@
+ERR, ERL Functions
+ERR returns the run-time error code for the most recent error.
+ERL returns the line number where the error occurred, or the closest line
+number before the line where the error occurred.
+
+*ERR*
+*ERL*
+
+    @ ERL does not return line labels. If there are no line numbers in the
+      program, ERL returns 0.

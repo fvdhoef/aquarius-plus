@@ -1,0 +1,9 @@
+SQR Function
+Returns the square root of a numeric expression.
+
+*SQR(numeric-expression)*
+
+    @ *numeric-expression*    A value greater than or equal to zero.
+
+Example:
+    PRINT SQR(25), SQR(2)    'Output is:  5  1.414214

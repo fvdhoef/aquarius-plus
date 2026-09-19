@@ -1,0 +1,20 @@
+Using Help
+
+ Using BASIC Help:
+
+    @ To get help on a BASIC keyword, place the cursor on it while in the
+      BASIC editor or within a help topic and press F1.
+
+    @ When a text is <highlighted> place the cursor on it and press Enter to
+      navigate to this topic.
+
+    @ Move the cursor around using:
+        @ the cursor keys
+        @ Home / End
+        @ PageUp / Page Down
+
+    @ To close the help screen, press Esc.
+
+    @ The help system keeps a list of the last 20 Help topic you viewed.
+      To get back to them press Alt+F1 or press Enter with the cursor on the
+      <Back> link at the top of the page.

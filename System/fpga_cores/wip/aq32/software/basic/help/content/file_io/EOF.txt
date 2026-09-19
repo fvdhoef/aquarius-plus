@@ -1,0 +1,15 @@
+EOF Function
+Tests for the end of a file. EOF returns true (nonzero) if the end of a file
+has been reached.
+
+*EOF(filenumber%)*
+
+    @ *filenumber%*    The number of an open file.
+
+Example:
+    OPEN "test.txt" FOR INPUT AS f%
+    WHILE NOT EOF(f%)
+        LINE INPUT #f%, a$
+        PRINT a$
+    WEND
+    CLOSE #f%

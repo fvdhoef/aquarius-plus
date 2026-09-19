@@ -1,0 +1,8 @@
+GOTO Statements
+Branches to a specified line.
+
+*GOTO line*
+
+    @ *line*    The label or number of the line to execute next.
+
+    @ GOTO is also used as a keyword in the ON ERROR statement.

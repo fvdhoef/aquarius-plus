@@ -1,0 +1,125 @@
+Keywords by Programming Task
+
+ Control program flow
+
+  <END|END>
+  <FOR...NEXT|FOR>
+  <GOSUB...RETURN|GOSUB>
+  <GOTO|GOTO>
+  <IF...THEN...ELSE|IF>
+  <WHILE...WEND|WHILE>
+
+ Declare constants and variables
+
+  <LET|LET>
+
+  <DATA|DATA>
+  <READ|READ>
+  <RESTORE|RESTORE>
+
+  <DIM|DIM>
+  <ERASE|ERASE>
+  <REM|REM>
+  <SWAP|SWAP>
+  <CLEAR|CLEAR>
+
+  <DEFINT|DEFINT>
+  <DEFLNG|DEFLNG>
+  <DEFSNG|DEFSNG>
+  <DEFDBL|DEFDBL>
+  <DEFSTR|DEFSTR>
+
+ Display input/output
+
+  <CLS|CLS>
+  <COLOR|COLOR>
+  <CSRLIN|CSRLIN>
+  <INKEY$|INKEY$>
+  <INPUT|INPUT>
+  <LINE INPUT|INPUT>
+  <LOCATE|LOCATE>
+  <POS|POS>
+  <PRINT|PRINT>
+  <SPC|SPC>
+  <TAB|TAB>
+  <WIDTH|WIDTH>
+
+ File input/output
+
+  <OPEN|OPEN>
+  <CLOSE|CLOSE>
+  <READ #|READ>
+  <WRITE #|WRITE>
+  <SEEK|SEEK>
+  <LOF|LOF>
+  <EOF|EOF>
+  <LINE INPUT #|INPUT>
+  <INPUT$|INPUT$>
+
+  <KILL|KILL>
+  <CHDIR|CHDIR>
+  <MKDIR|MKDIR>
+  <RMDIR|RMDIR>
+
+  <CVD|CVD>
+  <CVI|CVI>
+  <CVL|CVL>
+  <CVS|CVS>
+  <MKD$|MKD$>
+  <MKI$|MKI$>
+  <MKL$|MKL$>
+  <MKS$|MKS$>
+
+ Manipulate strings
+
+  <ASC|ASC>
+  <CHR$|CHR>
+  <HEX$|HEX$>
+  <INSTR|INSTR>
+  <LEFT$|LEFT$>
+  <LEN|LEN>
+  <MID$|MID$>
+  <OCT$|OCT$>
+  <RIGHT$|RIGHT$>
+  <SPACE$|SPACE$>
+  <STR$|STR$>
+  <STRING$|STRING$>
+  <VAL|VAL>
+ 
+ Perform mathematical calculations
+
+  <ABS|ABS>
+  <FIX|FIX>
+  <INT|INT>
+  <SGN|SGN>
+
+  <SIN|SIN>
+  <COS|COS>
+  <ATN|ATN>
+  <TAN|TAN>
+  <SQR|SQR>
+  <EXP|EXP>
+  <LOG|LOG>
+
+  <MOD|MOD>
+  <NOT|NOT>
+  <AND|AND>
+  <OR|OR>
+  <XOR|XOR>
+  <EQV|EQV>
+  <IMP|IMP>
+
+  <RANDOMIZE|RANDOMIZE>
+  <RND|RND>
+
+  <CINT|CINT>
+  <CLNG|CLNG>
+  <CSNG|CSNG>
+  <CDBL|CDBL>
+
+ Error handling
+
+  <ERL|ERL>
+  <ERR|ERR>
+  <ERROR|ERROR>
+  <RESUME|RESUME>

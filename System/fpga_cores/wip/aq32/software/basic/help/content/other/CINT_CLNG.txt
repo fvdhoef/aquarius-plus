@@ -1,0 +1,15 @@
+CINT, CLNG Functions
+CINT rounds a numeric expression to an integer.
+CLNG rounds a numeric expression to a long (4-byte) integer.
+
+*CINT(numeric-expression)*
+*CLNG(numeric-expression)*
+
+    @ numeric-expression    For CINT, any numeric expression in the range
+                            -32,768 through 32,767.
+                            For CLNG, any numeric expression in the range
+                            -2,147,483,648 through 2,147,483,647.
+
+Example:
+    PRINT CINT(12.49), CINT(12.51)    'Output is:  12  13
+    PRINT CLNG(338457.8)              'Output is:  338458

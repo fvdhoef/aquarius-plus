@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "."
+    },
+    {
+      "name": "pcdev",
+      "path": "pcdev"
+    }
+  ],
+  "settings": {
+    "C_Cpp.autoAddFileAssociations": false
+  }
+}

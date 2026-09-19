@@ -1,0 +1,9 @@
+TAB Function
+Moves the text cursor to a specified print position.
+
+TAB(column%)
+
+    @ *column%*    The column number of the new print position.
+
+Example:
+    PRINT TAB(25); "Text"

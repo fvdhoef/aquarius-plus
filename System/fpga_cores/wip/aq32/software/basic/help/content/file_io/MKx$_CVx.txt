@@ -1,0 +1,20 @@
+MKn$, CVn Functions
+MKI$, MKL$, MKS$, and MKD$ convert numbers to numeric strings that can be
+stored in FIELD statement string variables. CVI, CVL, CVS, and CVD convert
+those strings back to numbers.
+
+*MKI$(integer-expression%)*
+*MKL$(long-integer-expression&)*
+*MKS$(single-precision-expression!)*
+*MKD$(double-precision-expression#)*
+*CVI(2-byte-numeric-string)*
+*CVL(4-byte-numeric-string)*
+*CVS(4-byte-numeric-string)*
+*CVD(8-byte-numeric-string)*
+
+    Function    Returns             Function    Returns
+    ========    ================    ========    =========================
+    MKI$        A 2-byte string     CVI         An integer
+    MKL$        A 4-byte string     CVL         A long integer
+    MKS$        A 4-byte string     CVS         A single-precision number
+    MKD$        An 8-byte string    CVD         A double-precision number

@@ -1,0 +1,15 @@
+DIM Statement
+DIM declares an array variable and its maximum array subscript value.
+
+*DIM variable(subscripts)[,variable(subscripts)]...*
+
+    @ *variable*      The name of an array or variable.
+    @ *subscripts*    Dimensions of the array, expressed as follows:
+    
+                    *upper [,upper]...*
+
+                    *upper*    The upper bound of the array's subscripts.
+                             The lower bound always is zero.
+
+Example:
+    DIM A(49)   'Array A has 50 elements ranging from index 0 to 49.

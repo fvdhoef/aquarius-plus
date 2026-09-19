@@ -1,0 +1,35 @@
+DEFtype Statements
+Sets the default data type for variables, DEF FN functions, and FUNCTION
+procedures.
+
+*DEFINT letterrange [,letterrange]...*
+*DEFLNG letterrange [,letterrange]...*
+*DEFSNG letterrange [,letterrange]...*
+*DEFDBL letterrange [,letterrange]...*
+*DEFSTR letterrange [,letterrange]...*
+
+    @ *letterrange*    A letter or range of letters (such as A-M). QBasic
+                     sets the default data type for variables, DEF FN
+                     functions, and FUNCTION procedures whose names begin
+                     with the specified letter or letters as follows:
+
+                     Statement    Default Data Type
+                     =========    =======================
+                     DEFINT       Integer
+                     DEFLNG       Long integer
+                     DEFSNG       Single precision
+                     DEFDBL       Double precision
+                     DEFSTR       String
+
+    @ A data-type suffix (%, &, !, #, or $) always takes precedence over a
+      DEFtype statement.
+    @ Single-precision is the default data type if you do not specify a
+      DEFtype statement.
+    @ After you specify a DEFtype statement in your program, QBasic
+      automatically inserts a corresponding DEFtype statement in each
+      procedure you create.
+
+Example:
+    DEFDBL A-Z
+    a = SQR(3)
+    PRINT "Square root of 3 = "; a

@@ -1,0 +1,12 @@
+CDBL, CSNG Functions
+CDBL converts a numeric expression to a double-precision value.
+CSNG converts a numeric expression to a single-precision value.
+
+*CDBL(numeric-expression)*
+*CSNG(numeric-expression)*
+
+    @ numeric-expression    Any numeric expression.
+
+Example:
+    PRINT 1 / 3, CDBL(1 / 3)    'Output is:  .3333333  .3333333333333333
+    PRINT CSNG(975.3421515#)    'Output is:  975.3422
